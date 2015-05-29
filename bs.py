@@ -167,7 +167,7 @@ class RunEngine:
         # private registry of callbacks processed on the "scan thread"
         self._scan_cb_registry = CallbackRegistry()
         for name, queue in queues.items():
-            curried_push = lambda doc: self._pushed_to_queue(name, queue, doc)
+            curried_push = lambda doc: self._push_to_queue(queue, doc)
             self._register_scan_callback(name, curried_push)
 
     def _register_scan_callback(self, name, func):
@@ -223,7 +223,7 @@ class RunEngine:
                 reason = str(err)
                 raise err
             finally:
-                doc = dict(run_start=run_start_uid,
+                doc = dict(run_start=self._run_start_uid,
                         time=ttime.time(),
                         exit_status=exit_status,
                         reason=reason)
@@ -253,16 +253,16 @@ class RunEngine:
         return ttime.sleep(*msg.args)
 
     def emit_event(self, event):
-        self._cb_registry.process('event', event)
+        self._scan_cb_registry.process('event', event)
 
     def emit_descriptor(self, descriptor):
-        self._cb_registry.process('descriptor', descriptor)
+        self._scan_cb_registry.process('descriptor', descriptor)
 
     def emit_start(self, start):
-        self._cb_registry.process('start', start)
+        self._scan_cb_registry.process('start', start)
 
     def emit_stop(self, stop):
-        self._cb_registry.process('stop', stop)
+        self._scan_cb_registry.process('stop', stop)
 
 
 class Dispatcher(object):
