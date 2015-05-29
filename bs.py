@@ -379,15 +379,15 @@ class CallbackRegistry():
         return cid
 
     def _remove_proxy(self, proxy):
-        for signal, proxies in self._func_cid_map.items():
+        for sig, proxies in self._func_cid_map.items():
             try:
-                del self.callbacks[signal][proxies[proxy]]
+                del self.callbacks[sig][proxies[proxy]]
             except KeyError:
                 pass
 
-            if len(self.callbacks[signal]) == 0:
-                del self.callbacks[signal]
-                del self._func_cid_map[signal]
+            if len(self.callbacks[sig]) == 0:
+                del self.callbacks[sig]
+                del self._func_cid_map[sig]
 
 
     def disconnect(self, cid):
@@ -400,7 +400,7 @@ class CallbackRegistry():
             except KeyError:
                 continue
             else:
-                for signal, functions in self._func_cid_map.items():
+                for sig, functions in self._func_cid_map.items():
                     for function, value in functions.items():
                         if value == cid:
                             del functions[function]
