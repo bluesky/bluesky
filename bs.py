@@ -147,7 +147,7 @@ class RunEngine:
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
             # When run_engine gets pushed to a thread, this SIGINT
             # handling will still work.
-            self.run_engine(self, g, additional_callbacks=None)
+            self.run_engine(g, additional_callbacks=None)
 
     def run_engine(self, g, additional_callbacks=None):
         run_start_uid = uid()
