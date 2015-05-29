@@ -129,13 +129,16 @@ def MoveRead_gen(motor, detector):
         print('Generator finished')
 
 
-def SynGaus_gen(syngaus):
+def SynGaus_gen(syngaus, motor_steps, motor_limit=None):
     try:
-        for x in np.linspace(-5, 5, 100):
+        for x in motor_steps:
             yield Msg('set', syngaus, ({syngaus.motor_name: x}, ), {})
             yield Msg('trigger', syngaus, (), {})
             yield Msg('wait', None, (.1, ), {})
-            yield Msg('read', syngaus, (), {})
+            ret = yield Msg('read', syngaus, (), {})
+            if motor_limit is not None:
+                if ret[syngaus.motor_name] > motor_limit:
+                    break
 
     finally:
         print('generator finished')
