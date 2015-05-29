@@ -4,7 +4,7 @@ from collections import namedtuple, deque
 import uuid
 import signal
 import threading
-from queue import Queue
+from queue import Queue, Empty
 from weakref import ref, WeakKeyDictionary
 import numpy as np
 
@@ -181,9 +181,11 @@ class RunEngine:
         return self._scan_cb_registry.connect(name, func)
 
     def _push_to_queue(self, queue, doc):
-        queue.put(event)
+        queue.put(doc)
 
     def run(self, g, additional_callbacks=None, use_threading=True):
+        self._read_cache.clear()
+        self._run_start_uid = uid()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
             func = lambda: self.run_engine(g, additional_callbacks=None)
             if use_threading:
@@ -194,12 +196,10 @@ class RunEngine:
 
     def run_engine(self, g, additional_callbacks=None):
         # This function is optionally run on its own thread.
-        run_start_uid = uid()
-        doc = dict(uid=run_start_uid,
+        doc = dict(uid=self._run_start_uid,
                 time=ttime.time(), beamline_id=beamline_id, owner=owner,
                 scan_id=scan_id, **custom)
         self.emit_start(doc)
-        self._read_cache.clear()
         r = None
         exit_status = None
         reason = ''
@@ -281,7 +281,7 @@ class Dispatcher(object):
             pass
         else:
             self.cb_registry.process(name, document)
-        logger.debug("Processed {name} subscriptions".format(name=name))
+        print("Processed {name} subscriptions".format(name=name))
 
     def subscribe(self, name, func):
         """
