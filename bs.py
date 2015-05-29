@@ -14,12 +14,12 @@ custom = {}
 scan_id = 123
 
 
-class Msg(namedtuple('Msg_base', ['message', 'obj', 'args', 'kwargs'])):
+class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
     __slots__ = ()
 
     def __repr__(self):
         return '{}: ({}), {}, {}'.format(
-            self.message, self.obj, self.args, self.kwargs)
+            self.command, self.obj, self.args, self.kwargs)
 
 
 class Base:
@@ -212,7 +212,7 @@ class RunEngine:
                     exit_status = 'abort'
                     break
                 msg = gen.send(response)
-                response = self._proc_registry[msg.message](msg)
+                response = self._proc_registry[msg.command](msg)
 
                 print('{}\n   ret: {}'.format(msg, response))
             except StopIteration:
