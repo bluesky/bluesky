@@ -7,6 +7,7 @@ import threading
 from queue import Queue, Empty
 from weakref import ref, WeakKeyDictionary
 import numpy as np
+import types
 
 beamline_id='test'
 owner='tester'
@@ -103,6 +104,10 @@ class SynGaus(Mover):
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
         self._staging[self._det] = v
 
+    @property
+    def motor_name(self):
+        return self._motor
+
 
 class FlyMagic(Base):
     def kickoff(self):
@@ -127,7 +132,7 @@ def MoveRead_gen(motor, detector):
 def SynGaus_gen(syngaus):
     try:
         for x in np.linspace(-5, 5, 100):
-            yield Msg('set', syngaus, ({'x': x}, ), {})
+            yield Msg('set', syngaus, ({syngaus.motor_name: x}, ), {})
             yield Msg('trigger', syngaus, (), {})
             yield Msg('wait', None, (.1, ), {})
             yield Msg('read', syngaus, (), {})
