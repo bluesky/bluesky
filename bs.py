@@ -9,6 +9,9 @@ from weakref import ref, WeakKeyDictionary
 import numpy as np
 import types
 
+import lmfit
+from lmfit.models import GaussianModel, LinearModel
+
 beamline_id='test'
 owner='tester'
 custom = {}
@@ -108,6 +111,10 @@ class SynGaus(Mover):
     def motor_name(self):
         return self._motor
 
+    @property
+    def det_name(self):
+        return self._det
+
 
 class FlyMagic(Base):
     def kickoff(self):
@@ -142,6 +149,47 @@ def SynGaus_gen(syngaus, motor_steps, motor_limit=None):
 
     finally:
         print('generator finished')
+
+
+def find_center_gen(syngaus, initial_center, initial_width,
+                    output_mutable):
+    tol = .01
+    seen_x = deque()
+    seen_y = deque()
+
+    for x in np.linspace(initial_center - initial_width,
+                         initial_center + initial_center,
+                         5, endpoint=True):
+        yield Msg('set', syngaus, ({syngaus.motor_name: x}, ), {})
+        yield Msg('trigger', syngaus, (), {})
+        yield Msg('wait', None, (.1, ), {})
+        ret = yield Msg('read', syngaus, (), {})
+        seen_x.append(ret[syngaus.motor_name])
+        seen_y.append(ret[syngaus.det_name])
+    model = GaussianModel() + LinearModel()
+    guesses = {'amplitude': np.max(seen_y),
+               'center': initial_center,
+               'sigma': initial_width,
+               'slope': 0, 'intercept': 0}
+    while True:
+        x = np.asarray(seen_x)
+        y = np.asarray(seen_y)
+        res = model.fit(y, x=x, **guesses)
+        new_guess = res.values
+
+        if np.abs(new_guess['center'] - guesses['center']) < tol:
+            break
+        print(new_guess)
+        guesses = new_guess
+        yield Msg('set', syngaus,
+                  ({syngaus.motor_name: guesses['center']}, ), {})
+        yield Msg('trigger', syngaus, (), {})
+        yield Msg('wait', None, (.1, ), {})
+        ret = yield Msg('read', syngaus, (), {})
+        seen_x.append(ret[syngaus.motor_name])
+        seen_y.append(ret[syngaus.det_name])
+
+    output_mutable.update(guesses)
 
 
 class RunEngine:
