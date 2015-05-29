@@ -194,13 +194,13 @@ class RunEngine:
             else:
                 func()
 
-    def run_engine(self, g, additional_callbacks=None):
+    def run_engine(self, gen, additional_callbacks=None):
         # This function is optionally run on its own thread.
         doc = dict(uid=self._run_start_uid,
                 time=ttime.time(), beamline_id=beamline_id, owner=owner,
                 scan_id=scan_id, **custom)
         self.emit_start(doc)
-        r = None
+        response = None
         exit_status = None
         reason = ''
         while True:
@@ -211,10 +211,10 @@ class RunEngine:
                 if self._sigint_handler.interrupted:
                     exit_status = 'abort'
                     break
-                msg = g.send(r)
-                r = self._proc_registry[msg.message](msg)
+                msg = gen.send(response)
+                response = self._proc_registry[msg.message](msg)
 
-                print('{}\n   ret: {}'.format(msg, r))
+                print('{}\n   ret: {}'.format(msg, response))
             except StopIteration:
                 exit_status = 'success'
                 break
