@@ -142,7 +142,6 @@ class RunEngine:
             'trigger': self._trigger,
             'wait': self._wait
             }
-        self._cache = None
 
     def run(self, g, additional_callbacks=None):
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
@@ -156,7 +155,7 @@ class RunEngine:
                 time=ttime.time(), beamline_id=beamline_id, owner=owner,
                 scan_id=scan_id, **custom)
         self.emit_start(doc)
-        self._cache = deque()
+        self._read_cache.clear()
         r = None
         while True:
             try:
