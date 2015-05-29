@@ -252,7 +252,7 @@ class RunEngine:
                     exit_status=exit_status,
                     reason=reason)
             self.emit('stop', doc)
-            print("Emitted RunStop\n:%s" % doc)
+            print("Emitted RunStop:\n%s" % doc)
 
     def _create(self, msg):
         self._read_cache.clear()
@@ -273,7 +273,7 @@ class RunEngine:
         objs_read = frozenset(self._objs_read)
 
         # Event Descriptor
-        if objs_read not in self._obj_sets:
+        if objs_read not in self._descriptor_uids:
             # We don't not have an Event Descriptor for this set.
             data_keys = [self._describe_cache[obj] for obj in objs_read]
             descriptor_uid = new_uid()
