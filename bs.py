@@ -3,7 +3,15 @@ from itertools import count
 from collections import namedtuple, deque
 import uuid
 import signal
+import threading
+from queue import Queue
+from weakref import ref, WeakKeyDictionary
 import numpy as np
+
+beamline_id='test'
+owner='tester'
+custom = {}
+scan_id = 123
 
 
 class Msg(namedtuple('Msg_base', ['message', 'obj', 'args', 'kwargs'])):
@@ -143,13 +151,49 @@ class RunEngine:
             'wait': self._wait
             }
 
-    def run(self, g, additional_callbacks=None):
+        # queues for passing Documents from "scan thread" to main thread
+        self.event_queue = Queue()
+        self.descriptor_queue = Queue()
+        self.start_queue = Queue()
+        self.stop_queue = Queue()
+        queues = {'event': self.event_queue,
+                  'descriptor': self.descriptor_queue,
+                  'start': self.start_queue,
+                  'stop': self.stop_queue}
+
+        # public dispatcher for callbacks processed on the main thread
+        self.dispatcher = Dispatcher(queues)
+
+        # private registry of callbacks processed on the "scan thread"
+        self._scan_cb_registry = CallbackRegistry()
+        for name, queue in queues.items():
+            curried_push = lambda doc: self._pushed_to_queue(name, queue, doc)
+            self._register_scan_callback(name, curried_push)
+
+    def _register_scan_callback(self, name, func):
+        """Register a callback to be processed by the scan thread.
+
+        Unlike subscribe, functions registered here will be processed on the
+        scan thread. They are guaranteed to be run (there is no Queue
+        involved) and they block the scan's progress until they return.
+        Use subscribe for any non-critical functions.
+        """
+        return self._scan_cb_registry.connect(name, func)
+
+    def _push_to_queue(self, queue, doc):
+        queue.put(event)
+
+    def run(self, g, additional_callbacks=None, use_threading=True):
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
-            # When run_engine gets pushed to a thread, this SIGINT
-            # handling will still work.
-            self.run_engine(g, additional_callbacks=None)
+            func = lambda: self.run_engine(g, additional_callbacks=None)
+            if use_threading:
+                thread = threading.Thread(target=func)
+                thread.start()
+            else:
+                func()
 
     def run_engine(self, g, additional_callbacks=None):
+        # This function is optionally run on its own thread.
         run_start_uid = uid()
         doc = dict(uid=run_start_uid,
                 time=ttime.time(), beamline_id=beamline_id, owner=owner,
@@ -157,6 +201,8 @@ class RunEngine:
         self.emit_start(doc)
         self._read_cache.clear()
         r = None
+        exit_status = None
+        reason = ''
         while True:
             try:
                 if self.panic:
@@ -172,18 +218,23 @@ class RunEngine:
             except StopIteration:
                 exit_status = 'success'
                 break
+            except Exception as err:
+                exit_status = 'fail'
+                reason = str(err)
+                raise err
             finally:
                 doc = dict(run_start=run_start_uid,
                         time=ttime.time(),
-                        exit_status=exit_status)
+                        exit_status=exit_status,
+                        reason=reason)
                 self.emit_stop(doc)
 
     def _create(self, msg):
-        pass
+        self._read_cache.clear()
 
     def _read(self, msg):
         ret = msg.obj.read(*msg.args, **msg.kwargs)
-        self._cache.append(ret)
+        self._read_cache.append(ret)
         return ret
 
     def _save(self, msg):
@@ -214,6 +265,54 @@ class RunEngine:
         self._cb_registry.process('stop', stop)
 
 
+class Dispatcher(object):
+    """Dispatch documents to user-defined consumers on the main thread."""
+
+    def __init__(self, queues, timeout=0.05):
+        self.queues = queues
+        self.timeout = timeout
+        self.cb_registry = CallbackRegistry()
+
+    def process_queue(self, name):
+        queue = self.queues[name]
+        try:
+            document = queue.get(timeout=self.timeout)
+        except Empty:
+            pass
+        else:
+            self.cb_registry.process(name, document)
+        logger.debug("Processed {name} subscriptions".format(name=name))
+
+    def subscribe(self, name, func):
+        """
+        Register a function to consume Event documents.
+
+        The Run Engine can execute callback functions at the start and end
+        of a scan, and after the insertion of new Event Descriptors
+        and Events.
+
+        Parameters
+        ----------
+        name: {'start', 'descriptor', 'event', 'stop'}
+        func: callable
+            expecting signature like ``f(mongoengine.Document)``
+        """
+        if name not in self.queues.keys():
+            raise ValueError("Valid callbacks: {0}".format(self.queues.keys()))
+        return self.cb_registry.connect(name, func)
+
+    def unsubscribe(self, callback_id):
+        """
+        Unregister a callback function using its integer ID.
+
+        Parameters
+        ----------
+        callback_id : int
+            the ID issued by `subscribe`
+        """
+        self.cb_registry.disconnect(callback_id)
+
+
 class SignalHandler():
     def __init__(self, sig):
         self.sig = sig
@@ -239,6 +338,85 @@ class SignalHandler():
         signal.signal(self.sig, self.original_handler)
         self.released = True
         return True
+
+
+class CallbackRegistry():
+    """
+    See matplotlib.cbook.CallbackRegistry. This is simplified, being py3 only.
+    """
+    def __init__(self):
+        self.callbacks = dict()
+        self._cid = 0
+        self._func_cid_map = {}
+
+    def __getstate__(self):
+        # We cannot currently pickle the callables in the registry, so
+        # return an empty dictionary.
+        return {}
+
+    def __setstate__(self, state):
+        # re-initialise an empty callback registry
+        self.__init__()
+
+    def connect(self, s, func):
+        """
+        register *func* to be called when a signal *s* is generated
+        func will be called
+        """
+        self._func_cid_map.setdefault(s, WeakKeyDictionary())
+        # Note proxy not needed in python 3.
+        # TODO rewrite this when support for python2.x gets dropped.
+        proxy = _BoundMethodProxy(func)
+        if proxy in self._func_cid_map[s]:
+            return self._func_cid_map[s][proxy]
+
+        proxy.add_destroy_callback(self._remove_proxy)
+        self._cid += 1
+        cid = self._cid
+        self._func_cid_map[s][proxy] = cid
+        self.callbacks.setdefault(s, dict())
+        self.callbacks[s][cid] = proxy
+        return cid
+
+    def _remove_proxy(self, proxy):
+        for signal, proxies in self._func_cid_map.items():
+            try:
+                del self.callbacks[signal][proxies[proxy]]
+            except KeyError:
+                pass
+
+            if len(self.callbacks[signal]) == 0:
+                del self.callbacks[signal]
+                del self._func_cid_map[signal]
+
+
+    def disconnect(self, cid):
+        """
+        disconnect the callback registered with callback id *cid*
+        """
+        for eventname, callbackd in self.callbacks.items():
+            try:
+                del callbackd[cid]
+            except KeyError:
+                continue
+            else:
+                for signal, functions in self._func_cid_map.items():
+                    for function, value in functions.items():
+                        if value == cid:
+                            del functions[function]
+                return
+
+    def process(self, s, *args, **kwargs):
+        """
+        process signal *s*.  All of the functions registered to receive
+        callbacks on *s* will be called with *\*args* and *\*\*kwargs*
+        """
+        if s in self.callbacks:
+            for cid, proxy in self.callbacks[s].items():
+                try:
+                    proxy(*args, **kwargs)
+                except ReferenceError:
+                    self._remove_proxy(proxy)
 
 
 def uid():
