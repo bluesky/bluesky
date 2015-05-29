@@ -115,11 +115,13 @@ class FlyMagic(Base):
 def MoveRead_gen(motor, detector):
     try:
         for j in range(10):
+            yield Msg('create', None, (), {})
             yield Msg('set', motor, ({'x': j}, ), {})
             yield Msg('trigger', motor, (), {})
             yield Msg('trigger', detector, (), {})
             yield Msg('read', detector, (), {})
             yield Msg('read', motor, (), {})
+            yield Msg('save', None, (), {})
     finally:
         print('Generator finished')
 
@@ -127,11 +129,12 @@ def MoveRead_gen(motor, detector):
 def SynGaus_gen(syngaus):
     try:
         for x in np.linspace(-5, 5, 100):
+            yield Msg('create', None, (), {})
             yield Msg('set', syngaus, ({'x': x}, ), {})
             yield Msg('trigger', syngaus, (), {})
             yield Msg('wait', None, (.1, ), {})
             yield Msg('read', syngaus, (), {})
-
+            yield Msg('save', None, (), {})
     finally:
         print('generator finished')
 
