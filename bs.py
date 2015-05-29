@@ -92,6 +92,7 @@ def MoveRead_gen(motor, detector):
 
 class RunEngine:
     def __init__(self):
+        self.panic = False
         self._read_cache = deque()
         self._proc_registry = {
             'create': self._create,
@@ -107,15 +108,14 @@ class RunEngine:
         r = None
         while True:
             try:
+                if self.panic():
+                    break
                 msg = g.send(r)
                 r = self._proc_registry[msg.message](msg)
 
                 print('{}\n   ret: {}'.format(msg, r))
             except StopIteration:
                 break
-
-    def check_external(self):
-        pass
 
     def _create(self, msg):
         pass
