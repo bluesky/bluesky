@@ -144,7 +144,7 @@ class RunEngine:
         self._read_cache = deque()  # cache of obj.read() in one Event
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._descriptor_uids = dict()  # cache of all Descriptor uids
-        self._seuquence_counters = dict()  # a seq_num counter per Descriptor
+        self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._proc_registry = {
             'create': self._create,
             'save': self._save,
@@ -174,24 +174,23 @@ class RunEngine:
             curried_push = lambda doc: self._push_to_queue(queue, doc)
             self._register_scan_callback(name, curried_push)
 
+    def clear(self):
+        self.panic = False
+        self._objs_read.clear()
+        self._read_cache.clear()
+        self._describe_cache.clear()
+        self._descriptor_uids.clear()
+        self._sequence_counters.clear()
+
     @property
     def panic(self):
         # Release GIL by sleeping, allowing other threads to set panic.
-        time.sleep(0.1)
+        ttime.sleep(0.1)
         return self._panic
 
     @panic.setter
     def panic(self, val):
         self._panic = val
-
-    def clear(self):
-        self.panic = False
-        _ = self.panic  # Allow other threads to set panic.
-        self._obj_read.clear()
-        self._read_cache.clear()
-        self._describe_cache.clear()
-        self._descriptor_uids.clear()
-        self._sequence_counters.clear()
 
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
@@ -209,6 +208,8 @@ class RunEngine:
     def run(self, g, additional_callbacks=None, use_threading=True):
         self.clear()
         self._run_start_uid = new_uid()
+        if self.panic:
+            raise PanicStateError("RunEngine is in a panic state.")
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
             func = lambda: self.run_engine(g, additional_callbacks=None)
             if use_threading:
@@ -227,8 +228,8 @@ class RunEngine:
         response = None
         exit_status = None
         reason = ''
-        while True:
-            try:
+        try:
+            while True:
                 if self.panic:
                     exit_status = 'fail'
                     break
@@ -239,20 +240,19 @@ class RunEngine:
                 response = self._proc_registry[msg.command](msg)
 
                 print('{}\n   ret: {}'.format(msg, response))
-            except StopIteration:
-                exit_status = 'success'
-                break
-            except Exception as err:
-                exit_status = 'fail'
-                reason = str(err)
-                raise err
-            finally:
-                doc = dict(run_start=self._run_start_uid,
-                        time=ttime.time(),
-                        exit_status=exit_status,
-                        reason=reason)
-                self.emit('stop', doc)
-                print("Emitted RunStop\n:%s" % doc)
+        except StopIteration:
+            exit_status = 'success'
+        except Exception as err:
+            exit_status = 'fail'
+            reason = str(err)
+            raise err
+        finally:
+            doc = dict(run_start=self._run_start_uid,
+                    time=ttime.time(),
+                    exit_status=exit_status,
+                    reason=reason)
+            self.emit('stop', doc)
+            print("Emitted RunStop\n:%s" % doc)
 
     def _create(self, msg):
         self._read_cache.clear()
@@ -309,7 +309,7 @@ class RunEngine:
         return ttime.sleep(*msg.args)
 
     def emit(self, name, doc):
-        self._scan_cb_registry.process(, event)
+        self._scan_cb_registry.process(name, doc)
 
 
 class Dispatcher(object):
@@ -360,9 +360,6 @@ class Dispatcher(object):
         self.cb_registry.disconnect(callback_id)
 
 
-RE = RunEngine()
-
-
 def new_uid():
     return str(uuid.uuid4())
 
@@ -394,7 +391,7 @@ class SignalHandler():
         return True
 
 
-class CallbackRegistry():
+class CallbackRegistry:
     """
     See matplotlib.cbook.CallbackRegistry. This is simplified, being py3 only.
     """
@@ -472,7 +469,7 @@ class CallbackRegistry():
                 except ReferenceError:
                     self._remove_proxy(proxy)
 
-class _BoundMethodProxy(object):
+class _BoundMethodProxy:
     '''
     Our own proxy object which enables weak references to bound and unbound
     methods and arbitrary callables. Pulls information about the function,
@@ -565,3 +562,7 @@ class _BoundMethodProxy(object):
 
     def __hash__(self):
         return self._hash
+
+
+class PanicStateError(Exception):
+    pass
