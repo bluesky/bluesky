@@ -140,7 +140,11 @@ class RunEngine:
     def __init__(self):
         self.panic = False
         self._sigint_handler = None
-        self._read_cache = deque()
+        self._objs_read = deque()  # objects read in one Event
+        self._read_cache = deque()  # cache of obj.read() in one Event
+        self._describe_cache = dict()  # cache of all obj.describe() output
+        self._descriptor_uids = dict()  # cache of all Descriptor uids
+        self._seuquence_counters = dict()  # a seq_num counter per Descriptor
         self._proc_registry = {
             'create': self._create,
             'save': self._save,
@@ -170,6 +174,25 @@ class RunEngine:
             curried_push = lambda doc: self._push_to_queue(queue, doc)
             self._register_scan_callback(name, curried_push)
 
+    @property
+    def panic(self):
+        # Release GIL by sleeping, allowing other threads to set panic.
+        time.sleep(0.1)
+        return self._panic
+
+    @panic.setter
+    def panic(self, val):
+        self._panic = val
+
+    def clear(self):
+        self.panic = False
+        _ = self.panic  # Allow other threads to set panic.
+        self._obj_read.clear()
+        self._read_cache.clear()
+        self._describe_cache.clear()
+        self._descriptor_uids.clear()
+        self._sequence_counters.clear()
+
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
 
@@ -184,8 +207,8 @@ class RunEngine:
         queue.put(doc)
 
     def run(self, g, additional_callbacks=None, use_threading=True):
-        self._read_cache.clear()
-        self._run_start_uid = uid()
+        self.clear()
+        self._run_start_uid = new_uid()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
             func = lambda: self.run_engine(g, additional_callbacks=None)
             if use_threading:
@@ -199,7 +222,8 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid,
                 time=ttime.time(), beamline_id=beamline_id, owner=owner,
                 scan_id=scan_id, **custom)
-        self.emit_start(doc)
+        print("Emitted RunStart:\n%s" % doc)
+        self.emit('start', doc)
         response = None
         exit_status = None
         reason = ''
@@ -227,18 +251,50 @@ class RunEngine:
                         time=ttime.time(),
                         exit_status=exit_status,
                         reason=reason)
-                self.emit_stop(doc)
+                self.emit('stop', doc)
+                print("Emitted RunStop\n:%s" % doc)
 
     def _create(self, msg):
         self._read_cache.clear()
+        self._objs_read.clear()
 
     def _read(self, msg):
-        ret = msg.obj.read(*msg.args, **msg.kwargs)
+        obj = msg.obj
+        self._objs_read.append(obj)
+        if obj not in self._describe_cache:
+            self._describe_cache[obj] = obj.describe()
+        ret = obj.read(*msg.args, **msg.kwargs)
         self._read_cache.append(ret)
         return ret
 
     def _save(self, msg):
-        raise NotImplementedError()
+        # The Event Descriptor is uniquely defined by the set of objects
+        # read in this Event grouping.
+        objs_read = frozenset(self._objs_read)
+
+        # Event Descriptor
+        if objs_read not in self._obj_sets:
+            # We don't not have an Event Descriptor for this set.
+            data_keys = [self._describe_cache[obj] for obj in objs_read]
+            descriptor_uid = new_uid()
+            doc = dict(run_start=self._run_start_uid, time=ttime.time(),
+                       data_keys=data_keys, uid=descriptor_uid)
+            self.emit('descriptor', doc)
+            print("Emitted Event Descriptor:\n%s" % doc)
+            self._descriptor_uids[objs_read] = descriptor_uid
+            self._sequence_counters[objs_read] = count(1)
+        else:
+            descriptor_uid = self._descriptor_uids[objs_read]
+
+        # Events
+        for reading in self._read_cache:
+            seq_num = next(self._sequence_counters[objs_read])
+            event_uid = new_uid()
+            doc = dict(event_descriptor=descriptor_uid,
+                       time=ttime.time(), data=reading, seq_num=seq_num,
+                       uid=event_uid)
+            self.emit('event', doc)
+            print("Emitted Event:\n%s" % doc)
 
     def _null(self, msg):
         pass
@@ -252,17 +308,8 @@ class RunEngine:
     def _wait(self, msg):
         return ttime.sleep(*msg.args)
 
-    def emit_event(self, event):
-        self._scan_cb_registry.process('event', event)
-
-    def emit_descriptor(self, descriptor):
-        self._scan_cb_registry.process('descriptor', descriptor)
-
-    def emit_start(self, start):
-        self._scan_cb_registry.process('start', start)
-
-    def emit_stop(self, stop):
-        self._scan_cb_registry.process('stop', stop)
+    def emit(self, name, doc):
+        self._scan_cb_registry.process(, event)
 
 
 class Dispatcher(object):
@@ -281,7 +328,7 @@ class Dispatcher(object):
             pass
         else:
             self.cb_registry.process(name, document)
-        print("Processed {name} subscriptions".format(name=name))
+        print("Processed %s subscriptions" % name)
 
     def subscribe(self, name, func):
         """
@@ -311,6 +358,13 @@ class Dispatcher(object):
             the ID issued by `subscribe`
         """
         self.cb_registry.disconnect(callback_id)
+
+
+RE = RunEngine()
+
+
+def new_uid():
+    return str(uuid.uuid4())
 
 
 class SignalHandler():
@@ -511,10 +565,3 @@ class _BoundMethodProxy(object):
 
     def __hash__(self):
         return self._hash
-
-
-def uid():
-    return str(uuid.uuid4())
-
-
-RE = RunEngine()
