@@ -175,12 +175,12 @@ def find_center_gen(syngaus, initial_center, initial_width,
         x = np.asarray(seen_x)
         y = np.asarray(seen_y)
         res = model.fit(y, x=x, **guesses)
-        new_guess = res.values
+        old_guess = guesses
+        guesses = res.values
 
-        if np.abs(new_guess['center'] - guesses['center']) < tol:
+        if np.abs(old_guess['center'] - guesses['center']) < tol:
             break
-        print(new_guess)
-        guesses = new_guess
+
         yield Msg('set', syngaus,
                   ({syngaus.motor_name: guesses['center']}, ), {})
         yield Msg('trigger', syngaus, (), {})
