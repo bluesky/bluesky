@@ -3,6 +3,7 @@ from itertools import count
 from collections import namedtuple, deque
 import uuid
 import signal
+import numpy as np
 
 
 class Msg(namedtuple('Msg_base', ['message', 'obj', 'args', 'kwargs'])):
@@ -28,6 +29,7 @@ class Base:
 
 class Reader(Base):
     _klass = 'reader'
+
     def __init__(self, *args, **kwargs):
         super(Reader, self).__init__(*args, **kwargs)
         self._cnt = 0
@@ -47,6 +49,7 @@ class Reader(Base):
 
 class Mover(Base):
     _klass = 'mover'
+
     def __init__(self, *args, **kwargs):
         super(Mover, self).__init__(*args, **kwargs)
         self._data = {k: 0 for k in self._fields}
@@ -56,6 +59,8 @@ class Mover(Base):
         return dict(self._data)
 
     def set(self, new_values):
+        if set(new_values) - set(self._data):
+            raise ValueError('setting non-existent field')
         self._staging = new_values
 
     def trigger(self, *, blocking=True):
@@ -70,6 +75,25 @@ class Mover(Base):
 
     def settle(self):
         pass
+
+
+class SynGaus(Mover):
+
+    def __init__(self, name, motor_name, det_name, center, Imax, sigma=1):
+        super(SynGaus, self).__init__(name, (motor_name, det_name))
+        self._motor = motor_name
+        self._det = det_name
+        self.center = center
+        self.Imax = Imax
+        self.sigma = sigma
+
+    def set(self, new_values):
+        if self._det in new_values:
+            raise ValueError("you can't set the detector value")
+        super(SynGaus, self).set(new_values)
+        m = self._staging[self._motor]
+        v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
+        self._staging[self._det] = v
 
 
 class FlyMagic(Base):
@@ -92,6 +116,18 @@ def MoveRead_gen(motor, detector):
         print('Generator finished')
 
 
+def SynGaus_gen(syngaus):
+    try:
+        for x in np.linspace(-5, 5, 100):
+            yield Msg('set', syngaus, ({'x': x}, ), {})
+            yield Msg('trigger', syngaus, (), {})
+            yield Msg('wait', None, (.1, ), {})
+            yield Msg('read', syngaus, (), {})
+
+    finally:
+        print('generator finished')
+
+
 class RunEngine:
     def __init__(self):
         self.panic = False
@@ -106,6 +142,7 @@ class RunEngine:
             'trigger': self._trigger,
             'wait': self._wait
             }
+        self._cache = None
 
     def run(self, g, additional_callbacks=None):
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
@@ -119,6 +156,7 @@ class RunEngine:
                 time=ttime.time(), beamline_id=beamline_id, owner=owner,
                 scan_id=scan_id, **custom)
         self.emit_start(doc)
+        self._cache = deque()
         r = None
         while True:
             try:
@@ -145,7 +183,9 @@ class RunEngine:
         pass
 
     def _read(self, msg):
-        return msg.obj.read(*msg.args, **msg.kwargs)
+        ret = msg.obj.read(*msg.args, **msg.kwargs)
+        self._cache.append(ret)
+        return ret
 
     def _save(self, msg):
         raise NotImplementedError()
@@ -160,7 +200,7 @@ class RunEngine:
         return msg.obj.trigger(*msg.args, **msg.kwargs)
 
     def _wait(self, msg):
-        return ttime.sleep(*msg.arg)
+        return ttime.sleep(*msg.args)
 
     def emit_event(self, event):
         self._cb_registry.process('event', event)
@@ -207,8 +247,3 @@ def uid():
 
 
 RE = RunEngine()
-
-g = MoveRead_gen(Mover('motor', 'x'), Reader('det', ['cnt', ]))
-
-
-RE.run_engine(g)
