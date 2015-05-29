@@ -1,6 +1,8 @@
 import time as ttime
 from itertools import count
 from collections import namedtuple, deque
+import uuid
+import signal
 
 
 class Msg(namedtuple('Msg_base', ['message', 'obj', 'args', 'kwargs'])):
@@ -93,6 +95,7 @@ def MoveRead_gen(motor, detector):
 class RunEngine:
     def __init__(self):
         self.panic = False
+        self._sigint_handler = None
         self._read_cache = deque()
         self._proc_registry = {
             'create': self._create,
@@ -104,18 +107,39 @@ class RunEngine:
             'wait': self._wait
             }
 
-    def run_engine(self, g):
+    def run(self, g, additional_callbacks=None):
+        with SignalHandler(signal.SIGINT) as self._sigint_handler:
+            # When run_engine gets pushed to a thread, this SIGINT
+            # handling will still work.
+            self.run_engine(self, g, additional_callbacks=None)
+
+    def run_engine(self, g, additional_callbacks=None):
+        run_start_uid = uid()
+        doc = dict(uid=run_start_uid,
+                time=ttime.time(), beamline_id=beamline_id, owner=owner,
+                scan_id=scan_id, **custom)
+        self.emit_start(doc)
         r = None
         while True:
             try:
-                if self.panic():
+                if self.panic:
+                    exit_status = 'fail'
+                    break
+                if self._sigint_handler.interrupted:
+                    exit_status = 'abort'
                     break
                 msg = g.send(r)
                 r = self._proc_registry[msg.message](msg)
 
                 print('{}\n   ret: {}'.format(msg, r))
             except StopIteration:
+                exit_status = 'success'
                 break
+            finally:
+                doc = dict(run_start=run_start_uid,
+                        time=ttime.time(),
+                        exit_status=exit_status)
+                self.emit_stop(doc)
 
     def _create(self, msg):
         pass
@@ -137,6 +161,49 @@ class RunEngine:
 
     def _wait(self, msg):
         return ttime.sleep(*msg.arg)
+
+    def emit_event(self, event):
+        self._cb_registry.process('event', event)
+
+    def emit_descriptor(self, descriptor):
+        self._cb_registry.process('descriptor', descriptor)
+
+    def emit_start(self, start):
+        self._cb_registry.process('start', start)
+
+    def emit_stop(self, stop):
+        self._cb_registry.process('stop', stop)
+
+
+class SignalHandler():
+    def __init__(self, sig):
+        self.sig = sig
+
+    def __enter__(self):
+        self.interrupted = False
+        self.released = False
+        self.original_handler = signal.getsignal(self.sig)
+
+        def handler(signum, frame):
+            self.release()
+            self.interrupted = True
+
+        signal.signal(self.sig, handler)
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.release()
+
+    def release(self):
+        if self.released:
+            return False
+        signal.signal(self.sig, self.original_handler)
+        self.released = True
+        return True
+
+
+def uid():
+    return str(uuid.uuid4())
 
 
 RE = RunEngine()
