@@ -2,6 +2,15 @@ import time as ttime
 from itertools import count
 from collections import namedtuple, deque
 
+
+class Msg(namedtuple('Msg_base', ['message', 'obj', 'args', 'kwargs'])):
+    __slots__ = ()
+
+    def __repr__(self):
+        return '{}: ({}), {}, {}'.format(
+            self.message, self.obj, self.args, self.kwargs)
+
+
 class Base:
     def __init__(self, name, fields):
         self._name = name
@@ -11,7 +20,12 @@ class Base:
         return {k: {'source': self._name, 'dtype': 'number'}
                 for k in self._fields}
 
+    def __repr__(self):
+        return '{}: {}'.format(self._klass, self._name)
+
+
 class Reader(Base):
+    _klass = 'reader'
     def __init__(self, *args, **kwargs):
         super(Reader, self).__init__(*args, **kwargs)
         self._cnt = 0
@@ -30,6 +44,7 @@ class Reader(Base):
 
 
 class Mover(Base):
+    _klass = 'mover'
     def __init__(self, *args, **kwargs):
         super(Mover, self).__init__(*args, **kwargs)
         self._data = {k: 0 for k in self._fields}
@@ -58,20 +73,19 @@ class Mover(Base):
 class FlyMagic(Base):
     def kickoff(self):
         pass
+
     def collect(self):
         pass
 
 
-
-
-
-def test_gen():
+def MoveRead_gen(motor, detector):
     try:
-        for j in count():
-            val = yield j
-            if val:
-                break
-            yield j - .5
+        for j in range(10):
+            yield Msg('set', motor, ({'x': j}, ), {})
+            yield Msg('trigger', motor, (), {})
+            yield Msg('trigger', detector, (), {})
+            yield Msg('read', detector, (), {})
+            yield Msg('read', motor, (), {})
     finally:
         print('Generator finished')
 
@@ -96,7 +110,7 @@ class RunEngine:
                 msg = g.send(r)
                 r = self._proc_registry[msg.message](msg)
 
-                print(msg, r)
+                print('{}\n   ret: {}'.format(msg, r))
             except StopIteration:
                 break
 
@@ -116,17 +130,18 @@ class RunEngine:
         pass
 
     def _set(self, msg):
-        raise NotImplementedError()
+        return msg.obj.set(*msg.args, **msg.kwargs)
 
     def _trigger(self, msg):
-        raise NotImplementedError()
+        return msg.obj.trigger(*msg.args, **msg.kwargs)
 
     def _wait(self, msg):
-        return time.sleep(*msg.arg)
+        return ttime.sleep(*msg.arg)
 
 
 RE = RunEngine()
 
-g = test_gen()
+g = MoveRead_gen(Mover('motor', 'x'), Reader('det', ['cnt', ]))
+
 
 RE.run_engine(g)
