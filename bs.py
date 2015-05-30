@@ -9,6 +9,7 @@ from queue import Queue, Empty
 from weakref import ref, WeakKeyDictionary
 import numpy as np
 import types
+import metadatastore.commands as mdscmd
 
 import lmfit
 from lmfit.models import GaussianModel, LinearModel
@@ -53,7 +54,7 @@ class Reader(Base):
     def read(self):
         data = dict()
         for k in self._fields:
-            data[k] = self._cnt
+            data[k] = {'value': self._cnt, 'timestamp': ttime.time()}
             self._cnt += 1
 
         return data
@@ -67,7 +68,8 @@ class Mover(Base):
 
     def __init__(self, *args, **kwargs):
         super(Mover, self).__init__(*args, **kwargs)
-        self._data = {k: 0 for k in self._fields}
+        self._data = {k: {'value': 0, 'timestamp': ttime.time()}
+                      for k in self._fields}
         self._staging = None
         self.is_moving = False
 
@@ -84,7 +86,7 @@ class Mover(Base):
         ttime.sleep(0.1)  # simulate moving time
         if self._staging:
             for k, v in self._staging.items():
-                self._data[k] = v
+                self._data[k] = {'value': v, 'timestamp': ttime.time()}
 
         self.is_moving = False
         self._staging = None
@@ -349,7 +351,8 @@ class RunEngine:
         # Event Descriptor
         if objs_read not in self._descriptor_uids:
             # We don't not have an Event Descriptor for this set.
-            data_keys = [self._describe_cache[obj] for obj in objs_read]
+            data_keys = {}
+            [data_keys.update(self._describe_cache[obj]) for obj in objs_read]
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
@@ -364,7 +367,9 @@ class RunEngine:
         for reading in self._read_cache:
             seq_num = next(self._sequence_counters[objs_read])
             event_uid = new_uid()
-            doc = dict(event_descriptor=descriptor_uid,
+            for key in reading:
+                reading[key]['value'] = _sanitize_np(reading[key]['value'])
+            doc = dict(descriptor=descriptor_uid,
                        time=ttime.time(), data=reading, seq_num=seq_num,
                        uid=event_uid)
             self.emit('event', doc)
@@ -650,9 +655,56 @@ class _BoundMethodProxy:
         return self._hash
 
 
+def _sanitize_np(val):
+    "Convert any numpy objects into built-in Python types."
+    if isinstance(val, np.generic):
+        if np.isscalar(val):
+            return val.item()
+        return val.tolist()
+    return val
+
+
 class PanicStateError(Exception):
     pass
 
 
 class RunInterrupt(KeyboardInterrupt):
     pass
+
+
+def _make_blc():
+    return mdscmd.insert_beamline_config({}, time=ttime.time())
+
+
+def insert_run_start(doc):
+    "Add a beamline config that, for now, only knows the time."
+    doc['beamline_config'] = _make_blc()
+    mdscmd.insert_run_start(**doc)
+
+
+def insert_event(doc):
+    mdscmd.insert_event(**doc)
+
+def insert_event_descriptor(doc):
+    mdscmd.insert_event_descriptor(**doc)
+
+def insert_run_stop(doc):
+    mdscmd.insert_run_stop(**doc)
+
+
+insert_funcs = {'event': insert_event,
+                'descriptor': insert_event_descriptor,
+                'start': insert_run_start,
+                'stop': insert_run_stop}
+
+
+def register_mds(runengine):
+    """
+    Register metadatastore insert_* functions to consume documents from scan.
+
+    Parameters
+    ----------
+    scan : ophyd.scans.Scan
+    """
+    for name in insert_funcs.keys():
+        runengine._register_scan_callback(name, insert_funcs[name])
