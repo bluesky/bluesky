@@ -119,7 +119,7 @@ class SynGauss(Reader):
     def trigger(self):
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        self._data = {'intensity': {'value': v, 'timetamp': ttime.time()}}
+        self._data = {'intensity': {'value': v, 'timestamp': ttime.time()}}
 
     def read(self):
         return self._data
