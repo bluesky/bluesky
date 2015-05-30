@@ -226,27 +226,23 @@ class RunEngine:
             }
 
         # queues for passing Documents from "scan thread" to main thread
-        self.event_queue = Queue()
-        self.descriptor_queue = Queue()
-        self.start_queue = Queue()
-        self.stop_queue = Queue()
-        queues = {'event': self.event_queue,
-                  'descriptor': self.descriptor_queue,
-                  'start': self.start_queue,
-                  'stop': self.stop_queue}
+        queue_names = ['start', 'stop', 'event', 'descriptor']
+        self._queues = {name: Queue() for name in queue_names}
 
         # public dispatcher for callbacks processed on the main thread
-        self.dispatcher = Dispatcher(queues)
+        self.dispatcher = Dispatcher(self._queues)
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
 
+        # For why this function is necessary, see
+        # http://stackoverflow.com/a/13355291/1221924
+        def make_push_func(name):
+            return lambda doc: self._push_to_queue(name, doc)
+
         # private registry of callbacks processed on the "scan thread"
         self._scan_cb_registry = CallbackRegistry()
-        self._register_scan_callback('event', self._push_to_event_queue)
-        self._register_scan_callback('descriptor',
-                                     self._push_to_descriptor_queue)
-        self._register_scan_callback('start', self._push_to_start_queue)
-        self._register_scan_callback('stop', self._push_to_stop_queue)
+        for name in self._queues.keys(): 
+            self._register_scan_callback(name, make_push_func(name))
 
     def clear(self):
         self.panic = False
@@ -278,19 +274,10 @@ class RunEngine:
         """
         return self._scan_cb_registry.connect(name, func)
 
-    def _push_to_event_queue(self, doc):
-        self.event_queue.put(doc)
+    def _push_to_queue(self, name, doc):
+        self._queues[name].put(doc)
 
-    def _push_to_descriptor_queue(self, doc):
-        self.descriptor_queue.put(doc)
-
-    def _push_to_start_queue(self, doc):
-        self.start_queue.put(doc)
-
-    def _push_to_stop_queue(self, doc):
-        self.stop_queue.put(doc)
-
-    def run(self, g, subscriptions={}, use_threading=True):
+    def run(self, gen, subscriptions={}, use_threading=True):
         self.clear()
         for name, func in subscriptions.items():
             self._temp_callback_ids.add(self.subscribe(name, func))
@@ -300,7 +287,7 @@ class RunEngine:
                                   "was aborted before it began. No records "
                                   "of this run were created.")
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
-            func = lambda: self.run_engine(g)
+            func = lambda: self.run_engine(gen)
             if use_threading:
                 thread = threading.Thread(target=func)
                 thread.start()
@@ -309,6 +296,7 @@ class RunEngine:
             else:
                 func()
                 self.dispatcher.process_all_queues()
+            self.dispatcher.process_all_queues()  # catch any stragglers
 
     def run_engine(self, gen):
         # This function is optionally run on its own thread.
