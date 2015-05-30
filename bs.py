@@ -82,7 +82,8 @@ class Mover(Base):
             raise ValueError('setting non-existent field')
         self._staging = new_values
 
-    def trigger(self):
+    def trigger(self, *, block_group=None):
+        # block_group is handled by the RunEngine
         self.is_moving = True
         ttime.sleep(0.1)  # simulate moving time
         if self._staging:
@@ -385,7 +386,7 @@ class RunEngine:
 
     def _trigger(self, msg):
         if 'block_group' in msg.kwargs:
-            group = msg.kwargs.pop('block_group')
+            group = msg.kwargs['block_group']
             self._block_groups[group].add(msg.obj)
         return msg.obj.trigger(*msg.args, **msg.kwargs)
 
