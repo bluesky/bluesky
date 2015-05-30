@@ -211,7 +211,7 @@ class RunEngine:
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._descriptor_uids = dict()  # cache of all Descriptor uids
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
-        self._blocking_groups = defaultdict(set)
+        self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -384,20 +384,20 @@ class RunEngine:
         return msg.obj.set(*msg.args, **msg.kwargs)
 
     def _trigger(self, msg):
-        if 'blocking' in msg.kwargs:
-            group = msg.kwargs.pop('blocking')
-            self._blocking_groups[group].add(msg.obj)
+        if 'block_group' in msg.kwargs:
+            group = msg.kwargs.pop('block_group')
+            self._block_groups[group].add(msg.obj)
         return msg.obj.trigger(*msg.args, **msg.kwargs)
 
     def _wait(self, msg):
         # Block progress until every object that was trigged
         # triggered with the keyword argument `block=group` is done.
         group = msg.kwargs.get('group', msg.args[0])
-        objs = self._blocking_groups[group]
+        objs = self._block_groups[group]
         while True:
             if not any([obj.is_moving for obj in objs]):
                 break
-        del self._blocking_groups[group]
+        del self._block_groups[group]
         return objs
 
     def _sleep(self, msg):
