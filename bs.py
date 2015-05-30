@@ -24,7 +24,7 @@ scan_id = 123
 class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
     __slots__ = ()
 
-    def __new__(cls, command, obj=None, args=(), kwargs={}):
+    def __new__(cls, command, obj=None, *args, **kwargs):
         return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
 
     def __repr__(self):
