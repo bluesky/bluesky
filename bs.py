@@ -272,7 +272,9 @@ class RunEngine:
         self.clear()
         self._run_start_uid = new_uid()
         if self.panic:
-            raise PanicStateError("RunEngine is in a panic state.")
+            raise PanicStateError("RunEngine is in a panic state. The run "
+                                  "was aborted before it began. No records "
+                                  "of this run were created.")
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
             func = lambda: self.run_engine(g, additional_callbacks=None)
             if use_threading:
@@ -295,10 +297,17 @@ class RunEngine:
             while True:
                 if self.panic:
                     exit_status = 'fail'
-                    break
+                    raise PanicStateError("Something put the RunEngine into a "
+                                          "panic state after the run began. "
+                                          "Records were created, but the run "
+                                          "was marked with "
+                                          "exit_status='fail'.")
                 if self._sigint_handler.interrupted:
                     exit_status = 'abort'
-                    break
+                    raise RunInterrupt("RunEngine detected a SIGINT (Ctrl+C) "
+                                       "and aborted the scan. Records were "
+                                       "created, but the run was marked with "
+                                       "exit_status='abort'.")
                 msg = gen.send(response)
                 response = self._command_registry[msg.command](msg)
 
@@ -642,4 +651,8 @@ class _BoundMethodProxy:
 
 
 class PanicStateError(Exception):
+    pass
+
+
+class RunInterrupt(KeyboardInterrupt):
     pass
