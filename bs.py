@@ -1,4 +1,5 @@
 import time as ttime
+import sys
 from itertools import count
 from collections import namedtuple, deque
 import uuid
@@ -325,6 +326,7 @@ class RunEngine:
                     reason=reason)
             self.emit('stop', doc)
             print("Emitted RunStop:\n%s" % doc)
+            sys.stdout.flush()
 
     def _create(self, msg):
         self._read_cache.clear()
