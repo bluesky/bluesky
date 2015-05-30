@@ -385,7 +385,8 @@ class RunEngine:
 
     def _trigger(self, msg):
         if 'blocking' in msg.kwargs:
-            self._blocking_groups[msg.kwargs['blocking']].add(msg.obj)
+            group = msg.kwargs.pop('blocking')
+            self._blocking_groups[group].add(msg.obj)
         return msg.obj.trigger(*msg.args, **msg.kwargs)
 
     def _wait(self, msg):
@@ -396,7 +397,8 @@ class RunEngine:
         while True:
             if not any([obj.is_moving for obj in objs]):
                 break
-        del self._blocking.groups[group]
+        del self._blocking_groups[group]
+        return objs
 
     def _sleep(self, msg):
         return ttime.sleep(*msg.args)
