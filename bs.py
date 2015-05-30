@@ -376,16 +376,17 @@ class RunEngine:
             descriptor_uid = self._descriptor_uids[objs_read]
 
         # Events
-        for reading in self._read_cache:
-            seq_num = next(self._sequence_counters[objs_read])
-            event_uid = new_uid()
-            for key in reading:
-                reading[key]['value'] = _sanitize_np(reading[key]['value'])
-            doc = dict(descriptor=descriptor_uid,
-                       time=ttime.time(), data=reading, seq_num=seq_num,
-                       uid=event_uid)
-            self.emit('event', doc)
-            print("*** Emitted Event:\n%s" % doc)
+        seq_num = next(self._sequence_counters[objs_read])
+        event_uid = new_uid()
+        # Merge list of readings into single dict.
+        readings = {k: v for d in self._read_cache for k, v in d.items()}
+        for key in readings:
+            readings[key]['value'] = _sanitize_np(readings[key]['value'])
+        doc = dict(descriptor=descriptor_uid,
+                    time=ttime.time(), data=readings, seq_num=seq_num,
+                    uid=event_uid)
+        self.emit('event', doc)
+        print("*** Emitted Event:\n%s" % doc)
 
     def _null(self, msg):
         pass
