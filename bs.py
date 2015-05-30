@@ -57,9 +57,8 @@ class Reader(Base):
 
         return data
 
-    def trigger(self, *, blocking=True):
-        if blocking:
-            pass
+    def trigger(self):
+        pass
 
 
 class Mover(Base):
@@ -69,6 +68,7 @@ class Mover(Base):
         super(Mover, self).__init__(*args, **kwargs)
         self._data = {k: 0 for k in self._fields}
         self._staging = None
+        self.is_moving = False
 
     def read(self):
         return dict(self._data)
@@ -78,14 +78,14 @@ class Mover(Base):
             raise ValueError('setting non-existent field')
         self._staging = new_values
 
-    def trigger(self, *, blocking=True):
-        if blocking:
-            pass
-
+    def trigger(self):
+        self.is_moving = True
+        ttime.sleep(0.1)  # simulate moving time
         if self._staging:
             for k, v in self._staging.items():
                 self._data[k] = v
 
+        self.is_moving = False
         self._staging = None
 
     def settle(self):
@@ -147,7 +147,7 @@ def SynGaus_gen(syngaus, motor_steps, motor_limit=None):
             yield Msg('create')
             yield Msg('set', syngaus, ({syngaus.motor_name: x}, ))
             yield Msg('trigger', syngaus)
-            yield Msg('wait', None, (.1,))
+            yield Msg('sleep', None, (.1,))
             ret = yield Msg('read', syngaus)
             yield Msg('save')
             if motor_limit is not None:
@@ -168,7 +168,7 @@ def find_center_gen(syngaus, initial_center, initial_width,
                          5, endpoint=True):
         yield Msg('set', syngaus, ({syngaus.motor_name: x}, ))
         yield Msg('trigger', syngaus)
-        yield Msg('wait', None, (.1, ))
+        yield Msg('sleep', None, (.1, ))
         ret = yield Msg('read', syngaus)
         seen_x.append(ret[syngaus.motor_name])
         seen_y.append(ret[syngaus.det_name])
@@ -189,7 +189,7 @@ def find_center_gen(syngaus, initial_center, initial_width,
 
         yield Msg('set', syngaus, ({syngaus.motor_name: guesses['center']}, ))
         yield Msg('trigger', syngaus)
-        yield Msg('wait', None, (.1, ))
+        yield Msg('sleep', None, (.1, ))
         ret = yield Msg('read', syngaus)
         seen_x.append(ret[syngaus.motor_name])
         seen_y.append(ret[syngaus.det_name])
@@ -206,13 +206,15 @@ class RunEngine:
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._descriptor_uids = dict()  # cache of all Descriptor uids
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
-        self._proc_registry = {
+        self._blocking_groups = dict()  # groups of objs that repond to block
+        self._command_registry = {
             'create': self._create,
             'save': self._save,
             'read': self._read,
             'null': self._null,
             'set': self._set,
             'trigger': self._trigger,
+            'sleep': self._sleep,
             'wait': self._wait
             }
 
@@ -298,7 +300,7 @@ class RunEngine:
                     exit_status = 'abort'
                     break
                 msg = gen.send(response)
-                response = self._proc_registry[msg.command](msg)
+                response = self._command_registry[msg.command](msg)
 
                 print('{}\n   ret: {}'.format(msg, response))
         except StopIteration:
@@ -364,9 +366,23 @@ class RunEngine:
         return msg.obj.set(*msg.args, **msg.kwargs)
 
     def _trigger(self, msg):
+        if 'blocking' in msg.kwargs:
+            try:
+                self._blocking_groups[msg.kwargs['blocking']].add(msg.obj)
+            except KeyError:
+                self._blocking_groups[msg.kwargs['blocking']] = set([msg.obj])
         return msg.obj.trigger(*msg.args, **msg.kwargs)
 
     def _wait(self, msg):
+        # Block progress until every object that was trigged
+        # triggered with the keyword argument `block=group` is done.
+        group = msg.kwargs.get('group', msg.args[0])
+        objs = self._blocking_groups[group]
+        while True:
+            if not any([obj.is_moving for obj in objs]):
+                break
+
+    def _sleep(self, msg):
         return ttime.sleep(*msg.args)
 
     def emit(self, name, doc):
