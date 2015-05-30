@@ -315,7 +315,7 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid,
                 time=ttime.time(), beamline_id=beamline_id, owner=owner,
                 scan_id=scan_id, **custom)
-        print("Emitted RunStart:\n%s" % doc)
+        print("*** Emitted RunStart:\n%s" % doc)
         self.emit('start', doc)
         response = None
         exit_status = None
@@ -351,7 +351,7 @@ class RunEngine:
                     exit_status=exit_status,
                     reason=reason)
             self.emit('stop', doc)
-            print("Emitted RunStop:\n%s" % doc)
+            print("*** Emitted RunStop:\n%s" % doc)
             sys.stdout.flush()
 
     def _create(self, msg):
@@ -381,7 +381,7 @@ class RunEngine:
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
             self.emit('descriptor', doc)
-            print("Emitted Event Descriptor:\n%s" % doc)
+            print("*** Emitted Event Descriptor:\n%s" % doc)
             self._descriptor_uids[objs_read] = descriptor_uid
             self._sequence_counters[objs_read] = count(1)
         else:
@@ -397,7 +397,7 @@ class RunEngine:
                        time=ttime.time(), data=reading, seq_num=seq_num,
                        uid=event_uid)
             self.emit('event', doc)
-            print("Emitted Event:\n%s" % doc)
+            print("*** Emitted Event:\n%s" % doc)
 
     def _null(self, msg):
         pass
