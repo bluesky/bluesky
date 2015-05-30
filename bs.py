@@ -206,7 +206,12 @@ def find_center_gen(syngaus, initial_center, initial_width,
 class RunEngine:
     def __init__(self):
         self.panic = False
+        self._abort = False
+        self._hard_pause_requested = False
+        self._soft_pause_requested = False
+        self._paused = False
         self._sigint_handler = None
+        self._sigtstp_handler = None
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
         self._describe_cache = dict()  # cache of all obj.describe() output
@@ -214,6 +219,7 @@ class RunEngine:
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
+        self._msg_cache = None  # may be used to hold recently processed msgs
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -222,7 +228,9 @@ class RunEngine:
             'set': self._set,
             'trigger': self._trigger,
             'sleep': self._sleep,
-            'wait': self._wait
+            'wait': self._wait,
+            'checkpoint': self._checkpoint,
+            'pause': self.request_pause,
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -246,11 +254,16 @@ class RunEngine:
 
     def clear(self):
         self.panic = False
+        self._abort = False
+        self._hard_pause_requested = False
+        self._soft_pause_requested = False
+        self._paused = False
         self._objs_read.clear()
         self._read_cache.clear()
         self._describe_cache.clear()
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
+        self._msg_cache = None
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
             self.unsubscribe(cid)
@@ -272,6 +285,14 @@ class RunEngine:
     def panic(self, val):
         self._panic = val
 
+    def request_pause(self, hard=False):
+        # to be called by other threads
+        # Ctrl+Z and Ctrl+C also set these
+        if hard:
+            self._hard_pause_requested = True
+        else:
+            self._soft_pause_requested = True
+
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
 
@@ -292,17 +313,33 @@ class RunEngine:
             raise PanicStateError("RunEngine is in a panic state. The run "
                                   "was aborted before it began. No records "
                                   "of this run were created.")
-        with SignalHandler(signal.SIGINT) as self._sigint_handler:
-            func = lambda: self.run_engine(gen)
-            if use_threading:
-                thread = threading.Thread(target=func)
-                thread.start()
-                while thread.is_alive():
+        with SignalHandler(signal.SIGINT) as self._sigint_handler: # ^C
+            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:  #^Z
+                def func():
+                    return self.run_engine(gen)
+                if use_threading:
+                    self._thread = threading.Thread(target=func)
+                    self._thread.start()
+                    while self._thread.is_alive() and not self._paused:
+                        self.dispatcher.process_all_queues()
+                else:
+                    func()
                     self.dispatcher.process_all_queues()
-            else:
-                func()
-                self.dispatcher.process_all_queues()
+                self.dispatcher.process_all_queues()  # catch any stragglers
+
+    def resume(self):
+        self._soft_pause_requested = False
+        self._hard_pause_requested = False
+        with SignalHandler(signal.SIGINT) as self._sigint_handler: # ^C
+            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:  #^Z
+                self._paused = False
+                while self._thread.is_alive() and not self._paused:
+                    self.dispatcher.process_all_queues()
             self.dispatcher.process_all_queues()  # catch any stragglers
+
+    def kill(self):
+        self._abort = True
+        self.resume()
 
     def run_engine(self, gen):
         # This function is optionally run on its own thread.
@@ -316,6 +353,8 @@ class RunEngine:
         reason = ''
         try:
             while True:
+                print('MSG_CACHE', self._msg_cache)
+                # Check for panic.
                 if self.panic:
                     exit_status = 'fail'
                     raise PanicStateError("Something put the RunEngine into a "
@@ -323,13 +362,41 @@ class RunEngine:
                                           "Records were created, but the run "
                                           "was marked with "
                                           "exit_status='fail'.")
+
+                # Check for pause requests from keyboard.
                 if self._sigint_handler.interrupted:
-                    exit_status = 'abort'
-                    raise RunInterrupt("RunEngine detected a SIGINT (Ctrl+C) "
-                                       "and aborted the scan. Records were "
-                                       "created, but the run was marked with "
-                                       "exit_status='abort'.")
+                    print("RunEngine detected a SIGINT (Ctrl+C)")
+                    if self._soft_pause_requested:
+                        self.request_pause(hard=True)
+                    self.request_pause(hard=False)
+                if self._sigtstp_handler.interrupted:
+                    print("RunEngine detected a SIGINT (Ctrl+Z)")
+                    self.request_pause(hard=True)
+
+                # If a hard pause was requested, sleep.
+                if self._hard_pause_requested:
+                    if self._msg_cache is None:
+                        exit_status = 'abort'
+                        raise RunInterrupt("Hard pause requested. There are no "
+                                           "checkpoints. Cannot resume; must "
+                                           "abort. Run aborted.")
+                    self._paused = True
+                    print("Hard pause requested. Sleeping until resume() is "
+                          "called. Will rerun from last 'checkpoint' command.")
+                    while True:
+                        ttime.sleep(0.5)
+                        if not self._paused:
+                            break
+                    if self._abort:
+                        exit_status = 'abort'
+                        raise RunInterrupt("Run aborted.")
+                    self._rerun_from_checkpoint()
+
+                # Normal operation
                 msg = gen.send(response)
+                if self._msg_cache is not None:
+                    # We have a checkpoint.
+                    self._msg_cache.append(msg)
                 response = self._command_registry[msg.command](msg)
 
                 print('{}\n   ret: {}'.format(msg, response))
@@ -419,6 +486,24 @@ class RunEngine:
 
     def _sleep(self, msg):
         return ttime.sleep(*msg.args)
+
+    def _checkpoint(self, msg):
+        self._msg_cache = deque()
+        if self._soft_pause_requested:
+            self._paused = True
+            print("Soft pause requested. Sleeping until resume() is "
+                  "called. Will resume from checkpoint.")
+            while True:
+                ttime.sleep(0.5)
+                if not self._paused:
+                    break
+
+    def _rerun_from_checkpoint(self):
+        print("Rerunning from checkpoint...")
+        for msg in self._msg_cache:
+            response = self._command_registry[msg.command](msg)
+            print('{}\n   ret: {} (On rerun, responses are not sent.)'.format(
+                msg, response))
 
     def emit(self, name, doc):
         self._scan_cb_registry.process(name, doc)
