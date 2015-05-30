@@ -1,7 +1,7 @@
 import time as ttime
 import sys
 from itertools import count
-from collections import namedtuple, deque
+from collections import namedtuple, deque, defaultdict
 import uuid
 import signal
 import threading
@@ -207,7 +207,7 @@ class RunEngine:
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._descriptor_uids = dict()  # cache of all Descriptor uids
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
-        self._blocking_groups = dict()  # groups of objs that repond to block
+        self._blocking_groups = defaultdict(set)
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -378,10 +378,7 @@ class RunEngine:
 
     def _trigger(self, msg):
         if 'blocking' in msg.kwargs:
-            try:
-                self._blocking_groups[msg.kwargs['blocking']].add(msg.obj)
-            except KeyError:
-                self._blocking_groups[msg.kwargs['blocking']] = set([msg.obj])
+            self._blocking_groups[msg.kwargs['blocking']].add(msg.obj)
         return msg.obj.trigger(*msg.args, **msg.kwargs)
 
     def _wait(self, msg):
@@ -392,6 +389,7 @@ class RunEngine:
         while True:
             if not any([obj.is_moving for obj in objs]):
                 break
+        del self._blocking.groups[group]
 
     def _sleep(self, msg):
         return ttime.sleep(*msg.args)
