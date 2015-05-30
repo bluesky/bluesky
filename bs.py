@@ -96,31 +96,32 @@ class Mover(Base):
         pass
 
 
-class SynGaus(Mover):
+class SynGauss(Reader):
+    """
+    Evaluate a point on a Gaussian based on the value of a motor.
 
-    def __init__(self, name, motor_name, det_name, center, Imax, sigma=1):
-        super(SynGaus, self).__init__(name, (motor_name, det_name))
-        self._motor = motor_name
-        self._det = det_name
+    Example
+    -------
+    motor = Mover('motor', ['pos'])
+    det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
+    """
+    _klass = 'reader'
+
+    def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
+        super(SynGauss, self).__init__(name, 'I')
+        self._motor = motor
+        self._motor_field = motor_field
         self.center = center
         self.Imax = Imax
         self.sigma = sigma
 
-    def set(self, new_values):
-        if self._det in new_values:
-            raise ValueError("you can't set the detector value")
-        super(SynGaus, self).set(new_values)
-        m = self._staging[self._motor]
+    def trigger(self):
+        m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        self._staging[self._det] = v
+        self._data = {'intensity': {'value': v, 'timetamp': ttime.time()}}
 
-    @property
-    def motor_name(self):
-        return self._motor
-
-    @property
-    def det_name(self):
-        return self._det
+    def read(self):
+        return self._data
 
 
 class FlyMagic(Base):
@@ -145,7 +146,7 @@ def MoveRead_gen(motor, detector):
         print('Generator finished')
 
 
-def SynGaus_gen(syngaus, motor_steps, motor_limit=None):
+def SynGauss_gen(syngaus, motor_steps, motor_limit=None):
     try:
         for x in motor_steps:
             yield Msg('create')
