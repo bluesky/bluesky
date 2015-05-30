@@ -265,7 +265,7 @@ class RunEngine:
     @property
     def panic(self):
         # Release GIL by sleeping, allowing other threads to set panic.
-        ttime.sleep(0.1)
+        ttime.sleep(0.01)
         return self._panic
 
     @panic.setter
