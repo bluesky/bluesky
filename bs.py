@@ -213,6 +213,7 @@ class RunEngine:
         self._descriptor_uids = dict()  # cache of all Descriptor uids
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._block_groups = defaultdict(set)  # sets of objs to wait for
+        self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -236,12 +237,16 @@ class RunEngine:
 
         # public dispatcher for callbacks processed on the main thread
         self.dispatcher = Dispatcher(queues)
+        self.subscribe = self.dispatcher.subscribe
+        self.unsubscribe = self.dispatcher.unsubscribe
 
         # private registry of callbacks processed on the "scan thread"
         self._scan_cb_registry = CallbackRegistry()
-        for name, queue in queues.items():
-            curried_push = lambda doc: self._push_to_queue(queue, doc)
-            self._register_scan_callback(name, curried_push)
+        self._register_scan_callback('event', self._push_to_event_queue)
+        self._register_scan_callback('descriptor',
+                                     self._push_to_descriptor_queue)
+        self._register_scan_callback('start', self._push_to_start_queue)
+        self._register_scan_callback('stop', self._push_to_stop_queue)
 
     def clear(self):
         self.panic = False
@@ -250,6 +255,10 @@ class RunEngine:
         self._describe_cache.clear()
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
+        # Unsubscribe for per-run callbacks.
+        for cid in self._temp_callback_ids:
+            self.unsubscribe(cid)
+        self._temp_callback_ids.clear()
 
     @property
     def panic(self):
@@ -264,32 +273,44 @@ class RunEngine:
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
 
-        Unlike subscribe, functions registered here will be processed on the
-        scan thread. They are guaranteed to be run (there is no Queue
+        Functions registered here are guaranteed to be run (there is no Queue
         involved) and they block the scan's progress until they return.
-        Use subscribe for any non-critical functions.
         """
         return self._scan_cb_registry.connect(name, func)
 
-    def _push_to_queue(self, queue, doc):
-        queue.put(doc)
+    def _push_to_event_queue(self, doc):
+        self.event_queue.put(doc)
 
-    def run(self, g, additional_callbacks=None, use_threading=True):
+    def _push_to_descriptor_queue(self, doc):
+        self.descriptor_queue.put(doc)
+
+    def _push_to_start_queue(self, doc):
+        self.start_queue.put(doc)
+
+    def _push_to_stop_queue(self, doc):
+        self.stop_queue.put(doc)
+
+    def run(self, g, subscriptions={}, use_threading=True):
         self.clear()
+        for name, func in subscriptions.items():
+            self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
         if self.panic:
             raise PanicStateError("RunEngine is in a panic state. The run "
                                   "was aborted before it began. No records "
                                   "of this run were created.")
         with SignalHandler(signal.SIGINT) as self._sigint_handler:
-            func = lambda: self.run_engine(g, additional_callbacks=None)
+            func = lambda: self.run_engine(g)
             if use_threading:
                 thread = threading.Thread(target=func)
                 thread.start()
+                while thread.is_alive():
+                    self.dispatcher.process_all_queues()
             else:
                 func()
+                self.dispatcher.process_all_queues()
 
-    def run_engine(self, gen, additional_callbacks=None):
+    def run_engine(self, gen):
         # This function is optionally run on its own thread.
         doc = dict(uid=self._run_start_uid,
                 time=ttime.time(), beamline_id=beamline_id, owner=owner,
@@ -424,7 +445,10 @@ class Dispatcher(object):
             pass
         else:
             self.cb_registry.process(name, document)
-        print("Processed %s subscriptions" % name)
+
+    def process_all_queues(self):
+        for name in self.queues.keys():
+            self.process_queue(name)
 
     def subscribe(self, name, func):
         """
