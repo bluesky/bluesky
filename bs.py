@@ -171,7 +171,7 @@ def MoveRead_gen(motor, detector):
             yield Msg('read', motor)
             yield Msg('save')
     finally:
-        print('Generator finished')
+        self.debug('Generator finished')
 
 
 def SynGauss_gen(syngaus, motor_steps, motor_limit=None):
@@ -187,7 +187,7 @@ def SynGauss_gen(syngaus, motor_steps, motor_limit=None):
                 if ret[syngaus.motor_name] > motor_limit:
                     break
     finally:
-        print('generator finished')
+        self.debug('generator finished')
 
 
 def find_center_gen(syngaus, initial_center, initial_width,
@@ -288,6 +288,8 @@ class RunEngine:
         for name in self._queues.keys():
             self._register_scan_callback(name, make_push_func(name))
 
+        self.verbose = True
+
     def clear(self):
         self._panic = False
         self._abort = False
@@ -378,14 +380,14 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid,
                    time=ttime.time(), beamline_id=beamline_id, owner=owner,
                    scan_id=scan_id, **custom)
-        print("*** Emitted RunStart:\n%s" % doc)
+        self.debug("*** Emitted RunStart:\n%s" % doc)
         self.emit('start', doc)
         response = None
         exit_status = None
         reason = ''
         try:
             while True:
-                print('MSG_CACHE', self._msg_cache)
+                # self.debug('MSG_CACHE', self._msg_cache)
                 # Check for panic.
                 if self._panic:
                     exit_status = 'fail'
@@ -397,7 +399,7 @@ class RunEngine:
 
                 # Check for pause requests from keyboard.
                 if self._sigint_handler.interrupted:
-                    print("RunEngine detected a SIGINT (Ctrl+C)")
+                    self.debug("RunEngine detected a SIGINT (Ctrl+C)")
                     self.request_pause(hard=True)
                     self._sigint_handler.interrupted = False
 
@@ -405,12 +407,13 @@ class RunEngine:
                 if self._hard_pause_requested:
                     if self._msg_cache is None:
                         exit_status = 'abort'
-                        raise RunInterrupt("*** Hard pause requested. There are "
-                                           "no checkpoints. Cannot resume; "
-                                           "must abort. Run aborted.")
+                        raise RunInterrupt("*** Hard pause requested. There "
+                                           "are no checkpoints. Cannot resume;"
+                                           " must abort. Run aborted.")
                     self._paused = True
-                    print("*** Hard pause requested. Sleeping until resume() is "
-                          "called. Will rerun from last 'checkpoint' command.")
+                    self.debug("*** Hard pause requested. Sleeping until "
+                               "resume() is called. "
+                               "Will rerun from last 'checkpoint' command.")
                     while True:
                         ttime.sleep(0.5)
                         if not self._paused:
@@ -423,8 +426,8 @@ class RunEngine:
                 # If a soft pause was requested, acknowledge it, but wait
                 # for a 'checkpoint' command to catch it (see self._checkpoint).
                 if self._soft_pause_requested:
-                    print("*** Soft pause requested. Continuing to process "
-                          "messages until the next 'checkpoint' command.")
+                    self.debug("*** Soft pause requested. Continuing to "
+                        "process messages until the next 'checkpoint' command.")
 
                 # Normal operation
                 msg = gen.send(response)
@@ -433,7 +436,7 @@ class RunEngine:
                     self._msg_cache.append(msg)
                 response = self._command_registry[msg.command](msg)
 
-                print('{}\n   ret: {}'.format(msg, response))
+                self.debug('{}\n   ret: {}'.format(msg, response))
         except StopIteration:
             exit_status = 'success'
         except Exception as err:
@@ -446,7 +449,7 @@ class RunEngine:
                        exit_status=exit_status,
                        reason=reason)
             self.emit('stop', doc)
-            print("*** Emitted RunStop:\n%s" % doc)
+            self.debug("*** Emitted RunStop:\n%s" % doc)
             sys.stdout.flush()
 
     def _create(self, msg):
@@ -477,7 +480,7 @@ class RunEngine:
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
             self.emit('descriptor', doc)
-            print("*** Emitted Event Descriptor:\n%s" % doc)
+            self.debug("*** Emitted Event Descriptor:\n%s" % doc)
             self._descriptor_uids[objs_read] = descriptor_uid
             self._sequence_counters[objs_read] = count(1)
         else:
@@ -495,7 +498,7 @@ class RunEngine:
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid)
         self.emit('event', doc)
-        print("*** Emitted Event:\n%s" % doc)
+        self.debug("*** Emitted Event:\n%s" % doc)
 
     def _kickoff(self, msg):
         return msg.obj.kickoff(*msg.args, **msg.kwargs)
@@ -513,7 +516,7 @@ class RunEngine:
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
             self.emit('descriptor', doc)
-            print("Emitted Event Descriptor:\n%s" % doc)
+            self.debug("Emitted Event Descriptor:\n%s" % doc)
             self._descriptor_uids[obj_read] = descriptor_uid
             self._sequence_counters[obj_read] = count(1)
         else:
@@ -529,7 +532,7 @@ class RunEngine:
             ev['seq_num'] = seq_num
             ev['uid'] = event_uid
             self.emit('event', ev)
-            print("Emitted Event:\n%s" % ev)
+            self.debug("Emitted Event:\n%s" % ev)
 
     def _null(self, msg):
         pass
@@ -564,7 +567,7 @@ class RunEngine:
         self._msg_cache = deque()
         if self._soft_pause_requested:
             self._paused = True
-            print("*** Checkpoint reached. Sleeping until resume() is "
+            self.debug("*** Checkpoint reached. Sleeping until resume() is "
                   "called. Will resume from checkpoint.")
             while True:
                 ttime.sleep(0.5)
@@ -572,14 +575,19 @@ class RunEngine:
                     break
 
     def _rerun_from_checkpoint(self):
-        print("*** Rerunning from checkpoint...")
+        self.debug("*** Rerunning from checkpoint...")
         for msg in self._msg_cache:
             response = self._command_registry[msg.command](msg)
-            print('{}\n   ret: {} (On rerun, responses are not sent.)'.format(
+            self.debug('{}\n   ret: {} '
+                '(On rerun, responses are not sent.)'.format(
                 msg, response))
 
     def emit(self, name, doc):
         self._scan_cb_registry.process(name, doc)
+
+    def debug(self, msg):
+        if self.verbose:
+            print(msg)
 
 
 class Dispatcher(object):
