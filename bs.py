@@ -123,11 +123,35 @@ class SynGauss(Reader):
 
 
 class FlyMagic(Base):
+    _klass = 'flyer'
+
+    def __init__(self, name, motor, det, scan_point=15):
+        super(FlyMagic, self).__init__(name, [motor, det])
+        self._motor = motor
+        self._det = det
+        self._scan_points = 15
+        self._time = None
+
     def kickoff(self):
-        pass
+        self._time = ttime.time()
 
     def collect(self):
-        pass
+        if self._time is None:
+            raise RuntimeError("Must kick off flyscan before you collect")
+
+        X = np.linspace(0, 2*np.pi, self._scan_points)
+        Y = np.sin(X)
+        dt = (ttime.time() - self._time) / self._scan_points
+        T = dt * np.arange(self._scan_points) + self._time
+
+        for j, (t, x, y) in enumerate(zip(T, X, Y)):
+            ev = {'time': t,
+                  'data': {self._motor: {'value': x, 'timestamp': t},
+                           self._det: {'value': y, 'timestamp': t}},
+                  }
+
+            yield ev
+        self._time = None
 
 
 def MoveRead_gen(motor, detector):
@@ -200,6 +224,13 @@ def find_center_gen(syngaus, initial_center, initial_width,
     output_mutable.update(guesses)
 
 
+def fly_gen(flyer):
+    yield Msg('kickoff', flyer)
+    yield Msg('collect', flyer)
+    yield Msg('kickoff', flyer)
+    yield Msg('collect', flyer)
+
+
 class RunEngine:
     def __init__(self):
         self.panic = False
@@ -228,6 +259,8 @@ class RunEngine:
             'wait': self._wait,
             'checkpoint': self._checkpoint,
             'pause': self.request_pause,
+            'collect': self._collect,
+            'kickoff': self._kickoff
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -457,6 +490,40 @@ class RunEngine:
                    uid=event_uid)
         self.emit('event', doc)
         print("*** Emitted Event:\n%s" % doc)
+
+    def _kickoff(self, msg):
+        return msg.obj.kickoff(*msg.args, **msg.kwargs)
+
+    def _collect(self, msg):
+        obj = msg.obj
+        if obj not in self._describe_cache:
+            self._describe_cache[obj] = obj.describe()
+
+        obj_read = frozenset((obj,))
+        if obj_read not in self._descriptor_uids:
+            # We don't not have an Event Descriptor for this set.
+            data_keys = obj.describe()
+            descriptor_uid = new_uid()
+            doc = dict(run_start=self._run_start_uid, time=ttime.time(),
+                       data_keys=data_keys, uid=descriptor_uid)
+            self.emit('descriptor', doc)
+            print("Emitted Event Descriptor:\n%s" % doc)
+            self._descriptor_uids[obj_read] = descriptor_uid
+            self._sequence_counters[obj_read] = count(1)
+        else:
+            descriptor_uid = self._descriptor_uids[obj_read]
+
+        for ev in obj.collect():
+            seq_num = next(self._sequence_counters[obj_read])
+            event_uid = new_uid()
+            reading = ev['data']
+            for key in ev['data']:
+                reading[key]['value'] = _sanitize_np(reading[key]['value'])
+            ev['descriptor'] = descriptor_uid
+            ev['seq_num'] = seq_num
+            ev['uid'] = event_uid
+            self.emit('event', ev)
+            print("Emitted Event:\n%s" % ev)
 
     def _null(self, msg):
         pass
