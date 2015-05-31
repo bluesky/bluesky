@@ -659,8 +659,14 @@ def _fill_missing_fields(data_keys):
     """This is a stop-gap until all describe() methods are complete."""
     result = {}
     for key, value in data_keys.items():
-        result[key] = value.get('source')
-        result[key] = value.get('dtype', 'number')
+        # required keys
+        result[key]['source'] = value.get('source')
+        result[key]['dtype']  = value.get('dtype', 'number')  # just guessing
+        # optional keys
+        if 'shape' in value:
+            result[key]['shape'] = value['shape']
+        if 'external' in value:
+            result[key]['external'] = value['external']
 
 
 class PanicStateError(Exception):
