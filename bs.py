@@ -667,6 +667,7 @@ def _fill_missing_fields(data_keys):
     """This is a stop-gap until all describe() methods are complete."""
     result = {}
     for key, value in data_keys.items():
+        result[key] = {}
         # required keys
         result[key]['source'] = value.get('source')
         result[key]['dtype']  = value.get('dtype', 'number')  # just guessing
