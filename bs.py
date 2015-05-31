@@ -239,7 +239,7 @@ def fly_gen(flyer):
 
 class RunEngine:
     def __init__(self):
-        self.panic = False
+        self._panic = False
         self._abort = False
         self._hard_pause_requested = False
         self._soft_pause_requested = False
@@ -289,7 +289,7 @@ class RunEngine:
             self._register_scan_callback(name, make_push_func(name))
 
     def clear(self):
-        self.panic = False
+        self._panic = False
         self._abort = False
         self._hard_pause_requested = False
         self._soft_pause_requested = False
@@ -311,15 +311,13 @@ class RunEngine:
     def unregister_command(self, name):
         del self._command_registry[name]
 
-    @property
     def panic(self):
         # Release GIL by sleeping, allowing other threads to set panic.
         ttime.sleep(0.01)
-        return self._panic
+        self._panic = True
 
-    @panic.setter
-    def panic(self, val):
-        self._panic = val
+    def all_is_well(self):
+        self._panic = False
 
     def request_pause(self, hard=False):
         # to be called by other threads
@@ -345,33 +343,31 @@ class RunEngine:
         for name, func in subscriptions.items():
             self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
-        if self.panic:
+        if self._panic:
             raise PanicStateError("RunEngine is in a panic state. The run "
                                   "was aborted before it began. No records "
                                   "of this run were created.")
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:   # ^Z
-                def func():
-                    return self.run_engine(gen)
-                if use_threading:
-                    self._thread = threading.Thread(target=func)
-                    self._thread.start()
-                    while self._thread.is_alive() and not self._paused:
-                        self.dispatcher.process_all_queues()
-                else:
-                    func()
+            def func():
+                return self.run_engine(gen)
+            if use_threading:
+                self._thread = threading.Thread(target=func)
+                self._thread.start()
+                while self._thread.is_alive() and not self._paused:
                     self.dispatcher.process_all_queues()
-                self.dispatcher.process_all_queues()  # catch any stragglers
+            else:
+                func()
+                self.dispatcher.process_all_queues()
+            self.dispatcher.process_all_queues()  # catch any stragglers
 
     def resume(self):
         self._soft_pause_requested = False
         self._hard_pause_requested = False
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:   # ^Z
-                self._paused = False
-                while self._thread.is_alive() and not self._paused:
-                    self.dispatcher.process_all_queues()
-            self.dispatcher.process_all_queues()  # catch any stragglers
+            self._paused = False
+            while self._thread.is_alive() and not self._paused:
+                self.dispatcher.process_all_queues()
+        self.dispatcher.process_all_queues()  # catch any stragglers
 
     def abort(self):
         self._abort = True
@@ -391,7 +387,7 @@ class RunEngine:
             while True:
                 print('MSG_CACHE', self._msg_cache)
                 # Check for panic.
-                if self.panic:
+                if self._panic:
                     exit_status = 'fail'
                     raise PanicStateError("Something put the RunEngine into a "
                                           "panic state after the run began. "
