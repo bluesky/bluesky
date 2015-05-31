@@ -264,7 +264,7 @@ class RunEngine:
             'sleep': self._sleep,
             'wait': self._wait,
             'checkpoint': self._checkpoint,
-            'pause': self.request_pause,
+            'pause': self._pause,
             'collect': self._collect,
             'kickoff': self._kickoff
             }
@@ -373,7 +373,7 @@ class RunEngine:
                     self.dispatcher.process_all_queues()
             self.dispatcher.process_all_queues()  # catch any stragglers
 
-    def kill(self):
+    def abort(self):
         self._abort = True
         self.resume()
 
@@ -402,22 +402,18 @@ class RunEngine:
                 # Check for pause requests from keyboard.
                 if self._sigint_handler.interrupted:
                     print("RunEngine detected a SIGINT (Ctrl+C)")
-                    if self._soft_pause_requested:
-                        self.request_pause(hard=True)
-                    self.request_pause(hard=False)
-                if self._sigtstp_handler.interrupted:
-                    print("RunEngine detected a SIGINT (Ctrl+Z)")
                     self.request_pause(hard=True)
+                    self._sigint_handler.interrupted = False
 
                 # If a hard pause was requested, sleep.
                 if self._hard_pause_requested:
                     if self._msg_cache is None:
                         exit_status = 'abort'
-                        raise RunInterrupt("Hard pause requested. There are "
+                        raise RunInterrupt("*** Hard pause requested. There are "
                                            "no checkpoints. Cannot resume; "
                                            "must abort. Run aborted.")
                     self._paused = True
-                    print("Hard pause requested. Sleeping until resume() is "
+                    print("*** Hard pause requested. Sleeping until resume() is "
                           "called. Will rerun from last 'checkpoint' command.")
                     while True:
                         ttime.sleep(0.5)
@@ -427,6 +423,12 @@ class RunEngine:
                         exit_status = 'abort'
                         raise RunInterrupt("Run aborted.")
                     self._rerun_from_checkpoint()
+
+                # If a soft pause was requested, acknowledge it, but wait
+                # for a 'checkpoint' command to catch it (see self._checkpoint).
+                if self._soft_pause_requested:
+                    print("*** Soft pause requested. Continuing to process "
+                          "messages until the next 'checkpoint' command.")
 
                 # Normal operation
                 msg = gen.send(response)
@@ -557,11 +559,14 @@ class RunEngine:
     def _sleep(self, msg):
         return ttime.sleep(*msg.args)
 
+    def _pause(self, msg):
+        self.request_pause(*msg.args, **msg.kwargs)
+
     def _checkpoint(self, msg):
         self._msg_cache = deque()
         if self._soft_pause_requested:
             self._paused = True
-            print("Soft pause requested. Sleeping until resume() is "
+            print("*** Checkpoint reached. Sleeping until resume() is "
                   "called. Will resume from checkpoint.")
             while True:
                 ttime.sleep(0.5)
@@ -569,7 +574,7 @@ class RunEngine:
                     break
 
     def _rerun_from_checkpoint(self):
-        print("Rerunning from checkpoint...")
+        print("*** Rerunning from checkpoint...")
         for msg in self._msg_cache:
             response = self._command_registry[msg.command](msg)
             print('{}\n   ret: {} (On rerun, responses are not sent.)'.format(
