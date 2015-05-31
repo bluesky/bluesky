@@ -134,7 +134,7 @@ def MoveRead_gen(motor, detector):
     try:
         for j in range(10):
             yield Msg('create')
-            yield Msg('set', motor, ({'x': j}, ))
+            yield Msg('set', motor, {'x': j})
             yield Msg('trigger', motor)
             yield Msg('trigger', detector)
             yield Msg('read', detector)
@@ -148,9 +148,9 @@ def SynGauss_gen(syngaus, motor_steps, motor_limit=None):
     try:
         for x in motor_steps:
             yield Msg('create')
-            yield Msg('set', syngaus, ({syngaus.motor_name: x}, ))
+            yield Msg('set', syngaus, {syngaus.motor_name: x})
             yield Msg('trigger', syngaus)
-            yield Msg('sleep', None, (.1,))
+            yield Msg('sleep', None, .1)
             ret = yield Msg('read', syngaus)
             yield Msg('save')
             if motor_limit is not None:
@@ -169,9 +169,9 @@ def find_center_gen(syngaus, initial_center, initial_width,
     for x in np.linspace(initial_center - initial_width,
                          initial_center + initial_center,
                          5, endpoint=True):
-        yield Msg('set', syngaus, ({syngaus.motor_name: x}, ))
+        yield Msg('set', syngaus, {syngaus.motor_name: x})
         yield Msg('trigger', syngaus)
-        yield Msg('sleep', None, (.1, ))
+        yield Msg('sleep', None, .1,)
         ret = yield Msg('read', syngaus)
         seen_x.append(ret[syngaus.motor_name])
         seen_y.append(ret[syngaus.det_name])
@@ -190,9 +190,9 @@ def find_center_gen(syngaus, initial_center, initial_width,
         if np.abs(old_guess['center'] - guesses['center']) < tol:
             break
 
-        yield Msg('set', syngaus, ({syngaus.motor_name: guesses['center']}, ))
+        yield Msg('set', syngaus, {syngaus.motor_name: guesses['center']})
         yield Msg('trigger', syngaus)
-        yield Msg('sleep', None, (.1, ))
+        yield Msg('sleep', None, .1)
         ret = yield Msg('read', syngaus)
         seen_x.append(ret[syngaus.motor_name])
         seen_y.append(ret[syngaus.det_name])
