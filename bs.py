@@ -7,16 +7,13 @@ import signal
 import threading
 from queue import Queue, Empty
 import numpy as np
-import types
+
 from utils import CallbackRegistry, SignalHandler
 
-import lmfit
 from lmfit.models import GaussianModel, LinearModel
 
-
-
-beamline_id='test'
-owner='tester'
+beamline_id = 'test'
+owner = 'tester'
 custom = {}
 scan_id = 123
 
@@ -249,7 +246,7 @@ class RunEngine:
 
         # private registry of callbacks processed on the "scan thread"
         self._scan_cb_registry = CallbackRegistry()
-        for name in self._queues.keys(): 
+        for name in self._queues.keys():
             self._register_scan_callback(name, make_push_func(name))
 
     def clear(self):
@@ -313,8 +310,8 @@ class RunEngine:
             raise PanicStateError("RunEngine is in a panic state. The run "
                                   "was aborted before it began. No records "
                                   "of this run were created.")
-        with SignalHandler(signal.SIGINT) as self._sigint_handler: # ^C
-            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:  #^Z
+        with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
+            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:   # ^Z
                 def func():
                     return self.run_engine(gen)
                 if use_threading:
@@ -330,8 +327,8 @@ class RunEngine:
     def resume(self):
         self._soft_pause_requested = False
         self._hard_pause_requested = False
-        with SignalHandler(signal.SIGINT) as self._sigint_handler: # ^C
-            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:  #^Z
+        with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
+            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:   # ^Z
                 self._paused = False
                 while self._thread.is_alive() and not self._paused:
                     self.dispatcher.process_all_queues()
@@ -344,8 +341,8 @@ class RunEngine:
     def run_engine(self, gen):
         # This function is optionally run on its own thread.
         doc = dict(uid=self._run_start_uid,
-                time=ttime.time(), beamline_id=beamline_id, owner=owner,
-                scan_id=scan_id, **custom)
+                   time=ttime.time(), beamline_id=beamline_id, owner=owner,
+                   scan_id=scan_id, **custom)
         print("*** Emitted RunStart:\n%s" % doc)
         self.emit('start', doc)
         response = None
@@ -377,9 +374,9 @@ class RunEngine:
                 if self._hard_pause_requested:
                     if self._msg_cache is None:
                         exit_status = 'abort'
-                        raise RunInterrupt("Hard pause requested. There are no "
-                                           "checkpoints. Cannot resume; must "
-                                           "abort. Run aborted.")
+                        raise RunInterrupt("Hard pause requested. There are "
+                                           "no checkpoints. Cannot resume; "
+                                           "must abort. Run aborted.")
                     self._paused = True
                     print("Hard pause requested. Sleeping until resume() is "
                           "called. Will rerun from last 'checkpoint' command.")
@@ -408,9 +405,9 @@ class RunEngine:
             raise err
         finally:
             doc = dict(run_start=self._run_start_uid,
-                    time=ttime.time(),
-                    exit_status=exit_status,
-                    reason=reason)
+                       time=ttime.time(),
+                       exit_status=exit_status,
+                       reason=reason)
             self.emit('stop', doc)
             print("*** Emitted RunStop:\n%s" % doc)
             sys.stdout.flush()
@@ -456,8 +453,8 @@ class RunEngine:
         for key in readings:
             readings[key]['value'] = _sanitize_np(readings[key]['value'])
         doc = dict(descriptor=descriptor_uid,
-                    time=ttime.time(), data=readings, seq_num=seq_num,
-                    uid=event_uid)
+                   time=ttime.time(), data=readings, seq_num=seq_num,
+                   uid=event_uid)
         self.emit('event', doc)
         print("*** Emitted Event:\n%s" % doc)
 
