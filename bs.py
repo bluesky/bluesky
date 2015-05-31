@@ -125,13 +125,16 @@ class SynGauss(Reader):
 class FlyMagic(Base):
     _klass = 'flyer'
 
-    def __init__(self, name, motor, det, scan_point=15):
+    def __init__(self, name, motor, det, scan_points=15):
         super(FlyMagic, self).__init__(name, [motor, det])
         self._motor = motor
         self._det = det
-        self._scan_points = 15
+        self._scan_points = scan_points
         self._time = None
         self._fly_count = 0
+
+    def reset(self):
+        self._fly_count= 0
 
     def kickoff(self):
         self._time = ttime.time()
