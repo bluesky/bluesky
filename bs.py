@@ -472,6 +472,7 @@ class RunEngine:
             # We don't not have an Event Descriptor for this set.
             data_keys = {}
             [data_keys.update(self._describe_cache[obj]) for obj in objs_read]
+            _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls.
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
@@ -489,9 +490,10 @@ class RunEngine:
         readings = {k: v for d in self._read_cache for k, v in d.items()}
         for key in readings:
             readings[key]['value'] = _sanitize_np(readings[key]['value'])
+        data, timestamps = _rearrange_into_parallel_dicts(readings)
         doc = dict(descriptor=descriptor_uid,
-                   time=ttime.time(), data=readings, seq_num=seq_num,
-                   uid=event_uid)
+                   time=ttime.time(), data=data, timestamps=timestamps,
+                   seq_num=seq_num, uid=event_uid)
         self.emit('event', doc)
         print("*** Emitted Event:\n%s" % doc)
 
@@ -642,6 +644,23 @@ def _sanitize_np(val):
             return val.item()
         return val.tolist()
     return val
+
+
+def _rearrange_into_parallel_dicts(readings):
+    data = {}
+    timestamps = {}
+    for key, payload in readings.items():
+        data[key] = payload['value']
+        timestamps[key] = payload['timestamp']
+    return data, timestamps
+
+
+def _fill_missing_fields(data_keys):
+    """This is a stop-gap until all describe() methods are complete."""
+    result = {}
+    for key, value in data_keys.items():
+        result[key] = value.get('source')
+        result[key] = value.get('dtype', 'number')
 
 
 class PanicStateError(Exception):
