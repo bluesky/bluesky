@@ -269,10 +269,10 @@ class RunEngine:
             self.unsubscribe(cid)
         self._temp_callback_ids.clear()
 
-    def register_command(name, func):
-        self._command_registry[name]= func
+    def register_command(self, name, func):
+        self._command_registry[name] = func
 
-    def unregister_command(name):
+    def unregister_command(self, name):
         del self._command_registry[name]
 
     @property
