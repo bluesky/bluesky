@@ -131,16 +131,19 @@ class FlyMagic(Base):
         self._det = det
         self._scan_points = 15
         self._time = None
+        self._fly_count = 0
 
     def kickoff(self):
         self._time = ttime.time()
+        self._fly_count += 1
 
     def collect(self):
         if self._time is None:
             raise RuntimeError("Must kick off flyscan before you collect")
 
+        dtheta = (np.pi / 10) * self._fly_count
         X = np.linspace(0, 2*np.pi, self._scan_points)
-        Y = np.sin(X)
+        Y = np.sin(X + dtheta)
         dt = (ttime.time() - self._time) / self._scan_points
         T = dt * np.arange(self._scan_points) + self._time
 
