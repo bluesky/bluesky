@@ -69,7 +69,7 @@ class Mover(Base):
         self._data = {k: {'value': 0, 'timestamp': ttime.time()}
                       for k in self._fields}
         self._staging = None
-        self.is_moving = False
+        self.moving = False
 
     def read(self):
         return dict(self._data)
@@ -81,13 +81,13 @@ class Mover(Base):
 
     def trigger(self, *, block_group=None):
         # block_group is handled by the RunEngine
-        self.is_moving = True
+        self.moving = True
         ttime.sleep(0.1)  # simulate moving time
         if self._staging:
             for k, v in self._staging.items():
                 self._data[k] = {'value': v, 'timestamp': ttime.time()}
 
-        self.is_moving = False
+        self.moving = False
         self._staging = None
 
     def settle(self):
@@ -552,7 +552,7 @@ class RunEngine:
         group = msg.kwargs.get('group', msg.args[0])
         objs = self._block_groups[group]
         while True:
-            if not any([obj.is_moving for obj in objs]):
+            if not any([obj.moving for obj in objs]):
                 break
         del self._block_groups[group]
         return objs
