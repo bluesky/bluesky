@@ -10,7 +10,6 @@ import numpy as np
 
 from utils import CallbackRegistry, SignalHandler
 
-from lmfit.models import GaussianModel, LinearModel
 
 beamline_id = 'test'
 owner = 'tester'
