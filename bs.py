@@ -152,8 +152,10 @@ class FlyMagic(Base):
 
         for j, (t, x, y) in enumerate(zip(T, X, Y)):
             ev = {'time': t,
-                  'data': {self._motor: {'value': x, 'timestamp': t},
-                           self._det: {'value': y, 'timestamp': t}},
+                  'data': {self._motor: x,
+                           self._det: y},
+                  'timestamps': {self._motor: t,
+                           self._det: t}
                   }
 
             yield ev
@@ -527,7 +529,8 @@ class RunEngine:
             event_uid = new_uid()
             reading = ev['data']
             for key in ev['data']:
-                reading[key]['value'] = _sanitize_np(reading[key]['value'])
+                reading[key] = _sanitize_np(reading[key])
+            ev['data'] = reading
             ev['descriptor'] = descriptor_uid
             ev['seq_num'] = seq_num
             ev['uid'] = event_uid
