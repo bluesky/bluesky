@@ -84,6 +84,12 @@ class Mover(Base):
             raise ValueError('setting non-existent field')
         self._staging = new_values
 
+    def trigger(self, *, block_group=None):
+        """
+
+        In case future readers wonder what in the hell this bare asterix is,
+        http://stackoverflow.com/questions/2965271/forced-naming-of-parameters-in-python/14298976#14298976
+        """
         # block_group is handled by the RunEngine
         ttime.sleep(0.1)  # simulate moving time
         if self._staging:
