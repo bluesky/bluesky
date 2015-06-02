@@ -272,7 +272,7 @@ class RunEngine:
         if hard:
             self._sm.hard_pause()
         else:
-            if self._sm.is_hard_pausing()
+            if self._sm.is_hard_pausing():
                 self._sm.soft_pause()
             # If we are already *hard* pausing, silently ignore this request.
 
