@@ -147,7 +147,7 @@ class FlyMagic(Base):
         self._fly_count = 0
 
     def reset(self):
-        self._fly_count= 0
+        self._fly_count = 0
 
     def kickoff(self):
         self._time = ttime.time()
@@ -168,7 +168,7 @@ class FlyMagic(Base):
                   'data': {self._motor: x,
                            self._det: y},
                   'timestamps': {self._motor: t,
-                           self._det: t}
+                                 self._det: t}
                   }
 
             yield ev
@@ -416,7 +416,8 @@ class RunEngine:
                 # for a 'checkpoint' command to catch it (see self._checkpoint).
                 if self._sm.is_soft_pausing:
                     self.debug("*** Soft pause requested. Continuing to "
-                        "process messages until the next 'checkpoint' command.")
+                               "process messages until the next 'checkpoint' "
+                               "command.")
 
                 # Normal operation
                 msg = gen.send(response)
@@ -563,7 +564,7 @@ class RunEngine:
         if self._sm.is_soft_pausing:
             self._sm.pause()  # soft_pausing -> paused
             self.debug("*** Checkpoint reached. Sleeping until resume() is "
-                  "called. Will resume from checkpoint.")
+                       "called. Will resume from checkpoint.")
             while True:
                 ttime.sleep(0.5)
                 if not self._sm.is_paused:
@@ -573,9 +574,8 @@ class RunEngine:
         self.debug("*** Rerunning from checkpoint...")
         for msg in self._msg_cache:
             response = self._command_registry[msg.command](msg)
-            self.debug('{}\n   ret: {} '
-                '(On rerun, responses are not sent.)'.format(
-                msg, response))
+            self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
+                       ''.format(msg, response))
 
     def emit(self, name, doc):
         self._scan_cb_registry.process(name, doc)
@@ -665,7 +665,7 @@ def _fill_missing_fields(data_keys):
         result[key] = {}
         # required keys
         result[key]['source'] = value.get('source')
-        result[key]['dtype']  = value.get('dtype', 'number')  # just guessing
+        result[key]['dtype'] = value.get('dtype', 'number')  # just guessing
         # optional keys
         if 'shape' in value:
             result[key]['shape'] = value['shape']
