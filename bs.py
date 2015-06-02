@@ -279,7 +279,7 @@ class RunEngine:
         if hard:
             self._sm.hard_pause()
         else:
-            if self._sm.is_hard_pausing():
+            if self._sm.is_hard_pausing:
                 self._sm.soft_pause()
             # If we are already *hard* pausing, silently ignore this request.
 
@@ -409,7 +409,8 @@ class RunEngine:
             self.emit('stop', doc)
             self.debug("*** Emitted RunStop:\n%s" % doc)
             sys.stdout.flush()
-            self._sm.stop()
+            if self._sm.is_aborting or self._sm.is_running:
+                self._sm.stop()
 
     def _create(self, msg):
         self._read_cache.clear()
