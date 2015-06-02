@@ -1,7 +1,124 @@
-from bs import Msg
+from .bs import Msg
 from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
+
+
+def simple_scan(motor):
+    yield Msg('set', motor, {'pos': 5})
+    yield Msg('read', motor)
+
+
+def conditional_break(motor, det, threshold):
+    """Set, trigger, read until the detector reads intensity < threshold"""
+    i = 0
+    while True:
+        print("LOOP %d" % i)
+        yield Msg('set', motor, {'pos': i})
+        yield Msg('trigger', det)
+        reading = yield Msg('read', det)
+        if reading['intensity']['value'] < threshold:
+            print('DONE')
+            break
+        i += 1
+
+
+def sleepy(motor, det):
+    "Set, trigger motor, sleep for a fixed time, trigger detector, read"
+    yield Msg('set', motor, {'pos': 5})
+    yield Msg('sleep', None, 2)  # units: seconds
+    yield Msg('trigger', det)
+    yield Msg('read', det)
+
+
+def wait_one(motor, det):
+    "Set, trigger, read"
+    yield Msg('set', motor, {'pos': 5}, block_group='A')  # Add to group 'A'.
+    yield Msg('wait', None, 'A')  # Wait for everything in group 'A' to finish.
+    yield Msg('trigger', det)
+    yield Msg('read', det)
+
+def wait_multiple(motors, det):
+    "Set motors, trigger all motors, wait for all motors to move."
+    for motor in motors:
+        yield Msg('set', motor, {'pos': 5}, block_group='A')
+    # Wait for everything in group 'A' to report done.
+    yield Msg('wait', None, 'A')
+    yield Msg('trigger', det)
+    yield Msg('read', det)
+
+def wait_complex(motors, det):    
+    "Set motors, trigger motors, wait for all motors to move in groups."
+    # Same as above...
+    for motor in motors[:-1]:
+        yield Msg('set', motor, {'pos': 5}, block_group='A')
+        
+    # ...but put the last motor is separate group.
+    yield Msg('set', motors[-1], {'pos': 5}, block_group='B')
+    # Wait for everything in group 'A' to report done.
+    yield Msg('wait', None, 'A')
+    yield Msg('trigger', det)
+    yield Msg('read', det)
+    
+    # Wait for everything in group 'B' to report done.
+    yield Msg('wait', None, 'B')
+    yield Msg('trigger', det)
+    yield Msg('read', det)
+
+def conditional_hard_pause(motor, det):
+    for i in range(5):
+        yield Msg('checkpoint')
+        yield Msg('set', motor, {'pos': i})
+        yield Msg('trigger', det)
+        reading = yield Msg('read', det)
+        if reading['intensity']['value'] < 0.2:
+            yield Msg('pause', hard=True)
+
+
+def conditional_soft_pause(motor, det):
+    for i in range(5):
+        yield Msg('checkpoint')
+        yield Msg('set', motor, {'pos': i})
+        yield Msg('trigger', det)
+        reading = yield Msg('read', det)
+        if reading['intensity']['value'] < 0.2:
+            yield Msg('pause', hard=False)
+        # If a soft pause is requested, the Run Engine will
+        # still execute these messages before pausing.
+        yield Msg('set', motor, {'pos': i + 0.5})
+
+def simple_scan_saving(motor, det):
+    "Set, trigger, read"
+    yield Msg('create')
+    yield Msg('set', motor, {'pos': 5})
+    yield Msg('read', motor)
+    yield Msg('trigger', det)
+    yield Msg('read', det)
+    yield Msg('save')
+
+def stepscan(motor, detector):
+    for i in range(-5, 5):
+        yield Msg('create')
+        yield Msg('set', motor, {'pos': i})
+        yield Msg('trigger', motor)
+        yield Msg('trigger', det)
+        yield Msg('read', motor)
+        yield Msg('read', detector)
+        yield Msg('save')
+
+def live_scalar_plotter(ax, y, x):
+    x_data, y_data = [], []
+    line, = ax.plot([], [], 'ro', markersize=10)
+    def update_plot(doc):
+        # Update with the latest data.
+        x_data.append(doc['data'][x]['value'])
+        y_data.append(doc['data'][y]['value'])
+        line.set_data(x_data, y_data)
+        # Rescale and redraw.
+        ax.relim(visible_only=True)
+        ax.autoscale_view(tight=True)
+        ax.figure.canvas.draw()
+    return update_plot
 
 
 def MoveRead_gen(motor, detector):
