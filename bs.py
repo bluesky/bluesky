@@ -10,7 +10,7 @@ from enum import Enum
 from super_state_machine.machines import StateMachine
 import numpy as np
 
-from utils import CallbackRegistry, SignalHandler
+from .utils import CallbackRegistry, SignalHandler
 
 
 beamline_id = 'test'
