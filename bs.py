@@ -175,9 +175,15 @@ class RunEngineStateMachine(StateMachine):
     class States(Enum):
         IDLE = 'idle'
         RUNNING = 'running'
-        ABORTING = 'aborting'  # abort has been requested but not completed
-        SOFT_PAUSING = 'soft_pausing'  # likewise for soft pause
-        HARD_PAUSING = 'hard_pausing'  # ditto
+        # abort has been requested but the state machine is not yet in the
+        # IDLE state
+        ABORTING = 'aborting'
+        # soft pause has been requested but the state machine is not yet
+        # in the PAUSED state
+        SOFT_PAUSING = 'soft_pausing'
+        # hard pause has been requested but the state machine is not yet
+        # in the PAUSED state
+        HARD_PAUSING = 'hard_pausing'
         PAUSED = 'paused'
         PANICKED = 'panicked'
 
@@ -304,6 +310,17 @@ class RunEngine:
         self._queues[name].put(doc)
 
     def run(self, gen, subscriptions={}, use_threading=True):
+        """Run the scan defined by ``gen``
+
+        Parameters
+        ----------
+        gen : generator
+            A generator that yields ``Msg`` objects
+        subscriptions : dict
+            Temporary subscriptions to be added for this call to ``run()`` only
+        use_threading : bool
+            duh.
+        """
         self._sm.run()
         self.clear()
         for name, func in subscriptions.items():
