@@ -1,4 +1,4 @@
-from .bs import Msg
+from bs import Msg
 from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
@@ -79,3 +79,45 @@ def fly_gen(flyer):
     yield Msg('collect', flyer)
     yield Msg('kickoff', flyer)
     yield Msg('collect', flyer)
+
+
+def adaptive_scan(motor, detector, motor_name, detector_name, start,
+                  stop, min_step, max_step, target_dI):
+    next_pos = start
+    step = (max_step - min_step) / 2
+
+    past_I = None
+    cur_I = None
+    while next_pos < stop:
+        yield Msg('set', motor, {motor_name: next_pos})
+        yield Msg('sleep', None, .1)
+        yield Msg('create')
+        yield Msg('trigger', motor)
+        yield Msg('trigger', detector)
+        cur_det = yield Msg('read', detector)
+        yield Msg('read', motor)
+        yield Msg('save')
+
+        cur_I = cur_det[detector_name]['value']
+
+        # special case first first loop
+        if past_I is None:
+            past_I = cur_I
+            next_pos += step
+            continue
+
+        dI = np.abs(cur_I - past_I)
+
+        slope = dI / step
+
+        new_step = np.clip(target_dI / slope, min_step, max_step)
+        # if we over stepped, go back and try again
+        if new_step < step * 0.8:
+            next_pos -= step
+        else:
+            past_I = cur_I
+        print(step, new_step)
+        step = new_step
+
+        next_pos += step
+        print('********', next_pos, step, past_I, slope, dI,  '********')
