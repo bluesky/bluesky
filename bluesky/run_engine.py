@@ -7,11 +7,18 @@ import signal
 import threading
 from queue import Queue, Empty
 from enum import Enum
+
 from super_state_machine.machines import StateMachine
 import numpy as np
 
 from .utils import CallbackRegistry, SignalHandler
 
+
+__all__ = ['Msg', 'Base', 'Reader', 'Mover', 'SynGauss', 'FlyMagic',
+           'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
+           'PanicStateError', 'RunInterrupt']
+
+# todo boo, hardcoded defaults
 beamline_id = 'test'
 owner = 'tester'
 custom = {}
@@ -314,6 +321,7 @@ class RunEngine:
     def _push_to_queue(self, name, doc):
         self._queues[name].put(doc)
 
+    # todo remove the mutable from this function sig!!
     def run(self, gen, subscriptions={}, use_threading=True):
         """Run the scan defined by ``gen``
 

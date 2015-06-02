@@ -1,27 +1,29 @@
-import metadatastore.commands as mdscmd
+import metadatastore.api as mds
 import time as ttime
+
+__all__ = ['register_mds']
 
 
 def _make_blc():
-    return mdscmd.insert_beamline_config({}, time=ttime.time())
+    return mds.insert_beamline_config({}, time=ttime.time())
 
 
 # For why this function is necessary, see
 # http://stackoverflow.com/a/13355291/1221924
-def make_insert_func(func):
+def _make_insert_func(func):
     return lambda doc: func(**doc)
 
 
-def insert_run_start(doc):
+def _insert_run_start(doc):
     "Add a beamline config that, for now, only knows the time."
     doc['beamline_config'] = _make_blc()
-    return make_insert_func(mdscmd.insert_run_start)(doc)
+    return _make_insert_func(mds.insert_run_start)(doc)
 
 
-insert_funcs = {'event': make_insert_func(mdscmd.insert_event),
-                'descriptor': make_insert_func(mdscmd.insert_event_descriptor),
-                'start': insert_run_start,  # special case; see above
-                'stop': make_insert_func(mdscmd.insert_run_stop)}
+insert_funcs = {'event': _make_insert_func(mds.insert_event),
+                'descriptor': _make_insert_func(mds.insert_event_descriptor),
+                'start': _insert_run_start,  # special case; see above
+                'stop': _make_insert_func(mds.insert_run_stop)}
 
 
 def register_mds(runengine):

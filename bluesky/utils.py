@@ -3,6 +3,9 @@ from weakref import ref, WeakKeyDictionary
 import types
 
 
+__all__ = ['SignalHandler', 'CallbackRegistry']
+
+
 class SignalHandler:
     def __init__(self, sig):
         self.sig = sig
@@ -78,7 +81,6 @@ class CallbackRegistry:
             if len(self.callbacks[sig]) == 0:
                 del self.callbacks[sig]
                 del self._func_cid_map[sig]
-
 
     def disconnect(self, cid):
         """

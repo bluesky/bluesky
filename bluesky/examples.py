@@ -1,4 +1,5 @@
 from .bs import Msg
+from .run_engine import Msg
 from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
@@ -47,19 +48,19 @@ def wait_multiple(motors, det):
     yield Msg('trigger', det)
     yield Msg('read', det)
 
-def wait_complex(motors, det):    
+def wait_complex(motors, det):
     "Set motors, trigger motors, wait for all motors to move in groups."
     # Same as above...
     for motor in motors[:-1]:
         yield Msg('set', motor, {'pos': 5}, block_group='A')
-        
+
     # ...but put the last motor is separate group.
     yield Msg('set', motors[-1], {'pos': 5}, block_group='B')
     # Wait for everything in group 'A' to report done.
     yield Msg('wait', None, 'A')
     yield Msg('trigger', det)
     yield Msg('read', det)
-    
+
     # Wait for everything in group 'B' to report done.
     yield Msg('wait', None, 'B')
     yield Msg('trigger', det)
