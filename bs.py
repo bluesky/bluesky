@@ -70,25 +70,28 @@ class Mover(Base):
         self._data = {k: {'value': 0, 'timestamp': ttime.time()}
                       for k in self._fields}
         self._staging = None
-        self.moving = False
+        self.ready = True
 
     def read(self):
         return dict(self._data)
 
-    def set(self, new_values):
+    def set(self, new_values, *, trigger=True, block_group=None):
+        # If trigger is False, wait for a separate 'trigger' command to move.
+        if not trigger:
+            raise NotImplementedError
+        # block_group is handled by the RunEngine
+        self.ready = False
         if set(new_values) - set(self._data):
             raise ValueError('setting non-existent field')
         self._staging = new_values
 
-    def trigger(self, *, block_group=None):
         # block_group is handled by the RunEngine
-        self.moving = True
         ttime.sleep(0.1)  # simulate moving time
         if self._staging:
             for k, v in self._staging.items():
                 self._data[k] = {'value': v, 'timestamp': ttime.time()}
 
-        self.moving = False
+        self.ready = True
         self._staging = None
 
     def settle(self):
@@ -108,16 +111,20 @@ class SynGauss(Reader):
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
         super(SynGauss, self).__init__(name, 'I')
+        self.ready = True
         self._motor = motor
         self._motor_field = motor_field
         self.center = center
         self.Imax = Imax
         self.sigma = sigma
 
-    def trigger(self):
+    def trigger(self, *, block_group=True):
+        self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
         self._data = {'intensity': {'value': v, 'timestamp': ttime.time()}}
+        ttime.sleep(0.05)  # simulate exposure time
+        self.ready = True
 
     def read(self):
         return self._data
@@ -491,6 +498,9 @@ class RunEngine:
         pass
 
     def _set(self, msg):
+        if 'block_group' in msg.kwargs:
+            group = msg.kwargs['block_group']
+            self._block_groups[group].add(msg.obj)
         return msg.obj.set(*msg.args, **msg.kwargs)
 
     def _trigger(self, msg):
@@ -505,7 +515,7 @@ class RunEngine:
         group = msg.kwargs.get('group', msg.args[0])
         objs = self._block_groups[group]
         while True:
-            if not any([obj.moving for obj in objs]):
+            if all([obj.ready for obj in objs]):
                 break
         del self._block_groups[group]
         return objs
