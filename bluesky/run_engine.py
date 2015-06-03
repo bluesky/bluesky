@@ -299,6 +299,7 @@ class RunEngine(object):
         self.state = self._sm.state
         self._sigint_handler = None
         self._sigtstp_handler = None
+        self._pause_requests = deque()  # holding {<name>: callable}
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
         self._describe_cache = dict()  # cache of all obj.describe() output
@@ -369,15 +370,40 @@ class RunEngine(object):
     def all_is_well(self):
         self._sm.all_is_well()
 
-    def request_pause(self, hard=False):
-        # to be called by other threads
-        # Ctrl+Z and Ctrl+C also set these
+    def request_pause(self, hard=True, name=None, callback=None):
+        """
+        Command the Run Engine to pause.
+
+        This function is called by 'pause' Messages. It can also be called
+        by other threads. It cannot be called on the main thread during a run,
+        but it is called by SIGINT (i.e., Ctrl+C).
+
+        If there current run has no checkpoint commands, this will cause the
+        run to abort.
+
+        Parameters
+        ----------
+        hard : bool, optional
+            If True, issue a 'hard pause' that stops at the next message.
+            If False, issue a 'soft pause' that stops at the next checkpoint.
+            True by default.
+        name : str, optional
+            Identify the source/reason for this pause. Required if there is a
+            callback, below.
+        callback : callable, optional
+            "Permission to resume." Until this callable returns True, the Run
+            Engine will not be allowed to resume. If None, 
+        """
         if hard:
             self._sm.hard_pause()
         else:
-            if self._sm.is_hard_pausing:
+            if not self._sm.is_hard_pausing:
                 self._sm.soft_pause()
-            # If we are already *hard* pausing, silently ignore this request.
+        if callback is not None:
+            if name is None:
+                raise ValueError("Pause requests with a callback must include "
+                                 "a name.")
+            self._pause_requests.append({name: callback})
 
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
@@ -426,8 +452,27 @@ class RunEngine(object):
             self.dispatcher.process_all_queues()  # catch any stragglers
 
     def resume(self):
+        """Resume a run from the last checkpoint.
+
+        Returns
+        -------
+        outstanding_pause_requests : list or None
+            If any pause requests have not been released, a list of their names
+            is immediately returned. Otherwise, after the run completes, this
+            returns None.
+        """
+        outstanding_requests = []
+        for name, func in self._pause_requests.items():
+            if func():
+                # We have permission to continue. Clear the request.
+                del self._pause_requests[name]
+            else:
+                outstanding_requests.append(name)
+        if outstanding_requests:
+            return outstanding_requests
         self._sm.resume()
         self._resume()
+        return None 
 
     def _resume(self):
         # This could be as a result of self.resume() or self.abort().
@@ -465,7 +510,7 @@ class RunEngine(object):
                 # Check for pause requests from keyboard.
                 if self._sigint_handler.interrupted:
                     self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-                    self.request_pause(hard=True)
+                    self.request_pause(hard=True, name='SIGINT')
                     self._sigint_handler.interrupted = False
 
                 # If a hard pause was requested, sleep.
@@ -502,6 +547,7 @@ class RunEngine(object):
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
                 response = self._command_registry[msg.command](msg)
+                self.debug('RE.state: ' + self.state)
 
                 self.debug('{}\n   ret: {}'.format(msg, response))
         except StopIteration:
