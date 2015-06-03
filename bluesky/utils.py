@@ -3,6 +3,9 @@ from weakref import ref, WeakKeyDictionary
 import types
 
 
+__all__ = ['SignalHandler', 'CallbackRegistry']
+
+
 class SignalHandler:
     def __init__(self, sig):
         self.sig = sig
@@ -32,7 +35,8 @@ class SignalHandler:
 
 class CallbackRegistry:
     """
-    See matplotlib.cbook.CallbackRegistry. This is simplified, being py3 only.
+    See matplotlib.cbook.CallbackRegistry. This is a simplified since
+    ``bluesky`` is python3.4+ only!
     """
     def __init__(self):
         self.callbacks = dict()
@@ -48,24 +52,34 @@ class CallbackRegistry:
         # re-initialise an empty callback registry
         self.__init__()
 
-    def connect(self, s, func):
+    def connect(self, sig, func):
+        """Register ``func`` to be called when ``sig`` is generated
+
+        Parameters
+        ----------
+        sig
+        func
+
+        Returns
+        -------
+        cid : int
+            The callback index. To be used with ``disconnect`` to deregister
+            ``func`` so that it will no longer be called when ``sig`` is
+            generated
         """
-        register *func* to be called when a signal *s* is generated
-        func will be called
-        """
-        self._func_cid_map.setdefault(s, WeakKeyDictionary())
+        self._func_cid_map.setdefault(sig, WeakKeyDictionary())
         # Note proxy not needed in python 3.
         # TODO rewrite this when support for python2.x gets dropped.
         proxy = _BoundMethodProxy(func)
-        if proxy in self._func_cid_map[s]:
-            return self._func_cid_map[s][proxy]
+        if proxy in self._func_cid_map[sig]:
+            return self._func_cid_map[sig][proxy]
 
         proxy.add_destroy_callback(self._remove_proxy)
         self._cid += 1
         cid = self._cid
-        self._func_cid_map[s][proxy] = cid
-        self.callbacks.setdefault(s, dict())
-        self.callbacks[s][cid] = proxy
+        self._func_cid_map[sig][proxy] = cid
+        self.callbacks.setdefault(sig, dict())
+        self.callbacks[sig][cid] = proxy
         return cid
 
     def _remove_proxy(self, proxy):
@@ -79,10 +93,13 @@ class CallbackRegistry:
                 del self.callbacks[sig]
                 del self._func_cid_map[sig]
 
-
     def disconnect(self, cid):
-        """
-        disconnect the callback registered with callback id *cid*
+        """Disconnect the callback registered with callback id *cid*
+
+        Parameters
+        ----------
+        cid : int
+            The callback index and return value from ``connect``
         """
         for eventname, callbackd in self.callbacks.items():
             try:
@@ -96,17 +113,24 @@ class CallbackRegistry:
                             del functions[function]
                 return
 
-    def process(self, s, *args, **kwargs):
+    def process(self, sig, *args, **kwargs):
+        """Process ``sig``
+
+        All of the functions registered to receive callbacks on ``sig``
+        will be called with ``args`` and ``kwargs``
+
+        Parameters
+        ----------
+        sig
+        args
+        kwargs
         """
-        process signal *s*.  All of the functions registered to receive
-        callbacks on *s* will be called with *\*args* and *\*\*kwargs*
-        """
-        if s in self.callbacks:
-            for cid, proxy in self.callbacks[s].items():
+        if sig in self.callbacks:
+            for cid, func in self.callbacks[sig].items():
                 try:
-                    proxy(*args, **kwargs)
+                    func(*args, **kwargs)
                 except ReferenceError:
-                    self._remove_proxy(proxy)
+                    self._remove_proxy(func)
 
 class _BoundMethodProxy:
     '''

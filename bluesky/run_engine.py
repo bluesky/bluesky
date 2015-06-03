@@ -7,12 +7,18 @@ import signal
 import threading
 from queue import Queue, Empty
 from enum import Enum
+
 from super_state_machine.machines import StateMachine
 import numpy as np
 
 from .utils import CallbackRegistry, SignalHandler
 
 
+__all__ = ['Msg', 'Base', 'Reader', 'Mover', 'SynGauss', 'FlyMagic',
+           'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
+           'PanicStateError', 'RunInterrupt']
+
+# todo boo, hardcoded defaults
 beamline_id = 'test'
 owner = 'tester'
 custom = {}
@@ -85,6 +91,12 @@ class Mover(Base):
             raise ValueError('setting non-existent field')
         self._staging = new_values
 
+    def trigger(self, *, block_group=None):
+        """
+
+        In case future readers wonder what in the hell this bare asterix is,
+        http://stackoverflow.com/questions/2965271/forced-naming-of-parameters-in-python/14298976#14298976
+        """
         # block_group is handled by the RunEngine
         ttime.sleep(0.1)  # simulate moving time
         if self._staging:
@@ -142,7 +154,7 @@ class FlyMagic(Base):
         self._fly_count = 0
 
     def reset(self):
-        self._fly_count= 0
+        self._fly_count = 0
 
     def kickoff(self):
         self._time = ttime.time()
@@ -163,7 +175,7 @@ class FlyMagic(Base):
                   'data': {self._motor: x,
                            self._det: y},
                   'timestamps': {self._motor: t,
-                           self._det: t}
+                                 self._det: t}
                   }
 
             yield ev
@@ -171,13 +183,55 @@ class FlyMagic(Base):
 
 
 class RunEngineStateMachine(StateMachine):
+    """
+
+    >>> # Using the state machine See ``examples/state_machine.py``
+    >>> sm = RunEngineStateMachine()
+    >>> sm.state
+    'idle'
+
+    # changing states
+    # sm.set_[[state.value]]()
+    >>> sm.set_running()
+    >>> sm.state()
+    'running'
+
+    # or use a named transition
+    >>> sm.stop()
+    >>> sm.state()
+    'idle'
+
+    # or assign a new state directly to the state of the state machine
+    >>> sm.state = 'panicked'
+    >>> sm.state
+    'panicked'
+    >>> sm.all_is_well()
+    >>> sm.state
+    'idle'
+
+    # or use the minimum amount of information necessary to change states
+    >>> sm.state = 'pan'
+    >>> sm.state
+    'panicked'
+    >>> sm.state = 'i'
+    >>> sm.state
+    'idle'
+
+    """
 
     class States(Enum):
+        """state.name = state.value"""
         IDLE = 'idle'
         RUNNING = 'running'
-        ABORTING = 'aborting'  # abort has been requested but not completed
-        SOFT_PAUSING = 'soft_pausing'  # likewise for soft pause
-        HARD_PAUSING = 'hard_pausing'  # ditto
+        # abort has been requested but the state machine is not yet in the
+        # IDLE state
+        ABORTING = 'aborting'
+        # soft pause has been requested but the state machine is not yet
+        # in the PAUSED state
+        SOFT_PAUSING = 'soft_pausing'
+        # hard pause has been requested but the state machine is not yet
+        # in the PAUSED state
+        HARD_PAUSING = 'hard_pausing'
         PAUSED = 'paused'
         PANICKED = 'panicked'
 
@@ -194,6 +248,15 @@ class RunEngineStateMachine(StateMachine):
             ('resume', 'running', ['paused']),
             ('abort', 'aborting', ['paused']),
             ('all_is_well', 'idle', ['panicked', 'idle']),
+        ]
+        named_checkers = [
+            ('panicked', 'panicked'),
+            ('paused', 'paused'),
+            ('hard_pausing', 'hard_pausing'),
+            ('soft_pausing', 'soft_pausing'),
+            ('aborting', 'aborting'),
+            ('running', 'running'),
+            ('idle', 'idle'),
         ]
 
 
@@ -294,7 +357,19 @@ class RunEngine:
     def _push_to_queue(self, name, doc):
         self._queues[name].put(doc)
 
+    # todo remove the mutable from this function sig!!
     def run(self, gen, subscriptions={}, use_threading=True):
+        """Run the scan defined by ``gen``
+
+        Parameters
+        ----------
+        gen : generator
+            A generator that yields ``Msg`` objects
+        subscriptions : dict
+            Temporary subscriptions to be added for this call to ``run()`` only
+        use_threading : bool
+            duh.
+        """
         self._sm.run()
         self.clear()
         for name, func in subscriptions.items():
@@ -385,7 +460,8 @@ class RunEngine:
                 # for a 'checkpoint' command to catch it (see self._checkpoint).
                 if self._sm.is_soft_pausing:
                     self.debug("*** Soft pause requested. Continuing to "
-                        "process messages until the next 'checkpoint' command.")
+                               "process messages until the next 'checkpoint' "
+                               "command.")
 
                 # Normal operation
                 msg = gen.send(response)
@@ -532,7 +608,7 @@ class RunEngine:
         if self._sm.is_soft_pausing:
             self._sm.pause()  # soft_pausing -> paused
             self.debug("*** Checkpoint reached. Sleeping until resume() is "
-                  "called. Will resume from checkpoint.")
+                       "called. Will resume from checkpoint.")
             while True:
                 ttime.sleep(0.5)
                 if not self._sm.is_paused:
@@ -542,9 +618,8 @@ class RunEngine:
         self.debug("*** Rerunning from checkpoint...")
         for msg in self._msg_cache:
             response = self._command_registry[msg.command](msg)
-            self.debug('{}\n   ret: {} '
-                '(On rerun, responses are not sent.)'.format(
-                msg, response))
+            self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
+                       ''.format(msg, response))
 
     def emit(self, name, doc):
         self._scan_cb_registry.process(name, doc)
@@ -634,7 +709,7 @@ def _fill_missing_fields(data_keys):
         result[key] = {}
         # required keys
         result[key]['source'] = value.get('source')
-        result[key]['dtype']  = value.get('dtype', 'number')  # just guessing
+        result[key]['dtype'] = value.get('dtype', 'number')  # just guessing
         # optional keys
         if 'shape' in value:
             result[key]['shape'] = value['shape']
