@@ -183,8 +183,44 @@ class FlyMagic(Base):
 
 
 class RunEngineStateMachine(StateMachine):
+    """
+
+    >>> # Using the state machine See ``examples/state_machine.py``
+    >>> sm = RunEngineStateMachine()
+    >>> sm.state
+    'idle'
+
+    # changing states
+    # sm.set_[[state.value]]()
+    >>> sm.set_running()
+    >>> sm.state()
+    'running'
+
+    # or use a named transition
+    >>> sm.stop()
+    >>> sm.state()
+    'idle'
+
+    # or assign a new state directly to the state of the state machine
+    >>> sm.state = 'panicked'
+    >>> sm.state
+    'panicked'
+    >>> sm.all_is_well()
+    >>> sm.state
+    'idle'
+
+    # or use the minimum amount of information necessary to change states
+    >>> sm.state = 'pan'
+    >>> sm.state
+    'panicked'
+    >>> sm.state = 'i'
+    >>> sm.state
+    'idle'
+
+    """
 
     class States(Enum):
+        """state.name = state.value"""
         IDLE = 'idle'
         RUNNING = 'running'
         # abort has been requested but the state machine is not yet in the
