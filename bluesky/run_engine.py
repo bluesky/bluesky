@@ -260,14 +260,16 @@ class RunEngineStateMachine(StateMachine):
         allow_empty = False
         initial_state = 'idle'
         transitions = {
-            # to_state : [valid_from_states]
-            'idle': ['aborting', 'running', 'panicked', 'idle'],
-            'running': ['idle', 'paused'],
-            'aborting': ['paused'],
-            'soft_pausing': ['running', 'soft_pausing'],
-            'hard_pausing': ['running', 'soft_pausing', 'hard_pausing'],
-            'paused': ['soft_pausing', 'hard_pausing'],
-            # can transit to 'panicked' from any other state
+            # Notice that 'transitions' and 'named_transitions' have
+            # opposite to <--> from structure.
+            # from_state : [valid_to_states]
+            'idle': ['running', 'panicked'],
+            'running': ['idle', 'soft_pausing', 'hard_pausing', 'panicked'],
+            'aborting': ['idle', 'panicked'],
+            'soft_pausing': ['paused', 'panicked'],
+            'hard_pausing': ['paused', 'panicked'],
+            'paused': ['aborting', 'running', 'panicked'],
+            'panicked': ['idle'],
         }
         named_transitions = [
             # (transition_name, to_state : [valid_from_states])
