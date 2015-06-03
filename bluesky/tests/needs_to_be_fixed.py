@@ -1,7 +1,7 @@
 import nose
 from nose.tools import assert_equal, assert_is, assert_is_none, assert_raises
-from .examples import *
-from .bs import RunEngine, Mover, SynGauss, RunInterrupt
+from bluesky.examples import *
+from bluesky import RunEngine, Mover, SynGauss, RunInterrupt, Msg
 
 
 # global utility vars defined in setup()
