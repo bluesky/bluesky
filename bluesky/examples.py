@@ -1,4 +1,4 @@
-from .bs import Msg
+from . import Msg
 from .run_engine import Msg
 from collections import deque
 import numpy as np
@@ -39,6 +39,7 @@ def wait_one(motor, det):
     yield Msg('trigger', det)
     yield Msg('read', det)
 
+
 def wait_multiple(motors, det):
     "Set motors, trigger all motors, wait for all motors to move."
     for motor in motors:
@@ -47,6 +48,7 @@ def wait_multiple(motors, det):
     yield Msg('wait', None, 'A')
     yield Msg('trigger', det)
     yield Msg('read', det)
+
 
 def wait_complex(motors, det):
     "Set motors, trigger motors, wait for all motors to move in groups."
@@ -65,6 +67,7 @@ def wait_complex(motors, det):
     yield Msg('wait', None, 'B')
     yield Msg('trigger', det)
     yield Msg('read', det)
+
 
 def conditional_hard_pause(motor, det):
     for i in range(5):
@@ -88,6 +91,7 @@ def conditional_soft_pause(motor, det):
         # still execute these messages before pausing.
         yield Msg('set', motor, {'pos': i + 0.5})
 
+
 def simple_scan_saving(motor, det):
     "Set, trigger, read"
     yield Msg('create')
@@ -97,19 +101,22 @@ def simple_scan_saving(motor, det):
     yield Msg('read', det)
     yield Msg('save')
 
+
 def stepscan(motor, detector):
     for i in range(-5, 5):
         yield Msg('create')
         yield Msg('set', motor, {'pos': i})
         yield Msg('trigger', motor)
-        yield Msg('trigger', det)
+        yield Msg('trigger', detector)
         yield Msg('read', motor)
         yield Msg('read', detector)
         yield Msg('save')
 
+
 def live_scalar_plotter(ax, y, x):
     x_data, y_data = [], []
     line, = ax.plot([], [], 'ro', markersize=10)
+
     def update_plot(doc):
         # Update with the latest data.
         x_data.append(doc['data'][x]['value'])
