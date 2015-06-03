@@ -50,7 +50,7 @@ def test_msgs():
 def test_simple():
     RE.run(simple_scan(motor))
 
-def test_adaptive():
+def test_conditional_break():
     RE.run(conditional_break(motor, det, threshold=0.2))
 
 def test_sleepy():
