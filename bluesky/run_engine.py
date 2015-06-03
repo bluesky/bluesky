@@ -185,7 +185,30 @@ class FlyMagic(Base):
 class RunEngineStateMachine(StateMachine):
     """
 
-    >>> # Using the state machine See ``examples/state_machine.py``
+    Attributes
+    ----------
+    idle
+        State machine is in its idle state
+    running
+        State machine is in its running state
+    aborting
+        State machine has been asked to abort but is not yet ``idle``
+    soft_pausing
+        State machine has been asked to enter a soft pause but is not yet in
+        its ``paused`` state
+    hard_pausing
+        State machine has been asked to enter a hard pause but is not yet in
+        its ``paused`` state
+    paused
+        State machine is paused.
+    panicked
+        State machine has encountered a critical error and the run cannot be
+        resumed.
+
+    Example
+    -------
+    # Using the state machine See ``examples/state_machine.py`` or
+    # ``examples/bluesky state machine.ipynb``
     >>> sm = RunEngineStateMachine()
     >>> sm.state
     'idle'
@@ -223,14 +246,8 @@ class RunEngineStateMachine(StateMachine):
         """state.name = state.value"""
         IDLE = 'idle'
         RUNNING = 'running'
-        # abort has been requested but the state machine is not yet in the
-        # IDLE state
         ABORTING = 'aborting'
-        # soft pause has been requested but the state machine is not yet
-        # in the PAUSED state
         SOFT_PAUSING = 'soft_pausing'
-        # hard pause has been requested but the state machine is not yet
-        # in the PAUSED state
         HARD_PAUSING = 'hard_pausing'
         PAUSED = 'paused'
         PANICKED = 'panicked'
