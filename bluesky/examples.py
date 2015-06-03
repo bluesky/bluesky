@@ -102,14 +102,13 @@ def simple_scan_saving(motor, det):
     yield Msg('save')
 
 
-def stepscan(motor, detector):
+def stepscan(motor, det):
     for i in range(-5, 5):
         yield Msg('create')
         yield Msg('set', motor, {'pos': i})
-        yield Msg('trigger', motor)
-        yield Msg('trigger', detector)
+        yield Msg('trigger', det)
         yield Msg('read', motor)
-        yield Msg('read', detector)
+        yield Msg('read', det)
         yield Msg('save')
 
 
@@ -119,8 +118,8 @@ def live_scalar_plotter(ax, y, x):
 
     def update_plot(doc):
         # Update with the latest data.
-        x_data.append(doc['data'][x]['value'])
-        y_data.append(doc['data'][y]['value'])
+        x_data.append(doc['data'][x])
+        y_data.append(doc['data'][y])
         line.set_data(x_data, y_data)
         # Rescale and redraw.
         ax.relim(visible_only=True)
@@ -134,7 +133,6 @@ def MoveRead_gen(motor, detector):
         for j in range(10):
             yield Msg('create')
             yield Msg('set', motor, {'x': j})
-            yield Msg('trigger', motor)
             yield Msg('trigger', detector)
             yield Msg('read', detector)
             yield Msg('read', motor)
