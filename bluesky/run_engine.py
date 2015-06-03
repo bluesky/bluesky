@@ -252,6 +252,10 @@ class RunEngineStateMachine(StateMachine):
         PAUSED = 'paused'
         PANICKED = 'panicked'
 
+        @classmethod
+        def states(cls):
+            return [state.value for state in cls]
+
     class Meta:
         allow_empty = False
         initial_state = 'idle'
@@ -277,8 +281,9 @@ class RunEngineStateMachine(StateMachine):
         ]
 
 
-class RunEngine:
+class RunEngine(object):
     def __init__(self):
+        super(RunEngine, self).__init__()
         self._sm = RunEngineStateMachine()
         self.state = self._sm.state
         self._sigint_handler = None
