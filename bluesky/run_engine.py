@@ -268,13 +268,8 @@ class RunEngineStateMachine(StateMachine):
             ('all_is_well', 'idle', ['panicked', 'idle']),
         ]
         named_checkers = [
-            ('panicked', 'panicked'),
-            ('paused', 'paused'),
-            ('hard_pausing', 'hard_pausing'),
-            ('soft_pausing', 'soft_pausing'),
-            ('aborting', 'aborting'),
-            ('running', 'running'),
-            ('idle', 'idle'),
+            ('can_hard_pause', 'hard_pausing'),
+            ('can_soft_pause', 'soft_pausing'),
         ]
 
 
