@@ -73,38 +73,21 @@ class Mover(Base):
 
     def __init__(self, *args, **kwargs):
         super(Mover, self).__init__(*args, **kwargs)
-        self._data = {k: {'value': 0, 'timestamp': ttime.time()}
-                      for k in self._fields}
-        self._staging = None
+        self._data = {'pos': {'value': 0, 'timestamp': ttime.time()}}
         self.ready = True
 
     def read(self):
-        return dict(self._data)
+        return self._data
 
-    def set(self, new_values, *, trigger=True, block_group=None):
+    def set(self, val, *, trigger=True, block_group=None):
         # If trigger is False, wait for a separate 'trigger' command to move.
         if not trigger:
             raise NotImplementedError
         # block_group is handled by the RunEngine
         self.ready = False
-        if set(new_values) - set(self._data):
-            raise ValueError('setting non-existent field')
-        self._staging = new_values
-
-    def trigger(self, *, block_group=None):
-        """
-
-        In case future readers wonder what in the hell this bare asterix is,
-        http://stackoverflow.com/questions/2965271/forced-naming-of-parameters-in-python/14298976#14298976
-        """
-        # block_group is handled by the RunEngine
         ttime.sleep(0.1)  # simulate moving time
-        if self._staging:
-            for k, v in self._staging.items():
-                self._data[k] = {'value': v, 'timestamp': ttime.time()}
-
+        self._data = {'pos': {'value': val, 'timestamp': ttime.time()}}
         self.ready = True
-        self._staging = None
 
     def settle(self):
         pass
