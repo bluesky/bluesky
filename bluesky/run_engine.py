@@ -185,45 +185,6 @@ class RunEngineStateMachine(StateMachine):
         its ``paused`` state
     paused
         State machine is paused.
-    panicked
-        State machine has encountered a critical error and the run cannot be
-        resumed.
-
-    Example
-    -------
-    # Using the state machine See ``examples/state_machine.py`` or
-    # ``examples/bluesky state machine.ipynb``
-    >>> sm = RunEngineStateMachine()
-    >>> sm.state
-    'idle'
-
-    # changing states
-    # sm.set_[[state.value]]()
-    >>> sm.set_running()
-    >>> sm.state()
-    'running'
-
-    # or use a named transition
-    >>> sm.stop()
-    >>> sm.state()
-    'idle'
-
-    # or assign a new state directly to the state of the state machine
-    >>> sm.state = 'panicked'
-    >>> sm.state
-    'panicked'
-    >>> sm.all_is_well()
-    >>> sm.state
-    'idle'
-
-    # or use the minimum amount of information necessary to change states
-    >>> sm.state = 'pan'
-    >>> sm.state
-    'panicked'
-    >>> sm.state = 'i'
-    >>> sm.state
-    'idle'
-
     """
 
     class States(Enum):
@@ -234,7 +195,6 @@ class RunEngineStateMachine(StateMachine):
         SOFT_PAUSING = 'soft_pausing'
         HARD_PAUSING = 'hard_pausing'
         PAUSED = 'paused'
-        PANICKED = 'panicked'
 
         @classmethod
         def states(cls):
@@ -247,13 +207,12 @@ class RunEngineStateMachine(StateMachine):
             # Notice that 'transitions' and 'named_transitions' have
             # opposite to <--> from structure.
             # from_state : [valid_to_states]
-            'idle': ['running', 'panicked'],
-            'running': ['idle', 'soft_pausing', 'hard_pausing', 'panicked'],
-            'aborting': ['idle', 'panicked'],
-            'soft_pausing': ['paused', 'soft_pausing', 'hard_pausing', 'panicked'],
-            'hard_pausing': ['paused', 'hard_pausing', 'panicked'],
-            'paused': ['aborting', 'running', 'panicked'],
-            'panicked': ['idle'],
+            'idle': ['running'],
+            'running': ['idle', 'soft_pausing', 'hard_pausing'],
+            'aborting': ['idle'],
+            'soft_pausing': ['paused', 'soft_pausing', 'hard_pausing'],
+            'hard_pausing': ['paused', 'hard_pausing'],
+            'paused': ['aborting', 'running'],
         }
         named_transitions = [
             # (transition_name, to_state : [valid_from_states])
@@ -262,10 +221,8 @@ class RunEngineStateMachine(StateMachine):
             ('pause', 'paused', ['soft_pausing', 'hard_pausing']),
             ('run', 'running', ['idle', 'paused']),
             ('stop', 'idle', ['running', 'aborting']),
-            ('panic', 'panicked'),
             ('resume', 'running', ['paused']),
             ('abort', 'aborting', ['paused']),
-            ('all_is_well', 'idle', ['panicked', 'idle']),
         ]
         named_checkers = [
             ('can_hard_pause', 'hard_pausing'),
@@ -279,6 +236,7 @@ class RunEngine:
 
     def __init__(self):
         super(RunEngine, self).__init__()
+        self._panic = False
         self._sigint_handler = None
         self._sigtstp_handler = None
         self._objs_read = deque()  # objects read in one Event
@@ -347,10 +305,10 @@ class RunEngine:
     def panic(self):
         # Release GIL by sleeping, allowing other threads to set panic.
         ttime.sleep(0.01)
-        self.state.panic()
+        self._panic = True
 
     def all_is_well(self):
-        self.state.all_is_well()
+        self._panic = False
 
     def request_pause(self, hard=True, name=None, callback=None):
         """
@@ -382,7 +340,7 @@ class RunEngine:
                 raise ValueError("Pause requests with a callback must include "
                                  "a name.")
             self._pause_requests[name] = callback
-        # Pause if possible (i.e., we aren't already aborting or panicking).
+        # Now to the right pause state if we can.
         if hard and self.state.can_hard_pause:
             self.state.hard_pause()
         else:
@@ -418,10 +376,10 @@ class RunEngine:
         for name, func in subscriptions.items():
             self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
-        if self.state.is_panicked:
-            raise PanicStateError("RunEngine is in a panic state. The run "
-                                  "was aborted before it began. No records "
-                                  "of this run were created.")
+        if self._panic:
+            raise PanicError("RunEngine is panicked. The run "
+                             "was aborted before it began. No records "
+                             "of this run were created.")
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             def func():
                 return self.run_engine(gen)
@@ -445,6 +403,9 @@ class RunEngine:
             is immediately returned. Otherwise, after the run completes, this
             returns None.
         """
+        if self._panic:
+            raise PanicError("Run Engine is panicked. If are you sure all is "
+                             "well, call the all_is_well() method.")
         outstanding_requests = []
         # We listify so we can modify the dict inside the loop.
         for name, func in list(self._pause_requests.items()):
@@ -484,13 +445,13 @@ class RunEngine:
             while True:
                 # self.debug('MSG_CACHE', self._msg_cache)
                 # Check for panic.
-                if self.state.is_panicked:
+                if self._panic:
                     exit_status = 'fail'
-                    raise PanicStateError("Something put the RunEngine into a "
-                                          "panic state after the run began. "
-                                          "Records were created, but the run "
-                                          "was marked with "
-                                          "exit_status='fail'.")
+                    raise PanicError("Something told the Run Engine to "
+                                     "panic after the run began. "
+                                     "Records were created, but the run "
+                                     "was marked with "
+                                     "exit_status='fail'.")
 
                 # Check for pause requests from keyboard.
                 if self._sigint_handler.interrupted:
@@ -796,7 +757,7 @@ def _fill_missing_fields(data_keys):
             result[key]['external'] = value['external']
 
 
-class PanicStateError(Exception):
+class PanicError(Exception):
     pass
 
 

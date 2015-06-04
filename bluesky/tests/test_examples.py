@@ -1,7 +1,9 @@
 import nose
-from nose.tools import assert_equal, assert_is, assert_is_none, assert_raises
+from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
+                        assert_true)
 from bluesky.examples import *
-from bluesky import RunEngine, Mover, SynGauss, RunInterrupt, Msg
+from bluesky import RunEngine, Mover, SynGauss, RunInterrupt, Msg, PanicError
+from super_state_machine.errors import TransitionError
 try:
     import matplotlib.pyplot as plt
 except ImportError:
