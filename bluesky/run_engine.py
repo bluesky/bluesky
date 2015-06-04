@@ -499,9 +499,10 @@ class RunEngine:
                     self._sigint_handler.interrupted = False
 
                 # If a hard pause was requested, sleep.
+                resumable = self._msg_cache is not None
                 if self.state.is_hard_pausing:
                     self.state.pause()
-                    if self._msg_cache is None:
+                    if not resumable:
                         self.state.abort()
                         exit_status = 'abort'
                         raise RunInterrupt("*** Hard pause requested. There "
@@ -522,6 +523,13 @@ class RunEngine:
                 # If a soft pause was requested, acknowledge it, but wait
                 # for a 'checkpoint' command to catch it (see self._checkpoint).
                 if self.state.is_soft_pausing:
+                    if not resumable:
+                        self.state.pause()
+                        self.state.abort()
+                        exit_status = 'abort'
+                        raise RunInterrupt("*** Soft pause requested. There "
+                                           "are no checkpoints. Cannot resume;"
+                                           " must abort. Run aborted.")
                     self.debug("*** Soft pause requested. Continuing to "
                                "process messages until the next 'checkpoint' "
                                "command.")
