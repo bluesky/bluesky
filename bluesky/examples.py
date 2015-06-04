@@ -151,6 +151,8 @@ def live_scalar_plotter(ax, y, x):
         ax.relim(visible_only=True)
         ax.autoscale_view(tight=True)
         ax.figure.canvas.draw()
+        ax.figure.canvas.flush_events()
+
     return update_plot
 
 
@@ -238,16 +240,15 @@ def adaptive_scan(motor, detector, motor_name, detector_name, start,
     past_I = None
     cur_I = None
     while next_pos < stop:
-        yield Msg('set', motor, {motor_name: next_pos})
-        yield Msg('sleep', None, .1)
+        yield Msg('set', motor, next_pos)
         yield Msg('create')
-        yield Msg('trigger', motor)
         yield Msg('trigger', detector)
         cur_det = yield Msg('read', detector)
         yield Msg('read', motor)
         yield Msg('save')
-
+        print(cur_det)
         cur_I = cur_det[detector_name]['value']
+
 
         # special case first first loop
         if past_I is None:
