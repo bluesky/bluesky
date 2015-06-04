@@ -53,7 +53,8 @@ The objects can have any other methods or attributes required for their operatio
 or easy of use.  These objects do not need to sub-class any particular base class,
 only have these methods.
 
-These objects can be used with ``Read``, ``Trigger``, and ``Describe`` `Msg`.
+These objects can be used with ``Read``, ``Trigger``, ``Wait``, and
+``Describe`` `Msg`.
 
 
 ``Mover`` API
@@ -97,7 +98,7 @@ The objects can have any other methods or attributes required for their operatio
 or easy of use.  These objects do not need to sub-class any particular base class,
 only have these methods.
 
-These objects can be used with ``Read``, ``Set``, and ``Describe`` `Msg`.
+These objects can be used with ``Read``, ``Set``, ``Wait``, and ``Describe`` `Msg`.
 
 
 ``Flyer`` API
@@ -111,7 +112,7 @@ scans.  It only supports the work flow of :
 3. when done collect all of the data
 
 In the future this might be extended to allow for partial collection
-of data and a way to stop a running fly scan.
+of data and a way to stop or pause a running fly scan.
 
 The required functions and attributes are
 
@@ -131,3 +132,10 @@ The required functions and attributes are
       :py:class:`Mover` is fully done and `False` otherwise.  Beware
       if not setting this `False` soon enough and allowing loops to
       over-run motion.
+
+
+The objects can have any other methods or attributes required for their operation
+or easy of use.  These objects do not need to sub-class any particular base class,
+only have these methods.
+
+These objects can be used with ``Kickoff``, ``Collect``, and ``Wait`` `Msg`.
