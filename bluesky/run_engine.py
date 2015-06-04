@@ -484,7 +484,7 @@ class RunEngine:
                 # There is no trouble. Now process the message.
                 response = self._command_registry[msg.command](msg)
                 self.debug('RE.state: ' + self.state)
-                self.debug('{}\n   ret: {}'.format(msg, response))
+                self.debug('msg: {}\n   response: {}'.format(msg, response))
         except StopIteration:
             self._exit_status = 'success'
         except Exception as err:
@@ -657,7 +657,6 @@ class RunEngine:
         block_group = msg.kwargs.pop('block_group', None)
         if block_group:
             self._block_groups[block_group].add(msg.obj)
-
         return msg.obj.set(*msg.args, **msg.kwargs)
 
     def _trigger(self, msg):
