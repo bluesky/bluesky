@@ -1,3 +1,5 @@
+import threading
+import time as ttime
 from . import Msg
 from .run_engine import Msg
 from collections import deque
@@ -30,6 +32,12 @@ def sleepy(motor, det):
     yield Msg('sleep', None, 2)  # units: seconds
     yield Msg('trigger', det)
     yield Msg('read', det)
+
+def checkpoint_forever():
+    # simplest pauseable scan
+    while True:
+        ttime.sleep(0.1)
+        yield Msg('checkpoint')
 
 
 def wait_one(motor, det):
@@ -69,28 +77,38 @@ def wait_complex(motors, det):
     yield Msg('read', det)
 
 
-def conditional_hard_pause(motor, det):
+def conditional_pause(motor, det, hard, include_checkpoint):
     for i in range(5):
-        yield Msg('checkpoint')
+        if include_checkpoint:
+            yield Msg('checkpoint')
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         reading = yield Msg('read', det)
         if reading['intensity']['value'] < 0.2:
-            yield Msg('pause', hard=True)
-
-
-def conditional_soft_pause(motor, det):
-    for i in range(5):
-        yield Msg('checkpoint')
-        yield Msg('set', motor, i)
-        yield Msg('trigger', det)
-        reading = yield Msg('read', det)
-        if reading['intensity']['value'] < 0.2:
-            yield Msg('pause', hard=False)
-        # If a soft pause is requested, the Run Engine will
-        # still execute these messages before pausing.
+            yield Msg('pause', hard=hard)
         yield Msg('set', motor, i + 0.5)
 
+
+class PausingAgent:
+    def __init__(self, RE, name):
+        self.RE = RE
+        self.name = name
+
+    def issue_request(self, hard, delay=0):
+        def callback():
+            return self.permission
+
+        def requester():
+            ttime.sleep(delay)
+            self.permission = False
+            self.RE.request_pause(hard, self.name, callback)
+
+        thread = threading.Thread(target=requester)
+        thread.start()
+
+    def revoke_request(self, delay=0):
+        ttime.sleep(delay)
+        self.permission = True
 
 def simple_scan_saving(motor, det):
     "Set, trigger, read"
