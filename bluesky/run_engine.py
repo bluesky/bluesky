@@ -450,7 +450,7 @@ class RunEngine:
             returns None.
         """
         outstanding_requests = []
-        for name, func in self._pause_requests.items():
+        for name, func in self._pause_requests:
             if func():
                 # We have permission to continue. Clear the request.
                 del self._pause_requests[name]
