@@ -74,7 +74,7 @@ def test_conditional_hard_pause():
     RE.resume()
     assert_equal(RE.state, 'paused')
     RE.abort()
-    raise ValueError("DAN")
+    assert_equal(RE.state, 'idle')
 
 def test_simple_scan_saving():
     RE(simple_scan_saving(motor, det))
