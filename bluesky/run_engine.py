@@ -250,15 +250,15 @@ class RunEngineStateMachine(StateMachine):
             'idle': ['running', 'panicked'],
             'running': ['idle', 'soft_pausing', 'hard_pausing', 'panicked'],
             'aborting': ['idle', 'panicked'],
-            'soft_pausing': ['paused', 'panicked'],
-            'hard_pausing': ['paused', 'panicked'],
+            'soft_pausing': ['paused', 'soft_pausing', 'hard_pausing', 'panicked'],
+            'hard_pausing': ['paused', 'hard_pausing', 'panicked'],
             'paused': ['aborting', 'running', 'panicked'],
             'panicked': ['idle'],
         }
         named_transitions = [
             # (transition_name, to_state : [valid_from_states])
-            ('soft_pause', 'soft_pausing', ['running']),
-            ('hard_pause', 'hard_pausing', ['running', 'soft_pausing']),
+            ('soft_pause', 'soft_pausing', ['running', 'soft_pausing']),
+            ('hard_pause', 'hard_pausing', ['running', 'soft_pausing', 'hard_pausing']),
             ('pause', 'paused', ['soft_pausing', 'hard_pausing']),
             ('run', 'running', ['idle', 'paused']),
             ('stop', 'idle', ['running', 'aborting']),
