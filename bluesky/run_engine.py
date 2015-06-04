@@ -559,6 +559,13 @@ class RunEngine:
             sys.stdout.flush()
             if self.state.is_aborting or self.state.is_running:
                 self.state.stop()
+            elif self.state.is_soft_pausing or self.state.is_hard_pausing:
+                # Apparently an exception was raised mid-pause.
+                self.debug("The RunEngine encountered an error while "
+                           "attempting to pause. Aborting and going to idle.")
+                self.state.pause()
+                self.state.abort()
+                self.state.stop()
 
     def _create(self, msg):
         self._read_cache.clear()
