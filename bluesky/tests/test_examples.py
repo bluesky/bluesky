@@ -54,40 +54,40 @@ def test_msgs():
     assert_equal(m.kwargs, {})
 
 def test_simple():
-    RE.run(simple_scan(motor))
+    RE(simple_scan(motor))
 
 def test_conditional_break():
-    RE.run(conditional_break(motor, det, threshold=0.2))
+    RE(conditional_break(motor, det, threshold=0.2))
 
 def test_sleepy():
-    RE.run(sleepy(motor, det))
+    RE(sleepy(motor, det))
 
 def test_wait_one():
-    RE.run(wait_one(motor, det))
+    RE(wait_one(motor, det))
 
 def test_wait_multiple():
-    RE.run(wait_multiple([motor1, motor2], det))
+    RE(wait_multiple([motor1, motor2], det))
 
-#def test_conditional_hard_pause():
-#    RE.run(conditional_hard_pause(motor, det))
-#    assert_equal(RE.state, 'paused')
-    #RE.resume()
-    #assert_equal(RE.state, 'paused')
-    #RE.abort()
-    #assert_raises(Exception, f)
+def test_conditional_hard_pause():
+    RE(conditional_hard_pause(motor, det))
+    assert_equal(RE.state, 'paused')
+    RE.resume()
+    assert_equal(RE.state, 'paused')
+    RE.abort()
+    raise ValueError("DAN")
 
 def test_simple_scan_saving():
-    RE.run(simple_scan_saving(motor, det))
+    RE(simple_scan_saving(motor, det))
 
 def print_event_time(doc):
     print('===== EVENT TIME:', doc['time'], '=====')
 
 def test_calltime_subscription():
-    RE.run(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
+    RE(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
 
 def test_stateful_subscription():
     token = RE.subscribe('event', print_event_time)
-    RE.run(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
+    RE(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
     RE.unsubscribe(token)
 
 def test_stepscan():
@@ -95,4 +95,4 @@ def test_stepscan():
         raise nose.SkipTest("matplotlib is not available")
     fig, ax = plt.subplots()
     my_plotter = live_scalar_plotter(ax, 'intensity', 'pos')
-    RE.run(stepscan(motor, det), subscriptions={'event': my_plotter})
+    RE(stepscan(motor, det), subscriptions={'event': my_plotter})

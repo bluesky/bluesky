@@ -405,7 +405,7 @@ class RunEngine:
         self._queues[name].put(doc)
 
     # todo remove the mutable from this function sig!!
-    def run(self, gen, subscriptions={}, use_threading=True):
+    def __call__(self, gen, subscriptions={}, use_threading=True):
         """Run the scan defined by ``gen``
 
         Parameters
@@ -413,7 +413,7 @@ class RunEngine:
         gen : generator
             A generator that yields ``Msg`` objects
         subscriptions : dict
-            Temporary subscriptions to be added for this call to ``run()`` only
+            Temporary subscriptions to be added for this call only
         use_threading : bool
             duh.
         """
