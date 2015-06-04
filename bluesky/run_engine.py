@@ -286,12 +286,12 @@ class RunEngine:
         super(RunEngine, self).__init__()
         self._sigint_handler = None
         self._sigtstp_handler = None
-        self._pause_requests = deque()  # holding {<name>: callable}
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._descriptor_uids = dict()  # cache of all Descriptor uids
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
+        self._pause_requests = dict()  # holding {<name>: callable}
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
@@ -382,16 +382,16 @@ class RunEngine:
             "Permission to resume." Until this callable returns True, the Run
             Engine will not be allowed to resume. If None,
         """
+        if callback is not None:
+            if name is None:
+                raise ValueError("Pause requests with a callback must include "
+                                 "a name.")
+            self._pause_requests[name] = callback
         if hard:
             self.state.hard_pause()
         else:
             if not self.state.is_hard_pausing:
                 self.state.soft_pause()
-        if callback is not None:
-            if name is None:
-                raise ValueError("Pause requests with a callback must include "
-                                 "a name.")
-            self._pause_requests.append({name: callback})
 
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
@@ -450,7 +450,8 @@ class RunEngine:
             returns None.
         """
         outstanding_requests = []
-        for name, func in self._pause_requests:
+        # We listify so we can modify the dict inside the loop.
+        for name, func in list(self._pause_requests.items()):
             if func():
                 # We have permission to continue. Clear the request.
                 del self._pause_requests[name]
