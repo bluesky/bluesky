@@ -394,7 +394,7 @@ class RunEngine(object):
             callback, below.
         callback : callable, optional
             "Permission to resume." Until this callable returns True, the Run
-            Engine will not be allowed to resume. If None, 
+            Engine will not be allowed to resume. If None,
         """
         if hard:
             self._sm.hard_pause()
@@ -474,7 +474,7 @@ class RunEngine(object):
             return outstanding_requests
         self._sm.resume()
         self._resume()
-        return None 
+        return None
 
     def _resume(self):
         # This could be as a result of self.resume() or self.abort().
