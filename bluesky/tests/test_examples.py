@@ -120,6 +120,29 @@ def test_pause_from_thread():
     RE.abort()
     assert_equal(RE.state, 'idle')
 
+def test_panic_during_pause():
+    assert_equal(RE.state, 'idle')
+    RE(conditional_pause(motor, det, True, True))
+    RE.panic()
+    assert_true(RE._panic)
+    assert_raises(PanicError, lambda: RE.resume())
+    # If we panic while paused, we can un-panic and resume.
+    RE.all_is_well()
+    assert_equal(RE.state, 'paused')
+    RE.abort()
+    assert_equal(RE.state, 'idle')
+
+def test_panic_from_thread():
+    assert_equal(RE.state, 'idle')
+    panic_timer(RE, 1)  # panic in 1 second
+    RE(checkpoint_forever())
+    # If we panic while runnning, we cannot resume. The run is aborted and we
+    # land in 'idle'
+    assert_equal(RE.state, 'idle')
+    assert_true(RE._panic)
+    RE.all_is_well()
+    assert_equal(RE.state, 'idle')
+
 def test_simple_scan_saving():
     yield run, simple_scan_saving, motor, det
 

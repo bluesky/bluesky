@@ -110,6 +110,14 @@ class PausingAgent:
         ttime.sleep(delay)
         self.permission = True
 
+def panic_timer(RE, delay):
+    def f():
+        ttime.sleep(delay)
+        RE.panic()
+
+    thread = threading.Thread(target=f)
+    thread.start()
+
 def simple_scan_saving(motor, det):
     "Set, trigger, read"
     yield Msg('create')
