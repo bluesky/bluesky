@@ -2,6 +2,12 @@ import nose
 from nose.tools import assert_equal, assert_is, assert_is_none, assert_raises
 from bluesky.examples import *
 from bluesky import RunEngine, Mover, SynGauss, RunInterrupt, Msg
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    skip_mpl = True
+else:
+    skip_mpl = False
 
 
 # global utility vars defined in setup()
@@ -85,6 +91,8 @@ def test_stateful_subscription():
     RE.unsubscribe(token)
 
 def test_stepscan():
+    if skip_mpl:
+        raise nose.SkipTest("matplotlib is not available")
     fig, ax = plt.subplots()
     my_plotter = live_scalar_plotter(ax, 'intensity', 'pos')
     RE.run(stepscan(motor, det), subscriptions={'event': my_plotter})
