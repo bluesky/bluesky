@@ -295,7 +295,6 @@ class RunEngine:
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
-        self._thread_exc_info = None
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -468,12 +467,6 @@ class RunEngine:
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             while self._thread.is_alive() and not self.state.is_paused:
                 self.dispatcher.process_all_queues()
-        print('EXC INFO', self._thread_exc_info)
-        if self._thread_exc_info:
-            exc_info = self._thread_exc_info
-            self._thread_exc_info = None
-            raise (exc_info[1], None, exc_info[2])
-        print("DONE 3")
         self.dispatcher.process_all_queues()  # catch any stragglers
 
     def abort(self):
