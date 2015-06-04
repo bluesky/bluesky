@@ -53,22 +53,28 @@ def test_msgs():
     assert_equal(m.args, (5,))
     assert_equal(m.kwargs, {})
 
+def run(gen, *args, **kwargs):
+    assert_equal(RE.state, 'idle')
+    RE(gen(*args, **kwargs))
+    assert_equal(RE.state, 'idle')
+
 def test_simple():
-    RE(simple_scan(motor))
+    yield run, simple_scan, motor
 
 def test_conditional_break():
-    RE(conditional_break(motor, det, threshold=0.2))
+    yield run, conditional_break, motor, det, 0.2
 
 def test_sleepy():
-    RE(sleepy(motor, det))
+    yield run, sleepy, motor, det
 
 def test_wait_one():
-    RE(wait_one(motor, det))
+    yield run, wait_one, motor, det
 
 def test_wait_multiple():
-    RE(wait_multiple([motor1, motor2], det))
+    yield run, wait_multiple, [motor1, motor2], det
 
 def test_hard_pause():
+    assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, True, True))
     assert_equal(RE.state, 'paused')
     RE.resume()
@@ -77,6 +83,7 @@ def test_hard_pause():
     assert_equal(RE.state, 'idle')
 
 def test_soft_pause():
+    assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, False, True))
     assert_equal(RE.state, 'paused')
     RE.resume()
@@ -85,15 +92,17 @@ def test_soft_pause():
     assert_equal(RE.state, 'idle')
 
 def test_hard_pause_no_checkpoint():
+    assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, True, False))
     assert_equal(RE.state, 'idle')
 
 def test_soft_pause_no_checkpoint():
+    assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, False, False))
     assert_equal(RE.state, 'idle')
 
 def test_pause_from_thread():
-    assert RE is not None
+    assert_equal(RE.state, 'idle')
     agent = PausingAgent(RE, 'foo')
     # Cue up a pause requests in 1 second.
     agent.issue_request(True, 1)
@@ -110,22 +119,28 @@ def test_pause_from_thread():
     assert_equal(RE.state, 'idle')
 
 def test_simple_scan_saving():
-    RE(simple_scan_saving(motor, det))
+    yield run, simple_scan_saving, motor, det
 
 def print_event_time(doc):
     print('===== EVENT TIME:', doc['time'], '=====')
 
 def test_calltime_subscription():
+    assert_equal(RE.state, 'idle')
     RE(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
+    assert_equal(RE.state, 'idle')
 
 def test_stateful_subscription():
+    assert_equal(RE.state, 'idle')
     token = RE.subscribe('event', print_event_time)
     RE(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
     RE.unsubscribe(token)
+    assert_equal(RE.state, 'idle')
 
 def test_stepscan():
     if skip_mpl:
         raise nose.SkipTest("matplotlib is not available")
     fig, ax = plt.subplots()
     my_plotter = live_scalar_plotter(ax, 'intensity', 'pos')
+    assert_equal(RE.state, 'idle')
     RE(stepscan(motor, det), subscriptions={'event': my_plotter})
+    assert_equal(RE.state, 'idle')
