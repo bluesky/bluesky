@@ -9,6 +9,7 @@ from queue import Queue, Empty
 from enum import Enum
 
 from super_state_machine.machines import StateMachine
+from super_state_machine.extras import PropertyMachine
 import numpy as np
 
 from .utils import CallbackRegistry, SignalHandler
@@ -277,11 +278,12 @@ class RunEngineStateMachine(StateMachine):
         ]
 
 
-class RunEngine(object):
+class RunEngine:
+
+    state = PropertyMachine(RunEngineStateMachine)
+
     def __init__(self):
         super(RunEngine, self).__init__()
-        self._sm = RunEngineStateMachine()
-        self.state = self._sm.state
         self._sigint_handler = None
         self._sigtstp_handler = None
         self._pause_requests = deque()  # holding {<name>: callable}
@@ -293,6 +295,7 @@ class RunEngine(object):
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
+        self._thread_exc_info = None
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -350,10 +353,10 @@ class RunEngine(object):
     def panic(self):
         # Release GIL by sleeping, allowing other threads to set panic.
         ttime.sleep(0.01)
-        self._sm.panic()
+        self.state.panic()
 
     def all_is_well(self):
-        self._sm.all_is_well()
+        self.state.all_is_well()
 
     def request_pause(self, hard=True, name=None, callback=None):
         """
@@ -380,10 +383,10 @@ class RunEngine(object):
             Engine will not be allowed to resume. If None,
         """
         if hard:
-            self._sm.hard_pause()
+            self.state.hard_pause()
         else:
-            if not self._sm.is_hard_pausing:
-                self._sm.soft_pause()
+            if not self.state.is_hard_pausing:
+                self.state.soft_pause()
         if callback is not None:
             if name is None:
                 raise ValueError("Pause requests with a callback must include "
@@ -414,12 +417,12 @@ class RunEngine(object):
         use_threading : bool
             duh.
         """
-        self._sm.run()
+        self.state.run()
         self.clear()
         for name, func in subscriptions.items():
             self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
-        if self._sm.is_panicked:
+        if self.state.is_panicked:
             raise PanicStateError("RunEngine is in a panic state. The run "
                                   "was aborted before it began. No records "
                                   "of this run were created.")
@@ -429,7 +432,7 @@ class RunEngine(object):
             if use_threading:
                 self._thread = threading.Thread(target=func)
                 self._thread.start()
-                while self._thread.is_alive() and not self._sm.is_paused:
+                while self._thread.is_alive() and not self.state.is_paused:
                     self.dispatcher.process_all_queues()
             else:
                 func()
@@ -455,19 +458,25 @@ class RunEngine(object):
                 outstanding_requests.append(name)
         if outstanding_requests:
             return outstanding_requests
-        self._sm.resume()
+        self.state.resume()
         self._resume()
         return None
 
     def _resume(self):
         # This could be as a result of self.resume() or self.abort().
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            while self._thread.is_alive() and not self._sm.is_paused:
+            while self._thread.is_alive() and not self.state.is_paused:
                 self.dispatcher.process_all_queues()
+        print('EXC INFO', self._thread_exc_info)
+        if self._thread_exc_info:
+            exc_info = self._thread_exc_info
+            self._thread_exc_info = None
+            raise (exc_info[1], None, exc_info[2])
+        print("DONE 3")
         self.dispatcher.process_all_queues()  # catch any stragglers
 
     def abort(self):
-        self._sm.abort()
+        self.state.abort()
         self._resume()  # to create RunStop Document
 
     def run_engine(self, gen):
@@ -484,7 +493,7 @@ class RunEngine(object):
             while True:
                 # self.debug('MSG_CACHE', self._msg_cache)
                 # Check for panic.
-                if self._sm.is_panicked:
+                if self.state.is_panicked:
                     exit_status = 'fail'
                     raise PanicStateError("Something put the RunEngine into a "
                                           "panic state after the run began. "
@@ -499,10 +508,10 @@ class RunEngine(object):
                     self._sigint_handler.interrupted = False
 
                 # If a hard pause was requested, sleep.
-                if self._sm.is_hard_pausing:
-                    self._sm.pause()
+                if self.state.is_hard_pausing:
+                    self.state.pause()
                     if self._msg_cache is None:
-                        self._sm.abort()
+                        self.state.abort()
                         exit_status = 'abort'
                         raise RunInterrupt("*** Hard pause requested. There "
                                            "are no checkpoints. Cannot resume;"
@@ -512,16 +521,16 @@ class RunEngine(object):
                                "Will rerun from last 'checkpoint' command.")
                     while True:
                         ttime.sleep(0.5)
-                        if not self._sm.is_paused:
+                        if not self.state.is_paused:
                             break
-                    if self._sm.is_aborting:
+                    if self.state.is_aborting:
                         exit_status = 'abort'
                         raise RunInterrupt("Run aborted.")
                     self._rerun_from_checkpoint()
 
                 # If a soft pause was requested, acknowledge it, but wait
                 # for a 'checkpoint' command to catch it (see self._checkpoint).
-                if self._sm.is_soft_pausing:
+                if self.state.is_soft_pausing:
                     self.debug("*** Soft pause requested. Continuing to "
                                "process messages until the next 'checkpoint' "
                                "command.")
@@ -549,8 +558,8 @@ class RunEngine(object):
             self.emit('stop', doc)
             self.debug("*** Emitted RunStop:\n%s" % doc)
             sys.stdout.flush()
-            if self._sm.is_aborting or self._sm.is_running:
-                self._sm.stop()
+            if self.state.is_aborting or self.state.is_running:
+                self.state.stop()
 
     def _create(self, msg):
         self._read_cache.clear()
@@ -669,13 +678,13 @@ class RunEngine(object):
 
     def _checkpoint(self, msg):
         self._msg_cache = deque()
-        if self._sm.is_soft_pausing:
-            self._sm.pause()  # soft_pausing -> paused
+        if self.state.is_soft_pausing:
+            self.state.pause()  # soft_pausing -> paused
             self.debug("*** Checkpoint reached. Sleeping until resume() is "
                        "called. Will resume from checkpoint.")
             while True:
                 ttime.sleep(0.5)
-                if not self._sm.is_paused:
+                if not self.state.is_paused:
                     break
 
     def _rerun_from_checkpoint(self):
