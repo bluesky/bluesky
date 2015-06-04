@@ -382,7 +382,7 @@ class RunEngine:
                              "of this run were created.")
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             def func():
-                return self.run_engine(gen)
+                return self._run(gen)
             if use_threading:
                 self._thread = threading.Thread(target=func)
                 self._thread.start()
@@ -431,7 +431,7 @@ class RunEngine:
         self.state.abort()
         self._resume()  # to create RunStop Document
 
-    def run_engine(self, gen):
+    def _run(self, gen):
         # This function is optionally run on its own thread.
         doc = dict(uid=self._run_start_uid,
                    time=ttime.time(), beamline_id=beamline_id, owner=owner,
@@ -442,67 +442,17 @@ class RunEngine:
         exit_status = None
         reason = ''
         try:
+            self._check_for_trouble()
             while True:
-                # self.debug('MSG_CACHE', self._msg_cache)
-                # Check for panic.
-                if self._panic:
-                    exit_status = 'fail'
-                    raise PanicError("Something told the Run Engine to "
-                                     "panic after the run began. "
-                                     "Records were created, but the run "
-                                     "was marked with "
-                                     "exit_status='fail'.")
-
-                # Check for pause requests from keyboard.
-                if self._sigint_handler.interrupted:
-                    self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-                    self.request_pause(hard=True, name='SIGINT')
-                    self._sigint_handler.interrupted = False
-
-                # If a hard pause was requested, sleep.
-                resumable = self._msg_cache is not None
-                if self.state.is_hard_pausing:
-                    self.state.pause()
-                    if not resumable:
-                        self.state.abort()
-                        exit_status = 'abort'
-                        raise RunInterrupt("*** Hard pause requested. There "
-                                           "are no checkpoints. Cannot resume;"
-                                           " must abort. Run aborted.")
-                    self.debug("*** Hard pause requested. Sleeping until "
-                               "resume() is called. "
-                               "Will rerun from last 'checkpoint' command.")
-                    while True:
-                        ttime.sleep(0.5)
-                        if not self.state.is_paused:
-                            break
-                    if self.state.is_aborting:
-                        exit_status = 'abort'
-                        raise RunInterrupt("Run aborted.")
-                    self._rerun_from_checkpoint()
-
-                # If a soft pause was requested, acknowledge it, but wait
-                # for a 'checkpoint' command to catch it (see self._checkpoint).
-                if self.state.is_soft_pausing:
-                    if not resumable:
-                        self.state.pause()
-                        self.state.abort()
-                        exit_status = 'abort'
-                        raise RunInterrupt("*** Soft pause requested. There "
-                                           "are no checkpoints. Cannot resume;"
-                                           " must abort. Run aborted.")
-                    self.debug("*** Soft pause requested. Continuing to "
-                               "process messages until the next 'checkpoint' "
-                               "command.")
-
-                # Normal operation
+                # Send last response; get new message but don't process it yet.
                 msg = gen.send(response)
                 if self._msg_cache is not None:
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
+                self._check_for_trouble()
+                # There is no trouble. Now process the message.
                 response = self._command_registry[msg.command](msg)
                 self.debug('RE.state: ' + self.state)
-
                 self.debug('{}\n   ret: {}'.format(msg, response))
         except StopIteration:
             exit_status = 'success'
@@ -527,6 +477,58 @@ class RunEngine:
                 self.state.pause()
                 self.state.abort()
                 self.state.stop()
+
+    def _check_for_trouble(self):
+        # Check for panic.
+        if self._panic:
+            exit_status = 'fail'
+            raise PanicError("Something told the Run Engine to "
+                                "panic after the run began. "
+                                "Records were created, but the run "
+                                "was marked with "
+                                "exit_status='fail'.")
+
+        # Check for pause requests from keyboard.
+        if self._sigint_handler.interrupted:
+            self.debug("RunEngine detected a SIGINT (Ctrl+C)")
+            self.request_pause(hard=True, name='SIGINT')
+            self._sigint_handler.interrupted = False
+
+        # If a hard pause was requested, sleep.
+        resumable = self._msg_cache is not None
+        if self.state.is_hard_pausing:
+            self.state.pause()
+            if not resumable:
+                self.state.abort()
+                exit_status = 'abort'
+                raise RunInterrupt("*** Hard pause requested. There "
+                                    "are no checkpoints. Cannot resume;"
+                                    " must abort. Run aborted.")
+            self.debug("*** Hard pause requested. Sleeping until "
+                        "resume() is called. "
+                        "Will rerun from last 'checkpoint' command.")
+            while True:
+                ttime.sleep(0.5)
+                if not self.state.is_paused:
+                    break
+            if self.state.is_aborting:
+                exit_status = 'abort'
+                raise RunInterrupt("Run aborted.")
+            self._rerun_from_checkpoint()
+
+        # If a soft pause was requested, acknowledge it, but wait
+        # for a 'checkpoint' command to catch it (see self._checkpoint).
+        if self.state.is_soft_pausing:
+            if not resumable:
+                self.state.pause()
+                self.state.abort()
+                exit_status = 'abort'
+                raise RunInterrupt("*** Soft pause requested. There "
+                                    "are no checkpoints. Cannot resume;"
+                                    " must abort. Run aborted.")
+            self.debug("*** Soft pause requested. Continuing to "
+                        "process messages until the next 'checkpoint' "
+                        "command.")
 
     def _create(self, msg):
         self._read_cache.clear()
