@@ -702,7 +702,7 @@ class RunEngine:
             print(msg)
 
 
-class Dispatcher(object):
+class Dispatcher:
     """Dispatch documents to user-defined consumers on the main thread."""
 
     def __init__(self, queues, timeout=0.05):
