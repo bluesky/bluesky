@@ -62,32 +62,32 @@ self._command_registry = {
 ###Message: ``trigger``
 Trigger a detector to start acquiring
 ```python
-    def count(det):
-        yield Msg('trigger', det)
+def count(det):
+    yield Msg('trigger', det)
 ```
 
 ###Message: ``set``
 Set the position of a motor. By default, the motor is instructed to move
 ```python
-    def move(mtr, pos):
-        # will move ``mtr`` to ``pos``
-        yield Msg('set', mtr, pos)
-    
-    # is equivalent to
-    
-    def move(mtr, pos)
-        yield Msg('set', mtr, pos, trigger=True)
-        # the trigger command
+def move(mtr, pos):
+    # will move ``mtr`` to ``pos``
+    yield Msg('set', mtr, pos)
+```
+is equivalent to
+```python
+def move(mtr, pos)
+    yield Msg('set', mtr, pos, trigger=True)
+    # the trigger command
 ```
 
 If you want to set the motors position and then tell it to move at a later 
 point in time, use the `trigger` kwarg
 ```python
-    def move(mtr, pos):
-        # will instruct ``mtr`` to move to ``pos`` when triggered
-        yield Msg('set', mtr, pos, trigger=False)
-        # will instruct ``mtr`` to move to ``pos``
-        yield Msg('trigger', mtr)
+def move(mtr, pos):
+    # will instruct ``mtr`` to move to ``pos`` when triggered
+    yield Msg('set', mtr, pos, trigger=False)
+    # will instruct ``mtr`` to move to ``pos``
+    yield Msg('trigger', mtr)
 ```
 
 ###Message: ``sleep``
@@ -187,17 +187,17 @@ def conditional_hard_pause(motor, det):
 ```python
 def step_fly(step_mtr, fly_mtr, fly_det, step_points, fly_start, fly_stop, 
              fly_velocity):
-    for step_point in step_points:
-        yield Msg('create')
-        yield Msg('set', step_mtr, step_point
-        yield Msg('save')
-        # start flying the motor and detector
-        yield Msg('kickoff', fly_mtr, fly_start, fly_stop, fly_velocity)
-        yield Msg('kickoff', fly_det)
-        # collect and create the event streams for the flyscan motor and 
-        # flyscan detector
-        yield Msg('collect', fly_mtr)
-        yield Msg('collect', fly_det)
+for step_point in step_points:
+    yield Msg('create')
+    yield Msg('set', step_mtr, step_point
+    yield Msg('save')
+    # start flying the motor and detector
+    yield Msg('kickoff', fly_mtr, fly_start, fly_stop, fly_velocity)
+    yield Msg('kickoff', fly_det)
+    # collect and create the event streams for the flyscan motor and 
+    # flyscan detector
+    yield Msg('collect', fly_mtr)
+    yield Msg('collect', fly_det)
 ```
 
 ###Messages: ``wait``
