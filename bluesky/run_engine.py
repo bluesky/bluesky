@@ -376,15 +376,17 @@ class RunEngine:
             "Permission to resume." Until this callable returns True, the Run
             Engine will not be allowed to resume. If None,
         """
+        # No matter what, this will be processed if we try to resume.
         if callback is not None:
             if name is None:
                 raise ValueError("Pause requests with a callback must include "
                                  "a name.")
             self._pause_requests[name] = callback
-        if hard:
+        # Pause if possible (i.e., we aren't already aborting or panicking).
+        if hard and self.state.can_hard_pause:
             self.state.hard_pause()
         else:
-            if not self.state.is_hard_pausing:
+            if self.state.can_soft_pause:
                 self.state.soft_pause()
 
     def _register_scan_callback(self, name, func):
