@@ -713,11 +713,12 @@ class Dispatcher:
     def process_queue(self, name):
         queue = self.queues[name]
         try:
-            document = queue.get(timeout=self.timeout)
+            while True:
+                document = queue.get(timeout=self.timeout, block=False)
+                self.cb_registry.process(name, document)
         except Empty:
             pass
-        else:
-            self.cb_registry.process(name, document)
+
 
     def process_all_queues(self):
         for name in self.queues.keys():
