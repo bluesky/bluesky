@@ -52,7 +52,6 @@ class LegacyAscan(_LegacyScan):
 class LegacyDscan(_LegacyScan):
     def __call__(self, motor, start, stop, num, **kwargs):
         _deprecation_warning('dscan', 'LinDscan')
-        dets = set(self.detectors) | set(self.default_detectors)
         curried = lambda dets: LinDscan(motor, dets, start, stop, num)
         super()._run(curried, **kwargs)
 
