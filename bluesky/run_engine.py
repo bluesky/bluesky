@@ -22,7 +22,6 @@ __all__ = ['Msg', 'Base', 'Reader', 'Mover', 'SynGauss', 'FlyMagic',
 # todo boo, hardcoded defaults
 beamline_id = 'test'
 owner = 'tester'
-custom = {}
 scan_id = 123
 
 
@@ -406,8 +405,11 @@ class RunEngine:
         self._queues[name].put(doc)
 
     # todo remove the mutable from this function sig!!
-    def __call__(self, gen, subs={}, use_threading=True):
+    def __call__(self, gen, subs={}, use_threading=True, **kwargs):
         """Run the scan defined by ``gen``
+
+        Any keyword arguments other than those listed below will be
+        interpreted as metadata and recorded with the run.
 
         Parameters
         ----------
@@ -437,6 +439,7 @@ class RunEngine:
         ...
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
+        custom_metadata = kwargs
         self.state.run()
         self.clear()
         for name, funcs in subs.items():
@@ -455,7 +458,7 @@ class RunEngine:
                              "of this run were created.")
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             def func():
-                return self._run(gen)
+                return self._run(gen, custom_metadata)
             if use_threading:
                 self._thread = threading.Thread(target=func,
                                                 name='scan_thread')
@@ -508,11 +511,11 @@ class RunEngine:
         self.state.abort()
         self._resume()  # to create RunStop Document
 
-    def _run(self, gen):
+    def _run(self, gen, custom_metadata):
         gen = iter(gen)  # no-op on generators; needed for classes
         doc = dict(uid=self._run_start_uid,
                    time=ttime.time(), beamline_id=beamline_id, owner=owner,
-                   scan_id=scan_id, **custom)
+                   scan_id=scan_id, **custom_metadata)
         self.debug("*** Emitted RunStart:\n%s" % doc)
         self.emit('start', doc)
         response = None
