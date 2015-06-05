@@ -14,9 +14,20 @@ def _make_insert_func(func):
     return lambda doc: func(**doc)
 
 
+known_run_start_keys = ['time', 'scan_id', 'beamline_id', 'beamline_config',
+                        'uid', 'owner', 'group', 'project']
+
 def _insert_run_start(doc):
     "Add a beamline config that, for now, only knows the time."
     doc['beamline_config'] = _make_blc()
+    # Move dynamic keys into 'custom' for MDS API.
+    for key in list(doc):
+        if key not in known_run_start_keys:
+            try:
+                doc['custom']
+            except KeyError:
+                doc['custom'] = {}
+            doc['custom'][key] = doc.pop(key)
     return _make_insert_func(mds.insert_run_start)(doc)
 
 
