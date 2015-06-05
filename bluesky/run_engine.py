@@ -711,9 +711,8 @@ class RunEngine:
 class Dispatcher:
     """Dispatch documents to user-defined consumers on the main thread."""
 
-    def __init__(self, queues, timeout=0.05):
+    def __init__(self, queues):
         self.queues = queues
-        self.timeout = timeout
         self.cb_registry = CallbackRegistry()
 
     def process_queue(self, name):
@@ -722,7 +721,7 @@ class Dispatcher:
         """
         queue = self.queues[name]
         try:
-            document = queue.get(timeout=self.timeout, block=False)
+            document = queue.get_nowait()
         except Empty:
             pass
         else:
@@ -730,7 +729,7 @@ class Dispatcher:
             # Dump any documents we will be skipping to keep the queue small.
             try:
                 while True:
-                    queue.get(block=False)
+                    queue.get_nowait()
             except Empty:
                 pass
 
