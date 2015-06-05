@@ -12,17 +12,18 @@ class Scan1D(Scan):
     _fields = ['motor', 'detectors', 'steps']
 
     def _gen(self):
+        dets = self.detectors
         for step in self._steps:
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
             yield Msg('wait', None, 'A')
             yield Msg('create')
             yield Msg('read', self.motor)
-            for det in self.detectors:
+            for det in dets:
                 yield Msg('trigger', det, block_group='B')
-            for det in self.detectors:
+            for det in dets:
                 yield Msg('wait', None, 'B')
-            for det in self.detectors:
+            for det in dets:
                 yield Msg('read', det)
             yield Msg('save')
 
@@ -63,7 +64,7 @@ class DScan(Scan1D):
         if len(ret.keys()) > 1:
             raise NotImplementedError("Can't DScan this motor")
         key, = ret.keys()
-        current_val = ret[key]['value']
+        current_value = ret[key]['value']
         self._steps = self.steps - current_value
         return super()._gen()
 

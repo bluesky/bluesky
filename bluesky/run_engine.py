@@ -5,7 +5,7 @@ from collections import namedtuple, deque, defaultdict
 import uuid
 import signal
 import threading
-from queue import LifoQueue, Empty
+from queue import Queue, Empty
 from enum import Enum
 
 from super_state_machine.machines import StateMachine
@@ -17,13 +17,29 @@ from .utils import CallbackRegistry, SignalHandler
 
 __all__ = ['Msg', 'Base', 'Reader', 'Mover', 'SynGauss', 'FlyMagic',
            'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
-           'PanicStateError', 'RunInterrupt']
+           'RunInterrupt']
 
 # todo boo, hardcoded defaults
 beamline_id = 'test'
 owner = 'tester'
 custom = {}
 scan_id = 123
+
+
+class LossyLiFoQueue(Queue):
+    '''Variant of Queue that is a 'lossy' first-in-last-out
+
+    The queue size is strictly bounded at `maxsize - 1` by
+    discarding old entries.
+    '''
+    def _init(self, maxsize):
+        if maxsize < 2:
+            raise ValueError("maxsize must be 2 or greater "
+                             "for LossyLiFoQueue")
+        self.queue = deque(maxlen=maxsize - 1)
+
+    def _get(self):
+        return self.queue.pop()
 
 
 class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
@@ -265,7 +281,8 @@ class RunEngine:
 
         # queues for passing Documents from "scan thread" to main thread
         queue_names = ['start', 'stop', 'event', 'descriptor']
-        self._queues = {name: LifoQueue() for name in queue_names}
+        self._queues = {name: LossyLiFoQueue(maxsize=2)
+                        for name in queue_names}
 
         # public dispatcher for callbacks processed on the main thread
         self.dispatcher = Dispatcher(self._queues)
@@ -432,7 +449,8 @@ class RunEngine:
             def func():
                 return self._run(gen)
             if use_threading:
-                self._thread = threading.Thread(target=func)
+                self._thread = threading.Thread(target=func,
+                                                name='scan_thread')
                 self._thread.start()
                 while self._thread.is_alive() and not self.state.is_paused:
                     self.dispatcher.process_all_queues()
@@ -733,7 +751,7 @@ class Dispatcher:
 
     def process_queue(self, name):
         """
-        Process the last item in the queue. Skip and dump any others.
+        Process the last item in the queue.
         """
         queue = self.queues[name]
         try:
@@ -742,13 +760,6 @@ class Dispatcher:
             pass
         else:
             self.cb_registry.process(name, document)
-            # Dump any documents we will be skipping to keep the queue small.
-            try:
-                while True:
-                    queue.get_nowait()
-            except Empty:
-                pass
-
 
     def process_all_queues(self):
         for name in self.queues.keys():
