@@ -43,7 +43,7 @@ class Ascan(Scan1D):
     """
     def _gen(self):
         self._steps = self.steps
-        return super()._gen()
+        yield from super()._gen()
 
 
 class Dscan(Scan1D):
@@ -65,8 +65,8 @@ class Dscan(Scan1D):
             raise NotImplementedError("Can't DScan this motor")
         key, = ret.keys()
         current_value = ret[key]['value']
-        self._steps = self.steps - current_value
-        return super()._gen()
+        self._steps = self.steps + current_value
+        yield from super()._gen()
 
 
 class LinAscan(Scan1D):
@@ -99,7 +99,7 @@ class LinAscan(Scan1D):
 
     def _gen(self):
         self._steps = np.linspace(self.start, self.stop, self.num)
-        return super()._gen()
+        yield from super()._gen()
 
 
 
@@ -133,7 +133,7 @@ class LogAscan(Scan1D):
 
     def _gen(self):
         self._steps = np.logspace(self.start, self.stop, self.num)
-        return super()._gen()
+        yield from super()._gen()
 
 
 class LinDscan(Dscan):
@@ -166,7 +166,7 @@ class LinDscan(Dscan):
 
     def _gen(self):
         self.steps = np.linspace(self.start, self.stop, self.num)
-        return super()._gen()
+        yield from super()._gen()
 
 
 class LogDscan(Dscan):
@@ -199,4 +199,4 @@ class LogDscan(Dscan):
 
     def _gen(self):
         self.steps = np.logspace(self.start, self.stop, self.num)
-        return super()._gen()
+        yield from super()._gen()
