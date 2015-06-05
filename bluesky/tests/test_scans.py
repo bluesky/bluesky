@@ -1,4 +1,4 @@
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_greater
 from bluesky.scans import *
 from bluesky.callbacks import *
 from bluesky import RunEngine
@@ -33,52 +33,84 @@ def test_dscan():
     yield traj_checker, scan, traj
 
 
-def test_linascan():
+def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
     scan = LinAscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
 
 
-def test_logascan():
+def test_log_ascan():
     traj = np.logspace(0, 10, 5)
     scan = LogAscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
 
 
-def test_lindscan():
+def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
     scan = LinDscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
 
 
-def test_logdscan():
+def test_log_dscan():
     traj = np.logspace(0, 10, 5) + 6
     motor.set(6)
     scan = LogDscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
 
-def test_linascan():
+def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
     scan = LinAscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
 
 
-def test_logascan():
+def test_log_ascan():
     traj = np.logspace(0, 10, 5)
     scan = LogAscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
 
 
-def test_lindscan():
+def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
     scan = LinDscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
 
 
-def test_logdscan():
+def test_log_dscan():
     traj = np.logspace(0, 10, 5) + 6
     motor.set(6)
     scan = LogDscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
+
+
+def test_adaptive_ascan():
+    scan1 = AdaptiveAscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.1)
+    scan2 = AdaptiveAscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.2)
+
+    actual_traj = []
+    col = collector('pos', actual_traj)
+    counter1 = CallbackCounter()
+    counter2 = CallbackCounter()
+
+    RE(scan1, subs={'event': [col, counter1]})
+    RE(scan2, subs={'event': counter2})
+    assert_greater(counter1.value, counter2.value)
+    assert_equal(actual_traj[0], 0)
+
+
+def test_adaptive_dscan():
+    scan1 = AdaptiveDscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.1)
+    scan2 = AdaptiveDscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.2)
+
+    actual_traj = []
+    col = collector('pos', actual_traj)
+    counter1 = CallbackCounter()
+    counter2 = CallbackCounter()
+
+    motor.set(1)
+    RE.verbose = False
+    RE(scan1, subs={'event': [col, counter1]})
+    RE(scan2, subs={'event': counter2})
+    assert_greater(counter1.value, counter2.value)
+    assert_equal(actual_traj[0], 1)
