@@ -46,7 +46,7 @@ class Ascan(Scan1D):
         return super()._gen()
 
 
-class DScan(Scan1D):
+class Dscan(Scan1D):
     """
     Delta (relative) scan over one variable in user-specified steps
 
