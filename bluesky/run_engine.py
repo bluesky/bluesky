@@ -467,7 +467,7 @@ class RunEngine:
         self._resume()  # to create RunStop Document
 
     def _run(self, gen):
-        # This function is optionally run on its own thread.
+        gen = iter(gen)  # no-op on generators; needed for classes
         doc = dict(uid=self._run_start_uid,
                    time=ttime.time(), beamline_id=beamline_id, owner=owner,
                    scan_id=scan_id, **custom)
