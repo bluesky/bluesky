@@ -17,7 +17,7 @@ from .utils import CallbackRegistry, SignalHandler
 
 __all__ = ['Msg', 'Base', 'Reader', 'Mover', 'SynGauss', 'FlyMagic',
            'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
-           'PanicStateError', 'RunInterrupt']
+           'RunInterrupt']
 
 # todo boo, hardcoded defaults
 beamline_id = 'test'
