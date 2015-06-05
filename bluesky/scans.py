@@ -102,7 +102,6 @@ class LinAscan(Scan1D):
         yield from super()._gen()
 
 
-
 class LogAscan(Scan1D):
     """
     Absolute scan over one variable in log-spaced steps
