@@ -34,8 +34,8 @@ def collector(field, output):
     func : function
         expects one argument, an Event dictionary
     """
-    def f(doc):
-        output.append(doc['data'][field])
+    def f(event):
+        output.append(event['data'][field])
 
     return f
 
@@ -67,10 +67,10 @@ def live_scalar_plotter(ax, y, x):
     x_data, y_data = [], []
     line, = ax.plot([], [], 'ro', markersize=10)
 
-    def update_plot(doc):
+    def update_plot(event):
         # Update with the latest data.
-        x_data.append(doc['data'][x])
-        y_data.append(doc['data'][y])
+        x_data.append(event['data'][x])
+        y_data.append(event['data'][y])
         line.set_data(x_data, y_data)
         # Rescale and redraw.
         ax.relim(visible_only=True)
