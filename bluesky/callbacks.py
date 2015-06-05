@@ -52,6 +52,11 @@ def live_scalar_plotter(ax, y, x):
     x : str
         the name of a data field in an Event
 
+    Returns
+    -------
+    func : function
+        expects one argument, an Event dictionary
+
     Examples
     --------
     >>> import matplotlib as pyplot
