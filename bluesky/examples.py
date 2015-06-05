@@ -1,10 +1,11 @@
 import threading
 import time as ttime
-from . import Msg
-from .run_engine import Msg, Mover, SynGauss
 from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
+from . import Msg
+from .run_engine import Msg, Mover, SynGauss
+from .callbacks import *
 
 
 motor = Mover('motor', ['pos'])
@@ -143,24 +144,6 @@ def stepscan(motor, det):
         yield Msg('read', motor)
         yield Msg('read', det)
         yield Msg('save')
-
-
-def live_scalar_plotter(ax, y, x):
-    x_data, y_data = [], []
-    line, = ax.plot([], [], 'ro', markersize=10)
-
-    def update_plot(doc):
-        # Update with the latest data.
-        x_data.append(doc['data'][x])
-        y_data.append(doc['data'][y])
-        line.set_data(x_data, y_data)
-        # Rescale and redraw.
-        ax.relim(visible_only=True)
-        ax.autoscale_view(tight=True)
-        ax.figure.canvas.draw()
-        ax.figure.canvas.flush_events()
-
-    return update_plot
 
 
 def MoveRead_gen(motor, detector):
