@@ -17,7 +17,7 @@ RE = None
 
 
 def setup():
-    global RE, motor, motor1, motor2, motor3, det
+    global RE
     RE = RunEngine()
 
 def test_msgs():
