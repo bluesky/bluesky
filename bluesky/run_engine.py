@@ -304,7 +304,7 @@ class RunEngine:
         ----------
         name : str
         func : callable
-            This can be a function or a method.
+            This can be a function or a method. The signature is `f(msg)`.
         """
         self._command_registry[name] = func
 
