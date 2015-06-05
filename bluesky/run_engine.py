@@ -5,7 +5,7 @@ from collections import namedtuple, deque, defaultdict
 import uuid
 import signal
 import threading
-from queue import Queue, Empty
+from queue import LifoQueue, Empty
 from enum import Enum
 
 from super_state_machine.machines import StateMachine
@@ -265,7 +265,7 @@ class RunEngine:
 
         # queues for passing Documents from "scan thread" to main thread
         queue_names = ['start', 'stop', 'event', 'descriptor']
-        self._queues = {name: Queue() for name in queue_names}
+        self._queues = {name: LifoQueue() for name in queue_names}
 
         # public dispatcher for callbacks processed on the main thread
         self.dispatcher = Dispatcher(self._queues)
@@ -717,13 +717,22 @@ class Dispatcher:
         self.cb_registry = CallbackRegistry()
 
     def process_queue(self, name):
+        """
+        Process the last item in the queue. Skip and dump any others.
+        """
         queue = self.queues[name]
         try:
-            while True:
-                document = queue.get(timeout=self.timeout, block=False)
-                self.cb_registry.process(name, document)
+            document = queue.get(timeout=self.timeout, block=False)
         except Empty:
             pass
+        else:
+            self.cb_registry.process(name, document)
+            # Dump any documents we will be skipping to keep the queue small.
+            try:
+                while True:
+                    queue.get(block=False)
+            except Empty:
+                pass
 
 
     def process_all_queues(self):
