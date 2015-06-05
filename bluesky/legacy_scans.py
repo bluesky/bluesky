@@ -14,10 +14,27 @@ def _deprecation_warning(replacement):
 
 
 class _LegacyScan:
+    _shared_config = {'default_detectors': [],
+                      'detectors': []}
+
+    @property
+    def default_detectors(self):
+        return self._shared_config['default_detectors']
+
+    @default_detectors.setter
+    def default_detectors(self, val):
+        self._shared_config['default_detectors'] = val
+
+    @property
+    def detectors(self):
+        return self._shared_config['detectors']
+
+    @detectors.setter
+    def detectors(self, val):
+        self._shared_config['detectors'] = val
+
     def __init__(self, RE):
         self.RE = RE
-        self.default_detectors = []
-        self.detectors = []
 
     def _run(self, curried):
         dets = set(self.detectors) | set(self.default_detectors)
