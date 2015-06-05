@@ -9,12 +9,15 @@ class Scan(Struct):
 
 
 class Scan1D(Scan):
+    _fields = ['motor', 'detectors', 'steps']
+
     def _gen(self):
         for step in self._steps:
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
             yield Msg('wait', None, 'A')
             yield Msg('create')
+            yield Msg('read', self.motor)
             for det in self.detectors:
                 yield Msg('trigger', det)
                 yield Msg('read', det)
@@ -34,8 +37,6 @@ class Ascan(Scan1D):
     steps : list
         list of positions
     """
-    _fields = ['motor', 'detectors', 'steps']
-
     def _gen(self):
         self._steps = self.steps
         return super()._gen()
