@@ -17,7 +17,7 @@ from .utils import CallbackRegistry, SignalHandler
 
 __all__ = ['Msg', 'Base', 'Reader', 'Mover', 'SynGauss', 'FlyMagic',
            'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
-           'RunInterrupt']
+           'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
 # todo boo, hardcoded defaults
 beamline_id = 'test'
@@ -252,6 +252,7 @@ class RunEngine:
     def __init__(self):
         super(RunEngine, self).__init__()
         self._panic = False
+        self._bundling = False
         self._sigint_handler = None
         self._sigtstp_handler = None
         self._objs_read = deque()  # objects read in one Event
@@ -301,6 +302,7 @@ class RunEngine:
         self.verbose = True
 
     def clear(self):
+        self._bundling = False
         self._objs_read.clear()
         self._read_cache.clear()
         self._describe_cache.clear()
@@ -614,6 +616,7 @@ class RunEngine:
     def _create(self, msg):
         self._read_cache.clear()
         self._objs_read.clear()
+        self._bundling = True
 
     def _read(self, msg):
         obj = msg.obj
@@ -644,6 +647,7 @@ class RunEngine:
             self._sequence_counters[objs_read] = count(1)
         else:
             descriptor_uid = self._descriptor_uids[objs_read]
+        self._bundling = False
 
         # Events
         seq_num = next(self._sequence_counters[objs_read])
@@ -727,6 +731,9 @@ class RunEngine:
         self.request_pause(*msg.args, **msg.kwargs)
 
     def _checkpoint(self, msg):
+        if self._bundling:
+            raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
+                                         "and before 'save'. Aborting!")
         self._msg_cache = deque()
         if self.state.is_soft_pausing:
             self.state.pause()  # soft_pausing -> paused
@@ -849,4 +856,8 @@ class PanicError(Exception):
 
 
 class RunInterrupt(KeyboardInterrupt):
+    pass
+
+
+class IllegalMessageSequence(Exception):
     pass
