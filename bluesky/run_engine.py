@@ -449,7 +449,8 @@ class RunEngine:
             def func():
                 return self._run(gen)
             if use_threading:
-                self._thread = threading.Thread(target=func)
+                self._thread = threading.Thread(target=func,
+                                                name='scan_thread')
                 self._thread.start()
                 while self._thread.is_alive() and not self.state.is_paused:
                     self.dispatcher.process_all_queues()
