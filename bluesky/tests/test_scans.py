@@ -1,4 +1,4 @@
-from nose.tools import assert_equal, assert_greater
+from nose.tools import assert_equal, assert_greater, assert_in
 from bluesky.scans import *
 from bluesky.callbacks import *
 from bluesky.standard_config import ascan, dscan, ct
@@ -141,3 +141,12 @@ def test_legacy_scans():
     ascan(motor, 0, 5, 5)
     dscan(motor, 0, 5, 5)
     ct()
+
+    # test that metadata is passed
+    # notice that we can pass subs to the RE as well
+
+    def assert_lion(doc):
+        assert_in('animal', doc)
+        assert_equal(doc['animal'], 'lion')
+
+    ct(animal='lion', subs={'start': assert_lion})
