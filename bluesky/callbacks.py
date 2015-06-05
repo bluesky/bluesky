@@ -15,6 +15,31 @@ class CallbackCounter:
         self.value = next(self.counter)
 
 
+def collector(field, output):
+    """
+    Build a function that appends data to a list.
+
+    This is useful for testing but not advised for general use. (There is
+    probably a better way to do whatever you want to do!)
+
+    Parameters
+    ----------
+    field : str
+        the name of a data field in an Event
+    output : mutable iterable
+        such as a list
+
+    Returns
+    -------
+    func : function
+        expects one argument, an Event dictionary
+    """
+    def f(doc):
+        output.append(doc['data'][field])
+
+    return f
+
+
 def live_scalar_plotter(ax, y, x):
     """
     Build a function that updates a plot from a stream of Events.
