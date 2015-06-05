@@ -297,17 +297,47 @@ class RunEngine:
         self._temp_callback_ids.clear()
 
     def register_command(self, name, func):
+        """
+        Register a new Message command.
+
+        Parameters
+        ----------
+        name : str
+        func : callable
+            This can be a function or a method.
+        """
         self._command_registry[name] = func
 
     def unregister_command(self, name):
+        """
+        Unregister a Message command.
+
+        Parameters
+        ----------
+        name : str
+        """
         del self._command_registry[name]
 
     def panic(self):
+        """
+        Do not permit the RunEngine to run until all_is_well() is called.
+
+        If the RunEngine is currently running, it will abort before processing
+        any more Messages and enter the 'idle' state.
+
+        If the RunEngine is currently paused, it will stay in the 'paused'
+        state, and it will disallow resume() until all_is_well() is called.
+        """
         # Release GIL by sleeping, allowing other threads to set panic.
         ttime.sleep(0.01)
         self._panic = True
 
     def all_is_well(self):
+        """
+        Un-panic.
+
+        If the panic occurred during a pause, the run can be resumed.
+        """
         self._panic = False
 
     def request_pause(self, hard=True, name=None, callback=None):
@@ -359,17 +389,19 @@ class RunEngine:
         self._queues[name].put(doc)
 
     # todo remove the mutable from this function sig!!
-    def __call__(self, gen, subscriptions={}, use_threading=True):
+    def __call__(self, gen, subs={}, use_threading=True):
         """Run the scan defined by ``gen``
 
         Parameters
         ----------
         gen : generator
-            A generator that yields ``Msg`` objects
-        subscriptions : dict
-            Temporary subscriptions to be added for this call only
-        use_threading : bool
-            duh.
+            a generator or that yields ``Msg`` objects (or an iterable that
+            returns such a generator)
+        subs: dict, optional
+            temporary subscriptions to be added for this call only
+        use_threading : bool, optional
+            True by default. False makes debugging easier, but removes some
+            features like pause/resume and subscriptions.
         """
         self.state.run()
         self.clear()
@@ -428,6 +460,9 @@ class RunEngine:
         self.dispatcher.process_all_queues()  # catch any stragglers
 
     def abort(self):
+        """
+        Abort a paused scan.
+        """
         self.state.abort()
         self._resume()  # to create RunStop Document
 
@@ -664,9 +699,11 @@ class RunEngine:
                        ''.format(msg, response))
 
     def emit(self, name, doc):
+        "Process blocking, scan-thread callbacks."
         self._scan_cb_registry.process(name, doc)
 
     def debug(self, msg):
+        "Print if the verbose attribute is True."
         if self.verbose:
             print(msg)
 
