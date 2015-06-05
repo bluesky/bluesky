@@ -1,6 +1,7 @@
 from nose.tools import assert_equal, assert_greater
 from bluesky.scans import *
 from bluesky.callbacks import *
+from bluesky.standard_config import ascan, dscan, ct
 from bluesky import RunEngine
 from bluesky.examples import motor, det
 
@@ -114,3 +115,21 @@ def test_adaptive_dscan():
     RE(scan2, subs={'event': counter2})
     assert_greater(counter1.value, counter2.value)
     assert_equal(actual_traj[0], 1)
+
+
+def test_count():
+    actual_intensity = []
+    col = collector('intensity', actual_intensity)
+    motor.set(0)
+    scan = Count([det], subs={'event': col})
+    RE(scan)
+    assert_equal(actual_intensity[0], 1.0)
+
+
+def test_legacy_scans():
+    # smoke tests
+    for scan_instance in [ascan, dscan, ct]:
+        scan_instance.detectors.append(det)
+    ascan(motor, 0, 5, 5)
+    dscan(motor, 0, 5, 5)
+    ct()

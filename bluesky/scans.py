@@ -7,6 +7,21 @@ class Scan(Struct):
     def __iter__(self):
         return self._gen()
 
+class Count(Scan):
+    _fields = ['detectors']
+
+    def _gen(self):
+        dets = self.detectors
+        yield Msg('checkpoint')
+        yield Msg('create')
+        for det in dets:
+            yield Msg('trigger', det, block_group='A')
+        for det in dets:
+            yield Msg('wait', None, 'A')
+        for det in dets:
+            yield Msg('read', det)
+        yield Msg('save')
+
 
 class Scan1D(Scan):
     _fields = ['motor', 'detectors', 'steps']
