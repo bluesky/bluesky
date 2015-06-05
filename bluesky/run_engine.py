@@ -449,7 +449,8 @@ class RunEngine:
             for func in funcs:
                 if not callable(func):
                     raise ValueError("subs values must be functions or lists "
-                                     "of functions")
+                                     "of functions. The offending entry is\n "
+                                     "{0}".format(func))
                 self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
         if self._panic:
