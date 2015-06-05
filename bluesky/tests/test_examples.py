@@ -2,7 +2,7 @@ import nose
 from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
                         assert_true)
 from bluesky.examples import *
-from bluesky import RunEngine, Mover, SynGauss, RunInterrupt, Msg, PanicError
+from bluesky import RunEngine, RunInterrupt, Msg, PanicError
 from super_state_machine.errors import TransitionError
 try:
     import matplotlib.pyplot as plt
@@ -14,21 +14,11 @@ else:
 
 # global utility vars defined in setup()
 RE = None
-motor = None
-motor1 = None
-motor2 = None
-motor3 = None
-det = None
 
 
 def setup():
     global RE, motor, motor1, motor2, motor3, det
     RE = RunEngine()
-    motor = Mover('motor', ['pos'])
-    motor1 = Mover('motor1', ['pos'])
-    motor2 = Mover('motor2', ['pos'])
-    motor3 = Mover('motor3', ['pos'])
-    det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
 
 def test_msgs():
     m = Msg('set', motor, {'pos': 5})
