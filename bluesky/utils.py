@@ -1,6 +1,7 @@
 import signal
 from weakref import ref, WeakKeyDictionary
 import types
+from inspect import Parameter, Signature
 
 
 __all__ = ['SignalHandler', 'CallbackRegistry']
@@ -225,3 +226,28 @@ class _BoundMethodProxy:
 
     def __hash__(self):
         return self._hash
+
+
+# The following three code blocks are from David Beazley's
+# 'Python 3 Metaprogramming' https://www.youtube.com/watch?v=sPiWg5jSoZI
+
+def make_signature(names):
+    return Signature(Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
+                     for name in names)
+
+
+class StructMeta(type):
+    def __new__(cls, name, bases, clsdict):
+        clsobj = super().__new__(cls, name, bases, clsdict)
+        sig = make_signature(clsobj._fields)
+        setattr(clsobj, '__signature__', sig)
+        return clsobj
+
+
+class Struct(metaclass=StructMeta):
+    "The _fields of any subclass become its attritubes and __init__ args."
+    _fields = []
+    def __init__(self, *args, **kwargs):
+        bound = self.__signature__.bind(*args, **kwargs)
+        for name, val in bound.arguments.items():
+            setattr(self, name, val)

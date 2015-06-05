@@ -1,10 +1,17 @@
 import threading
 import time as ttime
 from . import Msg
-from .run_engine import Msg
+from .run_engine import Msg, Mover, SynGauss
 from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
+
+
+motor = Mover('motor', ['pos'])
+motor1 = Mover('motor1', ['pos'])
+motor2 = Mover('motor2', ['pos'])
+motor3 = Mover('motor3', ['pos'])
+det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
 
 
 def simple_scan(motor):

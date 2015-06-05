@@ -5,7 +5,7 @@ from collections import namedtuple, deque, defaultdict
 import uuid
 import signal
 import threading
-from queue import Queue, Empty
+from queue import LifoQueue, Empty
 from enum import Enum
 
 from super_state_machine.machines import StateMachine
@@ -265,7 +265,7 @@ class RunEngine:
 
         # queues for passing Documents from "scan thread" to main thread
         queue_names = ['start', 'stop', 'event', 'descriptor']
-        self._queues = {name: Queue() for name in queue_names}
+        self._queues = {name: LifoQueue() for name in queue_names}
 
         # public dispatcher for callbacks processed on the main thread
         self.dispatcher = Dispatcher(self._queues)
@@ -297,17 +297,47 @@ class RunEngine:
         self._temp_callback_ids.clear()
 
     def register_command(self, name, func):
+        """
+        Register a new Message command.
+
+        Parameters
+        ----------
+        name : str
+        func : callable
+            This can be a function or a method. The signature is `f(msg)`.
+        """
         self._command_registry[name] = func
 
     def unregister_command(self, name):
+        """
+        Unregister a Message command.
+
+        Parameters
+        ----------
+        name : str
+        """
         del self._command_registry[name]
 
     def panic(self):
+        """
+        Do not permit the RunEngine to run until all_is_well() is called.
+
+        If the RunEngine is currently running, it will abort before processing
+        any more Messages and enter the 'idle' state.
+
+        If the RunEngine is currently paused, it will stay in the 'paused'
+        state, and it will disallow resume() until all_is_well() is called.
+        """
         # Release GIL by sleeping, allowing other threads to set panic.
         ttime.sleep(0.01)
         self._panic = True
 
     def all_is_well(self):
+        """
+        Un-panic.
+
+        If the panic occurred during a pause, the run can be resumed.
+        """
         self._panic = False
 
     def request_pause(self, hard=True, name=None, callback=None):
@@ -359,21 +389,39 @@ class RunEngine:
         self._queues[name].put(doc)
 
     # todo remove the mutable from this function sig!!
-    def __call__(self, gen, subscriptions={}, use_threading=True):
+    def __call__(self, gen, subs={}, use_threading=True):
         """Run the scan defined by ``gen``
 
         Parameters
         ----------
         gen : generator
-            A generator that yields ``Msg`` objects
-        subscriptions : dict
-            Temporary subscriptions to be added for this call only
-        use_threading : bool
-            duh.
+            a generator or that yields ``Msg`` objects (or an iterable that
+            returns such a generator)
+        subs: dict, optional
+            Temporary subscriptions (a.k.a. callbacks) to be used on this run.
+            Callbacks should expect a single argument, a Python dictionary.
+            See examples below.
+        use_threading : bool, optional
+            True by default. False makes debugging easier, but removes some
+            features like pause/resume and main-thread subscriptions.
+
+        Examples
+        --------
+        # Simplest example:
+        >>> RE(my_scan)
+        # Examples using subscriptions (a.k.a. callbacks):
+        >>> def print_data(doc):
+        ...     print("Measured: %s" % doc['data'])
+        ...
+        >>> def celebrate(doc):
+        ...     # Do nothing with the input.
+        ...     print("The run is finished!!!")
+        ...
+        >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
         self.state.run()
         self.clear()
-        for name, func in subscriptions.items():
+        for name, func in subs.items():
             self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
         if self._panic:
@@ -428,11 +476,14 @@ class RunEngine:
         self.dispatcher.process_all_queues()  # catch any stragglers
 
     def abort(self):
+        """
+        Abort a paused scan.
+        """
         self.state.abort()
         self._resume()  # to create RunStop Document
 
     def _run(self, gen):
-        # This function is optionally run on its own thread.
+        gen = iter(gen)  # no-op on generators; needed for classes
         doc = dict(uid=self._run_start_uid,
                    time=ttime.time(), beamline_id=beamline_id, owner=owner,
                    scan_id=scan_id, **custom)
@@ -664,9 +715,11 @@ class RunEngine:
                        ''.format(msg, response))
 
     def emit(self, name, doc):
+        "Process blocking, scan-thread callbacks."
         self._scan_cb_registry.process(name, doc)
 
     def debug(self, msg):
+        "Print if the verbose attribute is True."
         if self.verbose:
             print(msg)
 
@@ -674,19 +727,27 @@ class RunEngine:
 class Dispatcher:
     """Dispatch documents to user-defined consumers on the main thread."""
 
-    def __init__(self, queues, timeout=0.05):
+    def __init__(self, queues):
         self.queues = queues
-        self.timeout = timeout
         self.cb_registry = CallbackRegistry()
 
     def process_queue(self, name):
+        """
+        Process the last item in the queue. Skip and dump any others.
+        """
         queue = self.queues[name]
         try:
-            while True:
-                document = queue.get(timeout=self.timeout, block=False)
-                self.cb_registry.process(name, document)
+            document = queue.get_nowait()
         except Empty:
             pass
+        else:
+            self.cb_registry.process(name, document)
+            # Dump any documents we will be skipping to keep the queue small.
+            try:
+                while True:
+                    queue.get_nowait()
+            except Empty:
+                pass
 
 
     def process_all_queues(self):

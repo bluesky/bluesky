@@ -2,7 +2,7 @@ import nose
 from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
                         assert_true)
 from bluesky.examples import *
-from bluesky import RunEngine, Mover, SynGauss, RunInterrupt, Msg, PanicError
+from bluesky import RunEngine, RunInterrupt, Msg, PanicError
 from super_state_machine.errors import TransitionError
 try:
     import matplotlib.pyplot as plt
@@ -14,21 +14,11 @@ else:
 
 # global utility vars defined in setup()
 RE = None
-motor = None
-motor1 = None
-motor2 = None
-motor3 = None
-det = None
 
 
 def setup():
-    global RE, motor, motor1, motor2, motor3, det
+    global RE
     RE = RunEngine()
-    motor = Mover('motor', ['pos'])
-    motor1 = Mover('motor1', ['pos'])
-    motor2 = Mover('motor2', ['pos'])
-    motor3 = Mover('motor3', ['pos'])
-    det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
 
 def test_msgs():
     m = Msg('set', motor, {'pos': 5})
@@ -151,21 +141,21 @@ def print_event_time(doc):
 
 def test_calltime_subscription():
     assert_equal(RE.state, 'idle')
-    RE(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
+    RE(simple_scan_saving(motor, det), subs={'event': print_event_time})
     assert_equal(RE.state, 'idle')
 
 def test_stateful_subscription():
     assert_equal(RE.state, 'idle')
     token = RE.subscribe('event', print_event_time)
-    RE(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
+    RE(simple_scan_saving(motor, det))
     RE.unsubscribe(token)
     assert_equal(RE.state, 'idle')
 
-def test_stepscan():
+def test_live_plotter():
     if skip_mpl:
         raise nose.SkipTest("matplotlib is not available")
     fig, ax = plt.subplots()
     my_plotter = live_scalar_plotter(ax, 'intensity', 'pos')
     assert_equal(RE.state, 'idle')
-    RE(stepscan(motor, det), subscriptions={'event': my_plotter})
+    RE(stepscan(motor, det), subs={'event': my_plotter})
     assert_equal(RE.state, 'idle')
