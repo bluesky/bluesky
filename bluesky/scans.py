@@ -2,10 +2,13 @@ from .run_engine import Msg
 from .utils import Struct
 import numpy as np
 
-class Scan1D(Struct):
+
+class Scan(Struct):
     def __iter__(self):
         return self._gen()
 
+
+class Scan1D(Scan):
     def _gen(self):
         for step in self._steps:
             yield Msg('checkpoint')
@@ -38,7 +41,7 @@ class Ascan(Scan1D):
         return super()._gen()
 
 
-class DScan(Ascan):
+class DScan(Scan1D):
     """
     Delta (relative) scan over one variable in user-specified steps
 
