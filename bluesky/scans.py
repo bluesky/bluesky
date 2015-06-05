@@ -63,7 +63,7 @@ class DScan(Scan1D):
         if len(ret.keys()) > 1:
             raise NotImplementedError("Can't DScan this motor")
         key, = ret.keys()
-        current_val = ret[key]['value']
+        current_value = ret[key]['value']
         self._steps = self.steps - current_value
         return super()._gen()
 
