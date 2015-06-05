@@ -398,10 +398,26 @@ class RunEngine:
             a generator or that yields ``Msg`` objects (or an iterable that
             returns such a generator)
         subs: dict, optional
-            temporary subscriptions to be added for this call only
+            Temporary subscriptions (a.k.a. callbacks) to be used on this run.
+            Callbacks should expect a single argument, a Python dictionary.
+            See examples below.
         use_threading : bool, optional
             True by default. False makes debugging easier, but removes some
-            features like pause/resume and subscriptions.
+            features like pause/resume and main-thread subscriptions.
+
+        Examples
+        --------
+        # Simplest example:
+        >>> RE(my_scan)
+        # Examples using subscriptions (a.k.a. callbacks):
+        >>> def print_data(doc):
+        ...     print("Measured: %s" % doc['data'])
+        ...
+        >>> def celebrate(doc):
+        ...     # Do nothing with the input.
+        ...     print("The run is finished!!!")
+        ...
+        >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
         self.state.run()
         self.clear()
