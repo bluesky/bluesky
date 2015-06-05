@@ -37,28 +37,28 @@ class _LegacyScan:
     def __init__(self, RE):
         self.RE = RE
 
-    def _run(self, curried):
+    def _run(self, curried, **kwargs):
         dets = set(self.detectors) | set(self.default_detectors)
-        self.RE(curried(dets))
+        self.RE(curried(dets), **kwargs)
 
 
 class LegacyAscan(_LegacyScan):
-    def __call__(self, motor, start, stop, num):
+    def __call__(self, motor, start, stop, num, **kwargs):
         _deprecation_warning('ascan', 'LinAscan')
         curried = lambda dets: LinAscan(motor, dets, start, stop, num)
-        super()._run(curried)
+        super()._run(curried, **kwargs)
 
 
 class LegacyDscan(_LegacyScan):
-    def __call__(self, motor, start, stop, num):
+    def __call__(self, motor, start, stop, num, **kwargs):
         _deprecation_warning('dscan', 'LinDscan')
         dets = set(self.detectors) | set(self.default_detectors)
         curried = lambda dets: LinDscan(motor, dets, start, stop, num)
-        super()._run(curried)
+        super()._run(curried, **kwargs)
 
 
 class LegacyCount(_LegacyScan):
-    def __call__(self):
+    def __call__(self, **kwargs):
         _deprecation_warning('ct', 'Count')
         curried = lambda dets: Count(dets)
-        super()._run(curried)
+        super()._run(curried, **kwargs)
