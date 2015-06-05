@@ -8,19 +8,45 @@ class Scan(Struct):
         return self._gen()
 
 class Count(Scan):
-    _fields = ['detectors']
+    """
+    Take one or more readings from the detectors. Do not move anything.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    num : integer, optional
+        number of readings to take; default is 1
+    delay : float
+        time delay between successive readings; default is 0
+
+    Examples
+    --------
+    # Count three detectors five time with a one-second delay between readings.
+    >>> c = Count([det1, det2, det3], 5, 1)
+    >>> RE(c)
+    """
+
+    # This class does not actually use Struct because there are defaults.
+    def __init__(self, detectors, num=1, delay=0):
+        self.detectors = detectors
+        self.num = num
+        self.delay = delay
 
     def _gen(self):
         dets = self.detectors
-        yield Msg('checkpoint')
-        yield Msg('create')
-        for det in dets:
-            yield Msg('trigger', det, block_group='A')
-        for det in dets:
-            yield Msg('wait', None, 'A')
-        for det in dets:
-            yield Msg('read', det)
-        yield Msg('save')
+        delay = self.delay
+        for i in range(self.num):
+            yield Msg('checkpoint')
+            yield Msg('create')
+            for det in dets:
+                yield Msg('trigger', det, block_group='A')
+            for det in dets:
+                yield Msg('wait', None, 'A')
+            for det in dets:
+                yield Msg('read', det)
+            yield Msg('save')
+            yield Msg('sleep', None, delay)
 
 
 class Scan1D(Scan):

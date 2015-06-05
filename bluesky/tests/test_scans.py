@@ -121,9 +121,17 @@ def test_count():
     actual_intensity = []
     col = collector('intensity', actual_intensity)
     motor.set(0)
-    scan = Count([det], subs={'event': col})
-    RE(scan)
-    assert_equal(actual_intensity[0], 1.0)
+    scan = Count([det])
+    RE(scan, subs={'event': col})
+    assert_equal(actual_intensity[0], 1.)
+
+    # multiple counts
+    actual_intensity = []
+    col = collector('intensity', actual_intensity)
+    scan = Count([det], num=3, delay=0.05)
+    RE(scan, subs={'event': col})
+    assert_equal(scan.num, 3)
+    assert_equal(actual_intensity, [1., 1., 1.])
 
 
 def test_legacy_scans():
