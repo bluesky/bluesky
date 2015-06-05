@@ -19,7 +19,10 @@ class Scan1D(Scan):
             yield Msg('create')
             yield Msg('read', self.motor)
             for det in self.detectors:
-                yield Msg('trigger', det)
+                yield Msg('trigger', det, block_group='B')
+            for det in self.detectors:
+                yield Msg('wait', None, 'B')
+            for det in self.detectors:
                 yield Msg('read', det)
             yield Msg('save')
 
