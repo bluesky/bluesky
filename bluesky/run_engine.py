@@ -1,7 +1,7 @@
 import time as ttime
 import sys
 from itertools import count
-from collections import namedtuple, deque, defaultdict
+from collections import namedtuple, deque, defaultdict, Iterable
 import uuid
 import signal
 import threading
@@ -416,8 +416,9 @@ class RunEngine:
             returns such a generator)
         subs: dict, optional
             Temporary subscriptions (a.k.a. callbacks) to be used on this run.
-            Callbacks should expect a single argument, a Python dictionary.
-            See examples below.
+            - Valid dict keys are: {'start', 'stop', 'event', 'descriptor'}
+            - Dict values must be a function with the signature `f(dict)` or a
+              list of such functions
         use_threading : bool, optional
             True by default. False makes debugging easier, but removes some
             features like pause/resume and main-thread subscriptions.
@@ -438,8 +439,15 @@ class RunEngine:
         """
         self.state.run()
         self.clear()
-        for name, func in subs.items():
-            self._temp_callback_ids.add(self.subscribe(name, func))
+        for name, funcs in subs.items():
+            if not isinstance(funcs, Iterable):
+                # Take funcs to be a single function.
+                funcs = [funcs]
+            for func in funcs:
+                if not callable(func):
+                    raise ValueError("subs values must be functions or lists "
+                                     "of functions")
+                self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
         if self._panic:
             raise PanicError("RunEngine is panicked. The run "
