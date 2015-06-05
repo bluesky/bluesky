@@ -141,21 +141,21 @@ def print_event_time(doc):
 
 def test_calltime_subscription():
     assert_equal(RE.state, 'idle')
-    RE(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
+    RE(simple_scan_saving(motor, det), subs={'event': print_event_time})
     assert_equal(RE.state, 'idle')
 
 def test_stateful_subscription():
     assert_equal(RE.state, 'idle')
     token = RE.subscribe('event', print_event_time)
-    RE(simple_scan_saving(motor, det), subscriptions={'event': print_event_time})
+    RE(simple_scan_saving(motor, det))
     RE.unsubscribe(token)
     assert_equal(RE.state, 'idle')
 
-def test_stepscan():
+def test_live_plotter():
     if skip_mpl:
         raise nose.SkipTest("matplotlib is not available")
     fig, ax = plt.subplots()
     my_plotter = live_scalar_plotter(ax, 'intensity', 'pos')
     assert_equal(RE.state, 'idle')
-    RE(stepscan(motor, det), subscriptions={'event': my_plotter})
+    RE(stepscan(motor, det), subs={'event': my_plotter})
     assert_equal(RE.state, 'idle')

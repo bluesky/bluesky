@@ -405,7 +405,7 @@ class RunEngine:
         """
         self.state.run()
         self.clear()
-        for name, func in subscriptions.items():
+        for name, func in subs.items():
             self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
         if self._panic:
