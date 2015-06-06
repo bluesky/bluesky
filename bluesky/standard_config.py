@@ -24,16 +24,28 @@ SEARCH_PATH.extend([os.path.expanduser('~/.config/bluesky/bluesky_history.db'),
 
 
 def get_history():
-    # Find an existing one.
+    # Plan A: Find an existing db.
     for path in SEARCH_PATH:
         if os.path.isfile(path):
-            logger.debug('Using History file at %s' % path)
-            return history.History(path)
-    # Make new one.
+            try:
+                h = history.History(path)
+            except IOError:
+                continue
+            else:
+                logger.debug('Using History file at %s' % path)
+                return h
+    # Plan B: Make new db.
     for path in SEARCH_PATH:
         if os.path.isdir(os.path.dirname(path)):
-            logger.debug('Creating History file at %s' % path)
+            try:
+                h = history.History(path)
+            except IOError:
+                continue
+            else:
+                logger.debug('Created History file at %s' % path)
+                return h
             return history.History(path[0])
+    # Plan C: Use an in-memory sqlite db.
     logger.debug('Storing History in memory; it will not persist.')
     return history.History(':memory:')
 
