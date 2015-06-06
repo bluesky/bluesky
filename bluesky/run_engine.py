@@ -1,3 +1,5 @@
+import logging
+from io import StringIO
 import time as ttime
 import sys
 from itertools import count
@@ -344,7 +346,13 @@ class RunEngine:
         for name in self._queues.keys():
             self._register_scan_callback(name, make_push_func(name))
 
-        self.verbose = True
+        self.verbose = False
+        # Make a logger for this specific RE instance, using the instance's
+        # Python id, to keep from mixing output from separate instances.
+        logger_name = "{name}_id{id}".format(name=__name__, id=id(self))
+        self.logger = logging.getLogger(logger_name)
+        self._log_stream = StringIO()
+        self._run_log_handler = logging.StreamHandler(self._log_stream)
 
     def _clear(self):
         self._bundling = False
@@ -537,6 +545,7 @@ class RunEngine:
                                    "unless a new value is specified.".format(
                                         field))
 
+        self.logger.addHandler(self._run_log_handler)
         self.state.run()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             def func():
@@ -627,7 +636,6 @@ class RunEngine:
                        reason=reason)
             self.emit('stop', doc)
             self.debug("*** Emitted RunStop:\n%s" % doc)
-            sys.stdout.flush()
             if self.state.is_aborting or self.state.is_running:
                 self.state.stop()
             elif self.state.is_soft_pausing or self.state.is_hard_pausing:
@@ -637,6 +645,8 @@ class RunEngine:
                 self.state.pause()
                 self.state.abort()
                 self.state.stop()
+            sys.stdout.flush()
+            self.logger.removeHandler(self._run_log_handler)
 
     def _check_for_trouble(self):
         # Check for panic.
@@ -833,7 +843,8 @@ class RunEngine:
         self._scan_cb_registry.process(name, doc)
 
     def debug(self, msg):
-        "Print if the verbose attribute is True."
+        "Print if the verbose attribute is True. Log either way."
+        self.logger.debug(msg)
         if self.verbose:
             print(msg)
 
