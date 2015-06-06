@@ -342,7 +342,7 @@ class RunEngine:
 
         self.verbose = True
 
-    def clear(self):
+    def _clear(self):
         self._bundling = False
         self._objs_read.clear()
         self._read_cache.clear()
@@ -491,7 +491,7 @@ class RunEngine:
         """
         if subs is None:
             subs = {}
-        self.clear()
+        self._clear()
         for name, funcs in subs.items():
             if not isinstance(funcs, Iterable):
                 # Take funcs to be a single function.
