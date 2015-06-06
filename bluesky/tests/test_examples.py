@@ -1,7 +1,7 @@
+from history import History
 import nose
 from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
                         assert_true, assert_in, assert_not_in)
-from history import History
 from bluesky.examples import *
 from bluesky.callbacks import *
 from bluesky import RunEngine, RunInterrupt, Msg, PanicError
@@ -19,12 +19,10 @@ RE = None
 
 
 def setup():
-    history = History(':memory:')
     global RE
-    h = History(':memory:')
-    RE = RunEngine(h)
-    RE.memory.put('owner', 'test_owner')
-    RE.memory.put('beamline_id', 'test_beamline')
+    RE = RunEngine()
+    RE.memory['owner'] = 'test_owner'
+    RE.memory['beamline_id'] = 'test_beamline'
 
 
 def test_msgs():
@@ -167,9 +165,14 @@ def test_live_plotter():
     RE(stepscan(motor, det), subs={'event': my_plotter})
     assert_equal(RE.state, 'idle')
 
-def test_memory():
-    h = History(':memory:')
-    RE = RunEngine(h)
+def test_memory_dict():
+    yield _memory, {}
+
+def test_memory_history():
+    yield _memory, History(':memory:')
+
+def _memory(memory):
+    RE = RunEngine(memory)
     scan = simple_scan(motor)
     assert_raises(KeyError, lambda: RE(scan))  # missing owner, beamline_id
     assert_raises(KeyError, lambda: RE(scan, owner='dan'))
@@ -178,8 +181,8 @@ def test_memory():
     RE.memory.clear()
     assert_raises(KeyError, lambda: RE(scan))
     # We can prime the memory directly.
-    RE.memory.put('owner', 'dan')
-    RE.memory.put('beamline_id', 'his desk')
+    RE.memory['owner'] = 'dan'
+    RE.memory['beamline_id'] = 'his desk'
     RE(scan)
     # Do optional values persist?
     RE(scan, project='sitting')

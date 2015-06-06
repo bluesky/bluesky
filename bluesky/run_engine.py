@@ -250,16 +250,18 @@ class RunEngine:
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner']
 
-    def __init__(self, memory):
+    def __init__(self, memory=None):
         """
         The Run Engine execute messages and emits Documents.
 
         Parameters
         ----------
-        memory : history.History object or similar
-            Anything with the methods `.get('key')` and `.put('key'`, stuff)`
-            and `.clear()` will work here. The standard configuration uses
-            history.History, a simple interface to a sqlite file.
+        memory : dict-like
+            The default is a standard Python dictionary, but fancier objects
+            can be used to store long-term history and persist it between
+            sessions. The standard configuration instantiates a Run Engine with
+            history.History, a simple interface to a sqlite file. Any object
+            supporting `__getitem__`, `__setitem__`, and `clear` will work.
 
         Attributes
         ----------
@@ -290,6 +292,8 @@ class RunEngine:
             Undo register_command.
         """
         super(RunEngine, self).__init__()
+        if memory is None:
+            memory = {}
         self.memory = memory
         self._extra_fields = set(['project', 'group', 'sample'])
         self._panic = False
@@ -510,7 +514,7 @@ class RunEngine:
 
         # Advance and stash scan_id
         try:
-            scan_id = self.memory.get('scan_id') + 1
+            scan_id = self.memory['scan_id'] + 1
         except KeyError:
             scan_id = 1
         self.memory['scan_id'] = scan_id
@@ -523,7 +527,7 @@ class RunEngine:
             else:
                 # Use old value.
                 try:
-                    metadata[field] = self.memory.get(field)
+                    metadata[field] = self.memory[field]
                 except KeyError:
                     if field not in self._REQUIRED_FIELDS:
                         continue
