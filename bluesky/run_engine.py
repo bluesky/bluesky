@@ -256,10 +256,10 @@ class RunEngine:
 
         Parameters
         ----------
-        memory : dict-like
+        memory : history.History object or similar
             Anything with the methods `.get('key')` and `.put('key'`, stuff)`
-            will work here. The standard configuration uses a dict-like
-            interface to a sqlite file.
+            and `.clear()` will work here. The standard configuration uses
+            history.History, a simple interface to a sqlite file.
 
         Attributes
         ----------
