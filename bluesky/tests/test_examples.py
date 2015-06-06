@@ -1,8 +1,9 @@
 import nose
 from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
-                        assert_true)
+                        assert_true, assert_in, assert_not_in)
 from history import History
 from bluesky.examples import *
+from bluesky.callbacks import *
 from bluesky import RunEngine, RunInterrupt, Msg, PanicError
 from super_state_machine.errors import TransitionError
 try:
@@ -165,3 +166,45 @@ def test_live_plotter():
     assert_equal(RE.state, 'idle')
     RE(stepscan(motor, det), subs={'event': my_plotter})
     assert_equal(RE.state, 'idle')
+
+def test_memory():
+    h = History(':memory:')
+    RE = RunEngine(h)
+    scan = simple_scan(motor)
+    assert_raises(KeyError, lambda: RE(scan))  # missing owner, beamline_id
+    assert_raises(KeyError, lambda: RE(scan, owner='dan'))
+    RE(scan, owner='dan', beamline_id='his desk')  # this should work
+    RE(scan)  # and now this should work, reusing metadata
+    RE.memory.clear()
+    assert_raises(KeyError, lambda: RE(scan))
+    # We can prime the memory directly.
+    RE.memory.put('owner', 'dan')
+    RE.memory.put('beamline_id', 'his desk')
+    RE(scan)
+    # Do optional values persist?
+    RE(scan, project='sitting')
+    RE(scan, subs={'start': validate_dict_cb('project', 'sitting')})
+
+    # Persistent values are white-listed, so this should not persist.
+    RE(scan, mood='excited')
+    RE(scan, subs={'start': validate_dict_cb_opposite('mood')})
+
+    # Add 'mood' to the whitelist and check that it persists.
+    RE.persistent_fields = RE.persistent_fields + ['mood']
+    # TODO get append working in the above. There is no good recipe for this
+    # on S.O. as far as I can find.
+    assert_in('mood', RE.persistent_fields)
+    RE(scan, mood='excited')
+    RE(scan, subs={'start': validate_dict_cb('mood', 'excited')})
+
+
+def validate_dict_cb(key, val):
+    def callback(doc):
+        assert_in(key, doc)
+        assert_equal(doc[key], val)
+    return callback
+
+def validate_dict_cb_opposite(key):
+    def callback(doc):
+        assert_not_in(key, doc)
+    return callback

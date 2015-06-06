@@ -291,8 +291,7 @@ class RunEngine:
         """
         super(RunEngine, self).__init__()
         self.memory = memory
-        self._extra_history_fields = ['project', 'group', 'sample']
-        self._extra_history_fields = set()
+        self._extra_fields = set(['project', 'group', 'sample'])
         self._panic = False
         self._bundling = False
         self._sigint_handler = None
@@ -380,11 +379,11 @@ class RunEngine:
 
     @property
     def persistent_fields(self):
-        return self._extra_history_fields | set(self._REQUIRED_FIELDS)
+        return list(set(self._extra_fields) | set(self._REQUIRED_FIELDS))
 
     @persistent_fields.setter
     def persistent_fields(self, val):
-        self._extra_history_fields = set(val)
+        self._extra_fields = val
 
     def panic(self):
         """
