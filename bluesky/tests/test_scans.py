@@ -1,4 +1,5 @@
 from nose.tools import assert_equal, assert_greater, assert_in
+from history import History
 from bluesky.scans import *
 from bluesky.callbacks import *
 from bluesky.standard_config import ascan, dscan, ct
@@ -11,7 +12,10 @@ RE = None
 
 def setup():
     global RE
-    RE = RunEngine()
+    h = History(':memory:')
+    RE = RunEngine(h)
+    RE.memory.put('owner', 'test_owner')
+    RE.memory.put('beamline_id', 'test_beamline')
 
 
 def traj_checker(scan, expected_traj):
@@ -136,8 +140,9 @@ def test_count():
 
 def test_legacy_scans():
     # smoke tests
-    for scan_instance in [ascan, dscan, ct]:
-        scan_instance.detectors.append(det)
+    ascan.detectors.append(det)
+    ascan.RE.memory.put('owner', 'test_owner')
+    ascan.RE.memory.put('beamline_id', 'test_beamline')
     ascan(motor, 0, 5, 5)
     dscan(motor, 0, 5, 5)
     ct()
@@ -150,3 +155,6 @@ def test_legacy_scans():
         assert_equal(doc['animal'], 'lion')
 
     ct(animal='lion', subs={'start': assert_lion})
+
+    # cleanup
+    ascan.RE.memory.clear()

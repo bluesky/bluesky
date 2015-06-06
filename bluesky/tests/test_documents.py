@@ -1,4 +1,5 @@
 from nose.tools import assert_in, assert_equal
+from history import History
 from bluesky.run_engine import RunEngine
 from bluesky.examples import simple_scan, motor
 
@@ -8,7 +9,10 @@ RE = None
 
 def setup():
     global RE
-    RE = RunEngine()
+    h = History(':memory:')
+    RE = RunEngine(h)
+    RE.memory.put('owner', 'test_owner')
+    RE.memory.put('beamline_id', 'test_beamline')
 
 
 def test_custom_metadata():

@@ -186,19 +186,19 @@ class RunEngineStateMachine(StateMachine):
 
     Attributes
     ----------
-    idle
+    is_idle
         State machine is in its idle state
-    running
+    is_running
         State machine is in its running state
-    aborting
+    is_aborting
         State machine has been asked to abort but is not yet ``idle``
-    soft_pausing
+    is_soft_pausing
         State machine has been asked to enter a soft pause but is not yet in
         its ``paused`` state
-    hard_pausing
+    is_hard_pausing
         State machine has been asked to enter a hard pause but is not yet in
         its ``paused`` state
-    paused
+    is_paused
         State machine is paused.
     """
 
@@ -248,9 +248,51 @@ class RunEngineStateMachine(StateMachine):
 class RunEngine:
 
     state = PropertyMachine(RunEngineStateMachine)
+    _REQUIRED_FIELDS = ['beamline_id', 'owner']
 
-    def __init__(self):
+    def __init__(self, memory):
+        """
+        The Run Engine execute messages and emits Documents.
+
+        Parameters
+        ----------
+        memory : dict-like
+            Anything with the methods `.get('key')` and `.put('key'`, stuff)`
+            will work here. The standard configuration uses a dict-like
+            interface to a sqlite file.
+
+        Attributes
+        ----------
+        state
+            {'idle', 'running', 'soft_pausing, 'hard_pausing', 'paused',
+             'aborting'}
+        memory
+            direct access to the dict-like persistent storage described above
+        persistent_fields
+            list of metadata fields that will be remembered and reused between
+            subsequence runs
+
+        Methods
+        -------
+        request_pause
+            Pause the Run Engine at the next checkpoint.
+        resume
+            Start from the last checkpoint after a pause.
+        abort
+            Move from 'paused' to 'idle', stopping the run permanently.
+        panic
+            Force the Run Engine to stop and/or disallow resume.
+        all_is_well
+            Un-panic
+        register_command
+            Teach the Run Engine a new Message command.
+        unregister_command
+            Undo register_command.
+        """
         super(RunEngine, self).__init__()
+        self.memory = memory
+        self._extra_history_fields = ['project', 'group', 'sample']
+        self._extra_history_fields = set()
         self._panic = False
         self._bundling = False
         self._sigint_handler = None
@@ -336,6 +378,14 @@ class RunEngine:
         """
         del self._command_registry[name]
 
+    @property
+    def persistent_fields(self):
+        return self._extra_history_fields | set(self._REQUIRED_FIELDS)
+
+    @persistent_fields.setter
+    def persistent_fields(self, val):
+        self._extra_history_fields = set(val)
+
     def panic(self):
         """
         Do not permit the RunEngine to run until all_is_well() is called.
@@ -406,8 +456,7 @@ class RunEngine:
     def _push_to_queue(self, name, doc):
         self._queues[name].put(doc)
 
-    # todo remove the mutable from this function sig!!
-    def __call__(self, gen, subs={}, use_threading=True, **kwargs):
+    def __call__(self, gen, subs=None, use_threading=True, **metadata):
         """Run the scan defined by ``gen``
 
         Any keyword arguments other than those listed below will be
@@ -441,8 +490,8 @@ class RunEngine:
         ...
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
-        custom_metadata = kwargs
-        self.state.run()
+        if subs is None:
+            subs = {}
         self.clear()
         for name, funcs in subs.items():
             if not isinstance(funcs, Iterable):
@@ -459,9 +508,36 @@ class RunEngine:
             raise PanicError("RunEngine is panicked. The run "
                              "was aborted before it began. No records "
                              "of this run were created.")
+
+        # Advance and stash scan_id
+        try:
+            scan_id = self.memory.get('scan_id') + 1
+        except KeyError:
+            scan_id = 1
+        self.memory['scan_id'] = scan_id
+        metadata['scan_id'] = scan_id
+
+        for field in self.persistent_fields:
+            if field in metadata:
+                # Stash and use new value.
+                self.memory[field] = metadata[field]
+            else:
+                # Use old value.
+                try:
+                    metadata[field] = self.memory.get(field)
+                except KeyError:
+                    if field not in self._REQUIRED_FIELDS:
+                        continue
+                    raise KeyError("There is no entry for '{0}'. "
+                                   "It is required for this run. In future "
+                                   "runs, the most recent entry can be reused "
+                                   "unless a new value is specified.".format(
+                                        field))
+
+        self.state.run()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             def func():
-                return self._run(gen, custom_metadata)
+                return self._run(gen, metadata)
             if use_threading:
                 self._thread = threading.Thread(target=func,
                                                 name='scan_thread')
@@ -514,11 +590,9 @@ class RunEngine:
         self.state.abort()
         self._resume()  # to create RunStop Document
 
-    def _run(self, gen, custom_metadata):
+    def _run(self, gen, metadata):
         gen = iter(gen)  # no-op on generators; needed for classes
-        doc = dict(uid=self._run_start_uid,
-                   time=ttime.time(), beamline_id=beamline_id, owner=owner,
-                   scan_id=scan_id, **custom_metadata)
+        doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
         self.debug("*** Emitted RunStart:\n%s" % doc)
         self.emit('start', doc)
         response = None

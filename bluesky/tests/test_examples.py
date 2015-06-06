@@ -1,6 +1,7 @@
 import nose
 from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
                         assert_true)
+from history import History
 from bluesky.examples import *
 from bluesky import RunEngine, RunInterrupt, Msg, PanicError
 from super_state_machine.errors import TransitionError
@@ -17,8 +18,13 @@ RE = None
 
 
 def setup():
+    history = History(':memory:')
     global RE
-    RE = RunEngine()
+    h = History(':memory:')
+    RE = RunEngine(h)
+    RE.memory.put('owner', 'test_owner')
+    RE.memory.put('beamline_id', 'test_beamline')
+
 
 def test_msgs():
     m = Msg('set', motor, {'pos': 5})
