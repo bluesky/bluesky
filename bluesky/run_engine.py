@@ -141,6 +141,49 @@ class SynGauss(Reader):
         return self._data
 
 
+class MockFlyer:
+    """
+    Class for mocking a flyscan API implemented with stepper motors.
+
+    Currently this does the 'collection' in a blocking fashion in the
+    collect step, would be better do to this with a thread starting from
+    kickoff
+    """
+    def __init__(self, motor, detector):
+        self._mot = motor
+        self._detector = detector
+        self._steps = None
+        self.ready = True
+
+    def describe(self):
+        dd = dict()
+        dd.update(self._mot.describe())
+        dd.update(self._detector.describe())
+        return [dd, ]
+
+    def kickoff(self, start, stop, steps):
+        self._steps = np.linspace(start, stop, steps)
+
+    def collect(self):
+        for p in self._steps:
+            self._mot.set(p)
+            while True:
+                if self._mot.ready:
+                    break
+                ttime.sleep(0.01)
+            self._detector.trigger()
+            event = dict()
+            event['time'] = ttime.time()
+            event['data'] = dict()
+            event['timestamp'] = dict()
+            for r in [self._mot, self._detector]:
+                d = r.read()
+                for k, v in d.items():
+                    event['data'][k] = v['value']
+                    event['timestamp'][k] = v['timestamp']
+            yield event
+
+
 class FlyMagic(Base):
     _klass = 'flyer'
 
