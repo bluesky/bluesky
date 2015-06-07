@@ -193,13 +193,21 @@ def _memory(memory):
     RE(scan, subs={'start': validate_dict_cb_opposite('mood')})
 
     # Add 'mood' to the whitelist and check that it persists.
-    RE.persistent_fields = RE.persistent_fields + ['mood']
-    # TODO get append working in the above. There is no good recipe for this
-    # on S.O. as far as I can find.
+    RE.persistent_fields.append('mood')
     assert_in('mood', RE.persistent_fields)
     RE(scan, mood='excited')
     RE(scan, subs={'start': validate_dict_cb('mood', 'excited')})
 
+    # Remove 'project' from the whitelist and check that is stops persisting.
+    RE.persistent_fields.remove('project')
+    assert_not_in('project', RE.persistent_fields)
+    RE(scan, project='standing')
+    RE(scan)
+    RE(scan, subs={'start': validate_dict_cb_opposite('project')})
+
+    # Removing a field required by our Document spec is not allowed.
+    assert_raises(ValueError,
+                  lambda: RE.persistent_fields.remove('beamline_id'))
 
 def validate_dict_cb(key, val):
     def callback(doc):

@@ -2,6 +2,7 @@ import signal
 from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
+import itertools
 
 
 __all__ = ['SignalHandler', 'CallbackRegistry']
@@ -251,3 +252,32 @@ class Struct(metaclass=StructMeta):
         bound = self.__signature__.bind(*args, **kwargs)
         for name, val in bound.arguments.items():
             setattr(self, name, val)
+
+
+class ExtendedList(list):
+    "A list with some 'required' elements that can't be removed."
+    # Elaborated version of http://stackoverflow.com/a/16380637/1221924
+    def __init__(self, other=None):
+        self.other = other or []
+
+    def __len__(self):
+        return list.__len__(self) + len(self.other)
+
+    def __iter__(self):
+        return itertools.chain(list.__iter__(self), iter(self.other))
+
+    def __getitem__(self, index):
+        l = list.__len__(self)
+
+        if index > l:
+            return self.other[index - l]
+        else:
+            return list.__getitem__(self, index)
+
+    def __contains__(self, value):
+        return super().__contains__(value) or (value in self.other)
+
+    def remove(self, value):
+        if (not super().__contains__(value)) and (value in self):
+            raise ValueError('%s is mandatory and cannot be removed' % value)
+        super().remove(value)

@@ -12,7 +12,7 @@ from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 import numpy as np
 
-from .utils import CallbackRegistry, SignalHandler
+from .utils import CallbackRegistry, SignalHandler, ExtendedList
 
 
 __all__ = ['Msg', 'Base', 'Reader', 'Mover', 'SynGauss', 'FlyMagic',
@@ -295,7 +295,8 @@ class RunEngine:
         if memory is None:
             memory = {}
         self.memory = memory
-        self._extra_fields = set(['project', 'group', 'sample'])
+        self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
+        self.persistent_fields.extend(['project', 'group', 'sample'])
         self._panic = False
         self._bundling = False
         self._sigint_handler = None
@@ -380,14 +381,6 @@ class RunEngine:
         name : str
         """
         del self._command_registry[name]
-
-    @property
-    def persistent_fields(self):
-        return list(set(self._extra_fields) | set(self._REQUIRED_FIELDS))
-
-    @persistent_fields.setter
-    def persistent_fields(self, val):
-        self._extra_fields = val
 
     def panic(self):
         """
