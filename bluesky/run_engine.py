@@ -144,10 +144,11 @@ class SynGauss(Reader):
 class FlyMagic(Base):
     _klass = 'flyer'
 
-    def __init__(self, name, motor, det, scan_points=15):
-        super(FlyMagic, self).__init__(name, [motor, det])
+    def __init__(self, name, motor, det, det2, scan_points=15):
+        super(FlyMagic, self).__init__(name, [motor, det, det2])
         self._motor = motor
         self._det = det
+        self._det2 = det2
         self._scan_points = scan_points
         self._time = None
         self._fly_count = 0
@@ -158,6 +159,11 @@ class FlyMagic(Base):
     def kickoff(self):
         self._time = ttime.time()
         self._fly_count += 1
+
+    def describe(self):
+        return [{k: {'source': self._name, 'dtype': 'number'}
+                 for k in [self._motor, self._det]},
+                {self._det2: {'source': self._name, 'dtype': 'number'}}]
 
     def collect(self):
         if self._time is None:
@@ -178,6 +184,13 @@ class FlyMagic(Base):
                   }
 
             yield ev
+            ttime.sleep(0.01)
+            ev = {'time': t + .1,
+                  'data': {self._det2: -y},
+                  'timestamps': {self._det2: t + 0.1}
+                  }
+            yield ev
+            ttime.sleep(0.01)
         self._time = None
 
 
@@ -738,26 +751,26 @@ class RunEngine:
 
     def _collect(self, msg):
         obj = msg.obj
-        if obj not in self._describe_cache:
-            self._describe_cache[obj] = obj.describe()
-
-        obj_read = frozenset((obj,))
-        if obj_read not in self._descriptor_uids:
-            # We don't not have an Event Descriptor for this set.
-            data_keys = obj.describe()
-            descriptor_uid = new_uid()
-            doc = dict(run_start=self._run_start_uid, time=ttime.time(),
-                       data_keys=data_keys, uid=descriptor_uid)
-            self.emit('descriptor', doc)
-            self.debug("Emitted Event Descriptor:\n%s" % doc)
-            self._descriptor_uids[obj_read] = descriptor_uid
-            self._sequence_counters[obj_read] = count(1)
-        else:
-            descriptor_uid = self._descriptor_uids[obj_read]
+        descriptors = obj.describe()
+        for desc in descriptors:
+            objs_read = frozenset(desc)
+            if objs_read not in self._descriptor_uids:
+                # We don't not have an Event Descriptor for this set.
+                data_keys = obj.describe()
+                descriptor_uid = new_uid()
+                doc = dict(run_start=self._run_start_uid, time=ttime.time(),
+                           data_keys=data_keys, uid=descriptor_uid)
+                self.emit('descriptor', doc)
+                self.debug("Emitted Event Descriptor:\n%s" % doc)
+                self._descriptor_uids[objs_read] = descriptor_uid
+                self._sequence_counters[objs_read] = count(1)
 
         for ev in obj.collect():
-            seq_num = next(self._sequence_counters[obj_read])
+            objs_read = frozenset(ev['data'])
+            seq_num = next(self._sequence_counters[objs_read])
+            descriptor_uid = self._descriptor_uids[objs_read]
             event_uid = new_uid()
+
             reading = ev['data']
             for key in ev['data']:
                 reading[key] = _sanitize_np(reading[key])
