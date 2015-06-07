@@ -41,6 +41,7 @@ def sleepy(motor, det):
     yield Msg('trigger', det)
     yield Msg('read', det)
 
+
 def checkpoint_forever():
     # simplest pauseable scan
     while True:
@@ -118,6 +119,7 @@ class PausingAgent:
         ttime.sleep(delay)
         self.permission = True
 
+
 def panic_timer(RE, delay):
     def f():
         ttime.sleep(delay)
@@ -125,6 +127,7 @@ def panic_timer(RE, delay):
 
     thread = threading.Thread(target=f)
     thread.start()
+
 
 def simple_scan_saving(motor, det):
     "Set, trigger, read"

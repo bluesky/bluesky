@@ -134,6 +134,7 @@ class CallbackRegistry:
                 except ReferenceError:
                     self._remove_proxy(func)
 
+
 class _BoundMethodProxy:
     '''
     Our own proxy object which enables weak references to bound and unbound
