@@ -1,7 +1,9 @@
 """
 Useful callbacks for the Run Engine
 """
+import sys
 from itertools import count
+from prettytable import PrettyTable
 
 
 class CallbackCounter:
@@ -79,3 +81,50 @@ def live_scalar_plotter(ax, y, x):
         ax.figure.canvas.flush_events()
 
     return update_plot
+
+
+def live_table(fields, rowwise=True):
+    """
+    Build a function that prints data from each Event as a row in a table.
+
+    Parameters
+    ----------
+    fields : list
+        names of interesting data keys
+    rowwise : bool
+        If True, append each row to stdout. If False, reprint the full updated
+        table each time. This is useful if other messsages are interspersed.
+
+    Examples
+    --------
+    >>> RE(stepscan(motor, det), subs={'event': live_table(['motor', 'det'])})
+    +-------+-----+----------------------+
+    |seq_num|motor|         det          |
+    +-------+-----+----------------------+
+    |   1   |   -5|3.726653172078671e-06 |
+    |   2   |   -4|0.00033546262790251185|
+    |   3   |   -3| 0.011108996538242306 |
+    |   4   |   -2|  0.1353352832366127  |
+    |   5   |   -1|  0.6065306597126334  |
+    |   6   |   0 |         1.0          |
+    |   7   |   1 |  0.6065306597126334  |
+    |   8   |   2 |  0.1353352832366127  |
+    +-------+-----+----------------------+
+    """
+    table = PrettyTable(['seq_num'] + fields)
+    table.padding_width = 0
+    if rowwise:
+        print(table)
+
+    def update_table(event):
+        row = [event['seq_num']]
+        row.extend([event['data'].get(field, '') for field in fields])
+        table.add_row(row)
+
+        if rowwise:
+            # Print the last row of data only.
+            print(str(table).split('\n')[-2])  # [-1] is the bottom border
+        else:
+            print(table)
+        sys.stdout.flush()
+    return update_table
