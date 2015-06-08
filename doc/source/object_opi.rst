@@ -18,7 +18,7 @@ The required functions and attributes are
 
 .. py:class:: Reader
 
-   .. py:methad:: describe()
+   .. py:method:: describe()
 
       Describe the data that will be returned by
       :py:meth:`Reader.read`.  The schema must match the ``DataKey``
@@ -28,7 +28,7 @@ The required functions and attributes are
 
       Read the data from the object.  The ``*args`` and ``**kwargs``
       can be passed in to the runengine to control any special
-      details.
+      details specific to this object.
 
       The return value must be a `dict` and must conform to the schema
       defined by the :py:meth:`Reader.describe`
@@ -65,7 +65,7 @@ The required functions and attributes are
 
 .. py:class:: Mover
 
-   .. py:methad:: describe()
+   .. py:method:: describe()
 
       Describe the data that will be returned by
       :py:meth:`Mover.read`.  The schema must match the ``DataKey``
@@ -119,7 +119,7 @@ The required functions and attributes are
 
 .. py:class:: Flyer
 
-   .. py:methad:: describe()
+   .. py:method:: describe()
 
       Describe the data that will be returned by
       :py:meth:`Flyer.read`.  The schema must match the ``DataKey``
@@ -130,12 +130,12 @@ The required functions and attributes are
       If the :py:class:`Flyer` is ready to be collected.  This is used by
       the ``Wait`` messages.  This must be `True` only when the
       :py:class:`Mover` is fully done and `False` otherwise.  Beware
-      if not setting this `False` soon enough and allowing loops to
+      of not setting this `False` soon enough and allowing loops to
       over-run motion.
 
 
 The objects can have any other methods or attributes required for their operation
-or easy of use.  These objects do not need to sub-class any particular base class,
+or ease of use.  These objects do not need to sub-class any particular base class,
 only have these methods.
 
 These objects can be used with ``Kickoff``, ``Collect``, and ``Wait`` `Msg`.

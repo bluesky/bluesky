@@ -35,7 +35,7 @@ This command tells the run engine that it should start to collect the results of
 them it is an exception (as you can not have more than one open event going at a time).
 
 This relies very heavily on the internal state of the run engine and should not
-be messed with.
+be overriden by the user.
 
 This call returns `None` back to the co-routine.
 
@@ -45,8 +45,8 @@ save
 ++++
 
 This is the pair to ``create`` which bundles and causes ``Event`` documents to be
-emitted.  This must be called after a ``create`` or a the scan will die with a nasty
-error.
+emitted.  This must be called after a ``create`` or a the scan will die and raise
+`IllegalMessageSequence`.
 
 This relies very heavily on the internal state of the run engine and should not
 be messed with.
