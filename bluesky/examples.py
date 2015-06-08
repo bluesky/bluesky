@@ -8,11 +8,11 @@ from .run_engine import Msg, Mover, SynGauss
 from .callbacks import *
 
 
-motor = Mover('motor', ['pos'])
-motor1 = Mover('motor1', ['pos'])
-motor2 = Mover('motor2', ['pos'])
-motor3 = Mover('motor3', ['pos'])
-det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
+motor = Mover('motor', ['motor'])
+motor1 = Mover('motor1', ['motor1'])
+motor2 = Mover('motor2', ['motor2'])
+motor3 = Mover('motor3', ['motor3'])
+det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 
 
 def simple_scan(motor):
@@ -28,7 +28,7 @@ def conditional_break(motor, det, threshold):
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         reading = yield Msg('read', det)
-        if reading['intensity']['value'] < threshold:
+        if reading['det']['value'] < threshold:
             print('DONE')
             break
         i += 1
@@ -93,7 +93,7 @@ def conditional_pause(motor, det, hard, include_checkpoint):
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         reading = yield Msg('read', det)
-        if reading['intensity']['value'] < 0.2:
+        if reading['det']['value'] < 0.2:
             yield Msg('pause', hard=hard)
         yield Msg('set', motor, i + 0.5)
 

@@ -26,10 +26,10 @@ def setup():
 
 
 def test_msgs():
-    m = Msg('set', motor, {'pos': 5})
+    m = Msg('set', motor, {'motor': 5})
     assert_equal(m.command, 'set')
     assert_is(m.obj, motor)
-    assert_equal(m.args, ({'pos': 5},))
+    assert_equal(m.args, ({'motor': 5},))
     assert_equal(m.kwargs, {})
 
     m = Msg('read', motor)
@@ -50,25 +50,32 @@ def test_msgs():
     assert_equal(m.args, (5,))
     assert_equal(m.kwargs, {})
 
+
 def run(gen, *args, **kwargs):
     assert_equal(RE.state, 'idle')
     RE(gen(*args, **kwargs))
     assert_equal(RE.state, 'idle')
 
+
 def test_simple():
     yield run, simple_scan, motor
+
 
 def test_conditional_break():
     yield run, conditional_break, motor, det, 0.2
 
+
 def test_sleepy():
     yield run, sleepy, motor, det
+
 
 def test_wait_one():
     yield run, wait_one, motor, det
 
+
 def test_wait_multiple():
     yield run, wait_multiple, [motor1, motor2], det
+
 
 def test_hard_pause():
     assert_equal(RE.state, 'idle')
@@ -79,6 +86,7 @@ def test_hard_pause():
     RE.abort()
     assert_equal(RE.state, 'idle')
 
+
 def test_soft_pause():
     assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, False, True))
@@ -88,15 +96,18 @@ def test_soft_pause():
     RE.abort()
     assert_equal(RE.state, 'idle')
 
+
 def test_hard_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, True, False))
     assert_equal(RE.state, 'idle')
 
+
 def test_soft_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, False, False))
     assert_equal(RE.state, 'idle')
+
 
 def test_pause_from_thread():
     assert_equal(RE.state, 'idle')
@@ -115,6 +126,7 @@ def test_pause_from_thread():
     RE.abort()
     assert_equal(RE.state, 'idle')
 
+
 def test_panic_during_pause():
     assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, True, True))
@@ -127,6 +139,7 @@ def test_panic_during_pause():
     RE.abort()
     assert_equal(RE.state, 'idle')
 
+
 def test_panic_from_thread():
     assert_equal(RE.state, 'idle')
     panic_timer(RE, 1)  # panic in 1 second
@@ -138,16 +151,20 @@ def test_panic_from_thread():
     RE.all_is_well()
     assert_equal(RE.state, 'idle')
 
+
 def test_simple_scan_saving():
     yield run, simple_scan_saving, motor, det
 
+
 def print_event_time(doc):
     print('===== EVENT TIME:', doc['time'], '=====')
+
 
 def test_calltime_subscription():
     assert_equal(RE.state, 'idle')
     RE(simple_scan_saving(motor, det), subs={'event': print_event_time})
     assert_equal(RE.state, 'idle')
+
 
 def test_stateful_subscription():
     assert_equal(RE.state, 'idle')
@@ -156,20 +173,24 @@ def test_stateful_subscription():
     RE.unsubscribe(token)
     assert_equal(RE.state, 'idle')
 
+
 def test_live_plotter():
     if skip_mpl:
         raise nose.SkipTest("matplotlib is not available")
     fig, ax = plt.subplots()
-    my_plotter = live_scalar_plotter(ax, 'intensity', 'pos')
+    my_plotter = live_scalar_plotter(ax, 'det', 'motor')
     assert_equal(RE.state, 'idle')
     RE(stepscan(motor, det), subs={'event': my_plotter})
     assert_equal(RE.state, 'idle')
 
+
 def test_memory_dict():
     yield _memory, {}
 
+
 def test_memory_history():
     yield _memory, History(':memory:')
+
 
 def _memory(memory):
     RE = RunEngine(memory)
@@ -209,11 +230,13 @@ def _memory(memory):
     assert_raises(ValueError,
                   lambda: RE.persistent_fields.remove('beamline_id'))
 
+
 def validate_dict_cb(key, val):
     def callback(doc):
         assert_in(key, doc)
         assert_equal(doc[key], val)
     return callback
+
 
 def validate_dict_cb_opposite(key):
     def callback(doc):

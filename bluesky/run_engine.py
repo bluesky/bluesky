@@ -89,7 +89,8 @@ class Mover(Base):
 
     def __init__(self, *args, **kwargs):
         super(Mover, self).__init__(*args, **kwargs)
-        self._data = {'pos': {'value': 0, 'timestamp': ttime.time()}}
+        self._data = {f: {'value': 0, 'timestamp': ttime.time()}
+                      for f in self._fields}
         self.ready = True
 
     def read(self):
@@ -102,7 +103,12 @@ class Mover(Base):
         # block_group is handled by the RunEngine
         self.ready = False
         ttime.sleep(0.1)  # simulate moving time
-        self._data = {'pos': {'value': val, 'timestamp': ttime.time()}}
+        if isinstance(val, dict):
+            for k, v in val.items():
+                self._data[k] = v
+        else:
+            self._data = {f: {'value': val, 'timestamp': ttime.time()}
+                          for f in self._fields}
         self.ready = True
 
     def settle(self):
@@ -115,13 +121,13 @@ class SynGauss(Reader):
 
     Example
     -------
-    motor = Mover('motor', ['pos'])
-    det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
+    motor = Mover('motor', ['motor'])
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
-        super(SynGauss, self).__init__(name, 'I')
+        super(SynGauss, self).__init__(name, name)
         self.ready = True
         self._motor = motor
         self._motor_field = motor_field
@@ -133,7 +139,7 @@ class SynGauss(Reader):
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        self._data = {'intensity': {'value': v, 'timestamp': ttime.time()}}
+        self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
 
