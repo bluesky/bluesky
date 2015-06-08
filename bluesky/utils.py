@@ -142,7 +142,7 @@ class CallbackRegistry:
             except KeyError:
                 continue
             else:
-                for sig, functions in self._func_cid_map.items():
+                for sig, functions in list(self._func_cid_map.items()):
                     for function, value in list(functions.items()):
                         if value == cid:
                             del functions[function]
