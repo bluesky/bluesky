@@ -18,7 +18,7 @@ def setup():
 
 def traj_checker(scan, expected_traj):
     actual_traj = []
-    callback = collector('mot', actual_traj)
+    callback = collector('motor', actual_traj)
     RE(scan, subs={'event': callback})
     assert_equal(actual_traj, list(expected_traj))
 
@@ -67,7 +67,7 @@ def test_adaptive_ascan():
     scan2 = AdaptiveAscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.2)
 
     actual_traj = []
-    col = collector('mot', actual_traj)
+    col = collector('motor', actual_traj)
     counter1 = CallbackCounter()
     counter2 = CallbackCounter()
 
@@ -82,7 +82,7 @@ def test_adaptive_dscan():
     scan2 = AdaptiveDscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.2)
 
     actual_traj = []
-    col = collector('mot', actual_traj)
+    col = collector('motor', actual_traj)
     counter1 = CallbackCounter()
     counter2 = CallbackCounter()
 

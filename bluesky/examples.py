@@ -8,11 +8,11 @@ from .run_engine import Msg, Mover, SynGauss
 from .callbacks import *
 
 
-motor = Mover('motor', ['mot'])
-motor1 = Mover('motor1', ['mot1'])
-motor2 = Mover('motor2', ['mot2'])
-motor3 = Mover('motor3', ['mot3'])
-det = SynGauss('sg', motor, 'mot', center=0, Imax=1, sigma=1)
+motor = Mover('motor', ['motor'])
+motor1 = Mover('motor1', ['motor1'])
+motor2 = Mover('motor2', ['motor2'])
+motor3 = Mover('motor3', ['motor3'])
+det = SynGauss('sg', motor, 'motor', center=0, Imax=1, sigma=1)
 
 
 def simple_scan(motor):

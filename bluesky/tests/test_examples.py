@@ -26,10 +26,10 @@ def setup():
 
 
 def test_msgs():
-    m = Msg('set', motor, {'mot': 5})
+    m = Msg('set', motor, {'motor': 5})
     assert_equal(m.command, 'set')
     assert_is(m.obj, motor)
-    assert_equal(m.args, ({'mot': 5},))
+    assert_equal(m.args, ({'motor': 5},))
     assert_equal(m.kwargs, {})
 
     m = Msg('read', motor)
@@ -178,7 +178,7 @@ def test_live_plotter():
     if skip_mpl:
         raise nose.SkipTest("matplotlib is not available")
     fig, ax = plt.subplots()
-    my_plotter = live_scalar_plotter(ax, 'intensity', 'mot')
+    my_plotter = live_scalar_plotter(ax, 'intensity', 'motor')
     assert_equal(RE.state, 'idle')
     RE(stepscan(motor, det), subs={'event': my_plotter})
     assert_equal(RE.state, 'idle')
