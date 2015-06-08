@@ -661,6 +661,7 @@ class RunEngine:
         while True:
             if all([obj.ready for obj in objs]):
                 break
+            ttime.sleep(1e-4)
         del self._block_groups[group]
         return objs
 
