@@ -11,7 +11,7 @@
 Pausing, Resuming, and Aborting
 ===============================
 
-How does pausing work? 
+How does pausing work?
 ----------------------
 
 When a run is paused, the RunEngine returns control to the user and waits
@@ -19,9 +19,9 @@ for the user to decide to resume the run or abort it.
 
 There are three ways to request a pause.
 
-1. Writing a scan with a planned pause step (example)
+1. Writing a scan with a planned pause step
 2. Pressing Ctrl+C
-3. Calling ``RE.request_pause()``.
+3. Calling ``RE.request_pause()``
 
 Scans are specified as a sequence of *messages*, which are simple instructions
 like 'read' and 'set'. The instructions can include one or more 'checkpoint',
@@ -55,8 +55,23 @@ Abort
 To abort a paused run, call ``RE.abort()``. The RunEngine will return to the
 idle state, ready for new instructions.
 
-Example: Request Pause from a Thread
-------------------------------------
+Example: Using a scan that has a planned pause
+----------------------------------------------
+
+As an example, we'll use a step scan that pauses after each step, letting the
+user decide whether to continue. We'll revisit this example in a later section
+to see the code of the scan itself. For now, we focus on how to use it.
+
+.. ipython:: python
+
+    from bluesky.examples import cautious_stepscan, motor1, det1
+    RE(cautious_stepscan(motor1, det1))
+    RE.resume()
+    RE.resume()
+    RE.abort()
+
+Example: Requesting a pause from a thread
+-----------------------------------------
 
 The user cannot call ``RE.request_pause()`` directly while a scan is running.
 It can only be a done from a separate thread. Here is a example code for a
@@ -111,9 +126,6 @@ a function with the pause request.
                 self.RE.request_pause(hard, self.name, callback)
             thread = threading.Thread(target=requester)
             thread.start()
-        def revoke_request(self, delay=0):
-            sleep(delay)
-            self.permission = True
 
 When ``resume`` is called, the RunEngine will call ``callback()`` to check
 whether is has permission to lift the pause.
@@ -133,6 +145,43 @@ names of pause requests that must be revoked before the pause can be lifted.
     RE.resume()  # not allowed!
     agent.permission = True
     RE.resume()
+
+When ``resume`` is called, the RunEngine will call ``callback()`` to check
+whether is has permission to lift the pause.
+
+Example: Use a file to trigger a pause
+--------------------------------------
+
+This can be adapted to do something more useful. Instead of pausing based on a
+timed delay, it could monitor a PV or a file. The example below continually
+monitors a filepath and requests a pause if it sees that such a file has been
+created.
+
+.. ipython:: python
+
+    class FileBasedPausingAgent:
+        def __init__(self, RE, name, filepath):
+            self.RE = RE
+            self.name = name
+            self.filepath = filepath
+        def issue_request(self, hard, delay=0):
+            def callback():
+                return self.permission
+            def requester():
+                while True:
+                    sleep(1)  # Check every second.
+                    if self.permission:
+                        if os.path.isfile(self.filepath):
+                            # The file has been created! Request a pause.
+                            self.permission = False
+                            self.RE.request_pause(hard, self.name, callback)
+                    else:
+                        if not os.path.isfile(self.filepath):
+                            # The file is gone. Give permission to resume.
+                            self.permission = True
+            thread = threading.Thread(target=requester)
+            thread.start()
+
 
 State Machine
 -------------

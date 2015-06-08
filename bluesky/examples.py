@@ -371,6 +371,20 @@ def stepscan(motor, det):
         yield Msg('save')
 
 
+def cautious_stepscan(motor, det):
+    for i in range(-5, 5):
+        yield Msg('checkpoint')
+        yield Msg('create')
+        yield Msg('set', motor, i)
+        yield Msg('trigger', det)
+        ret_m = yield Msg('read', motor)
+        ret_d = yield Msg('read', det)
+        yield Msg('save')
+        print("Value at {m} is {d}. Pausing.".format(
+            m=ret_m[motor._name]['value'], d=ret_d[det1._name]['value']))
+        yield Msg('pause', None, hard=False)
+
+
 def MoveRead_gen(motor, detector):
     try:
         for j in range(10):
