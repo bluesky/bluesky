@@ -604,6 +604,10 @@ class RunEngine:
         self.debug("*** Emitted Event:\n%s" % doc)
 
     def _kickoff(self, msg):
+        block_group = msg.kwargs.pop('block_group', None)
+        if block_group:
+            self._block_groups[block_group].add(msg.obj)
+
         return msg.obj.kickoff(*msg.args, **msg.kwargs)
 
     def _collect(self, msg):
@@ -642,15 +646,17 @@ class RunEngine:
         pass
 
     def _set(self, msg):
-        if 'block_group' in msg.kwargs:
-            group = msg.kwargs['block_group']
-            self._block_groups[group].add(msg.obj)
+        block_group = msg.kwargs.pop('block_group', None)
+        if block_group:
+            self._block_groups[block_group].add(msg.obj)
+
         return msg.obj.set(*msg.args, **msg.kwargs)
 
     def _trigger(self, msg):
-        if 'block_group' in msg.kwargs:
-            group = msg.kwargs['block_group']
-            self._block_groups[group].add(msg.obj)
+        block_group = msg.kwargs.pop('block_group', None)
+        if block_group:
+            self._block_groups[block_group].add(msg.obj)
+
         return msg.obj.trigger(*msg.args, **msg.kwargs)
 
     def _wait(self, msg):
