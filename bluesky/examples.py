@@ -3,7 +3,7 @@ import time as ttime
 from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
-from . import Msg
+from .run_engine import Msg
 
 from .callbacks import *
 
@@ -43,11 +43,12 @@ class Reader(Base):
 class Mover(Base):
     _klass = 'mover'
 
-    def __init__(self, *args, **kwargs):
-        super(Mover, self).__init__(*args, **kwargs)
+    def __init__(self, name, fields, *, sleep_time=0, **kwargs):
+        super(Mover, self).__init__(name, fields, **kwargs)
         self._data = {f: {'value': 0, 'timestamp': ttime.time()}
                       for f in self._fields}
         self.ready = True
+        self._fake_sleep = sleep_time
 
     def read(self):
         return self._data
@@ -58,7 +59,8 @@ class Mover(Base):
             raise NotImplementedError
         # block_group is handled by the RunEngine
         self.ready = False
-        ttime.sleep(0.1)  # simulate moving time
+        if self._fake_sleep:
+            ttime.sleep(self._fake_sleep)  # simulate moving time
         if isinstance(val, dict):
             for k, v in val.items():
                 self._data[k] = v
@@ -83,7 +85,7 @@ class SynGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
-        super(SynGauss, self).__init__(name, name)
+        super(SynGauss, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
         self._motor_field = motor_field
@@ -115,7 +117,12 @@ class MockFlyer:
         self._mot = motor
         self._detector = detector
         self._steps = None
-        self.ready = True
+        self._thread = None
+        self._data = deque()
+
+    @property
+    def ready(self):
+        return self._thread and not self._thread.is_alive()
 
     def describe(self):
         dd = dict()
@@ -124,9 +131,20 @@ class MockFlyer:
         return [dd, ]
 
     def kickoff(self, start, stop, steps):
+        self._data = deque()
         self._steps = np.linspace(start, stop, steps)
+        self._thread = threading.Thread(target=self._scan,
+                                                name='mock_fly_thread')
+        self._thread.start()
 
     def collect(self):
+        if not self.ready:
+            raise RuntimeError("No reading until done!")
+
+        yield from self._data
+        self._thread = None
+
+    def _scan(self):
         for p in self._steps:
             self._mot.set(p)
             while True:
@@ -143,7 +161,7 @@ class MockFlyer:
                 for k, v in d.items():
                     event['data'][k] = v['value']
                     event['timestamp'][k] = v['timestamp']
-            yield event
+            self._data.append(event)
 
 
 class FlyMagic(Base):
@@ -199,12 +217,14 @@ class FlyMagic(Base):
         self._time = None
 
 
-
 motor = Mover('motor', ['motor'])
-motor1 = Mover('motor1', ['motor1'])
-motor2 = Mover('motor2', ['motor2'])
-motor3 = Mover('motor3', ['motor3'])
+motor1 = Mover('motor1', ['motor1'], sleep_time=.1)
+motor2 = Mover('motor2', ['motor2'], sleep_time=.2)
+motor3 = Mover('motor3', ['motor3'], sleep_time=.5)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
+det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
+det3 = SynGauss('det3', motor3, 'motor3', center=-1, Imax=2, sigma=1)
 
 
 def simple_scan(motor):
@@ -410,8 +430,10 @@ def find_center_gen(syngaus, initial_center, initial_width,
     output_mutable.update(guesses)
 
 
-def fly_gen(flyer):
-    yield Msg('kickoff', flyer)
+def fly_gen(flyer, start, stop, step):
+    yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
+    yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)
-    yield Msg('kickoff', flyer)
+    yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
+    yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)
