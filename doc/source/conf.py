@@ -37,6 +37,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinxcontrib.napoleon',
     'IPython.sphinxext.ipython_directive',
+    'IPython.sphinxext.ipython_console_highlighting',
 ]
 
 # Generate the API documentation when building
