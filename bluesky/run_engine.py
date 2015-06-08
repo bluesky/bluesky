@@ -695,6 +695,9 @@ class RunEngine:
                 ttime.sleep(0.5)
                 if not self.state.is_paused:
                     break
+            if self.state.is_aborting:
+                self._exit_status = 'abort'
+                raise RunInterrupt("Run aborted.")
 
     def _rerun_from_checkpoint(self):
         self.debug("*** Rerunning from checkpoint...")
