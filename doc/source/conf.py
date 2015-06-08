@@ -36,6 +36,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinxcontrib.napoleon',
+    'IPython.sphinxext.ipython_directive',
 ]
 
 # Generate the API documentation when building

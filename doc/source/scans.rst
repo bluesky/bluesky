@@ -20,10 +20,9 @@ Quick Start
    RE.memory['beamline_id'] = 'demo'
    from bluesky.scans import Count
 
-.. info::
+.. note::
 
-   This example assumes that you are running with a standard configuration,
-   provided at NSLS-II.
+   This example assumes that you are running with a standard configuration.
    If not, simply run ``from bluesky.standard_config import *``.
 
 1. Decide on the detectors of interest. Define a list for convenience.

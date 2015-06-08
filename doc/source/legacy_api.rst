@@ -102,8 +102,6 @@ Delta Scan
 interpreted as relative to the current position. Recall that one can check
 the current positions with the command ``wh_pos()``.
 
-.. currentmodule:: ophyd.cli_api
-
 Commands
 --------
 

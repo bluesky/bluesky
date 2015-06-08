@@ -1,5 +1,17 @@
-Low-level interface: Message protocol
-=====================================
+Custom Scans: Using the Message protocol
+========================================
+
+Simple Example
+--------------
+
+.. ipython:: python
+
+   from bluesky import Msg
+
+   def simple_scan(motor):
+       yield Msg('set', motor, 5)
+       yield Msg('read', motor)
+
 
 Overview
 --------
