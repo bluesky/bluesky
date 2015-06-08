@@ -4,8 +4,200 @@ from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
 from . import Msg
-from .run_engine import Msg, Mover, SynGauss
+
 from .callbacks import *
+
+
+class Base:
+    def __init__(self, name, fields):
+        self._name = name
+        self._fields = fields
+
+    def describe(self):
+        return {k: {'source': self._name, 'dtype': 'number'}
+                for k in self._fields}
+
+    def __repr__(self):
+        return '{}: {}'.format(self._klass, self._name)
+
+
+class Reader(Base):
+    _klass = 'reader'
+
+    def __init__(self, *args, **kwargs):
+        super(Reader, self).__init__(*args, **kwargs)
+        self._cnt = 0
+
+    def read(self):
+        data = dict()
+        for k in self._fields:
+            data[k] = {'value': self._cnt, 'timestamp': ttime.time()}
+            self._cnt += 1
+
+        return data
+
+    def trigger(self):
+        pass
+
+
+class Mover(Base):
+    _klass = 'mover'
+
+    def __init__(self, *args, **kwargs):
+        super(Mover, self).__init__(*args, **kwargs)
+        self._data = {f: {'value': 0, 'timestamp': ttime.time()}
+                      for f in self._fields}
+        self.ready = True
+
+    def read(self):
+        return self._data
+
+    def set(self, val, *, trigger=True, block_group=None):
+        # If trigger is False, wait for a separate 'trigger' command to move.
+        if not trigger:
+            raise NotImplementedError
+        # block_group is handled by the RunEngine
+        self.ready = False
+        ttime.sleep(0.1)  # simulate moving time
+        if isinstance(val, dict):
+            for k, v in val.items():
+                self._data[k] = v
+        else:
+            self._data = {f: {'value': val, 'timestamp': ttime.time()}
+                          for f in self._fields}
+        self.ready = True
+
+    def settle(self):
+        pass
+
+
+class SynGauss(Reader):
+    """
+    Evaluate a point on a Gaussian based on the value of a motor.
+
+    Example
+    -------
+    motor = Mover('motor', ['motor'])
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+    """
+    _klass = 'reader'
+
+    def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
+        super(SynGauss, self).__init__(name, name)
+        self.ready = True
+        self._motor = motor
+        self._motor_field = motor_field
+        self.center = center
+        self.Imax = Imax
+        self.sigma = sigma
+
+    def trigger(self, *, block_group=True):
+        self.ready = False
+        m = self._motor._data[self._motor_field]['value']
+        v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
+        self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
+        ttime.sleep(0.05)  # simulate exposure time
+        self.ready = True
+
+    def read(self):
+        return self._data
+
+
+class MockFlyer:
+    """
+    Class for mocking a flyscan API implemented with stepper motors.
+
+    Currently this does the 'collection' in a blocking fashion in the
+    collect step, would be better do to this with a thread starting from
+    kickoff
+    """
+    def __init__(self, motor, detector):
+        self._mot = motor
+        self._detector = detector
+        self._steps = None
+        self.ready = True
+
+    def describe(self):
+        dd = dict()
+        dd.update(self._mot.describe())
+        dd.update(self._detector.describe())
+        return [dd, ]
+
+    def kickoff(self, start, stop, steps):
+        self._steps = np.linspace(start, stop, steps)
+
+    def collect(self):
+        for p in self._steps:
+            self._mot.set(p)
+            while True:
+                if self._mot.ready:
+                    break
+                ttime.sleep(0.01)
+            self._detector.trigger()
+            event = dict()
+            event['time'] = ttime.time()
+            event['data'] = dict()
+            event['timestamp'] = dict()
+            for r in [self._mot, self._detector]:
+                d = r.read()
+                for k, v in d.items():
+                    event['data'][k] = v['value']
+                    event['timestamp'][k] = v['timestamp']
+            yield event
+
+
+class FlyMagic(Base):
+    _klass = 'flyer'
+
+    def __init__(self, name, motor, det, det2, scan_points=15):
+        super(FlyMagic, self).__init__(name, [motor, det, det2])
+        self._motor = motor
+        self._det = det
+        self._det2 = det2
+        self._scan_points = scan_points
+        self._time = None
+        self._fly_count = 0
+
+    def reset(self):
+        self._fly_count = 0
+
+    def kickoff(self):
+        self._time = ttime.time()
+        self._fly_count += 1
+
+    def describe(self):
+        return [{k: {'source': self._name, 'dtype': 'number'}
+                 for k in [self._motor, self._det]},
+                {self._det2: {'source': self._name, 'dtype': 'number'}}]
+
+    def collect(self):
+        if self._time is None:
+            raise RuntimeError("Must kick off flyscan before you collect")
+
+        dtheta = (np.pi / 10) * self._fly_count
+        X = np.linspace(0, 2*np.pi, self._scan_points)
+        Y = np.sin(X + dtheta)
+        dt = (ttime.time() - self._time) / self._scan_points
+        T = dt * np.arange(self._scan_points) + self._time
+
+        for j, (t, x, y) in enumerate(zip(T, X, Y)):
+            ev = {'time': t,
+                  'data': {self._motor: x,
+                           self._det: y},
+                  'timestamps': {self._motor: t,
+                                 self._det: t}
+                  }
+
+            yield ev
+            ttime.sleep(0.01)
+            ev = {'time': t + .1,
+                  'data': {self._det2: -y},
+                  'timestamps': {self._det2: t + 0.1}
+                  }
+            yield ev
+            ttime.sleep(0.01)
+        self._time = None
+
 
 
 motor = Mover('motor', ['motor'])
