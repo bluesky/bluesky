@@ -1,7 +1,7 @@
 import time as ttime
 import sys
 from itertools import count
-from collections import namedtuple, deque, defaultdict
+from collections import namedtuple, deque, defaultdict, Iterable
 import uuid
 import signal
 import threading
@@ -12,17 +12,16 @@ from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 import numpy as np
 
-from .utils import CallbackRegistry, SignalHandler
+from .utils import CallbackRegistry, SignalHandler, ExtendedList
 
 
 __all__ = ['Msg', 'Base', 'Reader', 'Mover', 'SynGauss', 'FlyMagic',
            'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
-           'RunInterrupt']
+           'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
 # todo boo, hardcoded defaults
 beamline_id = 'test'
 owner = 'tester'
-custom = {}
 scan_id = 123
 
 
@@ -90,7 +89,8 @@ class Mover(Base):
 
     def __init__(self, *args, **kwargs):
         super(Mover, self).__init__(*args, **kwargs)
-        self._data = {'pos': {'value': 0, 'timestamp': ttime.time()}}
+        self._data = {f: {'value': 0, 'timestamp': ttime.time()}
+                      for f in self._fields}
         self.ready = True
 
     def read(self):
@@ -103,7 +103,12 @@ class Mover(Base):
         # block_group is handled by the RunEngine
         self.ready = False
         ttime.sleep(0.1)  # simulate moving time
-        self._data = {'pos': {'value': val, 'timestamp': ttime.time()}}
+        if isinstance(val, dict):
+            for k, v in val.items():
+                self._data[k] = v
+        else:
+            self._data = {f: {'value': val, 'timestamp': ttime.time()}
+                          for f in self._fields}
         self.ready = True
 
     def settle(self):
@@ -116,13 +121,13 @@ class SynGauss(Reader):
 
     Example
     -------
-    motor = Mover('motor', ['pos'])
-    det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
+    motor = Mover('motor', ['motor'])
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
-        super(SynGauss, self).__init__(name, 'I')
+        super(SynGauss, self).__init__(name, name)
         self.ready = True
         self._motor = motor
         self._motor_field = motor_field
@@ -134,7 +139,7 @@ class SynGauss(Reader):
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        self._data = {'intensity': {'value': v, 'timestamp': ttime.time()}}
+        self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
 
@@ -142,13 +147,57 @@ class SynGauss(Reader):
         return self._data
 
 
+class MockFlyer:
+    """
+    Class for mocking a flyscan API implemented with stepper motors.
+
+    Currently this does the 'collection' in a blocking fashion in the
+    collect step, would be better do to this with a thread starting from
+    kickoff
+    """
+    def __init__(self, motor, detector):
+        self._mot = motor
+        self._detector = detector
+        self._steps = None
+        self.ready = True
+
+    def describe(self):
+        dd = dict()
+        dd.update(self._mot.describe())
+        dd.update(self._detector.describe())
+        return [dd, ]
+
+    def kickoff(self, start, stop, steps):
+        self._steps = np.linspace(start, stop, steps)
+
+    def collect(self):
+        for p in self._steps:
+            self._mot.set(p)
+            while True:
+                if self._mot.ready:
+                    break
+                ttime.sleep(0.01)
+            self._detector.trigger()
+            event = dict()
+            event['time'] = ttime.time()
+            event['data'] = dict()
+            event['timestamp'] = dict()
+            for r in [self._mot, self._detector]:
+                d = r.read()
+                for k, v in d.items():
+                    event['data'][k] = v['value']
+                    event['timestamp'][k] = v['timestamp']
+            yield event
+
+
 class FlyMagic(Base):
     _klass = 'flyer'
 
-    def __init__(self, name, motor, det, scan_points=15):
-        super(FlyMagic, self).__init__(name, [motor, det])
+    def __init__(self, name, motor, det, det2, scan_points=15):
+        super(FlyMagic, self).__init__(name, [motor, det, det2])
         self._motor = motor
         self._det = det
+        self._det2 = det2
         self._scan_points = scan_points
         self._time = None
         self._fly_count = 0
@@ -159,6 +208,11 @@ class FlyMagic(Base):
     def kickoff(self):
         self._time = ttime.time()
         self._fly_count += 1
+
+    def describe(self):
+        return [{k: {'source': self._name, 'dtype': 'number'}
+                 for k in [self._motor, self._det]},
+                {self._det2: {'source': self._name, 'dtype': 'number'}}]
 
     def collect(self):
         if self._time is None:
@@ -179,6 +233,13 @@ class FlyMagic(Base):
                   }
 
             yield ev
+            ttime.sleep(0.01)
+            ev = {'time': t + .1,
+                  'data': {self._det2: -y},
+                  'timestamps': {self._det2: t + 0.1}
+                  }
+            yield ev
+            ttime.sleep(0.01)
         self._time = None
 
 
@@ -187,19 +248,19 @@ class RunEngineStateMachine(StateMachine):
 
     Attributes
     ----------
-    idle
+    is_idle
         State machine is in its idle state
-    running
+    is_running
         State machine is in its running state
-    aborting
+    is_aborting
         State machine has been asked to abort but is not yet ``idle``
-    soft_pausing
+    is_soft_pausing
         State machine has been asked to enter a soft pause but is not yet in
         its ``paused`` state
-    hard_pausing
+    is_hard_pausing
         State machine has been asked to enter a hard pause but is not yet in
         its ``paused`` state
-    paused
+    is_paused
         State machine is paused.
     """
 
@@ -249,10 +310,57 @@ class RunEngineStateMachine(StateMachine):
 class RunEngine:
 
     state = PropertyMachine(RunEngineStateMachine)
+    _REQUIRED_FIELDS = ['beamline_id', 'owner']
 
-    def __init__(self):
+    def __init__(self, memory=None):
+        """
+        The Run Engine execute messages and emits Documents.
+
+        Parameters
+        ----------
+        memory : dict-like
+            The default is a standard Python dictionary, but fancier objects
+            can be used to store long-term history and persist it between
+            sessions. The standard configuration instantiates a Run Engine with
+            history.History, a simple interface to a sqlite file. Any object
+            supporting `__getitem__`, `__setitem__`, and `clear` will work.
+
+        Attributes
+        ----------
+        state
+            {'idle', 'running', 'soft_pausing, 'hard_pausing', 'paused',
+             'aborting'}
+        memory
+            direct access to the dict-like persistent storage described above
+        persistent_fields
+            list of metadata fields that will be remembered and reused between
+            subsequence runs
+
+        Methods
+        -------
+        request_pause
+            Pause the Run Engine at the next checkpoint.
+        resume
+            Start from the last checkpoint after a pause.
+        abort
+            Move from 'paused' to 'idle', stopping the run permanently.
+        panic
+            Force the Run Engine to stop and/or disallow resume.
+        all_is_well
+            Un-panic
+        register_command
+            Teach the Run Engine a new Message command.
+        unregister_command
+            Undo register_command.
+        """
         super(RunEngine, self).__init__()
+        if memory is None:
+            memory = {}
+        self.memory = memory
+        self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
+        self.persistent_fields.extend(['project', 'group', 'sample'])
         self._panic = False
+        self._bundling = False
         self._sigint_handler = None
         self._sigtstp_handler = None
         self._objs_read = deque()  # objects read in one Event
@@ -299,9 +407,10 @@ class RunEngine:
         for name in self._queues.keys():
             self._register_scan_callback(name, make_push_func(name))
 
-        self.verbose = True
+        self.verbose = False
 
-    def clear(self):
+    def _clear(self):
+        self._bundling = False
         self._objs_read.clear()
         self._read_cache.clear()
         self._describe_cache.clear()
@@ -405,9 +514,11 @@ class RunEngine:
     def _push_to_queue(self, name, doc):
         self._queues[name].put(doc)
 
-    # todo remove the mutable from this function sig!!
-    def __call__(self, gen, subs={}, use_threading=True):
+    def __call__(self, gen, subs=None, use_threading=True, **metadata):
         """Run the scan defined by ``gen``
+
+        Any keyword arguments other than those listed below will be
+        interpreted as metadata and recorded with the run.
 
         Parameters
         ----------
@@ -416,8 +527,9 @@ class RunEngine:
             returns such a generator)
         subs: dict, optional
             Temporary subscriptions (a.k.a. callbacks) to be used on this run.
-            Callbacks should expect a single argument, a Python dictionary.
-            See examples below.
+            - Valid dict keys are: {'start', 'stop', 'event', 'descriptor'}
+            - Dict values must be a function with the signature `f(dict)` or a
+              list of such functions
         use_threading : bool, optional
             True by default. False makes debugging easier, but removes some
             features like pause/resume and main-thread subscriptions.
@@ -436,18 +548,54 @@ class RunEngine:
         ...
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
-        self.state.run()
-        self.clear()
-        for name, func in subs.items():
-            self._temp_callback_ids.add(self.subscribe(name, func))
+        if subs is None:
+            subs = {}
+        self._clear()
+        for name, funcs in subs.items():
+            if not isinstance(funcs, Iterable):
+                # Take funcs to be a single function.
+                funcs = [funcs]
+            for func in funcs:
+                if not callable(func):
+                    raise ValueError("subs values must be functions or lists "
+                                     "of functions. The offending entry is\n "
+                                     "{0}".format(func))
+                self._temp_callback_ids.add(self.subscribe(name, func))
         self._run_start_uid = new_uid()
         if self._panic:
             raise PanicError("RunEngine is panicked. The run "
                              "was aborted before it began. No records "
                              "of this run were created.")
+
+        # Advance and stash scan_id
+        try:
+            scan_id = self.memory['scan_id'] + 1
+        except KeyError:
+            scan_id = 1
+        self.memory['scan_id'] = scan_id
+        metadata['scan_id'] = scan_id
+
+        for field in self.persistent_fields:
+            if field in metadata:
+                # Stash and use new value.
+                self.memory[field] = metadata[field]
+            else:
+                # Use old value.
+                try:
+                    metadata[field] = self.memory[field]
+                except KeyError:
+                    if field not in self._REQUIRED_FIELDS:
+                        continue
+                    raise KeyError("There is no entry for '{0}'. "
+                                   "It is required for this run. In future "
+                                   "runs, the most recent entry can be reused "
+                                   "unless a new value is specified.".format(
+                                        field))
+
+        self.state.run()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             def func():
-                return self._run(gen)
+                return self._run(gen, metadata)
             if use_threading:
                 self._thread = threading.Thread(target=func,
                                                 name='scan_thread')
@@ -500,11 +648,9 @@ class RunEngine:
         self.state.abort()
         self._resume()  # to create RunStop Document
 
-    def _run(self, gen):
+    def _run(self, gen, metadata):
         gen = iter(gen)  # no-op on generators; needed for classes
-        doc = dict(uid=self._run_start_uid,
-                   time=ttime.time(), beamline_id=beamline_id, owner=owner,
-                   scan_id=scan_id, **custom)
+        doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
         self.debug("*** Emitted RunStart:\n%s" % doc)
         self.emit('start', doc)
         response = None
@@ -602,6 +748,7 @@ class RunEngine:
     def _create(self, msg):
         self._read_cache.clear()
         self._objs_read.clear()
+        self._bundling = True
 
     def _read(self, msg):
         obj = msg.obj
@@ -632,6 +779,7 @@ class RunEngine:
             self._sequence_counters[objs_read] = count(1)
         else:
             descriptor_uid = self._descriptor_uids[objs_read]
+        self._bundling = False
 
         # Events
         seq_num = next(self._sequence_counters[objs_read])
@@ -652,26 +800,26 @@ class RunEngine:
 
     def _collect(self, msg):
         obj = msg.obj
-        if obj not in self._describe_cache:
-            self._describe_cache[obj] = obj.describe()
-
-        obj_read = frozenset((obj,))
-        if obj_read not in self._descriptor_uids:
-            # We don't not have an Event Descriptor for this set.
-            data_keys = obj.describe()
-            descriptor_uid = new_uid()
-            doc = dict(run_start=self._run_start_uid, time=ttime.time(),
-                       data_keys=data_keys, uid=descriptor_uid)
-            self.emit('descriptor', doc)
-            self.debug("Emitted Event Descriptor:\n%s" % doc)
-            self._descriptor_uids[obj_read] = descriptor_uid
-            self._sequence_counters[obj_read] = count(1)
-        else:
-            descriptor_uid = self._descriptor_uids[obj_read]
+        descriptors = obj.describe()
+        for desc in descriptors:
+            objs_read = frozenset(desc)
+            if objs_read not in self._descriptor_uids:
+                # We don't not have an Event Descriptor for this set.
+                data_keys = obj.describe()
+                descriptor_uid = new_uid()
+                doc = dict(run_start=self._run_start_uid, time=ttime.time(),
+                           data_keys=data_keys, uid=descriptor_uid)
+                self.emit('descriptor', doc)
+                self.debug("Emitted Event Descriptor:\n%s" % doc)
+                self._descriptor_uids[objs_read] = descriptor_uid
+                self._sequence_counters[objs_read] = count(1)
 
         for ev in obj.collect():
-            seq_num = next(self._sequence_counters[obj_read])
+            objs_read = frozenset(ev['data'])
+            seq_num = next(self._sequence_counters[objs_read])
+            descriptor_uid = self._descriptor_uids[objs_read]
             event_uid = new_uid()
+
             reading = ev['data']
             for key in ev['data']:
                 reading[key] = _sanitize_np(reading[key])
@@ -715,6 +863,9 @@ class RunEngine:
         self.request_pause(*msg.args, **msg.kwargs)
 
     def _checkpoint(self, msg):
+        if self._bundling:
+            raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
+                                         "and before 'save'. Aborting!")
         self._msg_cache = deque()
         if self.state.is_soft_pausing:
             self.state.pause()  # soft_pausing -> paused
@@ -748,6 +899,8 @@ class Dispatcher:
     def __init__(self, queues):
         self.queues = queues
         self.cb_registry = CallbackRegistry()
+        self._counter = count()
+        self._token_mapping = dict()
 
     def process_queue(self, name):
         """
@@ -775,24 +928,42 @@ class Dispatcher:
 
         Parameters
         ----------
-        name: {'start', 'descriptor', 'event', 'stop'}
+        name: {'start', 'descriptor', 'event', 'stop', 'all'}
         func: callable
             expecting signature like ``f(mongoengine.Document)``
-        """
-        if name not in self.queues.keys():
-            raise ValueError("Valid callbacks: {0}".format(self.queues.keys()))
-        return self.cb_registry.connect(name, func)
 
-    def unsubscribe(self, callback_id):
+        Returns
+        -------
+        token : int
+            an integer token that can be used to unsubscribe
+        """
+        queue_keys = self.queues.keys()
+        if name in queue_keys:
+            private_token = self.cb_registry.connect(name, func)
+            public_token = next(self._counter)
+            self._token_mapping[public_token] = [private_token]
+            return public_token
+        elif name == 'all':
+            private_tokens = []
+            for key in queue_keys:
+                private_tokens.append(self.cb_registry.connect(name, func))
+            public_token = next(self._counter)
+            self._token_mapping[public_token] = private_tokens
+        else:
+            valid_names = queue_keys + ['all']
+            raise ValueError("Valid names: {0}".format(valid_names))
+
+    def unsubscribe(self, token):
         """
         Unregister a callback function using its integer ID.
 
         Parameters
         ----------
-        callback_id : int
-            the ID issued by `subscribe`
+        token : int
+            the integer token issued by `subscribe`
         """
-        self.cb_registry.disconnect(callback_id)
+        for private_token in self._token_mapping[token]:
+            self.cb_registry.disconnect(private_token)
 
 
 def new_uid():
@@ -837,4 +1008,8 @@ class PanicError(Exception):
 
 
 class RunInterrupt(KeyboardInterrupt):
+    pass
+
+
+class IllegalMessageSequence(Exception):
     pass

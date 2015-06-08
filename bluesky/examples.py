@@ -1,17 +1,18 @@
 import threading
 import time as ttime
-from . import Msg
-from .run_engine import Msg, Mover, SynGauss
 from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
+from . import Msg
+from .run_engine import Msg, Mover, SynGauss
+from .callbacks import *
 
 
-motor = Mover('motor', ['pos'])
-motor1 = Mover('motor1', ['pos'])
-motor2 = Mover('motor2', ['pos'])
-motor3 = Mover('motor3', ['pos'])
-det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
+motor = Mover('motor', ['motor'])
+motor1 = Mover('motor1', ['motor1'])
+motor2 = Mover('motor2', ['motor2'])
+motor3 = Mover('motor3', ['motor3'])
+det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 
 
 def simple_scan(motor):
@@ -27,7 +28,7 @@ def conditional_break(motor, det, threshold):
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         reading = yield Msg('read', det)
-        if reading['intensity']['value'] < threshold:
+        if reading['det']['value'] < threshold:
             print('DONE')
             break
         i += 1
@@ -39,6 +40,7 @@ def sleepy(motor, det):
     yield Msg('sleep', None, 2)  # units: seconds
     yield Msg('trigger', det)
     yield Msg('read', det)
+
 
 def checkpoint_forever():
     # simplest pauseable scan
@@ -91,7 +93,7 @@ def conditional_pause(motor, det, hard, include_checkpoint):
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         reading = yield Msg('read', det)
-        if reading['intensity']['value'] < 0.2:
+        if reading['det']['value'] < 0.2:
             yield Msg('pause', hard=hard)
         yield Msg('set', motor, i + 0.5)
 
@@ -117,6 +119,7 @@ class PausingAgent:
         ttime.sleep(delay)
         self.permission = True
 
+
 def panic_timer(RE, delay):
     def f():
         ttime.sleep(delay)
@@ -124,6 +127,7 @@ def panic_timer(RE, delay):
 
     thread = threading.Thread(target=f)
     thread.start()
+
 
 def simple_scan_saving(motor, det):
     "Set, trigger, read"
@@ -143,24 +147,6 @@ def stepscan(motor, det):
         yield Msg('read', motor)
         yield Msg('read', det)
         yield Msg('save')
-
-
-def live_scalar_plotter(ax, y, x):
-    x_data, y_data = [], []
-    line, = ax.plot([], [], 'ro', markersize=10)
-
-    def update_plot(doc):
-        # Update with the latest data.
-        x_data.append(doc['data'][x])
-        y_data.append(doc['data'][y])
-        line.set_data(x_data, y_data)
-        # Rescale and redraw.
-        ax.relim(visible_only=True)
-        ax.autoscale_view(tight=True)
-        ax.figure.canvas.draw()
-        ax.figure.canvas.flush_events()
-
-    return update_plot
 
 
 def MoveRead_gen(motor, detector):
@@ -237,44 +223,3 @@ def fly_gen(flyer):
     yield Msg('collect', flyer)
     yield Msg('kickoff', flyer)
     yield Msg('collect', flyer)
-
-
-def adaptive_scan(motor, detector, motor_name, detector_name, start,
-                  stop, min_step, max_step, target_dI):
-    next_pos = start
-    step = (max_step - min_step) / 2
-
-    past_I = None
-    cur_I = None
-    while next_pos < stop:
-        yield Msg('set', motor, next_pos)
-        yield Msg('create')
-        yield Msg('trigger', detector)
-        cur_det = yield Msg('read', detector)
-        yield Msg('read', motor)
-        yield Msg('save')
-        print(cur_det)
-        cur_I = cur_det[detector_name]['value']
-
-
-        # special case first first loop
-        if past_I is None:
-            past_I = cur_I
-            next_pos += step
-            continue
-
-        dI = np.abs(cur_I - past_I)
-
-        slope = dI / step
-
-        new_step = np.clip(target_dI / slope, min_step, max_step)
-        # if we over stepped, go back and try again
-        if new_step < step * 0.8:
-            next_pos -= step
-        else:
-            past_I = cur_I
-        print(step, new_step)
-        step = new_step
-
-        next_pos += step
-        print('********', next_pos, step, past_I, slope, dI,  '********')

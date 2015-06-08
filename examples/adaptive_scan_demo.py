@@ -7,7 +7,7 @@ from bluesky.examples import adaptive_scan
 RE = RunEngine()
 RE.verbose = False
 motor = Mover('motor', ['pos'])
-det = SynGauss('sg', motor, 'pos', center=0, Imax=1, sigma=1)
+det = SynGauss('det', motor, 'pos', center=0, Imax=1, sigma=1)
 
 
 def live_scalar_plotter(ax, y, x):
@@ -32,6 +32,6 @@ plt.show()
 ax.set_xlim([-15, 5])
 ax.set_ylim([0, 2])
 # Point the function to our axes above, and specify what to plot.
-my_plotter = live_scalar_plotter(ax, 'intensity', 'pos')
-ad_scan = adaptive_scan(motor, det, 'pos', 'intensity', -15, 5, .01, 1, .05)
+my_plotter = live_scalar_plotter(ax, 'det', 'pos')
+ad_scan = adaptive_scan(motor, det, 'pos', 'det', -15, 5, .01, 1, .05)
 RE.run(ad_scan, subscriptions={'event': my_plotter})
