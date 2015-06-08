@@ -22,7 +22,13 @@ class Count(Scan):
 
     Examples
     --------
-    # Count three detectors five time with a one-second delay between readings.
+    Count three detectors.
+
+    >>> c = Count([det1, det2, det3])
+    >>> RE(c)
+
+    Count them five times with a one-second delay between readings.
+
     >>> c = Count([det1, det2, det3], 5, 1)
     >>> RE(c)
     """
@@ -129,7 +135,8 @@ class LinAscan(Scan1D):
 
     Examples
     --------
-    # Scan motor1 from 0 to 1 in ten steps.
+    Scan motor1 from 0 to 1 in ten steps.
+
     >>> my_scan = LinAscan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
@@ -162,7 +169,8 @@ class LogAscan(Scan1D):
 
     Examples
     --------
-    # Scan motor1 from 0 to 10 in ten log-spaced steps.
+    Scan motor1 from 0 to 10 in ten log-spaced steps.
+
     >>> my_scan = LogAscan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
@@ -195,7 +203,8 @@ class LinDscan(Dscan):
 
     Examples
     --------
-    # Scan motor1 from 0 to 1 in ten steps.
+    Scan motor1 from 0 to 1 in ten steps.
+
     >>> my_scan = LinDscan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
@@ -228,7 +237,8 @@ class LogDscan(Dscan):
 
     Examples
     --------
-    # Scan motor1 from 0 to 10 in ten log-spaced steps.
+    Scan motor1 from 0 to 10 in ten log-spaced steps.
+
     >>> my_scan = LogDscan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
