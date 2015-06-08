@@ -61,31 +61,6 @@ def test_log_dscan():
     scan = LogDscan(motor, [det], 0, 10, 5)
     yield traj_checker, scan, traj
 
-def test_lin_ascan():
-    traj = np.linspace(0, 10, 5)
-    scan = LinAscan(motor, [det], 0, 10, 5)
-    yield traj_checker, scan, traj
-
-
-def test_log_ascan():
-    traj = np.logspace(0, 10, 5)
-    scan = LogAscan(motor, [det], 0, 10, 5)
-    yield traj_checker, scan, traj
-
-
-def test_lin_dscan():
-    traj = np.linspace(0, 10, 5) + 6
-    motor.set(6)
-    scan = LinDscan(motor, [det], 0, 10, 5)
-    yield traj_checker, scan, traj
-
-
-def test_log_dscan():
-    traj = np.logspace(0, 10, 5) + 6
-    motor.set(6)
-    scan = LogDscan(motor, [det], 0, 10, 5)
-    yield traj_checker, scan, traj
-
 
 def test_adaptive_ascan():
     scan1 = AdaptiveAscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.1)
