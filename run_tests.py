@@ -11,7 +11,7 @@
 # these options.
 
 import nose
-from dataportal.testing.noseclasses import KnownFailure
+from bluesky.testing.noseclasses import KnownFailure
 
 plugins = [KnownFailure]
 env = {"NOSE_WITH_COVERAGE": 1,
