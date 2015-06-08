@@ -222,6 +222,15 @@ class RunEngine:
         self._sequence_counters.clear()
         self._msg_cache = None
         self._exit_status = None
+        # clear the main thread queues
+        for queue in self._queues.values():
+            try:
+                while True:
+                    queue.get_nowait()
+            except Empty:
+                # queue is empty
+                pass
+
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
             self.unsubscribe(cid)
