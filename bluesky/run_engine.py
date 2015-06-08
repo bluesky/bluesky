@@ -18,11 +18,6 @@ from .utils import CallbackRegistry, SignalHandler, ExtendedList
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
-# todo boo, hardcoded defaults
-beamline_id = 'test'
-owner = 'tester'
-scan_id = 123
-
 
 class LossyLiFoQueue(Queue):
     '''Variant of Queue that is a 'lossy' first-in-last-out
@@ -180,6 +175,7 @@ class RunEngine:
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
+        self._exit_status = None  # {'success', 'fail', 'abort'}
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -225,6 +221,7 @@ class RunEngine:
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
         self._msg_cache = None
+        self._exit_status = None
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
             self.unsubscribe(cid)
@@ -462,7 +459,6 @@ class RunEngine:
         self.debug("*** Emitted RunStart:\n%s" % doc)
         self.emit('start', doc)
         response = None
-        exit_status = None
         reason = ''
         try:
             self._check_for_trouble()
@@ -478,15 +474,15 @@ class RunEngine:
                 self.debug('RE.state: ' + self.state)
                 self.debug('{}\n   ret: {}'.format(msg, response))
         except StopIteration:
-            exit_status = 'success'
+            self._exit_status = 'success'
         except Exception as err:
-            exit_status = 'fail'
+            self._exit_status = 'fail'
             reason = str(err)
             raise err
         finally:
             doc = dict(run_start=self._run_start_uid,
                        time=ttime.time(),
-                       exit_status=exit_status,
+                       exit_status=self._exit_status,
                        reason=reason)
             self.emit('stop', doc)
             self.debug("*** Emitted RunStop:\n%s" % doc)
@@ -504,7 +500,7 @@ class RunEngine:
     def _check_for_trouble(self):
         # Check for panic.
         if self._panic:
-            exit_status = 'fail'
+            self._exit_status = 'fail'
             raise PanicError("Something told the Run Engine to "
                                 "panic after the run began. "
                                 "Records were created, but the run "
@@ -523,7 +519,7 @@ class RunEngine:
             self.state.pause()
             if not resumable:
                 self.state.abort()
-                exit_status = 'abort'
+                self._exit_status = 'abort'
                 raise RunInterrupt("*** Hard pause requested. There "
                                     "are no checkpoints. Cannot resume;"
                                     " must abort. Run aborted.")
@@ -535,7 +531,7 @@ class RunEngine:
                 if not self.state.is_paused:
                     break
             if self.state.is_aborting:
-                exit_status = 'abort'
+                self._exit_status = 'abort'
                 raise RunInterrupt("Run aborted.")
             self._rerun_from_checkpoint()
 
@@ -545,7 +541,7 @@ class RunEngine:
             if not resumable:
                 self.state.pause()
                 self.state.abort()
-                exit_status = 'abort'
+                self._exit_status = 'abort'
                 raise RunInterrupt("*** Soft pause requested. There "
                                     "are no checkpoints. Cannot resume;"
                                     " must abort. Run aborted.")

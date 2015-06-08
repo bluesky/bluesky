@@ -1,6 +1,6 @@
 """Tests for, uh, the state machine of the run engine"""
 from nose.tools import raises, assert_raises, assert_equal
-from bluesky import RunEngineStateMachine
+from bluesky.run_engine import RunEngineStateMachine
 from bluesky.testing.noseclasses import KnownFailureTest
 from super_state_machine.errors import TransitionError
 from .utils import (goto_state,
