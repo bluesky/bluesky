@@ -69,6 +69,7 @@ Contents
    :maxdepth: 1
 
    scans
+   state-machine
    msg
    object_api
    configuration

@@ -101,17 +101,3 @@ Delta Scan
 ``dscan`` matches the syntax of ``ascan``, but ``start`` and ``stop`` are
 interpreted as relative to the current position. Recall that one can check
 the current positions with the command ``wh_pos()``.
-
-Commands
---------
-
-.. autosummary::
-   :toctree: generated/
-
-   wh_pos
-   set_pos
-   mov
-   movr
-   set_lm
-   log_pos
-   log_pos_diff

@@ -1,65 +1,11 @@
-#bluesky
-duh!
 
 
-#What is the problem that bluesky solves?
-``bluesky`` is a Python implementation of a scanning framework that has been 
-designed to accomodate the various and complex needs of the NSLS-II beamlines.
-Its goal is to replace SPEC and add the full power of the Python language to
-data acquisition.  
+.. ipython:: python
 
-##``bluesky`` Features
-
-- Beamline panic conditions 
-  
-    - will immediately terminate the run
-  
-- Programmatic pause conditions 
-
-    - will pause the run until a resume condition has been met
-    - e.g., Sample temperature is too high. Pause until the sample 
-      temperature falls below some threshold
-
-- Interactive pause conditions ``Ctrl + c``
-  
-    - will pause until the user decides to resume
-    - A second ``Ctrl + c`` will terminate the scan
-
-- Implement custom scans with messaging (``Msg``) framework
-
-    - See ``bluesky.examples``
-    - and ``bluesky.run_engine.Msg``
-    - and ``bluesky.run_engine._command_registry``
-
-- Main thread callback registry
-
-  - Allows for "expensive" computations to take place on a different process 
-    than the scan such as "live" plotting and data analysis
+   from bluesky import Msg
+   Msg('trigger')
 
 
-##Messaging framework
-The ``bluesky`` run engine works via message passing.  As such, understanding
-the messaging framework is critical.  
-
-Mapping from message to `RunEngine` function
-```python
-self._command_registry = {
-    'create': self._create,
-    'save': self._save,
-    'read': self._read,
-    'null': self._null,
-    'set': self._set,
-    'trigger': self._trigger,
-    'sleep': self._sleep,
-    'wait': self._wait,
-    'checkpoint': self._checkpoint,
-    'pause': self._pause,
-    'collect': self._collect,
-    'kickoff': self._kickoff
-}
-```
-
-###Message: ``trigger``
 Trigger a detector to start acquiring
 ```python
 def count(det):
