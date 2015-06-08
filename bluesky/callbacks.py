@@ -4,6 +4,32 @@ Useful callbacks for the Run Engine
 import sys
 from itertools import count
 from prettytable import PrettyTable
+from collections import OrderedDict
+from .utils import doc_type
+
+
+class CallbackBase(object):
+    def __init__(self):
+        super(CallbackBase, self).__init__()
+
+    def dispatch(self, doc, *args, **kwargs):
+        doc_name = doc_type(doc)
+        doc_func = getattr(self, doc_name)
+        doc_func(*args, **kwargs)
+
+    def event(self, *args, **kwargs):
+        print("I'm an event with args = {} and kwargs = {}".format(args,
+                                                                   kwargs))
+
+    def descriptor(self, *args, **kwargs):
+        print("I'm a descriptor with args = {} and kwargs = {}".format(args,
+                                                                       kwargs))
+
+    def start(self, *args, **kwargs):
+        print("I'm a start with args = {} and kwargs = {}".format(args, kwargs))
+
+    def stop(self, *args, **kwargs):
+        print("I'm a stop with args = {} and kwargs = {}".format(args, kwargs))
 
 
 class CallbackCounter:
@@ -83,6 +109,49 @@ def live_scalar_plotter(ax, y, x):
     return update_plot
 
 
+def format_num(x, max_len=11, pre=5, post=5):
+    if x > 10**pre or x < 10**-post:
+        x = '%.{}e'.format(post) % x
+    else:
+        x = '%{}.{}f'.format(pre, post) % x
+
+    return x
+
+
+class LiveTable(CallbackBase):
+
+    base_fields = ['seq_num']
+
+    def __init__(self, rowwise=True, fields=None):
+        super(self, LiveTable).__init__()
+        self.rowwise = rowwise
+        if fields is None:
+            fields = []
+        self.fields = self.base_fields + fields
+
+    def start(self):
+        """Do nothing"""
+        pass
+
+    def event(self, event_document):
+        row = [event_document['seq_num']]
+        row.extend([format_num(event_document['data'].get(field, ''),
+                               max_len=11, pre=5, post=5)
+                    for field in self.fields])
+        self.table.add_row(row)
+
+        if self.rowwise:
+            # Print the last row of data only.
+            print(str(self.table).split('\n')[-2])  # [-1] is the bottom border
+        else:
+            print(self.table)
+        sys.stdout.flush()
+
+    def stop(self, stop_document):
+        pass
+
+
+
 def live_table(fields, rowwise=True):
     """
     Build a function that prints data from each Event as a row in a table.
@@ -112,13 +181,18 @@ def live_table(fields, rowwise=True):
     +-------+-----+----------------------+
     """
     table = PrettyTable(['seq_num'] + fields)
-    table.padding_width = 0
+
+    table.padding_width = 2
+    table.align = 'r'
     if rowwise:
         print(table)
 
+
     def update_table(event):
+        # todo figure out how to format this correctly
         row = [event['seq_num']]
-        row.extend([event['data'].get(field, '') for field in fields])
+        row.extend([format_num(event['data'].get(field, ''))
+                    for field in fields])
         table.add_row(row)
 
         if rowwise:
