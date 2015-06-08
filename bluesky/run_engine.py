@@ -89,7 +89,8 @@ class Mover(Base):
 
     def __init__(self, *args, **kwargs):
         super(Mover, self).__init__(*args, **kwargs)
-        self._data = {'pos': {'value': 0, 'timestamp': ttime.time()}}
+        self._data = {f: {'value': 0, 'timestamp': ttime.time()}
+                      for f in self._fields}
         self.ready = True
 
     def read(self):
@@ -102,7 +103,12 @@ class Mover(Base):
         # block_group is handled by the RunEngine
         self.ready = False
         ttime.sleep(0.1)  # simulate moving time
-        self._data = {'pos': {'value': val, 'timestamp': ttime.time()}}
+        if isinstance(val, dict):
+            for k, v in val.items():
+                self._data[k] = v
+        else:
+            self._data = {f: {'value': val, 'timestamp': ttime.time()}
+                          for f in self._fields}
         self.ready = True
 
     def settle(self):
