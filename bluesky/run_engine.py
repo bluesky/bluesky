@@ -893,6 +893,8 @@ class Dispatcher:
     def __init__(self, queues):
         self.queues = queues
         self.cb_registry = CallbackRegistry()
+        self._counter = count()
+        self._token_mapping = dict()
 
     def process_queue(self, name):
         """
@@ -920,24 +922,42 @@ class Dispatcher:
 
         Parameters
         ----------
-        name: {'start', 'descriptor', 'event', 'stop'}
+        name: {'start', 'descriptor', 'event', 'stop', 'all'}
         func: callable
             expecting signature like ``f(mongoengine.Document)``
-        """
-        if name not in self.queues.keys():
-            raise ValueError("Valid callbacks: {0}".format(self.queues.keys()))
-        return self.cb_registry.connect(name, func)
 
-    def unsubscribe(self, callback_id):
+        Returns
+        -------
+        token : int
+            an integer token that can be used to unsubscribe
+        """
+        queue_keys = self.queues.keys()
+        if name in queue_keys:
+            private_token = self.cb_registry.connect(name, func)
+            public_token = next(self._counter)
+            self._token_mapping[public_token] = [private_token]
+            return public_token
+        elif name == 'all':
+            private_tokens = []
+            for key in queue_keys:
+                private_tokens.append(self.cb_registry.connect(name, func))
+            public_token = next(self._counter)
+            self._token_mapping[public_token] = private_tokens
+        else:
+            valid_names = queue_keys + ['all']
+            raise ValueError("Valid names: {0}".format(valid_names))
+
+    def unsubscribe(self, token):
         """
         Unregister a callback function using its integer ID.
 
         Parameters
         ----------
-        callback_id : int
-            the ID issued by `subscribe`
+        token : int
+            the integer token issued by `subscribe`
         """
-        self.cb_registry.disconnect(callback_id)
+        for private_token in self._token_mapping[token]:
+            self.cb_registry.disconnect(private_token)
 
 
 def new_uid():
