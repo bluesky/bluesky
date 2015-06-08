@@ -110,7 +110,7 @@ class CallbackRegistry:
                 continue
             else:
                 for sig, functions in self._func_cid_map.items():
-                    for function, value in functions.items():
+                    for function, value in list(functions.items()):
                         if value == cid:
                             del functions[function]
                 return
