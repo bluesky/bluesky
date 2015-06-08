@@ -70,8 +70,11 @@ to see the code of the scan itself. For now, we focus on how to use it.
     RE.resume()
     RE.abort()
 
-Example: Requesting a pause from a thread
+Example: Requesting a pause after a delay
 -----------------------------------------
+
+Suppose we want to pause a scan if it hasn't finished in a certian amount
+of time. Then, we can decide whether to continue or abort.
 
 The user cannot call ``RE.request_pause()`` directly while a scan is running.
 It can only be a done from a separate thread. Here is a example code for a
@@ -152,19 +155,19 @@ whether is has permission to lift the pause.
 Example: Use a file to trigger a pause
 --------------------------------------
 
-This can be adapted to do something more useful. Instead of pausing based on a
-timed delay, it could monitor a PV or a file. The example below continually
-monitors a filepath and requests a pause if it sees that such a file has been
-created.
+The example above can be adapted to do something a little different.
+Instead of pausing based on a
+timed delay, we can monitor a PV or a file. The example below regularly
+checks a filepath. If it find a file there, it requests a pause.
 
 .. ipython:: python
 
     class FileBasedPausingAgent:
-        def __init__(self, RE, name, filepath):
+        def __init__(self, RE, name, filepath, hard=False):
             self.RE = RE
             self.name = name
             self.filepath = filepath
-        def issue_request(self, hard, delay=0):
+            self.hard = hard
             def callback():
                 return self.permission
             def requester():
@@ -174,7 +177,8 @@ created.
                         if os.path.isfile(self.filepath):
                             # The file has been created! Request a pause.
                             self.permission = False
-                            self.RE.request_pause(hard, self.name, callback)
+                            self.RE.request_pause(self.hard, self.name,
+                                                  callback)
                     else:
                         if not os.path.isfile(self.filepath):
                             # The file is gone. Give permission to resume.

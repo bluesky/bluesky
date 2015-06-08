@@ -1,10 +1,10 @@
-Built-in Scans
-==============
+Basic Scans
+===========
 
 .. currentmodule:: bluesky.scans
 
-Quick Start
------------
+An Example Workflow
+-------------------
 
 .. ipython:: python
    :suppress:

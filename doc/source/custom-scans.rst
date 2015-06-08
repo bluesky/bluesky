@@ -1,4 +1,5 @@
-
+Writing Custom Scans
+====================
 
 .. ipython:: python
 
