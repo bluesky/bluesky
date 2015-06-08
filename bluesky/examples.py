@@ -83,7 +83,7 @@ class SynGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
-        super(SynGauss, self).__init__(name, name)
+        super(SynGauss, self).__init__(name, [name,])
         self.ready = True
         self._motor = motor
         self._motor_field = motor_field
