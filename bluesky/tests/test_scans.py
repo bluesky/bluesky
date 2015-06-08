@@ -63,8 +63,8 @@ def test_log_dscan():
 
 
 def test_adaptive_ascan():
-    scan1 = AdaptiveAscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.1)
-    scan2 = AdaptiveAscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.2)
+    scan1 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1)
+    scan2 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -78,8 +78,8 @@ def test_adaptive_ascan():
 
 
 def test_adaptive_dscan():
-    scan1 = AdaptiveDscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.1)
-    scan2 = AdaptiveDscan(motor, [det], 'intensity', 0, 5, 0.1, 1, 0.2)
+    scan1 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1)
+    scan2 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -96,7 +96,7 @@ def test_adaptive_dscan():
 
 def test_count():
     actual_intensity = []
-    col = collector('intensity', actual_intensity)
+    col = collector('det', actual_intensity)
     motor.set(0)
     scan = Count([det])
     RE(scan, subs={'event': col})
@@ -104,7 +104,7 @@ def test_count():
 
     # multiple counts
     actual_intensity = []
-    col = collector('intensity', actual_intensity)
+    col = collector('det', actual_intensity)
     scan = Count([det], num=3, delay=0.05)
     RE(scan, subs={'event': col})
     assert_equal(scan.num, 3)

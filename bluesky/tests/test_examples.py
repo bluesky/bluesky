@@ -178,7 +178,7 @@ def test_live_plotter():
     if skip_mpl:
         raise nose.SkipTest("matplotlib is not available")
     fig, ax = plt.subplots()
-    my_plotter = live_scalar_plotter(ax, 'intensity', 'motor')
+    my_plotter = live_scalar_plotter(ax, 'det', 'motor')
     assert_equal(RE.state, 'idle')
     RE(stepscan(motor, det), subs={'event': my_plotter})
     assert_equal(RE.state, 'idle')
