@@ -18,11 +18,6 @@ from .utils import CallbackRegistry, SignalHandler, ExtendedList
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
-# todo boo, hardcoded defaults
-beamline_id = 'test'
-owner = 'tester'
-scan_id = 123
-
 
 class LossyLiFoQueue(Queue):
     '''Variant of Queue that is a 'lossy' first-in-last-out
