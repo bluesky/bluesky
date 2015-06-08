@@ -407,7 +407,7 @@ class RunEngine:
         for name in self._queues.keys():
             self._register_scan_callback(name, make_push_func(name))
 
-        self.verbose = True
+        self.verbose = False
 
     def _clear(self):
         self._bundling = False
