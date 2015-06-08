@@ -4,7 +4,7 @@ import types
 from inspect import Parameter, Signature
 import itertools
 from collections import OrderedDict
-
+import sys
 
 __all__ = ['SignalHandler', 'CallbackRegistry', 'doc_type']
 
@@ -73,7 +73,8 @@ class CallbackRegistry:
     See matplotlib.cbook.CallbackRegistry. This is a simplified since
     ``bluesky`` is python3.4+ only!
     """
-    def __init__(self):
+    def __init__(self, halt_on_exception=True):
+        self.halt_on_exception = halt_on_exception
         self.callbacks = dict()
         self._cid = 0
         self._func_cid_map = {}
@@ -160,12 +161,19 @@ class CallbackRegistry:
         args
         kwargs
         """
+        exceptions = []
         if sig in self.callbacks:
             for cid, func in self.callbacks[sig].items():
                 try:
                     func(*args, **kwargs)
                 except ReferenceError:
                     self._remove_proxy(func)
+                except Exception as e:
+                    if self.halt_on_exception:
+                        raise
+                    else:
+                        exceptions.append((e, sys.exc_info()[2]))
+        return exceptions
 
 
 class _BoundMethodProxy:

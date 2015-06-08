@@ -7,6 +7,7 @@ import signal
 import threading
 from queue import Queue, Empty
 from enum import Enum
+import traceback
 
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
@@ -226,7 +227,9 @@ class RunEngine:
         for queue in self._queues.values():
             try:
                 while True:
-                    queue.get_nowait()
+                    self.debug(
+                        "This was left on the queue after the last run ended:"
+                        "====\n{}\n====".format(queue.get_nowait()))
             except Empty:
                 # queue is empty
                 pass
@@ -711,7 +714,7 @@ class Dispatcher:
 
     def __init__(self, queues):
         self.queues = queues
-        self.cb_registry = CallbackRegistry()
+        self.cb_registry = CallbackRegistry(halt_on_exception=False)
         self._counter = count()
         self._token_mapping = dict()
 
@@ -723,9 +726,25 @@ class Dispatcher:
         try:
             document = queue.get_nowait()
         except Empty:
+            # no documents available on the queue
             pass
         else:
-            self.cb_registry.process(name, document)
+            # process the callbacks for "name" and grab any exceptions that
+            # come out the registry as "ninety_nine_probs"
+            ninety_nine_probs = self.cb_registry.process(name, document)
+            # spam the screen with the exceptions that are being raised
+            if ninety_nine_probs:
+                print("The following exceptions were raised during processing "
+                      "of the [[{}]] queue".format(name))
+                for idx, (error, tb) in enumerate(ninety_nine_probs):
+                    err = "Error %s" % idx
+                    print("\n%s\n%s\n%s\n" % (err, '-'*len(err), error))
+                    print("\tTraceback\n"
+                          "\t---------")
+                    # todo format this traceback properly
+                    tb_list = traceback.extract_tb(tb)
+                    for item in traceback._format_list_iter(tb_list):
+                        print('\t%s' % item)
 
     def process_all_queues(self):
         for name in self.queues.keys():
