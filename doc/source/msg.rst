@@ -1,5 +1,5 @@
-`Msg` protocol
-==============
+Low-level interface: Message protocol
+=====================================
 
 Overview
 --------

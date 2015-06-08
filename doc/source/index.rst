@@ -69,6 +69,8 @@ Contents
    :maxdepth: 1
 
    scans
+   msg
+   object_api
    configuration
    nsls2_checklist
    legacy_api

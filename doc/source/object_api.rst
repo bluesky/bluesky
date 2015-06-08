@@ -1,5 +1,5 @@
-Expected Object API
-===================
+Expected API of Hardware Objects
+================================
 
 The `BlueSky` run engine code is completely independent of the details
 of how the interaction with the hardware works, but the objects passed
