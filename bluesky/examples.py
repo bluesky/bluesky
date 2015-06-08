@@ -115,7 +115,12 @@ class MockFlyer:
         self._mot = motor
         self._detector = detector
         self._steps = None
-        self.ready = True
+        self._thread = None
+        self._data = deque()
+
+    @property
+    def ready(self):
+        return self._thread and not self._thread.is_alive()
 
     def describe(self):
         dd = dict()
@@ -124,9 +129,20 @@ class MockFlyer:
         return [dd, ]
 
     def kickoff(self, start, stop, steps):
+        self._data = deque()
         self._steps = np.linspace(start, stop, steps)
+        self._thread = threading.Thread(target=self._scan,
+                                                name='mock_fly_thread')
+        self._thread.start()
 
     def collect(self):
+        if not self.ready:
+            raise RuntimeError("No reading until done!")
+
+        yield from self._data
+        self._thread = None
+
+    def _scan(self):
         for p in self._steps:
             self._mot.set(p)
             while True:
@@ -143,7 +159,7 @@ class MockFlyer:
                 for k, v in d.items():
                     event['data'][k] = v['value']
                     event['timestamp'][k] = v['timestamp']
-            yield event
+            self._data.append(event)
 
 
 class FlyMagic(Base):
@@ -197,7 +213,6 @@ class FlyMagic(Base):
             yield ev
             ttime.sleep(0.01)
         self._time = None
-
 
 
 motor = Mover('motor', ['motor'])
