@@ -3,9 +3,42 @@ from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
+from collections import OrderedDict
 
 
-__all__ = ['SignalHandler', 'CallbackRegistry']
+__all__ = ['SignalHandler', 'CallbackRegistry', 'doc_type']
+
+
+
+def doc_type(doc):
+    """Determine if 'doc' is a 'start', 'stop', 'event' or 'descriptor'
+
+    Returns
+    -------
+    {'start', 'stop', 'event', descriptor'}
+    """
+    # use an ordered dict to be a little faster with the assumption that
+    # events are going to be the most common, then descriptors then
+    # start/stops should come as pairs
+    field_mapping = OrderedDict()
+    field_mapping['event'] = ['seq_num', 'data']
+    field_mapping['descriptor'] = ['data_keys', 'run_start']
+    field_mapping['start'] = ['scan_id', 'beamline_config']
+    field_mapping['stop'] = ['reason', 'exit_status']
+
+    for doc_type, required_fields in field_mapping.items():
+        could_be_this_one = True
+        for field in required_fields:
+            try:
+                doc[field]
+            except KeyError:
+                could_be_this_one = False
+        if could_be_this_one:
+            print('document is a %s' % doc_type)
+            return doc_type
+
+    raise ValueError("Cannot determine the document type. Document I was "
+                     "given:\n=====\n{}\n=====".format(doc))
 
 
 class SignalHandler:
