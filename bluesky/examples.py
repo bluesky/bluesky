@@ -3,7 +3,7 @@ import time as ttime
 from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
-from . import Msg
+from .run_engine import Msg
 
 from .callbacks import *
 
@@ -83,7 +83,7 @@ class SynGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
-        super(SynGauss, self).__init__(name, [name,])
+        super(SynGauss, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
         self._motor_field = motor_field
@@ -428,8 +428,10 @@ def find_center_gen(syngaus, initial_center, initial_width,
     output_mutable.update(guesses)
 
 
-def fly_gen(flyer):
-    yield Msg('kickoff', flyer)
+def fly_gen(flyer, start, stop, step):
+    yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
+    yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)
-    yield Msg('kickoff', flyer)
+    yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
+    yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)

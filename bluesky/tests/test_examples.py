@@ -69,7 +69,7 @@ def test_sleepy():
     yield run, sleepy, motor, det
 
 
-def test_wait_one():
+def test_wati_one():
     yield run, wait_one, motor, det
 
 
@@ -242,3 +242,8 @@ def validate_dict_cb_opposite(key):
     def callback(doc):
         assert_not_in(key, doc)
     return callback
+
+
+def test_simple_fly():
+    mm = MockFlyer(motor, det)
+    RE(fly_gen(mm, -1, 1, 15))
