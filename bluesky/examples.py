@@ -254,6 +254,16 @@ def sleepy(motor, det):
     yield Msg('read', det)
 
 
+def do_nothing(timeout=5):
+    "Generate 'checkpoint' messages until timeout."
+    t = ttime.time()
+    while True:
+        if ttime.time() > t + timeout:
+            break
+        ttime.sleep(0.1)
+        yield Msg('checkpoint')
+
+
 def checkpoint_forever():
     # simplest pauseable scan
     while True:
