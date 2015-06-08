@@ -213,8 +213,6 @@ def adaptive_scan(motor, detector, motor_name, detector_name, start,
     cur_I = None
     while next_pos < stop:
         yield Msg('set', motor, {motor_name: next_pos})
-        # Why is this sleep here?  I would imagine this is for demo purposes
-        # only?
         yield Msg('sleep', None, .1)
         yield Msg('create')
         yield Msg('trigger', motor)

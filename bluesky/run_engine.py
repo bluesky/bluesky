@@ -527,8 +527,6 @@ class RunEngine(object):
                                "command.")
 
                 # Normal operation
-                # Why do you need to send in ``response`` here?  It is
-                # guaranteed to be ``None`` in this code path.
                 msg = gen.send(response)
                 if self._msg_cache is not None:
                     # We have a checkpoint.
@@ -536,7 +534,7 @@ class RunEngine(object):
                 response = self._command_registry[msg.command](msg)
                 self.debug('RE.state: ' + self.state)
 
-                self.debug('msg: {}\n   response: {}'.format(msg, response))
+                self.debug('{}\n   ret: {}'.format(msg, response))
         except StopIteration:
             exit_status = 'success'
         except Exception as err:
@@ -641,7 +639,6 @@ class RunEngine(object):
         pass
 
     def _set(self, msg):
-        # why 'block_group' as opposed to just 'group'?
         if 'block_group' in msg.kwargs:
             group = msg.kwargs['block_group']
             self._block_groups[group].add(msg.obj)
