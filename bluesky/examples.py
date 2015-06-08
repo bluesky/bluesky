@@ -374,22 +374,6 @@ def MoveRead_gen(motor, detector):
         print('Generator finished')
 
 
-def SynGauss_gen(syngaus, motor_steps, motor_limit=None):
-    try:
-        for x in motor_steps:
-            yield Msg('create')
-            yield Msg('set', syngaus, {syngaus.motor_name: x})
-            yield Msg('trigger', syngaus)
-            yield Msg('sleep', None, .1)
-            ret = yield Msg('read', syngaus)
-            yield Msg('save')
-            if motor_limit is not None:
-                if ret[syngaus.motor_name] > motor_limit:
-                    break
-    finally:
-        print('generator finished')
-
-
 def find_center_gen(syngaus, initial_center, initial_width,
                     output_mutable):
     tol = .01
