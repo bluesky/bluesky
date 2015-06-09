@@ -6,6 +6,7 @@ from itertools import count
 from prettytable import PrettyTable
 from collections import OrderedDict
 from .utils import doc_type
+from datetime import datetime
 
 import logging
 logger = logging.getLogger(__name__)
@@ -160,8 +161,8 @@ class LiveTable(CallbackBase):
     |        10  |       4.00000  |       0.00034  |
     +------------+----------------+----------------+
     """
-    base_fields = ['seq_num']
-    base_field_widths = [8]
+    base_fields = ['seq_num', 'time']
+    base_field_widths = [8, 15]
     data_field_width = 12
     max_pre_decimal = 5
     max_post_decimal = 5
@@ -184,12 +185,9 @@ class LiveTable(CallbackBase):
     ### RunEngine document callbacks
 
     def start(self, start_document):
-        base_field_widths = self.base_field_widths
-        if len(self.base_fields) > 1 and len(base_field_widths) == 1:
-            base_field_widths = base_field_widths * len(self.base_fields)
         # format the placeholder fields for the base fields so that the
         # heading prints at the correct width
-        base_fields = [' '*width for width in base_field_widths]
+        base_fields = [' '*width for width in self.base_field_widths]
         # format placeholder fields for the data fields so that the heading
         # prints at the correct width
         data_fields = [' '*self.data_field_width for _ in self.fields]
@@ -199,9 +197,14 @@ class LiveTable(CallbackBase):
         sys.stdout.flush()
 
     def event(self, event_document):
-        row = [event_document['seq_num']]
+        event_time = str(datetime.fromtimestamp(event_document['time']).time())
+        row = [event_document['seq_num'], event_time]
         for field in self.fields:
-            val = event_document['data'].get(field, '')
+            if field == 'timestamps':
+                logger.warning('LiveTable is not sure what to do with '
+                               '"timestamps". It is too vague.')
+            else:
+                val = event_document['data'].get(field, '')
             try:
                 val = format_num(val,
                                  max_len=self.data_field_width,
