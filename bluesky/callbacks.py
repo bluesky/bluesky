@@ -45,8 +45,9 @@ class CallbackCounter:
         self.value = next(self.counter)
 
 
-def print_metadata(start):
-    for field, value in sorted(start.items()):
+def print_metadata(doc):
+    "Print all fields except uid and time."
+    for field, value in sorted(doc.items()):
         # uid is returned by the RunEngine, and time is self-evident
         if field not in ['time', 'uid']:
             print('{0}: {1}'.format(field, value))
