@@ -15,7 +15,8 @@ class CallbackBase(object):
     def __init__(self):
         super(CallbackBase, self).__init__()
 
-    def dispatch(self, doc):
+    def __call__(self, doc):
+        """Inspect the document, infer its type, and dispatch it."""
         doc_name = doc_type(doc)
         doc_func = getattr(self, doc_name)
         doc_func(doc)
