@@ -6,6 +6,9 @@ import itertools
 from collections import OrderedDict
 import sys
 
+import logging
+logger = logging.getLogger(__name__)
+
 __all__ = ['SignalHandler', 'CallbackRegistry', 'doc_type']
 
 
@@ -34,7 +37,7 @@ def doc_type(doc):
             except KeyError:
                 could_be_this_one = False
         if could_be_this_one:
-            print('document is a %s' % doc_type)
+            logger.debug('document is a %s' % doc_type)
             return doc_type
 
     raise ValueError("Cannot determine the document type. Document I was "

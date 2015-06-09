@@ -7,29 +7,30 @@ from prettytable import PrettyTable
 from collections import OrderedDict
 from .utils import doc_type
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class CallbackBase(object):
     def __init__(self):
         super(CallbackBase, self).__init__()
 
-    def dispatch(self, doc, *args, **kwargs):
+    def dispatch(self, doc):
         doc_name = doc_type(doc)
         doc_func = getattr(self, doc_name)
-        doc_func(*args, **kwargs)
+        doc_func(doc)
 
-    def event(self, *args, **kwargs):
-        print("I'm an event with args = {} and kwargs = {}".format(args,
-                                                                   kwargs))
+    def event(self, doc):
+        logger.debug("CallbackBase: I'm an event with doc = {}".format(doc))
 
-    def descriptor(self, *args, **kwargs):
-        print("I'm a descriptor with args = {} and kwargs = {}".format(args,
-                                                                       kwargs))
+    def descriptor(self, doc):
+        logger.debug("CallbackBase: I'm a descriptor with doc = {}".format(doc))
 
-    def start(self, *args, **kwargs):
-        print("I'm a start with args = {} and kwargs = {}".format(args, kwargs))
+    def start(self, doc):
+        logger.debug("CallbackBase: I'm a start with doc = {}".format(doc))
 
-    def stop(self, *args, **kwargs):
-        print("I'm a stop with args = {} and kwargs = {}".format(args, kwargs))
+    def stop(self, doc):
+        logger.debug("CallbackBase: I'm a stop with doc = {}".format(doc))
 
 
 class CallbackCounter:
@@ -123,15 +124,11 @@ class LiveTable(CallbackBase):
     base_fields = ['seq_num']
 
     def __init__(self, rowwise=True, fields=None):
-        super(self, LiveTable).__init__()
+        super(LiveTable, self).__init__()
         self.rowwise = rowwise
         if fields is None:
             fields = []
         self.fields = self.base_fields + fields
-
-    def start(self):
-        """Do nothing"""
-        pass
 
     def event(self, event_document):
         row = [event_document['seq_num']]
@@ -148,7 +145,15 @@ class LiveTable(CallbackBase):
         sys.stdout.flush()
 
     def stop(self, stop_document):
-        pass
+        """Print the last row of the table
+
+        Parameters
+        ----------
+        stop_document : dict
+            Not explicitly used in this function, other than to signal that
+            the run has been completed
+        """
+        print(str(self.table).split('\n')[-1])
 
 
 
