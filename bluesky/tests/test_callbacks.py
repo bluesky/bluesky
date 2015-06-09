@@ -23,6 +23,17 @@ def test_main_thread_callback_exceptions():
                                    'all': callbacker},
        beamline_id='testing', owner='tester')
 
+def test_all():
+    c = CallbackCounter()
+    RE(stepscan(motor, det), subs={'all': c})
+    assert_equal(c.value, 10 + 1 + 2)  # events, descriptor, start and stop
+
+    c = CallbackCounter()
+    token = RE.subscribe('all', c)
+    RE(stepscan(motor, det))
+    RE.unsubscribe(token)
+    assert_equal(c.value, 10 + 1 + 2)
+
 
 if __name__ == '__main__':
     import nose
