@@ -121,7 +121,35 @@ def format_num(x, max_len=11, pre=5, post=5):
 
 
 class LiveTable(CallbackBase):
+    """
+    Build a function that prints data from each Event as a row in a table.
 
+    Parameters
+    ----------
+    fields : list, optional
+        names of data fields to include in addition to 'seq_num'
+    rowwise : bool
+        If True, append each row to stdout. If False, reprint the full updated
+        table each time. This is useful if other messsages are interspersed.
+
+    Examples
+    --------
+    Show a table with motor and detector readings..
+
+    >>> RE(stepscan(motor, det), subs={'all': LiveTable(['motor', 'det'])})
+    +-------+-----+----------------------+
+    |seq_num|motor|         det          |
+    +-------+-----+----------------------+
+    |   1   |   -5|3.726653172078671e-06 |
+    |   2   |   -4|0.00033546262790251185|
+    |   3   |   -3| 0.011108996538242306 |
+    |   4   |   -2|  0.1353352832366127  |
+    |   5   |   -1|  0.6065306597126334  |
+    |   6   |   0 |         1.0          |
+    |   7   |   1 |  0.6065306597126334  |
+    |   8   |   2 |  0.1353352832366127  |
+    +-------+-----+----------------------+
+    """
     base_fields = ['seq_num']
     base_field_widths = [8]
     data_field_width = 12
@@ -185,56 +213,3 @@ class LiveTable(CallbackBase):
         print(str(self.table).split('\n')[-1])
         # remove all data from the table
         self.table.clear_rows()
-
-
-
-def live_table(fields, rowwise=True):
-    """
-    Build a function that prints data from each Event as a row in a table.
-
-    Parameters
-    ----------
-    fields : list
-        names of interesting data keys
-    rowwise : bool
-        If True, append each row to stdout. If False, reprint the full updated
-        table each time. This is useful if other messsages are interspersed.
-
-    Examples
-    --------
-    >>> RE(stepscan(motor, det), subs={'event': live_table(['motor', 'det'])})
-    +-------+-----+----------------------+
-    |seq_num|motor|         det          |
-    +-------+-----+----------------------+
-    |   1   |   -5|3.726653172078671e-06 |
-    |   2   |   -4|0.00033546262790251185|
-    |   3   |   -3| 0.011108996538242306 |
-    |   4   |   -2|  0.1353352832366127  |
-    |   5   |   -1|  0.6065306597126334  |
-    |   6   |   0 |         1.0          |
-    |   7   |   1 |  0.6065306597126334  |
-    |   8   |   2 |  0.1353352832366127  |
-    +-------+-----+----------------------+
-    """
-    table = PrettyTable(['seq_num'] + fields)
-
-    table.padding_width = 2
-    table.align = 'r'
-    if rowwise:
-        print(table)
-
-
-    def update_table(event):
-        # todo figure out how to format this correctly
-        row = [event['seq_num']]
-        row.extend([format_num(event['data'].get(field, ''))
-                    for field in fields])
-        table.add_row(row)
-
-        if rowwise:
-            # Print the last row of data only.
-            print(str(table).split('\n')[-2])  # [-1] is the bottom border
-        else:
-            print(table)
-        sys.stdout.flush()
-    return update_table
