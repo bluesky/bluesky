@@ -1,0 +1,44 @@
+{
+"definitions": {
+    "data_key": {
+        "properties": {
+            "external": {
+                "pattern": "^[A-Z]+:?",
+                "type": "string"
+            },
+            "source": {
+                "pattern": "^[A-Z]+:",
+                "type": "string"
+            }
+        },
+        "required": [
+            "source"
+        ],
+        "type": "object"
+    }
+},
+"properties": {
+    "begin_run_event": {
+        "type": "string"
+    },
+    "keys": {
+        "additionalProperties": {
+            "$ref": "#/definitions/data_key"
+        },
+        "type": "object"
+    },
+    "time": {
+        "type": "number"
+    },
+    "uid": {
+        "type": "string"
+    }
+},
+"required": [
+    "uid",
+    "keys",
+    "time",
+    "begin_run_event"
+],
+"type": "object"
+}

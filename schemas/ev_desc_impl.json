@@ -1,0 +1,47 @@
+{
+   "definitions": {
+       "data_key": {
+           "properties": {
+               "external": {
+                   "pattern": "^[A-Z]+:?",
+                   "type": "string"
+               },
+               "source": {
+                   "pattern": "^[A-Z]+:",
+                   "type": "string"
+               }
+           },
+           "required": [
+               "source"
+           ],
+           "type": "object"
+       }
+   },
+   "properties": {
+       "begin_run_event": {
+           "type": "string"
+       },
+       "data_keys": {
+           "additionalProperties": {
+               "$ref": "#/definitions/data_key"
+           },
+           "type": "object"
+       },
+       "time": {
+           "type": "number"
+       },
+       "id": {
+           "type": "string"
+       },
+       "event_type": {
+           "type": "string"
+           }
+   },
+   "required": [
+       "id",
+       "keys",
+       "time",
+       "begin_run_event"
+   ],
+   "type": "object"
+}

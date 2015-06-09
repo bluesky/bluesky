@@ -1,0 +1,50 @@
+{
+    "properties": {
+        "beamline_config": {
+            "type": ["object", "string"],
+            "description": "Meta-data regrading how the beamline is configured.  Maybe UID into another collection"
+        },
+        "project": {
+            "type": "string",
+            "description": "Name of project that this run is part of"
+        },
+        "sample": {
+            "type": ["object", "string"],
+            "description": "Information about the sample, may be a UID to another collection"
+        },
+        "beamline_id": {
+            "type": "string",
+            "description": "The beamline ID"
+        },
+        "scan_id": {
+            "type": "integer",
+            "description": "Scan ID number, not globally unique"
+        },
+        "time": {
+            "type": "number",
+            "description": "Time the run started.  Unix epoch time"
+        },
+        "uid": {
+            "type": "string",
+            "description": "Globally unique ID for tihs run"
+        },
+        "group": {
+            "type": ["string", "integer"],
+            "description": "Unix group to associate this data with"
+        },
+        "owner": {
+            "type": ["string", "integer"],
+            "description": "Unix owner to associate this data with"
+        }
+    },
+    "required": [
+        "uid",
+        "time",
+        "group",
+        "owner",
+        "beamline_config",
+        "beamline_id"
+     ],
+    "type": "object",
+    "description": "Document created at the start of run.  Provides a seach target and later documents link to it"
+}
