@@ -56,6 +56,7 @@ Make a second instance ``Count``, configured to take multiple measurements.
 .. ipython:: python
 
    more_c = Count(dets, 5)
+   RE(more_c)
 
 Make some changes to the parameters---say, take 2 measurements intead of 5---
 and run again.
@@ -69,20 +70,10 @@ and run again.
     :suppress:
 
     RE.unsubscribe(token)
+    RE.subscribe('start', print_metadata)
 
 Handling Metadata
 -----------------
-
-We'll hook a subscription to print the metadata at the start of a scan.
-
-.. ipython:: python
-
-    RE.subscribe('start', print_metadata)
-
-.. ipython:: python
-    :suppress:
-
-    token = RE.subscribe('all', LiveTable(['det1', 'det2']))
 
 Usage
 +++++
