@@ -757,7 +757,8 @@ class Dispatcher:
                         print('\t%s' % item)
 
     def process_all_queues(self):
-        for name in self.queues.keys():
+        # keys are hard-coded to enforce order
+        for name in ['start', 'descriptor', 'event', 'stop']:
             self.process_queue(name)
 
     def subscribe(self, name, func):
