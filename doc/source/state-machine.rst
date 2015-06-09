@@ -56,6 +56,8 @@ Abort
 To abort a paused run, call ``RE.abort()``. The RunEngine will return to the
 idle state, ready for new instructions.
 
+.. _planned-pause:
+
 Example: Using a scan that has a planned pause
 ----------------------------------------------
 
