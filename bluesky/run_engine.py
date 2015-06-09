@@ -695,6 +695,9 @@ class RunEngine:
                 ttime.sleep(0.5)
                 if not self.state.is_paused:
                     break
+            if self.state.is_aborting:
+                self._exit_status = 'abort'
+                raise RunInterrupt("Run aborted.")
 
     def _rerun_from_checkpoint(self):
         self.debug("*** Rerunning from checkpoint...")
@@ -762,7 +765,6 @@ class Dispatcher:
             private_token = self.cb_registry.connect(name, func)
             public_token = next(self._counter)
             self._token_mapping[public_token] = [private_token]
-            return public_token
         elif name == 'all':
             private_tokens = []
             for key in queue_keys:
@@ -772,6 +774,7 @@ class Dispatcher:
         else:
             valid_names = queue_keys + ['all']
             raise ValueError("Valid names: {0}".format(valid_names))
+        return public_token
 
     def unsubscribe(self, token):
         """
