@@ -165,7 +165,7 @@ class LiveTable(CallbackBase):
     max_pre_decimal = 5
     max_post_decimal = 5
 
-    def __init__(self, rowwise=True, fields=None):
+    def __init__(self, fields=None, rowwise=True):
         super(LiveTable, self).__init__()
         self.rowwise = rowwise
         if fields is None:

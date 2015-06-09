@@ -6,7 +6,7 @@ An Example Workflow
    :suppress:
 
    from bluesky.examples import det1, det2, det
-   from bluesky.callbacks import live_table, print_metadata
+   from bluesky.callbacks import LiveTable, print_metadata
    from bluesky import RunEngine
    RE = RunEngine()
    RE.verbose = False
@@ -43,7 +43,7 @@ every time. You can make it happen automatically at startup.)
 
 .. ipython:: python
 
-    RE.subscribe('all', live_table(dets))
+    RE.subscribe('all', LiveTable(dets))
 
 Run the scan again.
 
