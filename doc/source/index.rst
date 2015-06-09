@@ -50,20 +50,18 @@ Python package. Bluesky does not import or require on any of them.
 Relationship to DataBroker, metadatastore, filestore
 ----------------------------------------------------
 
-Bluesky includes a module called ``standard_config``. At NSLS-II, it will used
-every beamline, but it is technically optional.
-Among other things, it configures metadatastore to listen for and store data
-collected and emitted by bluesky. (It is configured in such a way that, if data
-is for any reason not saved, the run will fail and the user will be immediately
-notified.) 
-Results will be available from the DataBroker as they are collected.
-
-Because integration with metadatastore is not strictly assumed, other
-storage or processing pipelines can be integrated in the future without making
-changes to bluesky.
+The Documents genereated by bluesky conform to the specification expected by
+metadatastore. However, integration with metadatastore is not required or
+assumed. Other storage or processing pipelines can be used alongside or in
+place of metadatastore.
 
 Integration with filestore is handled by individual detector interfaces, such as
 ``AreaDetector``.
+
+At NSLS-II, it is expected that bluesky will be operating with metadatastore
+and filestore. An optional module called ``standard_config`` can be used to
+conveniently hook data collection into metadatastore. Collected data will
+become immediately available through DataBroker.
 
 Contents
 --------
