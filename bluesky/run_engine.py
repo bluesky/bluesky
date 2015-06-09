@@ -765,7 +765,6 @@ class Dispatcher:
             private_token = self.cb_registry.connect(name, func)
             public_token = next(self._counter)
             self._token_mapping[public_token] = [private_token]
-            return public_token
         elif name == 'all':
             private_tokens = []
             for key in queue_keys:
@@ -775,6 +774,7 @@ class Dispatcher:
         else:
             valid_names = queue_keys + ['all']
             raise ValueError("Valid names: {0}".format(valid_names))
+        return public_token
 
     def unsubscribe(self, token):
         """
