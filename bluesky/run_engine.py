@@ -1,3 +1,4 @@
+import os
 import time as ttime
 import sys
 from itertools import count
@@ -9,6 +10,8 @@ from queue import Queue, Empty
 from enum import Enum
 import traceback
 
+import json
+import jsonschema
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 import numpy as np
@@ -18,6 +21,14 @@ from .utils import CallbackRegistry, SignalHandler, ExtendedList
 
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
+
+SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'schemas')
+SCHEMA_NAMES = {'start': 'run_start.json',
+                'stop': 'run_stop.json',
+                'event': 'event.json',
+                'descriptor': 'event_descriptor.json'}
+schemas = {name: json.load(open(os.path.join(SCHEMA_PATH, filename)))
+           for name, filename in SCHEMA_NAMES.items()}
 
 
 class LossyLiFoQueue(Queue):
@@ -710,6 +721,7 @@ class RunEngine:
 
     def emit(self, name, doc):
         "Process blocking, scan-thread callbacks."
+        jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
 
     def debug(self, msg):
