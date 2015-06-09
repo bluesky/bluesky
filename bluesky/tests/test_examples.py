@@ -5,6 +5,7 @@ from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
 from bluesky.examples import *
 from bluesky.callbacks import *
 from bluesky import RunEngine, RunInterrupt, Msg, PanicError
+from bluesky.tests.utils import setup_run_engine
 from super_state_machine.errors import TransitionError
 try:
     import matplotlib.pyplot as plt
@@ -14,17 +15,7 @@ else:
     skip_mpl = False
 
 
-# global utility vars defined in setup()
-RE = None
-
-
-def setup():
-    global RE
-    RE = RunEngine()
-    RE.memory['owner'] = 'test_owner'
-    RE.memory['group'] = 'test_group'
-    RE.memory['beamline_id'] = 'test_beamline'
-    RE.memory['config'] = {}
+RE = setup_run_engine()
 
 
 def test_msgs():

@@ -1,16 +1,10 @@
 from nose.tools import assert_in, assert_equal
 from bluesky.run_engine import RunEngine
+from bluesky.tests.utils import setup_run_engine
 from bluesky.examples import simple_scan, motor
 
 
-RE = None
-
-
-def setup():
-    global RE
-    RE = RunEngine()
-    RE.memory['owner'] = 'test_owner'
-    RE.memory['beamline_id'] = 'test_beamline'
+RE = setup_run_engine()
 
 
 def test_custom_metadata():

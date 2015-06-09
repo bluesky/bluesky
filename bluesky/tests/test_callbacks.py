@@ -1,15 +1,12 @@
 from nose.tools import assert_in, assert_equal
 from bluesky.run_engine import RunEngine
 from bluesky.examples import *
+from bluesky.tests.utils import setup_run_engine
 from nose.tools import raises
 
 
-RE = None
+RE = setup_run_engine()
 
-
-def setup():
-    global RE
-    RE = RunEngine()
 
 def exception_raiser(doc):
     raise Exception("Hey look it's an exception that better not kill the "

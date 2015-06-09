@@ -1,6 +1,6 @@
-
 from collections import defaultdict
 from itertools import product
+from bluesky.run_engine import RunEngine
 
 
 # path to various states
@@ -87,6 +87,15 @@ def define_state_machine_transitions_from_class(state_machine):
                 allowed = False
             transition_map[from_state].append((to_state, allowed))
     return transition_map
+
+
+def setup_run_engine():
+    RE = RunEngine()
+    RE.memory['owner'] = 'test_owner'
+    RE.memory['group'] = 'Grant No. 12345'
+    RE.memory['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
+    RE.memory['beamline_id'] = 'test_beamline'
+    return RE
 
 
 if __name__ == "__main__":
