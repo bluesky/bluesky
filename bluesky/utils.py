@@ -122,7 +122,8 @@ class CallbackRegistry:
         return cid
 
     def _remove_proxy(self, proxy):
-        for sig, proxies in self._func_cid_map.items():
+        # need the list because `del self._func_cid_map[sig]` mutates the dict
+        for sig, proxies in list(self._func_cid_map.items()):
             try:
                 del self.callbacks[sig][proxies[proxy]]
             except KeyError:
