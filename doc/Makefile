@@ -197,20 +197,4 @@ pseudoxml:
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
 
 gh-pages:
-	git clone `git config --get remote.origin.url` $(GH_PAGES_DIR)
-	cd $(GH_PAGES_DIR) && \
-		git checkout gh-pages && \
-		mkdir -p $(GH_PAGES_DIR)/doc && \
-		git checkout master $(GH_PAGES_SOURCES) && \
-		git reset HEAD && \
-		cd $(GH_PAGES_DIR)/doc && \
-		make html && \
-		cp -rv build/html/* ../ && \
-		rm -rf $(GH_PAGES_DIR)/$(GH_PAGES_SOURCES) && \
-		rm -rf $(GH_PAGES_DIR)/build && \
-		rm -rf $(GH_PAGES_DIR)/doc && \
-		cd $(GH_PAGES_DIR) && \
-		git add -A  && \
-		git commit -m "Generated gh-pages `git log master -1 --pretty=short --abbrev-commit`" && \
-		git push origin gh-pages 
-	rm -rf $(GH_PAGES_DIR)
+	cd .. && git checkout gh-pages && git rm -rf . && touch .nojekyll && mv doc/build/html/* . && rm -rf doc && git add -A && git commit -a --amend -m "Makefile is force-commiting new build." && git push origin gh-pages -f && cd .. && git checkout --
