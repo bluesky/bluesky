@@ -154,11 +154,16 @@ class LiveTable(CallbackBase):
 
     def event(self, event_document):
         row = [event_document['seq_num']]
-        row.extend([format_num(event_document['data'].get(field, ''),
-                               max_len=self.data_field_width,
-                               pre=self.max_pre_decimal,
-                               post=self.max_post_decimal)
-                    for field in self.fields])
+        for field in self.fields:
+            val = event_document['data'].get(field, '')
+            try:
+                val = format_num(val,
+                                 max_len=self.data_field_width,
+                                 pre=self.max_pre_decimal,
+                                 post=self.max_post_decimal)
+            except Exception:
+                pass
+            row.append(val)
         self.table.add_row(row)
 
         if self.rowwise:
