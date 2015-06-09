@@ -11,6 +11,8 @@ An Example Workflow
    RE = RunEngine()
    RE.verbose = False
    RE.memory['owner'] = 'Jane'
+   RE.memory['group'] = 'Grant No. 12345'
+   RE.memory['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
    RE.memory['beamline_id'] = 'demo'
    from bluesky.scans import Count
 
@@ -118,7 +120,9 @@ The following fields are automatically reused between runs unless overridden.
 * sample
 * project
 * owner
+* group
 * beamline_id
+* config (which should rarely change; see below)
 * scan_id (which is automatically incremented)
 
 Custom fields, like 'experimenter' and 'mood' in the example above, are not
@@ -132,8 +136,8 @@ reused by default, as we can see below.
 To add a custom field to the list of peristent fields, use
 ``RE.persistent_fields.append('experimenter')``. Use
 ``RE.persistent_fields.remove('experimenter')`` to stop persisting it.
-Fields that are required by our Document model---owner, beamline_id, and
-beamline_config---cannot be removed.
+Fields that are required by our Document specification---owner, group,
+beamline_id, and config---cannot be removed. (More on these below.)
 
 To review the metadata before running ascan, check ``RE.memory``, which
 behaves like a Python dictionary.
@@ -148,14 +152,17 @@ To start fresh:
 
     RE.memory.clear()
 
-Some fields and required, and the RunEngine will raise an error if they are
-not set.
+Required Fields
++++++++++++++++
 
-.. ipython:: python
-    :okexcept:
+Some fields and required by our Document specification, and the RunEngine will
+raise a ``KeyError`` if they are not set. These fields are:
 
-    RE(c)
-    # Fill in required metadata...
-    RE.memory['owner'] = 'John'
-    RE.memory['beamline_id'] = 'demo'
-    RE(c)
+* owner
+* group
+* beamline_id (e.g., 'csx')
+* config, a dictionary describing the hardware, calibration, dead pixels on
+  detectors, etc.
+
+``standard_config.py`` fills some of these in automatically (e.g., 'owner'
+defaults to the username of the UNIX user currently logged in).
