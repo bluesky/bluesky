@@ -10,8 +10,8 @@ to step-wise change their state and ``Flyer`` objects which can be
 instructed to start a fly-scan.
 
 
-``Reader`` API
---------------
+Reader API
+----------
 
 The required functions and attributes are
 
@@ -57,8 +57,8 @@ These objects can be used with ``Read``, ``Trigger``, ``Wait``, and
 ``Describe`` `Msg`.
 
 
-``Mover`` API
--------------
+Mover API
+---------
 
 The required functions and attributes are
 
@@ -101,8 +101,8 @@ only have these methods.
 These objects can be used with ``Read``, ``Set``, ``Wait``, and ``Describe`` `Msg`.
 
 
-``Flyer`` API
--------------
+Flyer API
+---------
 
 This is the first pass at implementing a generic interface to fly
 scans.  It only supports the work flow of :

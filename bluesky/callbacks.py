@@ -45,6 +45,14 @@ class CallbackCounter:
         self.value = next(self.counter)
 
 
+def print_metadata(doc):
+    "Print all fields except uid and time."
+    for field, value in sorted(doc.items()):
+        # uid is returned by the RunEngine, and time is self-evident
+        if field not in ['time', 'uid']:
+            print('{0}: {1}'.format(field, value))
+
+
 def collector(field, output):
     """
     Build a function that appends data to a list.
@@ -158,7 +166,7 @@ class LiveTable(CallbackBase):
     max_pre_decimal = 5
     max_post_decimal = 5
 
-    def __init__(self, rowwise=True, fields=None):
+    def __init__(self, fields=None, rowwise=True):
         super(LiveTable, self).__init__()
         self.rowwise = rowwise
         if fields is None:

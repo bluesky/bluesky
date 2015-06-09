@@ -1,14 +1,24 @@
 Bluesky Data Collection Interface
 =================================
 
-Bluesky is Python package for interactive data collection.
+Bluesky is Python package for interactive data collection. There are three
+components:
+
+* *Messages,* simple, single-step instructions,
+* a *Run Engine,* which processes the messages and coordinates collection, 
+* and *Documents*, Python dictionaries containing data and metadata, organized
+  in a
+  `specified but flexible <http://nsls-ii.github.io/arch/metadatastore-format.html>`__
+  way.
+
 
 Key Features
 ------------
-* Runs can be **paused, aborted, and resumed** with user-defined checkpoints.
+* Running can be **paused, aborted, and resumed** with user-defined
+  checkpoints.
 * In addition to the built-in scans, you can specify **custom scans and 
-  "macros"** in a simple, procedural way using basic Python sytnax (e.g., for
-  loops) and a small set of commands. There are many documented examples.
+  "macros"** in a simple, procedural way using basic Python sytnax (e.g.,
+  for-loops) and a small set of commands. There are many documented examples.
 * You can register **custom commands** -- say, to control your robot -- and
   immediately integrate them with existing ones.
 * You can write your own high-level **"motors" that control many PVs**. Examples
@@ -27,14 +37,7 @@ Key Features
 * Automated **tests** ensure stability of the project going forward.
 * With optional **data validation** at the end of a run, you can be sure that
   the data will be available from Data Broker.
-* Documentation, including:
-    * how to configure new motors and detectors
-    * how to write macros
-    * how to start agents that pause or abort the run when danger or failure are
-      detected
-    * how to use a PV to trigger pause or abort
-    * how set up customized live plots
-    * how set up in situ analysis on a parallel process
+* This documentation!
 
 Relationship to EPICS, pyepics, ophyd
 -------------------------------------
@@ -68,9 +71,12 @@ Contents
 .. toctree::
    :maxdepth: 1
 
+   workflow
    scans
+   callbacks
+   state-machine
+   custom-scans
    msg
    object_api
-   configuration
    nsls2_checklist
    legacy_api

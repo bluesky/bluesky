@@ -1,13 +1,11 @@
-.. currentmodule:: bluesky.standard_config
-
-Legacy API
-**********
+Legacy Scan API
+***************
 
 .. warning::
 
    The commands covered below are supported for backward-compatibility with
-   the ophyd Run Engine. While they will ensure that old code can be run, they
-   are not compatible with the new features offered by bluesky.
+   the ophyd Run Engine. They are not compatible with all the features in
+   bluesky.
 
 Basic Built-in Scans
 --------------------
@@ -101,17 +99,3 @@ Delta Scan
 ``dscan`` matches the syntax of ``ascan``, but ``start`` and ``stop`` are
 interpreted as relative to the current position. Recall that one can check
 the current positions with the command ``wh_pos()``.
-
-Commands
---------
-
-.. autosummary::
-   :toctree: generated/
-
-   wh_pos
-   set_pos
-   mov
-   movr
-   set_lm
-   log_pos
-   log_pos_diff

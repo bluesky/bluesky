@@ -1,17 +1,5 @@
-Custom Scans: Using the Message protocol
-========================================
-
-Simple Example
---------------
-
-.. ipython:: python
-
-   from bluesky import Msg
-
-   def simple_scan(motor):
-       yield Msg('set', motor, 5)
-       yield Msg('read', motor)
-
+Message protocol
+================
 
 Overview
 --------
@@ -31,6 +19,8 @@ passed through to the calls on the objects.
 The `RunEngine` has a registry which is used to dispatch the `Msg` objects
 based on the value of the `Msg.cmd`.  By default a basic set of commands are
 registered, but users can register their own functions to add custom commands.
+
+.. _commands:
 
 
 Commands

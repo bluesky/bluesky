@@ -254,6 +254,16 @@ def sleepy(motor, det):
     yield Msg('read', det)
 
 
+def do_nothing(timeout=5):
+    "Generate 'checkpoint' messages until timeout."
+    t = ttime.time()
+    while True:
+        if ttime.time() > t + timeout:
+            break
+        ttime.sleep(0.1)
+        yield Msg('checkpoint')
+
+
 def checkpoint_forever():
     # simplest pauseable scan
     while True:
@@ -359,6 +369,20 @@ def stepscan(motor, det):
         yield Msg('read', motor)
         yield Msg('read', det)
         yield Msg('save')
+
+
+def cautious_stepscan(motor, det):
+    for i in range(-5, 5):
+        yield Msg('checkpoint')
+        yield Msg('create')
+        yield Msg('set', motor, i)
+        yield Msg('trigger', det)
+        ret_m = yield Msg('read', motor)
+        ret_d = yield Msg('read', det)
+        yield Msg('save')
+        print("Value at {m} is {d}. Pausing.".format(
+            m=ret_m[motor._name]['value'], d=ret_d[det1._name]['value']))
+        yield Msg('pause', None, hard=False)
 
 
 def MoveRead_gen(motor, detector):
