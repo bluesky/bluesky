@@ -15,21 +15,22 @@ How does pausing work?
 ----------------------
 
 When a run is paused, the RunEngine returns control to the user and waits
-for the user to decide to resume the run or abort it.
-
-There are three ways to request a pause.
+for the user to decide to resume the run or abort it. There are three ways to
+request a pause.
 
 1. Writing a scan with a planned pause step
 2. Pressing Ctrl+C
 3. Calling ``RE.request_pause()``
 
-Scans are specified as a sequence of *messages*, which are simple instructions
-like 'read' and 'set'. The instructions can include one or more 'checkpoint',
-indicating a place where it safe to cleanly resume from a pause. For instance,
-checkpoints are placed before each step of an `AScan`.
+Scans are specified as a sequence of messages, simple instructions
+like 'read' and 'set'. The instructions can optionally include one or more
+'checkpoint' message, indicating a place where it safe to resume after an
+interruption. For example, checkpoints are placed before each step of an
+`AScan`.
 
-Checkpoints are optional. If a scan does not include any 'checkpoint' messages,
-then it cannot be resumed. If a pause is requested, the scan will be aborted.
+If a scan does not include any 'checkpoint' messages, then it cannot be
+resumed after an interruption. If a pause is requested, the scan is aborted
+instead.
 
 Soft Pause
 ----------

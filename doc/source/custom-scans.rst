@@ -1,21 +1,40 @@
 Writing Custom Scans
 ====================
 
+.. ipython:: python
+   :suppress:
+
+    from bluesky import Msg
+    from bluesky.examples import motor
+
 Messages
 --------
 
-The RunEngine processes Messages. Examples:
+The RunEngine processes *messages*. A message is comprised of:
+
+* a command, such as 'read', 'set', or 'pause'
+* a target object, such as ``motor``, if applicable
+* positional arguments
+* keyword arguments
+
+Examples:
 
 .. ipython:: python
 
    Msg('read', motor)
    Msg('set', motor, 5)
 
+The full list of built-in commands is covered systematically
+:ref:`elsewhere <commands>`.
+Below, we build up a collection of example scans demonstrating a variety of
+use cases.
+
 Simplest Scan
 -------------
 
-Messages are passed to the RunEngine through a Python *generator*. Here is a
-very simple scan that moves a motor to ``5`` and reads its position.
+Messages are passed to the RunEngine through a Python *generator* (more on
+these below). Here is a very simple scan that sets a motor's position to 5
+and reads the position back.
 
 .. ipython:: python
 
@@ -23,12 +42,46 @@ very simple scan that moves a motor to ``5`` and reads its position.
         yield Msg('set', motor, 5)
         yield Msg('read', motor)
 
-Responsive Scans
-----------------
+The RunEngine processes these messages like so:
+
+.. code-block:: python
+
+    motor.set(5)
+    motor.read()
+
+To read from a detector, we also need the 'trigger' command.
+
+.. ipython:: python
+
+    def simple_scan(motor, det):
+        yield Msg('set', motor, 5)
+        yield Msg('read', motor)
+        yield Msg('trigger', det)
+        yield Msg('read', det)
+
+Setting Objects with Multiple Degrees of Freedom
+------------------------------------------------
+
+It's possible to 'set' an object with multiple degress of freedom.
+
+.. ipython:: python
+
+    def multi_set(multi_motor):
+        yield Msg('set', multi_motor, (), {'h': 1, 'k':2, 'l': 3})
+
+The dictionary in this message is passed to ``multi_motor.set`` as keyword
+arguments:
+
+.. code-block:: python
+
+    multi_motor.set(h=1, k=2, l=3)
+
+Making Scans Responsive
+-----------------------
 
 Two-way communication is possible between the generator and the RunEngine.
-The 'read' command responds with its data payload. We can inspect the data
-point and use it to decide whether to continue.
+For example, the 'read' command responds with its reading. We can use it to
+make an on-the-fly decision about whether to continue or stop.
 
 .. ipython:: python
 
@@ -45,7 +98,7 @@ point and use it to decide whether to continue.
                 break
             i += 1
 
-The data is formatted like:
+The response from 'read' -- ``reading``, above -- is formatted like:
 
 .. code-block:: python
 
@@ -54,10 +107,12 @@ The data is formatted like:
 For a detailed technical description of the messages and their responses,
 see :doc:`msg`.
 
-Waiting and Sleeping
---------------------
+Sleeping
+--------
 
-Sleeping is as simple as it sounds.
+Sleeping is as simple as it sounds. It might be used, for example, to add
+extra delay to allow a sample to equilibrate to the temperature set by a
+temperature controller.
 
 .. ipython:: python
 
@@ -68,8 +123,16 @@ Sleeping is as simple as it sounds.
         yield Msg('trigger', det)
         yield Msg('read', det)
 
-To wait for a motor or any set-able thing to finish reponding to a 'set'
-command, use 'wait'. First, give the 'set' command a ``block_group``
+Notice that unlike 'set', 'read', and 'trigger', the 'sleep' command does
+not have a target object. We use ``None`` as a placeholder.
+
+Waiting
+-------
+
+Use the 'wait' command to block progress until an object report that it is
+ready. For example, wait for a motor to finish moving.
+
+First, give the 'set' command a ``block_group``
 keyword argument. This is just a label that we can use to refer to it later.
 Then, use 'wait' to tell the RunEngine to block progress until everything in
 that ``block_group`` reports that it is ready.
@@ -108,14 +171,12 @@ different points in the scan.
         # Same as above...
         for motor in motors[:-1]:
             yield Msg('set', motor, 5, block_group='A')
-
         # ...but put the last motor is separate group.
         yield Msg('set', motors[-1], 5, block_group='B')
         # Wait for everything in group 'A' to report done.
         yield Msg('wait', None, 'A')
         yield Msg('trigger', det)
         yield Msg('read', det)
-
         # Wait for everything in group 'B' to report done.
         yield Msg('wait', None, 'B')
         yield Msg('trigger', det)
@@ -123,6 +184,12 @@ different points in the scan.
 
 Pauseable Scans
 ---------------
+
+The 'pause' command pauses the RunEngine. Details of pausing and resuming were
+addressed :doc:`previously <state-machine>`.
+
+The 'checkpoint' command defines where a scan can be safely resumed after an
+interruption.
 
 .. ipython:: python
 
@@ -140,16 +207,45 @@ Pauseable Scans
 Creating Documents (Saving the Data)
 ------------------------------------
 
-Fly Scans
----------
+Data is bundled into *Events*, logical groupings of measurements that can be
+considered "simultaneous" for the purposes of analysis. When readings are
+bundled as an Event, an Event Document is created and made available to
+:doc:`subscriptions <callbacks>`.
 
-
-
+To bundle data into an Event, use the 'create' and 'save' commands. Any
+'read' commands that occur between the two will be bundled into an Event.
 
 .. ipython:: python
 
-   from bluesky import Msg
-   Msg('trigger')
+    def simple_scan_saving(motor, det):
+        "Set, trigger, read"
+        yield Msg('create')
+        yield Msg('set', motor, 5)
+        yield Msg('read', motor)
+        yield Msg('trigger', det)
+        yield Msg('read', det)
+        yield Msg('save')
+
+The above generates one Event. By looping through several create--save pairs,
+we can generate many Events.
+
+.. ipython:: python
+
+    def stepscan(motor, det):
+        for i in range(-5, 5):
+            yield Msg('create')
+            yield Msg('set', motor, i)
+            yield Msg('trigger', det)
+            yield Msg('read', motor)
+            yield Msg('read', det)
+            yield Msg('save')
+
+Fly Scans
+---------
+
+Registering Custom Commands
+---------------------------
+
 
 
 ###Message: ``sleep``

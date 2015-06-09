@@ -1,13 +1,11 @@
-.. currentmodule:: bluesky.standard_config
-
-Legacy API
-**********
+Legacy Scan API
+***************
 
 .. warning::
 
    The commands covered below are supported for backward-compatibility with
-   the ophyd Run Engine. While they will ensure that old code can be run, they
-   are not compatible with the new features offered by bluesky.
+   the ophyd Run Engine. They are not compatible with all the features in
+   bluesky.
 
 Basic Built-in Scans
 --------------------

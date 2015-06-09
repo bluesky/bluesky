@@ -1,11 +1,21 @@
 Bluesky Data Collection Interface
 =================================
 
-Bluesky is Python package for interactive data collection.
+Bluesky is Python package for interactive data collection. There are three
+components:
+
+* *Messages,* simple, single-step instructions,
+* a *Run Engine,* which processes the messages and coordinates collection, 
+* and *Documents*, Python dictionaries containing data and metadata, organized
+  in a
+  `specified but flexible <http://nsls-ii.github.io/arch/metadatastore-format.html>`__
+  way.
+
 
 Key Features
 ------------
-* Runs can be **paused, aborted, and resumed** with user-defined checkpoints.
+* Running can be **paused, aborted, and resumed** with user-defined
+  checkpoints.
 * In addition to the built-in scans, you can specify **custom scans and 
   "macros"** in a simple, procedural way using basic Python sytnax (e.g., for
   loops) and a small set of commands. There are many documented examples.
@@ -68,12 +78,12 @@ Contents
 .. toctree::
    :maxdepth: 1
 
+   workflow
    scans
    callbacks
    state-machine
    custom-scans
    msg
    object_api
-   configuration
    nsls2_checklist
    legacy_api
