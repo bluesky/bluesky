@@ -35,6 +35,8 @@ Now ``c`` encapsulates scan instructions and the detector list. Run the scan.
 
    RE(c)
 
+It worked, but we could use a little more feedback.
+
 To see a live-updating table during collection, we'll add a
 :doc:`subscription <callbacks>`. (Don't worry, you don't have to type this
 every time. You can make it happen automatically at startup.)
