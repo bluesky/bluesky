@@ -1,4 +1,3 @@
-
 An Example Workflow
 ===================
 
@@ -7,18 +6,13 @@ An Example Workflow
    :suppress:
 
    from bluesky.examples import det1, det2, det
-   from bluesky.callbacks import live_table
+   from bluesky.callbacks import live_table, print_metadata
    from bluesky import RunEngine
    RE = RunEngine()
    RE.verbose = False
-   RE.memory['owner'] = 'Jane the Scientist'
+   RE.memory['owner'] = 'Jane'
    RE.memory['beamline_id'] = 'demo'
    from bluesky.scans import Count
-
-   def print_metadata(start):
-       for field, value in sorted(start.items()):
-           if field not in ['time', 'uid']:
-               print('{0}: {1}'.format(field, value))
 
 .. note::
 
@@ -42,7 +36,8 @@ Now ``c`` encapsulates scan instructions and the detector list. Run the scan.
    RE(c)
 
 To see a live-updating table during collection, we'll add a
-:doc:`subscription <callbacks>`.
+:doc:`subscription <callbacks>`. (Don't worry, you don't have to type this
+every time. You can make it happen automatically at startup.)
 
 .. ipython:: python
 
@@ -71,10 +66,15 @@ and run again.
 Handling Metadata
 -----------------
 
+We'll hook a subscription to print the metadata at the start of a scan.
+
 .. ipython:: python
 
     RE.subscribe('start', print_metadata)
     RE(c)
+
+Usage
++++++
 
 Metadata can be specified like so. It will be stored with the data.
 
@@ -82,7 +82,6 @@ Metadata can be specified like so. It will be stored with the data.
 
     RE.memory['project'] = 'my xray project'
     RE.memory['sample'] = {'color': 'red', 'dimensions': [10, 20, 5]}
-    RE.memory['my_custom_field'] = 'zebra'
     RE(c)
 
 .. note::
@@ -109,12 +108,30 @@ Additional metadata can be specified when the scan is run.
 
     RE(c, experimenter='Emily', mood='excited')
 
-Metadata is automatically reused between runs unless overridden.
+Persistence
++++++++++++
+
+The following fields are automatically reused between runs unless overridden.
+
+* sample
+* project
+* owner
+* beamline_id
+* scan_id (which is automatically incremented)
+
+Custom fields, like 'experimenter' and 'mood' in the example above, are not
+reused by default, as we can see below.
 
 .. ipython:: python
 
     RE(c)
     RE(c, sample={'color': 'blue', 'dimensions': [3, 1, 4]})
+
+To add a custom field to the list of peristent fields, use
+``RE.persistent_fields.append('experimenter')``. Use
+``RE.persistent_fields.remove('experimenter')`` to stop persisting it.
+Fields that are required by our Document model---owner, beamline_id, and
+beamline_config---cannot be removed.
 
 To review the metadata before running ascan, check ``RE.memory``, which
 behaves like a Python dictionary.
@@ -136,7 +153,7 @@ not set.
     :okexcept:
 
     RE(c)
-    # Filling in required metadata...
+    # Fill in required metadata...
     RE.memory['owner'] = 'John'
     RE.memory['beamline_id'] = 'demo'
     RE(c)
