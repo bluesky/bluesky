@@ -22,7 +22,7 @@ from .utils import CallbackRegistry, SignalHandler, ExtendedList
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
-SCHEMA_PATH = os.path.join(os.path.dirname(__file__), 'schemas')
+SCHEMA_PATH = os.path.join(os.path.dirname(__file__), '..', 'schemas')
 SCHEMA_NAMES = {'start': 'run_start.json',
                 'stop': 'run_stop.json',
                 'event': 'event.json',
@@ -125,7 +125,7 @@ class RunEngineStateMachine(StateMachine):
 class RunEngine:
 
     state = PropertyMachine(RunEngineStateMachine)
-    _REQUIRED_FIELDS = ['beamline_id', 'owner']
+    _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
 
     def __init__(self, memory=None):
         """
@@ -504,7 +504,7 @@ class RunEngine:
             raise err
         finally:
             doc = dict(run_start=self._run_start_uid,
-                       time=ttime.time(),
+                       time=ttime.time(), uid=new_uid(),
                        exit_status=self._exit_status,
                        reason=reason)
             self.emit('stop', doc)
@@ -631,12 +631,11 @@ class RunEngine:
 
     def _collect(self, msg):
         obj = msg.obj
-        descriptors = obj.describe()
-        for desc in descriptors:
-            objs_read = frozenset(desc)
+        data_keys_list = obj.describe()
+        for data_keys in data_keys_list:
+            objs_read = frozenset(data_keys)
             if objs_read not in self._descriptor_uids:
                 # We don't not have an Event Descriptor for this set.
-                data_keys = obj.describe()
                 descriptor_uid = new_uid()
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid)
@@ -850,11 +849,10 @@ def _fill_missing_fields(data_keys):
         # required keys
         result[key]['source'] = value.get('source')
         result[key]['dtype'] = value.get('dtype', 'number')  # just guessing
-        # optional keys
-        if 'shape' in value:
-            result[key]['shape'] = value['shape']
+        result[key]['shape'] = value.get('shape', None)
         if 'external' in value:
             result[key]['external'] = value['external']
+    return result
 
 
 class PanicError(Exception):

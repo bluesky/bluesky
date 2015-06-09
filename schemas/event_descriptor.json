@@ -28,7 +28,6 @@
                         "destription": "The shape of the data.  Null and empty list mean scalar data."
                     },
                     "source": {
-                        "pattern": "^[A-Z]+:",
                         "type": "string",
                         "description": "The source (ex piece of hardware) of the data."
                     }
@@ -42,7 +41,7 @@
             }
         },
         "properties": {
-            "keys": {
+            "data_keys": {
                 "additionalProperties": {
                     "$ref": "#/definitions/data_key"
                 },
@@ -55,9 +54,9 @@
                 "description": "Globally unique ID for this event descriptor.",
                 "title": "uid"
             },
-            "begin_run_event": {
+            "run_start": {
                 "type": "string",
-                "description": "Globally unique ID to the begin_run document this descriptor is associtaed with."
+                "description": "Globally unique ID to the run_start document this descriptor is associtaed with."
             },
             "time": {
                 "type": "number",
@@ -66,7 +65,8 @@
         },
         "required": [
             "uid",
-            "keys",
+            "data_keys",
+            "run_start",
             "time"
         ],
         "type": "object",

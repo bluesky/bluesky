@@ -1,8 +1,8 @@
 {
     "properties": {
-        "beamline_config": {
+        "config": {
             "type": ["object", "string"],
-            "description": "Meta-data regrading how the beamline is configured.  Maybe UID into another collection"
+            "description": "Meta-data regrading slow-chaning configuration, such as equipment specifications and calibration"
         },
         "project": {
             "type": "string",
@@ -42,7 +42,7 @@
         "time",
         "group",
         "owner",
-        "beamline_config",
+        "config",
         "beamline_id"
      ],
     "type": "object",

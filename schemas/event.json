@@ -1,39 +1,12 @@
 {
-    "definitions": {
-        "data_field": {
-            "title": "data_field",
-            "description": "Schema for entries in the event data property",
-            "items": [
-                {
-                    "type": [
-                        "string",
-                        "number",
-                        "boolean",
-                        "integer"
-                    ],
-                    "description": "The measured value or UID to look up external data",
-                    "title": "value"
-
-                },
-                {
-                    "type": "number",
-                    "description": "The hardware time stamp of this measurement. [s] from unix epoch",
-                    "title": "timestamp"
-                }
-
-            ],
-            "type": "array",
-            "additionalItems": false,
-            "minItems": 2
-        }
-    },
     "properties": {
         "data": {
-            "additionalProperties": {
-                "$ref": "#/definitions/data_field"
-            },
             "type": "object",
             "description": "The actual measument data"
+        },
+        "timestamps": {
+            "type": "object",
+            "description": "The timestamps of the individual measument data"
         },
         "descriptor": {
             "type": "string",
@@ -55,6 +28,7 @@
     "required": [
         "uid",
         "data",
+        "timestamps",
         "time",
         "descriptor",
         "seq_num"

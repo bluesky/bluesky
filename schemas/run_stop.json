@@ -1,9 +1,9 @@
 
 {
     "properties": {
-        "begin_run_event": {
+        "run_start": {
             "type": "string",
-            "description": "Reference back to the begin run document that this document is paired with."
+            "description": "Reference back to the run_start document that this document is paired with."
         },
         "reason": {
             "type": "string",
@@ -13,7 +13,7 @@
             "type": "number",
             "description": "The time the run ended. Unix epoch"
         },
-        "completion_state": {
+        "exit_status": {
             "type": "string",
             "enum": ["success", "abort", "fail"],
             "description": "State of the run when it ended"
@@ -25,9 +25,9 @@
     },
     "required": [
         "uid",
-        "begin_run_event",
+        "run_start",
         "time",
-        "completion_state"
+        "exit_status"
     ],
     "type": "object",
     "description": "Document for the end of a run indicating the success/fail state of the run and the end time"
