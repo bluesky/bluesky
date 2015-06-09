@@ -3,9 +3,45 @@ from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
+from collections import OrderedDict
+import sys
+
+import logging
+logger = logging.getLogger(__name__)
+
+__all__ = ['SignalHandler', 'CallbackRegistry', 'doc_type']
 
 
-__all__ = ['SignalHandler', 'CallbackRegistry']
+
+def doc_type(doc):
+    """Determine if 'doc' is a 'start', 'stop', 'event' or 'descriptor'
+
+    Returns
+    -------
+    {'start', 'stop', 'event', descriptor'}
+    """
+    # use an ordered dict to be a little faster with the assumption that
+    # events are going to be the most common, then descriptors then
+    # start/stops should come as pairs
+    field_mapping = OrderedDict()
+    field_mapping['event'] = ['seq_num', 'data']
+    field_mapping['descriptor'] = ['data_keys', 'run_start']
+    field_mapping['start'] = ['scan_id', 'beamline_id']
+    field_mapping['stop'] = ['reason', 'exit_status']
+
+    for doc_type, required_fields in field_mapping.items():
+        could_be_this_one = True
+        for field in required_fields:
+            try:
+                doc[field]
+            except KeyError:
+                could_be_this_one = False
+        if could_be_this_one:
+            logger.debug('document is a %s' % doc_type)
+            return doc_type
+
+    raise ValueError("Cannot determine the document type. Document I was "
+                     "given:\n=====\n{}\n=====".format(doc))
 
 
 class SignalHandler:
@@ -40,7 +76,8 @@ class CallbackRegistry:
     See matplotlib.cbook.CallbackRegistry. This is a simplified since
     ``bluesky`` is python3.4+ only!
     """
-    def __init__(self):
+    def __init__(self, halt_on_exception=True):
+        self.halt_on_exception = halt_on_exception
         self.callbacks = dict()
         self._cid = 0
         self._func_cid_map = {}
@@ -127,12 +164,19 @@ class CallbackRegistry:
         args
         kwargs
         """
+        exceptions = []
         if sig in self.callbacks:
             for cid, func in self.callbacks[sig].items():
                 try:
                     func(*args, **kwargs)
                 except ReferenceError:
                     self._remove_proxy(func)
+                except Exception as e:
+                    if self.halt_on_exception:
+                        raise
+                    else:
+                        exceptions.append((e, sys.exc_info()[2]))
+        return exceptions
 
 
 class _BoundMethodProxy:
