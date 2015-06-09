@@ -26,7 +26,7 @@ def doc_type(doc):
     field_mapping = OrderedDict()
     field_mapping['event'] = ['seq_num', 'data']
     field_mapping['descriptor'] = ['data_keys', 'run_start']
-    field_mapping['start'] = ['scan_id', 'beamline_config']
+    field_mapping['start'] = ['scan_id', 'beamline_id']
     field_mapping['stop'] = ['reason', 'exit_status']
 
     for doc_type, required_fields in field_mapping.items():

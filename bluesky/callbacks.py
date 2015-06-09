@@ -122,18 +122,41 @@ def format_num(x, max_len=11, pre=5, post=5):
 class LiveTable(CallbackBase):
 
     base_fields = ['seq_num']
+    base_field_widths = [8]
+    data_field_width = 12
+    max_pre_decimal = 5
+    max_post_decimal = 5
 
     def __init__(self, rowwise=True, fields=None):
         super(LiveTable, self).__init__()
         self.rowwise = rowwise
         if fields is None:
             fields = []
-        self.fields = self.base_fields + fields
+        self.fields = fields
+        self.table = PrettyTable(field_names=(self.base_fields + self.fields))
+        self.table.padding_width = 2
+        self.table.align = 'r'
+
+    def start(self, start_document):
+        base_field_widths = self.base_field_widths
+        if len(self.base_fields) > 1 and len(base_field_widths) == 1:
+            base_field_widths = base_field_widths * len(self.base_fields)
+        # format the placeholder fields for the base fields so that the
+        # heading prints at the correct width
+        base_fields = [' '*width for width in base_field_widths]
+        # format placeholder fields for the data fields so that the heading
+        # prints at the correct width
+        data_fields = [' '*self.data_field_width for _ in self.fields]
+        self.table.add_row(base_fields + data_fields)
+        if self.rowwise:
+            print(self.table)
 
     def event(self, event_document):
         row = [event_document['seq_num']]
         row.extend([format_num(event_document['data'].get(field, ''),
-                               max_len=11, pre=5, post=5)
+                               max_len=self.data_field_width,
+                               pre=self.max_pre_decimal,
+                               post=self.max_post_decimal)
                     for field in self.fields])
         self.table.add_row(row)
 
@@ -154,6 +177,8 @@ class LiveTable(CallbackBase):
             the run has been completed
         """
         print(str(self.table).split('\n')[-1])
+        # remove all data from the table
+        self.table.clear_rows()
 
 
 
