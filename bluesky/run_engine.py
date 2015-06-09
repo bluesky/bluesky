@@ -787,7 +787,7 @@ class Dispatcher:
         elif name == 'all':
             private_tokens = []
             for key in queue_keys:
-                private_tokens.append(self.cb_registry.connect(name, func))
+                private_tokens.append(self.cb_registry.connect(key, func))
             public_token = next(self._counter)
             self._token_mapping[public_token] = private_tokens
         else:
