@@ -7,6 +7,9 @@ from prettytable import PrettyTable
 from collections import OrderedDict
 from .utils import doc_type
 from datetime import datetime
+import matplotlib
+from xray_vision.backend.mpl.cross_section_2d import CrossSection
+import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
@@ -33,6 +36,21 @@ class CallbackBase(object):
 
     def stop(self, doc):
         logger.debug("CallbackBase: I'm a stop with doc = {}".format(doc))
+
+
+class ImageCallback(CallbackBase):
+
+    def __init__(self, datakey):
+        # wheeee MRO
+        super(ImageCallback, self).__init__()
+        self.cs = CrossSection(matplotlib.figure.Figure())
+        self.cs.show()
+        self.datakey = datakey
+
+    def event(self, doc):
+        data = doc['data'][self.datakey]
+        self.cs.update_image(data)
+
 
 
 class CallbackCounter:
@@ -204,11 +222,9 @@ class LiveTable(CallbackBase):
         event_time = str(datetime.fromtimestamp(event_document['time']).time())
         row = [event_document['seq_num'], event_time]
         for field in self.fields:
-            if field == 'timestamps':
-                logger.warning('LiveTable is not sure what to do with '
-                               '"timestamps". It is too vague.')
-            else:
-                val = event_document['data'].get(field, '')
+            val = event_document['data'].get(field, '')
+            if isinstance(val, np.ndarray) or isinstance(val, list):
+                val = np.sum(np.asarray(val))
             try:
                 val = format_num(val,
                                  max_len=self.data_field_width,
