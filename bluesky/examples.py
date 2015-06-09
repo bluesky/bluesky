@@ -116,8 +116,8 @@ class SynGauss2D(Reader):
     """
     _klass = 'reader'
 
-    def __init__(self, name, motor, motor_field, center, Imax, sigma=25,
-                 nx=250, ny=250):
+    def __init__(self, name, motor, motor_field, center, Imax=1000, sigma=1,
+                 nx=250, ny=250, img_sigma=50):
         super(SynGauss2D, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
@@ -126,12 +126,14 @@ class SynGauss2D(Reader):
         self.Imax = Imax
         self.sigma = sigma
         self.dims = (nx, ny)
+        self.img_sigma = img_sigma
 
     def trigger(self, *, block_group=True):
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        arr = self.gauss(self.dims, self.sigma) * v
+        arr = self.gauss(self.dims, self.img_sigma) * v + np.random.random(
+            self.dims) * .01
         self._data = {self._name: {'value': arr, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
@@ -306,14 +308,14 @@ det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
 det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
 det3 = SynGauss('det3', motor3, 'motor3', center=-1, Imax=2, sigma=1)
-det_2d = SynGauss2D('det', motor, 'motor', center=0, Imax=1, sigma=25,
+det_2d = SynGauss2D('det_2d', motor, 'motor', center=0, Imax=1000, sigma=1,
                     nx=300, ny=300)
-det1_2d = SynGauss2D('det', motor1, 'motor1', center=0, Imax=1,
-                     sigma=15, nx=100, ny=600)
-det2_2d = SynGauss2D('det', motor2, 'motor2', center=1, Imax=1,
-                     sigma=100, nx=1000, ny=1000)
-det3_2d = SynGauss2D('det', motor3, 'motor3', center=-1, Imax=1,
-                     sigma=60, nx=500, ny=200)
+det1_2d = SynGauss2D('det1_2d', motor1, 'motor1', center=0, Imax=10,
+                     sigma=1, nx=100, ny=600)
+det2_2d = SynGauss2D('det2_2d', motor2, 'motor2', center=1, Imax=10,
+                     sigma=.5, nx=1000, ny=1000)
+det3_2d = SynGauss2D('det3_2d', motor3, 'motor3', center=-1, Imax=10,
+                     sigma=1.5, nx=500, ny=200)
 
 
 def simple_scan(motor):
