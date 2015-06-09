@@ -178,7 +178,8 @@ class LiveTable(CallbackBase):
         data_fields = [' '*self.data_field_width for _ in self.fields]
         self.table.add_row(base_fields + data_fields)
         if self.rowwise:
-            print(self.table)
+            print('\n'.join(str(self.table).split('\n')[:-2]))
+        sys.stdout.flush()
 
     def event(self, event_document):
         row = [event_document['seq_num']]
