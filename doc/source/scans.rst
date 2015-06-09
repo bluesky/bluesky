@@ -25,6 +25,8 @@ Relative (Delta) Scans
 .. autofunction:: LogDscan
 .. autofunction:: Dscan
 
+.. _builtin-adaptive-scans:
+
 Adative Scans
 -------------
 

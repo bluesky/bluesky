@@ -269,8 +269,12 @@ we can generate many Events.
 Fly Scans
 ---------
 
+TODO
+
 Registering Custom Commands
 ---------------------------
+
+TODO
 
 Making Scans Reusable
 ---------------------
@@ -372,3 +376,53 @@ Temperature Sweep
             # trigger acquisition of the detector
             yield Msg('trigger', det)
             yield Msg('save')
+
+Adaptive Scan
++++++++++++++
+
+There are some ready-to-use :ref:`adaptive scans <builtin-adaptive-scans>`
+included in bluesky. A simplified version of the source code of
+``AdaptiveAScan`` is included here an illustration and a guide to writing your
+own.
+
+.. code-block:: python
+
+    def adaptive(motor, det, start, stop, min_step, max_step, target_delta):
+        THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
+
+        next_pos = start
+        # Start with a medium-sized step.
+        step = (max_step - min_step) / 2
+
+        past_I = None
+        cur_I = None
+        cur_det = {}
+        while next_pos < stop:
+            yield Msg('checkpoint')
+            yield Msg('set', motor, next_pos)
+            yield Msg('wait', None, 'A')
+            yield Msg('create')
+            yield Msg('read', motor)
+            yield Msg('trigger', det, block_group='B')
+            yield Msg('wait', None, 'B')
+            cur_det = yield Msg('read', det)
+            cur_I = cur_det[det._name]['value']
+            yield Msg('save')
+
+            # special case first first loop
+            if past_I is None:
+                past_I = cur_I
+                next_pos += step
+                continue
+
+            dI = np.abs(cur_I - past_I)
+
+            slope = dI / step
+
+            new_step = np.clip(self.target_delta / slope, self.min_step,
+                            self.max_step)
+            # if we over stepped, go back and try again
+            if new_step < step * self.THRESHOLD:
+                next_pos -= step
+            else:
+                past_I = cur_I
