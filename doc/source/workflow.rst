@@ -43,7 +43,7 @@ every time. You can make it happen automatically at startup.)
 
 .. ipython:: python
 
-    RE.subscribe('all', LiveTable(['det1', 'det2']))
+    token = RE.subscribe('all', LiveTable(['det1', 'det2']))
 
 Run the scan again.
 
@@ -65,6 +65,11 @@ and run again.
     more_c.num = 2
     RE(more_c)
 
+.. ipython:: python
+    :suppress:
+
+    RE.unsubscribe(token)
+
 Handling Metadata
 -----------------
 
@@ -73,7 +78,11 @@ We'll hook a subscription to print the metadata at the start of a scan.
 .. ipython:: python
 
     RE.subscribe('start', print_metadata)
-    RE(c)
+
+.. ipython:: python
+    :suppress:
+
+    token = RE.subscribe('all', LiveTable(['det1', 'det2']))
 
 Usage
 +++++
