@@ -43,7 +43,7 @@ every time. You can make it happen automatically at startup.)
 
 .. ipython:: python
 
-    RE.subscribe('all', LiveTable(dets))
+    RE.subscribe('all', LiveTable(['det1', 'det2']))
 
 Run the scan again.
 
