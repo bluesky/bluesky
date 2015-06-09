@@ -6,6 +6,7 @@ from itertools import count
 from prettytable import PrettyTable
 from collections import OrderedDict
 from .utils import doc_type
+from datetime import datetime
 
 import logging
 logger = logging.getLogger(__name__)
@@ -139,34 +140,38 @@ class LiveTable(CallbackBase):
     rowwise : bool
         If True, append each row to stdout. If False, reprint the full updated
         table each time. This is useful if other messsages are interspersed.
+    print_header_interval : int
+        The number of events to process and print their rows before printing
+        the header again
 
     Examples
     --------
     Show a table with motor and detector readings..
 
     >>> RE(stepscan(motor, det), subs={'all': LiveTable(['motor', 'det'])})
-    +------------+----------------+----------------+
-    |   seq_num  |         motor  |           det  |
-    +------------+----------------+----------------+
-    |         1  |  -5.00000e+00  |   3.72665e-06  |
-    |         2  |  -4.00000e+00  |       0.00034  |
-    |         3  |  -3.00000e+00  |       0.01111  |
-    |         4  |  -2.00000e+00  |       0.13534  |
-    |         5  |  -1.00000e+00  |       0.60653  |
-    |         6  |   0.00000e+00  |       1.00000  |
-    |         7  |       1.00000  |       0.60653  |
-    |         8  |       2.00000  |       0.13534  |
-    |         9  |       3.00000  |       0.01111  |
-    |        10  |       4.00000  |       0.00034  |
-    +------------+----------------+----------------+
+    +------------+-------------------+----------------+----------------+
+    |   seq_num  |             time  |         motor  |           det  |
+    +------------+-------------------+----------------+----------------+
+    |         1  |  17:22:19.476380  |  -5.00000e+00  |   3.72665e-06  |
+    |         2  |  17:22:19.552068  |  -4.00000e+00  |       0.00034  |
+    |         3  |  17:22:19.630759  |  -3.00000e+00  |       0.01111  |
+    |         4  |  17:22:19.696007  |  -2.00000e+00  |       0.13534  |
+    |         5  |  17:22:19.761655  |  -1.00000e+00  |       0.60653  |
+    |         6  |  17:22:19.827130  |   0.00000e+00  |       1.00000  |
+    |         7  |  17:22:19.893318  |       1.00000  |       0.60653  |
+    |         8  |  17:22:19.970275  |       2.00000  |       0.13534  |
+    |         9  |  17:22:20.052067  |       3.00000  |       0.01111  |
+    |        10  |  17:22:20.119620  |       4.00000  |       0.00034  |
+    +------------+-------------------+----------------+----------------+
+
     """
-    base_fields = ['seq_num']
-    base_field_widths = [8]
+    base_fields = ['seq_num', 'time']
+    base_field_widths = [8, 15]
     data_field_width = 12
     max_pre_decimal = 5
     max_post_decimal = 5
 
-    def __init__(self, fields=None, rowwise=True):
+    def __init__(self, fields=None, rowwise=True, print_header_interval=50):
         super(LiveTable, self).__init__()
         self.rowwise = rowwise
         if fields is None:
@@ -175,26 +180,35 @@ class LiveTable(CallbackBase):
         self.table = PrettyTable(field_names=(self.base_fields + self.fields))
         self.table.padding_width = 2
         self.table.align = 'r'
+        self.num_events_since_last_header = 1
+        self.print_header_interval = print_header_interval
+
+    def _print_table_header(self):
+        print('\n'.join(str(self.table).split('\n')[:3]))
+
+    ### RunEngine document callbacks
 
     def start(self, start_document):
-        base_field_widths = self.base_field_widths
-        if len(self.base_fields) > 1 and len(base_field_widths) == 1:
-            base_field_widths = base_field_widths * len(self.base_fields)
         # format the placeholder fields for the base fields so that the
         # heading prints at the correct width
-        base_fields = [' '*width for width in base_field_widths]
+        base_fields = [' '*width for width in self.base_field_widths]
         # format placeholder fields for the data fields so that the heading
         # prints at the correct width
         data_fields = [' '*self.data_field_width for _ in self.fields]
         self.table.add_row(base_fields + data_fields)
         if self.rowwise:
-            print('\n'.join(str(self.table).split('\n')[:-2]))
+            self._print_table_header()
         sys.stdout.flush()
 
     def event(self, event_document):
-        row = [event_document['seq_num']]
+        event_time = str(datetime.fromtimestamp(event_document['time']).time())
+        row = [event_document['seq_num'], event_time]
         for field in self.fields:
-            val = event_document['data'].get(field, '')
+            if field == 'timestamps':
+                logger.warning('LiveTable is not sure what to do with '
+                               '"timestamps". It is too vague.')
+            else:
+                val = event_document['data'].get(field, '')
             try:
                 val = format_num(val,
                                  max_len=self.data_field_width,
@@ -208,8 +222,15 @@ class LiveTable(CallbackBase):
         if self.rowwise:
             # Print the last row of data only.
             print(str(self.table).split('\n')[-2])  # [-1] is the bottom border
+            # only print header intermittently for rowwise table printing
+            if self.num_events_since_last_header >= self.print_header_interval:
+                self._print_table_header()
+                self.num_events_since_last_header = 0
+            self.num_events_since_last_header += 1
         else:
+            # print the whole table
             print(self.table)
+
         sys.stdout.flush()
 
     def stop(self, stop_document):
