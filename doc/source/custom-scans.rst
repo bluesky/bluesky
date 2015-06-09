@@ -325,10 +325,8 @@ scan---reusable. Follow this pattern:
         def __init__(self, motor, det):
             self.motor = motor
             self.det = det
-
         def __iter__(self):
-            return _gen()
-
+            return self._gen()
         def _gen(self):
             yield from stepscan(self.motor, self.det)
 
@@ -382,7 +380,7 @@ Adaptive Scan
 
 There are some ready-to-use :ref:`adaptive scans <builtin-adaptive-scans>`
 included in bluesky. A simplified version of the source code of
-``AdaptiveAScan`` is included here an illustration and a guide to writing your
+``AdaptiveAscan`` is included here an illustration and a guide to writing your
 own.
 
 .. code-block:: python
