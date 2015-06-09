@@ -166,7 +166,7 @@ class LiveTable(CallbackBase):
     max_pre_decimal = 5
     max_post_decimal = 5
 
-    def __init__(self, fields=None, rowwise=True):
+    def __init__(self, fields=None, rowwise=True, print_header_interval=50):
         super(LiveTable, self).__init__()
         self.rowwise = rowwise
         if fields is None:
@@ -175,6 +175,13 @@ class LiveTable(CallbackBase):
         self.table = PrettyTable(field_names=(self.base_fields + self.fields))
         self.table.padding_width = 2
         self.table.align = 'r'
+        self.num_events_since_last_header = 1
+        self.print_header_interval = print_header_interval
+
+    def _print_table_header(self):
+        print('\n'.join(str(self.table).split('\n')[:3]))
+
+    ### RunEngine document callbacks
 
     def start(self, start_document):
         base_field_widths = self.base_field_widths
@@ -188,7 +195,7 @@ class LiveTable(CallbackBase):
         data_fields = [' '*self.data_field_width for _ in self.fields]
         self.table.add_row(base_fields + data_fields)
         if self.rowwise:
-            print('\n'.join(str(self.table).split('\n')[:-2]))
+            self._print_table_header()
         sys.stdout.flush()
 
     def event(self, event_document):
@@ -208,8 +215,15 @@ class LiveTable(CallbackBase):
         if self.rowwise:
             # Print the last row of data only.
             print(str(self.table).split('\n')[-2])  # [-1] is the bottom border
+            # only print header intermittently for rowwise table printing
+            if self.num_events_since_last_header >= self.print_header_interval:
+                self._print_table_header()
+                self.num_events_since_last_header = 0
+            self.num_events_since_last_header += 1
         else:
+            # print the whole table
             print(self.table)
+
         sys.stdout.flush()
 
     def stop(self, stop_document):
