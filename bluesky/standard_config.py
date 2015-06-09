@@ -66,5 +66,5 @@ def rollcall():
     objs = []
     for obj in globals():
         if hasattr(obj, 'read') and hasattr(obj, 'describe'):
-        objs.append(obj)
+            objs.append(obj)
     return objs
