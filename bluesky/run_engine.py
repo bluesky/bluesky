@@ -250,7 +250,7 @@ class RunEngine:
         self._sequence_counters.clear()
         # N.B. self._pause_requests is NOT cleared.
         self._block_groups.clear()
-        self._temp_callback_ids.clear()
+        # self._temp_callback_ids are cleared before, after unsubscribing
         self._msg_cache = None
         self._exit_status = None
         # clear the main thread queues
