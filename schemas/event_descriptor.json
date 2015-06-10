@@ -47,7 +47,7 @@
                 },
                 "type": "object",
                 "description": "The describes the data to be in the event Documents",
-                "title": "keys"
+                "title": "data_keys"
             },
             "uid": {
                 "type": "string",
