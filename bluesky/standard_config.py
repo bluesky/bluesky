@@ -75,7 +75,7 @@ def rollcall():
     return objs
 
 
-def olog_wrapper(logbook, logbooks, prop):
+def olog_wrapper(logbook, logbooks):
     """Wrap a olog logbook for use with RunEngine
 
     The admittedly confusing parameter names reflect our understanding of Olog
@@ -87,8 +87,6 @@ def olog_wrapper(logbook, logbooks, prop):
         logbook object
     logbooks : list of strings
         names of logbooks to write entries to
-    property_key : string
-        logbook property
 
     Returns
     -------
@@ -99,7 +97,8 @@ def olog_wrapper(logbook, logbooks, prop):
         msg = msg.format(**d)
         d = {k: repr(v) for k, v in d.items()}
         logbook.log(msg,
-                    properties={prop: d},
+                    # TODO Figure out why this returns 500 from olog.
+                    # properties={'OphydScan': d},
                     ensure=True,
                     logbooks=logbooks)
 
