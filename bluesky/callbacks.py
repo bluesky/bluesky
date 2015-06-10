@@ -10,6 +10,7 @@ from datetime import datetime
 import matplotlib
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 import numpy as np
+import filestore
 
 import logging
 logger = logging.getLogger(__name__)
@@ -48,7 +49,8 @@ class ImageCallback(CallbackBase):
         self.datakey = datakey
 
     def event(self, doc):
-        data = doc['data'][self.datakey]
+        uid = doc['data'][self.datakey]
+        data = filestore.retrieve(uid)
         self.cs.update_image(data)
 
 
