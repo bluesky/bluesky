@@ -129,18 +129,22 @@ class RunEngine:
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
 
-    def __init__(self, memory=None):
+    def __init__(self, memory=None, logbook=None):
         """
         The Run Engine execute messages and emits Documents.
 
         Parameters
         ----------
-        memory : dict-like
+        memory : dict-like, optional
             The default is a standard Python dictionary, but fancier objects
             can be used to store long-term history and persist it between
             sessions. The standard configuration instantiates a Run Engine with
             history.History, a simple interface to a sqlite file. Any object
             supporting `__getitem__`, `__setitem__`, and `clear` will work.
+
+        logbook : callable, optional
+            logbook(msg, properties=dict)
+
 
         Attributes
         ----------
@@ -173,6 +177,7 @@ class RunEngine:
         super(RunEngine, self).__init__()
         if memory is None:
             memory = {}
+        self.logbook = logbook
         self.memory = memory
         self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
         self.persistent_fields.extend(['project', 'group', 'sample'])
@@ -202,7 +207,8 @@ class RunEngine:
             'checkpoint': self._checkpoint,
             'pause': self._pause,
             'collect': self._collect,
-            'kickoff': self._kickoff
+            'kickoff': self._kickoff,
+            'logbook': self._logbook
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -719,6 +725,14 @@ class RunEngine:
             response = self._command_registry[msg.command](msg)
             self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
                        ''.format(msg, response))
+
+    def _logbook(self, msg):
+        if self.logbook:
+            d = msg.kwargs
+            log_message, = msg.args
+            d['uid'] = self._run_start_uid
+
+            self.logbook(log_message, d)
 
     def emit(self, name, doc):
         "Process blocking, scan-thread callbacks."
