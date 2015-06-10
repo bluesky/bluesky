@@ -73,3 +73,28 @@ def rollcall():
         if hasattr(obj, 'read') and hasattr(obj, 'describe'):
             objs.append(obj)
     return objs
+
+
+def olog_wrapper(logbook):
+    """Wrap a olog logbook for use with RunEngine
+
+    The hard-coded values are adapted from the Ophyd implementation.
+
+    Parameters
+    ----------
+    logbook : pyolog.logbook
+        The logbook to add stuff to
+
+    Returns
+    -------
+    callable
+       callable with the right signature for use with RunEngine.logbook
+    """
+    def _logbook_log(msg, d):
+        msg = msg.format(**d)
+        logbook.log(msg,
+                    properties={'BlueSkyScan': d},
+                    ensure=True,
+                    logbooks=['Data Acquisition'])
+
+    return _logbook_log

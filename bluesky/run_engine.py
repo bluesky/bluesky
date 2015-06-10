@@ -129,18 +129,22 @@ class RunEngine:
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
 
-    def __init__(self, md=None):
+    def __init__(self, md=None, logbook=None):
         """
         The Run Engine execute messages and emits Documents.
 
         Parameters
         ----------
-        md : dict-like
+        md : dict-like, optional
             The default is a standard Python dictionary, but fancier objects
             can be used to store long-term history and persist it between
             sessions. The standard configuration instantiates a Run Engine with
             history.History, a simple interface to a sqlite file. Any object
             supporting `__getitem__`, `__setitem__`, and `clear` will work.
+
+        logbook : callable, optional
+            logbook(msg, properties=dict)
+
 
         Attributes
         ----------
@@ -171,9 +175,16 @@ class RunEngine:
             Undo register_command.
         """
         super(RunEngine, self).__init__()
+<<<<<<< HEAD
         if md is None:
             md = {}
         self.md = md
+=======
+        if memory is None:
+            memory = {}
+        self.logbook = logbook
+        self.memory = memory
+>>>>>>> tacaswell/olog_mk2
         self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
         self.persistent_fields.extend(['project', 'group', 'sample'])
         self._panic = False
@@ -202,7 +213,8 @@ class RunEngine:
             'checkpoint': self._checkpoint,
             'pause': self._pause,
             'collect': self._collect,
-            'kickoff': self._kickoff
+            'kickoff': self._kickoff,
+            'logbook': self._logbook
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -568,11 +580,11 @@ class RunEngine:
                 self.state.abort()
                 self._exit_status = 'abort'
                 raise RunInterrupt("*** Soft pause requested. There "
-                                    "are no checkpoints. Cannot resume;"
-                                    " must abort. Run aborted.")
+                                   "are no checkpoints. Cannot resume;"
+                                   " must abort. Run aborted.")
             self.debug("*** Soft pause requested. Continuing to "
-                        "process messages until the next 'checkpoint' "
-                        "command.")
+                       "process messages until the next 'checkpoint' "
+                       "command.")
 
     def _create(self, msg):
         self._read_cache.clear()
@@ -598,7 +610,7 @@ class RunEngine:
             # We don't not have an Event Descriptor for this set.
             data_keys = {}
             [data_keys.update(self._describe_cache[obj]) for obj in objs_read]
-            _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls.
+            _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
@@ -719,6 +731,14 @@ class RunEngine:
             response = self._command_registry[msg.command](msg)
             self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
                        ''.format(msg, response))
+
+    def _logbook(self, msg):
+        if self.logbook:
+            d = msg.kwargs
+            log_message, = msg.args
+            d['uid'] = self._run_start_uid
+
+            self.logbook(log_message, d)
 
     def emit(self, name, doc):
         "Process blocking, scan-thread callbacks."
