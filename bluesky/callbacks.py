@@ -40,19 +40,25 @@ class CallbackBase(object):
         logger.debug("CallbackBase: I'm a stop with doc = {}".format(doc))
 
 
-class ImageCallback(CallbackBase):
+class LiveImage(CallbackBase):
 
-    def __init__(self, datakey, fig=None):
-        # wheeee MRO
-        super(ImageCallback, self).__init__()
-        self.datakey = datakey
-        if fig is None:
-            fig = plt.figure()
+    def __init__(self, field):
+        """
+        Stream 2D images in a cross-section viewer.
+
+        Parameters
+        ----------
+        field : string
+            name of data field in an Event
+        """
+        super().__init__()
+        self.field = field
+        fig = plt.figure()
         self.cs = CrossSection(fig)
         self.cs._fig.show()
 
     def event(self, doc):
-        uid = doc['data'][self.datakey]
+        uid = doc['data'][self.field]
         data = fsapi.retrieve(uid)
         self.cs.update_image(data)
         self.cs._fig.canvas.draw()
