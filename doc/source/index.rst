@@ -14,30 +14,37 @@ components:
 
 Key Features
 ------------
+
+Programmable Scans
+++++++++++++++++++
+
 * Running can be **paused, aborted, and resumed** with user-defined
   checkpoints.
 * In addition to the built-in scans, you can specify **custom scans and 
   "macros"** in a simple, procedural way using basic Python sytnax (e.g.,
   for-loops) and a small set of commands. There are many documented examples.
-* You can register **custom commands** -- say, to control your robot -- and
+* You can register **custom commands**---say, to control your robot---and
   immediately integrate them with existing ones.
 * You can write your own high-level **"motors" that control many PVs**. Examples
-  include coordinated motion and controllers like XPD's "gas switcher" that don't
-  really map onto a continuous single-axis motor.
-* While IPython can be used to set up a convenient interactive environment,
-  **IPython is not required**. Data collection can be run from plain Python
-  scripts. This will provide easy integration with beamline-specific control
-  GUIs.
-* Optional **automatic data export** at the end of each run. This paves the way
-  for prompt HPC.
-* Highly customizable **live plotting** is possible. Working examples are
-  included.
+  include coordinated motion and controllers that don't map onto a continuous
+  single-axis motor.
+
+Powerful Features, Built In
++++++++++++++++++++++++++++
+
+* Highly customizable **live plotting** and other real-time processing
+  pipelines are possible. Useful working examples are included.
 * **Adaptive scans** can sample fast-changing regions more. There are
   ready-to-use functions and examples for writing your own.
-* Automated **tests** ensure stability of the project going forward.
-* With optional **data validation** at the end of a run, you can be sure that
-  the data will be available from Data Broker.
-* This documentation!
+* Optional **automatic data export** at the end of each run. This paves the way
+  for prompt HPC.
+
+Robustness
+++++++++++
+
+* Every datapoint undergoes **validation** to ensure immediate feedback in
+  the event of trouble. Additional, customized data validation is possible.
+* Strong code coverage by automated **tests** ensure stability.
 
 Relationship to EPICS, pyepics, ophyd
 -------------------------------------
