@@ -75,6 +75,8 @@ class Count(Scan):
     def _gen(self):
         dets = self.detectors
         delay = self.delay
+        for d in dets:
+            yield Msg('configure', d)
         for i in range(self.num):
             yield Msg('checkpoint')
             yield Msg('create')
@@ -86,6 +88,8 @@ class Count(Scan):
                 yield Msg('read', det)
             yield Msg('save')
             yield Msg('sleep', None, delay)
+        for d in dets:
+            yield Msg('deconfigure', d)
 
 
 class Scan1D(Scan):
@@ -93,6 +97,8 @@ class Scan1D(Scan):
 
     def _gen(self):
         dets = self.detectors
+        for d in dets:
+            yield Msg('configure', d)
         for step in self._steps:
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
@@ -106,6 +112,8 @@ class Scan1D(Scan):
             for det in dets:
                 yield Msg('read', det)
             yield Msg('save')
+        for d in dets:
+            yield Msg('deconfigure', d)
 
 
 class Ascan(Scan1D):
@@ -302,6 +310,8 @@ class _AdaptiveScan(Scan1D):
         motor = self.motor
         dets = self.detectors
         target_field = self.target_field
+        for d in dets:
+            yield Msg('configure', d)
         while next_pos < stop:
             yield Msg('checkpoint')
             yield Msg('set', motor, next_pos)
@@ -337,6 +347,8 @@ class _AdaptiveScan(Scan1D):
                 past_I = cur_I
             step = new_step
             next_pos += step
+        for d in dets:
+            yield Msg('deconfigure', d)
 
 
 class AdaptiveAscan(_AdaptiveScan):
