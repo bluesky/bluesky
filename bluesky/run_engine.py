@@ -156,6 +156,8 @@ class RunEngine:
         persistent_fields
             list of metadata fields that will be remembered and reused between
             subsequence runs
+        logbook
+            callable accepting a message and an optional dict
 
         Methods
         -------
@@ -175,16 +177,10 @@ class RunEngine:
             Undo register_command.
         """
         super(RunEngine, self).__init__()
-<<<<<<< HEAD
         if md is None:
             md = {}
         self.md = md
-=======
-        if memory is None:
-            memory = {}
         self.logbook = logbook
-        self.memory = memory
->>>>>>> tacaswell/olog_mk2
         self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
         self.persistent_fields.extend(['project', 'group', 'sample'])
         self._panic = False
