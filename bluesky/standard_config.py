@@ -5,15 +5,16 @@ this is *essential* but it is extremely useful and generally recommended.
 import os
 import logging
 import history
+
 from .run_engine import RunEngine
 from .legacy_scans import LegacyAscan, LegacyDscan, LegacyCount
 from .register_mds import register_mds
-
+from pyOlog.OlogHandler import OlogHandler
 
 logger = logging.getLogger(__name__)
 
 
-### Set up a History object to handle peristence (scan ID, etc.)
+# ## Set up a History object to handle peristence (scan ID, etc.)
 
 SEARCH_PATH = []
 ENV_VAR = 'BLUESKY_HISTORY_LOCATION'
@@ -73,3 +74,8 @@ def rollcall():
         if hasattr(obj, 'read') and hasattr(obj, 'describe'):
             objs.append(obj)
     return objs
+
+
+olog_handler = OlogHandler(logbooks='Data Acquisition')
+olog_handler.setLevel(logging.INFO)
+logging.getLogger('bluesky').addHandler(olog_handler)
