@@ -86,7 +86,8 @@ class SynGauss(Reader):
     """
     _klass = 'reader'
 
-    def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
+    def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
+                 noise=False):
         super(SynGauss, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
@@ -94,11 +95,14 @@ class SynGauss(Reader):
         self.center = center
         self.Imax = Imax
         self.sigma = sigma
+        self.noise = noise
 
     def trigger(self, *, block_group=True):
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
+        if self.noise:
+            v = int(np.random.poisson(np.round(v), 1))
         self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
@@ -501,37 +505,62 @@ def MoveRead_gen(motor, detector):
         print('Generator finished')
 
 
-def SynGauss_gen(syngaus, motor_steps, motor_limit=None):
-    try:
-        for x in motor_steps:
-            yield Msg('create')
-            yield Msg('set', syngaus, {syngaus.motor_name: x})
-            yield Msg('trigger', syngaus)
-            yield Msg('sleep', None, .1)
-            ret = yield Msg('read', syngaus)
-            yield Msg('save')
-            if motor_limit is not None:
-                if ret[syngaus.motor_name] > motor_limit:
-                    break
-    finally:
-        print('generator finished')
+def find_center_gen(motor, det, motor_name, det_name,
+                    initial_center, initial_width, output_mutable=None,
+                    tolerance=.01):
+    """
+    Attempts to find the center of a peak by moving a motor.
 
+    This will leave the motor at what it thinks is the center.
 
-def find_center_gen(syngaus, initial_center, initial_width,
-                    output_mutable):
-    tol = .01
+    The motion is clipped to initial center +/- 6 initial width
+
+    Works by :
+
+    - sampling 5 points around the initial center
+    - fitting to Gaussian + line
+    - moving to the center of the Gaussian
+    - while |old center - new center| > tolerance
+      - taking a measurement
+      - re-run fit
+      - move to new center
+
+    Parameters
+    ----------
+    motor : Mover
+    det : Reader
+    motor_name : string
+        The data key to read out of the motor to check the position
+    det_name : string
+        The data key to read out of the detector
+    initial_center : number
+        Initial guess at where the center is
+    initial_width : number
+        Initial guess at the width
+    output_mutable : dict-like, optional
+        Must have 'update' method.  Mutable object to provide a side-band to return
+        fitting parameters + data points
+    tolerance : number
+        Tolerance to declare good enough on finding the center.
+    """
+    tol = tolerance
     seen_x = deque()
     seen_y = deque()
-
+    min_cen = initial_center - 6 * initial_width
+    max_cen = initial_center + 6 * initial_width
     for x in np.linspace(initial_center - initial_width,
-                         initial_center + initial_center,
+                         initial_center + initial_width,
                          5, endpoint=True):
-        yield Msg('set', syngaus, {syngaus.motor_name: x})
-        yield Msg('trigger', syngaus)
+        yield Msg('set', motor, x)
+        yield Msg('trigger', det)
         yield Msg('sleep', None, .1,)
-        ret = yield Msg('read', syngaus)
-        seen_x.append(ret[syngaus.motor_name])
-        seen_y.append(ret[syngaus.det_name])
+        yield Msg('create')
+        ret_mot = yield Msg('read', motor)
+        ret_det = yield Msg('read', det)
+        yield Msg('save')
+        seen_y.append(ret_det[det_name]['value'])
+        seen_x.append(ret_mot[motor_name]['value'])
+
     model = GaussianModel() + LinearModel()
     guesses = {'amplitude': np.max(seen_y),
                'center': initial_center,
@@ -543,18 +572,23 @@ def find_center_gen(syngaus, initial_center, initial_width,
         res = model.fit(y, x=x, **guesses)
         old_guess = guesses
         guesses = res.values
-
         if np.abs(old_guess['center'] - guesses['center']) < tol:
             break
+        next_cen = np.clip(guesses['center'], min_cen, max_cen)
+        yield Msg('set', motor, next_cen)
+        yield Msg('trigger', det)
+        yield Msg('sleep', None, .1,)
+        yield Msg('create')
+        ret_mot = yield Msg('read', motor)
+        ret_det = yield Msg('read', det)
+        yield Msg('save')
+        seen_y.append(ret_det[det_name]['value'])
+        seen_x.append(ret_mot[motor_name]['value'])
 
-        yield Msg('set', syngaus, {syngaus.motor_name: guesses['center']})
-        yield Msg('trigger', syngaus)
-        yield Msg('sleep', None, .1)
-        ret = yield Msg('read', syngaus)
-        seen_x.append(ret[syngaus.motor_name])
-        seen_y.append(ret[syngaus.det_name])
-
-    output_mutable.update(guesses)
+    if output_mutable is not None:
+        output_mutable.update(guesses)
+        output_mutable['x'] = np.array(seen_x)
+        output_mutable['y'] = np.array(seen_y)
 
 
 def fly_gen(flyer, start, stop, step):
