@@ -44,7 +44,7 @@ Robustness
 
 * Every Document undergoes **validation** to ensure immediate feedback in
   the event of trouble. Additional, customized data validation is possible.
-* Strong code coverage by automated **tests** ensure stability.
+* Strong code coverage by automated **tests** ensures stability.
 
 Relationship to EPICS, pyepics, ophyd
 -------------------------------------
