@@ -182,7 +182,7 @@ def test_md_dict():
 
 
 def test_md_history():
-    yield _md, History(':md:')
+    yield _md, History(':memory:')
 
 
 def _md(md):
