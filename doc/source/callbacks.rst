@@ -6,7 +6,7 @@ Live Feedback
    :suppress:
 
    from bluesky.examples import det1, det2, det3, det, motor
-   from bluesky.callbacks import LiveTable, print_metadata
+   from bluesky.callbacks import *
    from bluesky import RunEngine
    RE = RunEngine()
    RE.verbose = False
@@ -17,7 +17,7 @@ Live Feedback
    from bluesky.scans import Count
 
 Demo: live-updating table
---------------------------
+-------------------------
 
 As demonstrated in the :doc:`example workflow <workflow>`, a live-updating
 table shows results as they come in.
@@ -28,7 +28,7 @@ table shows results as they come in.
     from bluesky.scans import Ascan
     table = LiveTable(['det1', 'det2', 'det3'])
     RE.subscribe('all', table)  # Subscribe table to all future runs.
-    scan = Ascan(motor, [det1, det2, det3], [1,2,4,8])
+    s = Ascan(motor, [det1, det2, det3], [1,2,4,8])
 
 .. ipython:: python
 
@@ -125,6 +125,8 @@ LiveTable Revisited
 
 As demonstrated in the :doc:`example workflow <workflow>`, a live-updating
 table shows results as they come in.
+
+
 
 .. ipython:: python
 

@@ -38,6 +38,7 @@ extensions = [
     'sphinxcontrib.napoleon',
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
+    'matplotlib.sphinxext.plot_directive',
 ]
 
 # Generate the API documentation when building
