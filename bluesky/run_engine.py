@@ -129,13 +129,13 @@ class RunEngine:
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
 
-    def __init__(self, memory=None):
+    def __init__(self, md=None):
         """
         The Run Engine execute messages and emits Documents.
 
         Parameters
         ----------
-        memory : dict-like
+        md : dict-like
             The default is a standard Python dictionary, but fancier objects
             can be used to store long-term history and persist it between
             sessions. The standard configuration instantiates a Run Engine with
@@ -147,7 +147,7 @@ class RunEngine:
         state
             {'idle', 'running', 'soft_pausing, 'hard_pausing', 'paused',
              'aborting'}
-        memory
+        md
             direct access to the dict-like persistent storage described above
         persistent_fields
             list of metadata fields that will be remembered and reused between
@@ -171,9 +171,9 @@ class RunEngine:
             Undo register_command.
         """
         super(RunEngine, self).__init__()
-        if memory is None:
-            memory = {}
-        self.memory = memory
+        if md is None:
+            md = {}
+        self.md = md
         self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
         self.persistent_fields.extend(['project', 'group', 'sample'])
         self._panic = False
@@ -399,20 +399,20 @@ class RunEngine:
 
         # Advance and stash scan_id
         try:
-            scan_id = self.memory['scan_id'] + 1
+            scan_id = self.md['scan_id'] + 1
         except KeyError:
             scan_id = 1
-        self.memory['scan_id'] = scan_id
+        self.md['scan_id'] = scan_id
         metadata['scan_id'] = scan_id
 
         for field in self.persistent_fields:
             if field in metadata:
                 # Stash and use new value.
-                self.memory[field] = metadata[field]
+                self.md[field] = metadata[field]
             else:
                 # Use old value.
                 try:
-                    metadata[field] = self.memory[field]
+                    metadata[field] = self.md[field]
                 except KeyError:
                     if field not in self._REQUIRED_FIELDS:
                         continue

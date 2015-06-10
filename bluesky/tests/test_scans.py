@@ -108,10 +108,10 @@ def test_count():
 def test_legacy_scans():
     # smoke tests
     ascan.detectors.append(det)
-    ascan.RE.memory['owner'] = 'test_owner'
-    ascan.RE.memory['group'] = 'test_group'
-    ascan.RE.memory['config'] = {}
-    ascan.RE.memory['beamline_id'] = 'test_beamline'
+    ascan.RE.md['owner'] = 'test_owner'
+    ascan.RE.md['group'] = 'test_group'
+    ascan.RE.md['config'] = {}
+    ascan.RE.md['beamline_id'] = 'test_beamline'
     ascan(motor, 0, 5, 5)
     dscan(motor, 0, 5, 5)
     ct()
@@ -126,4 +126,4 @@ def test_legacy_scans():
     ct(animal='lion', subs={'start': assert_lion})
 
     # cleanup
-    ascan.RE.memory.clear()
+    ascan.RE.md.clear()

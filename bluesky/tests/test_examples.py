@@ -177,29 +177,29 @@ def test_live_plotter():
     assert_equal(RE.state, 'idle')
 
 
-def test_memory_dict():
-    yield _memory, {}
+def test_md_dict():
+    yield _md, {}
 
 
-def test_memory_history():
-    yield _memory, History(':memory:')
+def test_md_history():
+    yield _md, History(':md:')
 
 
-def _memory(memory):
-    RE = RunEngine(memory)
+def _md(md):
+    RE = RunEngine(md)
     scan = simple_scan(motor)
     assert_raises(KeyError, lambda: RE(scan))  # missing owner, beamline_id
     assert_raises(KeyError, lambda: RE(scan, owner='dan'))
     RE(scan, owner='dan', beamline_id='his desk',
        group='some group', config={})  # this should work
     RE(scan)  # and now this should work, reusing metadata
-    RE.memory.clear()
+    RE.md.clear()
     assert_raises(KeyError, lambda: RE(scan))
-    # We can prime the memory directly.
-    RE.memory['owner'] = 'dan'
-    RE.memory['group'] = 'some group'
-    RE.memory['config'] = {}
-    RE.memory['beamline_id'] = 'his desk'
+    # We can prime the md directly.
+    RE.md['owner'] = 'dan'
+    RE.md['group'] = 'some group'
+    RE.md['config'] = {}
+    RE.md['beamline_id'] = 'his desk'
     RE(scan)
     # Do optional values persist?
     RE(scan, project='sitting')

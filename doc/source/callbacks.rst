@@ -10,10 +10,10 @@ Live Feedback using Subscriptions
    from bluesky import RunEngine
    RE = RunEngine()
    RE.verbose = False
-   RE.memory['owner'] = 'Jane'
-   RE.memory['group'] = 'Grant No. 12345'
-   RE.memory['config'] = {}
-   RE.memory['beamline_id'] = 'demo'
+   RE.md['owner'] = 'Jane'
+   RE.md['group'] = 'Grant No. 12345'
+   RE.md['config'] = {}
+   RE.md['beamline_id'] = 'demo'
    from bluesky.scans import Count
 
 As the RunEngine processes instructions, it creates *Documents,* plain Python

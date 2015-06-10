@@ -52,10 +52,10 @@ def get_history():
 
 RE = RunEngine(get_history())
 try:
-    RE.memory['owner']
+    RE.md['owner']
 except KeyError:
     from getpass import getuser
-    RE.memory['owner'] = getuser()
+    RE.md['owner'] = getuser()
 register_mds(RE)  # subscribes to MDS-related callbacks
 ascan = LegacyAscan(RE)
 dscan = LegacyDscan(RE)

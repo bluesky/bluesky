@@ -10,10 +10,10 @@ An Example Workflow
    from bluesky import RunEngine
    RE = RunEngine()
    RE.verbose = False
-   RE.memory['owner'] = 'Jane'
-   RE.memory['group'] = 'Grant No. 12345'
-   RE.memory['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
-   RE.memory['beamline_id'] = 'demo'
+   RE.md['owner'] = 'Jane'
+   RE.md['group'] = 'Grant No. 12345'
+   RE.md['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
+   RE.md['beamline_id'] = 'demo'
    from bluesky.scans import Count
 
 .. note::
@@ -84,8 +84,8 @@ Metadata can be specified like so. It will be stored with the data.
 
 .. ipython:: python
 
-    RE.memory['project'] = 'my xray project'
-    RE.memory['sample'] = {'color': 'red', 'dimensions': [10, 20, 5]}
+    RE.md['project'] = 'my xray project'
+    RE.md['sample'] = {'color': 'red', 'dimensions': [10, 20, 5]}
     RE(c)
 
 .. note::
@@ -139,18 +139,18 @@ To add a custom field to the list of peristent fields, use
 Fields that are required by our Document specification---owner, group,
 beamline_id, and config---cannot be removed. (More on these below.)
 
-To review the metadata before running ascan, check ``RE.memory``, which
+To review the metadata before running ascan, check ``RE.md``, which
 behaves like a Python dictionary.
 
 .. ipython:: python
 
-    RE.memory['sample']
+    RE.md['sample']
 
 To start fresh:
 
 .. ipython:: python
 
-    RE.memory.clear()
+    RE.md.clear()
 
 Required Fields
 +++++++++++++++

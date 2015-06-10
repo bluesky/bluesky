@@ -5,10 +5,10 @@
 
     from bluesky import RunEngine
     RE = RunEngine()
-    RE.memory['owner'] = 'demo'
-    RE.memory['group'] = 'Grant No. 12345'
-    RE.memory['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
-    RE.memory['beamline_id'] = 'demo'
+    RE.md['owner'] = 'demo'
+    RE.md['group'] = 'Grant No. 12345'
+    RE.md['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
+    RE.md['beamline_id'] = 'demo'
 
 Pausing, Resuming, and Aborting
 ===============================
