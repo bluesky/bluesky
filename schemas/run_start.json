@@ -29,11 +29,11 @@
             "description": "Globally unique ID for tihs run"
         },
         "group": {
-            "type": ["string", "integer"],
+            "type": "string",
             "description": "Unix group to associate this data with"
         },
         "owner": {
-            "type": ["string", "integer"],
+            "type": "string",
             "description": "Unix owner to associate this data with"
         }
     },
