@@ -215,7 +215,8 @@ class RunEngine:
             'kickoff': self._kickoff,
             'logbook': self._logbook,
             'configure': self._configure,
-            'deconfigure': self._deconfigure
+            'deconfigure': self._deconfigure,
+            'subscribe': self._subscribe,
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -771,6 +772,17 @@ class RunEngine:
         result = obj.deconfigure()
         self._configured.remove(obj)
         return result
+
+    def _subscribe(self, msg):
+        """
+        Add a subscription after the run has started.
+
+        This, like subscriptions passed to __call__, apply to one run only.
+        """
+        _, obj, args, kwargs = msg
+        token = self.subscribe(*args, **kwargs)
+        self._temp_callback_ids.add(token)
+        return token
 
     def emit(self, name, doc):
         "Process blocking, scan-thread callbacks."
