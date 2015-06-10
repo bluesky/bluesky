@@ -22,6 +22,12 @@ class Base:
     def __repr__(self):
         return '{}: {}'.format(self._klass, self._name)
 
+    def configure(self, *args, **kwargs):
+        pass
+
+    def deconfigure(self, *args, **kwargs):
+        pass
+
 
 class Reader(Base):
     _klass = 'reader'
