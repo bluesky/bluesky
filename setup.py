@@ -15,7 +15,8 @@ setup(
     author_email=None,
     license="BSD (3-clause)",
     url="https://github.com/danielballan/bluesky",
-    packages=['bluesky'],
+    packages=['bluesky', 'bluesky.tests', 'bluesky.testing'],
+    package_data={'bluesky': ['schema/*.json']},
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3.4",
