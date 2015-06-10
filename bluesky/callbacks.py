@@ -7,7 +7,8 @@ from prettytable import PrettyTable
 from collections import OrderedDict
 from .utils import doc_type
 from datetime import datetime
-import matplotlib
+import matplotlib.pyplot as plt
+import filestore.api as fsapi
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 import numpy as np
 import filestore
@@ -41,18 +42,21 @@ class CallbackBase(object):
 
 class ImageCallback(CallbackBase):
 
-    def __init__(self, datakey):
+    def __init__(self, datakey, fig=None):
         # wheeee MRO
         super(ImageCallback, self).__init__()
-        self.cs = CrossSection(matplotlib.figure.Figure())
-        self.cs.show()
         self.datakey = datakey
+        if fig is None:
+            fig = plt.figure()
+        self.cs = CrossSection(fig)
+        self.cs._fig.show()
 
     def event(self, doc):
         uid = doc['data'][self.datakey]
-        data = filestore.retrieve(uid)
+        data = fsapi.retrieve(uid)
         self.cs.update_image(data)
-
+        self.cs._fig.canvas.draw()
+        self.cs._fig.canvas.flush_events()
 
 
 class CallbackCounter:
