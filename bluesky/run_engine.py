@@ -29,8 +29,10 @@ SCHEMA_NAMES = {'start': 'run_start.json',
                 'event': 'event.json',
                 'descriptor': 'event_descriptor.json'}
 fn = '{}/{{}}'.format(SCHEMA_PATH)
-schemas = {name: json.load(open(rs_fn('bluesky', fn.format(filename))))
-           for name, filename in SCHEMA_NAMES.items()}
+schemas = {}
+for name, filename in SCHEMA_NAMES.items():
+    with open(rs_fn('bluesky', fn.format(filename))) as fin:
+        schemas['name'] = json.load(fin)
 
 
 class LossyLiFoQueue(Queue):
