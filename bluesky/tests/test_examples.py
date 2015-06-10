@@ -5,6 +5,7 @@ from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
 from bluesky.examples import *
 from bluesky.callbacks import *
 from bluesky import RunEngine, RunInterrupt, Msg, PanicError
+from bluesky.tests.utils import setup_test_run_engine
 from super_state_machine.errors import TransitionError
 try:
     import matplotlib.pyplot as plt
@@ -14,15 +15,7 @@ else:
     skip_mpl = False
 
 
-# global utility vars defined in setup()
-RE = None
-
-
-def setup():
-    global RE
-    RE = RunEngine()
-    RE.memory['owner'] = 'test_owner'
-    RE.memory['beamline_id'] = 'test_beamline'
+RE = setup_test_run_engine()
 
 
 def test_msgs():
@@ -197,12 +190,15 @@ def _memory(memory):
     scan = simple_scan(motor)
     assert_raises(KeyError, lambda: RE(scan))  # missing owner, beamline_id
     assert_raises(KeyError, lambda: RE(scan, owner='dan'))
-    RE(scan, owner='dan', beamline_id='his desk')  # this should work
+    RE(scan, owner='dan', beamline_id='his desk',
+       group='some group', config={})  # this should work
     RE(scan)  # and now this should work, reusing metadata
     RE.memory.clear()
     assert_raises(KeyError, lambda: RE(scan))
     # We can prime the memory directly.
     RE.memory['owner'] = 'dan'
+    RE.memory['group'] = 'some group'
+    RE.memory['config'] = {}
     RE.memory['beamline_id'] = 'his desk'
     RE(scan)
     # Do optional values persist?

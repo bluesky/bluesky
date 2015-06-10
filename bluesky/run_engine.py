@@ -1,3 +1,4 @@
+import os
 import time as ttime
 import sys
 from itertools import count
@@ -9,15 +10,27 @@ from queue import Queue, Empty
 from enum import Enum
 import traceback
 
+import json
+import jsonschema
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 import numpy as np
+from pkg_resources import resource_filename as rs_fn
 
 from .utils import CallbackRegistry, SignalHandler, ExtendedList
 
 
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
+
+SCHEMA_PATH = 'schema'
+SCHEMA_NAMES = {'start': 'run_start.json',
+                'stop': 'run_stop.json',
+                'event': 'event.json',
+                'descriptor': 'event_descriptor.json'}
+fn = '{}/{{}}'.format(SCHEMA_PATH)
+schemas = {name: json.load(open(rs_fn('bluesky', fn.format(filename))))
+           for name, filename in SCHEMA_NAMES.items()}
 
 
 class LossyLiFoQueue(Queue):
@@ -114,7 +127,7 @@ class RunEngineStateMachine(StateMachine):
 class RunEngine:
 
     state = PropertyMachine(RunEngineStateMachine)
-    _REQUIRED_FIELDS = ['beamline_id', 'owner']
+    _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
 
     def __init__(self, memory=None):
         """
@@ -493,7 +506,7 @@ class RunEngine:
             raise err
         finally:
             doc = dict(run_start=self._run_start_uid,
-                       time=ttime.time(),
+                       time=ttime.time(), uid=new_uid(),
                        exit_status=self._exit_status,
                        reason=reason)
             self.emit('stop', doc)
@@ -620,12 +633,11 @@ class RunEngine:
 
     def _collect(self, msg):
         obj = msg.obj
-        descriptors = obj.describe()
-        for desc in descriptors:
-            objs_read = frozenset(desc)
+        data_keys_list = obj.describe()
+        for data_keys in data_keys_list:
+            objs_read = frozenset(data_keys)
             if objs_read not in self._descriptor_uids:
                 # We don't not have an Event Descriptor for this set.
-                data_keys = obj.describe()
                 descriptor_uid = new_uid()
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid)
@@ -710,6 +722,7 @@ class RunEngine:
 
     def emit(self, name, doc):
         "Process blocking, scan-thread callbacks."
+        jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
 
     def debug(self, msg):
@@ -838,11 +851,10 @@ def _fill_missing_fields(data_keys):
         # required keys
         result[key]['source'] = value.get('source')
         result[key]['dtype'] = value.get('dtype', 'number')  # just guessing
-        # optional keys
-        if 'shape' in value:
-            result[key]['shape'] = value['shape']
+        result[key]['shape'] = value.get('shape', None)
         if 'external' in value:
             result[key]['external'] = value['external']
+    return result
 
 
 class PanicError(Exception):

@@ -14,7 +14,7 @@ class Base:
         self._fields = fields
 
     def describe(self):
-        return {k: {'source': self._name, 'dtype': 'number'}
+        return {k: {'source': self._name, 'dtype': 'number', 'shape': None}
                 for k in self._fields}
 
     def __repr__(self):
@@ -155,12 +155,12 @@ class MockFlyer:
             event = dict()
             event['time'] = ttime.time()
             event['data'] = dict()
-            event['timestamp'] = dict()
+            event['timestamps'] = dict()
             for r in [self._mot, self._detector]:
                 d = r.read()
                 for k, v in d.items():
                     event['data'][k] = v['value']
-                    event['timestamp'][k] = v['timestamp']
+                    event['timestamps'][k] = v['timestamp']
             self._data.append(event)
 
 

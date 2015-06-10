@@ -4,16 +4,10 @@ from bluesky.callbacks import *
 from bluesky.standard_config import ascan, dscan, ct
 from bluesky import RunEngine
 from bluesky.examples import motor, det
+from bluesky.tests.utils import setup_test_run_engine
 
 
-RE = None
-
-
-def setup():
-    global RE
-    RE = RunEngine()
-    RE.memory['owner'] = 'test_owner'
-    RE.memory['beamline_id'] = 'test_beamline'
+RE = setup_test_run_engine()
 
 
 def traj_checker(scan, expected_traj):
@@ -115,6 +109,8 @@ def test_legacy_scans():
     # smoke tests
     ascan.detectors.append(det)
     ascan.RE.memory['owner'] = 'test_owner'
+    ascan.RE.memory['group'] = 'test_group'
+    ascan.RE.memory['config'] = {}
     ascan.RE.memory['beamline_id'] = 'test_beamline'
     ascan(motor, 0, 5, 5)
     dscan(motor, 0, 5, 5)

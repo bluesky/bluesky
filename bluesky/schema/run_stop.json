@@ -1,0 +1,35 @@
+
+{
+    "properties": {
+        "run_start": {
+            "type": "string",
+            "description": "Reference back to the run_start document that this document is paired with."
+        },
+        "reason": {
+            "type": "string",
+            "description": "Long-form description of why the run ended"
+        },
+        "time": {
+            "type": "number",
+            "description": "The time the run ended. Unix epoch"
+        },
+        "exit_status": {
+            "type": "string",
+            "enum": ["success", "abort", "fail"],
+            "description": "State of the run when it ended"
+        },
+        "uid": {
+            "type": "string",
+            "description": "Globally unique ID for tihs run"
+        }
+    },
+    "required": [
+        "uid",
+        "run_start",
+        "time",
+        "exit_status"
+    ],
+    "type": "object",
+    "description": "Document for the end of a run indicating the success/fail state of the run and the end time"
+
+}
