@@ -484,6 +484,7 @@ class RunEngine:
         Abort a paused scan.
         """
         self.state.abort()
+        print("Aborting....")
         self._resume()  # to create RunStop Document
 
     def _run(self, gen, metadata):
@@ -550,8 +551,10 @@ class RunEngine:
         resumable = self._msg_cache is not None
         if self.state.is_hard_pausing:
             self.state.pause()
+            print("Pausing...")
             if not resumable:
                 self.state.abort()
+                print("No checkpoint; cannot pause. Aborting...")
                 self._exit_status = 'abort'
                 raise RunInterrupt("*** Hard pause requested. There "
                                     "are no checkpoints. Cannot resume;"
@@ -573,11 +576,13 @@ class RunEngine:
         if self.state.is_soft_pausing:
             if not resumable:
                 self.state.pause()
+                print("No checkpoint; cannot pause. Aborting...")
                 self.state.abort()
                 self._exit_status = 'abort'
                 raise RunInterrupt("*** Soft pause requested. There "
                                    "are no checkpoints. Cannot resume;"
                                    " must abort. Run aborted.")
+            print("Soft pause acknowledged. Continuing to next checkpoint.")
             self.debug("*** Soft pause requested. Continuing to "
                        "process messages until the next 'checkpoint' "
                        "command.")
@@ -711,6 +716,7 @@ class RunEngine:
         self._msg_cache = deque()
         if self.state.is_soft_pausing:
             self.state.pause()  # soft_pausing -> paused
+            print("Checkpoint reached. Pausing...")
             self.debug("*** Checkpoint reached. Sleeping until resume() is "
                        "called. Will resume from checkpoint.")
             while True:
@@ -722,6 +728,7 @@ class RunEngine:
                 raise RunInterrupt("Run aborted.")
 
     def _rerun_from_checkpoint(self):
+        print("Rerunning from last checkpoint...")
         self.debug("*** Rerunning from checkpoint...")
         for msg in self._msg_cache:
             response = self._command_registry[msg.command](msg)
