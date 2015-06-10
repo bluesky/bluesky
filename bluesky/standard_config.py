@@ -75,15 +75,20 @@ def rollcall():
     return objs
 
 
-def olog_wrapper(logbook):
+def olog_wrapper(logbook, logbooks, prop):
     """Wrap a olog logbook for use with RunEngine
 
-    The hard-coded values are adapted from the Ophyd implementation.
+    The admittedly confusing parameter names reflect our understanding of Olog
+    conventions.
 
     Parameters
     ----------
     logbook : pyolog.logbook
-        The logbook to add stuff to
+        logbook object
+    logbooks : list of strings
+        names of logbooks to write entries to
+    property_key : string
+        logbook property
 
     Returns
     -------
@@ -93,8 +98,8 @@ def olog_wrapper(logbook):
     def _logbook_log(msg, d):
         msg = msg.format(**d)
         logbook.log(msg,
-                    properties={'BlueSkyScan': d},
+                    properties={prop: d},
                     ensure=True,
-                    logbooks=['Data Acquisition'])
+                    logbooks=logbooks)
 
     return _logbook_log
