@@ -193,6 +193,12 @@ class SynGauss2D(Reader):
         y = np.exp(-(x / sigma)**2 / 2)
         return y / np.sum(y)
 
+    def describe(self):
+        return {self._name: {'source': self._name,
+                             'dtype': 'array',
+                             'shape': list(self.dims),
+                             'external': 'FILESTORE:'}}
+
 
 class MockFlyer:
     """
