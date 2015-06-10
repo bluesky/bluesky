@@ -2,10 +2,28 @@ from .run_engine import Msg
 from .utils import Struct
 import numpy as np
 
+BASE_MSG = """
+Scan id: {uid}
+Scan Class: {scn_cls}
+"""
+
 
 class Scan(Struct):
     def __iter__(self):
-        return self._gen()
+        yield Msg('logbook', None, self.logmsg(), **self.logdict())
+        yield from self._gen()
+
+    def logmsg(self):
+        msgs = [BASE_MSG, ]
+        for k in self._fields:
+            msgs.append('{k}: {{{k}!r}}'.format(k=k))
+        return '\n'.join(msgs)
+
+    def logdict(self):
+        out_dict = {k: getattr(self, k) for k in self._fields}
+        out_dict['scn_cls'] = self.__class__.__name__
+        return out_dict
+
 
 class Count(Scan):
     """
@@ -38,6 +56,21 @@ class Count(Scan):
         self.detectors = detectors
         self.num = num
         self.delay = delay
+
+    def logdict(self):
+        out = super().logdict()
+        out['detectors'] = self.detectors
+        out['num'] = self.num
+        out['delay'] = self.delay
+        return out
+
+    def logmsg(self):
+        base_msg = super().logmsg()
+        msgs = [base_msg]
+        msgs.append('detectors: {detectors!r}')
+        msgs.append('num: {num}')
+        msgs.append('delay: {delay}')
+        return '\n'.join(msgs)
 
     def _gen(self):
         dets = self.detectors
