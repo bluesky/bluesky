@@ -1,5 +1,5 @@
 from bluesky.examples import *
-from bluesky.standard_config import RE
+from bluesky.tests.utils import setup_test_run_engine
 from matplotlib import pyplot as plt
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 import numpy as np
@@ -22,4 +22,5 @@ def stepscan(motor, det):
 
 ic = LiveImage('det_2d')
 table_callback = LiveTable(fields=[motor._name, det_2d._name])
+RE = setup_test_run_engine()
 RE(stepscan(motor, det_2d), subs={'event': ic, 'all': table_callback}, beamline_id='c08i')
