@@ -32,7 +32,7 @@ fn = '{}/{{}}'.format(SCHEMA_PATH)
 schemas = {}
 for name, filename in SCHEMA_NAMES.items():
     with open(rs_fn('bluesky', fn.format(filename))) as fin:
-        schemas['name'] = json.load(fin)
+        schemas[name] = json.load(fin)
 
 
 class LossyLiFoQueue(Queue):
