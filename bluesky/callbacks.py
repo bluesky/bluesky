@@ -145,7 +145,7 @@ def live_scalar_plotter(ax, y, x):
 
 
 def format_num(x, max_len=11, pre=5, post=5):
-    if x > 10**pre or x < 10**-post:
+    if abs(x) > 10**pre or abs(x) < 10**-post:
         x = '%.{}e'.format(post) % x
     else:
         x = '%{}.{}f'.format(pre, post) % x
@@ -193,9 +193,13 @@ class LiveTable(CallbackBase):
     base_field_widths = [8, 15]
     data_field_width = 12
     max_pre_decimal = 5
-    max_post_decimal = 5
+    max_post_decimal = 2
 
-    def __init__(self, fields=None, rowwise=True, print_header_interval=50):
+    def __init__(self, fields=None, rowwise=True, print_header_interval=50,
+                 max_post_decimal=2, max_pre_decimal=5, data_field_width=12):
+        self.data_field_width = data_field_width
+        self.max_pre_decimal = max_pre_decimal
+        self.max_post_decimal = max_post_decimal
         super(LiveTable, self).__init__()
         self.rowwise = rowwise
         if fields is None:
