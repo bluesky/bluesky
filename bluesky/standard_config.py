@@ -97,6 +97,7 @@ def olog_wrapper(logbook, logbooks, prop):
     """
     def _logbook_log(msg, d):
         msg = msg.format(**d)
+        d = {k: repr(v) for k, v in d.items()}
         logbook.log(msg,
                     properties={prop: d},
                     ensure=True,
