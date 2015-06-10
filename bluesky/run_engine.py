@@ -15,6 +15,7 @@ import jsonschema
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 import numpy as np
+from pkg_resources import resource_filename as rs_fn
 
 from .utils import CallbackRegistry, SignalHandler, ExtendedList
 
@@ -22,12 +23,13 @@ from .utils import CallbackRegistry, SignalHandler, ExtendedList
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
-SCHEMA_PATH = os.path.join(os.path.dirname(__file__), '..', 'schemas')
+SCHEMA_PATH = 'schema'
 SCHEMA_NAMES = {'start': 'run_start.json',
                 'stop': 'run_stop.json',
                 'event': 'event.json',
                 'descriptor': 'event_descriptor.json'}
-schemas = {name: json.load(open(os.path.join(SCHEMA_PATH, filename)))
+fn = '{}/{{}}'.format(SCHEMA_PATH)
+schemas = {name: json.load(open(rs_fn('bluesky', fn.format(filename))))
            for name, filename in SCHEMA_NAMES.items()}
 
 

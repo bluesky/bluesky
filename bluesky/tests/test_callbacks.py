@@ -1,11 +1,11 @@
 from nose.tools import assert_in, assert_equal
 from bluesky.run_engine import RunEngine
 from bluesky.examples import *
-from bluesky.tests.utils import setup_run_engine
+from bluesky.tests.utils import setup_test_run_engine
 from nose.tools import raises
 
 
-RE = setup_run_engine()
+RE = setup_test_run_engine()
 
 
 def exception_raiser(doc):
