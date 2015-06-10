@@ -130,7 +130,7 @@ This returns a token that we can use to unsubscribe later.
 
 .. ipython:: python
 
-    RE.unsubscribe(2)
+    RE.unsubscribe(4)
 
 Built-in Subscriptions
 ----------------------
