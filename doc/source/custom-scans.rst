@@ -417,10 +417,9 @@ own.
 
             slope = dI / step
 
-            new_step = np.clip(self.target_delta / slope, self.min_step,
-                            self.max_step)
+            new_step = np.clip(target_delta / slope, min_step, max_step)
             # if we over stepped, go back and try again
-            if new_step < step * self.THRESHOLD:
+            if new_step < step * THRESHOLD:
                 next_pos -= step
             else:
                 past_I = cur_I
