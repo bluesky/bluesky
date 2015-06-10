@@ -191,6 +191,7 @@ class RunEngine:
         self._sigtstp_handler = None
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
+        self._configured = list()  # objects configured, not yet deconfigured
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._descriptor_uids = dict()  # cache of all Descriptor uids
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
@@ -243,9 +244,13 @@ class RunEngine:
         self._bundling = False
         self._objs_read.clear()
         self._read_cache.clear()
+        self._configured.clear()
         self._describe_cache.clear()
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
+        # N.B. self._pause_requests is NOT cleared.
+        self._block_groups.clear()
+        self._temp_callback_ids.clear()
         self._msg_cache = None
         self._exit_status = None
         # clear the main thread queues
@@ -521,6 +526,9 @@ class RunEngine:
             reason = str(err)
             raise err
         finally:
+            # in case we were interrupted between 'configure' and 'deconfigure'
+            for obj in self._configured:
+                obj.deconfigure()
             doc = dict(run_start=self._run_start_uid,
                        time=ttime.time(), uid=new_uid(),
                        exit_status=self._exit_status,
@@ -752,11 +760,17 @@ class RunEngine:
 
     def _configure(self, msg):
         _, obj, args, kwargs = msg
-        return obj.configure(*args, **kwargs)
+        result = obj.configure(*args, **kwargs)
+        self._configured.append(obj)
+        return result
 
     def _deconfigure(self, msg):
         _, obj, args, kwargs = msg
-        return obj.deconfigure(*args, **kwargs)
+        # Deconfigure is not allowed to have args or kwargs.
+        # TODO Address this in Message validation.
+        result = obj.deconfigure()
+        self._configured.remove(obj)
+        return result
 
     def emit(self, name, doc):
         "Process blocking, scan-thread callbacks."
