@@ -746,7 +746,7 @@ class RunEngine:
             log_message, = msg.args
             d['uid'] = self._run_start_uid
 
-            self.logbook(log_message, d)
+            return self.logbook(log_message, d)
 
     def emit(self, name, doc):
         "Process blocking, scan-thread callbacks."
