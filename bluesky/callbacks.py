@@ -252,12 +252,12 @@ class LiveTable(CallbackBase):
             if data_loc == 'FILESTORE:':
                 self._filestore_keys.add(key)
 
-        print('filestore keys = {}'.format(self._filestore_keys))
         # see if any are being shown in the table
-        reprint_header = True
+        reprint_header = False
         new_names = []
         for key in self.field_column_names:
             if key in self._filestore_keys:
+                reprint_header = True
                 print('\n')
                 print('%s is a non-scalar field. Computing the sum instead' %
                       key)

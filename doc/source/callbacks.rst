@@ -2,8 +2,8 @@ Live Feedback
 =============
 
 .. ipython:: python
-   :okwarning:
    :suppress:
+   :okwarning:
 
    from bluesky.examples import det1, det2, det3, det, motor
    from bluesky.callbacks import *
@@ -42,15 +42,19 @@ table shows results as they come in.
 Demo: live-updating plot
 ------------------------
 
-.. ipython:: python
-    :suppress:
+.. note::
 
-    plot = LivePlot('det1')
-    RE.subscribe('all', plot)
+    The live-plotting feature works, but by it's difficult to demo "live"
+    thing on a static web page. Check back later!
 
-.. ipython:: python
+Demo: live-updating image viewer
+--------------------------------
 
-    RE(s)
+.. note::
+
+    The live image viewer works, but by it's difficult to demo "live"
+    thing on a static web page. Check back later!
+
 
 How this Works: Subscriptions
 -----------------------------
@@ -106,27 +110,33 @@ For example:
     def celebrate(doc):
         # Do nothing with the input; just use it as a signal that run is over.
         print("The run is finished!")
+
+Let's use both ``print_data`` and ``celebrate`` at once.
+
+.. ipython:: python
+
     RE(s, {'event': print_data, 'stop': celebrate})
 
+Now With Less Typing!
++++++++++++++++++++++
 
-Bluesky includes a couple functions that make useful subscriptions.
+To invoke a subscription automatically for all future runs:
 
-In the standard_configuration, one critical subscription is configured at
-startup time: a subscription that saves the Documents to metadatastore.
+.. ipython:: python
 
-Other subscriptions are left up to the user, but if you find yourself using
-one every time, you can add it to a start-up script or an IPython profile.
+    RE.subscribe('event', print_data)
+
+This returns a token that we can use to unsubscribe later.
+
+.. ipython:: python
+
+    RE.unsubscribe(2)
 
 Built-in Subscriptions
 ----------------------
 
-LiveTable Revisited
-+++++++++++++++++++
-
-As demonstrated in the :doc:`example workflow <workflow>`, a live-updating
-table shows results as they come in.
-
-
+LiveTable
++++++++++
 
 .. ipython:: python
 
@@ -162,8 +172,8 @@ unsubscribe later.
 
     RE.unsubscribe(2)
 
-Live plot, Revisited
-++++++++++++++++++++
+Live plot
++++++++++
 
 .. note::
 
@@ -181,11 +191,40 @@ Post-scan Validation
 Writing your own
 ----------------
 
-Simplest Example
-++++++++++++++++
+Examples
+++++++++
+
+TODO
 
 Using multiple document types
 +++++++++++++++++++++++++++++
+
+Some tasks use only one Document type, but we often need to use more than one.
+For example, LiveTable uses 'start' kick off the creation of a fresh table,
+it uses 'event' to see the data, and it uses 'stop' to draw the bottom border.
+
+A convenient pattern for this kind of subscription is a class with a method
+for each Document type.
+
+.. ipython:: python
+
+    from bluesky.callbacks import CallbackBase
+    class MyCallback(CallbackBase):
+        def start(self, doc):
+            # Do something
+
+        def descriptor(self, doc):
+            # Do something
+
+        def event(self, doc):
+            # Do something
+
+        def stop(self, doc):
+            # Do something
+
+
+The base class, ``CallbackBase``, takes care of dispatching each Document to
+the corresponding method.
 
 Critical Subscriptions
 ----------------------
