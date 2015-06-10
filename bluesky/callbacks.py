@@ -4,6 +4,7 @@ Useful callbacks for the Run Engine
 import sys
 from itertools import count
 from prettytable import PrettyTable
+import matplotlib.pyplot as plt
 from collections import OrderedDict
 from .utils import doc_type
 from datetime import datetime
@@ -114,45 +115,67 @@ def collector(field, output):
     return f
 
 
-def live_scalar_plotter(ax, y, x):
-    """
-    Build a function that updates a plot from a stream of Events.
+class LivePlot(CallbackBase):
+    def __init__(self, y, x=None, **kwargs):
+        """
+        Build a function that updates a plot from a stream of Events.
 
-    Parameters
-    ----------
-    ax : Axes
-    y : str
-        the name of a data field in an Event
-    x : str
-        the name of a data field in an Event
+        Parameters
+        ----------
+        y : str
+            the name of a data field in an Event
+        x : str or None
+            the name of a data field in an Event
+            If None, use the Event's sequence number.
 
-    Returns
-    -------
-    func : function
-        expects one argument, an Event dictionary
+        All additional keyword arguments are passed through to ``Axes.plot``.
 
-    Examples
-    --------
-    >>> import matplotlib as pyplot
-    >>> fig, ax = plt.subplots()
-    >>> my_plotter = live_scalar_plotter(ax, 'det1', 'motor1')
-    >>> RE(my_scan, subs={'event': my_plotter})
-    """
-    x_data, y_data = [], []
-    line, = ax.plot([], [], 'ro', markersize=10)
+        Returns
+        -------
+        func : function
+            expects one argument, an Event dictionary
 
-    def update_plot(event):
-        # Update with the latest data.
-        x_data.append(event['data'][x])
-        y_data.append(event['data'][y])
-        line.set_data(x_data, y_data)
+        Examples
+        --------
+        >>> import matplotlib as pyplot
+        >>> fig, ax = plt.subplots()
+        >>> my_plotter = live_scalar_plotter(ax, 'det1', 'motor1')
+        >>> RE(my_scan, subs={'event': my_plotter})
+        """
+        fig, ax = plt.subplots()
+        plt.show()
+        self.ax = ax
+        self.y = y
+        self.x = x
+        self.kwargs = kwargs
+        self.lines = []
+
+    def start(self, doc):
+        # The doc is not used; we just use the singal that a new run began.
+        self.x_data, self.y_data = [], []
+        self.current_line, = self.ax.plot([], [], **self.kwargs)
+        self.lines.append(self.current_line)
+
+    def event(self, doc):
+        "Update line with data from this Event."
+        # Do repeated 'self' lookups once, for perf.
+        x_data = self.x_data
+        y_data = self.y_data
+        ax = self.ax
+        if self.x is not None:
+            x_data.append(doc['data'][self.x])
+        else:
+            x_data.append(doc['seq_num'])
+        y_data.append(doc['data'][self.y])
+        self.current_line.set_data(x_data, y_data)
         # Rescale and redraw.
         ax.relim(visible_only=True)
         ax.autoscale_view(tight=True)
         ax.figure.canvas.draw()
-        ax.figure.canvas.flush_events()
-
-    return update_plot
+        try:
+            ax.figure.canvas.flush_events()
+        except NotImplementedError:
+            pass  # Ignore on non-interactive backends.
 
 
 def format_num(x, max_len=11, pre=5, post=5):
