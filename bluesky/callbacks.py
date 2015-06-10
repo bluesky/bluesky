@@ -201,18 +201,17 @@ class LiveTable(CallbackBase):
         if fields is None:
             fields = []
         self.fields = fields
-        self.table = PrettyTable(field_names=(self.base_fields + self.fields))
-        self.table.padding_width = 2
-        self.table.align = 'r'
+        self.field_column_names = [field for field in self.fields]
         self.num_events_since_last_header = 1
         self.print_header_interval = print_header_interval
+        self._filestore_keys = set()
+        # self.create_table()
 
-    def _print_table_header(self):
-        print('\n'.join(str(self.table).split('\n')[:3]))
-
-    ### RunEngine document callbacks
-
-    def start(self, start_document):
+    def create_table(self):
+        self.table = PrettyTable(field_names=(self.base_fields +
+                                              self.field_column_names))
+        self.table.padding_width = 2
+        self.table.align = 'r'
         # format the placeholder fields for the base fields so that the
         # heading prints at the correct width
         base_fields = [' '*width for width in self.base_field_widths]
@@ -224,11 +223,46 @@ class LiveTable(CallbackBase):
             self._print_table_header()
         sys.stdout.flush()
 
+    def _print_table_header(self):
+        print('\n'.join(str(self.table).split('\n')[:3]))
+
+    ### RunEngine document callbacks
+
+    def start(self, start_document):
+        self.create_table()
+
+    def descriptor(self, descriptor):
+        # find all keys that are filestore keys
+        for key, datakeydict in descriptor['data_keys'].items():
+            data_loc = datakeydict.get('external', '')
+            if data_loc == 'FILESTORE:':
+                self._filestore_keys.add(key)
+
+        print('filestore keys = {}'.format(self._filestore_keys))
+        # see if any are being shown in the table
+        reprint_header = True
+        new_names = []
+        for key in self.field_column_names:
+            if key in self._filestore_keys:
+                print('\n')
+                print('%s is a non-scalar field. Computing the sum instead' %
+                      key)
+                key = 'sum(%s)' % key
+                key = key[:self.data_field_width]
+            new_names.append(key)
+        self.field_column_names = new_names
+        if reprint_header:
+            print('\n\n')
+            self.create_table()
+            # self._print_table_header()
+
     def event(self, event_document):
         event_time = str(datetime.fromtimestamp(event_document['time']).time())
         row = [event_document['seq_num'], event_time]
         for field in self.fields:
             val = event_document['data'].get(field, '')
+            if field in self._filestore_keys:
+                val = fsapi.retrieve(val)
             if isinstance(val, np.ndarray) or isinstance(val, list):
                 val = np.sum(np.asarray(val))
             try:
@@ -267,3 +301,5 @@ class LiveTable(CallbackBase):
         print(str(self.table).split('\n')[-1])
         # remove all data from the table
         self.table.clear_rows()
+        # reset the filestore keys
+        self._filestore_keys = set()
