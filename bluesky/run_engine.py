@@ -568,11 +568,11 @@ class RunEngine:
                 self.state.abort()
                 self._exit_status = 'abort'
                 raise RunInterrupt("*** Soft pause requested. There "
-                                    "are no checkpoints. Cannot resume;"
-                                    " must abort. Run aborted.")
+                                   "are no checkpoints. Cannot resume;"
+                                   " must abort. Run aborted.")
             self.debug("*** Soft pause requested. Continuing to "
-                        "process messages until the next 'checkpoint' "
-                        "command.")
+                       "process messages until the next 'checkpoint' "
+                       "command.")
 
     def _create(self, msg):
         self._read_cache.clear()
@@ -598,7 +598,7 @@ class RunEngine:
             # We don't not have an Event Descriptor for this set.
             data_keys = {}
             [data_keys.update(self._describe_cache[obj]) for obj in objs_read]
-            _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls.
+            _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
