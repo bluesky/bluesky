@@ -4,6 +4,8 @@ from collections import deque
 import numpy as np
 from lmfit.models import GaussianModel, LinearModel
 from .run_engine import Msg
+from filestore.file_writers import save_ndarray
+import tempfile
 
 from .callbacks import *
 
@@ -127,6 +129,9 @@ class SynGauss2D(Reader):
         self.sigma = sigma
         self.dims = (nx, ny)
         self.img_sigma = img_sigma
+        # stash these things in a temp directory. This might cause an
+        # exception to be raised if/when the file system cleans its temp files
+        self.output_dir = tempfile.gettempdir()
 
     def trigger(self, *, block_group=True):
         self.ready = False
@@ -134,7 +139,8 @@ class SynGauss2D(Reader):
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
         arr = self.gauss(self.dims, self.img_sigma) * v + np.random.random(
             self.dims) * .01
-        self._data = {self._name: {'value': arr, 'timestamp': ttime.time()}}
+        fs_uid = save_ndarray(arr, self.output_dir)
+        self._data = {self._name: {'value': fs_uid, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
 
