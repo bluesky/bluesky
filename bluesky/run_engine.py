@@ -444,6 +444,7 @@ class RunEngine:
                 func()
                 self.dispatcher.process_all_queues()
             self.dispatcher.process_all_queues()  # catch any stragglers
+        return self._run_start_uid
 
     def resume(self):
         """Resume a run from the last checkpoint.
