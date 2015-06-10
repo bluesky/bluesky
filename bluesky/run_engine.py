@@ -440,6 +440,7 @@ class RunEngine:
                 self._thread.start()
                 while self._thread.is_alive() and not self.state.is_paused:
                     self.dispatcher.process_all_queues()
+                    ttime.sleep(.01)
             else:
                 func()
                 self.dispatcher.process_all_queues()
@@ -478,6 +479,7 @@ class RunEngine:
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             while self._thread.is_alive() and not self.state.is_paused:
                 self.dispatcher.process_all_queues()
+                ttime.sleep(.01)
         self.dispatcher.process_all_queues()  # catch any stragglers
 
     def abort(self):

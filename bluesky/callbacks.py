@@ -7,6 +7,11 @@ from prettytable import PrettyTable
 from collections import OrderedDict
 from .utils import doc_type
 from datetime import datetime
+import matplotlib.pyplot as plt
+import filestore.api as fsapi
+from xray_vision.backend.mpl.cross_section_2d import CrossSection
+import numpy as np
+import filestore
 
 import logging
 logger = logging.getLogger(__name__)
@@ -33,6 +38,25 @@ class CallbackBase(object):
 
     def stop(self, doc):
         logger.debug("CallbackBase: I'm a stop with doc = {}".format(doc))
+
+
+class ImageCallback(CallbackBase):
+
+    def __init__(self, datakey, fig=None):
+        # wheeee MRO
+        super(ImageCallback, self).__init__()
+        self.datakey = datakey
+        if fig is None:
+            fig = plt.figure()
+        self.cs = CrossSection(fig)
+        self.cs._fig.show()
+
+    def event(self, doc):
+        uid = doc['data'][self.datakey]
+        data = fsapi.retrieve(uid)
+        self.cs.update_image(data)
+        self.cs._fig.canvas.draw()
+        self.cs._fig.canvas.flush_events()
 
 
 class CallbackCounter:
@@ -121,7 +145,7 @@ def live_scalar_plotter(ax, y, x):
 
 
 def format_num(x, max_len=11, pre=5, post=5):
-    if x > 10**pre or x < 10**-post:
+    if (abs(x) > 10**pre or abs(x) < 10**-post) and x != 0:
         x = '%.{}e'.format(post) % x
     else:
         x = '%{}.{}f'.format(pre, post) % x
@@ -150,45 +174,47 @@ class LiveTable(CallbackBase):
 
     >>> RE(stepscan(motor, det), subs={'all': LiveTable(['motor', 'det'])})
     +------------+-------------------+----------------+----------------+
-    |   seq_num  |             time  |         motor  |           det  |
+    |   seq_num  |             time  |         motor  |   sum(det_2d)  |
     +------------+-------------------+----------------+----------------+
-    |         1  |  17:22:19.476380  |  -5.00000e+00  |   3.72665e-06  |
-    |         2  |  17:22:19.552068  |  -4.00000e+00  |       0.00034  |
-    |         3  |  17:22:19.630759  |  -3.00000e+00  |       0.01111  |
-    |         4  |  17:22:19.696007  |  -2.00000e+00  |       0.13534  |
-    |         5  |  17:22:19.761655  |  -1.00000e+00  |       0.60653  |
-    |         6  |  17:22:19.827130  |   0.00000e+00  |       1.00000  |
-    |         7  |  17:22:19.893318  |       1.00000  |       0.60653  |
-    |         8  |  17:22:19.970275  |       2.00000  |       0.13534  |
-    |         9  |  17:22:20.052067  |       3.00000  |       0.01111  |
-    |        10  |  17:22:20.119620  |       4.00000  |       0.00034  |
+    |         1  |  12:46:47.503068  |         -5.00  |        449.77  |
+    |         3  |  12:46:47.682788  |         -3.00  |        460.60  |
+    |         4  |  12:46:47.792307  |         -2.00  |        584.77  |
+    |         5  |  12:46:47.915401  |         -1.00  |       1056.37  |
+    |         7  |  12:46:48.120626  |          1.00  |       1056.50  |
+    |         8  |  12:46:48.193028  |          2.00  |        583.33  |
+    |         9  |  12:46:48.318454  |          3.00  |        460.99  |
+    |        10  |  12:46:48.419579  |          4.00  |        451.53  |
     +------------+-------------------+----------------+----------------+
+
 
     """
     base_fields = ['seq_num', 'time']
     base_field_widths = [8, 15]
     data_field_width = 12
     max_pre_decimal = 5
-    max_post_decimal = 5
+    max_post_decimal = 2
 
-    def __init__(self, fields=None, rowwise=True, print_header_interval=50):
+    def __init__(self, fields=None, rowwise=True, print_header_interval=50,
+                 max_post_decimal=2, max_pre_decimal=5, data_field_width=12):
+        self.data_field_width = data_field_width
+        self.max_pre_decimal = max_pre_decimal
+        self.max_post_decimal = max_post_decimal
         super(LiveTable, self).__init__()
         self.rowwise = rowwise
         if fields is None:
             fields = []
         self.fields = fields
-        self.table = PrettyTable(field_names=(self.base_fields + self.fields))
-        self.table.padding_width = 2
-        self.table.align = 'r'
+        self.field_column_names = [field for field in self.fields]
         self.num_events_since_last_header = 1
         self.print_header_interval = print_header_interval
+        self._filestore_keys = set()
+        # self.create_table()
 
-    def _print_table_header(self):
-        print('\n'.join(str(self.table).split('\n')[:3]))
-
-    ### RunEngine document callbacks
-
-    def start(self, start_document):
+    def create_table(self):
+        self.table = PrettyTable(field_names=(self.base_fields +
+                                              self.field_column_names))
+        self.table.padding_width = 2
+        self.table.align = 'r'
         # format the placeholder fields for the base fields so that the
         # heading prints at the correct width
         base_fields = [' '*width for width in self.base_field_widths]
@@ -200,15 +226,48 @@ class LiveTable(CallbackBase):
             self._print_table_header()
         sys.stdout.flush()
 
+    def _print_table_header(self):
+        print('\n'.join(str(self.table).split('\n')[:3]))
+
+    ### RunEngine document callbacks
+
+    def start(self, start_document):
+        self.create_table()
+
+    def descriptor(self, descriptor):
+        # find all keys that are filestore keys
+        for key, datakeydict in descriptor['data_keys'].items():
+            data_loc = datakeydict.get('external', '')
+            if data_loc == 'FILESTORE:':
+                self._filestore_keys.add(key)
+
+        print('filestore keys = {}'.format(self._filestore_keys))
+        # see if any are being shown in the table
+        reprint_header = True
+        new_names = []
+        for key in self.field_column_names:
+            if key in self._filestore_keys:
+                print('\n')
+                print('%s is a non-scalar field. Computing the sum instead' %
+                      key)
+                key = 'sum(%s)' % key
+                key = key[:self.data_field_width]
+            new_names.append(key)
+        self.field_column_names = new_names
+        if reprint_header:
+            print('\n\n')
+            self.create_table()
+            # self._print_table_header()
+
     def event(self, event_document):
         event_time = str(datetime.fromtimestamp(event_document['time']).time())
         row = [event_document['seq_num'], event_time]
         for field in self.fields:
-            if field == 'timestamps':
-                logger.warning('LiveTable is not sure what to do with '
-                               '"timestamps". It is too vague.')
-            else:
-                val = event_document['data'].get(field, '')
+            val = event_document['data'].get(field, '')
+            if field in self._filestore_keys:
+                val = fsapi.retrieve(val)
+            if isinstance(val, np.ndarray) or isinstance(val, list):
+                val = np.sum(np.asarray(val))
             try:
                 val = format_num(val,
                                  max_len=self.data_field_width,
@@ -245,3 +304,5 @@ class LiveTable(CallbackBase):
         print(str(self.table).split('\n')[-1])
         # remove all data from the table
         self.table.clear_rows()
+        # reset the filestore keys
+        self._filestore_keys = set()
