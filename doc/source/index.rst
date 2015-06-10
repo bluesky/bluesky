@@ -49,10 +49,9 @@ Robustness
 Relationship to EPICS, pyepics, ophyd
 -------------------------------------
 
-Bluesky is a high-level interface: it communicates with hardware through
-Python objects that are expected to have methods like ``read`` and ``set``.
-These objects might be implemented with ophyd, pyepics, cothread, or any other
-Python package. Bluesky does not import or require any of them.
+Bluesky assumes a high-level abstraction and expects Python objects that have
+methods like 'read' and 'set'. Bluesky is agnostic about exactly how this
+interaction is implemented.
 
 Relationship to DataBroker, metadatastore, filestore
 ----------------------------------------------------
