@@ -145,7 +145,7 @@ def live_scalar_plotter(ax, y, x):
 
 
 def format_num(x, max_len=11, pre=5, post=5):
-    if abs(x) > 10**pre or abs(x) < 10**-post:
+    if (abs(x) > 10**pre or abs(x) < 10**-post) and x != 0:
         x = '%.{}e'.format(post) % x
     else:
         x = '%{}.{}f'.format(pre, post) % x
