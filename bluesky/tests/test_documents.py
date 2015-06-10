@@ -1,10 +1,10 @@
 from nose.tools import assert_in, assert_equal
 from bluesky.run_engine import RunEngine
-from bluesky.tests.utils import setup_run_engine
+from bluesky.tests.utils import setup_test_run_engine
 from bluesky.examples import simple_scan, motor
 
 
-RE = setup_run_engine()
+RE = setup_test_run_engine()
 
 
 def test_custom_metadata():

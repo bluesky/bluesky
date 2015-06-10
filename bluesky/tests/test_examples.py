@@ -5,7 +5,7 @@ from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
 from bluesky.examples import *
 from bluesky.callbacks import *
 from bluesky import RunEngine, RunInterrupt, Msg, PanicError
-from bluesky.tests.utils import setup_run_engine
+from bluesky.tests.utils import setup_test_run_engine
 from super_state_machine.errors import TransitionError
 try:
     import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ else:
     skip_mpl = False
 
 
-RE = setup_run_engine()
+RE = setup_test_run_engine()
 
 
 def test_msgs():

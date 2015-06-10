@@ -89,7 +89,7 @@ def define_state_machine_transitions_from_class(state_machine):
     return transition_map
 
 
-def setup_run_engine():
+def setup_test_run_engine():
     RE = RunEngine()
     RE.memory['owner'] = 'test_owner'
     RE.memory['group'] = 'Grant No. 12345'

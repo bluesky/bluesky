@@ -4,10 +4,10 @@ from bluesky.callbacks import *
 from bluesky.standard_config import ascan, dscan, ct
 from bluesky import RunEngine
 from bluesky.examples import motor, det
-from bluesky.tests.utils import setup_run_engine
+from bluesky.tests.utils import setup_test_run_engine
 
 
-RE = setup_run_engine()
+RE = setup_test_run_engine()
 
 
 def traj_checker(scan, expected_traj):
