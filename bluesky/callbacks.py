@@ -50,6 +50,11 @@ class LiveImage(CallbackBase):
         ----------
         field : string
             name of data field in an Event
+
+        Note
+        ----
+        Required a matplotlib fix not released as of this writing. The
+        relevant commit is a951b7.
         """
         super().__init__()
         self.field = field
