@@ -84,7 +84,8 @@ class SynGauss(Reader):
     """
     _klass = 'reader'
 
-    def __init__(self, name, motor, motor_field, center, Imax, sigma=1):
+    def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
+                 noise=False):
         super(SynGauss, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
@@ -92,11 +93,14 @@ class SynGauss(Reader):
         self.center = center
         self.Imax = Imax
         self.sigma = sigma
+        self.noise = noise
 
     def trigger(self, *, block_group=True):
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
+        if self.noise:
+            v = int(np.random.poisson(np.round(v), 1))
         self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
