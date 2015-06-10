@@ -212,7 +212,9 @@ class RunEngine:
             'pause': self._pause,
             'collect': self._collect,
             'kickoff': self._kickoff,
-            'logbook': self._logbook
+            'logbook': self._logbook,
+            'configure': self._configure,
+            'deconfigure': self._deconfigure
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -747,6 +749,14 @@ class RunEngine:
             d['uid'] = self._run_start_uid
 
             return self.logbook(log_message, d)
+
+    def _configure(self, msg):
+        _, obj, args, kwargs = msg
+        return obj.configure(*args, **kwargs)
+
+    def _deconfigure(self, msg):
+        _, obj, args, kwargs = msg
+        return obj.deconfigure(*args, **kwargs)
 
     def emit(self, name, doc):
         "Process blocking, scan-thread callbacks."
