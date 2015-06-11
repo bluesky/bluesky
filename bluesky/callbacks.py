@@ -241,9 +241,9 @@ class LiveTable(CallbackBase):
         self.rowwise = rowwise
         if fields is None:
             fields = []
-        self.fields = fields
+        self.fields = _get_obj_fields(fields)
         self.field_column_names = [field for field in self.fields]
-        self.num_events_since_last_header = 1
+        self.num_events_since_last_header = 0
         self.print_header_interval = print_header_interval
         self._filestore_keys = set()
         # self.create_table()
@@ -344,3 +344,22 @@ class LiveTable(CallbackBase):
         self.table.clear_rows()
         # reset the filestore keys
         self._filestore_keys = set()
+
+def _get_obj_fields(fields):
+    """
+    If fields includes any objects, get their field names using obj.describe()
+
+    ['det1', det_obj] -> ['det1, 'det_obj_field1, 'det_obj_field2']"
+    """
+    string_fields = []
+    for field in fields:
+        if isinstance(field, str):
+            string_fields.append(field)
+        else:
+            try:
+                field_list = field.describe().keys()
+            except AttributeError:
+                raise ValueError("Fields must be strings or objects with a "
+                                 "'describe' method that return a dict.")
+            string_fields.extend(field_list)
+    return string_fields
