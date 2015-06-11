@@ -759,11 +759,18 @@ class RunEngine:
         if self.logbook:
             d = msg.kwargs
             input_message, = msg.args
-            log_message = 'Header uid: {uid}\n\n'
-            log_message += 'Scan Plan\n---------\n'
-            log_message += input_message + '\n\n'
-            log_message += 'Metadata\n--------\n'
-            log_message += _run_engine_log_template(self.metadata)
+            msg = []
+            msg.append('Header uid: {uid}')
+            msg.append('')
+            msg.append('Scan Plan')
+            msg.append('---------')
+            msg.append(input_message)
+            msg.append('')
+            msg.append('Metadata')
+            msg.append('--------')
+            msg.append(_run_engine_log_template(self.metadata))
+            log_message = '\n'.join(msg)
+                       
             d['uid'] = self._run_start_uid
             d.update(self.md)
             return self.logbook(log_message, d)
@@ -939,10 +946,10 @@ def _fill_missing_fields(data_keys):
 
 
 def _run_engine_log_template(metadata):
-    template = "\n"  # leave one blank line on purpose
+    template = []
     for key in metadata:
-        template += "{key}: {{{key}}}\n".format(key=key)
-    return template
+        template.append("{key}: {{{key}}}".format(key=key))
+    return '\n'.join(template)
 
 
 class PanicError(Exception):

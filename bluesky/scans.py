@@ -30,12 +30,13 @@ class Scan(Struct):
         for k in self._fields:
             args.append("{k}={{{k}!r}}".format(k=k))
         
-        call_str = "RE({{scn_cls}}({args})".format(args=', '.join(args))
+        call_str = "RE({{scn_cls}}({args}))".format(args=', '.join(args))
 
-        msgs = ['Scan Class: {scn_cls}', '\n']
+        msgs = ['Scan Class: {scn_cls}', '']
         for k in self._fields:
             msgs.append('{k}: {{{k}!r}}'.format(k=k))
-        msgs.append('\n')
+        msgs.append('')
+        msgs.append('To call:')
         msgs.append(call_str)
         return '\n'.join(msgs)
 
