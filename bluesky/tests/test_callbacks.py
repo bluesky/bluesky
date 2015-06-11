@@ -1,5 +1,5 @@
 from nose.tools import assert_in, assert_equal
-from bluesky.run_engine import RunEngine
+from bluesky.run_engine import RunEngine, Msg
 from bluesky.examples import *
 from bluesky.tests.utils import setup_test_run_engine
 from nose.tools import raises
@@ -46,6 +46,21 @@ def test_callback_execution():
     cb = exception_raiser
     for stream in ['all', 'start', 'event', 'stop', 'descriptor']:
         yield _raising_callbacks_helper, stream, cb
+    RE.state.stop()
+
+
+def test_subscribe_msg():
+    assert RE.state == 'idle'
+    c = CallbackCounter()
+    def counting_stepscan(motor, det):
+        yield Msg('subscribe', None, 'start', c)
+        yield from stepscan(motor, det)
+    RE(counting_stepscan(motor, det))  # should advance c
+    assert_equal(c.value, 1)
+    RE(counting_stepscan(motor, det))  # should advance c
+    assert_equal(c.value, 2)
+    RE(stepscan(motor, det))  # should not
+    assert_equal(c.value, 2)
 
 
 if __name__ == '__main__':
