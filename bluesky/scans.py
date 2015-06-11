@@ -55,21 +55,8 @@ class Count(Scan):
         self.detectors = detectors
         self.num = num
         self.delay = delay
-
-    def logdict(self):
-        out = super().logdict()
-        out['detectors'] = self.detectors
-        out['num'] = self.num
-        out['delay'] = self.delay
-        return out
-
-    def logmsg(self):
-        base_msg = super().logmsg()
-        msgs = [base_msg]
-        msgs.append('detectors: {detectors!r}')
-        msgs.append('num: {num}')
-        msgs.append('delay: {delay}')
-        return '\n'.join(msgs)
+        # We define _fields not for Struct, but for Scan.log* methods.
+        self._fields = ['detectors', 'num', 'delay']
 
     def _gen(self):
         dets = self.detectors
