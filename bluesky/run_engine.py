@@ -655,10 +655,11 @@ class RunEngine:
 
     def _kickoff(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
+        ret = msg.obj.kickoff(*msg.args, **msg.kwargs)
         if block_group:
-            self._block_groups[block_group].add(msg.obj)
+            self._block_groups[block_group].add(ret)
 
-        return msg.obj.kickoff(*msg.args, **msg.kwargs)
+        return ret
 
     def _collect(self, msg):
         obj = msg.obj
@@ -696,16 +697,18 @@ class RunEngine:
 
     def _set(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
+        ret = msg.obj.set(*msg.args, **msg.kwargs)
         if block_group:
-            self._block_groups[block_group].add(msg.obj)
-        return msg.obj.set(*msg.args, **msg.kwargs)
+            self._block_groups[block_group].add(ret)
+        return ret
 
     def _trigger(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
+        ret = msg.obj.trigger(*msg.args, **msg.kwargs)
         if block_group:
-            self._block_groups[block_group].add(msg.obj)
+            self._block_groups[block_group].add(ret)
 
-        return msg.obj.trigger(*msg.args, **msg.kwargs)
+        return ret
 
     def _wait(self, msg):
         # Block progress until every object that was trigged
@@ -713,9 +716,9 @@ class RunEngine:
         group = msg.kwargs.get('group', msg.args[0])
         objs = self._block_groups[group]
         while True:
-            if all([obj.ready for obj in objs]):
+            if all([obj.done for obj in objs]):
                 break
-            ttime.sleep(1e-4)
+            ttime.sleep(1e-2)
         del self._block_groups[group]
         return objs
 
