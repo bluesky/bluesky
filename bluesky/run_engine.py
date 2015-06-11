@@ -939,7 +939,7 @@ def _fill_missing_fields(data_keys):
 def _run_engine_log_template(metadata):
     template = "\n"  # leave one blank line on purpose
     for key in metadata:
-        template += "{key}: {{key}}\n".format(key=key)
+        template += "{key}: {{{key}}}\n".format(key=key)
     return template
 
 
