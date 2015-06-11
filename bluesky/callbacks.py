@@ -216,7 +216,7 @@ class LiveTable(CallbackBase):
             fields = []
         self.fields = _get_obj_fields(fields)
         self.field_column_names = [field for field in self.fields]
-        self.num_events_since_last_header = 1
+        self.num_events_since_last_header = 0
         self.print_header_interval = print_header_interval
         self._filestore_keys = set()
         # self.create_table()
