@@ -2,20 +2,41 @@ from .run_engine import Msg
 from .utils import Struct
 import numpy as np
 
-BASE_MSG = """
-Scan Class: {scn_cls}
-"""
-
 
 class Scan(Struct):
+    """
+    This is a base class for writing reusable scans.
+
+    It provides a default entry in the logbook at the start of the scan and a
+    __iter__ method.
+
+    To create a new sub-class you need to over-ride two things:
+
+    - a ``_gen`` method which yields the instructions of the scan.
+    - optionally, a class level ``_fields`` attribute which is used to construct the init 
+      signature via meta-class magic.
+
+
+    If you do not use the class-level ``_fields`` and write a custom ``__init__`` (which you need
+    to do if you want to have optional kwargs) you should provide an instance level ``_fields`` so
+    that the logbook related messages will work.
+    """
     def __iter__(self):
         yield Msg('logbook', None, self.logmsg(), **self.logdict())
         yield from self._gen()
-
+            
     def logmsg(self):
-        msgs = [BASE_MSG, ]
+        args = []
+        for k in self._fields:
+            args.append("{k}={{{k}!r}}".format(k=k))
+        
+        call_str = "RE({{scn_cls}}({args})".format(args=', '.join(args))
+
+        msgs = ['Scan Class: {scn_cls}', '\n']
         for k in self._fields:
             msgs.append('{k}: {{{k}!r}}'.format(k=k))
+        msgs.append('\n')
+        msgs.append(call_str)
         return '\n'.join(msgs)
 
     def logdict(self):
@@ -23,6 +44,9 @@ class Scan(Struct):
         out_dict['scn_cls'] = self.__class__.__name__
         return out_dict
 
+    def _gen(self):
+        raise NotImplementedError("Scan is a base class, you must sub-class it and "
+                                  "override this method (_gen)")
 
 class Count(Scan):
     """

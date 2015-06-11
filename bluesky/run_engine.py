@@ -759,8 +759,10 @@ class RunEngine:
         if self.logbook:
             d = msg.kwargs
             input_message, = msg.args
-            log_message = 'Globally Unique Scan ID: {uid}\n'
-            log_message += input_message
+            log_message = 'Header uid: {uid}\n\n'
+            log_message += 'Scan Plan\n---------\n'
+            log_message += input_message + '\n\n'
+            log_message += 'Metadata\n--------\n'
             log_message += _run_engine_log_template(self.metadata)
             d['uid'] = self._run_start_uid
             d.update(self.md)
