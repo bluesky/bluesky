@@ -758,10 +758,12 @@ class RunEngine:
     def _logbook(self, msg):
         if self.logbook:
             d = msg.kwargs
-            log_message, = msg.args
+            input_message, = msg.args
+            log_message = 'Globally Unique Scan ID: {uid}\n'
+            log_message += input_message
             log_message += _run_engine_log_template(self.metadata)
-            d['Globally Unique Scan ID'] = self._run_start_uid
-            d.update(RE.md)
+            d['uid'] = self._run_start_uid
+            d.update(self.md)
             return self.logbook(log_message, d)
 
     def _configure(self, msg):
