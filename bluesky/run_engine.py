@@ -439,6 +439,7 @@ class RunEngine:
                                    "runs, the most recent entry can be reused "
                                    "unless a new value is specified.".format(
                                         field))
+        self.metadata = metadata  # _logbook command may use this
 
         self.state.run()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
@@ -755,8 +756,9 @@ class RunEngine:
         if self.logbook:
             d = msg.kwargs
             log_message, = msg.args
-            d['uid'] = self._run_start_uid
-
+            log_message += _run_engine_log_template(self.metadata)
+            d['Globally Unique Scan ID'] = self._run_start_uid
+            d.update(RE.md)
             return self.logbook(log_message, d)
 
     def _configure(self, msg):
@@ -927,6 +929,13 @@ def _fill_missing_fields(data_keys):
         if 'external' in value:
             result[key]['external'] = value['external']
     return result
+
+
+def _run_engine_log_template(metadata):
+    template = "\n"  # leave one blank line on purpose
+    for key in metadata:
+        template += "{key}: {{key}}\n".format(key=key)
+    return template
 
 
 class PanicError(Exception):

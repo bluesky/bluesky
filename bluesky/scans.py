@@ -3,7 +3,6 @@ from .utils import Struct
 import numpy as np
 
 BASE_MSG = """
-Scan id: {uid}
 Scan Class: {scn_cls}
 """
 
