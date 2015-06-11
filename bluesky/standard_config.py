@@ -25,30 +25,19 @@ SEARCH_PATH.extend([os.path.expanduser('~/.config/bluesky/bluesky_history.db'),
 
 
 def get_history():
-    # Plan A: Find an existing db.
-    for path in SEARCH_PATH:
-        if os.path.isfile(path):
-            try:
-                h = history.History(path)
-            except IOError:
-                continue
-            else:
-                logger.debug('Using History file at %s' % path)
-                return h
-    # Plan B: Make new db.
-    for path in SEARCH_PATH:
-        if os.path.isdir(os.path.dirname(path)):
-            try:
-                h = history.History(path)
-            except IOError:
-                continue
-            else:
-                logger.debug('Created History file at %s' % path)
-                return h
-            return history.History(path[0])
-    # Plan C: Use an in-memory sqlite db.
-    logger.debug('Storing History in memory; it will not persist.')
-    return history.History(':memory:')
+    target_path = os.path.join(os.path.expanduser('~'), '.bluesky',
+                               'metadata_history.db')
+    try:
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        if os.path.isfile(target_path):
+            print('Found metadata history in existing file.')
+        else:
+            print('Storing metadata history in a new file.')
+        return history.History(target_path)
+    except IOError as exc:
+        print(exc)
+        print('Storing History in memory; it will not persist.')
+        return history.History(':memory:')
 
 
 RE = RunEngine(get_history())
