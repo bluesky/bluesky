@@ -337,9 +337,12 @@ class _AdaptiveScan(Scan1D):
             dI = np.abs(cur_I - past_I)
 
             slope = dI / step
+            if slope:
+                new_step = np.clip(self.target_delta / slope, self.min_step,
+                                   self.max_step)
+            else:
+                new_step = step
 
-            new_step = np.clip(self.target_delta / slope, self.min_step,
-                               self.max_step)
             # if we over stepped, go back and try again
             if new_step < step * self.THRESHOLD:
                 next_pos -= step
