@@ -80,7 +80,6 @@ Contents
    callbacks
    state-machine
    custom-scans
-   msg
    object_api
    nsls2_checklist
    legacy_api
