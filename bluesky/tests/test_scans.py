@@ -1,10 +1,11 @@
 import warnings
-from nose.tools import assert_equal, assert_greater, assert_in, assert_true
+from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
+                        assert_less)
 from bluesky.scans import *
 from bluesky.callbacks import *
 from bluesky.standard_config import ascan, dscan, ct
 from bluesky import RunEngine
-from bluesky.examples import motor, det
+from bluesky.examples import motor, det, SynGauss
 from bluesky.tests.utils import setup_test_run_engine
 
 
@@ -158,3 +159,11 @@ def test_set():
     scan.set(num=4)
     assert_equal(scan.num, 4)
     assert_equal(scan.start, 2)
+
+
+def test_center():
+    det = SynGauss('det', motor, 'motor', 0, 1000, 1, True)
+    d = {}
+    cen = Center(motor, [det], 'det', 0.1, 1.1, 0.01, d)
+    RE(cen)
+    assert_less(abs(d['center']), 0.1)

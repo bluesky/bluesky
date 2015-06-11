@@ -1,6 +1,8 @@
+from collections import deque
+from lmfit.models import GaussianModel, LinearModel
+import numpy as np
 from .run_engine import Msg
 from .utils import Struct
-import numpy as np
 
 
 class ScanBase(Struct):
@@ -440,3 +442,128 @@ class AdaptiveDscan(AdaptiveScanBase):
         # Return the motor to its original position.
         yield Msg('set', self.motor, current_value, block_group='A')
         yield Msg('wait', None, 'A')
+
+
+class Center(Scan):
+    SIGMA = 6
+    NUM_SAMPLES = 5
+
+    def __init__(self, motor, detectors, target_field, initial_center, initial_width,
+                tolerance=0.1, output_mutable=None):
+        """
+        Attempts to find the center of a peak by moving a motor.
+
+        This will leave the motor at what it thinks is the center.
+
+        The motion is clipped to initial center +/- 6 initial width
+
+        Works by :
+
+        - sampling 5 points around the initial center
+        - fitting to Gaussian + line
+        - moving to the center of the Gaussian
+        - while |old center - new center| > tolerance
+        - taking a measurement
+        - re-run fit
+        - move to new center
+
+        Parameters
+        ----------
+        motor : Mover
+        detetector : Reader
+        target_field : string
+            data field whose output is the focus of the adaptive tuning
+        initial_center : number
+            Initial guess at where the center is
+        initial_width : number
+            Initial guess at the width
+        tolerance : number, optional
+            Tolerance to declare good enough on finding the center. Default 0.01.
+        output_mutable : dict-like, optional
+            Must have 'update' method.  Mutable object to provide a side-band to
+            return fitting parameters + data points
+        """
+        self.motor = motor
+        self.dets = detectors
+        self.target_field = target_field
+        self.initial_center = initial_center
+        self.initial_width = initial_width
+        self.output_mutable = output_mutable
+        self.tol = tolerance
+
+    @property
+    def min_cen(self):
+        return self.initial_center - self.SIGMA * self.initial_width
+
+    @property
+    def max_cen(self):
+        return self.initial_center + self.SIGMA * self.initial_width
+
+    def _gen(self):
+        # For thread safety (paranoia) make copies of stuff
+        dets = self.dets
+        motor = self.motor
+        target_field = self.target_field
+        initial_center = self.initial_center
+        initial_width = self.initial_width
+        tol = self.tol
+        min_cen = self.min_cen
+        max_cen = self.max_cen
+        seen_x = deque()
+        seen_y = deque()
+        for x in np.linspace(initial_center - initial_width,
+                             initial_center + initial_width,
+                             self.NUM_SAMPLES, endpoint=True):
+            yield Msg('set', motor, x)
+            yield Msg('create')
+            ret_mot = yield Msg('read', motor)
+            key, = ret_mot.keys()
+            seen_x.append(ret_mot[key]['value'])
+            for det in dets:
+                yield Msg('trigger', det, block_group='B')
+            for det in dets:
+                yield Msg('wait', None, 'B')
+            for det in dets:
+                ret_det = yield Msg('read', det)
+                if target_field in ret_det:
+                    seen_y.append(ret_det[target_field]['value'])
+            yield Msg('save')
+
+        model = GaussianModel() + LinearModel()
+        guesses = {'amplitude': np.max(seen_y),
+                'center': initial_center,
+                'sigma': initial_width,
+                'slope': 0, 'intercept': 0}
+        while True:
+            x = np.asarray(seen_x)
+            y = np.asarray(seen_y)
+            res = model.fit(y, x=x, **guesses)
+            old_guess = guesses
+            guesses = res.values
+            if np.abs(old_guess['center'] - guesses['center']) < tol:
+                break
+            next_cen = np.clip(guesses['center'] +
+                            np.random.randn(1) * guesses['sigma'],
+                            min_cen, max_cen)
+            yield Msg('set', motor, next_cen)
+            yield Msg('create')
+            ret_mot = yield Msg('read', motor)
+            key, = ret_mot.keys()
+            seen_x.append(ret_mot[key]['value'])
+            for det in dets:
+                yield Msg('trigger', det, block_group='B')
+            for det in dets:
+                yield Msg('wait', None, 'B')
+            for det in dets:
+                ret_det = yield Msg('read', det)
+                if target_field in ret_det:
+                    seen_y.append(ret_det[target_field]['value'])
+            yield Msg('save')
+
+        yield Msg('set', motor, np.clip(guesses['center'], min_cen, max_cen))
+
+        if self.output_mutable is not None:
+            self.output_mutable.update(guesses)
+            self.output_mutable['x'] = np.array(seen_x)
+            self.output_mutable['y'] = np.array(seen_y)
+            self.output_mutable['model'] = res
