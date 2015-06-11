@@ -145,6 +145,8 @@ class LivePlot(CallbackBase):
         fig, ax = plt.subplots()
         plt.show()
         self.ax = ax
+        self.ax.set_ylabel(y)
+        self.ax.set_xlabel(x or 'sequence #')
         self.y = y
         self.x = x
         self.kwargs = kwargs
