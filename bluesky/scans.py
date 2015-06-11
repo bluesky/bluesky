@@ -445,8 +445,9 @@ class AdaptiveDscan(AdaptiveScanBase):
 
 
 class Center(Scan):
-    SIGMA = 6
-    NUM_SAMPLES = 5
+    RANGE = 2  # in sigma, first sample this range around the guess
+    RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
+    NUM_SAMPLES = 10 
 
     def __init__(self, motor, detectors, target_field, initial_center, initial_width,
                 tolerance=0.1, output_mutable=None):
@@ -493,11 +494,11 @@ class Center(Scan):
 
     @property
     def min_cen(self):
-        return self.initial_center - self.SIGMA * self.initial_width
+        return self.initial_center - self.RANGE_LIMIT * self.initial_width
 
     @property
     def max_cen(self):
-        return self.initial_center + self.SIGMA * self.initial_width
+        return self.initial_center + self.RANGE_LIMIT * self.initial_width
 
     def _gen(self):
         # For thread safety (paranoia) make copies of stuff
@@ -511,8 +512,8 @@ class Center(Scan):
         max_cen = self.max_cen
         seen_x = deque()
         seen_y = deque()
-        for x in np.linspace(initial_center - initial_width,
-                             initial_center + initial_width,
+        for x in np.linspace(initial_center - self.RANGE * initial_width,
+                             initial_center + self.RANGE * initial_width,
                              self.NUM_SAMPLES, endpoint=True):
             yield Msg('set', motor, x)
             yield Msg('create')
