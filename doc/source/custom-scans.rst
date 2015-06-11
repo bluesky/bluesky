@@ -385,7 +385,8 @@ own.
 
 .. code-block:: python
 
-    def adaptive(motor, det, start, stop, min_step, max_step, target_delta):
+    def adaptive(motor, det, start, stop, min_step, max_step, target_delta,
+                 backstep):
         THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
 
         next_pos = start
@@ -419,7 +420,7 @@ own.
 
             new_step = np.clip(target_delta / slope, min_step, max_step)
             # if we over stepped, go back and try again
-            if new_step < step * THRESHOLD:
+            if backstep and (new_step < step * THRESHOLD):
                 next_pos -= step
             else:
                 past_I = cur_I
