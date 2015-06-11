@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class CallbackBase(object):
     def __init__(self):
-        super(CallbackBase, self).__init__()
+        super().__init__()
 
     def __call__(self, doc):
         """Inspect the document, infer its type, and dispatch it."""
@@ -142,6 +142,7 @@ class LivePlot(CallbackBase):
         >>> my_plotter = live_scalar_plotter(ax, 'det1', 'motor1')
         >>> RE(my_scan, subs={'event': my_plotter})
         """
+        super().__init__()
         fig, ax = plt.subplots()
         plt.show()
         self.ax = ax
