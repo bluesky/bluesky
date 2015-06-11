@@ -252,7 +252,7 @@ class LiveTable(CallbackBase):
 
     def write(self, s):
         if self.logbook:
-            self.logbook(s)
+            self.logbook(s, d)
         else:
             print(s)
 
@@ -273,7 +273,7 @@ class LiveTable(CallbackBase):
         sys.stdout.flush()
 
     def _print_table_header(self):
-        self.write('\n'.join(str(self.table).split('\n')[:3]))
+        print('\n'.join(str(self.table).split('\n')[:3]))
 
     ### RunEngine document callbacks
 
@@ -293,14 +293,14 @@ class LiveTable(CallbackBase):
         for key in self.field_column_names:
             if key in self._filestore_keys:
                 reprint_header = True
-                self.write('%s is a non-scalar field. '
+                print('%s is a non-scalar field. '
                            'Computing the sum instead' % key)
                 key = 'sum(%s)' % key
                 key = key[:self.data_field_width]
             new_names.append(key)
         self.field_column_names = new_names
         if reprint_header:
-            self.write('\n\n')
+            print('\n\n')
             self.create_table()
             # self._print_table_header()
 
@@ -326,7 +326,7 @@ class LiveTable(CallbackBase):
         if self.rowwise:
             # Print the last row of data only.
             # [-1] is the bottom border
-            self.write(str(self.table).split('\n')[-2])
+            print(str(self.table).split('\n')[-2])
             # only print header intermittently for rowwise table printing
             if self.num_events_since_last_header >= self.print_header_interval:
                 self._print_table_header()
@@ -334,7 +334,7 @@ class LiveTable(CallbackBase):
             self.num_events_since_last_header += 1
         else:
             # print the whole table
-            self.write(self.table)
+            print(self.table)
 
         sys.stdout.flush()
 
@@ -347,7 +347,11 @@ class LiveTable(CallbackBase):
             Not explicitly used in this function, other than to signal that
             the run has been completed
         """
-        self.write(str(self.table).split('\n')[-1])
+        table_str = str(self.table).split('\n')[-1]
+        if self.logbook:
+            self.logbook(table_str, {
+                'run_start_uid': stop_document.run_start_uid})
+        print(table_str)
         # remove all data from the table
         self.table.clear_rows()
         # reset the filestore keys
