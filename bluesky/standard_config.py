@@ -91,7 +91,7 @@ def olog_wrapper(logbook, logbooks):
         d = {k: repr(v) for k, v in d.items()}
         logbook.log(msg,
                     # TODO Figure out why this returns 500 from olog.
-                    # properties={'OphydScan': d},
+                    properties={'Bluesky': d},
                     ensure=True,
                     logbooks=logbooks)
 
