@@ -3,7 +3,7 @@ from .utils import Struct
 import numpy as np
 
 
-class Scan(Struct):
+class ScanBaseClass(Struct):
     """
     This is a base class for writing reusable scans.
 
@@ -13,23 +13,24 @@ class Scan(Struct):
     To create a new sub-class you need to over-ride two things:
 
     - a ``_gen`` method which yields the instructions of the scan.
-    - optionally, a class level ``_fields`` attribute which is used to construct the init 
-      signature via meta-class magic.
+    - optionally, a class level ``_fields`` attribute which is used to
+      construct the init signature via meta-class magic.
 
 
-    If you do not use the class-level ``_fields`` and write a custom ``__init__`` (which you need
-    to do if you want to have optional kwargs) you should provide an instance level ``_fields`` so
-    that the logbook related messages will work.
+    If you do not use the class-level ``_fields`` and write a custom
+    ``__init__`` (which you need to do if you want to have optional kwargs)
+    you should provide an instance level ``_fields`` so that the logbook
+    related messages will work.
     """
     def __iter__(self):
         yield Msg('logbook', None, self.logmsg(), **self.logdict())
         yield from self._gen()
-            
+
     def logmsg(self):
         args = []
         for k in self._fields:
             args.append("{k}={{{k}!r}}".format(k=k))
-        
+
         call_str = "RE({{scn_cls}}({args}))".format(args=', '.join(args))
 
         msgs = ['Scan Class: {scn_cls}', '']
@@ -46,10 +47,12 @@ class Scan(Struct):
         return out_dict
 
     def _gen(self):
-        raise NotImplementedError("Scan is a base class, you must sub-class it and "
-                                  "override this method (_gen)")
+        raise NotImplementedError("ScanBaseClass is a base class, you must "
+                                  "sub-class it and override this method "
+                                  "(_gen)")
 
-class Count(Scan):
+
+class Count(ScanBaseClass):
     """
     Take one or more readings from the detectors. Do not move anything.
 
@@ -80,7 +83,7 @@ class Count(Scan):
         self.detectors = detectors
         self.num = num
         self.delay = delay
-        # We define _fields not for Struct, but for Scan.log* methods.
+        # We define _fields not for Struct, but for ScanBaseClass.log* methods.
         self._fields = ['detectors', 'num', 'delay']
 
     def _gen(self):
@@ -103,7 +106,7 @@ class Count(Scan):
             yield Msg('deconfigure', d)
 
 
-class Scan1D(Scan):
+class Scan1D(ScanBaseClass):
     _fields = ['motor', 'detectors', 'steps']
 
     def _gen(self):
@@ -304,7 +307,7 @@ class LogDscan(Dscan):
         yield from super()._gen()
 
 
-class _AdaptiveScan(Scan1D):
+class AdaptiveScanBaseClass(Scan1D):
     _fields = ['motor', 'detectors', 'target_field', 'start', 'stop',
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
@@ -366,7 +369,7 @@ class _AdaptiveScan(Scan1D):
             yield Msg('deconfigure', d)
 
 
-class AdaptiveAscan(_AdaptiveScan):
+class AdaptiveAscan(AdaptiveScanBaseClass):
     """
     Absolute scan over one variable with adaptively tuned step size
 
@@ -396,7 +399,7 @@ class AdaptiveAscan(_AdaptiveScan):
         yield from super()._gen()
 
 
-class AdaptiveDscan(_AdaptiveScan):
+class AdaptiveDscan(AdaptiveScanBaseClass):
     """
     Delta (relative) scan over one variable with adaptively tuned step size
 
