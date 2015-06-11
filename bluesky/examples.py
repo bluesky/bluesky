@@ -580,7 +580,9 @@ def find_center_gen(motor, det, motor_name, det_name,
         guesses = res.values
         if np.abs(old_guess['center'] - guesses['center']) < tol:
             break
-        next_cen = np.clip(guesses['center'], min_cen, max_cen)
+        next_cen = np.clip(guesses['center'] +
+                           np.random.randn(1) * guesses['sigma'],
+                           min_cen, max_cen)
         yield Msg('set', motor, next_cen)
         yield Msg('trigger', det)
         yield Msg('sleep', None, .1,)
@@ -590,6 +592,8 @@ def find_center_gen(motor, det, motor_name, det_name,
         yield Msg('save')
         seen_y.append(ret_det[det_name]['value'])
         seen_x.append(ret_mot[motor_name]['value'])
+
+    yield Msg('set', motor, np.clip(guesses['center'], min_cen, max_cen))
 
     if output_mutable is not None:
         output_mutable.update(guesses)
