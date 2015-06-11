@@ -341,14 +341,15 @@ class _AdaptiveScan(Scan1D):
                 new_step = np.clip(self.target_delta / slope, self.min_step,
                                    self.max_step)
             else:
-                new_step = step
+                new_step = np.min([step * 1.1, self.max_step])
 
             # if we over stepped, go back and try again
             if new_step < step * self.THRESHOLD:
                 next_pos -= step
+                step = new_step
             else:
                 past_I = cur_I
-            step = new_step
+                step = 0.2 * new_step + 0.8 * step
             next_pos += step
         for d in dets:
             yield Msg('deconfigure', d)
