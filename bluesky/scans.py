@@ -416,8 +416,8 @@ class AdaptiveDscan(AdaptiveScanBase):
         any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
-    target_detector : obj
-        detector whose output is the focus of the adaptive tuning
+    target_field : string
+        data field whose output is the focus of the adaptive tuning
     start : float
         starting position of motor
     stop : float
