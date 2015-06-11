@@ -595,6 +595,7 @@ def find_center_gen(motor, det, motor_name, det_name,
         output_mutable.update(guesses)
         output_mutable['x'] = np.array(seen_x)
         output_mutable['y'] = np.array(seen_y)
+        output_mutable['model'] = res
 
 
 def fly_gen(flyer, start, stop, step):
