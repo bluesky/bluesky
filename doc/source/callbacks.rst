@@ -175,7 +175,7 @@ unsubscribe later.
 
 .. ipython:: python
 
-    RE.unsubscribe(2)
+    RE.unsubscribe(7)
 
 Live plot
 +++++++++
@@ -231,8 +231,9 @@ The base class, ``CallbackBase``, takes care of dispatching each Document to
 the corresponding method. If your application does not need all four, you may
 simple omit methods that aren't required.
 
-Associating Subscriptions with A Type of Scan
----------------------------------------------
+
+Putting subscriptions into scans
+--------------------------------
 
 .. warning::
 
@@ -240,24 +241,23 @@ Associating Subscriptions with A Type of Scan
     :doc:`custom-scans`. If you haven't at least skimmed that section of the
     documents, head over to that page and then revisit this.
 
-There are three ways to invoke a subscription. The first two were adressed
+To summarize, there are three ways to invoke a subscription. The first two were adressed
 above.
 
-1. Associate a subscription with the RunEngine This affects all future runs.
+1. Use a subscription for all future runs.
    
 .. code-block:: python
 
     RE.subscribe(name, func)
 
-2. Subscribe on run-by-run basis, affecting only one run at a time.
+2. Use a subscription for one run at a time.
 
 .. code-block:: python
    
     RE(my_scan, {name: func})
     RE(my_scan, {name, [func1, func2]}  # P.S. A list of functions works, too.
 
-3. Subscriptions inside the scan itself, affecting all executions of that
-   particular scan.
+3. Use subscriptions for every run of a given scan.
 
 To demonstrate #3, we'll make a variant of the built-in ``Count`` scan that
 prints a table using the ``LiveTable`` callback.
@@ -269,15 +269,16 @@ prints a table using the ``LiveTable`` callback.
         # Here we cheat. LiveTable doesn't actually use the *contents* of the
         # Document from 'start', so we give it a fake one to cue setup.
         table.start({})
-        yield Msg('subscribe', None, 'all', table)
+        yield Msg('subscribe', None, 'descriptor', table)
+        yield Msg('subscribe', None, 'event', table)
+        yield Msg('subscribe', None, 'stop', table)
         yield from Count(detectors)
-        table.stop({})  # cheating again
     RE(count_with_table(dets))
 
 One detail to notice is that callbacks subscribed inside the scan have
 unreliable access to the 'start' Document: it might not still be there by the
 time they start listening for it. To be safe (specifically, to avoid a race
-condition, subscriptions inside scans should be never subscribe to 'start'.
+condition) the RunEngine does not allow Messages to subscribe to 'start'.
 
 Forunately, callbacks object just use 'start' to signal some setup code. For
 like creating a new table. Here, we handle that setup manually. Likewise with
@@ -295,12 +296,11 @@ This slightly fancier invocation would makes the object returned by
             table = LiveTable(self.detectors)
             yield Msg('subscribe', None, 'descriptor', table)
             yield Msg('subscribe', None, 'event', table)
+            yield Msg('subscribe', None, 'stop', table)
             table.start({})
             yield from super()._gen()
-            table.stop({})
     c = CountWithTable(dets)
     RE(c)
-            
 
 Critical Subscriptions
 ----------------------
