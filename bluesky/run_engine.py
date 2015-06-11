@@ -760,13 +760,21 @@ class RunEngine:
             return self.logbook(log_message, d)
 
     def _configure(self, msg):
+        # If an object has no 'configure' method, assume it does not need
+        # configuring.
         _, obj, args, kwargs = msg
+        if not hasattr(obj, 'configure'):
+            return None
         result = obj.configure(*args, **kwargs)
         self._configured.append(obj)
         return result
 
     def _deconfigure(self, msg):
+        # If an object has no 'deconfigure' method, assume it does not need
+        # deconfiguring.
         _, obj, args, kwargs = msg
+        if not hasattr(obj, 'deconfigure'):
+            return None
         # Deconfigure is not allowed to have args or kwargs.
         # TODO Address this in Message validation.
         result = obj.deconfigure()
