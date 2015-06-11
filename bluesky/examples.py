@@ -28,6 +28,10 @@ class Base:
     def deconfigure(self, *args, **kwargs):
         pass
 
+    @property
+    def done(self):
+        return self.ready
+
 
 class Reader(Base):
     _klass = 'reader'
@@ -45,7 +49,7 @@ class Reader(Base):
         return data
 
     def trigger(self):
-        pass
+        return self
 
 
 class Mover(Base):
@@ -76,6 +80,7 @@ class Mover(Base):
             self._data = {f: {'value': val, 'timestamp': ttime.time()}
                           for f in self._fields}
         self.ready = True
+        return self
 
     def settle(self):
         pass
@@ -112,6 +117,7 @@ class SynGauss(Reader):
         self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
+        return self
 
     def read(self):
         return self._data
@@ -153,6 +159,7 @@ class SynGauss2D(Reader):
         self._data = {self._name: {'value': fs_uid, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
+        return self
 
     def read(self):
         return self._data
@@ -229,6 +236,10 @@ class MockFlyer:
     def ready(self):
         return self._thread and not self._thread.is_alive()
 
+    @property
+    def done(self):
+        return self.ready
+
     def describe(self):
         dd = dict()
         dd.update(self._mot.describe())
@@ -241,6 +252,7 @@ class MockFlyer:
         self._thread = threading.Thread(target=self._scan,
                                                 name='mock_fly_thread')
         self._thread.start()
+        return self
 
     def collect(self):
         if not self.ready:
@@ -251,12 +263,17 @@ class MockFlyer:
 
     def _scan(self):
         for p in self._steps:
-            self._mot.set(p)
+            stat = self._mot.set(p)
             while True:
-                if self._mot.ready:
+                if stat.done:
                     break
                 ttime.sleep(0.01)
-            self._detector.trigger()
+            stat = self._detector.trigger()
+            while True:
+                if stat.done:
+                    break
+                ttime.sleep(0.01)
+
             event = dict()
             event['time'] = ttime.time()
             event['data'] = dict()
@@ -287,6 +304,7 @@ class FlyMagic(Base):
     def kickoff(self):
         self._time = ttime.time()
         self._fly_count += 1
+        return self
 
     def describe(self):
         return [{k: {'source': self._name, 'dtype': 'number'}
