@@ -148,6 +148,7 @@ class LivePlot(CallbackBase):
         self.ax = ax
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
+        self.ax.margins(.1)
         self.y = y
         self.x = x
         self.kwargs = kwargs
