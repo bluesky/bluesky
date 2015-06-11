@@ -1,4 +1,4 @@
-from nose.tools import assert_equal, assert_greater, assert_in
+from nose.tools import assert_equal, assert_greater, assert_in, assert_true
 from bluesky.scans import *
 from bluesky.callbacks import *
 from bluesky.standard_config import ascan, dscan, ct
@@ -57,8 +57,9 @@ def test_log_dscan():
 
 
 def test_adaptive_ascan():
-    scan1 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1)
-    scan2 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2)
+    scan1 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, True)
+    scan2 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2, True)
+    scan3 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -70,10 +71,16 @@ def test_adaptive_ascan():
     assert_greater(counter1.value, counter2.value)
     assert_equal(actual_traj[0], 0)
 
+    actual_traj = []
+    col = collector('motor', actual_traj)
+    RE(scan3, {'event': col})
+    monotonic_increasing = np.all(np.diff(actual_traj) > 0)
+    assert_true(monotonic_increasing)
 
 def test_adaptive_dscan():
-    scan1 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1)
-    scan2 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2)
+    scan1 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, True)
+    scan2 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2, True)
+    scan3 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -86,6 +93,12 @@ def test_adaptive_dscan():
     RE(scan2, subs={'event': counter2})
     assert_greater(counter1.value, counter2.value)
     assert_equal(actual_traj[0], 1)
+
+    actual_traj = []
+    col = collector('motor', actual_traj)
+    RE(scan3, {'event': col})
+    monotonic_increasing = np.all(np.diff(actual_traj) > 0)
+    assert_true(monotonic_increasing)
 
 
 def test_count():

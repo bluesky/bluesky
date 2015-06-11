@@ -79,21 +79,8 @@ class Count(Scan):
         self.detectors = detectors
         self.num = num
         self.delay = delay
-
-    def logdict(self):
-        out = super().logdict()
-        out['detectors'] = self.detectors
-        out['num'] = self.num
-        out['delay'] = self.delay
-        return out
-
-    def logmsg(self):
-        base_msg = super().logmsg()
-        msgs = [base_msg]
-        msgs.append('detectors: {detectors!r}')
-        msgs.append('num: {num}')
-        msgs.append('delay: {delay}')
-        return '\n'.join(msgs)
+        # We define _fields not for Struct, but for Scan.log* methods.
+        self._fields = ['detectors', 'num', 'delay']
 
     def _gen(self):
         dets = self.detectors
@@ -318,7 +305,7 @@ class LogDscan(Dscan):
 
 class _AdaptiveScan(Scan1D):
     _fields = ['motor', 'detectors', 'target_field', 'start', 'stop',
-               'min_step', 'max_step', 'target_delta']
+               'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
 
     def _gen(self):
@@ -367,7 +354,7 @@ class _AdaptiveScan(Scan1D):
                 new_step = np.min([step * 1.1, self.max_step])
 
             # if we over stepped, go back and try again
-            if new_step < step * self.THRESHOLD:
+            if self.backstep and (new_step < step * self.THRESHOLD):
                 next_pos -= step
                 step = new_step
             else:
@@ -400,6 +387,8 @@ class AdaptiveAscan(_AdaptiveScan):
         largest step for slow-chaning regions
     target_delta : float
         desired fractional change in detector signal between steps
+    backstep : bool
+        whether backward steps are allowed -- this is concern with some motors
     """
     def _gen(self):
         self._offset = 0
@@ -428,6 +417,8 @@ class AdaptiveDscan(_AdaptiveScan):
         largest step for slow-chaning regions
     target_delta : float
         desired fractional change in detector signal between steps
+    backstep : bool
+        whether backward steps are allowed -- this is concern with some motors
     """
     def _gen(self):
         ret = yield Msg('read', self.motor)

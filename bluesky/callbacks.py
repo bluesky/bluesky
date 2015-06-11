@@ -233,7 +233,8 @@ class LiveTable(CallbackBase):
     max_post_decimal = 2
 
     def __init__(self, fields=None, rowwise=True, print_header_interval=50,
-                 max_post_decimal=2, max_pre_decimal=5, data_field_width=12):
+                 max_post_decimal=2, max_pre_decimal=5, data_field_width=12,
+                 logbook=None):
         self.data_field_width = data_field_width
         self.max_pre_decimal = max_pre_decimal
         self.max_post_decimal = max_post_decimal
@@ -245,8 +246,15 @@ class LiveTable(CallbackBase):
         self.field_column_names = [field for field in self.fields]
         self.num_events_since_last_header = 0
         self.print_header_interval = print_header_interval
+        self.logbook = logbook
         self._filestore_keys = set()
         # self.create_table()
+
+    def write(self, s):
+        if self.logbook:
+            self.logbook(s)
+        else:
+            print(s)
 
     def create_table(self):
         self.table = PrettyTable(field_names=(self.base_fields +
@@ -265,7 +273,7 @@ class LiveTable(CallbackBase):
         sys.stdout.flush()
 
     def _print_table_header(self):
-        print('\n'.join(str(self.table).split('\n')[:3]))
+        self.write('\n'.join(str(self.table).split('\n')[:3]))
 
     ### RunEngine document callbacks
 
@@ -285,15 +293,14 @@ class LiveTable(CallbackBase):
         for key in self.field_column_names:
             if key in self._filestore_keys:
                 reprint_header = True
-                print('\n')
-                print('%s is a non-scalar field. Computing the sum instead' %
-                      key)
+                self.write('%s is a non-scalar field. '
+                           'Computing the sum instead' % key)
                 key = 'sum(%s)' % key
                 key = key[:self.data_field_width]
             new_names.append(key)
         self.field_column_names = new_names
         if reprint_header:
-            print('\n\n')
+            self.write('\n\n')
             self.create_table()
             # self._print_table_header()
 
@@ -318,7 +325,8 @@ class LiveTable(CallbackBase):
 
         if self.rowwise:
             # Print the last row of data only.
-            print(str(self.table).split('\n')[-2])  # [-1] is the bottom border
+            # [-1] is the bottom border
+            self.write(str(self.table).split('\n')[-2])
             # only print header intermittently for rowwise table printing
             if self.num_events_since_last_header >= self.print_header_interval:
                 self._print_table_header()
@@ -326,7 +334,7 @@ class LiveTable(CallbackBase):
             self.num_events_since_last_header += 1
         else:
             # print the whole table
-            print(self.table)
+            self.write(self.table)
 
         sys.stdout.flush()
 
@@ -339,7 +347,7 @@ class LiveTable(CallbackBase):
             Not explicitly used in this function, other than to signal that
             the run has been completed
         """
-        print(str(self.table).split('\n')[-1])
+        self.write(str(self.table).split('\n')[-1])
         # remove all data from the table
         self.table.clear_rows()
         # reset the filestore keys
