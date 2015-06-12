@@ -640,8 +640,8 @@ class RunEngine:
             # We don't not have an Event Descriptor for this set.
             # Better also check to see if we have a run start and create one
             # if we do not
-            # if not self.has_run_start:
-            #     self._new_run(Msg('start', None, None, self.metadata))
+            if not self.has_run_start:
+                self._new_run(Msg('start', None, None, self.metadata))
             data_keys = {}
             [data_keys.update(self._describe_cache[obj]) for obj in objs_read]
             _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls
