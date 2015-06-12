@@ -18,6 +18,16 @@ else:
 RE = setup_test_run_engine()
 
 
+def setup():
+    from metadatastore.utils.testing import mds_setup
+    mds_setup()
+
+
+def teardown():
+    from metadatastore.utils.testing import mds_teardown
+    mds_teardown()
+
+
 def test_msgs():
     m = Msg('set', motor, {'motor': 5})
     assert_equal(m.command, 'set')

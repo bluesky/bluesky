@@ -217,6 +217,7 @@ class RunEngine:
             'configure': self._configure,
             'deconfigure': self._deconfigure,
             'subscribe': self._subscribe,
+            'new_run': self._new_run,
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -502,10 +503,13 @@ class RunEngine:
         self._resume()  # to create RunStop Document
 
     def _run(self, gen, metadata):
+        # We, uh, don't have a run start yet. This will create a RunStart
+        # when a "start" message is received or, at the latest possible point
+        #  in time, i.e., when an event descriptor is created
+        self.has_run_start = False
         # stash the metadata (in this thread only?)
         self.metadata = metadata
         gen = iter(gen)  # no-op on generators; needed for classes
-        self._start_run(Msg('start', None, None, self.metadata))
         response = None
         reason = ''
         try:
@@ -603,8 +607,9 @@ class RunEngine:
                        "process messages until the next 'checkpoint' "
                        "command.")
 
-    def _start_run(self, msg):
+    def _new_run(self, msg):
         """Create and emit a run start document"""
+        self.has_run_start = True
         self.metadata.update(msg.kwargs)
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **self.metadata)
         self.debug("*** Emitted RunStart:\n%s" % doc)
@@ -633,6 +638,10 @@ class RunEngine:
         # Event Descriptor
         if objs_read not in self._descriptor_uids:
             # We don't not have an Event Descriptor for this set.
+            # Better also check to see if we have a run start and create one
+            # if we do not
+            # if not self.has_run_start:
+            #     self._new_run(Msg('start', None, None, self.metadata))
             data_keys = {}
             [data_keys.update(self._describe_cache[obj]) for obj in objs_read]
             _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls
@@ -777,7 +786,7 @@ class RunEngine:
             msg.append('--------')
             msg.append(_run_engine_log_template(self.metadata))
             log_message = '\n'.join(msg)
-                       
+
             d['uid'] = self._run_start_uid
             d.update(self.md)
             return self.logbook(log_message, d)
