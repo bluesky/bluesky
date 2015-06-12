@@ -374,7 +374,7 @@ def _get_obj_fields(fields):
             string_fields.append(field)
         else:
             try:
-                field_list = field.describe().keys()
+                field_list = sorted(field.describe().keys())
             except AttributeError:
                 raise ValueError("Fields must be strings or objects with a "
                                  "'describe' method that return a dict.")
