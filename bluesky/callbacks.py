@@ -252,7 +252,7 @@ class LiveTable(CallbackBase):
 
     def write(self, s):
         if self.logbook:
-            self.logbook(s, d)
+            self.logbook(s, {'run_start_uid': self.run_start_uid})
         else:
             print(s)
 
@@ -278,7 +278,9 @@ class LiveTable(CallbackBase):
     ### RunEngine document callbacks
 
     def start(self, start_document):
+        self.run_start_uid = start_document['uid']
         self.create_table()
+
 
     def descriptor(self, descriptor):
         # find all keys that are filestore keys
@@ -347,11 +349,14 @@ class LiveTable(CallbackBase):
             Not explicitly used in this function, other than to signal that
             the run has been completed
         """
-        table_str = str(self.table).split('\n')[-1]
         if self.logbook:
-            self.logbook(table_str, {
-                'run_start_uid': stop_document.run_start_uid})
-        print(table_str)
+            # Finnicky styling....
+            my_table = str(self.table).split('\n')
+            my_table.pop(3)  # remove blank line
+            my_table = '\n'.join(my_table)
+            self.logbook(str(my_table), {
+                'run_start_uid': stop_document['run_start']})
+        print(str(self.table).split('\n')[-1])
         # remove all data from the table
         self.table.clear_rows()
         # reset the filestore keys
