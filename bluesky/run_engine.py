@@ -266,6 +266,7 @@ class RunEngine:
                 # queue is empty
                 pass
 
+    def _unsubscribe(self):
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
             self.unsubscribe(cid)
@@ -400,6 +401,7 @@ class RunEngine:
         if subs is None:
             subs = {}
         self._clear()
+        self._unsubscribe()
         for name, funcs in subs.items():
             if not isinstance(funcs, Iterable):
                 # Take funcs to be a single function.
@@ -609,7 +611,7 @@ class RunEngine:
 
     def _new_run(self, msg):
         """Create and emit a run start document"""
-        self._clear
+        self._clear()
         self.metadata.update(msg.kwargs)
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **self.metadata)
         self.debug("*** Emitted RunStart:\n%s" % doc)
