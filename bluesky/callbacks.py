@@ -140,7 +140,7 @@ class LivePlot(CallbackBase):
 
         Examples
         --------
-        >>> my_plotter = LivePlot('det', 'motor', legend_name=['sample'])
+        >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
         >>> RE(my_scan, subs={'event': my_plotter})
         """
         super().__init__()
@@ -271,12 +271,6 @@ class LiveTable(CallbackBase):
         self._filestore_keys = set()
         # self.create_table()
 
-    def write(self, s):
-        if self.logbook:
-            self.logbook(s, {'run_start_uid': self.run_start_uid})
-        else:
-            print(s)
-
     def create_table(self):
         self.table = PrettyTable(field_names=(self.base_fields +
                                               self.field_column_names))
@@ -378,6 +372,7 @@ class LiveTable(CallbackBase):
             self.logbook(str(my_table), {
                 'run_start_uid': stop_document['run_start']})
         print(str(self.table).split('\n')[-1])
+        sys.stdout.flush()
         # remove all data from the table
         self.table.clear_rows()
         # reset the filestore keys

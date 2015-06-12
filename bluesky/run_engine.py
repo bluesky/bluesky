@@ -221,8 +221,8 @@ class RunEngine:
             'configure': self._configure,
             'deconfigure': self._deconfigure,
             'subscribe': self._subscribe,
-            'new_run': self._new_run,
-            'end_run': self._end_run,
+            'start_run': self._start_run,
+            'stop_run': self._stop_run,
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -442,7 +442,7 @@ class RunEngine:
                 except KeyError:
                     if field not in self._REQUIRED_FIELDS:
                         continue
-                    raise KeyError("There is no entry for '{0}'."
+                    raise KeyError("There is no entry for '{0}'. "
                                    "It is required for this run. In future "
                                    "runs, the most recent entry can be reused "
                                    "unless a new value is specified."
@@ -516,7 +516,7 @@ class RunEngine:
         # We, uh, don't have a run start yet. This will create a RunStart
         # when a "start" message is received or, at the latest possible point
         #  in time, i.e., when an event descriptor is created
-        self.has_run_start = False
+        self._has_run_start = False
         # stash the metadata (in this thread only?)
         # mydata = threading.local()
         # mydata.metadata = metadata
@@ -547,7 +547,7 @@ class RunEngine:
             # in case we were interrupted between 'configure' and 'deconfigure'
             for obj in self._configured:
                 obj.deconfigure()
-            self._end_run(Msg('end_run', reason=reason))
+            self._stop_run(Msg('stop_run', reason=reason))
             sys.stdout.flush()
             if self.state.is_aborting or self.state.is_running:
                 self.state.stop()
@@ -614,12 +614,14 @@ class RunEngine:
                        "process messages until the next 'checkpoint' "
                        "command.")
 
-    def _new_run(self, msg):
+    def _start_run(self, msg):
         """Create and emit a run start document"""
         if self._has_run_start:
             # need to create a run stop document
             self._exit_status = 'success'
-            self._end_run(Msg('end_run'))
+            self._stop_run(Msg('stop_run', reason=''))
+            # sleep for a short while before clearing the queues
+            ttime.sleep(.5)
         # presumably we could call _clear() after the run stop is created or
         # before the run start is created. I think calling _clear() just
         # before the run start is created is the better option because then
@@ -637,10 +639,11 @@ class RunEngine:
         self.debug("*** Emitted RunStart:\n%s" % doc)
         self._has_run_start = True
 
-    def _end_run(self, msg):
+    def _stop_run(self, msg):
         doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                    uid=new_uid(), exit_status=self._exit_status, **msg.kwargs)
         self.debug("*** Emitting RunStop:\n%s" % doc)
+        # print("*** Emitting RunStop:\n%s" % doc)
         self.emit('stop', doc)
         self.debug("*** Emitted RunStop:\n%s" % doc)
 
@@ -670,7 +673,7 @@ class RunEngine:
             # Better also check to see if we have a run start and create one
             # if we do not
             if not self._has_run_start:
-                self._new_run(Msg('start', None, None, self.metadata))
+                self._start_run(Msg('start_run', None, None, self.metadata))
             data_keys = {}
             [data_keys.update(self._describe_cache[obj]) for obj in objs_read]
             _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls

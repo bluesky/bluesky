@@ -685,7 +685,7 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
         for sample, sample_position, peak_pos in zip(sample_names,
                                                      sample_positions,
                                                      peak_centers):
-            yield Msg('new_run', sample_name=sample, target_temp=temp)
+            yield Msg('start_run', sample_name=sample, target_temp=temp)
             detector.center = peak_pos
             detector.sigma = .5 + .25 * idx
             detector.noise_factor = .05 + idx * 0.1
