@@ -143,8 +143,9 @@ class LivePlot(CallbackBase):
         >>> RE(my_scan, subs={'event': my_plotter})
         """
         super().__init__()
-        fig, ax = plt.subplots()
-        plt.show()
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fig.show()
         self.ax = ax
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
