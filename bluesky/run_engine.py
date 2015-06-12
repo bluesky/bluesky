@@ -247,7 +247,7 @@ class RunEngine:
 
         self.verbose = False
 
-    def _clear(self):
+    def _clear_run_cache(self):
         self._bundling = False
         self._objs_read.clear()
         self._read_cache.clear()
@@ -271,7 +271,7 @@ class RunEngine:
                 # queue is empty
                 pass
 
-    def _unsubscribe(self):
+    def _unsubscribe_tmp_subs(self):
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
             self.unsubscribe(cid)
@@ -405,8 +405,8 @@ class RunEngine:
         """
         if subs is None:
             subs = {}
-        self._clear()
-        self._unsubscribe()
+        self._clear_run_cache()
+        self._unsubscribe_tmp_subs()
         for name, funcs in subs.items():
             if not isinstance(funcs, Iterable):
                 # Take funcs to be a single function.
@@ -622,13 +622,13 @@ class RunEngine:
             self._stop_run(Msg('stop_run', reason=''))
             # sleep for a short while before clearing the queues
             ttime.sleep(.5)
-        # presumably we could call _clear() after the run stop is created or
-        # before the run start is created. I think calling _clear() just
+        # presumably we could call _clear_run_cache() after the run stop is created or
+        # before the run start is created. I think calling _clear_run_cache() just
         # before the run start is created is the better option because then
         # the RunEngine maintains any left over state from the last run for
         # as long as possible which could be helpful in debugging weird state
         # issues.
-        self._clear()
+        self._clear_run_cache()
 
         self.metadata.update(msg.kwargs)
         # update the scan id
