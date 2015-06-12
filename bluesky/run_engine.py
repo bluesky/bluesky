@@ -233,7 +233,7 @@ class RunEngine:
         loop.call_soon(self._check_for_trouble)
         loop.call_soon(self._check_for_signals)
 
-    def _clear(self):
+    def _clear_run_cache(self):
         self._metadata_per_call.clear()
         self._metadata_per_run.clear()
         self._bundling = False
@@ -256,10 +256,16 @@ class RunEngine:
         self._reason = ''
         self._task = None
 
+    def _unsubscribe_tmp_subs(self):
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
             self.unsubscribe(cid)
         self._temp_callback_ids.clear()
+
+    def reset(self):
+        self._clear_run_cache()
+        self._unsubscribe_tmp_subs()
+        self.dispatcher.unsubscribe_all()
 
     @property
     def resumable(self):
@@ -416,7 +422,7 @@ class RunEngine:
         # Register temporary subscriptions. Save tokens to unsubscribe later.
         if subs is None:
             subs = {}
-        self._clear()
+        self.reset()
         for name, funcs in subs.items():
             if not isinstance(funcs, Iterable):
                 # Take funcs to be a single function.
@@ -922,6 +928,12 @@ class Dispatcher:
         """
         for private_token in self._token_mapping[token]:
             self.cb_registry.disconnect(private_token)
+
+    def unsubscribe_all(self):
+        """Unregister ALL callbacks from the dispatcher
+        """
+        for public_token in self._token_mapping.keys():
+            self.unsubscribe(public_token)
 
 
 def new_uid():
