@@ -434,16 +434,16 @@ class RunEngine:
                 except KeyError:
                     if field not in self._REQUIRED_FIELDS:
                         continue
-                    raise KeyError("There is no entry for '{0}'. "
+                    raise KeyError("There is no entry for '{0}'."
                                    "It is required for this run. In future "
                                    "runs, the most recent entry can be reused "
-                                   "unless a new value is specified.".format(
-                                        field))
-        self.metadata = metadata  # _logbook command may use this
+                                   "unless a new value is specified."
+                                   "".format(field))
 
         self.state.run()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             def func():
+                """Spawn a thread to run the scan """
                 return self._run(gen, metadata)
             if use_threading:
                 self._thread = threading.Thread(target=func,
@@ -502,10 +502,10 @@ class RunEngine:
         self._resume()  # to create RunStop Document
 
     def _run(self, gen, metadata):
+        # stash the metadata (in this thread only?)
+        self.metadata = metadata
         gen = iter(gen)  # no-op on generators; needed for classes
-        doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
-        self.debug("*** Emitted RunStart:\n%s" % doc)
-        self.emit('start', doc)
+        self._start_run(Msg('start', None, None, self.metadata))
         response = None
         reason = ''
         try:
@@ -574,11 +574,10 @@ class RunEngine:
                 print("No checkpoint; cannot pause. Aborting...")
                 self._exit_status = 'abort'
                 raise RunInterrupt("*** Hard pause requested. There "
-                                    "are no checkpoints. Cannot resume;"
-                                    " must abort. Run aborted.")
-            self.debug("*** Hard pause requested. Sleeping until "
-                        "resume() is called. "
-                        "Will rerun from last 'checkpoint' command.")
+                                   "are no checkpoints. Cannot resume;"
+                                   " must abort. Run aborted.")
+            self.debug("*** Hard pause requested. Sleeping until resume() is "
+                       "called. Will rerun from last 'checkpoint' command.")
             while True:
                 ttime.sleep(0.5)
                 if not self.state.is_paused:
@@ -604,7 +603,15 @@ class RunEngine:
                        "process messages until the next 'checkpoint' "
                        "command.")
 
+    def _start_run(self, msg):
+        """Create and emit a run start document"""
+        self.metadata.update(msg.kwargs)
+        doc = dict(uid=self._run_start_uid, time=ttime.time(), **self.metadata)
+        self.debug("*** Emitted RunStart:\n%s" % doc)
+        self.emit('start', doc)
+
     def _create(self, msg):
+        """Start capturing reads to be bundled into an event"""
         self._read_cache.clear()
         self._objs_read.clear()
         self._bundling = True
