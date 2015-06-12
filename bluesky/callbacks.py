@@ -116,7 +116,7 @@ def collector(field, output):
 
 
 class LivePlot(CallbackBase):
-    def __init__(self, y, x=None, legend_name=None, **kwargs):
+    def __init__(self, y, x=None, legend_keys=None, **kwargs):
         """
         Build a function that updates a plot from a stream of Events.
 
@@ -124,10 +124,13 @@ class LivePlot(CallbackBase):
         ----------
         y : str
             the name of a data field in an Event
-        x : str or None
+        x : str, optional
             the name of a data field in an Event
             If None, use the Event's sequence number.
-
+        legend_keys : list, optional
+            The list of keys to extract from the RunStart document and format
+            in the legend of the plot. The legend will always show the
+            scan_id followed by a colon ("1: ").  Each
         All additional keyword arguments are passed through to ``Axes.plot``.
 
         Returns
@@ -137,16 +140,16 @@ class LivePlot(CallbackBase):
 
         Examples
         --------
-        >>> import matplotlib as pyplot
-        >>> fig, ax = plt.subplots()
-        >>> my_plotter = live_scalar_plotter(ax, 'det1', 'motor1')
+        >>> my_plotter = LivePlot('det', 'motor', legend_name=['sample'])
         >>> RE(my_scan, subs={'event': my_plotter})
         """
         super().__init__()
         fig = plt.figure()
-        self.ax = fig.add_subplot(111)
+        self.ax = fig.add_subplot(1, 1, 1)
         fig.show()
-        self.legend_name = legend_name
+        if legend_keys is None:
+            legend_keys = []
+        self.legend_keys = ['scan_id'] + legend_keys
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
         self.ax.margins(.1)
@@ -154,23 +157,17 @@ class LivePlot(CallbackBase):
         self.x = x
         self.kwargs = kwargs
         self.lines = []
+        self.legend = None
+        self.legend_title = " :: ".join([name for name in self.legend_keys])
 
     def start(self, doc):
         # The doc is not used; we just use the singal that a new run began.
         self.x_data, self.y_data = [], []
-        try:
-            label = ''
-            for name in self.legend_name:
-                label += str(doc[name]) + '-'
-        except KeyError as ke:
-            logger.info("The key [[{}]] could not be found in the run start "
-                        "document. RunStart document:\n{}"
-                        "".format(self.legend_name, doc))
-            label = doc['scan_id']
-        self.current_line, = self.ax.plot([], [], label=label,
-                                          **self.kwargs)
+        label = " :: ".join(
+            [str(doc.get(name, ' ')) for name in self.legend_keys])
+        self.current_line, = self.ax.plot([], [], label=label, **self.kwargs)
         self.lines.append(self.current_line)
-        self.ax.legend()
+        self.legend = self.ax.legend(loc=0, title=self.legend_title).draggable()
 
     def event(self, doc):
         "Update line with data from this Event."
@@ -179,10 +176,22 @@ class LivePlot(CallbackBase):
         y_data = self.y_data
         ax = self.ax
         if self.x is not None:
-            x_data.append(doc['data'][self.x])
+            # this try/except block is needed because multiple event streams
+            # will be emitted by the RunEngine and not all event streams will
+            # have the keys we want
+            try:
+                x_data.append(doc['data'][self.x])
+            except KeyError:
+                # wrong event stream, skip it
+                return
         else:
             x_data.append(doc['seq_num'])
-        y_data.append(doc['data'][self.y])
+        # same rationale as the above try/except block
+        try:
+            y_data.append(doc['data'][self.y])
+        except KeyError:
+            pass
+
         self.current_line.set_data(x_data, y_data)
         # Rescale and redraw.
         ax.relim(visible_only=True)

@@ -121,6 +121,7 @@ def test_count():
 def test_legacy_scans():
     # smoke tests
     ascan.detectors.append(det)
+    ascan.RE = RE
     ascan.RE.md['owner'] = 'test_owner'
     ascan.RE.md['group'] = 'test_group'
     ascan.RE.md['config'] = {}

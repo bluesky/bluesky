@@ -200,6 +200,10 @@ class RunEngine:
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
         self._exit_status = None  # {'success', 'fail', 'abort'}
+        # If False, then a RunStart document need to be created when an
+        # EventDescriptor is created because one has not yet been created.
+        # Will be set to True by the _new_run() function
+        self._has_run_start = False
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -218,6 +222,7 @@ class RunEngine:
             'deconfigure': self._deconfigure,
             'subscribe': self._subscribe,
             'new_run': self._new_run,
+            'end_run': self._end_run,
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -445,18 +450,21 @@ class RunEngine:
 
         self.state.run()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            def func():
+            def do_the_run():
                 """Spawn a thread to run the scan """
                 return self._run(gen, metadata)
             if use_threading:
-                self._thread = threading.Thread(target=func,
+                self._thread = threading.Thread(target=do_the_run,
                                                 name='scan_thread')
                 self._thread.start()
                 while self._thread.is_alive() and not self.state.is_paused:
                     self.dispatcher.process_all_queues()
                     ttime.sleep(.01)
             else:
-                func()
+                metadata = do_the_run()
+                for k, v in metadata.items():
+                    if k in self.persistent_fields:
+                        self.md[k] = v
                 self.dispatcher.process_all_queues()
             self.dispatcher.process_all_queues()  # catch any stragglers
         return self._run_start_uid
@@ -510,6 +518,8 @@ class RunEngine:
         #  in time, i.e., when an event descriptor is created
         self.has_run_start = False
         # stash the metadata (in this thread only?)
+        # mydata = threading.local()
+        # mydata.metadata = metadata
         self.metadata = metadata
         gen = iter(gen)  # no-op on generators; needed for classes
         response = None
@@ -537,12 +547,7 @@ class RunEngine:
             # in case we were interrupted between 'configure' and 'deconfigure'
             for obj in self._configured:
                 obj.deconfigure()
-            doc = dict(run_start=self._run_start_uid,
-                       time=ttime.time(), uid=new_uid(),
-                       exit_status=self._exit_status,
-                       reason=reason)
-            self.emit('stop', doc)
-            self.debug("*** Emitted RunStop:\n%s" % doc)
+            self._end_run(Msg('end_run', reason=reason))
             sys.stdout.flush()
             if self.state.is_aborting or self.state.is_running:
                 self.state.stop()
@@ -611,12 +616,33 @@ class RunEngine:
 
     def _new_run(self, msg):
         """Create and emit a run start document"""
+        if self._has_run_start:
+            # need to create a run stop document
+            self._exit_status = 'success'
+            self._end_run(Msg('end_run'))
+        # presumably we could call _clear() after the run stop is created or
+        # before the run start is created. I think calling _clear() just
+        # before the run start is created is the better option because then
+        # the RunEngine maintains any left over state from the last run for
+        # as long as possible which could be helpful in debugging weird state
+        # issues.
         self._clear()
+
         self.metadata.update(msg.kwargs)
+        # update the scan id
+        self.metadata['scan_id'] += 1
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **self.metadata)
-        self.debug("*** Emitted RunStart:\n%s" % doc)
+        self.debug("*** Emitting RunStart:\n%s" % doc)
         self.emit('start', doc)
-        self.has_run_start = True
+        self.debug("*** Emitted RunStart:\n%s" % doc)
+        self._has_run_start = True
+
+    def _end_run(self, msg):
+        doc = dict(run_start=self._run_start_uid, time=ttime.time(),
+                   uid=new_uid(), exit_status=self._exit_status, **msg.kwargs)
+        self.debug("*** Emitting RunStop:\n%s" % doc)
+        self.emit('stop', doc)
+        self.debug("*** Emitted RunStop:\n%s" % doc)
 
     def _create(self, msg):
         """Start capturing reads to be bundled into an event"""
@@ -643,7 +669,7 @@ class RunEngine:
             # We don't not have an Event Descriptor for this set.
             # Better also check to see if we have a run start and create one
             # if we do not
-            if not self.has_run_start:
+            if not self._has_run_start:
                 self._new_run(Msg('start', None, None, self.metadata))
             data_keys = {}
             [data_keys.update(self._describe_cache[obj]) for obj in objs_read]

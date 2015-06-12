@@ -136,7 +136,7 @@ class NoisyGaussian(Reader):
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
                  noise=False, noise_factor=1):
-        super(NoisyGaussian, self).__init__(name, [name, ])
+        super().__init__(name, [name, ])
         self.ready = True
         self._motor = motor
         self._motor_field = motor_field
@@ -673,7 +673,7 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
                                   temp_controller, tstart, tstop, tstep):
     def read_and_store_temp():
         yield Msg('create')
-        actual_temp = yield Msg('read', temp_controller)
+        yield Msg('read', temp_controller)
         yield Msg('save')
 
     peak_centers = [-1+3*n for n in range(len((sample_names)))]
@@ -682,7 +682,6 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
     for idx, temp in enumerate(np.arange(tstart, tstop, tstep)):
         # todo would be cute to have the temperature reduce peak noise
         yield Msg('set', temp_controller, temp)
-        actual_temp = yield Msg('read', temp_controller)
         for sample, sample_position, peak_pos in zip(sample_names,
                                                      sample_positions,
                                                      peak_centers):
@@ -694,10 +693,16 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
                 yield Msg('set', scan_motor, scan_pos)
                 # be super paranoid about the temperature. Grab it before and
                 # after each trigger!
+                # Capturing the temperature data before and after each
+                # trigger is resulting in unintended behavior. Uncomment the
+                # two `yield from` statements and run this example to see
+                # what I'm talking about.
                 # yield from read_and_store_temp()
                 yield Msg('trigger', detector)
                 # yield from read_and_store_temp()
                 yield Msg('create')
-                pos = yield Msg('read', scan_motor)
-                det = yield Msg('read', detector)
+                yield Msg('read', scan_motor)
+                yield Msg('read', detector)
+                yield Msg('read', temp_controller)
+                # yield Msg('sleep', None, .1)
                 yield Msg('save')
