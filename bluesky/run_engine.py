@@ -609,11 +609,12 @@ class RunEngine:
 
     def _new_run(self, msg):
         """Create and emit a run start document"""
-        self.has_run_start = True
+        self._clear
         self.metadata.update(msg.kwargs)
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **self.metadata)
         self.debug("*** Emitted RunStart:\n%s" % doc)
         self.emit('start', doc)
+        self.has_run_start = True
 
     def _create(self, msg):
         """Start capturing reads to be bundled into an event"""

@@ -116,7 +116,7 @@ def collector(field, output):
 
 
 class LivePlot(CallbackBase):
-    def __init__(self, y, x=None, **kwargs):
+    def __init__(self, y, x=None, legend_name=None, **kwargs):
         """
         Build a function that updates a plot from a stream of Events.
 
@@ -144,9 +144,9 @@ class LivePlot(CallbackBase):
         """
         super().__init__()
         fig = plt.figure()
-        ax = fig.add_subplot(111)
+        self.ax = fig.add_subplot(111)
         fig.show()
-        self.ax = ax
+        self.legend_name = legend_name
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
         self.ax.margins(.1)
@@ -158,8 +158,19 @@ class LivePlot(CallbackBase):
     def start(self, doc):
         # The doc is not used; we just use the singal that a new run began.
         self.x_data, self.y_data = [], []
-        self.current_line, = self.ax.plot([], [], **self.kwargs)
+        try:
+            label = ''
+            for name in self.legend_name:
+                label += str(doc[name]) + '-'
+        except KeyError as ke:
+            logger.info("The key [[{}]] could not be found in the run start "
+                        "document. RunStart document:\n{}"
+                        "".format(self.legend_name, doc))
+            label = doc['scan_id']
+        self.current_line, = self.ax.plot([], [], label=label,
+                                          **self.kwargs)
         self.lines.append(self.current_line)
+        self.ax.legend()
 
     def event(self, doc):
         "Update line with data from this Event."
