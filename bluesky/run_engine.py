@@ -647,6 +647,11 @@ class RunEngine:
         self.emit('stop', doc)
         self.debug("*** Emitted RunStop:\n%s" % doc)
 
+    def reset(self):
+        self._clear_run_cache()
+        self._unsubscribe_tmp_subs()
+        self.dispatcher.unsubscribe_all()
+
     def _create(self, msg):
         """Start capturing reads to be bundled into an event"""
         self._read_cache.clear()
@@ -955,6 +960,12 @@ class Dispatcher:
         """
         for private_token in self._token_mapping[token]:
             self.cb_registry.disconnect(private_token)
+
+    def unsubscribe_all(self):
+        """Unregister ALL callbacks from the dispatcher
+        """
+        for public_token in self._token_mapping.keys():
+            self.unsubscribe(public_token)
 
 
 def new_uid():
