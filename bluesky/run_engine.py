@@ -200,10 +200,6 @@ class RunEngine:
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
         self._exit_status = None  # {'success', 'fail', 'abort'}
-        # If False, then a RunStart document need to be created when an
-        # EventDescriptor is created because one has not yet been created.
-        # Will be set to True by the _new_run() function
-        self._has_run_start = False
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -221,8 +217,6 @@ class RunEngine:
             'configure': self._configure,
             'deconfigure': self._deconfigure,
             'subscribe': self._subscribe,
-            'run_start': self._run_start,
-            'run_stop': self._run_stop,
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -247,7 +241,7 @@ class RunEngine:
 
         self.verbose = False
 
-    def _clear_run_cache(self):
+    def _clear(self):
         self._bundling = False
         self._objs_read.clear()
         self._read_cache.clear()
@@ -271,7 +265,6 @@ class RunEngine:
                 # queue is empty
                 pass
 
-    def _unsubscribe_tmp_subs(self):
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
             self.unsubscribe(cid)
@@ -405,8 +398,7 @@ class RunEngine:
         """
         if subs is None:
             subs = {}
-        self._clear_run_cache()
-        self._unsubscribe_tmp_subs()
+        self._clear()
         for name, funcs in subs.items():
             if not isinstance(funcs, Iterable):
                 # Take funcs to be a single function.
@@ -445,26 +437,23 @@ class RunEngine:
                     raise KeyError("There is no entry for '{0}'. "
                                    "It is required for this run. In future "
                                    "runs, the most recent entry can be reused "
-                                   "unless a new value is specified."
-                                   "".format(field))
+                                   "unless a new value is specified.".format(
+                                        field))
+        self.metadata = metadata  # _logbook command may use this
 
         self.state.run()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            def do_the_run():
-                """Spawn a thread to run the scan """
+            def func():
                 return self._run(gen, metadata)
             if use_threading:
-                self._thread = threading.Thread(target=do_the_run,
+                self._thread = threading.Thread(target=func,
                                                 name='scan_thread')
                 self._thread.start()
                 while self._thread.is_alive() and not self.state.is_paused:
                     self.dispatcher.process_all_queues()
                     ttime.sleep(.01)
             else:
-                metadata = do_the_run()
-                for k, v in metadata.items():
-                    if k in self.persistent_fields:
-                        self.md[k] = v
+                func()
                 self.dispatcher.process_all_queues()
             self.dispatcher.process_all_queues()  # catch any stragglers
         return self._run_start_uid
@@ -513,15 +502,10 @@ class RunEngine:
         self._resume()  # to create RunStop Document
 
     def _run(self, gen, metadata):
-        # We, uh, don't have a run start yet. This will create a RunStart
-        # when a "start" message is received or, at the latest possible point
-        #  in time, i.e., when an event descriptor is created
-        self._has_run_start = False
-        # stash the metadata (in this thread only?)
-        # mydata = threading.local()
-        # mydata.metadata = metadata
-        self.metadata = metadata
         gen = iter(gen)  # no-op on generators; needed for classes
+        doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
+        self.debug("*** Emitted RunStart:\n%s" % doc)
+        self.emit('start', doc)
         response = None
         reason = ''
         try:
@@ -547,7 +531,12 @@ class RunEngine:
             # in case we were interrupted between 'configure' and 'deconfigure'
             for obj in self._configured:
                 obj.deconfigure()
-            self._run_stop(Msg('run_stop', reason=reason))
+            doc = dict(run_start=self._run_start_uid,
+                       time=ttime.time(), uid=new_uid(),
+                       exit_status=self._exit_status,
+                       reason=reason)
+            self.emit('stop', doc)
+            self.debug("*** Emitted RunStop:\n%s" % doc)
             sys.stdout.flush()
             if self.state.is_aborting or self.state.is_running:
                 self.state.stop()
@@ -585,10 +574,11 @@ class RunEngine:
                 print("No checkpoint; cannot pause. Aborting...")
                 self._exit_status = 'abort'
                 raise RunInterrupt("*** Hard pause requested. There "
-                                   "are no checkpoints. Cannot resume;"
-                                   " must abort. Run aborted.")
-            self.debug("*** Hard pause requested. Sleeping until resume() is "
-                       "called. Will rerun from last 'checkpoint' command.")
+                                    "are no checkpoints. Cannot resume;"
+                                    " must abort. Run aborted.")
+            self.debug("*** Hard pause requested. Sleeping until "
+                        "resume() is called. "
+                        "Will rerun from last 'checkpoint' command.")
             while True:
                 ttime.sleep(0.5)
                 if not self.state.is_paused:
@@ -614,60 +604,7 @@ class RunEngine:
                        "process messages until the next 'checkpoint' "
                        "command.")
 
-    def _run_start(self, msg):
-        """Create and emit a run start document"""
-        if self._has_run_start:
-            raise("A")
-            # need to create a run stop document
-            self._exit_status = 'success'
-            self._run_stop(Msg('run_stop', reason=''))
-            # sleep for a short while before clearing the queues
-            ttime.sleep(.5)
-        # presumably we could call _clear_run_cache() after the run stop is created or
-        # before the run start is created. I think calling _clear_run_cache() just
-        # before the run start is created is the better option because then
-        # the RunEngine maintains any left over state from the last run for
-        # as long as possible which could be helpful in debugging weird state
-        # issues.
-        self._clear_run_cache()
-
-        #todo handle the case when 'uid' or 'run_start_uid' is in msg.kwargs
-        uid_names = ['uid', 'run_start_uid']
-        for uid_name in uid_names:
-            if uid_name in msg.kwargs:
-                # man i really want to check and see if this uid exists in
-                # metadatastore already! Shit, this will raise a main thread
-                # exception, which we snarf...
-                uid = msg.kwargs[uid_name]
-            for k, v in msg.kwargs:
-
-        # update the scan id
-        self.metadata.update(msg.kwargs)
-        self.metadata['scan_id'] += 1
-        doc = dict(uid=self._run_start_uid, time=ttime.time(), **self.metadata)
-        self.debug("*** Emitting RunStart:\n%s" % doc)
-        self.emit('start', doc)
-        self.debug("*** Emitted RunStart:\n%s" % doc)
-        self._has_run_start = True
-
-    def _run_stop(self, msg):
-        doc = dict(run_start=self._run_start_uid, time=ttime.time(),
-                   uid=new_uid(), exit_status=self._exit_status, **msg.kwargs)
-        self.debug("*** Emitting RunStop:\n%s" % doc)
-        # print("*** Emitting RunStop:\n%s" % doc)
-        self.emit('stop', doc)
-        self.debug("*** Emitted RunStop:\n%s" % doc)
-        self._has_run_start = False
-        # by default, generate a new run start uid
-        self._run_start_uid = new_uid()
-
-    def reset(self):
-        self._clear_run_cache()
-        self._unsubscribe_tmp_subs()
-        self.dispatcher.unsubscribe_all()
-
     def _create(self, msg):
-        """Start capturing reads to be bundled into an event"""
         self._read_cache.clear()
         self._objs_read.clear()
         self._bundling = True
@@ -689,10 +626,6 @@ class RunEngine:
         # Event Descriptor
         if objs_read not in self._descriptor_uids:
             # We don't not have an Event Descriptor for this set.
-            # Better also check to see if we have a run start and create one
-            # if we do not
-            if not self._has_run_start:
-                self._run_start(Msg('run_start', None, None, self.metadata))
             data_keys = {}
             [data_keys.update(self._describe_cache[obj]) for obj in objs_read]
             _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls
@@ -837,7 +770,7 @@ class RunEngine:
             msg.append('--------')
             msg.append(_run_engine_log_template(self.metadata))
             log_message = '\n'.join(msg)
-
+                       
             d['uid'] = self._run_start_uid
             d.update(self.md)
             return self.logbook(log_message, d)
@@ -974,12 +907,6 @@ class Dispatcher:
         """
         for private_token in self._token_mapping[token]:
             self.cb_registry.disconnect(private_token)
-
-    def unsubscribe_all(self):
-        """Unregister ALL callbacks from the dispatcher
-        """
-        for public_token in self._token_mapping.keys():
-            self.unsubscribe(public_token)
 
 
 def new_uid():
