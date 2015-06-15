@@ -359,13 +359,16 @@ det3_2d = SynGauss2D('det3_2d', motor3, 'motor3', center=-1, Imax=10,
 
 
 def simple_scan(motor):
+    yield Msg('open_run')
     yield Msg('set', motor, 5)
     yield Msg('read', motor)
+    yield Msg('close_run')
 
 
 def conditional_break(motor, det, threshold):
     """Set, trigger, read until the detector reads intensity < threshold"""
     i = 0
+    yield Msg('open_run')
     while True:
         print("LOOP %d" % i)
         yield Msg('set', motor, i)
@@ -373,56 +376,68 @@ def conditional_break(motor, det, threshold):
         reading = yield Msg('read', det)
         if reading['det']['value'] < threshold:
             print('DONE')
+            yield Msg('close_run')
             break
         i += 1
 
 
 def sleepy(motor, det):
     "Set, trigger motor, sleep for a fixed time, trigger detector, read"
+    yield Msg('open_run')
     yield Msg('set', motor, 5)
     yield Msg('sleep', None, 2)  # units: seconds
     yield Msg('trigger', det)
     yield Msg('read', det)
+    yield Msg('close_run')
 
 
 def do_nothing(timeout=5):
     "Generate 'checkpoint' messages until timeout."
     t = ttime.time()
+    yield Msg('open_run')
     while True:
         if ttime.time() > t + timeout:
             break
         ttime.sleep(0.1)
         yield Msg('checkpoint')
+    yield Msg('close_run')
 
 
 def checkpoint_forever():
     # simplest pauseable scan
+    yield Msg('open_run')
     while True:
         ttime.sleep(0.1)
         yield Msg('checkpoint')
+    yield Msg('close_run')
 
 
 def wait_one(motor, det):
     "Set, trigger, read"
+    yield Msg('open_run')
     yield Msg('set', motor, 5, block_group='A')  # Add to group 'A'.
     yield Msg('wait', None, 'A')  # Wait for everything in group 'A' to finish.
     yield Msg('trigger', det)
     yield Msg('read', det)
+    yield Msg('close_run')
 
 
 def wait_multiple(motors, det):
     "Set motors, trigger all motors, wait for all motors to move."
+    yield Msg('open_run')
     for motor in motors:
         yield Msg('set', motor, 5, block_group='A')
     # Wait for everything in group 'A' to report done.
     yield Msg('wait', None, 'A')
     yield Msg('trigger', det)
     yield Msg('read', det)
+    yield Msg('close_run')
 
 
 def wait_complex(motors, det):
     "Set motors, trigger motors, wait for all motors to move in groups."
     # Same as above...
+    yield Msg('open_run')
     for motor in motors[:-1]:
         yield Msg('set', motor, 5, block_group='A')
 
@@ -437,9 +452,11 @@ def wait_complex(motors, det):
     yield Msg('wait', None, 'B')
     yield Msg('trigger', det)
     yield Msg('read', det)
+    yield Msg('close_run')
 
 
 def conditional_pause(motor, det, hard, include_checkpoint):
+    yield Msg('open_run')
     for i in range(5):
         if include_checkpoint:
             yield Msg('checkpoint')
@@ -449,6 +466,7 @@ def conditional_pause(motor, det, hard, include_checkpoint):
         if reading['det']['value'] < 0.2:
             yield Msg('pause', hard=hard)
         yield Msg('set', motor, i + 0.5)
+    yield Msg('close_run')
 
 
 class PausingAgent:
@@ -495,6 +513,7 @@ def simple_scan_saving(motor, det):
 
 
 def stepscan(motor, det):
+    yield Msg('open_run')
     for i in range(-5, 5):
         yield Msg('create')
         yield Msg('set', motor, i)
@@ -502,9 +521,11 @@ def stepscan(motor, det):
         yield Msg('read', motor)
         yield Msg('read', det)
         yield Msg('save')
+    yield Msg('close_run')
 
 
 def cautious_stepscan(motor, det):
+    yield Msg('open_run')
     for i in range(-5, 5):
         yield Msg('checkpoint')
         yield Msg('create')
@@ -516,116 +537,15 @@ def cautious_stepscan(motor, det):
         print("Value at {m} is {d}. Pausing.".format(
             m=ret_m[motor._name]['value'], d=ret_d[det1._name]['value']))
         yield Msg('pause', None, hard=False)
-
-
-def MoveRead_gen(motor, detector):
-    try:
-        for j in range(10):
-            yield Msg('create')
-            yield Msg('set', motor, {'x': j})
-            yield Msg('trigger', detector)
-            yield Msg('read', detector)
-            yield Msg('read', motor)
-            yield Msg('save')
-    finally:
-        print('Generator finished')
-
-
-def find_center_gen(motor, det, motor_name, det_name,
-                    initial_center, initial_width, output_mutable=None,
-                    tolerance=.01):
-    """
-    Attempts to find the center of a peak by moving a motor.
-
-    This will leave the motor at what it thinks is the center.
-
-    The motion is clipped to initial center +/- 6 initial width
-
-    Works by :
-
-    - sampling 5 points around the initial center
-    - fitting to Gaussian + line
-    - moving to the center of the Gaussian
-    - while |old center - new center| > tolerance
-      - taking a measurement
-      - re-run fit
-      - move to new center
-
-    Parameters
-    ----------
-    motor : Mover
-    det : Reader
-    motor_name : string
-        The data key to read out of the motor to check the position
-    det_name : string
-        The data key to read out of the detector
-    initial_center : number
-        Initial guess at where the center is
-    initial_width : number
-        Initial guess at the width
-    output_mutable : dict-like, optional
-        Must have 'update' method.  Mutable object to provide a side-band to return
-        fitting parameters + data points
-    tolerance : number
-        Tolerance to declare good enough on finding the center.
-    """
-    tol = tolerance
-    seen_x = deque()
-    seen_y = deque()
-    min_cen = initial_center - 6 * initial_width
-    max_cen = initial_center + 6 * initial_width
-    for x in np.linspace(initial_center - initial_width,
-                         initial_center + initial_width,
-                         5, endpoint=True):
-        yield Msg('set', motor, x)
-        yield Msg('trigger', det)
-        yield Msg('sleep', None, .1,)
-        yield Msg('create')
-        ret_mot = yield Msg('read', motor)
-        ret_det = yield Msg('read', det)
-        yield Msg('save')
-        seen_y.append(ret_det[det_name]['value'])
-        seen_x.append(ret_mot[motor_name]['value'])
-
-    model = GaussianModel() + LinearModel()
-    guesses = {'amplitude': np.max(seen_y),
-               'center': initial_center,
-               'sigma': initial_width,
-               'slope': 0, 'intercept': 0}
-    while True:
-        x = np.asarray(seen_x)
-        y = np.asarray(seen_y)
-        res = model.fit(y, x=x, **guesses)
-        old_guess = guesses
-        guesses = res.values
-        if np.abs(old_guess['center'] - guesses['center']) < tol:
-            break
-        next_cen = np.clip(guesses['center'] +
-                           np.random.randn(1) * guesses['sigma'],
-                           min_cen, max_cen)
-        yield Msg('set', motor, next_cen)
-        yield Msg('trigger', det)
-        yield Msg('sleep', None, .1,)
-        yield Msg('create')
-        ret_mot = yield Msg('read', motor)
-        ret_det = yield Msg('read', det)
-        yield Msg('save')
-        seen_y.append(ret_det[det_name]['value'])
-        seen_x.append(ret_mot[motor_name]['value'])
-
-    yield Msg('set', motor, np.clip(guesses['center'], min_cen, max_cen))
-
-    if output_mutable is not None:
-        output_mutable.update(guesses)
-        output_mutable['x'] = np.array(seen_x)
-        output_mutable['y'] = np.array(seen_y)
-        output_mutable['model'] = res
+    yield Msg('close_run')
 
 
 def fly_gen(flyer, start, stop, step):
+    yield Msg('open_run')
     yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
     yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)
     yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
     yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)
+    yield Msg('close_run')
