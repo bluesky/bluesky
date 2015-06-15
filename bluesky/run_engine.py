@@ -193,6 +193,7 @@ class RunEngine:
         self._panic = False
         self._bundling = False  # if we are in the middle of bundling readings
         self._run_is_open = False  # if we have emitted a RunStart, no RunStop
+        self._rewound = False  # if we are recovering from a pause
         self._sigint_handler = None
         self._sigtstp_handler = None
         self._objs_read = deque()  # objects read in one Event
@@ -249,6 +250,8 @@ class RunEngine:
             self._register_scan_callback(name, make_push_func(name))
 
         self.verbose = False
+
+        loop.call_soon(self._check_for_trouble)
 
     def _clear(self):
         self._bundling = False
@@ -407,6 +410,12 @@ class RunEngine:
         ...
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
+        # First thing's first: if we are panicked, do nothing.
+        if self._panic:
+            raise PanicError("RunEngine is panicked. The run "
+                             "was aborted before it began. No records "
+                             "of this run were created.")
+
         if subs is None:
             subs = {}
         self._clear()
@@ -422,11 +431,6 @@ class RunEngine:
                 self._temp_callback_ids.add(self.subscribe(name, func))
 
         self._run_start_uid = new_uid()
-
-        if self._panic:
-            raise PanicError("RunEngine is panicked. The run "
-                             "was aborted before it began. No records "
-                             "of this run were created.")
 
         # Before running, do one-time-tasks not repeated after a 'resume'
         self.state.run()
@@ -459,15 +463,11 @@ class RunEngine:
             return outstanding_requests
         self.state.resume()
         self._resume()
-        return None
-
-    def _resume(self):
-        # This could be as a result of self.resume() or self.abort().
+        self._rewound = True
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            while self._thread.is_alive() and not self.state.is_paused:
-                self.dispatcher.process_all_queues()
-                ttime.sleep(.01)
-        self.dispatcher.process_all_queues()  # catch any stragglers
+            self._rerun_from_checkpoint()
+            loop.run_forever()
+        return None
 
     def abort(self):
         """
@@ -483,13 +483,15 @@ class RunEngine:
         self._reason = ''
         try:
             while True:
+                if self._rewound:
+                    yield from self._rerun_from_checkpoint()
+                    continue
                 yield from asyncio.sleep(0.001)
                 # Send last response; get new message but don't process it yet.
                 msg = gen.send(response)
                 if self._msg_cache is not None:
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
-                self._check_for_trouble()
                 # There is no trouble. Now process the message.
                 response = yield from self._command_registry[msg.command](msg)
                 self.debug('RE.state: ' + self.state)
@@ -520,6 +522,8 @@ class RunEngine:
                 self._run_is_open = False
 
     def _check_for_trouble(self):
+        if self.state == 'idle':
+            loop.call_later(0.1, self._check_for_trouble)
         # Check for panic.
         if self._panic:
             self._exit_status = 'fail'
@@ -532,7 +536,7 @@ class RunEngine:
         # Check for pause requests from keyboard.
         if self._sigint_handler.interrupted:
             self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-            self.request_pause(hard=True, name='SIGINT')
+            loop.call_soon(self.request_pause, hard=True, name='SIGINT')
             self._sigint_handler.interrupted = False
 
         # If a hard pause was requested, sleep.
@@ -550,14 +554,10 @@ class RunEngine:
             self.debug("*** Hard pause requested. Sleeping until "
                         "resume() is called. "
                         "Will rerun from last 'checkpoint' command.")
-            while True:
-                ttime.sleep(0.5)
-                if not self.state.is_paused:
-                    break
+            loop.stop()
             if self.state.is_aborting:
                 self._exit_status = 'abort'
                 raise RunInterrupt("Run aborted.")
-            self._rerun_from_checkpoint()
 
         # If a soft pause was requested, acknowledge it, but wait
         # for a 'checkpoint' command to catch it (see self._checkpoint).
@@ -574,6 +574,7 @@ class RunEngine:
             self.debug("*** Soft pause requested. Continuing to "
                        "process messages until the next 'checkpoint' "
                        "command.")
+        loop.call_later(0.1, self._check_for_trouble)
 
     def _validate_metadata(self, metadata):
         # Advance and stash scan_id
@@ -786,6 +787,7 @@ class RunEngine:
             response = self._command_registry[msg.command](msg)
             self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
                        ''.format(msg, response))
+        self._rewound = False
 
     @asyncio.coroutine
     def _logbook(self, msg):
