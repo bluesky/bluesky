@@ -182,6 +182,7 @@ class RunEngine:
             md = {}
         self.md = md
         self.logbook = logbook
+        self._metadata = {}
         self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
         self.persistent_fields.extend(['project', 'group', 'sample'])
         self._panic = False
@@ -370,7 +371,7 @@ class RunEngine:
                 loop.stop()
                 if not self.resumable:
                     print("No checkpoint; cannot pause. Aborting...")
-                    self.abort()  # re-starts loop to clean up
+                    raise FailedPause()
             else:
                 print(("Cannot hard pause from {0} state. "
                        "Ignoring request.").format(self.state))
@@ -457,13 +458,17 @@ class RunEngine:
                 self._temp_callback_ids.add(self.subscribe(name, func))
 
         self._run_start_uid = new_uid()
+        metadata = self._validate_metadata(self._metadata)
 
         # Before running, do one-time-tasks not repeated after a 'resume'
         self.state.run()
-        gen = iter(gen)  # no-op on generators; needed for classes
+        self._gen = iter(gen)  # no-op on generators; needed for classes
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            loop.create_task(self._run(gen, metadata))
+            task = loop.create_task(self._run(self._gen, metadata))
             loop.run_forever()
+            print(task.exception())
+            if isinstance(task.exception(), FailedPause):
+                self.abort()
 
     def resume(self):
         """Resume a run from the last checkpoint.
@@ -496,17 +501,23 @@ class RunEngine:
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
+            task = loop.create_task(self._run(self._gen, self._metadata))
             loop.run_forever()
+            if isinstance(task.exception, FailedPause):
+                self.abort()
         return None
 
     def abort(self):
         """
         Abort a paused scan.
         """
-        self.state.abort()
         print("Aborting....")
+        self.state.abort()
+        print('DAN', self.state)
         self._exit_status = 'abort'
+        print('DAN', self.state)
         self._resume_event_loop()  # clean up, no more messages processed
+        print('DAN', self.state)
 
     @asyncio.coroutine
     def _run(self, gen, metadata):
@@ -518,7 +529,7 @@ class RunEngine:
                     yield from self._rerun_from_checkpoint()
                     continue
                 if self.state.is_aborting:
-                    print('hi tom')
+                    yield from asyncio.sleep(0.1)
                     loop.stop()
                     raise RunInterrupt("Run aborted.")
                 yield from asyncio.sleep(0.001)
@@ -538,18 +549,29 @@ class RunEngine:
             self._reason = str(err)
             raise err
         finally:
+            print("FINALLY!!!")
+            print(self.state)
+            print(loop.is_running())
             # in case we were interrupted between 'configure' and 'deconfigure'
             for obj in self._configured:
                 obj.deconfigure()
                 self._configured.remove(obj)
             sys.stdout.flush()
             # Emit RunStop if necessary.
+            print('it is nice to be above an if')
             if self._run_is_open:
                 yield from self._close_run(Msg('close_run'))
                 self._run_is_open = False
+
+            print('i am below an if')
+            for task in asyncio.Task.all_tasks(loop):
+                task.cancel()
             # Return state machine to 'idle'.
             if self.state.is_aborting or self.state.is_running:
+                print("STOP")
                 self.state.stop()
+                print(self.state)
+                print(loop.is_running())
             elif self.state.is_soft_pausing:
                 # Apparently an exception was raised mid-pause.
                 self.debug("The RunEngine encountered an error while "
@@ -602,16 +624,16 @@ class RunEngine:
                                    "runs, the most recent entry can be reused "
                                    "unless a new value is specified.".format(
                                         field))
-        self.metadata = metadata  # _logbook command may use this
+        self._metadata = metadata  # _logbook command may use this
         return metadata
 
     @asyncio.coroutine
     def _open_run(self, msg):
         self._run_is_open = True
-        metadata = self._validate_metadata(msg.kwargs)
+        self._metadata.update(msg.kwargs)
+        metadata = self._validate_metadata(self._metadata)
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
         yield from self.emit('start', doc)
-        yield from asyncio.sleep(0.001)
         self.debug("*** Emitted RunStart:\n%s" % doc)
 
     @asyncio.coroutine
@@ -620,10 +642,12 @@ class RunEngine:
                     time=ttime.time(), uid=new_uid(),
                     exit_status=self._exit_status,
                     reason=self._reason)
+        print('about to emit')
         yield from self.emit('stop', doc)
-        yield from asyncio.sleep(0.001)
+        print('emitted')
         self.debug("*** Emitted RunStop:\n%s" % doc)
         self._run_is_open = False
+        print('set run is open')
 
     @asyncio.coroutine
     def _create(self, msg):
@@ -780,7 +804,6 @@ class RunEngine:
             response = yield from self._command_registry[msg.command](msg)
             self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
                        ''.format(msg, response))
-            self._check_for_trouble()
         self._rewound = False
 
     @asyncio.coroutine
@@ -797,7 +820,7 @@ class RunEngine:
             msg.append('')
             msg.append('Metadata')
             msg.append('--------')
-            msg.append(_run_engine_log_template(self.metadata))
+            msg.append(_run_engine_log_template(self._metadata))
             log_message = '\n'.join(msg)
                        
             d['uid'] = self._run_start_uid
@@ -971,4 +994,8 @@ class RunInterrupt(KeyboardInterrupt):
 
 
 class IllegalMessageSequence(Exception):
+    pass
+
+
+class FailedPause(Exception):
     pass
