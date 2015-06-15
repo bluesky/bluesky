@@ -282,6 +282,10 @@ class RunEngine:
     def resumable(self):
         return self._msg_cache is not None
 
+    @property
+    def normal_operation(self):
+        return self.state.is_running or self.state.is_soft_pausing
+
     def register_command(self, name, func):
         """
         Register a new Message command.
@@ -314,9 +318,10 @@ class RunEngine:
         If the RunEngine is currently paused, it will stay in the 'paused'
         state, and it will disallow resume() until all_is_well() is called.
         """
-        # Release GIL by sleeping, allowing other threads to set panic.
-        ttime.sleep(0.01)
         self._panic = True
+        if self.normal_operation:
+            self.state.pause()
+        raise PanicError()
 
     def all_is_well(self):
         """
