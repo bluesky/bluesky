@@ -484,12 +484,14 @@ def panic_timer(RE, delay):
 
 def simple_scan_saving(motor, det):
     "Set, trigger, read"
+    yield Msg('open_run')
     yield Msg('create')
     yield Msg('set', motor, 5)
     yield Msg('read', motor)
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('save')
+    yield Msg('close_run')
 
 
 def stepscan(motor, det):

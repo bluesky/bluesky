@@ -191,7 +191,8 @@ class RunEngine:
         self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
         self.persistent_fields.extend(['project', 'group', 'sample'])
         self._panic = False
-        self._bundling = False
+        self._bundling = False  # if we are in the middle of bundling readings
+        self._run_is_open = False  # if we have emitted a RunStart, no RunStop
         self._sigint_handler = None
         self._sigtstp_handler = None
         self._objs_read = deque()  # objects read in one Event
@@ -223,6 +224,8 @@ class RunEngine:
             'configure': self._configure,
             'deconfigure': self._deconfigure,
             'subscribe': self._subscribe,
+            'open_run': self._open_run,
+            'close_run': self._close_run,
             }
 
         # queues for passing Documents from "scan thread" to main thread
@@ -249,6 +252,7 @@ class RunEngine:
 
     def _clear(self):
         self._bundling = False
+        self._run_is_open = False
         self._objs_read.clear()
         self._read_cache.clear()
         self._configured.clear()
@@ -259,7 +263,8 @@ class RunEngine:
         self._block_groups.clear()
         # self._temp_callback_ids are cleared before, after unsubscribing
         self._msg_cache = None
-        self._exit_status = None
+        self._exit_status = 'success'
+        self._reason = ''
         # clear the main thread queues
         for queue in self._queues.values():
             try:
@@ -415,39 +420,17 @@ class RunEngine:
                                      "of functions. The offending entry is\n "
                                      "{0}".format(func))
                 self._temp_callback_ids.add(self.subscribe(name, func))
+
         self._run_start_uid = new_uid()
+
         if self._panic:
             raise PanicError("RunEngine is panicked. The run "
                              "was aborted before it began. No records "
                              "of this run were created.")
 
-        # Advance and stash scan_id
-        try:
-            scan_id = self.md['scan_id'] + 1
-        except KeyError:
-            scan_id = 1
-        self.md['scan_id'] = scan_id
-        metadata['scan_id'] = scan_id
-
-        for field in self.persistent_fields:
-            if field in metadata:
-                # Stash and use new value.
-                self.md[field] = metadata[field]
-            else:
-                # Use old value.
-                try:
-                    metadata[field] = self.md[field]
-                except KeyError:
-                    if field not in self._REQUIRED_FIELDS:
-                        continue
-                    raise KeyError("There is no entry for '{0}'. "
-                                   "It is required for this run. In future "
-                                   "runs, the most recent entry can be reused "
-                                   "unless a new value is specified.".format(
-                                        field))
-        self.metadata = metadata  # _logbook command may use this
-
+        # Before running, do one-time-tasks not repeated after a 'resume'
         self.state.run()
+        gen = iter(gen)  # no-op on generators; needed for classes
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             loop.run_until_complete(self._run(gen, metadata))
 
@@ -496,13 +479,8 @@ class RunEngine:
 
     @asyncio.coroutine
     def _run(self, gen, metadata):
-        gen = iter(gen)  # no-op on generators; needed for classes
-        doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
-        yield from self.emit('start', doc)
-        yield from asyncio.sleep(0.001)
-        self.debug("*** Emitted RunStart:\n%s" % doc)
         response = None
-        reason = ''
+        self._reason = ''
         try:
             while True:
                 yield from asyncio.sleep(0.001)
@@ -517,22 +495,16 @@ class RunEngine:
                 self.debug('RE.state: ' + self.state)
                 self.debug('msg: {}\n   response: {}'.format(msg, response))
         except StopIteration:
-            self._exit_status = 'success'
             yield from asyncio.sleep(0.001)
         except Exception as err:
             self._exit_status = 'fail'
-            reason = str(err)
+            self._reason = str(err)
             raise err
         finally:
             # in case we were interrupted between 'configure' and 'deconfigure'
             for obj in self._configured:
                 obj.deconfigure()
-            doc = dict(run_start=self._run_start_uid,
-                       time=ttime.time(), uid=new_uid(),
-                       exit_status=self._exit_status,
-                       reason=reason)
-            yield from self.emit('stop', doc)
-            self.debug("*** Emitted RunStop:\n%s" % doc)
+                self._configured.remove(obj)
             sys.stdout.flush()
             if self.state.is_aborting or self.state.is_running:
                 self.state.stop()
@@ -543,6 +515,9 @@ class RunEngine:
                 self.state.pause()
                 self.state.abort()
                 self.state.stop()
+            if self._run_is_open:
+                yield from self._close_run(Msg('close_run'))
+                self._run_is_open = False
 
     def _check_for_trouble(self):
         # Check for panic.
@@ -599,6 +574,54 @@ class RunEngine:
             self.debug("*** Soft pause requested. Continuing to "
                        "process messages until the next 'checkpoint' "
                        "command.")
+
+    def _validate_metadata(self, metadata):
+        # Advance and stash scan_id
+        try:
+            scan_id = self.md['scan_id'] + 1
+        except KeyError:
+            scan_id = 1
+        self.md['scan_id'] = scan_id
+        metadata['scan_id'] = scan_id
+
+        for field in self.persistent_fields:
+            if field in metadata:
+                # Stash and use new value.
+                self.md[field] = metadata[field]
+            else:
+                # Use old value.
+                try:
+                    metadata[field] = self.md[field]
+                except KeyError:
+                    if field not in self._REQUIRED_FIELDS:
+                        continue
+                    raise KeyError("There is no entry for '{0}'. "
+                                   "It is required for this run. In future "
+                                   "runs, the most recent entry can be reused "
+                                   "unless a new value is specified.".format(
+                                        field))
+        self.metadata = metadata  # _logbook command may use this
+        return metadata
+
+    @asyncio.coroutine
+    def _open_run(self, msg):
+        self._run_is_open = True
+        metadata = self._validate_metadata(msg.kwargs)
+        doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
+        yield from self.emit('start', doc)
+        yield from asyncio.sleep(0.001)
+        self.debug("*** Emitted RunStart:\n%s" % doc)
+
+    @asyncio.coroutine
+    def _close_run(self, msg):
+        doc = dict(run_start=self._run_start_uid,
+                    time=ttime.time(), uid=new_uid(),
+                    exit_status=self._exit_status,
+                    reason=self._reason)
+        yield from self.emit('stop', doc)
+        yield from asyncio.sleep(0.001)
+        self.debug("*** Emitted RunStop:\n%s" % doc)
+        self._run_is_open = False
 
     @asyncio.coroutine
     def _create(self, msg):
