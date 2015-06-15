@@ -706,3 +706,5 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
                 yield Msg('read', temp_controller)
                 # yield Msg('sleep', None, .1)
                 yield Msg('save')
+            # generate the end of the run document
+            yield Msg('run_stop')

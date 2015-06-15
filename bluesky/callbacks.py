@@ -296,7 +296,6 @@ class LiveTable(CallbackBase):
         self.run_start_uid = start_document['uid']
         self.create_table()
 
-
     def descriptor(self, descriptor):
         # find all keys that are filestore keys
         for key, datakeydict in descriptor['data_keys'].items():

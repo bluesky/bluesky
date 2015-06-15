@@ -617,6 +617,7 @@ class RunEngine:
     def _run_start(self, msg):
         """Create and emit a run start document"""
         if self._has_run_start:
+            raise("A")
             # need to create a run stop document
             self._exit_status = 'success'
             self._run_stop(Msg('run_stop', reason=''))
@@ -630,8 +631,18 @@ class RunEngine:
         # issues.
         self._clear_run_cache()
 
-        self.metadata.update(msg.kwargs)
+        #todo handle the case when 'uid' or 'run_start_uid' is in msg.kwargs
+        uid_names = ['uid', 'run_start_uid']
+        for uid_name in uid_names:
+            if uid_name in msg.kwargs:
+                # man i really want to check and see if this uid exists in
+                # metadatastore already! Shit, this will raise a main thread
+                # exception, which we snarf...
+                uid = msg.kwargs[uid_name]
+            for k, v in msg.kwargs:
+
         # update the scan id
+        self.metadata.update(msg.kwargs)
         self.metadata['scan_id'] += 1
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **self.metadata)
         self.debug("*** Emitting RunStart:\n%s" % doc)
@@ -646,6 +657,9 @@ class RunEngine:
         # print("*** Emitting RunStop:\n%s" % doc)
         self.emit('stop', doc)
         self.debug("*** Emitted RunStop:\n%s" % doc)
+        self._has_run_start = False
+        # by default, generate a new run start uid
+        self._run_start_uid = new_uid()
 
     def reset(self):
         self._clear_run_cache()
