@@ -3,7 +3,7 @@ from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 import sys
 
 import logging
@@ -341,3 +341,37 @@ class ExtendedList(list):
         if (not super().__contains__(value)) and (value in self):
             raise ValueError('%s is mandatory and cannot be removed' % value)
         super().remove(value)
+
+
+class ScanValidator:
+    def __init__(self, scan, run_engine=None):
+        if run_engine is None:
+            from .run_engine import RunEngine
+            run_engine = RunEngine()
+
+        self.run_engine = run_engine
+        self.scan = scan
+        self.message_names = list(self.run_engine._command_registry.keys())
+        self.message_counts = defaultdict(int)
+
+    def _process_message(self, message):
+        # increment the number of coun
+        self.message_counts[message.command] += 1
+
+    def validate(self):
+        for msg in self.scan:
+            self._process_message(msg)
+
+    def report(self):
+        print("Scan {} exited successfully.".format(self.scan))
+        print("Here are the number of times that each message was received.")
+        from prettytable import PrettyTable
+        p = PrettyTable(field_names=['Message Name', 'Times Called'])
+        p.padding_width = 1
+        p.align['Message Name'] = 'l'
+        p.align['Times Called'] = 'r'
+
+        for k, v in self.message_counts.items():
+            p.add_row([k, v])
+
+        print(p)
