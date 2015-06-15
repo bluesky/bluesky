@@ -1,4 +1,5 @@
 import os
+import asyncio
 import time as ttime
 import sys
 from itertools import count
@@ -33,6 +34,10 @@ schemas = {}
 for name, filename in SCHEMA_NAMES.items():
     with open(rs_fn('bluesky', fn.format(filename))) as fin:
         schemas[name] = json.load(fin)
+
+
+loop = asyncio.get_event_loop()
+loop.set_debug(True)
 
 
 class LossyLiFoQueue(Queue):
@@ -178,7 +183,7 @@ class RunEngine:
         unregister_command
             Undo register_command.
         """
-        super(RunEngine, self).__init__()
+        super().__init__()
         if md is None:
             md = {}
         self.md = md
@@ -200,6 +205,7 @@ class RunEngine:
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
         self._exit_status = None  # {'success', 'fail', 'abort'}
+        self._handles = {k: None for k in ['start', 'stop', 'descriptor', 'event']}
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -443,20 +449,7 @@ class RunEngine:
 
         self.state.run()
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            def func():
-                return self._run(gen, metadata)
-            if use_threading:
-                self._thread = threading.Thread(target=func,
-                                                name='scan_thread')
-                self._thread.start()
-                while self._thread.is_alive() and not self.state.is_paused:
-                    self.dispatcher.process_all_queues()
-                    ttime.sleep(.01)
-            else:
-                func()
-                self.dispatcher.process_all_queues()
-            self.dispatcher.process_all_queues()  # catch any stragglers
-        return self._run_start_uid
+            loop.run_until_complete(self._run(gen, metadata))
 
     def resume(self):
         """Resume a run from the last checkpoint.
@@ -501,16 +494,18 @@ class RunEngine:
         print("Aborting....")
         self._resume()  # to create RunStop Document
 
+    @asyncio.coroutine
     def _run(self, gen, metadata):
         gen = iter(gen)  # no-op on generators; needed for classes
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
+        yield from self.emit('start', doc)
+        yield from asyncio.sleep(0.001)
         self.debug("*** Emitted RunStart:\n%s" % doc)
-        self.emit('start', doc)
         response = None
         reason = ''
         try:
-            self._check_for_trouble()
             while True:
+                yield from asyncio.sleep(0.001)
                 # Send last response; get new message but don't process it yet.
                 msg = gen.send(response)
                 if self._msg_cache is not None:
@@ -518,11 +513,12 @@ class RunEngine:
                     self._msg_cache.append(msg)
                 self._check_for_trouble()
                 # There is no trouble. Now process the message.
-                response = self._command_registry[msg.command](msg)
+                response = yield from self._command_registry[msg.command](msg)
                 self.debug('RE.state: ' + self.state)
                 self.debug('msg: {}\n   response: {}'.format(msg, response))
         except StopIteration:
             self._exit_status = 'success'
+            yield from asyncio.sleep(0.001)
         except Exception as err:
             self._exit_status = 'fail'
             reason = str(err)
@@ -535,7 +531,7 @@ class RunEngine:
                        time=ttime.time(), uid=new_uid(),
                        exit_status=self._exit_status,
                        reason=reason)
-            self.emit('stop', doc)
+            yield from self.emit('stop', doc)
             self.debug("*** Emitted RunStop:\n%s" % doc)
             sys.stdout.flush()
             if self.state.is_aborting or self.state.is_running:
@@ -604,11 +600,13 @@ class RunEngine:
                        "process messages until the next 'checkpoint' "
                        "command.")
 
+    @asyncio.coroutine
     def _create(self, msg):
         self._read_cache.clear()
         self._objs_read.clear()
         self._bundling = True
 
+    @asyncio.coroutine
     def _read(self, msg):
         obj = msg.obj
         self._objs_read.append(obj)
@@ -618,6 +616,7 @@ class RunEngine:
         self._read_cache.append(ret)
         return ret
 
+    @asyncio.coroutine
     def _save(self, msg):
         # The Event Descriptor is uniquely defined by the set of objects
         # read in this Event grouping.
@@ -632,7 +631,7 @@ class RunEngine:
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
-            self.emit('descriptor', doc)
+            yield from self.emit('descriptor', doc)
             self.debug("*** Emitted Event Descriptor:\n%s" % doc)
             self._descriptor_uids[objs_read] = descriptor_uid
             self._sequence_counters[objs_read] = count(1)
@@ -651,9 +650,10 @@ class RunEngine:
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid)
-        self.emit('event', doc)
+        yield from self.emit('event', doc)
         self.debug("*** Emitted Event:\n%s" % doc)
 
+    @asyncio.coroutine
     def _kickoff(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.kickoff(*msg.args, **msg.kwargs)
@@ -662,6 +662,7 @@ class RunEngine:
 
         return ret
 
+    @asyncio.coroutine
     def _collect(self, msg):
         obj = msg.obj
         data_keys_list = obj.describe()
@@ -693,9 +694,11 @@ class RunEngine:
             self.emit('event', ev)
             self.debug("Emitted Event:\n%s" % ev)
 
+    @asyncio.coroutine
     def _null(self, msg):
         pass
 
+    @asyncio.coroutine
     def _set(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
@@ -703,6 +706,7 @@ class RunEngine:
             self._block_groups[block_group].add(ret)
         return ret
 
+    @asyncio.coroutine
     def _trigger(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
@@ -711,6 +715,7 @@ class RunEngine:
 
         return ret
 
+    @asyncio.coroutine
     def _wait(self, msg):
         # Block progress until every object that was trigged
         # triggered with the keyword argument `block=group` is done.
@@ -723,12 +728,15 @@ class RunEngine:
         del self._block_groups[group]
         return objs
 
+    @asyncio.coroutine
     def _sleep(self, msg):
-        return ttime.sleep(*msg.args)
+        yield from asyncio.sleep(*msg.args)
 
+    @asyncio.coroutine
     def _pause(self, msg):
         self.request_pause(*msg.args, **msg.kwargs)
 
+    @asyncio.coroutine
     def _checkpoint(self, msg):
         if self._bundling:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
@@ -747,6 +755,7 @@ class RunEngine:
                 self._exit_status = 'abort'
                 raise RunInterrupt("Run aborted.")
 
+    @asyncio.coroutine
     def _rerun_from_checkpoint(self):
         print("Rerunning from last checkpoint...")
         self.debug("*** Rerunning from checkpoint...")
@@ -755,6 +764,7 @@ class RunEngine:
             self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
                        ''.format(msg, response))
 
+    @asyncio.coroutine
     def _logbook(self, msg):
         if self.logbook:
             d = msg.kwargs
@@ -775,6 +785,7 @@ class RunEngine:
             d.update(self.md)
             return self.logbook(log_message, d)
 
+    @asyncio.coroutine
     def _configure(self, msg):
         # If an object has no 'configure' method, assume it does not need
         # configuring.
@@ -785,6 +796,7 @@ class RunEngine:
         self._configured.append(obj)
         return result
 
+    @asyncio.coroutine
     def _deconfigure(self, msg):
         # If an object has no 'deconfigure' method, assume it does not need
         # deconfiguring.
@@ -797,6 +809,7 @@ class RunEngine:
         self._configured.remove(obj)
         return result
 
+    @asyncio.coroutine
     def _subscribe(self, msg):
         """
         Add a subscription after the run has started.
@@ -808,10 +821,18 @@ class RunEngine:
         self._temp_callback_ids.add(token)
         return token
 
+    @asyncio.coroutine
     def emit(self, name, doc):
-        "Process blocking, scan-thread callbacks."
+        "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
+        handle = loop.call_soon(self.dispatcher.process, name, doc)
+        if name != 'descriptor':
+            # If the last doc hasn't been processed yet, cancel it to
+            # prioritize the latest one.
+            if self._handles[name]:
+                self._handles[name].cancel()  # no effect if finished
+            self._handles[name] = handle
 
     def debug(self, msg):
         "Print if the verbose attribute is True."
@@ -828,38 +849,8 @@ class Dispatcher:
         self._counter = count()
         self._token_mapping = dict()
 
-    def process_queue(self, name):
-        """
-        Process the last item in the queue.
-        """
-        queue = self.queues[name]
-        try:
-            document = queue.get_nowait()
-        except Empty:
-            # no documents available on the queue
-            pass
-        else:
-            # process the callbacks for "name" and grab any exceptions that
-            # come out the registry as "ninety_nine_probs"
-            ninety_nine_probs = self.cb_registry.process(name, document)
-            # spam the screen with the exceptions that are being raised
-            if ninety_nine_probs:
-                print("The following exceptions were raised during processing "
-                      "of the [[{}]] queue".format(name))
-                for idx, (error, tb) in enumerate(ninety_nine_probs):
-                    err = "Error %s" % idx
-                    print("\n%s\n%s\n%s\n" % (err, '-'*len(err), error))
-                    print("\tTraceback\n"
-                          "\t---------")
-                    # todo format this traceback properly
-                    tb_list = traceback.extract_tb(tb)
-                    for item in traceback._format_list_iter(tb_list):
-                        print('\t%s' % item)
-
-    def process_all_queues(self):
-        # keys are hard-coded to enforce order
-        for name in ['start', 'descriptor', 'event', 'stop']:
-            self.process_queue(name)
+    def process(self, name, doc):
+        self.cb_registry.process(name, doc)
 
     def subscribe(self, name, func):
         """
