@@ -543,6 +543,11 @@ class RunEngine:
                 obj.deconfigure()
                 self._configured.remove(obj)
             sys.stdout.flush()
+            # Emit RunStop if necessary.
+            if self._run_is_open:
+                yield from self._close_run(Msg('close_run'))
+                self._run_is_open = False
+            # Return state machine to 'idle'.
             if self.state.is_aborting or self.state.is_running:
                 self.state.stop()
             elif self.state.is_soft_pausing:
@@ -552,27 +557,23 @@ class RunEngine:
                 self.state.pause()
                 self.state.abort()
                 self.state.stop()
-            if self._run_is_open:
-                yield from self._close_run(Msg('close_run'))
-                self._run_is_open = False
 
     def _check_for_trouble(self):
-        if self.state == 'idle':
-            loop.call_later(0.1, self._check_for_trouble)
-        # Check for panic.
-        if self._panic:
-            self._exit_status = 'fail'
-            raise PanicError("Something told the Run Engine to "
-                                "panic after the run began. "
-                                "Records were created, but the run "
-                                "was marked with "
-                                "exit_status='fail'.")
+        if not self.state.is_idle:
+            # Check for panic.
+            if self._panic:
+                self._exit_status = 'fail'
+                raise PanicError("Something told the Run Engine to "
+                                    "panic after the run began. "
+                                    "Records were created, but the run "
+                                    "was marked with "
+                                    "exit_status='fail'.")
 
-        # Check for pause requests from keyboard.
-        if self._sigint_handler.interrupted:
-            self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-            loop.call_soon(self.request_pause, hard=True, name='SIGINT')
-            self._sigint_handler.interrupted = False
+            # Check for pause requests from keyboard.
+            if self._sigint_handler.interrupted:
+                self.debug("RunEngine detected a SIGINT (Ctrl+C)")
+                loop.call_soon(self.request_pause, hard=True, name='SIGINT')
+                self._sigint_handler.interrupted = False
 
         loop.call_later(0.1, self._check_for_trouble)
 
