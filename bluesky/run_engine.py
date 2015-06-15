@@ -81,9 +81,6 @@ class RunEngineStateMachine(StateMachine):
     is_soft_pausing
         State machine has been asked to enter a soft pause but is not yet in
         its ``paused`` state
-    is_hard_pausing
-        State machine has been asked to enter a hard pause but is not yet in
-        its ``paused`` state
     is_paused
         State machine is paused.
     """
@@ -94,7 +91,6 @@ class RunEngineStateMachine(StateMachine):
         RUNNING = 'running'
         ABORTING = 'aborting'
         SOFT_PAUSING = 'soft_pausing'
-        HARD_PAUSING = 'hard_pausing'
         PAUSED = 'paused'
 
         @classmethod
@@ -109,24 +105,22 @@ class RunEngineStateMachine(StateMachine):
             # opposite to <--> from structure.
             # from_state : [valid_to_states]
             'idle': ['running'],
-            'running': ['idle', 'soft_pausing', 'hard_pausing'],
+            'running': ['idle', 'soft_pausing', 'paused'],
             'aborting': ['idle'],
-            'soft_pausing': ['paused', 'soft_pausing', 'hard_pausing'],
-            'hard_pausing': ['paused', 'hard_pausing'],
+            'soft_pausing': ['paused', 'soft_pausing'],
             'paused': ['aborting', 'running'],
         }
         named_transitions = [
             # (transition_name, to_state : [valid_from_states])
             ('soft_pause', 'soft_pausing', ['running', 'soft_pausing']),
-            ('hard_pause', 'hard_pausing', ['running', 'soft_pausing', 'hard_pausing']),
-            ('pause', 'paused', ['soft_pausing', 'hard_pausing']),
+            ('pause', 'paused', ['soft_pausing', 'running']),
             ('run', 'running', ['idle', 'paused']),
             ('stop', 'idle', ['running', 'aborting']),
             ('resume', 'running', ['paused']),
             ('abort', 'aborting', ['paused']),
         ]
         named_checkers = [
-            ('can_hard_pause', 'hard_pausing'),
+            ('can_pause', 'paused'),
             ('can_soft_pause', 'soft_pausing'),
         ]
 
@@ -284,6 +278,10 @@ class RunEngine:
             self.unsubscribe(cid)
         self._temp_callback_ids.clear()
 
+    @property
+    def resumable(self):
+        return self._msg_cache is not None
+
     def register_command(self, name, func):
         """
         Register a new Message command.
@@ -355,15 +353,33 @@ class RunEngine:
         # No matter what, this will be processed if we try to resume.
         if callback is not None:
             if name is None:
+                loop.stop()
                 raise ValueError("Pause requests with a callback must include "
                                  "a name.")
             self._pause_requests[name] = callback
         # Now to the right pause state if we can.
-        if hard and self.state.can_hard_pause:
-            self.state.hard_pause()
+        if hard:
+            if self.state.can_pause:
+                print("Pausing...")
+                self.state.pause()
+                loop.stop()
+                if not self.resumable:
+                    print("No checkpoint; cannot pause. Aborting...")
+                    self.abort()  # re-starts loop to clean up
+            else:
+                print(("Cannot hard pause from {0} state. "
+                       "Ignoring request.").format(self.state))
         else:
             if self.state.can_soft_pause:
                 self.state.soft_pause()
+                if not self.resumable:
+                    print("No checkpoint yet; cannot pause. Request a hard "
+                          "pause to abort.")
+                else:
+                    print("Soft pause acknowledged. Continuing to checkpoint.")
+            else:
+                print(("Cannot soft pause from {0} state. "
+                       "Ignoring request.").format(self.state))
 
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
@@ -411,7 +427,11 @@ class RunEngine:
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
         # First thing's first: if we are panicked, do nothing.
+        if not self.state.is_idle:
+            loop.stop()
+            raise RuntimeError("The RunEngine is in a %s state" % self.state)
         if self._panic:
+            loop.stop()
             raise PanicError("RunEngine is panicked. The run "
                              "was aborted before it began. No records "
                              "of this run were created.")
@@ -425,6 +445,7 @@ class RunEngine:
                 funcs = [funcs]
             for func in funcs:
                 if not callable(func):
+                    loop.stop()
                     raise ValueError("subs values must be functions or lists "
                                      "of functions. The offending entry is\n "
                                      "{0}".format(func))
@@ -436,7 +457,8 @@ class RunEngine:
         self.state.run()
         gen = iter(gen)  # no-op on generators; needed for classes
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            loop.run_until_complete(self._run(gen, metadata))
+            loop.create_task(self._run(gen, metadata))
+            loop.run_forever()
 
     def resume(self):
         """Resume a run from the last checkpoint.
@@ -449,6 +471,7 @@ class RunEngine:
             returns None.
         """
         if self._panic:
+            loop.stop()
             raise PanicError("Run Engine is panicked. If are you sure all is "
                              "well, call the all_is_well() method.")
         outstanding_requests = []
@@ -462,10 +485,12 @@ class RunEngine:
         if outstanding_requests:
             return outstanding_requests
         self.state.resume()
-        self._resume()
         self._rewound = True
+        self._resume_event_loop()
+
+    def _resume_event_loop(self):
+        # may be called by 'resume' or 'abort'
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            self._rerun_from_checkpoint()
             loop.run_forever()
         return None
 
@@ -475,7 +500,8 @@ class RunEngine:
         """
         self.state.abort()
         print("Aborting....")
-        self._resume()  # to create RunStop Document
+        self._exit_status = 'abort'
+        self._resume_event_loop()  # clean up, no more messages processed
 
     @asyncio.coroutine
     def _run(self, gen, metadata):
@@ -486,6 +512,10 @@ class RunEngine:
                 if self._rewound:
                     yield from self._rerun_from_checkpoint()
                     continue
+                if self.state.is_aborting:
+                    print('hi tom')
+                    loop.stop()
+                    raise RunInterrupt("Run aborted.")
                 yield from asyncio.sleep(0.001)
                 # Send last response; get new message but don't process it yet.
                 msg = gen.send(response)
@@ -510,7 +540,7 @@ class RunEngine:
             sys.stdout.flush()
             if self.state.is_aborting or self.state.is_running:
                 self.state.stop()
-            elif self.state.is_soft_pausing or self.state.is_hard_pausing:
+            elif self.state.is_soft_pausing:
                 # Apparently an exception was raised mid-pause.
                 self.debug("The RunEngine encountered an error while "
                            "attempting to pause. Aborting and going to idle.")
@@ -539,41 +569,6 @@ class RunEngine:
             loop.call_soon(self.request_pause, hard=True, name='SIGINT')
             self._sigint_handler.interrupted = False
 
-        # If a hard pause was requested, sleep.
-        resumable = self._msg_cache is not None
-        if self.state.is_hard_pausing:
-            self.state.pause()
-            print("Pausing...")
-            if not resumable:
-                self.state.abort()
-                print("No checkpoint; cannot pause. Aborting...")
-                self._exit_status = 'abort'
-                raise RunInterrupt("*** Hard pause requested. There "
-                                    "are no checkpoints. Cannot resume;"
-                                    " must abort. Run aborted.")
-            self.debug("*** Hard pause requested. Sleeping until "
-                        "resume() is called. "
-                        "Will rerun from last 'checkpoint' command.")
-            loop.stop()
-            if self.state.is_aborting:
-                self._exit_status = 'abort'
-                raise RunInterrupt("Run aborted.")
-
-        # If a soft pause was requested, acknowledge it, but wait
-        # for a 'checkpoint' command to catch it (see self._checkpoint).
-        if self.state.is_soft_pausing:
-            if not resumable:
-                self.state.pause()
-                print("No checkpoint; cannot pause. Aborting...")
-                self.state.abort()
-                self._exit_status = 'abort'
-                raise RunInterrupt("*** Soft pause requested. There "
-                                   "are no checkpoints. Cannot resume;"
-                                   " must abort. Run aborted.")
-            print("Soft pause acknowledged. Continuing to next checkpoint.")
-            self.debug("*** Soft pause requested. Continuing to "
-                       "process messages until the next 'checkpoint' "
-                       "command.")
         loop.call_later(0.1, self._check_for_trouble)
 
     def _validate_metadata(self, metadata):
@@ -763,30 +758,23 @@ class RunEngine:
     @asyncio.coroutine
     def _checkpoint(self, msg):
         if self._bundling:
+            loop.stop()
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
         self._msg_cache = deque()
         if self.state.is_soft_pausing:
             self.state.pause()  # soft_pausing -> paused
             print("Checkpoint reached. Pausing...")
-            self.debug("*** Checkpoint reached. Sleeping until resume() is "
-                       "called. Will resume from checkpoint.")
-            while True:
-                ttime.sleep(0.5)
-                if not self.state.is_paused:
-                    break
-            if self.state.is_aborting:
-                self._exit_status = 'abort'
-                raise RunInterrupt("Run aborted.")
+            loop.stop()
 
     @asyncio.coroutine
     def _rerun_from_checkpoint(self):
         print("Rerunning from last checkpoint...")
-        self.debug("*** Rerunning from checkpoint...")
         for msg in self._msg_cache:
-            response = self._command_registry[msg.command](msg)
+            response = yield from self._command_registry[msg.command](msg)
             self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
                        ''.format(msg, response))
+            self._check_for_trouble()
         self._rewound = False
 
     @asyncio.coroutine
