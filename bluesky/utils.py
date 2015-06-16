@@ -349,23 +349,46 @@ class ScanValidator:
             from .run_engine import RunEngine
             run_engine = RunEngine()
 
+        run_engine_state = ['']
         self.run_engine = run_engine
         self.scan = scan
         self.message_names = list(self.run_engine._command_registry.keys())
         self.message_counts = defaultdict(int)
         self.message_order = deque()
+        self.exit_status = 'Not yet validated'
 
     def _process_message(self, message):
         # increment the number of coun
         self.message_counts[message.command] += 1
+        if message.command == 'checkpoint':
+            # search backwards through history and make sure that we
+            # find a "save" before we find a "create", or don't find a save
+            # at all.
+            for msg in self.message_order:
+                if msg.command == 'save':
+                    # all is well
+                    break
+                if msg.command == 'create':
+                    self.exit_status = ("'checkpoint' received after 'create' "
+                                        "and before 'save'")
+                    self.report()
+                    raise ValueError("A 'checkpoint' message cannot occur "
+                                     "between a create and a save. This is a "
+                                     "flawed scan. Printing out a report and "
+                                     "ceasing to process the scan.")
 
     def validate(self):
+        self.exit_status = 'Not yet validated'
         for msg in self.scan:
-            self.message_order.append(msg)
+            self.message_order.appendleft(msg)
             self._process_message(msg)
+        self.exit_status = "Success"
 
     def report(self):
-        print("Scan {} exited successfully.".format(self.scan))
+        print("Scan Validation Report")
+        print("----------------------")
+        print("Exit status of %s = %s." % (self.scan, self.exit_status))
+        print()
         print("Here are the number of times that each message was received.")
         from prettytable import PrettyTable
         p = PrettyTable(field_names=['Message Name', 'Times Called'])
@@ -375,5 +398,24 @@ class ScanValidator:
 
         for k, v in self.message_counts.items():
             p.add_row([k, v])
-
         print(p)
+
+        print()
+        print("Messages received (newest messages first)")
+        for idx, msg in enumerate(self.message_order):
+            print("%s: %s" % (idx, msg))
+        sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    from bluesky.examples import *
+    from bluesky.utils import ScanValidator
+
+    def bad_scan():
+        yield Msg('create')
+        yield Msg('checkpoint')
+        yield Msg('save')
+
+    sv = ScanValidator(bad_scan())
+    sv.validate()
+
