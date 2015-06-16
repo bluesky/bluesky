@@ -315,7 +315,6 @@ class RunEngine:
             "Permission to resume." Until this callable returns True, the Run
             Engine will not be allowed to resume. If None,
         """
-        print("REQUEST PAUSE")
         # No matter what, this will be processed if we try to resume.
         if callback is not None:
             if name is None:
@@ -333,19 +332,15 @@ class RunEngine:
                     print("No checkpoint; cannot pause. Aborting...")
                     self._exception = FailedPause()
             else:
-                print(("Cannot pause from {0} state. "
-                       "Ignoring request.").format(self.state))
+                print("Cannot pause from {0} state. "
+                       "Ignoring request.".format(self.state))
         else:
             if self.state.is_running:
                 self._deferred_pause_requested = True
-                if not self.resumable:
-                    print("No checkpoint yet; cannot pause. Will continue. "
-                          "Request a non-deferred pause to abort.")
-                else:
-                    print("Soft pause acknowledged. Continuing to checkpoint.")
+                print("Deferred pause acknowledged. Continuing to checkpoint.")
             else:
-                print(("Cannot pause from {0} state. "
-                       "Ignoring request.").format(self.state))
+                print("Cannot pause from {0} state. "
+                       "Ignoring request.".format(self.state))
 
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
@@ -391,7 +386,7 @@ class RunEngine:
         ...
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
-        # First thing's first: if we are panicked, do nothing.
+        # First thing's first: if we are in the wrong state, raise.
         if not self.state.is_idle:
             raise RuntimeError("The RunEngine is in a %s state" % self.state)
         if self._panic:
@@ -414,7 +409,6 @@ class RunEngine:
                                      "{0}".format(func))
                 self._temp_callback_ids.add(self.subscribe(name, func))
 
-        # Validate metadata.
         self._metadata_per_call = metadata
 
         self.state = 'running'
@@ -464,16 +458,11 @@ class RunEngine:
 
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
-        print('outside context')
         self.state = 'running'
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            print('inside context')
-            print(self._task.done())
             if self._task.done():
                 return
             loop.run_forever()
-            print('done running forever')
-            print(self._task.done())
             if self._task.done():
                 exc = self._task.exception()
                 if exc is not None:
@@ -525,7 +514,6 @@ class RunEngine:
                 coro = self._command_registry[msg.command]
                 self.debug("About to process: {0}, {1}".format(coro, msg))
                 response = yield from coro(msg)
-                print('hi')
                 self.debug('RE.state: ' + self.state)
                 self.debug('msg: {}\n   response: {}'.format(msg, response))
         except (StopIteration, RequestStop):
@@ -539,7 +527,6 @@ class RunEngine:
             self._reason = str(err)
             raise err
         finally:
-            print("AAT LASSST MY FINALLY HAS COME ALONG, MY LONELY DAYS ARE OVER AND LIFE IS LIKE A SONGGGGG")
             self.state = 'idle'
             # in case we were interrupted between 'configure' and 'deconfigure'
             for obj in self._configured:
@@ -624,12 +611,9 @@ class RunEngine:
                     time=ttime.time(), uid=new_uid(),
                     exit_status=self._exit_status,
                     reason=self._reason)
-        print('about to emit')
         yield from self.emit(DocumentNames.stop, doc)
-        print('emitted')
         self.debug("*** Emitted RunStop:\n%s" % doc)
         self._run_is_open = False
-        print('set run is open')
 
     @asyncio.coroutine
     def _create(self, msg):
@@ -765,9 +749,7 @@ class RunEngine:
 
     @asyncio.coroutine
     def _pause(self, msg):
-        print("_pause!!!")
         self.request_pause(*msg.args, **msg.kwargs)
-        print("_pause done!!!")
 
     @asyncio.coroutine
     def _checkpoint(self, msg):
