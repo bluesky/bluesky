@@ -103,6 +103,7 @@ class RunEngineStateMachine(StateMachine):
 
 class RunEngine:
 
+    _loop = loop  # just a convenient way to inspect the global event loop
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
 
