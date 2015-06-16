@@ -3,7 +3,7 @@ from .utils import Struct
 import numpy as np
 
 
-class ScanBaseClass(Struct):
+class ScanBase(Struct):
     """
     This is a base class for writing reusable scans.
 
@@ -47,12 +47,12 @@ class ScanBaseClass(Struct):
         return out_dict
 
     def _gen(self):
-        raise NotImplementedError("ScanBaseClass is a base class, you must "
+        raise NotImplementedError("ScanBase is a base class, you must "
                                   "sub-class it and override this method "
                                   "(_gen)")
 
 
-class Count(ScanBaseClass):
+class Count(ScanBase):
     """
     Take one or more readings from the detectors. Do not move anything.
 
@@ -83,7 +83,7 @@ class Count(ScanBaseClass):
         self.detectors = detectors
         self.num = num
         self.delay = delay
-        # We define _fields not for Struct, but for ScanBaseClass.log* methods.
+        # We define _fields not for Struct, but for ScanBase.log* methods.
         self._fields = ['detectors', 'num', 'delay']
 
     def _gen(self):
@@ -106,7 +106,7 @@ class Count(ScanBaseClass):
             yield Msg('deconfigure', d)
 
 
-class Scan1D(ScanBaseClass):
+class Scan1D(ScanBase):
     _fields = ['motor', 'detectors', 'steps']
 
     def _gen(self):
@@ -307,7 +307,7 @@ class LogDscan(Dscan):
         yield from super()._gen()
 
 
-class AdaptiveScanBaseClass(Scan1D):
+class AdaptiveScanBase(Scan1D):
     _fields = ['motor', 'detectors', 'target_field', 'start', 'stop',
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
@@ -369,7 +369,7 @@ class AdaptiveScanBaseClass(Scan1D):
             yield Msg('deconfigure', d)
 
 
-class AdaptiveAscan(AdaptiveScanBaseClass):
+class AdaptiveAscan(AdaptiveScanBase):
     """
     Absolute scan over one variable with adaptively tuned step size
 
@@ -399,7 +399,7 @@ class AdaptiveAscan(AdaptiveScanBaseClass):
         yield from super()._gen()
 
 
-class AdaptiveDscan(AdaptiveScanBaseClass):
+class AdaptiveDscan(AdaptiveScanBase):
     """
     Delta (relative) scan over one variable with adaptively tuned step size
 

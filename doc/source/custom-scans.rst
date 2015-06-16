@@ -339,12 +339,12 @@ Extra Credit: Less Typing, More Magic
 +++++++++++++++++++++++++++++++++++++
 
 If the ``__init__`` and ``__iter__`` blocks above seems tedious and reptitive,
-subclass bluesky's ``ScanBaseClass`` class.
+subclass bluesky's ``ScanBase`` class.
 
 .. ipython:: python
 
-    from bluesky.scans import ScanBaseClass
-    class ReusableStepscan(ScanBaseClass):
+    from bluesky.scans import ScanBase
+    class ReusableStepscan(ScanBase):
         _fields = ['motor', 'det']  # These magically become the args.
         def _gen(self):
             yield from stepscan(self.motor, self.det)
