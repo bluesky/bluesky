@@ -1,4 +1,5 @@
 import threading
+import asyncio
 import time as ttime
 from collections import deque
 import numpy as np
@@ -492,12 +493,8 @@ class PausingAgent:
 
 
 def panic_timer(RE, delay):
-    def f():
-        ttime.sleep(delay)
-        RE.panic()
-
-    thread = threading.Thread(target=f)
-    thread.start()
+    loop = asyncio.get_event_loop()
+    loop.call_later(delay, RE.panic)
 
 
 def simple_scan_saving(motor, det):

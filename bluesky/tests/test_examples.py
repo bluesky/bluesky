@@ -133,10 +133,10 @@ def test_panic_during_pause():
     assert_equal(RE.state, 'idle')
 
 
-def panic_from_thread():
+def test_panic_timer():
     assert_equal(RE.state, 'idle')
     panic_timer(RE, 1)  # panic in 1 second
-    RE(checkpoint_forever())
+    assert_raises(PanicError, RE, checkpoint_forever())
     # If we panic while runnning, we cannot resume. The run is aborted and we
     # land in 'idle'
     assert_equal(RE.state, 'idle')
