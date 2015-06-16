@@ -344,11 +344,7 @@ class ExtendedList(list):
 
 
 class ScanValidator:
-    def __init__(self, scan, run_engine=None):
-        if run_engine is None:
-            from .run_engine import RunEngine
-            run_engine = RunEngine()
-
+    def __init__(self, scan, run_engine):
         run_engine_state = ['']
         self.run_engine = run_engine
         self.scan = scan
@@ -372,6 +368,9 @@ class ScanValidator:
                     self.exit_status = ("'checkpoint' received after 'create' "
                                         "and before 'save'")
                     self.report()
+                    # flush stdout so that the scan validation report is not
+                    # interleaved with the exception
+                    sys.stdout.flush()
                     raise ValueError("A 'checkpoint' message cannot occur "
                                      "between a create and a save. This is a "
                                      "flawed scan. Printing out a report and "
@@ -404,18 +403,19 @@ class ScanValidator:
         print("Messages received (newest messages first)")
         for idx, msg in enumerate(self.message_order):
             print("%s: %s" % (idx, msg))
-        sys.stdout.flush()
 
 
 if __name__ == "__main__":
     from bluesky.examples import *
     from bluesky.utils import ScanValidator
+    from bluesky.tests.utils import setup_test_run_engine
+    RE = setup_test_run_engine()
 
     def bad_scan():
         yield Msg('create')
         yield Msg('checkpoint')
         yield Msg('save')
 
-    sv = ScanValidator(bad_scan())
+    sv = ScanValidator(bad_scan(), RE)
     sv.validate()
 
