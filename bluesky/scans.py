@@ -23,8 +23,10 @@ class ScanBase(Struct):
     related messages will work.
     """
     def __iter__(self):
+        yield Msg('open_run')
         yield Msg('logbook', None, self.logmsg(), **self.logdict())
         yield from self._gen()
+        yield Msg('close_run')
 
     def logmsg(self):
         args = []
