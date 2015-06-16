@@ -187,13 +187,15 @@ def test_md_history():
 def _md(md):
     RE = RunEngine(md)
     scan = simple_scan(motor)
-    assert_raises(KeyError, lambda: RE(scan))  # missing owner, beamline_id
-    assert_raises(KeyError, lambda: RE(scan, owner='dan'))
+    assert_raises(KeyError, RE, scan)  # missing owner, beamline_id
+    scan = simple_scan(motor)
+    assert_raises(KeyError, RE, scan, owner='dan')
     RE(scan, owner='dan', beamline_id='his desk',
        group='some group', config={})  # this should work
     RE(scan)  # and now this should work, reusing metadata
     RE.md.clear()
-    assert_raises(KeyError, lambda: RE(scan))
+    scan = simple_scan(motor)
+    assert_raises(KeyError, RE, scan)
     # We can prime the md directly.
     RE.md['owner'] = 'dan'
     RE.md['group'] = 'some group'
@@ -222,8 +224,7 @@ def _md(md):
     RE(scan, subs={'start': validate_dict_cb_opposite('project')})
 
     # Removing a field required by our Document spec is not allowed.
-    assert_raises(ValueError,
-                  lambda: RE.persistent_fields.remove('beamline_id'))
+    assert_raises(ValueError, RE.persistent_fields.remove, 'beamline_id')
 
 
 def validate_dict_cb(key, val):
