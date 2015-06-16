@@ -36,19 +36,9 @@ def test_all():
 
 @raises(Exception)
 def _raising_callbacks_helper(stream_name, callback):
-    RE(stepscan(motor, det), subs={stream_name: callback},
-       beamline_id='testing', owner='tester')
+    RE(stepscan(motor, det), subs={stream_name: callback})
 
     
-def test_callback_execution():
-    # make main thread exceptions end the scan
-    RE.dispatcher.cb_registry.halt_on_exception = True
-    cb = exception_raiser
-    for stream in ['all', 'start', 'event', 'stop', 'descriptor']:
-        yield _raising_callbacks_helper, stream, cb
-    RE.state = 'idle'
-
-
 def test_subscribe_msg():
     assert RE.state == 'idle'
     c = CallbackCounter()
