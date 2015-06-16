@@ -72,7 +72,7 @@ def test_wait_multiple():
 
 def test_hard_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, True, True))
+    RE(conditional_pause(motor, det, False, True))
     assert_equal(RE.state, 'paused')
     RE.resume()
     assert_equal(RE.state, 'paused')
@@ -80,9 +80,9 @@ def test_hard_pause():
     assert_equal(RE.state, 'idle')
 
 
-def test_soft_pause():
+def test_deferred_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, False, True))
+    RE(conditional_pause(motor, det, True, True))
     assert_equal(RE.state, 'paused')
     RE.resume()
     assert_equal(RE.state, 'paused')
@@ -92,13 +92,13 @@ def test_soft_pause():
 
 def test_hard_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, True, False))
-    assert_equal(RE.state, 'idle')
-
-
-def test_soft_pause_no_checkpoint():
-    assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, False, False))
+    assert_equal(RE.state, 'idle')
+
+
+def test_deferred_pause_no_checkpoint():
+    assert_equal(RE.state, 'idle')
+    RE(conditional_pause(motor, det, True, False))
     assert_equal(RE.state, 'idle')
 
 
@@ -106,13 +106,13 @@ def _pause_from_thread():
     assert_equal(RE.state, 'idle')
     agent = PausingAgent(RE, 'foo')
     # Cue up a pause requests in 1 second.
-    agent.issue_request(True, 1)
+    agent.issue_request(False, 1)
     RE(checkpoint_forever())
     assert_equal(RE.state, 'paused')
     agent.revoke_request()
 
     # Cue up a second pause requests in 2 seconds.
-    agent.issue_request(True, 2)
+    agent.issue_request(False, 2)
     RE.resume()
     assert_equal(RE.state, 'paused')
 
@@ -122,7 +122,7 @@ def _pause_from_thread():
 
 def test_panic_during_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, True, True))
+    RE(conditional_pause(motor, det, False, True))
     RE.panic()
     assert_true(RE._panic)
     assert_raises(PanicError, lambda: RE.resume())

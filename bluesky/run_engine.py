@@ -291,7 +291,7 @@ class RunEngine:
         # is broken when it raises a PanicError.
         loop.call_later(0.1, self._check_for_trouble)
 
-    def request_pause(self, hard=True, name=None, callback=None):
+    def request_pause(self, defer=False, name=None, callback=None):
         """
         Command the Run Engine to pause.
 
@@ -304,10 +304,10 @@ class RunEngine:
 
         Parameters
         ----------
-        hard : bool, optional
-            If True, pause immediately before processing any new messages.
-            If False, pause at the next checkpoint.
-            True by default.
+        defer : bool, optional
+            If False, pause immediately before processing any new messages.
+            If True, pause at the next checkpoint.
+            False by default.
         name : str, optional
             Identify the source/reason for this pause. Required if there is a
             callback, below.
@@ -323,7 +323,7 @@ class RunEngine:
                                  "a name.")
             self._pause_requests[name] = callback
         # Now to the right pause state if we can.
-        if hard:
+        if not defer:
             if self.state.can_pause:
                 print("Pausing...")
                 self.state = 'paused'
@@ -333,14 +333,14 @@ class RunEngine:
                     print("No checkpoint; cannot pause. Aborting...")
                     self._exception = FailedPause()
             else:
-                print(("Cannot hard pause from {0} state. "
+                print(("Cannot pause from {0} state. "
                        "Ignoring request.").format(self.state))
         else:
             if self.state.is_running:
                 self._deferred_pause_requested = True
                 if not self.resumable:
-                    print("No checkpoint yet; cannot pause. Request a hard "
-                          "pause to abort.")
+                    print("No checkpoint yet; cannot pause. Will continue. "
+                          "Request a non-deferred pause to abort.")
                 else:
                     print("Soft pause acknowledged. Continuing to checkpoint.")
             else:

@@ -455,7 +455,7 @@ def wait_complex(motors, det):
     yield Msg('close_run')
 
 
-def conditional_pause(motor, det, hard, include_checkpoint):
+def conditional_pause(motor, det, defer, include_checkpoint):
     yield Msg('open_run')
     for i in range(5):
         if include_checkpoint:
@@ -464,7 +464,7 @@ def conditional_pause(motor, det, hard, include_checkpoint):
         yield Msg('trigger', det)
         reading = yield Msg('read', det)
         if reading['det']['value'] < 0.2:
-            yield Msg('pause', hard=hard)
+            yield Msg('pause', defer=defer)
         print("I'm not pausing yet.")
     yield Msg('close_run')
 
@@ -474,14 +474,14 @@ class PausingAgent:
         self.RE = RE
         self.name = name
 
-    def issue_request(self, hard, delay=0):
+    def issue_request(self, defer, delay=0):
         def callback():
             return self.permission
 
         def requester():
             ttime.sleep(delay)
             self.permission = False
-            self.RE.request_pause(hard, self.name, callback)
+            self.RE.request_pause(defer, self.name, callback)
 
         thread = threading.Thread(target=requester)
         thread.start()
@@ -536,7 +536,7 @@ def cautious_stepscan(motor, det):
         yield Msg('save')
         print("Value at {m} is {d}. Pausing.".format(
             m=ret_m[motor._name]['value'], d=ret_d[det1._name]['value']))
-        yield Msg('pause', None, hard=False)
+        yield Msg('pause', None, defer=True)
     yield Msg('close_run')
 
 
