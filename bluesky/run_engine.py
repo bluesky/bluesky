@@ -7,7 +7,6 @@ from collections import namedtuple, deque, defaultdict, Iterable
 import uuid
 import signal
 import threading
-from queue import Queue, Empty
 from enum import Enum
 import traceback
 
@@ -24,11 +23,17 @@ from .utils import CallbackRegistry, SignalHandler, ExtendedList
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
+class DocumentNames(Enum):
+    stop = 'stop'
+    start = 'start'
+    descriptor = 'descriptor'
+    event = 'event'
+
 SCHEMA_PATH = 'schema'
-SCHEMA_NAMES = {'start': 'run_start.json',
-                'stop': 'run_stop.json',
-                'event': 'event.json',
-                'descriptor': 'event_descriptor.json'}
+SCHEMA_NAMES = {DocumentNames.start: 'run_start.json',
+                DocumentNames.stop: 'run_stop.json',
+                DocumentNames.event: 'event.json',
+                DocumentNames.descriptor: 'event_descriptor.json'}
 fn = '{}/{{}}'.format(SCHEMA_PATH)
 schemas = {}
 for name, filename in SCHEMA_NAMES.items():
@@ -38,22 +43,6 @@ for name, filename in SCHEMA_NAMES.items():
 
 loop = asyncio.get_event_loop()
 loop.set_debug(True)
-
-
-class LossyLiFoQueue(Queue):
-    '''Variant of Queue that is a 'lossy' first-in-last-out
-
-    The queue size is strictly bounded at `maxsize - 1` by
-    discarding old entries.
-    '''
-    def _init(self, maxsize):
-        if maxsize < 2:
-            raise ValueError("maxsize must be 2 or greater "
-                             "for LossyLiFoQueue")
-        self.queue = deque(maxlen=maxsize - 1)
-
-    def _get(self):
-        return self.queue.pop()
 
 
 class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
@@ -261,18 +250,10 @@ class RunEngine:
         self._block_groups.clear()
         # self._temp_callback_ids are cleared before, after unsubscribing
         self._msg_cache = None
-        self._exit_status = 'success'
+        self._exit_status = 'fail'
         self._reason = ''
-        # clear the main thread queues
-        for queue in self._queues.values():
-            try:
-                while True:
-                    self.debug(
-                        "This was left on the queue after the last run ended:"
-                        "====\n{}\n====".format(queue.get_nowait()))
-            except Empty:
-                # queue is empty
-                pass
+        self._task = None
+        self._handles = {k: None for k in DocumentNames}
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -395,10 +376,7 @@ class RunEngine:
         """
         return self._scan_cb_registry.connect(name, func)
 
-    def _push_to_queue(self, name, doc):
-        self._queues[name].put(doc)
-
-    def __call__(self, gen, subs=None, use_threading=True, **metadata):
+    def __call__(self, gen, subs=None, **metadata):
         """Run the scan defined by ``gen``
 
         Any keyword arguments other than those listed below will be
@@ -414,9 +392,11 @@ class RunEngine:
             - Valid dict keys are: {'start', 'stop', 'event', 'descriptor'}
             - Dict values must be a function with the signature `f(dict)` or a
               list of such functions
-        use_threading : bool, optional
-            True by default. False makes debugging easier, but removes some
-            features like pause/resume and main-thread subscriptions.
+
+        Returns
+        -------
+        uids : list
+            list of Header uids (a.k.a RunStart uids) of run(s)
 
         Examples
         --------
@@ -643,7 +623,7 @@ class RunEngine:
                     exit_status=self._exit_status,
                     reason=self._reason)
         print('about to emit')
-        yield from self.emit('stop', doc)
+        yield from self.emit(DocumentNames.stop, doc)
         print('emitted')
         self.debug("*** Emitted RunStop:\n%s" % doc)
         self._run_is_open = False
@@ -680,7 +660,7 @@ class RunEngine:
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
-            yield from self.emit('descriptor', doc)
+            yield from self.emit(DocumentNames.descriptor, doc)
             self.debug("*** Emitted Event Descriptor:\n%s" % doc)
             self._descriptor_uids[objs_read] = descriptor_uid
             self._sequence_counters[objs_read] = count(1)
@@ -699,7 +679,7 @@ class RunEngine:
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid)
-        yield from self.emit('event', doc)
+        yield from self.emit(DocumentNames.event, doc)
         self.debug("*** Emitted Event:\n%s" % doc)
 
     @asyncio.coroutine
@@ -722,7 +702,7 @@ class RunEngine:
                 descriptor_uid = new_uid()
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid)
-                self.emit('descriptor', doc)
+                self.emit(DocumentNames.descriptor, doc)
                 self.debug("Emitted Event Descriptor:\n%s" % doc)
                 self._descriptor_uids[objs_read] = descriptor_uid
                 self._sequence_counters[objs_read] = count(1)
@@ -740,7 +720,7 @@ class RunEngine:
             ev['descriptor'] = descriptor_uid
             ev['seq_num'] = seq_num
             ev['uid'] = event_uid
-            self.emit('event', ev)
+            self.emit(DocumentNames.event, ev)
             self.debug("Emitted Event:\n%s" % ev)
 
     @asyncio.coroutine
@@ -869,7 +849,7 @@ class RunEngine:
         jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
         handle = loop.call_soon(self.dispatcher.process, name, doc)
-        if name != 'descriptor':
+        if name != DocumentNames.descriptor:
             # If the last doc hasn't been processed yet, cancel it to
             # prioritize the latest one.
             if self._handles[name]:
@@ -885,8 +865,7 @@ class RunEngine:
 class Dispatcher:
     """Dispatch documents to user-defined consumers on the main thread."""
 
-    def __init__(self, queues):
-        self.queues = queues
+    def __init__(self):
         self.cb_registry = CallbackRegistry(halt_on_exception=False)
         self._counter = count()
         self._token_mapping = dict()
@@ -913,20 +892,19 @@ class Dispatcher:
         token : int
             an integer token that can be used to unsubscribe
         """
-        queue_keys = self.queues.keys()
-        if name in queue_keys:
-            private_token = self.cb_registry.connect(name, func)
-            public_token = next(self._counter)
-            self._token_mapping[public_token] = [private_token]
-        elif name == 'all':
+        if name == 'all':
             private_tokens = []
-            for key in queue_keys:
+            for key in DocumentNames:
                 private_tokens.append(self.cb_registry.connect(key, func))
             public_token = next(self._counter)
             self._token_mapping[public_token] = private_tokens
-        else:
-            valid_names = queue_keys + ['all']
-            raise ValueError("Valid names: {0}".format(valid_names))
+            return public_token
+
+        if isinstance(name, str):
+            name = DocumentNames[name]
+        private_token = self.cb_registry.connect(name, func)
+        public_token = next(self._counter)
+        self._token_mapping[public_token] = [private_token]
         return public_token
 
     def unsubscribe(self, token):
