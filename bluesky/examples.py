@@ -465,7 +465,7 @@ def conditional_pause(motor, det, hard, include_checkpoint):
         reading = yield Msg('read', det)
         if reading['det']['value'] < 0.2:
             yield Msg('pause', hard=hard)
-        yield Msg('set', motor, i + 0.5)
+        print("I'm not pausing yet.")
     yield Msg('close_run')
 
 
