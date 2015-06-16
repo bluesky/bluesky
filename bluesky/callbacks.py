@@ -49,7 +49,7 @@ class LiveImage(CallbackBase):
 
         Note: If your figure blocks the main thread when you are trying to
         scan with this callback, call `plt.ion()` in your IPython session.
-        
+
         Parameters
         ----------
         field : string
