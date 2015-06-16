@@ -41,6 +41,15 @@ def bad_deconfigure_scan2():
     yield Msg('deconfigure', det)
     yield Msg('deconfigure', det)
 
+bad_scans = [
+    bad_deconfigure_scan2,
+    bad_deconfigure_scan,
+    bad_save_scan2,
+    bad_save_scan,
+    bad_checkpoint_scan,
+    bad_subscription_scan,
+    bad_configure_scan
+]
 
 def good_checkpoint_scan():
     yield Msg('checkpoint')
@@ -60,6 +69,13 @@ def good_deconfigure_scan():
         yield Msg('deconfigure', det)
 
 
+good_scans = [
+    good_checkpoint_scan,
+    good_subscription_scan,
+    good_deconfigure_scan,
+]
+
+
 def _validator_helper(scan, run_engine, raises):
     sv = ScanValidator(scan, run_engine)
     if raises:
@@ -70,26 +86,12 @@ def _validator_helper(scan, run_engine, raises):
 
 def validator_tester():
     global RE
-    bad_scans = [
-        bad_checkpoint_scan(),
-        bad_save_scan(),
-        bad_save_scan2(),
-        bad_subscription_scan(),
-        bad_configure_scan(),
-        bad_deconfigure_scan(),
-        bad_deconfigure_scan2(),
-    ]
-    good_scans = [
-        good_checkpoint_scan(),
-        good_subscription_scan(),
-        good_deconfigure_scan(),
-    ]
 
     for scan in bad_scans:
-        yield _validator_helper, scan, RE, ValueError
+        yield _validator_helper, scan(), RE, ValueError
 
     for scan in good_scans:
-        yield _validator_helper, scan, RE, None
+        yield _validator_helper, scan(), RE, None
 
 
 if __name__ == "__main__":

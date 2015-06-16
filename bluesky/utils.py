@@ -350,7 +350,7 @@ class ScanValidator:
         self.scan = scan
         self.message_names = list(self.run_engine._command_registry.keys())
         self.message_counts = defaultdict(int)
-        self.message_order = deque()
+        self.message_order = []
         self.exit_status = 'Not yet validated'
         self.configured = set()
 
@@ -361,7 +361,8 @@ class ScanValidator:
             # search backwards through history and make sure that we
             # find a "save" before we find a "create", or don't find a save
             # at all.
-            for msg in self.message_order:
+            # the zeroth message is the message that we are trying to process
+            for msg in self.message_order[1:]:
                 if msg.command == 'save':
                     # all is well
                     break
@@ -380,7 +381,8 @@ class ScanValidator:
             # search backwards through history and make sure that 'create' is
             # encountered first. Otherwise, raise!
             all_is_well = False
-            for msg in self.message_order:
+            # the zeroth message is the message that we are trying to process
+            for msg in self.message_order[1:]:
                 if msg.command == 'create':
                     # all is well
                     all_is_well = True
@@ -453,8 +455,8 @@ class ScanValidator:
     def validate(self):
         self.exit_status = 'Not yet validated'
         for msg in self.scan:
+            self.message_order.insert(0, msg)
             self._process_message(msg)
-            self.message_order.appendleft(msg)
         self.exit_status = "Success"
 
     def report(self):
