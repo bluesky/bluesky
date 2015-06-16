@@ -3,7 +3,7 @@ from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, deque
 import sys
 
 import logging
@@ -353,6 +353,7 @@ class ScanValidator:
         self.scan = scan
         self.message_names = list(self.run_engine._command_registry.keys())
         self.message_counts = defaultdict(int)
+        self.message_order = deque()
 
     def _process_message(self, message):
         # increment the number of coun
@@ -360,6 +361,7 @@ class ScanValidator:
 
     def validate(self):
         for msg in self.scan:
+            self.message_order.append(msg)
             self._process_message(msg)
 
     def report(self):
