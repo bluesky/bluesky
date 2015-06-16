@@ -90,6 +90,14 @@ class SynGauss(Reader):
     """
     Evaluate a point on a Gaussian based on the value of a motor.
 
+    Parameters
+    ----------
+    noise : {'poisson', 'uniform', None}
+        Add noise to the gaussian peak.
+    noise_multiplier : float
+        Only relevant for 'uniform' noise. Multiply the random amount of
+        noise by 'noise_multiplier'
+
     Example
     -------
     motor = Mover('motor', ['motor'])
@@ -98,7 +106,7 @@ class SynGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
-                 noise=False):
+                 noise=None, noise_multiplier=1):
         super(SynGauss, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
@@ -107,51 +115,16 @@ class SynGauss(Reader):
         self.Imax = Imax
         self.sigma = sigma
         self.noise = noise
+        self.noise_multiplier = noise_multiplier
 
     def trigger(self, *, block_group=True):
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        if self.noise:
+        if self.noise == 'poisson':
             v = int(np.random.poisson(np.round(v), 1))
-        self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
-        ttime.sleep(0.05)  # simulate exposure time
-        self.ready = True
-        return self
-
-    def read(self):
-        return self._data
-
-
-class NoisyGaussian(Reader):
-    """
-    Evaluate a point on a Gaussian based on the value of a motor.
-
-    Example
-    -------
-    motor = Mover('motor', ['motor'])
-    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
-    """
-    _klass = 'reader'
-
-    def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
-                 noise=False, noise_factor=1):
-        super().__init__(name, [name, ])
-        self.ready = True
-        self._motor = motor
-        self._motor_field = motor_field
-        self.center = center
-        self.Imax = Imax
-        self.sigma = sigma
-        self.noise = noise
-        self.noise_factor = 1
-
-    def trigger(self, *, block_group=True):
-        self.ready = False
-        m = self._motor._data[self._motor_field]['value']
-        v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        if self.noise:
-            v += random.uniform(-1, 1) * self.noise_factor
+        elif self.noise == 'uniform':
+            v += random.uniform(-1, 1) * self.noise_multiplier
         self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
@@ -382,7 +355,8 @@ motor = Mover('motor', ['motor'])
 motor1 = Mover('motor1', ['motor1'], sleep_time=.1)
 motor2 = Mover('motor2', ['motor2'], sleep_time=.2)
 motor3 = Mover('motor3', ['motor3'], sleep_time=.5)
-noisy_det = NoisyGaussian('det', motor, 'motor', center=0, Imax=1, sigma=1)
+noisy_det = SynGauss('det', motor, 'motor', center=0, Imax=1,
+                     noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
 det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
