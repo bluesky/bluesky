@@ -13,10 +13,6 @@ def bad_checkpoint_scan():
     yield Msg('save')
 
 
-def bad_subscription_scan():
-    yield Msg('subscribe', None, 'start')
-
-
 def bad_save_scan():
     yield Msg('save')
 
@@ -47,7 +43,6 @@ bad_scans = [
     bad_save_scan2,
     bad_save_scan,
     bad_checkpoint_scan,
-    bad_subscription_scan,
     bad_configure_scan
 ]
 
@@ -55,12 +50,6 @@ def good_checkpoint_scan():
     yield Msg('checkpoint')
     yield Msg('create')
     yield Msg('save')
-
-
-def good_subscription_scan():
-    yield Msg('subscribe', None, 'stop')
-    yield Msg('subscribe', None, 'descriptor')
-    yield Msg('subscribe', None, 'event')
 
 
 def good_deconfigure_scan():
@@ -71,7 +60,6 @@ def good_deconfigure_scan():
 
 good_scans = [
     good_checkpoint_scan,
-    good_subscription_scan,
     good_deconfigure_scan,
 ]
 

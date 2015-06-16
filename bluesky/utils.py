@@ -413,15 +413,6 @@ class ScanValidator:
                                  "is a flawed scan. Printing out a report "
                                  "and ceasing to process the scan.")
 
-        if message.command == 'subscribe':
-            if 'start' in message.args:
-                self.exit_status = ("We do not allow the 'subscribe' message "
-                                    "to subscribe to the 'start' document.")
-                self.report()
-                sys.stdout.flush()
-                raise ValueError("The 'subscribe' message is not allowed to "
-                                 "subscribe to the 'start' queue")
-
         if message.command == 'configure':
             if message.obj in self.configured:
                 # then we have tried to configure a detector twice without
