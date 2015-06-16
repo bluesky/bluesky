@@ -65,9 +65,6 @@ class RunEngineStateMachine(StateMachine):
         State machine is in its idle state
     is_running
         State machine is in its running state
-    is_soft_pausing
-        State machine has been asked to enter a soft pause but is not yet in
-        its ``paused`` state
     is_paused
         State machine is paused.
     """
@@ -76,7 +73,6 @@ class RunEngineStateMachine(StateMachine):
         """state.name = state.value"""
         IDLE = 'idle'
         RUNNING = 'running'
-        SOFT_PAUSING = 'soft_pausing'
         PAUSED = 'paused'
 
         @classmethod
@@ -91,13 +87,11 @@ class RunEngineStateMachine(StateMachine):
             # opposite to <--> from structure.
             # from_state : [valid_to_states]
             'idle': ['running'],
-            'running': ['idle', 'soft_pausing', 'paused'],
-            'soft_pausing': ['paused', 'soft_pausing'],
+            'running': ['idle', 'paused'],
             'paused': ['idle', 'running'],
         }
         named_checkers = [
             ('can_pause', 'paused'),
-            ('can_soft_pause', 'soft_pausing'),
         ]
 
 
@@ -127,8 +121,7 @@ class RunEngine:
         Attributes
         ----------
         state
-            {'idle', 'running', 'soft_pausing, 'hard_pausing', 'paused',
-             'aborting'}
+            {'idle', 'running', 'paused'}
         md
             direct access to the dict-like persistent storage described above
         persistent_fields
@@ -166,6 +159,7 @@ class RunEngine:
         self._panic = False
         self._bundling = False  # if we are in the middle of bundling readings
         self._run_is_open = False  # if we have emitted a RunStart, no RunStop
+        self._deferred_pause_requested = False  # pause at next 'checkpoint'
         self._rewound = False  # if we are recovering from a pause
         self._sigint_handler = None
         self._sigtstp_handler = None
@@ -224,6 +218,7 @@ class RunEngine:
         self._metadata_per_run.clear()
         self._bundling = False
         self._run_is_open = False
+        self._deferred_pause_requested = False
         self._rewound = False
         self._exception = None
         self._objs_read.clear()
@@ -250,10 +245,6 @@ class RunEngine:
     @property
     def resumable(self):
         return self._msg_cache is not None
-
-    @property
-    def normal_operation(self):
-        return self.state.is_running or self.state.is_soft_pausing
 
     def register_command(self, name, func):
         """
@@ -314,8 +305,8 @@ class RunEngine:
         Parameters
         ----------
         hard : bool, optional
-            If True, issue a 'hard pause' that stops at the next message.
-            If False, issue a 'soft pause' that stops at the next checkpoint.
+            If True, pause immediately before processing any new messages.
+            If False, pause at the next checkpoint.
             True by default.
         name : str, optional
             Identify the source/reason for this pause. Required if there is a
@@ -345,15 +336,15 @@ class RunEngine:
                 print(("Cannot hard pause from {0} state. "
                        "Ignoring request.").format(self.state))
         else:
-            if self.state.can_soft_pause:
-                self.state = 'soft_pausing'
+            if self.state.is_running:
+                self._deferred_pause_requested = True
                 if not self.resumable:
                     print("No checkpoint yet; cannot pause. Request a hard "
                           "pause to abort.")
                 else:
                     print("Soft pause acknowledged. Continuing to checkpoint.")
             else:
-                print(("Cannot soft pause from {0} state. "
+                print(("Cannot pause from {0} state. "
                        "Ignoring request.").format(self.state))
 
     def _register_scan_callback(self, name, func):
@@ -549,9 +540,6 @@ class RunEngine:
             raise err
         finally:
             print("AAT LASSST MY FINALLY HAS COME ALONG, MY LONELY DAYS ARE OVER AND LIFE IS LIKE A SONGGGGG")
-            if self.state.is_soft_pausing:
-                # We never found the next checkpoint, lads.
-                self.state = 'paused'
             self.state = 'idle'
             # in case we were interrupted between 'configure' and 'deconfigure'
             for obj in self._configured:
@@ -783,19 +771,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _checkpoint(self, msg):
-        print('A')
         if self._bundling:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
-        print('B is for burger')
         self._msg_cache = deque()
-        print('so hungry')
-        if self.state.is_soft_pausing:
-            print('c is for cheese')
+        if self._deferred_pause_requested:
             self.state = 'paused'
-            print("Checkpoint reached. Pausing...")
             loop.stop()
-            print('d is for donut')
 
     @asyncio.coroutine
     def _logbook(self, msg):
