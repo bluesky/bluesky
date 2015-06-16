@@ -352,6 +352,7 @@ class ScanValidator:
         self.message_counts = defaultdict(int)
         self.message_order = deque()
         self.exit_status = 'Not yet validated'
+        self.configured = set()
 
     def _process_message(self, message):
         # increment the number of coun
@@ -375,12 +376,85 @@ class ScanValidator:
                                      "between a create and a save. This is a "
                                      "flawed scan. Printing out a report and "
                                      "ceasing to process the scan.")
+        if message.command == 'save':
+            # search backwards through history and make sure that 'create' is
+            # encountered first. Otherwise, raise!
+            all_is_well = False
+            for msg in self.message_order:
+                if msg.command == 'create':
+                    # all is well
+                    all_is_well = True
+                    break
+                elif msg.command == 'save':
+                    # all is definitely not well
+                    self.exit_status = ("Two 'save's were received "
+                                        "without a 'create' in between.")
+                    self.report()
+                    # flush stdout so that the scan validation report is not
+                    # interleaved with the exception
+                    sys.stdout.flush()
+                    raise ValueError("Two 'save' messages cannot be processed "
+                                     "without a 'create' message occuring "
+                                     "between them. This is a flawed scan. "
+                                     "Printing out a report and ceasing to "
+                                     "process the scan.")
+
+            if not all_is_well:
+                self.exit_status = ("There is no 'create' message that "
+                                    "precedes this 'save' message")
+                self.report()
+                # flush stdout so that the scan validation report is not
+                # interleaved with the exception
+                sys.stdout.flush()
+                raise ValueError("A 'save' message cannot be processed "
+                                 "without having a 'create' before it.This "
+                                 "is a flawed scan. Printing out a report "
+                                 "and ceasing to process the scan.")
+
+        if message.command == 'subscribe':
+            if 'start' in message.args:
+                self.exit_status = ("We do not allow the 'subscribe' message "
+                                    "to subscribe to the 'start' document.")
+                self.report()
+                sys.stdout.flush()
+                raise ValueError("The 'subscribe' message is not allowed to "
+                                 "subscribe to the 'start' queue")
+
+        if message.command == 'configure':
+            if message.obj in self.configured:
+                # then we have tried to configure a detector twice without
+                # deconfiguring it first
+                self.exit_status = (
+                    "'configure' cannot be received twice in a row. "
+                    "'deconfigure' must be called before 'configure' can be "
+                    "called again.")
+                self.report()
+                sys.stdout.flush()
+                raise ValueError(
+                    "A second 'configure' request for object %s was received "
+                    "without processing a 'deconfigure' for this object." %
+                    message.obj)
+            # otherwise, add it to the set of configured detectors
+            self.configured.add(message.obj)
+
+        if message.command == 'deconfigure':
+            if message.obj not in self.configured:
+                # that is a problem!
+                self.exit_status = ("'deconfigure' received without a "
+                                    "corresponding 'configure' first.")
+                self.report()
+                sys.stdout.flush()
+                raise ValueError(
+                    "A 'deconfigure' request for object %s was received "
+                    "without a 'configure' request first." % message.obj)
+            # otherwise, remove it from the set of configured detectors
+            self.configured.remove(message.obj)
 
     def validate(self):
         self.exit_status = 'Not yet validated'
         for msg in self.scan:
-            self.message_order.appendleft(msg)
             self._process_message(msg)
+            self.message_order.appendleft(msg)
         self.exit_status = "Success"
 
     def report(self):
@@ -411,11 +485,5 @@ if __name__ == "__main__":
     from bluesky.tests.utils import setup_test_run_engine
     RE = setup_test_run_engine()
 
-    def bad_scan():
-        yield Msg('create')
-        yield Msg('checkpoint')
-        yield Msg('save')
-
-    sv = ScanValidator(bad_scan(), RE)
+    sv = ScanValidator(bad_checkpoint_scan(), RE)
     sv.validate()
-
