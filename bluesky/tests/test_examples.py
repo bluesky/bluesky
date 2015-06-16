@@ -102,7 +102,7 @@ def test_soft_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
 
 
-def test_pause_from_thread():
+def _pause_from_thread():
     assert_equal(RE.state, 'idle')
     agent = PausingAgent(RE, 'foo')
     # Cue up a pause requests in 1 second.
@@ -133,7 +133,7 @@ def test_panic_during_pause():
     assert_equal(RE.state, 'idle')
 
 
-def test_panic_from_thread():
+def panic_from_thread():
     assert_equal(RE.state, 'idle')
     panic_timer(RE, 1)  # panic in 1 second
     RE(checkpoint_forever())

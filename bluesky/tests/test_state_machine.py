@@ -20,7 +20,7 @@ def _transitioner(state_machine, state_from, state_to, valid_transition):
         assert_raises(TransitionError, state_machine.set_, state_to)
 
 
-def test_state_machine_transitions():
+def state_machine_transitions():
     raise KnownFailureTest()
     transition_map = tautologically_define_state_machine_transitions(sm)
     for state_from, transitions in transition_map.items():
@@ -30,7 +30,7 @@ def test_state_machine_transitions():
             yield _transitioner, sm, state_from, state_to, valid_transition
 
 
-def test_super_state_machine():
+def super_state_machine():
     # make sure super state machine is doing what it promises to do...
     assert_equal(tautologically_define_state_machine_transitions(sm),
                  define_state_machine_transitions_from_class(sm))

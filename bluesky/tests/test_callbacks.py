@@ -46,7 +46,7 @@ def test_callback_execution():
     cb = exception_raiser
     for stream in ['all', 'start', 'event', 'stop', 'descriptor']:
         yield _raising_callbacks_helper, stream, cb
-    RE.state.stop()
+    RE.state = 'idle'
 
 
 def test_subscribe_msg():
