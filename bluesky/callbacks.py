@@ -63,6 +63,8 @@ class LiveImage(CallbackBase):
         super().__init__()
         self.field = field
         fig = plt.figure()
+        # show the figure (Note that this is a non-blocking call to show)
+        fig.show()
         self.cs = CrossSection(fig)
 
     def event(self, doc):
@@ -153,6 +155,7 @@ class LivePlot(CallbackBase):
         # stash the figure so we can re-show it later if it gets closed (or
         # something)
         self.fig = fig
+        # show the figure (Note that this is a non-blocking call to show)
         fig.show()
         if legend_keys is None:
             legend_keys = []
