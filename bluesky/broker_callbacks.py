@@ -71,6 +71,8 @@ def validate_all_events(run_stop):
     Parameters
     ----------
     run_stop : uid or RunStop document
+        If used as a callback, this function should subscribe to the 'stop'
+        queue.
     """
     try:
         run_start_uid = run_stop['run_start']
@@ -116,6 +118,8 @@ def validate_all_resources(run_stop):
     Parameters
     ----------
     run_stop : uid or RunStop document
+        If used as a callback, this function should subscribe to the 'stop'
+        queue.
     """
     try:
         run_start_uid = run_stop['run_start']
