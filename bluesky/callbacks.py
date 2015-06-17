@@ -149,6 +149,10 @@ class LivePlot(CallbackBase):
         """
         super().__init__()
         fig, ax = plt.subplots()
+        fig.show()
+        # stash the figure so we can re-show it later if it gets closed (or
+        # something)
+        self.fig = fig
         self.ax = ax
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
