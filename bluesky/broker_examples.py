@@ -97,3 +97,13 @@ class SynGauss2D(Reader):
                              'dtype': 'array',
                              'shape': list(self.dims),
                              'external': 'FILESTORE:'}}
+
+
+det_2d = SynGauss2D('det_2d', motor, 'motor', center=0, Imax=1000, sigma=1,
+                    nx=300, ny=300)
+det1_2d = SynGauss2D('det1_2d', motor1, 'motor1', center=0, Imax=10,
+                     sigma=1, nx=100, ny=600)
+det2_2d = SynGauss2D('det2_2d', motor2, 'motor2', center=1, Imax=10,
+                     sigma=.5, nx=1000, ny=1000)
+det3_2d = SynGauss2D('det3_2d', motor3, 'motor3', center=-1, Imax=10,
+                     sigma=1.5, nx=500, ny=200)

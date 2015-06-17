@@ -254,15 +254,6 @@ det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
 det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
 det3 = SynGauss('det3', motor3, 'motor3', center=-1, Imax=2, sigma=1)
-det_2d = SynGauss2D('det_2d', motor, 'motor', center=0, Imax=1000, sigma=1,
-                    nx=300, ny=300)
-det1_2d = SynGauss2D('det1_2d', motor1, 'motor1', center=0, Imax=10,
-                     sigma=1, nx=100, ny=600)
-det2_2d = SynGauss2D('det2_2d', motor2, 'motor2', center=1, Imax=10,
-                     sigma=.5, nx=1000, ny=1000)
-det3_2d = SynGauss2D('det3_2d', motor3, 'motor3', center=-1, Imax=10,
-                     sigma=1.5, nx=500, ny=200)
-
 
 def simple_scan(motor):
     yield Msg('open_run')

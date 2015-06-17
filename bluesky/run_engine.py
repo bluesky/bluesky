@@ -819,17 +819,29 @@ class RunEngine:
         return token
 
     @asyncio.coroutine
+    def _process_event(self, doc):
+        "Wrap a curried dispatcher method in a coroutine."
+        return self.dispatcher.process('event', doc)
+
+    @asyncio.coroutine
+    def _impatient_event_processor(self, doc):
+        "Schedule a Event to be processed with a timeout."
+        yield from asyncio.wait_for(self._process_event,
+                                    self._event_timeout)
+
+    @asyncio.coroutine
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
-        handle = loop.call_soon(self.dispatcher.process, name, doc)
-        if name != DocumentNames.descriptor:
-            # If the last doc hasn't been processed yet, cancel it to
-            # prioritize the latest one.
-            if self._handles[name]:
-                self._handles[name].cancel()  # no effect if finished
-            self._handles[name] = handle
+        if name == DocumentNames.event:
+            # Schedule with a timeout. If the event loop gets to this
+            # after the timeout, it will skip it. Thus, more recent Events
+            # effectively get priority.
+            loop.create_task(self._impatient_event_processor(doc))
+        else:
+            # All other Documents will not time out.
+            loop.call_soon(self.dispatcher.process, name, doc)
 
     def debug(self, msg):
         "Print if the verbose attribute is True."
