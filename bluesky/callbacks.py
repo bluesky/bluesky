@@ -47,6 +47,9 @@ class LiveImage(CallbackBase):
         """
         Stream 2D images in a cross-section viewer.
 
+        Note: If your figure blocks the main thread when you are trying to
+        scan with this callback, call `plt.ion()` in your IPython session.
+
         Parameters
         ----------
         field : string
@@ -61,7 +64,6 @@ class LiveImage(CallbackBase):
         self.field = field
         fig = plt.figure()
         self.cs = CrossSection(fig)
-        self.cs._fig.show()
 
     def event(self, doc):
         uid = doc['data'][self.field]
@@ -120,6 +122,9 @@ class LivePlot(CallbackBase):
         """
         Build a function that updates a plot from a stream of Events.
 
+        Note: If your figure blocks the main thread when you are trying to
+        scan with this callback, call `plt.ion()` in your IPython session.
+
         Parameters
         ----------
         y : str
@@ -144,12 +149,15 @@ class LivePlot(CallbackBase):
         >>> RE(my_scan, subs={'event': my_plotter})
         """
         super().__init__()
-        fig = plt.figure()
-        self.ax = fig.add_subplot(1, 1, 1)
+        fig, ax = plt.subplots()
+        # stash the figure so we can re-show it later if it gets closed (or
+        # something)
+        self.fig = fig
         fig.show()
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
+        self.ax = ax
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
         self.ax.margins(.1)

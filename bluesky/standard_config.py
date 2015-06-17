@@ -9,6 +9,7 @@ from .run_engine import RunEngine
 from .legacy_scans import LegacyAscan, LegacyDscan, LegacyCount
 from .register_mds import register_mds
 from .callbacks import print_metadata
+from matplotlib import pyplot as plt
 
 
 logger = logging.getLogger(__name__)
