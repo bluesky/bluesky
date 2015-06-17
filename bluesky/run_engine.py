@@ -178,7 +178,6 @@ class RunEngine:
         self._exit_status = 'fail'  # pessimistic default
         self._reason = ''
         self._task = None
-        self._handles = {k: None for k in DocumentNames}
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -235,7 +234,6 @@ class RunEngine:
         self._exit_status = 'fail'
         self._reason = ''
         self._task = None
-        self._handles = {k: None for k in DocumentNames}
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -777,7 +775,7 @@ class RunEngine:
             msg.append('--------')
             msg.append(_run_engine_log_template(self._metadata_per_run))
             log_message = '\n'.join(msg)
-                       
+
             d['uid'] = self._run_start_uid
             d.update(self.md)
             return self.logbook(log_message, d)
@@ -823,13 +821,7 @@ class RunEngine:
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
-        handle = loop.call_soon(self.dispatcher.process, name, doc)
-        if name != DocumentNames.descriptor:
-            # If the last doc hasn't been processed yet, cancel it to
-            # prioritize the latest one.
-            if self._handles[name]:
-                self._handles[name].cancel()  # no effect if finished
-            self._handles[name] = handle
+        loop.call_soon(self.dispatcher.process, name, doc)
 
     def debug(self, msg):
         "Print if the verbose attribute is True."
