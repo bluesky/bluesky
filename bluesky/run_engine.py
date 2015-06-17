@@ -23,6 +23,18 @@ from .utils import CallbackRegistry, SignalHandler, ExtendedList
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
+
+def expiring_function(func, *args, **kwargs):
+    def dummy(start_time, timeout):
+        if loop.time() > start_time + timeout:
+            print("skipping")
+            return
+        print("running!")
+        return func(*args, **kwargs)
+
+    return dummy
+
+
 class DocumentNames(Enum):
     stop = 'stop'
     start = 'start'
@@ -201,6 +213,7 @@ class RunEngine:
 
         # public dispatcher for callbacks processed on the main thread
         self.dispatcher = Dispatcher()
+        self.event_timeout = 0.1
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
 
@@ -821,7 +834,12 @@ class RunEngine:
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
-        loop.call_soon(self.dispatcher.process, name, doc)
+        if name != DocumentNames.event:
+            loop.call_soon(self.dispatcher.process, name, doc)
+        else:
+            start_time = loop.time()
+            dummy = expiring_function(self.dispatcher.process, name, doc)
+            loop.run_in_executor(None, dummy, start_time, self.event_timeout)
 
     def debug(self, msg):
         "Print if the verbose attribute is True."
