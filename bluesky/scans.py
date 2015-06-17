@@ -171,6 +171,9 @@ class Dscan(Scan1D):
         current_value = ret[key]['value']
         self._steps = self.steps + current_value
         yield from super()._gen()
+        # Return the motor to its original position.
+        yield Msg('set', self.motor, current_value, block_group='A')
+        yield Msg('wait', None, 'A')
 
 
 class LinAscan(Scan1D):
@@ -434,3 +437,6 @@ class AdaptiveDscan(AdaptiveScanBase):
         current_value = ret[key]['value']
         self._offset = current_value
         yield from super()._gen()
+        # Return the motor to its original position.
+        yield Msg('set', self.motor, current_value, block_group='A')
+        yield Msg('wait', None, 'A')
