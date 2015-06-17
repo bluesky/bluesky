@@ -124,7 +124,7 @@ class SynGauss(Reader):
         if self.noise == 'poisson':
             v = int(np.random.poisson(np.round(v), 1))
         elif self.noise == 'uniform':
-            v += random.uniform(-1, 1) * self.noise_multiplier
+            v += np.random.uniform(-1, 1) * self.noise_multiplier
         self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
