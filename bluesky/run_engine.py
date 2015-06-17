@@ -27,10 +27,9 @@ __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
 def expiring_function(func, *args, **kwargs):
     def dummy(start_time, timeout):
         if loop.time() > start_time + timeout:
-            print("skipping")
             return
-        print("running!")
-        return func(*args, **kwargs)
+        func(*args, **kwargs)
+        return
 
     return dummy
 
