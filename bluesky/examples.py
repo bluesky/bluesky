@@ -6,7 +6,7 @@ from lmfit.models import GaussianModel, LinearModel
 from .run_engine import Msg
 from filestore.file_writers import save_ndarray
 import tempfile
-
+import random
 from .callbacks import *
 
 
@@ -90,6 +90,14 @@ class SynGauss(Reader):
     """
     Evaluate a point on a Gaussian based on the value of a motor.
 
+    Parameters
+    ----------
+    noise : {'poisson', 'uniform', None}
+        Add noise to the gaussian peak.
+    noise_multiplier : float
+        Only relevant for 'uniform' noise. Multiply the random amount of
+        noise by 'noise_multiplier'
+
     Example
     -------
     motor = Mover('motor', ['motor'])
@@ -98,7 +106,7 @@ class SynGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
-                 noise=False):
+                 noise=None, noise_multiplier=1):
         super(SynGauss, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
@@ -107,13 +115,16 @@ class SynGauss(Reader):
         self.Imax = Imax
         self.sigma = sigma
         self.noise = noise
+        self.noise_multiplier = noise_multiplier
 
     def trigger(self, *, block_group=True):
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        if self.noise:
+        if self.noise == 'poisson':
             v = int(np.random.poisson(np.round(v), 1))
+        elif self.noise == 'uniform':
+            v += np.random.uniform(-1, 1) * self.noise_multiplier
         self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
@@ -344,6 +355,8 @@ motor = Mover('motor', ['motor'])
 motor1 = Mover('motor1', ['motor1'], sleep_time=.1)
 motor2 = Mover('motor2', ['motor2'], sleep_time=.2)
 motor3 = Mover('motor3', ['motor3'], sleep_time=.5)
+noisy_det = SynGauss('det', motor, 'motor', center=0, Imax=1,
+                     noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
 det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
@@ -627,3 +640,45 @@ def fly_gen(flyer, start, stop, step):
     yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
     yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)
+
+
+def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
+                                  scan_motor, start, stop, step,
+                                  temp_controller, tstart, tstop, tstep):
+    def read_and_store_temp():
+        yield Msg('create')
+        yield Msg('read', temp_controller)
+        yield Msg('save')
+
+    peak_centers = [-1+3*n for n in range(len((sample_names)))]
+    detector.noise = True
+
+    for idx, temp in enumerate(np.arange(tstart, tstop, tstep)):
+        # todo would be cute to have the temperature reduce peak noise
+        yield Msg('set', temp_controller, temp)
+        for sample, sample_position, peak_pos in zip(sample_names,
+                                                     sample_positions,
+                                                     peak_centers):
+            yield Msg('open_run', sample_name=sample, target_temp=temp)
+            detector.center = peak_pos
+            detector.sigma = .5 + .25 * idx
+            detector.noise_factor = .05 + idx * 0.1
+            for scan_pos in np.arange(start, stop, step):
+                yield Msg('set', scan_motor, scan_pos)
+                # be super paranoid about the temperature. Grab it before and
+                # after each trigger!
+                # Capturing the temperature data before and after each
+                # trigger is resulting in unintended behavior. Uncomment the
+                # two `yield from` statements and run this example to see
+                # what I'm talking about.
+                # yield from read_and_store_temp()
+                yield Msg('trigger', detector)
+                # yield from read_and_store_temp()
+                yield Msg('create')
+                yield Msg('read', scan_motor)
+                yield Msg('read', detector)
+                yield Msg('read', temp_controller)
+                # yield Msg('sleep', None, .1)
+                yield Msg('save')
+            # generate the end of the run document
+            yield Msg('close_run')

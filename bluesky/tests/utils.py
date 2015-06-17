@@ -93,7 +93,7 @@ def setup_test_run_engine():
     RE = RunEngine()
     RE.md['owner'] = 'test_owner'
     RE.md['group'] = 'Grant No. 12345'
-    RE.md['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
+    RE.md['config'] = {'detector_model': 'XYZ', 'pixel_size': 10}
     RE.md['beamline_id'] = 'test_beamline'
     return RE
 
