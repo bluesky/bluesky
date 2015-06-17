@@ -25,6 +25,12 @@ __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
 
 
 def expiring_function(func, *args, **kwargs):
+    """
+    If timeout has not occurred, call func(*args, **kwargs).
+
+    This is meant to used with the event loop's run_in_exector
+    method. Outside that context, it doesn't make any sense.
+    """
     def dummy(start_time, timeout):
         if loop.time() > start_time + timeout:
             return
@@ -138,6 +144,9 @@ class RunEngine:
         persistent_fields
             list of metadata fields that will be remembered and reused between
             subsequence runs
+        event_timeout
+            number of seconds before Events yet unprocessed by callbacks are
+            skipped
         logbook
             callable accepting a message and an optional dict
 
