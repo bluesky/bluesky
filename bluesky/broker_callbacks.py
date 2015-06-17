@@ -1,5 +1,39 @@
 from dataportal import DataBroker as db
+import filestore
+import filestore.api as fsapi
 from metadatastore.commands import find_event_descriptors, find_run_starts
+import matplotlib.pyplot as plt
+from xray_vision.backend.mpl.cross_section_2d import CrossSection
+
+
+class LiveImage(CallbackBase):
+
+    def __init__(self, field):
+        """
+        Stream 2D images in a cross-section viewer.
+
+        Parameters
+        ----------
+        field : string
+            name of data field in an Event
+
+        Note
+        ----
+        Required a matplotlib fix not released as of this writing. The
+        relevant commit is a951b7.
+        """
+        super().__init__()
+        self.field = field
+        fig = plt.figure()
+        self.cs = CrossSection(fig)
+        self.cs._fig.show()
+
+    def event(self, doc):
+        uid = doc['data'][self.field]
+        data = fsapi.retrieve(uid)
+        self.cs.update_image(data)
+        self.cs._fig.canvas.draw()
+        self.cs._fig.canvas.flush_events()
 
 
 def post_run(callback):

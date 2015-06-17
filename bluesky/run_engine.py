@@ -830,6 +830,17 @@ class RunEngine:
         return token
 
     @asyncio.coroutine
+    def _process_event(self, doc):
+        "Wrap a curried dispatcher method in a coroutine."
+        return self.dispatcher.process('event', doc)
+
+    @asyncio.coroutine
+    def _impatient_event_processor(self, doc):
+        "Schedule a Event to be processed with a timeout."
+        yield from asyncio.wait_for(self._process_event,
+                                    self._event_timeout)
+
+    @asyncio.coroutine
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
