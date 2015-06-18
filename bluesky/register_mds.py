@@ -1,6 +1,8 @@
 import metadatastore.api as mds
 import copy
 import time as ttime
+from bluesky.run_engine import DocumentNames
+
 
 __all__ = ['register_mds']
 
@@ -12,7 +14,9 @@ def _make_blc():
 # For why this function is necessary, see
 # http://stackoverflow.com/a/13355291/1221924
 def _make_insert_func(func):
-    return lambda doc: func(**doc)
+    def inserter(doc):
+        return func(**doc)
+    return inserter
 
 
 known_run_start_keys = ['time', 'scan_id', 'beamline_id', 'beamline_config',
@@ -34,10 +38,11 @@ def _insert_run_start(doc):
     return _make_insert_func(mds.insert_run_start)(doc)
 
 
-insert_funcs = {'event': _make_insert_func(mds.insert_event),
-                'descriptor': _make_insert_func(mds.insert_event_descriptor),
-                'start': _insert_run_start,  # special case; see above
-                'stop': _make_insert_func(mds.insert_run_stop)}
+insert_funcs = {DocumentNames.event: _make_insert_func(mds.insert_event),
+                DocumentNames.descriptor: _make_insert_func(
+                    mds.insert_event_descriptor),
+                DocumentNames.start: _insert_run_start,  # see above
+                DocumentNames.stop: _make_insert_func(mds.insert_run_stop)}
 
 
 def register_mds(runengine):
