@@ -8,7 +8,6 @@ import history
 from .run_engine import RunEngine
 from .legacy_scans import LegacyAscan, LegacyDscan, LegacyCount
 from .register_mds import register_mds
-from .callbacks import print_metadata
 
 
 logger = logging.getLogger(__name__)
@@ -47,7 +46,6 @@ except KeyError:
     from getpass import getuser
     RE.md['owner'] = getuser()
 register_mds(RE)  # subscribes to MDS-related callbacks
-RE.subscribe('start', print_metadata)
 
 # Instantiate legacy API objects.
 ascan = LegacyAscan(RE)

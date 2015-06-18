@@ -1,4 +1,5 @@
 import os
+import asyncio
 import time as ttime
 import sys
 from itertools import count
@@ -6,7 +7,6 @@ from collections import namedtuple, deque, defaultdict, Iterable
 import uuid
 import signal
 import threading
-from queue import Queue, Empty
 from enum import Enum
 import traceback
 
@@ -23,11 +23,34 @@ from .utils import CallbackRegistry, SignalHandler, ExtendedList
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
            'RunInterrupt', 'PanicError', 'IllegalMessageSequence']
 
+
+def expiring_function(func, *args, **kwargs):
+    """
+    If timeout has not occurred, call func(*args, **kwargs).
+
+    This is meant to used with the event loop's run_in_exector
+    method. Outside that context, it doesn't make any sense.
+    """
+    def dummy(start_time, timeout):
+        if loop.time() > start_time + timeout:
+            return
+        func(*args, **kwargs)
+        return
+
+    return dummy
+
+
+class DocumentNames(Enum):
+    stop = 'stop'
+    start = 'start'
+    descriptor = 'descriptor'
+    event = 'event'
+
 SCHEMA_PATH = 'schema'
-SCHEMA_NAMES = {'start': 'run_start.json',
-                'stop': 'run_stop.json',
-                'event': 'event.json',
-                'descriptor': 'event_descriptor.json'}
+SCHEMA_NAMES = {DocumentNames.start: 'run_start.json',
+                DocumentNames.stop: 'run_stop.json',
+                DocumentNames.event: 'event.json',
+                DocumentNames.descriptor: 'event_descriptor.json'}
 fn = '{}/{{}}'.format(SCHEMA_PATH)
 schemas = {}
 for name, filename in SCHEMA_NAMES.items():
@@ -35,20 +58,8 @@ for name, filename in SCHEMA_NAMES.items():
         schemas[name] = json.load(fin)
 
 
-class LossyLiFoQueue(Queue):
-    '''Variant of Queue that is a 'lossy' first-in-last-out
-
-    The queue size is strictly bounded at `maxsize - 1` by
-    discarding old entries.
-    '''
-    def _init(self, maxsize):
-        if maxsize < 2:
-            raise ValueError("maxsize must be 2 or greater "
-                             "for LossyLiFoQueue")
-        self.queue = deque(maxlen=maxsize - 1)
-
-    def _get(self):
-        return self.queue.pop()
+loop = asyncio.get_event_loop()
+loop.set_debug(True)
 
 
 class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
@@ -71,14 +82,6 @@ class RunEngineStateMachine(StateMachine):
         State machine is in its idle state
     is_running
         State machine is in its running state
-    is_aborting
-        State machine has been asked to abort but is not yet ``idle``
-    is_soft_pausing
-        State machine has been asked to enter a soft pause but is not yet in
-        its ``paused`` state
-    is_hard_pausing
-        State machine has been asked to enter a hard pause but is not yet in
-        its ``paused`` state
     is_paused
         State machine is paused.
     """
@@ -87,9 +90,6 @@ class RunEngineStateMachine(StateMachine):
         """state.name = state.value"""
         IDLE = 'idle'
         RUNNING = 'running'
-        ABORTING = 'aborting'
-        SOFT_PAUSING = 'soft_pausing'
-        HARD_PAUSING = 'hard_pausing'
         PAUSED = 'paused'
 
         @classmethod
@@ -104,30 +104,17 @@ class RunEngineStateMachine(StateMachine):
             # opposite to <--> from structure.
             # from_state : [valid_to_states]
             'idle': ['running'],
-            'running': ['idle', 'soft_pausing', 'hard_pausing'],
-            'aborting': ['idle'],
-            'soft_pausing': ['paused', 'soft_pausing', 'hard_pausing'],
-            'hard_pausing': ['paused', 'hard_pausing'],
-            'paused': ['aborting', 'running'],
+            'running': ['idle', 'paused'],
+            'paused': ['idle', 'running'],
         }
-        named_transitions = [
-            # (transition_name, to_state : [valid_from_states])
-            ('soft_pause', 'soft_pausing', ['running', 'soft_pausing']),
-            ('hard_pause', 'hard_pausing', ['running', 'soft_pausing', 'hard_pausing']),
-            ('pause', 'paused', ['soft_pausing', 'hard_pausing']),
-            ('run', 'running', ['idle', 'paused']),
-            ('stop', 'idle', ['running', 'aborting']),
-            ('resume', 'running', ['paused']),
-            ('abort', 'aborting', ['paused']),
-        ]
         named_checkers = [
-            ('can_hard_pause', 'hard_pausing'),
-            ('can_soft_pause', 'soft_pausing'),
+            ('can_pause', 'paused'),
         ]
 
 
 class RunEngine:
 
+    _loop = loop  # just a convenient way to inspect the global event loop
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
 
@@ -151,13 +138,15 @@ class RunEngine:
         Attributes
         ----------
         state
-            {'idle', 'running', 'soft_pausing, 'hard_pausing', 'paused',
-             'aborting'}
+            {'idle', 'running', 'paused'}
         md
             direct access to the dict-like persistent storage described above
         persistent_fields
             list of metadata fields that will be remembered and reused between
             subsequence runs
+        event_timeout
+            number of seconds before Events yet unprocessed by callbacks are
+            skipped
         logbook
             callable accepting a message and an optional dict
 
@@ -178,20 +167,27 @@ class RunEngine:
         unregister_command
             Undo register_command.
         """
-        super(RunEngine, self).__init__()
+        super().__init__()
         if md is None:
             md = {}
         self.md = md
         self.logbook = logbook
+        self._metadata_per_call = {}  # for all runs generated by one __call__
+        self._metadata_per_run = {}  # for one run, incorporating Msg metadata
         self.persistent_fields = ExtendedList(self._REQUIRED_FIELDS)
         self.persistent_fields.extend(['project', 'group', 'sample'])
         self._panic = False
-        self._bundling = False
+        self._bundling = False  # if we are in the middle of bundling readings
+        self._run_is_open = False  # if we have emitted a RunStart, no RunStop
+        self._deferred_pause_requested = False  # pause at next 'checkpoint'
+        self._rewound = False  # if we are recovering from a pause
         self._sigint_handler = None
         self._sigtstp_handler = None
+        self._exception = None  # stored and then raised in the _run loop
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
         self._configured = list()  # objects configured, not yet deconfigured
+        self._uids = list()  # all uids generated by one __call__
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._descriptor_uids = dict()  # cache of all Descriptor uids
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
@@ -199,7 +195,9 @@ class RunEngine:
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
-        self._exit_status = None  # {'success', 'fail', 'abort'}
+        self._exit_status = 'fail'  # pessimistic default
+        self._reason = ''
+        self._task = None
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -217,35 +215,36 @@ class RunEngine:
             'configure': self._configure,
             'deconfigure': self._deconfigure,
             'subscribe': self._subscribe,
+            'open_run': self._open_run,
+            'close_run': self._close_run,
             }
 
-        # queues for passing Documents from "scan thread" to main thread
-        queue_names = ['start', 'stop', 'event', 'descriptor']
-        self._queues = {name: LossyLiFoQueue(maxsize=2)
-                        for name in queue_names}
-
         # public dispatcher for callbacks processed on the main thread
-        self.dispatcher = Dispatcher(self._queues)
+        self.dispatcher = Dispatcher()
+        self.event_timeout = 0.1
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
 
-        # For why this function is necessary, see
-        # http://stackoverflow.com/a/13355291/1221924
-        def make_push_func(name):
-            return lambda doc: self._push_to_queue(name, doc)
-
-        # private registry of callbacks processed on the "scan thread"
+        # private registry of blocking callbacks
         self._scan_cb_registry = CallbackRegistry()
-        for name in self._queues.keys():
-            self._register_scan_callback(name, make_push_func(name))
 
         self.verbose = False
 
+        loop.call_soon(self._check_for_trouble)
+        loop.call_soon(self._check_for_signals)
+
     def _clear(self):
+        self._metadata_per_call.clear()
+        self._metadata_per_run.clear()
         self._bundling = False
+        self._run_is_open = False
+        self._deferred_pause_requested = False
+        self._rewound = False
+        self._exception = None
         self._objs_read.clear()
         self._read_cache.clear()
         self._configured.clear()
+        self._uids.clear()
         self._describe_cache.clear()
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
@@ -253,22 +252,18 @@ class RunEngine:
         self._block_groups.clear()
         # self._temp_callback_ids are cleared before, after unsubscribing
         self._msg_cache = None
-        self._exit_status = None
-        # clear the main thread queues
-        for queue in self._queues.values():
-            try:
-                while True:
-                    self.debug(
-                        "This was left on the queue after the last run ended:"
-                        "====\n{}\n====".format(queue.get_nowait()))
-            except Empty:
-                # queue is empty
-                pass
+        self._exit_status = 'fail'
+        self._reason = ''
+        self._task = None
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
             self.unsubscribe(cid)
         self._temp_callback_ids.clear()
+
+    @property
+    def resumable(self):
+        return self._msg_cache is not None
 
     def register_command(self, name, func):
         """
@@ -302,8 +297,6 @@ class RunEngine:
         If the RunEngine is currently paused, it will stay in the 'paused'
         state, and it will disallow resume() until all_is_well() is called.
         """
-        # Release GIL by sleeping, allowing other threads to set panic.
-        ttime.sleep(0.01)
         self._panic = True
 
     def all_is_well(self):
@@ -313,8 +306,11 @@ class RunEngine:
         If the panic occurred during a pause, the run can be resumed.
         """
         self._panic = False
+        # The cycle where _check_for_trouble schedules a future call to itself
+        # is broken when it raises a PanicError.
+        loop.call_later(0.1, self._check_for_trouble)
 
-    def request_pause(self, hard=True, name=None, callback=None):
+    def request_pause(self, defer=False, name=None, callback=None):
         """
         Command the Run Engine to pause.
 
@@ -327,10 +323,10 @@ class RunEngine:
 
         Parameters
         ----------
-        hard : bool, optional
-            If True, issue a 'hard pause' that stops at the next message.
-            If False, issue a 'soft pause' that stops at the next checkpoint.
-            True by default.
+        defer : bool, optional
+            If False, pause immediately before processing any new messages.
+            If True, pause at the next checkpoint.
+            False by default.
         name : str, optional
             Identify the source/reason for this pause. Required if there is a
             callback, below.
@@ -345,11 +341,25 @@ class RunEngine:
                                  "a name.")
             self._pause_requests[name] = callback
         # Now to the right pause state if we can.
-        if hard and self.state.can_hard_pause:
-            self.state.hard_pause()
+        if not defer:
+            if self.state.can_pause:
+                print("Pausing...")
+                self.state = 'paused'
+                if self.resumable:
+                    loop.stop()
+                else:
+                    print("No checkpoint; cannot pause. Aborting...")
+                    self._exception = FailedPause()
+            else:
+                print("Cannot pause from {0} state. "
+                       "Ignoring request.".format(self.state))
         else:
-            if self.state.can_soft_pause:
-                self.state.soft_pause()
+            if self.state.is_running:
+                self._deferred_pause_requested = True
+                print("Deferred pause acknowledged. Continuing to checkpoint.")
+            else:
+                print("Cannot pause from {0} state. "
+                       "Ignoring request.".format(self.state))
 
     def _register_scan_callback(self, name, func):
         """Register a callback to be processed by the scan thread.
@@ -359,10 +369,7 @@ class RunEngine:
         """
         return self._scan_cb_registry.connect(name, func)
 
-    def _push_to_queue(self, name, doc):
-        self._queues[name].put(doc)
-
-    def __call__(self, gen, subs=None, use_threading=True, **metadata):
+    def __call__(self, gen, subs=None, **metadata):
         """Run the scan defined by ``gen``
 
         Any keyword arguments other than those listed below will be
@@ -378,9 +385,11 @@ class RunEngine:
             - Valid dict keys are: {'start', 'stop', 'event', 'descriptor'}
             - Dict values must be a function with the signature `f(dict)` or a
               list of such functions
-        use_threading : bool, optional
-            True by default. False makes debugging easier, but removes some
-            features like pause/resume and main-thread subscriptions.
+
+        Returns
+        -------
+        uids : list
+            list of Header uids (a.k.a RunStart uids) of run(s)
 
         Examples
         --------
@@ -396,6 +405,15 @@ class RunEngine:
         ...
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
+        # First thing's first: if we are in the wrong state, raise.
+        if not self.state.is_idle:
+            raise RuntimeError("The RunEngine is in a %s state" % self.state)
+        if self._panic:
+            raise PanicError("RunEngine is panicked. The run "
+                             "was aborted before it began. No records "
+                             "of this run were created.")
+
+        # Register temporary subscriptions. Save tokens to unsubscribe later.
         if subs is None:
             subs = {}
         self._clear()
@@ -409,54 +427,20 @@ class RunEngine:
                                      "of functions. The offending entry is\n "
                                      "{0}".format(func))
                 self._temp_callback_ids.add(self.subscribe(name, func))
-        self._run_start_uid = new_uid()
-        if self._panic:
-            raise PanicError("RunEngine is panicked. The run "
-                             "was aborted before it began. No records "
-                             "of this run were created.")
 
-        # Advance and stash scan_id
-        try:
-            scan_id = self.md['scan_id'] + 1
-        except KeyError:
-            scan_id = 1
-        self.md['scan_id'] = scan_id
-        metadata['scan_id'] = scan_id
+        self._metadata_per_call = metadata
 
-        for field in self.persistent_fields:
-            if field in metadata:
-                # Stash and use new value.
-                self.md[field] = metadata[field]
-            else:
-                # Use old value.
-                try:
-                    metadata[field] = self.md[field]
-                except KeyError:
-                    if field not in self._REQUIRED_FIELDS:
-                        continue
-                    raise KeyError("There is no entry for '{0}'. "
-                                   "It is required for this run. In future "
-                                   "runs, the most recent entry can be reused "
-                                   "unless a new value is specified.".format(
-                                        field))
-        self.metadata = metadata  # _logbook command may use this
-
-        self.state.run()
+        self.state = 'running'
+        self._gen = iter(gen)  # no-op on generators; needed for classes
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            def func():
-                return self._run(gen, metadata)
-            if use_threading:
-                self._thread = threading.Thread(target=func,
-                                                name='scan_thread')
-                self._thread.start()
-                while self._thread.is_alive() and not self.state.is_paused:
-                    self.dispatcher.process_all_queues()
-                    ttime.sleep(.01)
-            else:
-                func()
-                self.dispatcher.process_all_queues()
-            self.dispatcher.process_all_queues()  # catch any stragglers
-        return self._run_start_uid
+            self._task = loop.create_task(self._run(self._gen))
+            loop.run_forever()
+            if self._task.done():
+                exc = self._task.exception()
+                if exc is not None:
+                    raise exc
+
+        return self._uids
 
     def resume(self):
         """Resume a run from the last checkpoint.
@@ -468,11 +452,17 @@ class RunEngine:
             is immediately returned. Otherwise, after the run completes, this
             returns None.
         """
+        # The state machine does not capture the whole picture.
+        if not self.state.is_paused:
+            raise RuntimeError("The RunEngine is the {0} state. You can only "
+                               "resume for the paused state.".format(
+                                   self.state))
         if self._panic:
             raise PanicError("Run Engine is panicked. If are you sure all is "
                              "well, call the all_is_well() method.")
+
+        # Check that all pause requests have been released.
         outstanding_requests = []
-        # We listify so we can modify the dict inside the loop.
         for name, func in list(self._pause_requests.items()):
             if func():
                 # We have permission to continue. Clear the request.
@@ -481,134 +471,176 @@ class RunEngine:
                 outstanding_requests.append(name)
         if outstanding_requests:
             return outstanding_requests
-        self.state.resume()
-        self._resume()
-        return None
 
-    def _resume(self):
-        # This could be as a result of self.resume() or self.abort().
+        self._rewound = True
+        self._resume_event_loop()
+
+    def _resume_event_loop(self):
+        # may be called by 'resume' or 'abort'
+        self.state = 'running'
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            while self._thread.is_alive() and not self.state.is_paused:
-                self.dispatcher.process_all_queues()
-                ttime.sleep(.01)
-        self.dispatcher.process_all_queues()  # catch any stragglers
+            if self._task.done():
+                return
+            loop.run_forever()
+            if self._task.done():
+                exc = self._task.exception()
+                if exc is not None:
+                    raise exc
 
-    def abort(self):
+    def abort(self, reason=''):
         """
-        Abort a paused scan.
+        Stop a paused scan and mark it as aborted.
         """
-        self.state.abort()
+        # The state machine does not capture the whole picture.
+        if not self.state.is_paused:
+            raise RuntimeError("The RunEngine is the {0} state. You can only "
+                               "resume for the paused state.".format(
+                                   self.state))
         print("Aborting....")
-        self._resume()  # to create RunStop Document
+        self._reason = reason
+        self._exception = RequestAbort()
+        self._resume_event_loop()
 
-    def _run(self, gen, metadata):
-        gen = iter(gen)  # no-op on generators; needed for classes
-        doc = dict(uid=self._run_start_uid, time=ttime.time(), **metadata)
-        self.debug("*** Emitted RunStart:\n%s" % doc)
-        self.emit('start', doc)
+    def stop(self):
+        print("Stopping...")
+        self._exception = RequestStop()
+        self._resume_event_loop()
+
+    @asyncio.coroutine
+    def _run(self, gen):
         response = None
-        reason = ''
+        self._reason = ''
         try:
-            self._check_for_trouble()
             while True:
+                if self._exception is not None:
+                    raise self._exception
+                if self._rewound:
+                    print("Rerunning from last checkpoint...")
+                    for msg in self._msg_cache:
+                        coro = self._command_registry[msg.command]
+                        self.debug("About to process: {0}, {1}".format(coro, msg))
+                        response = yield from coro(msg)
+                        self.debug('RE.state: ' + self.state)
+                    self._rewound = False
+                    continue
+                yield from asyncio.sleep(0.001)
                 # Send last response; get new message but don't process it yet.
                 msg = gen.send(response)
                 if self._msg_cache is not None:
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
-                self._check_for_trouble()
                 # There is no trouble. Now process the message.
-                response = self._command_registry[msg.command](msg)
+                coro = self._command_registry[msg.command]
+                self.debug("About to process: {0}, {1}".format(coro, msg))
+                response = yield from coro(msg)
                 self.debug('RE.state: ' + self.state)
                 self.debug('msg: {}\n   response: {}'.format(msg, response))
-        except StopIteration:
+        except (StopIteration, RequestStop):
             self._exit_status = 'success'
+            yield from asyncio.sleep(0.001)  # TODO Do we need this?
+        except (FailedPause, RequestAbort):
+            self._exit_status = 'abort'  # RE.abort() was called from a pause
+            yield from asyncio.sleep(0.001)  # TODO Do we need this?
         except Exception as err:
-            self._exit_status = 'fail'
-            reason = str(err)
+            self._exit_status = 'fail'  # Exception raises during 'running'
+            self._reason = str(err)
             raise err
         finally:
+            self.state = 'idle'
             # in case we were interrupted between 'configure' and 'deconfigure'
             for obj in self._configured:
                 obj.deconfigure()
-            doc = dict(run_start=self._run_start_uid,
-                       time=ttime.time(), uid=new_uid(),
-                       exit_status=self._exit_status,
-                       reason=reason)
-            self.emit('stop', doc)
-            self.debug("*** Emitted RunStop:\n%s" % doc)
+                self._configured.remove(obj)
             sys.stdout.flush()
-            if self.state.is_aborting or self.state.is_running:
-                self.state.stop()
-            elif self.state.is_soft_pausing or self.state.is_hard_pausing:
-                # Apparently an exception was raised mid-pause.
-                self.debug("The RunEngine encountered an error while "
-                           "attempting to pause. Aborting and going to idle.")
-                self.state.pause()
-                self.state.abort()
-                self.state.stop()
+            # Emit RunStop if necessary.
+            if self._run_is_open:
+                yield from self._close_run(Msg('close_run'))
+                self._run_is_open = False
+
+            for task in asyncio.Task.all_tasks(loop):
+                task.cancel()
+            loop.stop()
 
     def _check_for_trouble(self):
-        # Check for panic.
-        if self._panic:
-            self._exit_status = 'fail'
-            raise PanicError("Something told the Run Engine to "
-                                "panic after the run began. "
-                                "Records were created, but the run "
-                                "was marked with "
-                                "exit_status='fail'.")
+        if self.state.is_running:
+            # Check for panic.
+            if self._panic:
+                self._exit_status = 'fail'
+                exc = PanicError("Something told the Run Engine to "
+                                 "panic after the run began. "
+                                 "Records were created, but the run "
+                                 "was marked with "
+                                 "exit_status='fail'.")
+                self._exception = exc  # will stop _run coroutine
 
+        loop.call_later(0.1, self._check_for_trouble)
+
+    def _check_for_signals(self):
         # Check for pause requests from keyboard.
-        if self._sigint_handler.interrupted:
-            self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-            self.request_pause(hard=True, name='SIGINT')
-            self._sigint_handler.interrupted = False
+        if self.state.is_running:
+            if self._sigint_handler.interrupted:
+                self.debug("RunEngine detected a SIGINT (Ctrl+C)")
+                loop.call_soon(self.request_pause, True, 'SIGINT')
+                self._sigint_handler.interrupted = False
 
-        # If a hard pause was requested, sleep.
-        resumable = self._msg_cache is not None
-        if self.state.is_hard_pausing:
-            self.state.pause()
-            print("Pausing...")
-            if not resumable:
-                self.state.abort()
-                print("No checkpoint; cannot pause. Aborting...")
-                self._exit_status = 'abort'
-                raise RunInterrupt("*** Hard pause requested. There "
-                                    "are no checkpoints. Cannot resume;"
-                                    " must abort. Run aborted.")
-            self.debug("*** Hard pause requested. Sleeping until "
-                        "resume() is called. "
-                        "Will rerun from last 'checkpoint' command.")
-            while True:
-                ttime.sleep(0.5)
-                if not self.state.is_paused:
-                    break
-            if self.state.is_aborting:
-                self._exit_status = 'abort'
-                raise RunInterrupt("Run aborted.")
-            self._rerun_from_checkpoint()
+        loop.call_later(0.1, self._check_for_signals)
 
-        # If a soft pause was requested, acknowledge it, but wait
-        # for a 'checkpoint' command to catch it (see self._checkpoint).
-        if self.state.is_soft_pausing:
-            if not resumable:
-                self.state.pause()
-                print("No checkpoint; cannot pause. Aborting...")
-                self.state.abort()
-                self._exit_status = 'abort'
-                raise RunInterrupt("*** Soft pause requested. There "
-                                   "are no checkpoints. Cannot resume;"
-                                   " must abort. Run aborted.")
-            print("Soft pause acknowledged. Continuing to next checkpoint.")
-            self.debug("*** Soft pause requested. Continuing to "
-                       "process messages until the next 'checkpoint' "
-                       "command.")
+    def increment_scan_id(self):
+        scan_id = self.md.get('scan_id', 0) + 1
+        self.md['scan_id'] = scan_id
+        return scan_id
 
+    @asyncio.coroutine
+    def _open_run(self, msg):
+        self._run_is_open = True
+        self._run_start_uid = new_uid()
+        self._uids.append(self._run_start_uid)
+
+        # Metadata can come from history, __call__, or the open_run Msg.
+        self._metadata_per_run = {k: v for k, v in self.md.items()
+                                  if k in self.persistent_fields}
+        self._metadata_per_run.update(self._metadata_per_call)
+        self._metadata_per_run.update(msg.kwargs)
+
+        for field in self._REQUIRED_FIELDS:
+            if field not in self._metadata_per_run:
+                raise KeyError("The field '{0}' was not specified as is "
+                               "required.".format(field))
+
+        # If any persistent fields have been overridden, update md.
+        for field in self.persistent_fields:
+            if field not in self._metadata_per_run:
+                continue
+            is_updated = (field not in self.md or
+                          self._metadata_per_run[field] != self.md[field])
+            if is_updated:
+                self.md[field] = self._metadata_per_run[field]
+
+        # At this point required fields must be present.
+        if 'scan_id' not in self._metadata_per_run:
+            self._metadata_per_run['scan_id'] = self.increment_scan_id()
+        doc = dict(uid=self._run_start_uid, time=ttime.time(),
+                   **self._metadata_per_run)
+        yield from self.emit(DocumentNames.start, doc)
+        self.debug("*** Emitted RunStart:\n%s" % doc)
+
+    @asyncio.coroutine
+    def _close_run(self, msg):
+        doc = dict(run_start=self._run_start_uid,
+                    time=ttime.time(), uid=new_uid(),
+                    exit_status=self._exit_status,
+                    reason=self._reason)
+        yield from self.emit(DocumentNames.stop, doc)
+        self.debug("*** Emitted RunStop:\n%s" % doc)
+        self._run_is_open = False
+
+    @asyncio.coroutine
     def _create(self, msg):
         self._read_cache.clear()
         self._objs_read.clear()
         self._bundling = True
 
+    @asyncio.coroutine
     def _read(self, msg):
         obj = msg.obj
         self._objs_read.append(obj)
@@ -618,6 +650,7 @@ class RunEngine:
         self._read_cache.append(ret)
         return ret
 
+    @asyncio.coroutine
     def _save(self, msg):
         # The Event Descriptor is uniquely defined by the set of objects
         # read in this Event grouping.
@@ -632,7 +665,7 @@ class RunEngine:
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid)
-            self.emit('descriptor', doc)
+            yield from self.emit(DocumentNames.descriptor, doc)
             self.debug("*** Emitted Event Descriptor:\n%s" % doc)
             self._descriptor_uids[objs_read] = descriptor_uid
             self._sequence_counters[objs_read] = count(1)
@@ -651,9 +684,10 @@ class RunEngine:
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid)
-        self.emit('event', doc)
+        yield from self.emit(DocumentNames.event, doc)
         self.debug("*** Emitted Event:\n%s" % doc)
 
+    @asyncio.coroutine
     def _kickoff(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.kickoff(*msg.args, **msg.kwargs)
@@ -662,6 +696,7 @@ class RunEngine:
 
         return ret
 
+    @asyncio.coroutine
     def _collect(self, msg):
         obj = msg.obj
         data_keys_list = obj.describe()
@@ -672,7 +707,7 @@ class RunEngine:
                 descriptor_uid = new_uid()
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid)
-                self.emit('descriptor', doc)
+                self.emit(DocumentNames.descriptor, doc)
                 self.debug("Emitted Event Descriptor:\n%s" % doc)
                 self._descriptor_uids[objs_read] = descriptor_uid
                 self._sequence_counters[objs_read] = count(1)
@@ -690,12 +725,14 @@ class RunEngine:
             ev['descriptor'] = descriptor_uid
             ev['seq_num'] = seq_num
             ev['uid'] = event_uid
-            self.emit('event', ev)
+            self.emit(DocumentNames.event, ev)
             self.debug("Emitted Event:\n%s" % ev)
 
+    @asyncio.coroutine
     def _null(self, msg):
         pass
 
+    @asyncio.coroutine
     def _set(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
@@ -703,6 +740,7 @@ class RunEngine:
             self._block_groups[block_group].add(ret)
         return ret
 
+    @asyncio.coroutine
     def _trigger(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
@@ -711,6 +749,7 @@ class RunEngine:
 
         return ret
 
+    @asyncio.coroutine
     def _wait(self, msg):
         # Block progress until every object that was trigged
         # triggered with the keyword argument `block=group` is done.
@@ -719,42 +758,29 @@ class RunEngine:
         while True:
             if all([obj.done for obj in objs]):
                 break
-            ttime.sleep(1e-2)
+            yield from asyncio.sleep(0.05)
         del self._block_groups[group]
         return objs
 
+    @asyncio.coroutine
     def _sleep(self, msg):
-        return ttime.sleep(*msg.args)
+        yield from asyncio.sleep(*msg.args)
 
+    @asyncio.coroutine
     def _pause(self, msg):
         self.request_pause(*msg.args, **msg.kwargs)
 
+    @asyncio.coroutine
     def _checkpoint(self, msg):
         if self._bundling:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
         self._msg_cache = deque()
-        if self.state.is_soft_pausing:
-            self.state.pause()  # soft_pausing -> paused
-            print("Checkpoint reached. Pausing...")
-            self.debug("*** Checkpoint reached. Sleeping until resume() is "
-                       "called. Will resume from checkpoint.")
-            while True:
-                ttime.sleep(0.5)
-                if not self.state.is_paused:
-                    break
-            if self.state.is_aborting:
-                self._exit_status = 'abort'
-                raise RunInterrupt("Run aborted.")
+        if self._deferred_pause_requested:
+            self.state = 'paused'
+            loop.stop()
 
-    def _rerun_from_checkpoint(self):
-        print("Rerunning from last checkpoint...")
-        self.debug("*** Rerunning from checkpoint...")
-        for msg in self._msg_cache:
-            response = self._command_registry[msg.command](msg)
-            self.debug('{}\n   ret: {} (On rerun, responses are not sent.)'
-                       ''.format(msg, response))
-
+    @asyncio.coroutine
     def _logbook(self, msg):
         if self.logbook:
             d = msg.kwargs
@@ -768,13 +794,14 @@ class RunEngine:
             msg.append('')
             msg.append('Metadata')
             msg.append('--------')
-            msg.append(_run_engine_log_template(self.metadata))
+            msg.append(_run_engine_log_template(self._metadata_per_run))
             log_message = '\n'.join(msg)
-                       
+
             d['uid'] = self._run_start_uid
             d.update(self.md)
             return self.logbook(log_message, d)
 
+    @asyncio.coroutine
     def _configure(self, msg):
         # If an object has no 'configure' method, assume it does not need
         # configuring.
@@ -785,6 +812,7 @@ class RunEngine:
         self._configured.append(obj)
         return result
 
+    @asyncio.coroutine
     def _deconfigure(self, msg):
         # If an object has no 'deconfigure' method, assume it does not need
         # deconfiguring.
@@ -797,6 +825,7 @@ class RunEngine:
         self._configured.remove(obj)
         return result
 
+    @asyncio.coroutine
     def _subscribe(self, msg):
         """
         Add a subscription after the run has started.
@@ -808,10 +837,28 @@ class RunEngine:
         self._temp_callback_ids.add(token)
         return token
 
+    @asyncio.coroutine
+    def _process_event(self, doc):
+        "Wrap a curried dispatcher method in a coroutine."
+        return self.dispatcher.process('event', doc)
+
+    @asyncio.coroutine
+    def _impatient_event_processor(self, doc):
+        "Schedule a Event to be processed with a timeout."
+        yield from asyncio.wait_for(self._process_event,
+                                    self._event_timeout)
+
+    @asyncio.coroutine
     def emit(self, name, doc):
-        "Process blocking, scan-thread callbacks."
+        "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
+        if name != DocumentNames.event:
+            loop.call_soon(self.dispatcher.process, name, doc)
+        else:
+            start_time = loop.time()
+            dummy = expiring_function(self.dispatcher.process, name, doc)
+            loop.run_in_executor(None, dummy, start_time, self.event_timeout)
 
     def debug(self, msg):
         "Print if the verbose attribute is True."
@@ -822,44 +869,13 @@ class RunEngine:
 class Dispatcher:
     """Dispatch documents to user-defined consumers on the main thread."""
 
-    def __init__(self, queues):
-        self.queues = queues
+    def __init__(self):
         self.cb_registry = CallbackRegistry(halt_on_exception=False)
         self._counter = count()
         self._token_mapping = dict()
 
-    def process_queue(self, name):
-        """
-        Process the last item in the queue.
-        """
-        queue = self.queues[name]
-        try:
-            document = queue.get_nowait()
-        except Empty:
-            # no documents available on the queue
-            pass
-        else:
-            # process the callbacks for "name" and grab any exceptions that
-            # come out the registry as "ninety_nine_probs"
-            ninety_nine_probs = self.cb_registry.process(name, document)
-            # spam the screen with the exceptions that are being raised
-            if ninety_nine_probs:
-                print("The following exceptions were raised during processing "
-                      "of the [[{}]] queue".format(name))
-                for idx, (error, tb) in enumerate(ninety_nine_probs):
-                    err = "Error %s" % idx
-                    print("\n%s\n%s\n%s\n" % (err, '-'*len(err), error))
-                    print("\tTraceback\n"
-                          "\t---------")
-                    # todo format this traceback properly
-                    tb_list = traceback.extract_tb(tb)
-                    for item in traceback._format_list_iter(tb_list):
-                        print('\t%s' % item)
-
-    def process_all_queues(self):
-        # keys are hard-coded to enforce order
-        for name in ['start', 'descriptor', 'event', 'stop']:
-            self.process_queue(name)
+    def process(self, name, doc):
+        self.cb_registry.process(name, doc)
 
     def subscribe(self, name, func):
         """
@@ -880,20 +896,19 @@ class Dispatcher:
         token : int
             an integer token that can be used to unsubscribe
         """
-        queue_keys = self.queues.keys()
-        if name in queue_keys:
-            private_token = self.cb_registry.connect(name, func)
-            public_token = next(self._counter)
-            self._token_mapping[public_token] = [private_token]
-        elif name == 'all':
+        if name == 'all':
             private_tokens = []
-            for key in queue_keys:
+            for key in DocumentNames:
                 private_tokens.append(self.cb_registry.connect(key, func))
             public_token = next(self._counter)
             self._token_mapping[public_token] = private_tokens
-        else:
-            valid_names = queue_keys + ['all']
-            raise ValueError("Valid names: {0}".format(valid_names))
+            return public_token
+
+        if isinstance(name, str):
+            name = DocumentNames[name]
+        private_token = self.cb_registry.connect(name, func)
+        public_token = next(self._counter)
+        self._token_mapping[public_token] = [private_token]
         return public_token
 
     def unsubscribe(self, token):
@@ -952,6 +967,14 @@ def _run_engine_log_template(metadata):
     return '\n'.join(template)
 
 
+class RequestAbort(Exception):
+    pass
+
+
+class RequestStop(Exception):
+    pass
+
+
 class PanicError(Exception):
     pass
 
@@ -961,4 +984,8 @@ class RunInterrupt(KeyboardInterrupt):
 
 
 class IllegalMessageSequence(Exception):
+    pass
+
+
+class FailedPause(Exception):
     pass

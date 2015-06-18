@@ -1,3 +1,4 @@
+import warnings
 from nose.tools import assert_equal, assert_greater, assert_in, assert_true
 from bluesky.scans import *
 from bluesky.callbacks import *
@@ -126,9 +127,11 @@ def test_legacy_scans():
     ascan.RE.md['group'] = 'test_group'
     ascan.RE.md['config'] = {}
     ascan.RE.md['beamline_id'] = 'test_beamline'
-    ascan(motor, 0, 5, 5)
-    dscan(motor, 0, 5, 5)
-    ct()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ascan(motor, 0, 5, 5)
+        dscan(motor, 0, 5, 5)
+        ct()
 
     # test that metadata is passed
     # notice that we can pass subs to the RE as well
@@ -137,7 +140,9 @@ def test_legacy_scans():
         assert_in('animal', doc)
         assert_equal(doc['animal'], 'lion')
 
-    ct(animal='lion', subs={'start': assert_lion})
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ct(animal='lion', subs={'start': assert_lion})
 
     # cleanup
     ascan.RE.md.clear()

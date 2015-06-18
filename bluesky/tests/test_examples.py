@@ -72,7 +72,7 @@ def test_wait_multiple():
 
 def test_hard_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, True, True))
+    RE(conditional_pause(motor, det, False, True))
     assert_equal(RE.state, 'paused')
     RE.resume()
     assert_equal(RE.state, 'paused')
@@ -80,9 +80,9 @@ def test_hard_pause():
     assert_equal(RE.state, 'idle')
 
 
-def test_soft_pause():
+def test_deferred_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, False, True))
+    RE(conditional_pause(motor, det, True, True))
     assert_equal(RE.state, 'paused')
     RE.resume()
     assert_equal(RE.state, 'paused')
@@ -92,27 +92,27 @@ def test_soft_pause():
 
 def test_hard_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, True, False))
-    assert_equal(RE.state, 'idle')
-
-
-def test_soft_pause_no_checkpoint():
-    assert_equal(RE.state, 'idle')
     RE(conditional_pause(motor, det, False, False))
     assert_equal(RE.state, 'idle')
 
 
-def test_pause_from_thread():
+def test_deferred_pause_no_checkpoint():
+    assert_equal(RE.state, 'idle')
+    RE(conditional_pause(motor, det, True, False))
+    assert_equal(RE.state, 'idle')
+
+
+def _pause_from_thread():
     assert_equal(RE.state, 'idle')
     agent = PausingAgent(RE, 'foo')
     # Cue up a pause requests in 1 second.
-    agent.issue_request(True, 1)
+    agent.issue_request(False, 1)
     RE(checkpoint_forever())
     assert_equal(RE.state, 'paused')
     agent.revoke_request()
 
     # Cue up a second pause requests in 2 seconds.
-    agent.issue_request(True, 2)
+    agent.issue_request(False, 2)
     RE.resume()
     assert_equal(RE.state, 'paused')
 
@@ -122,7 +122,7 @@ def test_pause_from_thread():
 
 def test_panic_during_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, True, True))
+    RE(conditional_pause(motor, det, False, True))
     RE.panic()
     assert_true(RE._panic)
     assert_raises(PanicError, lambda: RE.resume())
@@ -133,10 +133,10 @@ def test_panic_during_pause():
     assert_equal(RE.state, 'idle')
 
 
-def test_panic_from_thread():
+def test_panic_timer():
     assert_equal(RE.state, 'idle')
     panic_timer(RE, 1)  # panic in 1 second
-    RE(checkpoint_forever())
+    assert_raises(PanicError, RE, checkpoint_forever())
     # If we panic while runnning, we cannot resume. The run is aborted and we
     # land in 'idle'
     assert_equal(RE.state, 'idle')
@@ -187,13 +187,15 @@ def test_md_history():
 def _md(md):
     RE = RunEngine(md)
     scan = simple_scan(motor)
-    assert_raises(KeyError, lambda: RE(scan))  # missing owner, beamline_id
-    assert_raises(KeyError, lambda: RE(scan, owner='dan'))
+    assert_raises(KeyError, RE, scan)  # missing owner, beamline_id
+    scan = simple_scan(motor)
+    assert_raises(KeyError, RE, scan, owner='dan')
     RE(scan, owner='dan', beamline_id='his desk',
        group='some group', config={})  # this should work
     RE(scan)  # and now this should work, reusing metadata
     RE.md.clear()
-    assert_raises(KeyError, lambda: RE(scan))
+    scan = simple_scan(motor)
+    assert_raises(KeyError, RE, scan)
     # We can prime the md directly.
     RE.md['owner'] = 'dan'
     RE.md['group'] = 'some group'
@@ -222,8 +224,7 @@ def _md(md):
     RE(scan, subs={'start': validate_dict_cb_opposite('project')})
 
     # Removing a field required by our Document spec is not allowed.
-    assert_raises(ValueError,
-                  lambda: RE.persistent_fields.remove('beamline_id'))
+    assert_raises(ValueError, RE.persistent_fields.remove, 'beamline_id')
 
 
 def validate_dict_cb(key, val):

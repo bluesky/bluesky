@@ -3,19 +3,33 @@ Useful callbacks for the Run Engine
 """
 import sys
 from itertools import count
+import asyncio
 from prettytable import PrettyTable
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from .utils import doc_type
 from datetime import datetime
-import matplotlib.pyplot as plt
-import filestore.api as fsapi
-from xray_vision.backend.mpl.cross_section_2d import CrossSection
 import numpy as np
-import filestore
 
 import logging
 logger = logging.getLogger(__name__)
+
+import matplotlib.backends.backend_qt5
+from matplotlib.backends.backend_qt5 import _create_qApp
+_create_qApp()
+qApp = matplotlib.backends.backend_qt5.qApp
+
+
+def _qt_kicker():
+    # The RunEngine Event Loop interferes with the qt event loop. Here we
+    # kick it to keep it going.
+    plt.draw_all()
+    qApp.processEvents()
+    loop.call_later(0.1, _qt_kicker)
+
+
+loop = asyncio.get_event_loop()
+loop.call_soon(_qt_kicker)
 
 
 class CallbackBase(object):
@@ -152,14 +166,10 @@ class LivePlot(CallbackBase):
         """
         super().__init__()
         fig, ax = plt.subplots()
-        # stash the figure so we can re-show it later if it gets closed (or
-        # something)
-        self.fig = fig
-        # show the figure (Note that this is a non-blocking call to show)
-        fig.show()
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
+        self.fig = fig
         self.ax = ax
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
@@ -183,35 +193,29 @@ class LivePlot(CallbackBase):
     def event(self, doc):
         "Update line with data from this Event."
         # Do repeated 'self' lookups once, for perf.
-        x_data = self.x_data
-        y_data = self.y_data
         ax = self.ax
         if self.x is not None:
             # this try/except block is needed because multiple event streams
             # will be emitted by the RunEngine and not all event streams will
             # have the keys we want
             try:
-                x_data.append(doc['data'][self.x])
+                self.x_data.append(doc['data'][self.x])
             except KeyError:
                 # wrong event stream, skip it
                 return
         else:
-            x_data.append(doc['seq_num'])
+            self.x_data.append(doc['seq_num'])
         # same rationale as the above try/except block
         try:
-            y_data.append(doc['data'][self.y])
+            self.y_data.append(doc['data'][self.y])
         except KeyError:
             pass
 
-        self.current_line.set_data(x_data, y_data)
+        self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
         ax.relim(visible_only=True)
         ax.autoscale_view(tight=True)
         ax.figure.canvas.draw()
-        try:
-            ax.figure.canvas.flush_events()
-        except NotImplementedError:
-            pass  # Ignore on non-interactive backends.
 
 
 def format_num(x, max_len=11, pre=5, post=5):

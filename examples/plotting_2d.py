@@ -12,12 +12,14 @@ fsapi.register_handler('npy', NpyHandler)
 
 def stepscan(motor, det):
     for i in np.linspace(-5, 5, 75):
+        yield Msg('open_run')
         yield Msg('create')
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         yield Msg('read', motor)
         yield Msg('read', det)
         yield Msg('save')
+        yield Msg('close_run')
 
 
 ic = LiveImage('det_2d')
