@@ -449,8 +449,8 @@ class Center(Scan):
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
     NUM_SAMPLES = 10 
 
-    def __init__(self, motor, detectors, target_field, initial_center, initial_width,
-                tolerance=0.1, output_mutable=None):
+    def __init__(self, detectors, target_field, motor, initial_center,
+                 initial_width, tolerance=0.1, output_mutable=None):
         """
         Attempts to find the center of a peak by moving a motor.
 
@@ -470,10 +470,10 @@ class Center(Scan):
 
         Parameters
         ----------
-        motor : Mover
         detetector : Reader
         target_field : string
             data field whose output is the focus of the adaptive tuning
+        motor : Mover
         initial_center : number
             Initial guess at where the center is
         initial_width : number
@@ -512,6 +512,7 @@ class Center(Scan):
         max_cen = self.max_cen
         seen_x = deque()
         seen_y = deque()
+        yield Msg('open_run')
         for x in np.linspace(initial_center - self.RANGE * initial_width,
                              initial_center + self.RANGE * initial_width,
                              self.NUM_SAMPLES, endpoint=True):
@@ -562,6 +563,7 @@ class Center(Scan):
             yield Msg('save')
 
         yield Msg('set', motor, np.clip(guesses['center'], min_cen, max_cen))
+        yield Msg('close_run')
 
         if self.output_mutable is not None:
             self.output_mutable.update(guesses)
