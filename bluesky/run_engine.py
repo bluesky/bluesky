@@ -584,7 +584,7 @@ class RunEngine:
         if self.state.is_running:
             if self._sigint_handler.interrupted:
                 self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-                loop.call_soon(self.request_pause, True, 'SIGINT')
+                loop.call_soon(self.request_pause, False, 'SIGINT')
                 self._sigint_handler.interrupted = False
 
         loop.call_later(0.1, self._check_for_signals)
