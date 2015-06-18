@@ -305,7 +305,11 @@ class LiveTable(CallbackBase):
         for field in self.fields:
             val = event_document['data'].get(field, '')
             if field in self._filestore_keys:
-                val = fsapi.retrieve(val)
+                try:
+                    import filestore.api as fsapi
+                    val = fsapi.retrieve(val)
+                except (ImportError, KeyError):
+                    pass
             if isinstance(val, np.ndarray) or isinstance(val, list):
                 val = np.sum(np.asarray(val))
             try:
