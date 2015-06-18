@@ -15,7 +15,7 @@ def exception_raiser(doc):
 
 def test_main_thread_callback_exceptions():
 
-    RE(stepscan(motor, det), subs={'start': exception_raiser,
+    RE(stepscan(det, motor), subs={'start': exception_raiser,
                                    'stop': exception_raiser,
                                    'event': exception_raiser,
                                    'descriptor': exception_raiser,
@@ -25,34 +25,34 @@ def test_main_thread_callback_exceptions():
 
 def test_all():
     c = CallbackCounter()
-    RE(stepscan(motor, det), subs={'all': c})
+    RE(stepscan(det, motor), subs={'all': c})
     assert_equal(c.value, 10 + 1 + 2)  # events, descriptor, start and stop
 
     c = CallbackCounter()
     token = RE.subscribe('all', c)
-    RE(stepscan(motor, det))
+    RE(stepscan(det, motor))
     RE.unsubscribe(token)
     assert_equal(c.value, 10 + 1 + 2)
 
 
 @raises(Exception)
 def _raising_callbacks_helper(stream_name, callback):
-    RE(stepscan(motor, det), subs={stream_name: callback})
+    RE(stepscan(det, motor), subs={stream_name: callback})
 
 
 def test_subscribe_msg():
     assert RE.state == 'idle'
     c = CallbackCounter()
 
-    def counting_stepscan(motor, det):
+    def counting_stepscan(det, motor):
         yield Msg('subscribe', None, 'start', c)
-        yield from stepscan(motor, det)
+        yield from stepscan(det, motor)
 
-    RE(counting_stepscan(motor, det))  # should advance c
+    RE(counting_stepscan(det, motor))  # should advance c
     assert_equal(c.value, 1)
-    RE(counting_stepscan(motor, det))  # should advance c
+    RE(counting_stepscan(det, motor))  # should advance c
     assert_equal(c.value, 2)
-    RE(stepscan(motor, det))  # should not
+    RE(stepscan(det, motor))  # should not
     assert_equal(c.value, 2)
 
 
