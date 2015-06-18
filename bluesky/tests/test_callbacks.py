@@ -1,4 +1,4 @@
-from nose.tools import assert_in, assert_equal
+from nose.tools import assert_in, assert_equal, assert_raises
 from bluesky.run_engine import RunEngine, Msg
 from bluesky.examples import *
 from bluesky.tests.utils import setup_test_run_engine
@@ -51,6 +51,15 @@ def test_subscribe_msg():
     assert_equal(c.value, 2)
     RE(stepscan(motor, det))  # should not
     assert_equal(c.value, 2)
+
+
+def test_unknown_cb_raises():
+    def f(doc):
+        pass
+    # Dispatches catches this case.
+    assert_raises(KeyError, RE.subscribe, 'not a thing', f)
+    # CallbackRegistry catches this case (different error).
+    assert_raises(ValueError, RE._register_scan_callback, 'not a thing', f)
 
 
 if __name__ == '__main__':

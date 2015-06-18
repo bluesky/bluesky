@@ -76,8 +76,9 @@ class CallbackRegistry:
     See matplotlib.cbook.CallbackRegistry. This is a simplified since
     ``bluesky`` is python3.4+ only!
     """
-    def __init__(self, halt_on_exception=True):
+    def __init__(self, halt_on_exception=True, allowed_sigs=None):
         self.halt_on_exception = halt_on_exception
+        self.allowed_sigs = allowed_sigs
         self.callbacks = dict()
         self._cid = 0
         self._func_cid_map = {}
@@ -106,6 +107,10 @@ class CallbackRegistry:
             ``func`` so that it will no longer be called when ``sig`` is
             generated
         """
+        if self.allowed_sigs is not None:
+            if sig not in self.allowed_sigs:
+                raise ValueError("Allowed signals are {0}".format(
+                    self.allowed_sigs))
         self._func_cid_map.setdefault(sig, WeakKeyDictionary())
         # Note proxy not needed in python 3.
         # TODO rewrite this when support for python2.x gets dropped.
@@ -165,6 +170,10 @@ class CallbackRegistry:
         args
         kwargs
         """
+        if self.allowed_sigs is not None:
+            if sig not in self.allowed_sigs:
+                raise ValueError("Allowed signals are {0}".format(
+                    self.allowed_sigs))
         exceptions = []
         if sig in self.callbacks:
             for cid, func in self.callbacks[sig].items():
