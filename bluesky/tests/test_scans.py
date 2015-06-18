@@ -146,3 +146,15 @@ def test_legacy_scans():
 
     # cleanup
     ascan.RE.md.clear()
+
+
+def test_set():
+    scan = LinAscan([det], motor, 1, 5, 3)
+    assert_equal(scan.start, 1)
+    assert_equal(scan.stop, 5)
+    assert_equal(scan.num, 3)
+    scan.set(start=2)
+    assert_equal(scan.start, 2)
+    scan.set(num=4)
+    assert_equal(scan.num, 4)
+    assert_equal(scan.start, 2)
