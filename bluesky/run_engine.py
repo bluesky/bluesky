@@ -758,7 +758,7 @@ class RunEngine:
         while True:
             if all([obj.done for obj in objs]):
                 break
-            ttime.sleep(1e-2)
+            yield from asyncio.sleep(0.05)
         del self._block_groups[group]
         return objs
 
