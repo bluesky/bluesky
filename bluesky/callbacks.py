@@ -355,6 +355,8 @@ class LiveTable(CallbackBase):
             self.logbook(my_table, {
                 'run_start_uid': stop_document['run_start'],
                 'scan_id': self.scan_id})
+
+        self.table.start = 0
         print(str(self.table).split('\n')[-1])
         sys.stdout.flush()
         # remove all data from the table
