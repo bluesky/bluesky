@@ -194,23 +194,20 @@ class LivePlot(CallbackBase):
         "Update line with data from this Event."
         # Do repeated 'self' lookups once, for perf.
         ax = self.ax
-        if self.x is not None:
-            # this try/except block is needed because multiple event streams
-            # will be emitted by the RunEngine and not all event streams will
-            # have the keys we want
-            try:
-                self.x_data.append(doc['data'][self.x])
-            except KeyError:
-                # wrong event stream, skip it
-                return
-        else:
-            self.x_data.append(doc['seq_num'])
-        # same rationale as the above try/except block
         try:
-            self.y_data.append(doc['data'][self.y])
+            if self.x is not None:
+                # this try/except block is needed because multiple event streams
+                # will be emitted by the RunEngine and not all event streams will
+                # have the keys we want
+                new_x = doc['data'][self.x]
+            else:
+                new_x = doc['seq_num']
+            new_y = doc['data'][self.y]
         except KeyError:
-            pass
-
+            # wrong event stream, skip it
+            return
+        self.y_data.append(new_y)
+        self.x_data.append(new_x)
         self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
         ax.relim(visible_only=True)
