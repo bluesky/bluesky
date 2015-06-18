@@ -349,11 +349,10 @@ class LiveTable(CallbackBase):
 
         if self.logbook and self.run_start_uid == stop_document['run_start']:
             header = ["Scan {scan_id} (uid='{run_start_uid}')", '']
-            # Finnicky styling....
-            my_table = str(self.table).split('\n')
-            my_table.pop(3)  # remove blank line
-            my_table = '\n'.join(header + my_table)
-            self.logbook(str(my_table), {
+            # drop the padding row
+            self.table.start = 1
+            my_table = '\n'.join(header + [str(self.table), ])
+            self.logbook(my_table, {
                 'run_start_uid': stop_document['run_start'],
                 'scan_id': self.scan_id})
         print(str(self.table).split('\n')[-1])
