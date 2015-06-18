@@ -90,7 +90,6 @@ def test_adaptive_dscan():
     counter2 = CallbackCounter()
 
     motor.set(1)
-    RE.verbose = False
     RE(scan1, subs={'event': [col, counter1]})
     RE(scan2, subs={'event': counter2})
     assert_greater(counter1.value, counter2.value)
@@ -120,14 +119,19 @@ def test_count():
     assert_equal(actual_intensity, [1., 1., 1.])
 
 
+def test_center():
+    assert_true(not RE._run_is_open)
+    det = SynGauss('det', motor, 'motor', 0, 1000, 1, 'poisson', True)
+    d = {}
+    cen = Center([det], 'det', motor, 0.1, 1.1, 0.01, d)
+    RE(cen)
+    assert_less(abs(d['center']), 0.1)
+
+
 def test_legacy_scans():
     # smoke tests
     ascan.detectors.append(det)
     ascan.RE = RE
-    ascan.RE.md['owner'] = 'test_owner'
-    ascan.RE.md['group'] = 'test_group'
-    ascan.RE.md['config'] = {}
-    ascan.RE.md['beamline_id'] = 'test_beamline'
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         ascan(motor, 0, 5, 5)
@@ -145,9 +149,6 @@ def test_legacy_scans():
         warnings.simplefilter("ignore")
         ct(animal='lion', subs={'start': assert_lion})
 
-    # cleanup
-    ascan.RE.md.clear()
-
 
 def test_set():
     scan = LinAscan([det], motor, 1, 5, 3)
@@ -159,11 +160,3 @@ def test_set():
     scan.set(num=4)
     assert_equal(scan.num, 4)
     assert_equal(scan.start, 2)
-
-
-def test_center():
-    det = SynGauss('det', motor, 'motor', 0, 1000, 1, True)
-    d = {}
-    cen = Center(motor, [det], 'det', 0.1, 1.1, 0.01, d)
-    RE(cen)
-    assert_less(abs(d['center']), 0.1)

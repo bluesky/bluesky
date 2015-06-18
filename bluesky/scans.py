@@ -444,7 +444,7 @@ class AdaptiveDscan(AdaptiveScanBase):
         yield Msg('wait', None, 'A')
 
 
-class Center(Scan):
+class Center(ScanBase):
     RANGE = 2  # in sigma, first sample this range around the guess
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
     NUM_SAMPLES = 10 
@@ -512,7 +512,6 @@ class Center(Scan):
         max_cen = self.max_cen
         seen_x = deque()
         seen_y = deque()
-        yield Msg('open_run')
         for x in np.linspace(initial_center - self.RANGE * initial_width,
                              initial_center + self.RANGE * initial_width,
                              self.NUM_SAMPLES, endpoint=True):
@@ -563,7 +562,6 @@ class Center(Scan):
             yield Msg('save')
 
         yield Msg('set', motor, np.clip(guesses['center'], min_cen, max_cen))
-        yield Msg('close_run')
 
         if self.output_mutable is not None:
             self.output_mutable.update(guesses)
