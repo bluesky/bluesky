@@ -3,6 +3,7 @@ Useful callbacks for the Run Engine
 """
 import sys
 from itertools import count
+import asyncio
 from prettytable import PrettyTable
 import matplotlib.pyplot as plt
 from collections import OrderedDict
@@ -12,6 +13,23 @@ import numpy as np
 
 import logging
 logger = logging.getLogger(__name__)
+
+import matplotlib.backends.backend_qt5
+from matplotlib.backends.backend_qt5 import _create_qApp
+_create_qApp()
+qApp = matplotlib.backends.backend_qt5.qApp
+
+
+def _qt_kicker():
+    # The RunEngine Event Loop interferes with the qt event loop. Here we
+    # kick it to keep it going.
+    plt.draw_all()
+    qApp.processEvents()
+    loop.call_later(0.1, _qt_kicker)
+
+
+loop = asyncio.get_event_loop()
+loop.call_soon(_qt_kicker)
 
 
 class CallbackBase(object):
@@ -128,23 +146,17 @@ class LivePlot(CallbackBase):
     def event(self, doc):
         "Update line with data from this Event."
         # Do repeated 'self' lookups once, for perf.
-        x_data = self.x_data
-        y_data = self.y_data
         ax = self.ax
         if self.x is not None:
-            x_data.append(doc['data'][self.x])
+            self.x_data.append(doc['data'][self.x])
         else:
-            x_data.append(doc['seq_num'])
-        y_data.append(doc['data'][self.y])
-        self.current_line.set_data(x_data, y_data)
+            self.x_data.append(doc['seq_num'])
+        self.y_data.append(doc['data'][self.y])
+        self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
         ax.relim(visible_only=True)
         ax.autoscale_view(tight=True)
         ax.figure.canvas.draw()
-        try:
-            ax.figure.canvas.flush_events()
-        except NotImplementedError:
-            pass  # Ignore on non-interactive backends.
 
 
 def format_num(x, max_len=11, pre=5, post=5):
