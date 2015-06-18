@@ -446,6 +446,10 @@ class ScanValidator:
     def validate(self):
         self.exit_status = 'Not yet validated'
         for msg in self.scan:
+            if msg.command not in self.message_names:
+                raise KeyError(
+                    "The RunEngine you provided does not have a callback "
+                    "registered for message = {}".format(msg))
             self.message_order.insert(0, msg)
             self._process_message(msg)
         self.exit_status = "Success"
