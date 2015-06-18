@@ -299,6 +299,11 @@ class Struct(metaclass=StructMeta):
         for name, val in bound.arguments.items():
             setattr(self, name, val)
 
+    def set(self, **kwargs):
+        "Update attributes as keyword arguments."
+        for attr, val in kwargs.items():
+            setattr(self, attr, val)
+
 
 class ExtendedList(list):
     "A list with some 'required' elements that can't be removed."
