@@ -470,7 +470,7 @@ class Center(Scan):
 
         Parameters
         ----------
-        detetector : Reader
+        detetectors : Reader
         target_field : string
             data field whose output is the focus of the adaptive tuning
         motor : Mover
