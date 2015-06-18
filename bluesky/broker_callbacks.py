@@ -4,6 +4,7 @@ import filestore.api as fsapi
 from metadatastore.commands import find_event_descriptors, find_run_starts
 import matplotlib.pyplot as plt
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
+from .callbacks import CallbackBase
 
 
 class LiveImage(CallbackBase):

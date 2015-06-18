@@ -55,40 +55,6 @@ class CallbackBase(object):
         logger.debug("CallbackBase: I'm a stop with doc = {}".format(doc))
 
 
-class LiveImage(CallbackBase):
-
-    def __init__(self, field):
-        """
-        Stream 2D images in a cross-section viewer.
-
-        Note: If your figure blocks the main thread when you are trying to
-        scan with this callback, call `plt.ion()` in your IPython session.
-
-        Parameters
-        ----------
-        field : string
-            name of data field in an Event
-
-        Note
-        ----
-        Required a matplotlib fix not released as of this writing. The
-        relevant commit is a951b7.
-        """
-        super().__init__()
-        self.field = field
-        fig = plt.figure()
-        # show the figure (Note that this is a non-blocking call to show)
-        fig.show()
-        self.cs = CrossSection(fig)
-
-    def event(self, doc):
-        uid = doc['data'][self.field]
-        data = fsapi.retrieve(uid)
-        self.cs.update_image(data)
-        self.cs._fig.canvas.draw()
-        self.cs._fig.canvas.flush_events()
-
-
 class CallbackCounter:
     "As simple as it sounds: count how many times a callback is called."
     # Wrap itertools.count in something we can use as a callback.
