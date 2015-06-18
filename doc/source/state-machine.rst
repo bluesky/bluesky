@@ -70,7 +70,7 @@ to see the code of the scan itself. For now, we focus on how to use it.
 .. ipython:: python
 
     from bluesky.examples import cautious_stepscan, motor1, det1
-    RE(cautious_stepscan(motor1, det1))
+    RE(cautious_stepscan(det1, motor1))
     RE.resume()
     RE.resume()
     RE.abort()
