@@ -226,7 +226,7 @@ class RunEngine:
         self.unsubscribe = self.dispatcher.unsubscribe
 
         # private registry of blocking callbacks
-        self._scan_cb_registry = CallbackRegistry()
+        self._scan_cb_registry = CallbackRegistry(allowed_sigs=DocumentNames)
 
         self.verbose = False
 
@@ -880,7 +880,8 @@ class Dispatcher:
     """Dispatch documents to user-defined consumers on the main thread."""
 
     def __init__(self):
-        self.cb_registry = CallbackRegistry(halt_on_exception=False)
+        self.cb_registry = CallbackRegistry(allowed_sigs=DocumentNames,
+                                            halt_on_exception=False)
         self._counter = count()
         self._token_mapping = dict()
 
