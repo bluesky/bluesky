@@ -12,7 +12,7 @@ def teardown():
 
 
 def test_scan_and_get_data():
-    uid = RE(stepscan(motor, det), group='foo', beamline_id='testing',
+    uid = RE(stepscan(det, motor), group='foo', beamline_id='testing',
              config={})
 
     hdr = db[uid]

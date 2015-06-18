@@ -21,47 +21,47 @@ def traj_checker(scan, expected_traj):
 
 def test_ascan():
     traj = [1, 2, 3]
-    scan = Ascan(motor, [det], traj)
+    scan = Ascan([det], motor, traj)
     yield traj_checker, scan, traj
 
 
 def test_dscan():
     traj = np.array([1, 2, 3]) - 4
     motor.set(-4)
-    scan = Ascan(motor, [det], traj)
+    scan = Ascan([det], motor, traj)
     yield traj_checker, scan, traj
 
 
 def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
-    scan = LinAscan(motor, [det], 0, 10, 5)
+    scan = LinAscan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_log_ascan():
     traj = np.logspace(0, 10, 5)
-    scan = LogAscan(motor, [det], 0, 10, 5)
+    scan = LogAscan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
-    scan = LinDscan(motor, [det], 0, 10, 5)
+    scan = LinDscan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_log_dscan():
     traj = np.logspace(0, 10, 5) + 6
     motor.set(6)
-    scan = LogDscan(motor, [det], 0, 10, 5)
+    scan = LogDscan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_adaptive_ascan():
-    scan1 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, True)
-    scan2 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2, True)
-    scan3 = AdaptiveAscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, False)
+    scan1 = AdaptiveAscan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
+    scan2 = AdaptiveAscan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
+    scan3 = AdaptiveAscan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -81,9 +81,9 @@ def test_adaptive_ascan():
 
 
 def test_adaptive_dscan():
-    scan1 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, True)
-    scan2 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2, True)
-    scan3 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, False)
+    scan1 = AdaptiveDscan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
+    scan2 = AdaptiveDscan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
+    scan3 = AdaptiveDscan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)

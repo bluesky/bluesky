@@ -55,24 +55,24 @@ def test_simple():
 
 
 def test_conditional_break():
-    yield run, conditional_break, motor, det, 0.2
+    yield run, conditional_break, det, motor, 0.2
 
 
 def test_sleepy():
-    yield run, sleepy, motor, det
+    yield run, sleepy, det, motor
 
 
 def test_wati_one():
-    yield run, wait_one, motor, det
+    yield run, wait_one, det, motor
 
 
 def test_wait_multiple():
-    yield run, wait_multiple, [motor1, motor2], det
+    yield run, wait_multiple, det, [motor1, motor2]
 
 
 def test_hard_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, False, True))
+    RE(conditional_pause(det, motor, False, True))
     assert_equal(RE.state, 'paused')
     RE.resume()
     assert_equal(RE.state, 'paused')
@@ -82,7 +82,7 @@ def test_hard_pause():
 
 def test_deferred_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, True, True))
+    RE(conditional_pause(det, motor, True, True))
     assert_equal(RE.state, 'paused')
     RE.resume()
     assert_equal(RE.state, 'paused')
@@ -92,13 +92,13 @@ def test_deferred_pause():
 
 def test_hard_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, False, False))
+    RE(conditional_pause(det, motor, False, False))
     assert_equal(RE.state, 'idle')
 
 
 def test_deferred_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, True, False))
+    RE(conditional_pause(det, motor, True, False))
     assert_equal(RE.state, 'idle')
 
 
@@ -122,7 +122,7 @@ def _pause_from_thread():
 
 def test_panic_during_pause():
     assert_equal(RE.state, 'idle')
-    RE(conditional_pause(motor, det, False, True))
+    RE(conditional_pause(det, motor, False, True))
     RE.panic()
     assert_true(RE._panic)
     assert_raises(PanicError, lambda: RE.resume())
@@ -146,7 +146,7 @@ def test_panic_timer():
 
 
 def test_simple_scan_saving():
-    yield run, simple_scan_saving, motor, det
+    yield run, simple_scan_saving, det, motor
 
 
 def print_event_time(doc):
@@ -155,14 +155,14 @@ def print_event_time(doc):
 
 def test_calltime_subscription():
     assert_equal(RE.state, 'idle')
-    RE(simple_scan_saving(motor, det), subs={'event': print_event_time})
+    RE(simple_scan_saving(det, motor), subs={'event': print_event_time})
     assert_equal(RE.state, 'idle')
 
 
 def test_stateful_subscription():
     assert_equal(RE.state, 'idle')
     token = RE.subscribe('event', print_event_time)
-    RE(simple_scan_saving(motor, det))
+    RE(simple_scan_saving(det, motor))
     RE.unsubscribe(token)
     assert_equal(RE.state, 'idle')
 
@@ -172,7 +172,7 @@ def test_live_plotter():
         raise nose.SkipTest("matplotlib is not available")
     my_plotter = LivePlot('det', 'motor')
     assert_equal(RE.state, 'idle')
-    RE(stepscan(motor, det), subs={'all': my_plotter})
+    RE(stepscan(det, motor), subs={'all': my_plotter})
     assert_equal(RE.state, 'idle')
 
 
@@ -243,5 +243,5 @@ def validate_dict_cb_opposite(key):
 def test_simple_fly():
     raise nose.SkipTest("The thread logic is not working right")
 
-    mm = MockFlyer(motor, det)
+    mm = MockFlyer(det, motor)
     RE(fly_gen(mm, -1, 1, 15))

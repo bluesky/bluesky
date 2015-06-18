@@ -111,7 +111,7 @@ class Count(ScanBase):
 
 
 class Scan1D(ScanBase):
-    _fields = ['motor', 'detectors', 'steps']
+    _fields = ['detectors', 'motor', 'steps']
 
     def _gen(self):
         dets = self.detectors
@@ -140,10 +140,10 @@ class Ascan(Scan1D):
 
     Parameters
     ----------
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
     steps : list
         list of positions
     """
@@ -158,10 +158,10 @@ class Dscan(Scan1D):
 
     Parameters
     ----------
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
     steps : list
         list of positions relative to current position
     """
@@ -184,10 +184,10 @@ class LinAscan(Scan1D):
 
     Parameters
     ----------
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -205,7 +205,7 @@ class LinAscan(Scan1D):
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
-    _fields = ['motor', 'detectors', 'start', 'stop', 'num']
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
 
     def _gen(self):
         self._steps = np.linspace(self.start, self.stop, self.num)
@@ -218,10 +218,10 @@ class LogAscan(Scan1D):
 
     Parameters
     ----------
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -239,7 +239,7 @@ class LogAscan(Scan1D):
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
-    _fields = ['motor', 'detectors', 'start', 'stop', 'num']
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
 
     def _gen(self):
         self._steps = np.logspace(self.start, self.stop, self.num)
@@ -252,10 +252,10 @@ class LinDscan(Dscan):
 
     Parameters
     ----------
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -273,7 +273,7 @@ class LinDscan(Dscan):
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
-    _fields = ['motor', 'detectors', 'start', 'stop', 'num']
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
 
     def _gen(self):
         self.steps = np.linspace(self.start, self.stop, self.num)
@@ -286,10 +286,10 @@ class LogDscan(Dscan):
 
     Parameters
     ----------
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -307,7 +307,7 @@ class LogDscan(Dscan):
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
-    _fields = ['motor', 'detectors', 'start', 'stop', 'num']
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
 
     def _gen(self):
         self.steps = np.logspace(self.start, self.stop, self.num)
@@ -315,7 +315,7 @@ class LogDscan(Dscan):
 
 
 class AdaptiveScanBase(Scan1D):
-    _fields = ['motor', 'detectors', 'target_field', 'start', 'stop',
+    _fields = ['detectors', 'target_field', 'motor', 'start', 'stop',
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
 
@@ -382,12 +382,12 @@ class AdaptiveAscan(AdaptiveScanBase):
 
     Parameters
     ----------
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
     target_field : string
         data field whose output is the focus of the adaptive tuning
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -412,12 +412,12 @@ class AdaptiveDscan(AdaptiveScanBase):
 
     Parameters
     ----------
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
     detectors : list
         list of 'readable' objects
     target_field : string
         data field whose output is the focus of the adaptive tuning
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float

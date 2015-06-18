@@ -38,7 +38,7 @@ and reads the position back.
 
 .. ipython:: python
 
-    def simple_scan(motor):
+    def simple_scan(det, motor):
         yield Msg('set', motor, 5)
         yield Msg('read', motor)
 
@@ -53,7 +53,7 @@ To read from a detector, we also need the 'trigger' command.
 
 .. ipython:: python
 
-    def simple_scan(motor, det):
+    def simple_scan(det, motor):
         yield Msg('set', motor, 5)
         yield Msg('read', motor)
         yield Msg('trigger', det)
@@ -85,7 +85,7 @@ make an on-the-fly decision about whether to continue or stop.
 
 .. ipython:: python
 
-    def conditional_break(motor, det, threshold):
+    def conditional_break(det, motor, threshold):
         """Set, trigger, read until the detector reads intensity < threshold"""
         i = 0
         while True:
@@ -116,7 +116,7 @@ temperature controller.
 
 .. ipython:: python
 
-    def sleepy(motor, det):
+    def sleepy(det, motor):
         "Set, trigger motor, sleep for a fixed time, trigger detector, read"
         yield Msg('set', motor, 5)
         yield Msg('sleep', None, 2)  # units: seconds
@@ -139,7 +139,7 @@ that ``block_group`` reports that it is ready.
 
 .. ipython:: python
 
-    def wait_one(motor, det):
+    def wait_one(det, motor):
         "Set, trigger, read"
         yield Msg('set', motor, 5, block_group='A')  # Add to group 'A'.
         yield Msg('wait', None, 'A')  # Wait for everything in group 'A'.
@@ -151,7 +151,7 @@ the last one reports it is ready.
 
 .. ipython:: python
 
-    def wait_multiple(motors, det):
+    def wait_multiple(det, motors):
         "Set motors, trigger all motors, wait for all motors to move."
         for motor in motors:
             yield Msg('set', motor, 5, block_group='A')
@@ -166,7 +166,7 @@ different points in the scan.
 
 .. ipython:: python
 
-    def wait_complex(motors, det):
+    def wait_complex(det, motors):
         "Set motors, trigger motors, wait for all motors to move in groups."
         # Same as above...
         for motor in motors[:-1]:
@@ -193,14 +193,14 @@ interruption.
 
 .. ipython:: python
 
-    def conditional_pause(motor, det, hard):
+    def conditional_pause(det, motor, defer):
         for i in range(5):
             yield Msg('checkpoint')
             yield Msg('set', motor, i)
             yield Msg('trigger', det)
             reading = yield Msg('read', det)
             if reading['det']['value'] < 0.2:
-                yield Msg('pause', hard=hard)
+                yield Msg('pause', defer=defer)
             yield Msg('set', motor, i + 0.5)
 
 If detector reading dips below 0.2, the scan is paused.
@@ -212,7 +212,7 @@ The next example is a step scan that pauses after each data point is collected.
 
 .. ipython:: python
 
-    def cautious_stepscan(motor, det):
+    def cautious_stepscan(det, motor):
         for i in range(-5, 5):
             yield Msg('checkpoint')
             yield Msg('create')
@@ -245,12 +245,14 @@ To bundle data into an Event, use the 'create' and 'save' commands. Any
 
     def simple_scan_saving(motor, det):
         "Set, trigger, read"
+        yield Msg('open_run')
         yield Msg('create')
         yield Msg('set', motor, 5)
         yield Msg('read', motor)
         yield Msg('trigger', det)
         yield Msg('read', det)
         yield Msg('save')
+        yield Msg('close_run')
 
 The above generates one Event. By looping through several create--save pairs,
 we can generate many Events.
@@ -258,6 +260,7 @@ we can generate many Events.
 .. ipython:: python
 
     def stepscan(motor, det):
+        yield Msg('open_run')
         for i in range(-5, 5):
             yield Msg('create')
             yield Msg('set', motor, i)
@@ -265,6 +268,7 @@ we can generate many Events.
             yield Msg('read', motor)
             yield Msg('read', det)
             yield Msg('save')
+        yield Msg('close_run')
 
 Fly Scans
 ---------
@@ -309,7 +313,7 @@ By contrast, bluesky's built-in scans are reusable.
 .. ipython:: python
 
     from bluesky.scans import Ascan
-    s = Ascan(motor, [det], [1, 2, 3])
+    s = Ascan([det], motor, [1, 2, 3])
     count_messages(s)
     count_messages(s)  # reusable!
 
@@ -322,16 +326,16 @@ scan---reusable. Follow this pattern:
 .. ipython:: python
 
     class ReusableStepscan:
-        def __init__(self, motor, det):
+        def __init__(self, det, motor):
             self.motor = motor
             self.det = det
         def __iter__(self):
             return self._gen()
         def _gen(self):
-            yield from stepscan(self.motor, self.det)
+            yield from stepscan(self.det, self.motor)
 
     # Check that it works.
-    s = ReusableStepscan(motor, det)
+    s = ReusableStepscan(det, motor)
     count_messages(s)
     count_messages(s)  # reusable!
 
@@ -345,12 +349,12 @@ subclass bluesky's ``ScanBase`` class.
 
     from bluesky.scans import ScanBase
     class ReusableStepscan(ScanBase):
-        _fields = ['motor', 'det']  # These magically become the args.
+        _fields = ['det', 'motor']  # These magically become the args.
         def _gen(self):
-            yield from stepscan(self.motor, self.det)
+            yield from stepscan(self.det, self.motor)
 
     # Check that it works.
-    s = ReusableStepscan(motor, det)
+    s = ReusableStepscan(det, motor)
     count_messages(s)
     count_messages(s)  # reusable!
 
@@ -363,8 +367,9 @@ Temperature Sweep
 .. ipython:: python
 
     import numpy as np
-    def temperature_sweep(temp_controller, det):
+    def temperature_sweep(det, temp_controller):
         # scan a temperature controller from 100 to 150 in 50 steps
+        yield Msg('open_run')
         for temp in np.linspace(100, 150, 50):
             yield Msg('create')
             # set the temperature controller
@@ -374,3 +379,4 @@ Temperature Sweep
             # trigger acquisition of the detector
             yield Msg('trigger', det)
             yield Msg('save')
+        yield Msg('close_run')

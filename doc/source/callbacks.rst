@@ -29,7 +29,7 @@ table shows results as they come in.
     dets = [det1, det2, det3]
     table = LiveTable(dets)
     RE.subscribe('all', table)  # Subscribe table to all future runs.
-    s = Ascan(motor, dets, [1,2,4,8])
+    s = Ascan(dets, motor, [1,2,4,8])
 
 .. ipython:: python
 
@@ -146,7 +146,7 @@ LiveTable
 .. ipython:: python
 
     from bluesky.scans import Ascan
-    scan = Ascan(motor, dets, [1,2,4,8])
+    scan = Ascan(dets, motor, [1,2,4,8])
     table = LiveTable(dets)
 
 .. ipython:: python
