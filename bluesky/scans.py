@@ -460,7 +460,7 @@ class Center(ScanBase):
 
         Works by :
 
-        - sampling 5 points around the initial center
+        - sampling 10 points around the initial center
         - fitting to Gaussian + line
         - moving to the center of the Gaussian
         - while |old center - new center| > tolerance
