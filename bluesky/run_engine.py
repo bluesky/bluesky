@@ -691,8 +691,15 @@ class RunEngine:
     def _kickoff(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.kickoff(*msg.args, **msg.kwargs)
+
         if block_group:
-            self._block_groups[block_group].add(ret)
+            p_event = asyncio.Event()
+
+            def done_callback():
+                loop.call_soon_threadsafe(p_event.set)
+
+            ret.finished_cb = done_callback
+            self._block_groups[block_group].add(p_event.wait())
 
         return ret
 
@@ -737,15 +744,29 @@ class RunEngine:
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
         if block_group:
-            self._block_groups[block_group].add(ret)
+            p_event = asyncio.Event()
+
+            def done_callback():
+                loop.call_soon_threadsafe(p_event.set)
+
+            ret.finished_cb = done_callback
+            self._block_groups[block_group].add(p_event.wait())
+
         return ret
 
     @asyncio.coroutine
     def _trigger(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
+
         if block_group:
-            self._block_groups[block_group].add(ret)
+            p_event = asyncio.Event()
+
+            def done_callback():
+                loop.call_soon_threadsafe(p_event.set)
+
+            ret.finished_cb = done_callback
+            self._block_groups[block_group].add(p_event.wait())
 
         return ret
 
@@ -754,13 +775,9 @@ class RunEngine:
         # Block progress until every object that was trigged
         # triggered with the keyword argument `block=group` is done.
         group = msg.kwargs.get('group', msg.args[0])
-        objs = self._block_groups[group]
-        while True:
-            if all([obj.done for obj in objs]):
-                break
-            yield from asyncio.sleep(0.05)
-        del self._block_groups[group]
-        return objs
+        objs = list(self._block_groups[group])
+        if objs:
+            yield from asyncio.wait(objs)
 
     @asyncio.coroutine
     def _sleep(self, msg):
