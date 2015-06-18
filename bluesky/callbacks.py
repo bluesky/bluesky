@@ -272,6 +272,7 @@ class LiveTable(CallbackBase):
 
     def start(self, start_document):
         self.run_start_uid = start_document['uid']
+        self.scan_id = start_document['scan_id']
         self.create_table()
 
     def descriptor(self, descriptor):
@@ -341,19 +342,23 @@ class LiveTable(CallbackBase):
             Not explicitly used in this function, other than to signal that
             the run has been completed
         """
-        if self.logbook:
+
+        if self.logbook and self.run_start_uid == stop_document['run_start']:
+            header = ["Scan {scan_id} (uid='{run_start_uid}')", '']
             # Finnicky styling....
             my_table = str(self.table).split('\n')
             my_table.pop(3)  # remove blank line
-            my_table = '\n'.join(my_table)
+            my_table = '\n'.join(header + my_table)
             self.logbook(str(my_table), {
-                'run_start_uid': stop_document['run_start']})
+                'run_start_uid': stop_document['run_start'],
+                'scan_id': self.scan_id})
         print(str(self.table).split('\n')[-1])
         sys.stdout.flush()
         # remove all data from the table
         self.table.clear_rows()
         # reset the filestore keys
         self._filestore_keys = set()
+
 
 def _get_obj_fields(fields):
     """
