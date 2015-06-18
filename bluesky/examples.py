@@ -168,7 +168,7 @@ class MockFlyer:
     collect step, would be better do to this with a thread starting from
     kickoff
     """
-    def __init__(self, motor, detector):
+    def __init__(self, detector, motor):
         self._mot = motor
         self._detector = detector
         self._steps = None
@@ -323,7 +323,7 @@ def simple_scan(motor):
     yield Msg('close_run')
 
 
-def conditional_break(motor, det, threshold):
+def conditional_break(det, motor, threshold):
     """Set, trigger, read until the detector reads intensity < threshold"""
     i = 0
     yield Msg('open_run')
@@ -339,7 +339,7 @@ def conditional_break(motor, det, threshold):
         i += 1
 
 
-def sleepy(motor, det):
+def sleepy(det, motor):
     "Set, trigger motor, sleep for a fixed time, trigger detector, read"
     yield Msg('open_run')
     yield Msg('set', motor, 5)
@@ -370,7 +370,7 @@ def checkpoint_forever():
     yield Msg('close_run')
 
 
-def wait_one(motor, det):
+def wait_one(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')
     yield Msg('set', motor, 5, block_group='A')  # Add to group 'A'.
@@ -380,7 +380,7 @@ def wait_one(motor, det):
     yield Msg('close_run')
 
 
-def wait_multiple(motors, det):
+def wait_multiple(det, motors):
     "Set motors, trigger all motors, wait for all motors to move."
     yield Msg('open_run')
     for motor in motors:
@@ -392,7 +392,7 @@ def wait_multiple(motors, det):
     yield Msg('close_run')
 
 
-def wait_complex(motors, det):
+def wait_complex(det, motors):
     "Set motors, trigger motors, wait for all motors to move in groups."
     # Same as above...
     yield Msg('open_run')
@@ -413,7 +413,7 @@ def wait_complex(motors, det):
     yield Msg('close_run')
 
 
-def conditional_pause(motor, det, defer, include_checkpoint):
+def conditional_pause(det, motor, defer, include_checkpoint):
     yield Msg('open_run')
     for i in range(5):
         if include_checkpoint:
@@ -432,7 +432,7 @@ def panic_timer(RE, delay):
     loop.call_later(delay, RE.panic)
 
 
-def simple_scan_saving(motor, det):
+def simple_scan_saving(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')
     yield Msg('create')
@@ -444,7 +444,7 @@ def simple_scan_saving(motor, det):
     yield Msg('close_run')
 
 
-def stepscan(motor, det):
+def stepscan(det, motor):
     yield Msg('open_run')
     for i in range(-5, 5):
         yield Msg('create')
@@ -456,7 +456,7 @@ def stepscan(motor, det):
     yield Msg('close_run')
 
 
-def cautious_stepscan(motor, det):
+def cautious_stepscan(det, motor):
     yield Msg('open_run')
     for i in range(-5, 5):
         yield Msg('checkpoint')

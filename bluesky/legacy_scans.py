@@ -45,14 +45,14 @@ class _LegacyScan:
 class LegacyAscan(_LegacyScan):
     def __call__(self, motor, start, stop, num, **kwargs):
         _deprecation_warning('ascan', 'LinAscan')
-        curried = lambda dets: LinAscan(motor, dets, start, stop, num)
+        curried = lambda dets: LinAscan(dets, motor, start, stop, num)
         super()._run(curried, **kwargs)
 
 
 class LegacyDscan(_LegacyScan):
     def __call__(self, motor, start, stop, num, **kwargs):
         _deprecation_warning('dscan', 'LinDscan')
-        curried = lambda dets: LinDscan(motor, dets, start, stop, num)
+        curried = lambda dets: LinDscan(dets, motor, start, stop, num)
         super()._run(curried, **kwargs)
 
 

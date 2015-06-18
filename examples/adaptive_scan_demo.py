@@ -19,5 +19,5 @@ det = SynGauss('det', motor, 'pos', center=0, Imax=1, sigma=1)
 # Point the function to our axes above, and specify what to plot.
 #my_plotter = LivePlot('det', 'pos')
 table = LiveTable(['det', 'pos'])
-ad_scan = AdaptiveAscan(motor, [det], 'det', -15, 5, .01, 1, .05, True)
+ad_scan = AdaptiveAscan([det], 'det', motor, -15, 5, .01, 1, .05, True)
 RE(ad_scan, subscriptions={'all': [table]}) #, my_plotter})
