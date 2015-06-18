@@ -12,6 +12,7 @@ def exception_raiser(doc):
     raise Exception("Hey look it's an exception that better not kill the "
                     "scan!!")
 
+
 def test_main_thread_callback_exceptions():
 
     RE(stepscan(motor, det), subs={'start': exception_raiser,
@@ -38,13 +39,15 @@ def test_all():
 def _raising_callbacks_helper(stream_name, callback):
     RE(stepscan(motor, det), subs={stream_name: callback})
 
-    
+
 def test_subscribe_msg():
     assert RE.state == 'idle'
     c = CallbackCounter()
+
     def counting_stepscan(motor, det):
         yield Msg('subscribe', None, 'start', c)
         yield from stepscan(motor, det)
+
     RE(counting_stepscan(motor, det))  # should advance c
     assert_equal(c.value, 1)
     RE(counting_stepscan(motor, det))  # should advance c

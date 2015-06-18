@@ -1,4 +1,3 @@
-import threading
 import asyncio
 import time as ttime
 from collections import deque
@@ -14,6 +13,7 @@ class Base:
     def __init__(self, name, fields):
         self._name = name
         self._fields = fields
+        self._cb = None
 
     def describe(self):
         return {k: {'source': self._name, 'dtype': 'number', 'shape': None}
@@ -31,6 +31,30 @@ class Base:
     @property
     def done(self):
         return self.ready
+
+    @property
+    def finished_cb(self):
+        """
+        Callback to be run when the status is marked as finished
+
+        The call back has no arguments
+        """
+        return self._cb
+
+    @finished_cb.setter
+    def finished_cb(self, cb):
+        if self._cb is not None:
+            raise RuntimeError("Can not change the call back")
+        if self.done:
+            cb()
+        else:
+            self._cb = cb
+
+    def _finish(self):
+        self.ready = True
+        if self._cb is not None:
+            self._cb()
+            self._cb = None
 
 
 class Reader(Base):
@@ -148,12 +172,10 @@ class MockFlyer:
         self._mot = motor
         self._detector = detector
         self._steps = None
-        self._thread = None
+        self._future = None
         self._data = deque()
-
-    @property
-    def ready(self):
-        return self._thread and not self._thread.is_alive()
+        self._cb = None
+        self.ready = False
 
     @property
     def done(self):
@@ -168,9 +190,8 @@ class MockFlyer:
     def kickoff(self, start, stop, steps):
         self._data = deque()
         self._steps = np.linspace(start, stop, steps)
-        self._thread = threading.Thread(target=self._scan,
-                                                name='mock_fly_thread')
-        self._thread.start()
+        self._future = loop.run_in_executor(None, self._scan)
+        self._future.add_done_callback(lambda x: self._finish())
         return self
 
     def collect(self):
@@ -203,6 +224,30 @@ class MockFlyer:
                     event['data'][k] = v['value']
                     event['timestamps'][k] = v['timestamp']
             self._data.append(event)
+
+    @property
+    def finished_cb(self):
+        """
+        Callback to be run when the status is marked as finished
+
+        The call back has no arguments
+        """
+        return self._cb
+
+    @finished_cb.setter
+    def finished_cb(self, cb):
+        if self._cb is not None:
+            raise RuntimeError("Can not change the call back")
+        if self.done:
+            cb()
+        else:
+            self._cb = cb
+
+    def _finish(self):
+        self.ready = True
+        if self._cb is not None:
+            self._cb()
+            self._cb = None
 
 
 class FlyMagic(Base):
@@ -269,6 +314,7 @@ det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
 det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
 det3 = SynGauss('det3', motor3, 'motor3', center=-1, Imax=2, sigma=1)
+
 
 def simple_scan(motor):
     yield Msg('open_run')
@@ -379,28 +425,6 @@ def conditional_pause(motor, det, defer, include_checkpoint):
             yield Msg('pause', defer=defer)
         print("I'm not pausing yet.")
     yield Msg('close_run')
-
-
-class PausingAgent:
-    def __init__(self, RE, name):
-        self.RE = RE
-        self.name = name
-
-    def issue_request(self, defer, delay=0):
-        def callback():
-            return self.permission
-
-        def requester():
-            ttime.sleep(delay)
-            self.permission = False
-            self.RE.request_pause(defer, self.name, callback)
-
-        thread = threading.Thread(target=requester)
-        thread.start()
-
-    def revoke_request(self, delay=0):
-        ttime.sleep(delay)
-        self.permission = True
 
 
 def panic_timer(RE, delay):

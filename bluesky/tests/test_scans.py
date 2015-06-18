@@ -79,6 +79,7 @@ def test_adaptive_ascan():
     monotonic_increasing = np.all(np.diff(actual_traj) > 0)
     assert_true(monotonic_increasing)
 
+
 def test_adaptive_dscan():
     scan1 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.1, True)
     scan2 = AdaptiveDscan(motor, [det], 'det', 0, 5, 0.1, 1, 0.2, True)
