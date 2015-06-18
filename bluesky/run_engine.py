@@ -6,9 +6,8 @@ from itertools import count
 from collections import namedtuple, deque, defaultdict, Iterable
 import uuid
 import signal
-import threading
 from enum import Enum
-import traceback
+
 
 import json
 import jsonschema

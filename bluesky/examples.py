@@ -1,4 +1,3 @@
-import threading
 import asyncio
 import time as ttime
 from collections import deque
@@ -424,28 +423,6 @@ def conditional_pause(motor, det, defer, include_checkpoint):
             yield Msg('pause', defer=defer)
         print("I'm not pausing yet.")
     yield Msg('close_run')
-
-
-class PausingAgent:
-    def __init__(self, RE, name):
-        self.RE = RE
-        self.name = name
-
-    def issue_request(self, defer, delay=0):
-        def callback():
-            return self.permission
-
-        def requester():
-            ttime.sleep(delay)
-            self.permission = False
-            self.RE.request_pause(defer, self.name, callback)
-
-        thread = threading.Thread(target=requester)
-        thread.start()
-
-    def revoke_request(self, delay=0):
-        ttime.sleep(delay)
-        self.permission = True
 
 
 def panic_timer(RE, delay):
