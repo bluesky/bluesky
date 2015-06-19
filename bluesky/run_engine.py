@@ -374,15 +374,15 @@ class RunEngine:
         """
         return self._scan_cb_registry.connect(name, func)
 
-    def __call__(self, gen, subs=None, **metadata):
-        """Run the scan defined by ``gen``
+    def __call__(self, plan, subs=None, **metadata):
+        """Run the scan defined by ``plan``
 
         Any keyword arguments other than those listed below will be
         interpreted as metadata and recorded with the run.
 
         Parameters
         ----------
-        gen : generator
+        plan : generator
             a generator or that yields ``Msg`` objects (or an iterable that
             returns such a generator)
         subs: dict, optional
@@ -440,7 +440,7 @@ class RunEngine:
         self._metadata_per_call = metadata
 
         self.state = 'running'
-        self._gen = iter(gen)  # no-op on generators; needed for classes
+        self._gen = iter(plan)  # no-op on generators; needed for classes
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             self._task = loop.create_task(self._run(self._gen))
             loop.run_forever()
