@@ -1,5 +1,6 @@
 import os
 import asyncio
+import itertools
 import time as ttime
 import sys
 from itertools import count
@@ -420,8 +421,12 @@ class RunEngine:
         # Register temporary subscriptions. Save tokens to unsubscribe later.
         if subs is None:
             subs = {}
+        try:
+            scan_subs = plan.subs
+        except AttributeError:
+            scan_subs = {}
         self._clear_call_cache()
-        for name, funcs in subs.items():
+        for name, funcs in itertools.chain(subs.items(), scan_subs.items()):
             if not isinstance(funcs, Iterable):
                 # Take funcs to be a single function.
                 funcs = [funcs]
