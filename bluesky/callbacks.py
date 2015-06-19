@@ -135,13 +135,16 @@ class LivePlot(CallbackBase):
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
+        if x is not None:
+            self.x, *others = _get_obj_fields([x])
+        else:
+            self.x = None
+        self.y, *others = _get_obj_fields([y])
         self.fig = fig
         self.ax = ax
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
         self.ax.margins(.1)
-        self.y = y
-        self.x = x
         self.kwargs = kwargs
         self.lines = []
         self.legend = None
