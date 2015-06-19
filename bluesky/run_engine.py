@@ -1,6 +1,7 @@
 import os
 import asyncio
 import itertools
+import types
 import time as ttime
 import sys
 from itertools import count
@@ -441,6 +442,9 @@ class RunEngine:
 
         self.state = 'running'
         self._gen = iter(plan)  # no-op on generators; needed for classes
+        if not isinstance(self._gen, types.GeneratorType):
+            # If plan does not support .send, we must wrap it in a generator.
+            self._gen = (msg for msg in self._gen)
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             self._task = loop.create_task(self._run(self._gen))
             loop.run_forever()
