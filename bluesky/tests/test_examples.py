@@ -245,3 +245,8 @@ def test_simple_fly():
 
     mm = MockFlyer(det, motor)
     RE(fly_gen(mm, -1, 1, 15))
+
+
+def test_list_of_msgs():
+    # smoke tests checking that RunEngine accepts a plain list of Messages
+    RE([Msg('open_run'), Msg('set', motor, 5), Msg('close_run')])
