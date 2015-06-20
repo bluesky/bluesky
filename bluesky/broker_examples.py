@@ -3,6 +3,7 @@ from .examples import Reader
 from .run_engine import Msg
 from filestore.file_writers import save_ndarray
 import tempfile
+from .examples import *
 
 
 class SynGauss2D(Reader):

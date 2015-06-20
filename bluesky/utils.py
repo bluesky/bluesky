@@ -430,6 +430,19 @@ class ScanValidator:
             # otherwise, add it to the set of configured detectors
             self.configured.add(message.obj)
 
+        if message.command == 'open_run':
+            # loop backwards through the messages that have been received
+            for msg in self.message_order[1:]:
+                if msg.command == 'open_run':
+                    self.exit_status = "Failed."
+                    self.report()
+                    sys.stdout.flush()
+                    raise ValueError(
+                        "A second open_run cannot be received without first "
+                        "getting a close_run message")
+                elif msg.command == 'close_run':
+                    break
+
         if message.command == 'deconfigure':
             if message.obj not in self.configured:
                 # that is a problem!
