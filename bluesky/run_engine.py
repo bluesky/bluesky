@@ -220,6 +220,7 @@ class RunEngine:
             'subscribe': self._subscribe,
             'open_run': self._open_run,
             'close_run': self._close_run,
+            'wait_for': self._wait_for,
         }
 
         # public dispatcher for callbacks processed on the main thread
@@ -605,6 +606,11 @@ class RunEngine:
         scan_id = self.md.get('scan_id', 0) + 1
         self.md['scan_id'] = scan_id
         return scan_id
+
+    @asyncio.coroutine
+    def _wait_for(self, msg):
+        futs = msg.obj
+        yield from asyncio.wait(futs)
 
     @asyncio.coroutine
     def _open_run(self, msg):
