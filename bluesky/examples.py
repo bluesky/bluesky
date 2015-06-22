@@ -14,6 +14,7 @@ class Base:
         self._name = name
         self._fields = fields
         self._cb = None
+        self._ready = False
 
     def describe(self):
         return {k: {'source': self._name, 'dtype': 'number', 'shape': None}
@@ -164,9 +165,6 @@ class MockFlyer:
     """
     Class for mocking a flyscan API implemented with stepper motors.
 
-    Currently this does the 'collection' in a blocking fashion in the
-    collect step, would be better do to this with a thread starting from
-    kickoff
     """
     def __init__(self, detector, motor):
         self._mot = motor
@@ -188,6 +186,7 @@ class MockFlyer:
         return [dd, ]
 
     def kickoff(self, start, stop, steps):
+        self.ready = False
         self._data = deque()
         self._steps = np.linspace(start, stop, steps)
         self._future = loop.run_in_executor(None, self._scan)
@@ -224,6 +223,7 @@ class MockFlyer:
                     event['data'][k] = v['value']
                     event['timestamps'][k] = v['timestamp']
             self._data.append(event)
+        self._finish()
 
     @property
     def finished_cb(self):

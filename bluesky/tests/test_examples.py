@@ -241,10 +241,9 @@ def validate_dict_cb_opposite(key):
 
 
 def test_simple_fly():
-    raise nose.SkipTest("The thread logic is not working right")
-
     mm = MockFlyer(det, motor)
     RE(fly_gen(mm, -1, 1, 15))
+    assert mm._future.done()
 
 
 def test_list_of_msgs():
