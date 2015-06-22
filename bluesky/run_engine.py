@@ -196,6 +196,8 @@ class RunEngine:
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
+        self._genstack = deque()  # stack of generators to work off of
+
         self._exit_status = 'fail'  # pessimistic default
         self._reason = ''
         self._task = None
@@ -250,6 +252,7 @@ class RunEngine:
         self._metadata_per_call.clear()
         self._deferred_pause_requested = False
         self._msg_cache = None
+        self._genstack = deque()
         self._rewound = False
         self._exception = None
         self._run_start_uids.clear()
@@ -441,12 +444,13 @@ class RunEngine:
         self._metadata_per_call = metadata
 
         self.state = 'running'
-        self._gen = iter(plan)  # no-op on generators; needed for classes
-        if not isinstance(self._gen, types.GeneratorType):
+        gen = iter(plan)  # no-op on generators; needed for classes
+        if not isinstance(gen, types.GeneratorType):
             # If plan does not support .send, we must wrap it in a generator.
-            self._gen = (msg for msg in self._gen)
+            gen = (msg for msg in gen)
+        self._genstack.append(gen)
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            self._task = loop.create_task(self._run(self._gen))
+            self._task = loop.create_task(self._run())
             loop.run_forever()
             if self._task.done():
                 exc = self._task.exception()
@@ -460,16 +464,16 @@ class RunEngine:
 
         Returns
         -------
-        outstanding_pause_requests : list or None
+        requests_or_uids : list
             If any pause requests have not been released, a list of their names
             is immediately returned. Otherwise, after the run completes, this
-            returns None.
+            returns the list of uids this plan knows about.
         """
         # The state machine does not capture the whole picture.
         if not self.state.is_paused:
             raise RuntimeError("The RunEngine is the {0} state. You can only "
-                               "resume for the paused state.".format(
-                self.state))
+                               "resume for the paused state."
+                               "".format(self.state))
         if self._panic:
             raise PanicError("Run Engine is panicked. If are you sure all is "
                              "well, call the all_is_well() method.")
@@ -485,8 +489,9 @@ class RunEngine:
         if outstanding_requests:
             return outstanding_requests
 
-        self._rewound = True
+        self._genstack.append((msg for msg in list(self._msg_cache)))
         self._resume_event_loop()
+        return self._run_start_uids
 
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
@@ -520,25 +525,23 @@ class RunEngine:
         self._resume_event_loop()
 
     @asyncio.coroutine
-    def _run(self, gen):
+    def _run(self):
         response = None
         self._reason = ''
         try:
             while True:
                 if self._exception is not None:
                     raise self._exception
-                if self._rewound:
-                    print("Rerunning from last checkpoint...")
-                    for msg in self._msg_cache:
-                        coro = self._command_registry[msg.command]
-                        self.debug("About to process: {0}, {1}".format(coro, msg))
-                        response = yield from coro(msg)
-                        self.debug('RE.state: ' + self.state)
-                    self._rewound = False
-                    continue
                 yield from asyncio.sleep(0.001)
                 # Send last response; get new message but don't process it yet.
-                msg = gen.send(response)
+                try:
+                    msg = self._genstack[-1].send(response)
+                except StopIteration:
+                    self._genstack.pop()
+                    if len(self._genstack):
+                        continue
+                    else:
+                        raise
                 if self._msg_cache is not None:
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
