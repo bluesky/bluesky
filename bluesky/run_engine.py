@@ -181,7 +181,6 @@ class RunEngine:
         self._bundling = False  # if we are in the middle of bundling readings
         self._run_is_open = False  # if we have emitted a RunStart, no RunStop
         self._deferred_pause_requested = False  # pause at next 'checkpoint'
-        self._rewound = False  # if we are recovering from a pause
         self._sigint_handler = None
         self._sigtstp_handler = None
         self._exception = None  # stored and then raised in the _run loop
@@ -254,7 +253,6 @@ class RunEngine:
         self._deferred_pause_requested = False
         self._msg_cache = None
         self._genstack = deque()
-        self._rewound = False
         self._exception = None
         self._run_start_uids.clear()
         self._exit_status = 'fail'
