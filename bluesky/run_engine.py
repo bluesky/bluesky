@@ -804,7 +804,7 @@ class RunEngine:
         group = msg.kwargs.get('group', msg.args[0])
         objs = list(self._block_groups.pop(group, []))
         if objs:
-            yield from asyncio.wait(objs)
+            yield from self._wait_for(Msg('wait_for', objs))
 
     @asyncio.coroutine
     def _sleep(self, msg):
