@@ -506,6 +506,18 @@ class RunEngine:
                 if exc is not None:
                     raise exc
 
+    def request_suspend(self, fut):
+        """
+        Request that the run suspend it self until
+        """
+        if not self.resumable:
+            print("No checkpoint; cannot suspend. Aborting...")
+            self._exception = FailedPause()
+        else:
+            wait_msg = Msg('wait_for', [fut, ])
+            new_msg_lst = [wait_msg, ] + list(self._msg_cache)
+            self._genstack.append((msg for msg in new_msg_lst))
+
     def abort(self, reason=''):
         """
         Stop a paused scan and mark it as aborted.
