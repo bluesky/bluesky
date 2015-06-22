@@ -18,8 +18,8 @@ Key Features
 Programmable Scans
 ++++++++++++++++++
 
-* Running can be **paused, aborted, and resumed** with user-defined
-  checkpoints.
+* Running can be cleanly **paused and later aborted or resumed** at
+  user-defined checkpoints.
 * In addition to the built-in scans, you can specify **custom scans and 
   "macros"** in a simple, procedural way using basic Python sytnax (e.g.,
   for-loops) and a small set of commands. There are many documented examples.
@@ -29,8 +29,8 @@ Programmable Scans
   include coordinated motion and controllers that don't map onto a continuous
   single-axis motor.
 
-Powerful Features, Built In
-+++++++++++++++++++++++++++
+Powerful Features with Working Examples
++++++++++++++++++++++++++++++++++++++++
 
 * Highly customizable **live plotting** and other real-time processing
   pipelines are possible. Useful working examples are included.

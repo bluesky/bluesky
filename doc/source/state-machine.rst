@@ -10,19 +10,47 @@
     RE.md['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
     RE.md['beamline_id'] = 'demo'
 
-Pausing, Resuming, and Aborting
-===============================
+Pausing and Resuming
+====================
 
-How does pausing work?
-----------------------
+Pausing
+-------
 
-When a run is paused, the RunEngine returns control to the user and waits
-for the user to decide to resume the run or abort it. There are three ways to
-request a pause.
+The RunEngine can be cleanly paused and resumed. Scans are resumed at specified
+checkpoints to ensure that the interruption does not corrupt the data or a miss
+a step.
+
+There are three ways to pause:
 
 1. Writing a scan with a planned pause step
 2. Pressing Ctrl+C
 3. Calling ``RE.request_pause()``
+
+When the RunEngine is paused, it returns control to the user, who can then
+choose to resume, stop or abort.
+
+Resuming
+--------
+
+Scans are composed of granular instructions like 'read' and 'set'. These
+instructions can optionally include one or more 'checkpoint' messages,
+indicating a place where it is safe to resume after an interruption. For
+example, the built-in step-scans include a checkpoint before each step. If the
+scan is interrupted in the middle of a step, it will resume from the beginning
+of that step. There is no possibility of data being recorded twice.
+
+When the RunEngnine is paused, use ``RE.resume()`` to resume from the last
+checkpoint. If a scan has no checkpoints or has not yet reached a
+checkpoint, the RunEngine has no safe place to resume. If paused, it will
+abort instead.
+
+Stopping or Aborting
+--------------------
+
+To stop a paused scan, use ``RE.stop()`` or ``RE.abort()``. In both cases, any
+data that has been generated will be saved. The only difference is that
+aborted runs are marked with ``exit_status: 'abort'`` instead of
+``exit_status: 'success'``, which may be a useful distinction during analysis.
 
 Scans are specified as a sequence of messages, simple instructions
 like 'read' and 'set'. The instructions can optionally include one or more
@@ -34,29 +62,13 @@ If a scan does not include any 'checkpoint' messages, then it cannot be
 resumed after an interruption. If a pause is requested, the scan is aborted
 instead.
 
-Soft Pause
-----------
+Deferred Pause
+--------------
 
-When a *soft pause* is requested, the RunEngine continues processing messages
-until the next checkpoint. Then, the scanning thread is paused and control
-is returned the user. When the user calls ``RE.resume()``, the scan resumes
-from that checkpoint.
-
-Hard Pause
-----------
-
-When a *hard pause* is requested, the RunEngine does not wait for the next
-checkpoint. It pauses before processing any more messages. When the user
-calls ``RE.resume()``, the scan rewinds to the most recent checkpoint and
-continues from there.
-
-Ctrl+C (and, more generally, SIGINT) requests a hard pause.
-
-Abort
------
-
-To abort a paused run, call ``RE.abort()``. The RunEngine will return to the
-idle state, ready for new instructions.
+When a *deferred pause* is requested, the RunEngine continues processing
+messages until the next checkpoint or the end of the scan, whichever happens
+first. When (if) it reaches a checkpoint, it pauses. Then it can be resumed
+from that checkpoint without repeating any work.
 
 .. _planned-pause:
 
@@ -73,7 +85,7 @@ to see the code of the scan itself. For now, we focus on how to use it.
     RE(cautious_stepscan(det1, motor1))
     RE.resume()
     RE.resume()
-    RE.abort()
+    RE.stop()
 
 Example: Requesting a pause after a delay
 -----------------------------------------
@@ -83,7 +95,7 @@ of time. Then, we can decide whether to continue or abort.
 
 The user cannot call ``RE.request_pause()`` directly while a scan is running.
 It can only be a done from a separate thread. Here is a example code for a
-"pausing agent" that requests a pause after a timed delay.
+pausing a scan if it goes on for more than 2 seconds.
 
 .. ipython:: python
 
@@ -92,10 +104,10 @@ It can only be a done from a separate thread. Here is a example code for a
     class SimplePausingAgent:
         def __init__(self, RE):
             self.RE = RE
-        def issue_request(self, hard, delay=0):
+        def issue_request(self, defer, delay=0):
             def requester():
                 sleep(delay)
-                self.RE.request_pause(hard)
+                self.RE.request_pause(defer)
             thread = threading.Thread(target=requester)
             thread.start()
 
@@ -206,15 +218,8 @@ the ``state`` property.
 The states are:
 
 * ``'idle'``: RunEngine is waiting for instructions.
-* ``'running'``: RunEngine is executing instructions in normal operation.
-* ``'soft_pausing'``:  RunEngine has received a request to soft-pause, but it
-  has not yet entered the ``'paused'`` state.
-* ``'hard_pausing'``:  RunEngine has received a request to hard-pause, but it
-  has not yet entered the ``'paused'`` state.
-* ``'aborting'``: RunEngine has received a request to abort, but it is
-  currently cleaning up the run before going to ``'idle'``.
-* ``'paused'``: RunEngine is waiting for user input. From here it can
-  return to ``'running'`` or enter ``'aborting'``.
+* ``'running'``: RunEngine is executing instructions.
+* ``'paused'``: RunEngine is waiting for user input. It can be 
 
 
 "Panic": an Emergency Stop
@@ -227,18 +232,14 @@ The states are:
    of a dangerous condition. It may not have the necessary repsonse time or
    dependability.
 
-A panic is similar to a hard pause. It is different in the following ways:
+A panic is similar to a pause. It is different in the following ways:
 
-* A panic can happen from any state -- running, paused, etc.
+* A panic can happen from any state.
 * It is requested by calling ``RE.panic()``, a method which takes no
   arguments.
 * Once the beamline is "panicked," it is not possible to resume or run a new
   scan until ``RE.all_is_well()`` has been called.
-* If a panic happens while RunEngine is in the 'run' state, it always aborts
-  the ongoing run without the option of resuming it.
+* If a panic happens while RunEngine is in the 'running' state, it always
+  aborts the ongoing run without the option of resuming it.
 * If a panic happens while the RunEngine is in the 'paused' state, it is
   possible to resume after ``RE.all_is_well()`` has been called.
-
-As with the pausing example above, "agents" on separate threads can watch for
-danger conditions and call ``RE.panic()`` when they occur.
-
