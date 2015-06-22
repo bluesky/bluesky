@@ -793,7 +793,7 @@ class RunEngine:
         # Block progress until every object that was trigged
         # triggered with the keyword argument `block=group` is done.
         group = msg.kwargs.get('group', msg.args[0])
-        objs = list(self._block_groups[group])
+        objs = list(self._block_groups.pop(group, []))
         if objs:
             yield from asyncio.wait(objs)
 
