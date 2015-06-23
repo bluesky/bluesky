@@ -509,7 +509,8 @@ class RunEngine:
 
     def request_suspend(self, fut):
         """
-        Request that the run suspend it self until
+        Request that the run suspend itself until the future is
+        finished.
         """
         if not self.resumable:
             print("No checkpoint; cannot suspend. Aborting...")
@@ -566,7 +567,7 @@ class RunEngine:
                 if self._msg_cache is not None:
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
-                # There is no trouble. Now process the message.
+
                 coro = self._command_registry[msg.command]
                 self.debug("About to process: {0}, {1}".format(coro, msg))
                 yield from asyncio.sleep(0.001)  # TODO Do we need this?
