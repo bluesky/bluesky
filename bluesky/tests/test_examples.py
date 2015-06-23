@@ -366,9 +366,15 @@ def test_seqnum_nonrepeated():
         yield Msg('create')
         yield Msg('set', motor, 2)
         yield Msg('read', motor)
+        yield Msg('save')
         if first_pass:
             first_pass = False
             yield Msg('pause')
+        else:
+            print('not pausing this time')
+        yield Msg('create')
+        yield Msg('set', motor, 3)
+        yield Msg('read', motor)
         yield Msg('save')
         yield Msg('close_run')
 
@@ -378,4 +384,4 @@ def test_seqnum_nonrepeated():
 
     RE(gen(), {'event': f})
     RE.resume()
-    assert_equal(seq_nums, [1, 2, 2])
+    assert_equal(seq_nums, [1, 2, 2, 3])
