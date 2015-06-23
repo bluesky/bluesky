@@ -250,3 +250,47 @@ def test_simple_fly():
 def test_list_of_msgs():
     # smoke tests checking that RunEngine accepts a plain list of Messages
     RE([Msg('open_run'), Msg('set', motor, 5), Msg('close_run')])
+
+
+def test_suspend():
+    ev = asyncio.Event()
+
+    test_list = [
+        Msg('open_run'),
+        Msg('checkpoint'),
+        Msg('sleep', None, .2),
+        Msg('set', motor, 5),
+        Msg('trigger', det),
+        Msg('create'),
+        Msg('read', motor),
+        Msg('read', det),
+        Msg('save'),
+        Msg('close_run'),
+    ]
+    assert_equal(RE.state, 'idle')
+
+    def local_suspend():
+        RE.request_suspend(ev.wait())
+
+    def resume_cb():
+        ev.set()
+
+    def local_pause():
+        RE.request_pause()
+
+    out = []
+
+    def ev_cb(ev):
+        out.append(ev)
+    # trigger the suspend right after the check point
+    loop.call_later(.1, local_suspend)
+    # wait a second and then resume
+    loop.call_later(1, resume_cb)
+    # grab the start time
+    start = ttime.time()
+    # run, this will not return until it is done
+    RE(test_list, subs={'event': ev_cb})
+    # check to make sure it took long enough
+    assert out[0]['time'] - start > 1.1
+
+    assert_equal(RE.state, 'idle')
