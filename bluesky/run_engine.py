@@ -1,4 +1,3 @@
-import os
 import asyncio
 import itertools
 import types
@@ -196,7 +195,7 @@ class RunEngine:
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
         self._genstack = deque()  # stack of generators to work off of
-
+        self._new_gen = True
         self._exit_status = 'fail'  # pessimistic default
         self._reason = ''
         self._task = None
@@ -253,6 +252,7 @@ class RunEngine:
         self._deferred_pause_requested = False
         self._msg_cache = None
         self._genstack = deque()
+        self._new_gen = True
         self._exception = None
         self._run_start_uids.clear()
         self._exit_status = 'fail'
@@ -450,6 +450,7 @@ class RunEngine:
             # If plan does not support .send, we must wrap it in a generator.
             gen = (msg for msg in gen)
         self._genstack.append(gen)
+        self._new_gen = True
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             self._task = loop.create_task(self._run())
             loop.run_forever()
@@ -491,6 +492,7 @@ class RunEngine:
             return outstanding_requests
 
         self._genstack.append((msg for msg in list(self._msg_cache)))
+        self._new_gen = True
         self._msg_cache = deque()
         self._resume_event_loop()
         return self._run_start_uids
@@ -521,6 +523,7 @@ class RunEngine:
             new_msg_lst = [wait_msg, ] + list(self._msg_cache)
             self._msg_cache = deque()
             self._genstack.append((msg for msg in new_msg_lst))
+            self._new_gen = True
 
     def abort(self, reason=''):
         """
@@ -552,12 +555,9 @@ class RunEngine:
                     raise self._exception
                 # Send last response; get new message but don't process it yet.
                 try:
-                    try:
-                        msg = self._genstack[-1].send(response)
-                    except TypeError:
-                        # Deal with new generators that need to
-                        # be primed
-                        msg = self._genstack[-1].send(None)
+                    msg = self._genstack[-1].send(
+                        response if not self._new_gen else None)
+
                 except StopIteration:
                     self._genstack.pop()
                     if len(self._genstack):
@@ -567,7 +567,7 @@ class RunEngine:
                 if self._msg_cache is not None:
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
-
+                self._new_gen = False
                 coro = self._command_registry[msg.command]
                 self.debug("About to process: {0}, {1}".format(coro, msg))
                 yield from asyncio.sleep(0.001)  # TODO Do we need this?
