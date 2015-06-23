@@ -4,11 +4,12 @@ from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
                         assert_true, assert_in, assert_not_in)
 from bluesky.examples import *
 from bluesky.callbacks import *
-from bluesky import RunEngine, RunInterrupt, Msg, PanicError
+from bluesky import RunEngine, Msg, PanicError
 from bluesky.tests.utils import setup_test_run_engine
-from super_state_machine.errors import TransitionError
+
 try:
     import matplotlib.pyplot as plt
+    del plt
 except ImportError:
     skip_mpl = True
 else:
