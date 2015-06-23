@@ -306,6 +306,7 @@ class RunEngine:
         state, and it will disallow resume() until all_is_well() is called.
         """
         self._panic = True
+        self._task.cancel()
 
     def all_is_well(self):
         """
@@ -358,6 +359,7 @@ class RunEngine:
                 else:
                     print("No checkpoint; cannot pause. Aborting...")
                     self._exception = FailedPause()
+                    self._task.cancel()
             else:
                 print("Cannot pause from {0} state. "
                       "Ignoring request.".format(self.state))
@@ -451,7 +453,7 @@ class RunEngine:
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
             self._task = loop.create_task(self._run())
             loop.run_forever()
-            if self._task.done():
+            if self._task.done() and not self._task.cancelled():
                 exc = self._task.exception()
                 if exc is not None:
                     raise exc
@@ -500,7 +502,7 @@ class RunEngine:
             if self._task.done():
                 return
             loop.run_forever()
-            if self._task.done():
+            if self._task.done() and not self._task.cancelled():
                 exc = self._task.exception()
                 if exc is not None:
                     raise exc
@@ -531,6 +533,7 @@ class RunEngine:
         print("Aborting....")
         self._reason = reason
         self._exception = RequestAbort()
+        self._task.cancel()
         self._resume_event_loop()
 
     def stop(self):
@@ -546,10 +549,14 @@ class RunEngine:
             while True:
                 if self._exception is not None:
                     raise self._exception
-                yield from asyncio.sleep(0.001)
                 # Send last response; get new message but don't process it yet.
                 try:
-                    msg = self._genstack[-1].send(response)
+                    try:
+                        msg = self._genstack[-1].send(response)
+                    except TypeError:
+                        # Deal with new generators that need to
+                        # be primed
+                        msg = self._genstack[-1].send(None)
                 except StopIteration:
                     self._genstack.pop()
                     if len(self._genstack):
@@ -562,15 +569,19 @@ class RunEngine:
                 # There is no trouble. Now process the message.
                 coro = self._command_registry[msg.command]
                 self.debug("About to process: {0}, {1}".format(coro, msg))
+                yield from asyncio.sleep(0.001)  # TODO Do we need this?
                 response = yield from coro(msg)
                 self.debug('RE.state: ' + self.state)
                 self.debug('msg: {}\n   response: {}'.format(msg, response))
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             yield from asyncio.sleep(0.001)  # TODO Do we need this?
-        except (FailedPause, RequestAbort):
-            self._exit_status = 'abort'  # RE.abort() was called from a pause
+        except (FailedPause, RequestAbort, asyncio.CancelledError):
+            self._exit_status = 'abort'
             yield from asyncio.sleep(0.001)  # TODO Do we need this?
+            if isinstance(self._exception, PanicError):
+                self._exit_status = 'fail'
+                raise self._exception
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
             self._reason = str(err)
