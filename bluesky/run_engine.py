@@ -489,6 +489,7 @@ class RunEngine:
             return outstanding_requests
 
         self._genstack.append((msg for msg in list(self._msg_cache)))
+        self._msg_cache = deque()
         self._resume_event_loop()
         return self._run_start_uids
 
@@ -512,8 +513,10 @@ class RunEngine:
             print("No checkpoint; cannot suspend. Aborting...")
             self._exception = FailedPause()
         else:
+            print("Suspending....")
             wait_msg = Msg('wait_for', [fut, ])
             new_msg_lst = [wait_msg, ] + list(self._msg_cache)
+            self._msg_cache = deque()
             self._genstack.append((msg for msg in new_msg_lst))
 
     def abort(self, reason=''):
