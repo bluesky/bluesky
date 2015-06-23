@@ -195,7 +195,7 @@ class RunEngine:
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
         self._genstack = deque()  # stack of generators to work off of
-        self._new_gen = True
+        self._new_gen = True  # flag if we need to prime the generator
         self._exit_status = 'fail'  # pessimistic default
         self._reason = ''
         self._task = None
