@@ -367,11 +367,7 @@ def test_seqnum_nonrepeated():
         yield Msg('set', motor, 2)
         yield Msg('read', motor)
         yield Msg('save')
-        if first_pass:
-            first_pass = False
-            yield Msg('pause')
-        else:
-            print('not pausing this time')
+        yield Msg('pause')
         yield Msg('create')
         yield Msg('set', motor, 3)
         yield Msg('read', motor)

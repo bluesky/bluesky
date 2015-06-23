@@ -568,7 +568,7 @@ class RunEngine:
                     else:
                         raise
                 if (self._msg_cache is not None and
-                        msg.command is not in self.UNCACHEABLE_COMMANDS):
+                        msg.command not in self._UNCACHEABLE_COMMANDS):
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
 
