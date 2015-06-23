@@ -513,7 +513,7 @@ class RunEngine:
             print("No checkpoint; cannot suspend. Aborting...")
             self._exception = FailedPause()
         else:
-            print("Suspending....")
+            print("Suspending....To get prompt hit Ctrl-C to pause the scan")
             wait_msg = Msg('wait_for', [fut, ])
             new_msg_lst = [wait_msg, ] + list(self._msg_cache)
             self._msg_cache = deque()
@@ -527,7 +527,7 @@ class RunEngine:
         if not self.state.is_paused:
             raise RuntimeError("The RunEngine is the {0} state. You can only "
                                "resume for the paused state.".format(
-                self.state))
+                                   self.state))
         print("Aborting....")
         self._reason = reason
         self._exception = RequestAbort()
