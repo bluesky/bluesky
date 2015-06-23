@@ -6,6 +6,8 @@ from bluesky.examples import *
 from bluesky.callbacks import *
 from bluesky import RunEngine, Msg, PanicError
 from bluesky.tests.utils import setup_test_run_engine
+import os
+import signal
 
 try:
     import matplotlib.pyplot as plt
@@ -276,9 +278,6 @@ def test_suspend():
     def resume_cb():
         ev.set()
 
-    def local_pause():
-        RE.request_pause()
-
     out = []
 
     def ev_cb(ev):
@@ -295,3 +294,61 @@ def test_suspend():
     assert out[0]['time'] - start > 1.1
 
     assert_equal(RE.state, 'idle')
+
+
+def test_suspend_resume():
+    ev = asyncio.Event()
+
+    def done():
+        print("Done")
+        ev.set()
+
+    pid = os.getpid()
+
+    def sim_kill():
+        os.kill(pid, signal.SIGINT)
+
+    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
+    assert_equal(RE.state, 'idle')
+    start = ttime.time()
+    loop.call_later(1, sim_kill)
+    loop.call_later(2, done)
+
+    RE(scan)
+    assert_equal(RE.state, 'paused')
+    mid = ttime.time()
+    RE.resume()
+    assert_equal(RE.state, 'idle')
+    stop = ttime.time()
+
+    assert mid - start > 1
+    assert stop - start > 2
+
+
+def test_suspend_abort():
+    ev = asyncio.Event()
+
+    def done():
+        print("Done")
+        ev.set()
+
+    pid = os.getpid()
+
+    def sim_kill():
+        os.kill(pid, signal.SIGINT)
+
+    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
+    assert_equal(RE.state, 'idle')
+    start = ttime.time()
+    loop.call_later(1, sim_kill)
+    loop.call_later(2, done)
+
+    RE(scan)
+    assert_equal(RE.state, 'paused')
+    mid = ttime.time()
+    RE.abort()
+    assert_equal(RE.state, 'idle')
+    stop = ttime.time()
+
+    assert mid - start > 1
+    assert stop - start < 2
