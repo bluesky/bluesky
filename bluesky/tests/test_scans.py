@@ -7,7 +7,10 @@ from bluesky.standard_config import ascan, dscan, ct
 from bluesky import RunEngine
 from bluesky.examples import motor, det, SynGauss
 from bluesky.tests.utils import setup_test_run_engine
+import asyncio
+import time as ttime
 
+loop = asyncio.get_event_loop()
 
 RE = setup_test_run_engine()
 
@@ -161,3 +164,16 @@ def test_set():
     scan.set(num=4)
     assert_equal(scan.num, 4)
     assert_equal(scan.start, 2)
+
+
+def test_wait_for():
+    ev = asyncio.Event()
+
+    def done():
+        ev.set()
+    scan = [Msg('wait_for', [ev.wait(), ]), ]
+    loop.call_later(2, done)
+    start = ttime.time()
+    RE(scan)
+    stop = ttime.time()
+    assert stop - start >= 2

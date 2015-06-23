@@ -2,10 +2,8 @@ import asyncio
 import time as ttime
 from collections import deque
 import numpy as np
-from lmfit.models import GaussianModel, LinearModel
 from .run_engine import Msg
-import tempfile
-import random
+
 from .callbacks import *
 
 

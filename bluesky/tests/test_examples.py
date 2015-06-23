@@ -4,11 +4,14 @@ from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
                         assert_true, assert_in, assert_not_in)
 from bluesky.examples import *
 from bluesky.callbacks import *
-from bluesky import RunEngine, RunInterrupt, Msg, PanicError
+from bluesky import RunEngine, Msg, PanicError
 from bluesky.tests.utils import setup_test_run_engine
-from super_state_machine.errors import TransitionError
+import os
+import signal
+
 try:
     import matplotlib.pyplot as plt
+    del plt
 except ImportError:
     skip_mpl = True
 else:
@@ -102,17 +105,18 @@ def test_deferred_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
 
 
-def _pause_from_thread():
+def test_pause_from_outside():
     assert_equal(RE.state, 'idle')
-    agent = PausingAgent(RE, 'foo')
-    # Cue up a pause requests in 1 second.
-    agent.issue_request(False, 1)
+
+    def local_pause():
+        RE.request_pause()
+
+    loop.call_later(1, local_pause)
     RE(checkpoint_forever())
     assert_equal(RE.state, 'paused')
-    agent.revoke_request()
 
     # Cue up a second pause requests in 2 seconds.
-    agent.issue_request(False, 2)
+    loop.call_later(2, local_pause)
     RE.resume()
     assert_equal(RE.state, 'paused')
 
@@ -249,3 +253,102 @@ def test_simple_fly():
 def test_list_of_msgs():
     # smoke tests checking that RunEngine accepts a plain list of Messages
     RE([Msg('open_run'), Msg('set', motor, 5), Msg('close_run')])
+
+
+def test_suspend():
+    ev = asyncio.Event()
+
+    test_list = [
+        Msg('open_run'),
+        Msg('checkpoint'),
+        Msg('sleep', None, .2),
+        Msg('set', motor, 5),
+        Msg('trigger', det),
+        Msg('create'),
+        Msg('read', motor),
+        Msg('read', det),
+        Msg('save'),
+        Msg('close_run'),
+    ]
+    assert_equal(RE.state, 'idle')
+
+    def local_suspend():
+        RE.request_suspend(ev.wait())
+
+    def resume_cb():
+        ev.set()
+
+    out = []
+
+    def ev_cb(ev):
+        out.append(ev)
+    # trigger the suspend right after the check point
+    loop.call_later(.1, local_suspend)
+    # wait a second and then resume
+    loop.call_later(1, resume_cb)
+    # grab the start time
+    start = ttime.time()
+    # run, this will not return until it is done
+    RE(test_list, subs={'event': ev_cb})
+    # check to make sure it took long enough
+    assert out[0]['time'] - start > 1.1
+
+    assert_equal(RE.state, 'idle')
+
+
+def test_suspend_resume():
+    ev = asyncio.Event()
+
+    def done():
+        print("Done")
+        ev.set()
+
+    pid = os.getpid()
+
+    def sim_kill():
+        os.kill(pid, signal.SIGINT)
+
+    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
+    assert_equal(RE.state, 'idle')
+    start = ttime.time()
+    loop.call_later(1, sim_kill)
+    loop.call_later(2, done)
+
+    RE(scan)
+    assert_equal(RE.state, 'paused')
+    mid = ttime.time()
+    RE.resume()
+    assert_equal(RE.state, 'idle')
+    stop = ttime.time()
+
+    assert mid - start > 1
+    assert stop - start > 2
+
+
+def test_suspend_abort():
+    ev = asyncio.Event()
+
+    def done():
+        print("Done")
+        ev.set()
+
+    pid = os.getpid()
+
+    def sim_kill():
+        os.kill(pid, signal.SIGINT)
+
+    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
+    assert_equal(RE.state, 'idle')
+    start = ttime.time()
+    loop.call_later(1, sim_kill)
+    loop.call_later(2, done)
+
+    RE(scan)
+    assert_equal(RE.state, 'paused')
+    mid = ttime.time()
+    RE.abort()
+    assert_equal(RE.state, 'idle')
+    stop = ttime.time()
+
+    assert mid - start > 1
+    assert stop - start < 2
