@@ -102,7 +102,7 @@ def test_deferred_pause_no_checkpoint():
     assert_equal(RE.state, 'idle')
 
 
-def test_pause_from_thread():
+def test_pause_from_outside():
     assert_equal(RE.state, 'idle')
 
     def local_pause():
