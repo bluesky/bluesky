@@ -3,7 +3,7 @@ import itertools
 import types
 import time as ttime
 import sys
-from itertools import count
+from itertools import count, tee
 from collections import namedtuple, deque, defaultdict, Iterable
 import uuid
 import signal
@@ -117,6 +117,7 @@ class RunEngine:
     _loop = loop  # just a convenient way to inspect the global event loop
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
+    _UNCACHEABLE_COMMANDS = ['pause']
 
     def __init__(self, md=None, logbook=None):
         """
@@ -190,6 +191,7 @@ class RunEngine:
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._descriptor_uids = dict()  # cache of all Descriptor uids
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
+        self._teed_sequence_counters = dict()  # for if we redo datapoints
         self._pause_requests = dict()  # holding {<name>: callable}
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
@@ -494,6 +496,7 @@ class RunEngine:
         self._genstack.append((msg for msg in list(self._msg_cache)))
         self._new_gen = True
         self._msg_cache = deque()
+        self._sequence_counters = self._teed_sequence_counters
         self._resume_event_loop()
         return self._run_start_uids
 
@@ -564,7 +567,8 @@ class RunEngine:
                         continue
                     else:
                         raise
-                if self._msg_cache is not None:
+                if (self._msg_cache is not None and
+                        msg.command not in self._UNCACHEABLE_COMMANDS):
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
                 self._new_gen = False
@@ -845,6 +849,14 @@ class RunEngine:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
         self._msg_cache = deque()
+
+        # Keep a safe separate copy of the sequence counters to use if we
+        # rewind and retake some data points.
+        for key, counter in list(self._sequence_counters.items()):
+            counter_copy1, counter_copy2 = tee(counter)
+            self._sequence_counters[key] = counter_copy1
+            self._teed_sequence_counters[key] = counter_copy2
+
         if self._deferred_pause_requested:
             self.state = 'paused'
             loop.stop()

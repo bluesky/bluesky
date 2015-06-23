@@ -352,3 +352,32 @@ def test_suspend_abort():
 
     assert mid - start > 1
     assert stop - start < 2
+
+
+def test_seqnum_nonrepeated():
+    def gen():
+        first_pass = True
+        yield Msg('open_run')
+        yield Msg('create')
+        yield Msg('set', motor, 1)
+        yield Msg('read', motor)
+        yield Msg('save')
+        yield Msg('checkpoint')
+        yield Msg('create')
+        yield Msg('set', motor, 2)
+        yield Msg('read', motor)
+        yield Msg('save')
+        yield Msg('pause')
+        yield Msg('create')
+        yield Msg('set', motor, 3)
+        yield Msg('read', motor)
+        yield Msg('save')
+        yield Msg('close_run')
+
+    seq_nums = []
+    def f(doc):
+        seq_nums.append(doc['seq_num'])
+
+    RE(gen(), {'event': f})
+    RE.resume()
+    assert_equal(seq_nums, [1, 2, 2, 3])
