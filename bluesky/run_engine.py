@@ -118,6 +118,7 @@ class RunEngine:
     _loop = loop  # just a convenient way to inspect the global event loop
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
+    _UNCACHEABLE_COMMANDS = ['pause']
 
     def __init__(self, md=None, logbook=None):
         """
@@ -566,7 +567,8 @@ class RunEngine:
                         continue
                     else:
                         raise
-                if self._msg_cache is not None:
+                if (self._msg_cache is not None and
+                        msg.command is not in self.UNCACHEABLE_COMMANDS):
                     # We have a checkpoint.
                     self._msg_cache.append(msg)
 
