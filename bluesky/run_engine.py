@@ -241,6 +241,7 @@ class RunEngine:
         self._metadata_per_run.clear()
         self._bundling = False
         self._run_is_open = False
+        self._msg_cache = None  # checkpoints can't rewind into a closed run
         self._objs_read.clear()
         self._read_cache.clear()
         self._configured.clear()
@@ -252,7 +253,6 @@ class RunEngine:
     def _clear_call_cache(self):
         self._metadata_per_call.clear()
         self._deferred_pause_requested = False
-        self._msg_cache = None
         self._genstack = deque()
         self._new_gen = True
         self._exception = None
