@@ -117,7 +117,7 @@ class RunEngine:
     _loop = loop  # just a convenient way to inspect the global event loop
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
-    _UNCACHEABLE_COMMANDS = ['pause']
+    _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe']
 
     def __init__(self, md=None, logbook=None):
         """
@@ -241,9 +241,9 @@ class RunEngine:
         self._metadata_per_run.clear()
         self._bundling = False
         self._run_is_open = False
+        self._msg_cache = None  # checkpoints can't rewind into a closed run
         self._objs_read.clear()
         self._read_cache.clear()
-        self._configured.clear()
         self._describe_cache.clear()
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
@@ -251,8 +251,8 @@ class RunEngine:
 
     def _clear_call_cache(self):
         self._metadata_per_call.clear()
+        self._configured.clear()
         self._deferred_pause_requested = False
-        self._msg_cache = None
         self._genstack = deque()
         self._new_gen = True
         self._exception = None
