@@ -1,0 +1,42 @@
+package:
+  name: blueksy
+  version: {{ environ['GIT_DESCRIBE_TAG'] }}.post{{ environ['GIT_DESCRIBE_NUMBER'] }}
+
+source:
+  git_url: ../
+
+build:
+  # Note that this will override the default build string with the Python
+  # and NumPy versions
+  string: {{ environ.get('GIT_BUILD_STR', '') }}_np{{ np }}py{{ py }}
+
+requirements:
+  build:
+    - python >=3.4
+
+  run:
+    - python >=3.4
+    - jsonschema
+    - super_state_machine
+    - lmfit
+    - numpy
+    - metadatastore
+    - filestore
+    - matplotlib
+    - prettytable
+    - history
+
+test:
+  requires:
+    - nslsii_dev_configuration
+  imports:
+    - 'bluesky'
+    - 'bluesky.examples'
+    - 'bluesky.callbacks'
+    - 'bluesky.legacy_scans'
+    - 'bluesky.register_mds'
+    - 'bluesky.standard_config'
+
+about:
+  home: https://github.com/NSLS-II/dataportal
+  license: BSD
