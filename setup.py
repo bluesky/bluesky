@@ -10,7 +10,7 @@ except ImportError:
 
 setup(
     name='bluesky',
-    version='0.0.0.post1',
+    version='0.1.0',
     author='danielballan',
     author_email=None,
     license="BSD (3-clause)",
