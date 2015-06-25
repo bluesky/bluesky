@@ -3,7 +3,7 @@ from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict, deque
 import sys
 
 import logging
@@ -341,3 +341,159 @@ class ExtendedList(list):
         if (not super().__contains__(value)) and (value in self):
             raise ValueError('%s is mandatory and cannot be removed' % value)
         super().remove(value)
+
+
+class ScanValidator:
+    def __init__(self, scan, run_engine):
+        run_engine_state = ['']
+        self.run_engine = run_engine
+        self.scan = scan
+        self.message_names = list(self.run_engine._command_registry.keys())
+        self.message_counts = defaultdict(int)
+        self.message_order = []
+        self.exit_status = 'Not yet validated'
+        self.configured = set()
+
+    def _process_message(self, message):
+        # increment the number of coun
+        self.message_counts[message.command] += 1
+        if message.command == 'checkpoint':
+            # search backwards through history and make sure that we
+            # find a "save" before we find a "create", or don't find a save
+            # at all.
+            # the zeroth message is the message that we are trying to process
+            for msg in self.message_order[1:]:
+                if msg.command == 'save':
+                    # all is well
+                    break
+                if msg.command == 'create':
+                    self.exit_status = ("'checkpoint' received after 'create' "
+                                        "and before 'save'")
+                    self.report()
+                    # flush stdout so that the scan validation report is not
+                    # interleaved with the exception
+                    sys.stdout.flush()
+                    raise ValueError("A 'checkpoint' message cannot occur "
+                                     "between a create and a save. This is a "
+                                     "flawed scan. Printing out a report and "
+                                     "ceasing to process the scan.")
+        if message.command == 'save':
+            # search backwards through history and make sure that 'create' is
+            # encountered first. Otherwise, raise!
+            all_is_well = False
+            # the zeroth message is the message that we are trying to process
+            for msg in self.message_order[1:]:
+                if msg.command == 'create':
+                    # all is well
+                    all_is_well = True
+                    break
+                elif msg.command == 'save':
+                    # all is definitely not well
+                    self.exit_status = ("Two 'save's were received "
+                                        "without a 'create' in between.")
+                    self.report()
+                    # flush stdout so that the scan validation report is not
+                    # interleaved with the exception
+                    sys.stdout.flush()
+                    raise ValueError("Two 'save' messages cannot be processed "
+                                     "without a 'create' message occuring "
+                                     "between them. This is a flawed scan. "
+                                     "Printing out a report and ceasing to "
+                                     "process the scan.")
+
+            if not all_is_well:
+                self.exit_status = ("There is no 'create' message that "
+                                    "precedes this 'save' message")
+                self.report()
+                # flush stdout so that the scan validation report is not
+                # interleaved with the exception
+                sys.stdout.flush()
+                raise ValueError("A 'save' message cannot be processed "
+                                 "without having a 'create' before it.This "
+                                 "is a flawed scan. Printing out a report "
+                                 "and ceasing to process the scan.")
+
+        if message.command == 'configure':
+            if message.obj in self.configured:
+                # then we have tried to configure a detector twice without
+                # deconfiguring it first
+                self.exit_status = (
+                    "'configure' cannot be received twice in a row. "
+                    "'deconfigure' must be called before 'configure' can be "
+                    "called again.")
+                self.report()
+                sys.stdout.flush()
+                raise ValueError(
+                    "A second 'configure' request for object %s was received "
+                    "without processing a 'deconfigure' for this object." %
+                    message.obj)
+            # otherwise, add it to the set of configured detectors
+            self.configured.add(message.obj)
+
+        if message.command == 'open_run':
+            # loop backwards through the messages that have been received
+            for msg in self.message_order[1:]:
+                if msg.command == 'open_run':
+                    self.exit_status = "Failed."
+                    self.report()
+                    sys.stdout.flush()
+                    raise ValueError(
+                        "A second open_run cannot be received without first "
+                        "getting a close_run message")
+                elif msg.command == 'close_run':
+                    break
+
+        if message.command == 'deconfigure':
+            if message.obj not in self.configured:
+                # that is a problem!
+                self.exit_status = ("'deconfigure' received without a "
+                                    "corresponding 'configure' first.")
+                self.report()
+                sys.stdout.flush()
+                raise ValueError(
+                    "A 'deconfigure' request for object %s was received "
+                    "without a 'configure' request first." % message.obj)
+            # otherwise, remove it from the set of configured detectors
+            self.configured.remove(message.obj)
+
+    def validate(self):
+        self.exit_status = 'Not yet validated'
+        for msg in self.scan:
+            if msg.command not in self.message_names:
+                raise KeyError(
+                    "The RunEngine you provided does not have a callback "
+                    "registered for message = {}".format(msg))
+            self.message_order.insert(0, msg)
+            self._process_message(msg)
+        self.exit_status = "Success"
+
+    def report(self):
+        print("Scan Validation Report")
+        print("----------------------")
+        print("Exit status of %s = %s." % (self.scan, self.exit_status))
+        print()
+        print("Here are the number of times that each message was received.")
+        from prettytable import PrettyTable
+        p = PrettyTable(field_names=['Message Name', 'Times Called'])
+        p.padding_width = 1
+        p.align['Message Name'] = 'l'
+        p.align['Times Called'] = 'r'
+
+        for k, v in self.message_counts.items():
+            p.add_row([k, v])
+        print(p)
+
+        print()
+        print("Messages received (newest messages first)")
+        for idx, msg in enumerate(self.message_order):
+            print("%s: %s" % (idx, msg))
+
+
+if __name__ == "__main__":
+    from bluesky.examples import *
+    from bluesky.utils import ScanValidator
+    from bluesky.tests.utils import setup_test_run_engine
+    RE = setup_test_run_engine()
+
+    sv = ScanValidator(bad_checkpoint_scan(), RE)
+    sv.validate()
