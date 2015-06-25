@@ -244,7 +244,6 @@ class RunEngine:
         self._msg_cache = None  # checkpoints can't rewind into a closed run
         self._objs_read.clear()
         self._read_cache.clear()
-        self._configured.clear()
         self._describe_cache.clear()
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
@@ -252,6 +251,7 @@ class RunEngine:
 
     def _clear_call_cache(self):
         self._metadata_per_call.clear()
+        self._configured.clear()
         self._deferred_pause_requested = False
         self._genstack = deque()
         self._new_gen = True
