@@ -117,7 +117,7 @@ class RunEngine:
     _loop = loop  # just a convenient way to inspect the global event loop
     state = PropertyMachine(RunEngineStateMachine)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
-    _UNCACHEABLE_COMMANDS = ['pause']
+    _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe']
 
     def __init__(self, md=None, logbook=None):
         """
