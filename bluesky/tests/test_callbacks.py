@@ -65,6 +65,26 @@ def test_unknown_cb_raises():
     assert_raises(ValueError, RE._register_scan_callback, 'not a thing', f)
 
 
+@contextlib.contextmanager
+def _print_redirect():
+    old_stdout = sys.stdout
+    try:
+        fout = tempfile.tempfile()
+        sys.stdout = fout
+        yield fout
+    finally:
+        sys.stdout = old_stdout
+
+def test_table():
+
+    with _print_redirect as fout:
+        table = LiveTable(['det', 'pos'])
+        ad_scan = AdaptiveAscan([det], 'det', motor, -15, 5, .01, 1, .05, True)
+        RE(ad_scan, subscriptions={'all': [table]})
+
+    fout.rewind()
+
+
 if __name__ == '__main__':
     import nose
     nose.runmodule(argv=['-s', '--with-doctest'], exit=False)
