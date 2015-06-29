@@ -24,8 +24,7 @@
                         "items": {
                             "type": "integer"
                         },
-                        "type": ["array", "null"],
-                        "destription": "The shape of the data.  Null and empty list mean scalar data."
+                        "description": "The shape of the data.  Null and empty list mean scalar data."
                     },
                     "source": {
                         "type": "string",
