@@ -10,6 +10,19 @@ class PVSuspender:
     This will probably be a base class eventually.
     """
     def __init__(self, RE, pv_name, loop=None):
+        """
+        Parameters
+        ----------
+        RE : RunEngine
+            The run engine instance this should work on
+
+        pv_name : str
+            The PV to watch for changes to determine if the
+            scan should be suspended
+
+        loop : BaseEventLoop, optional
+            The event loop to work on
+        """
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
@@ -23,6 +36,17 @@ class PVSuspender:
         """
         Determine if the current value of the PV is such
         that we need to tell the scan to suspend
+
+        Parameters
+        ----------
+        value : object
+            The value to evaluate to determine if we should
+            suspend
+
+        Returns
+        -------
+        suspend : bool
+            True means suspend
         """
         return bool(value)
 
@@ -30,6 +54,17 @@ class PVSuspender:
         """
         Determine if the scan is ready to automatically
         restart.
+
+        Parameters
+        ----------
+        value : object
+            The value to evaluate to determine if we should
+            resume
+
+        Returns
+        -------
+        suspend : bool
+            True means resume
         """
         return not bool(value)
 
@@ -37,6 +72,8 @@ class PVSuspender:
         """
         Make the class callable so that we can
         pass it off to the pyepics callback stack.
+
+        This expects the massive blob that comes from pyepics
         """
         value = kwargs['value']
 
