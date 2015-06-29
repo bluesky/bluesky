@@ -100,7 +100,8 @@ def collector(field, output):
 
 
 class LivePlot(CallbackBase):
-    def __init__(self, y, x=None, legend_keys=None, **kwargs):
+    def __init__(self, y, x=None, legend_keys=None, xlim=None, ylim=None,
+                 **kwargs):
         """
         Build a function that updates a plot from a stream of Events.
 
@@ -118,6 +119,10 @@ class LivePlot(CallbackBase):
             The list of keys to extract from the RunStart document and format
             in the legend of the plot. The legend will always show the
             scan_id followed by a colon ("1: ").  Each
+        xlim : tuple
+            passed to Axes.set_xlim
+        ylim : tuple
+            passed to Axes.set_ylim
         All additional keyword arguments are passed through to ``Axes.plot``.
 
         Returns
@@ -144,6 +149,10 @@ class LivePlot(CallbackBase):
         self.ax = ax
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
+        if xlim is not None:
+            self.ax.set_xlim(*xlim)
+        if ylim is not None:
+            self.ax.set_ylim(*ylim)
         self.ax.margins(.1)
         self.kwargs = kwargs
         self.lines = []
