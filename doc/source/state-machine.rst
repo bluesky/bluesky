@@ -70,6 +70,13 @@ messages until the next checkpoint or the end of the scan, whichever happens
 first. When (if) it reaches a checkpoint, it pauses. Then it can be resumed
 from that checkpoint without repeating any work.
 
+Suspending
+----------
+
+A *suspended* scan does not return the prompt to the user. Like a paused scan,
+it stops executing new instructions and rewinds to the most recent checkpoint.
+But unlike a paused scan, it can resume execution automatically.
+
 .. _planned-pause:
 
 Example: Using a scan that has a planned pause
