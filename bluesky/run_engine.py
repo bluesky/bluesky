@@ -17,7 +17,8 @@ from super_state_machine.extras import PropertyMachine
 import numpy as np
 from pkg_resources import resource_filename as rs_fn
 
-from .utils import CallbackRegistry, SignalHandler, ExtendedList
+from .utils import (CallbackRegistry, SignalHandler, ExtendedList,
+                    normalize_subs_input)
 
 
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
@@ -392,11 +393,14 @@ class RunEngine:
         plan : generator
             a generator or that yields ``Msg`` objects (or an iterable that
             returns such a generator)
-        subs: dict, optional
+        subs: callable, list, or dict, optional
             Temporary subscriptions (a.k.a. callbacks) to be used on this run.
-            - Valid dict keys are: {'start', 'stop', 'event', 'descriptor'}
-            - Dict values must be a function with the signature `f(dict)` or a
-              list of such functions
+            For convenience, any of the following are accepted:
+            - a callable, which will be subscribed to 'all'
+            - a list of callables, which again will be subscribed to 'all'
+            - a dictionary, mapping specific subscriptions to callables or
+              lists of callables; valid keys are {'all', 'start', 'stop',
+              'event', 'descriptor'}
 
         Returns
         -------
@@ -426,10 +430,9 @@ class RunEngine:
                              "of this run were created.")
 
         # Register temporary subscriptions. Save tokens to unsubscribe later.
-        if subs is None:
-            subs = {}
+        subs = normalize_subs_input(subs)
         try:
-            scan_subs = plan.subs
+            scan_subs = normalize_subs_input(plan.subs)
         except AttributeError:
             scan_subs = {}
         self._clear_call_cache()

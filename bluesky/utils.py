@@ -341,3 +341,19 @@ class ExtendedList(list):
         if (not super().__contains__(value)) and (value in self):
             raise ValueError('%s is mandatory and cannot be removed' % value)
         super().remove(value)
+
+
+def normalize_subs_input(subs):
+    "Accept a callable, a list, or a dict. Normalize to a dict."
+    if subs is None:
+        return {}
+    if hasattr(subs, 'items'):
+        return subs
+    elif isinstance(subs, Iterable):
+        return {'all': subs}
+    elif callable(subs):
+        return {'all': [subs]}
+    else:
+        raise ValueError("Subscriptions should be a callable, a list of "
+                         "callables, or a dictionary mapping subscription "
+                         "names to lists of callables.")
