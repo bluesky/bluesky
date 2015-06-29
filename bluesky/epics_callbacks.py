@@ -9,7 +9,7 @@ class PVSuspender:
 
     This will probably be a base class eventually.
     """
-    def __init__(self, RE, pv_name, loop=None):
+    def __init__(self, RE, pv_name, sleep=0, loop=None):
         """
         Parameters
         ----------
@@ -20,6 +20,10 @@ class PVSuspender:
             The PV to watch for changes to determine if the
             scan should be suspended
 
+        sleep : float, optional
+            How long to wait in seconds after the resume condition is met
+            before marking the event as done.  Defaults to 0
+
         loop : BaseEventLoop, optional
             The event loop to work on
         """
@@ -28,6 +32,7 @@ class PVSuspender:
         self._loop = loop
         self.RE = RE
         self._ev = None
+        self._sleep = sleep
 
         self._pv = epics.PV(pv_name, auto_monitor=True)
         self._pv.add_callback(self)
@@ -76,8 +81,10 @@ class PVSuspender:
         This expects the massive blob that comes from pyepics
         """
         value = kwargs['value']
-
-        if self._ev is None or self._ev.is_set():
+        # TODO does this need thread locking? Depends on if
+        # more than one thread can service the same PV at the
+        # pyepics layer.
+        if self._ev is None:
             # in the case where either have never been
             # called or have already fully cycled once
             if self._should_suspend(value):
@@ -85,7 +92,12 @@ class PVSuspender:
 
                 self._loop.call_soon_threadsafe(
                     self.RE.request_suspend,
-                    self._ev.wait())
+                    self._ev.wait(),
+                    self._sleep)
         else:
             if self._should_resume(value):
-                self._loop.call_soon_threadsafe(self._ev.set)
+                def local():
+                    self._loop.call_later(self._sleep, self._ev.set)
+                self._loop.call_soon_threadsafe(local)
+                # clear that we have an event
+                self._ev = None
