@@ -70,13 +70,6 @@ messages until the next checkpoint or the end of the scan, whichever happens
 first. When (if) it reaches a checkpoint, it pauses. Then it can be resumed
 from that checkpoint without repeating any work.
 
-Suspending
-----------
-
-A *suspended* scan does not return the prompt to the user. Like a paused scan,
-it stops executing new instructions and rewinds to the most recent checkpoint.
-But unlike a paused scan, it can resume execution automatically.
-
 .. _planned-pause:
 
 Example: Using a scan that has a planned pause
@@ -118,6 +111,52 @@ seconds.
     # Observe that the RunEngine is in a 'paused' state.
     RE.state
     RE.resume()
+
+Suspending
+----------
+
+A *suspended* scan does not return the prompt to the user. Like a paused scan,
+it stops executing new instructions and rewinds to the most recent checkpoint.
+But unlike a paused scan, it can resume execution automatically.
+
+To take manual control of a suspended scan, pause it using Ctrl+C. This will
+override its plan to automatically resume.
+
+Example: Suspend a scan if a shutter closes; resume when it opens
+-----------------------------------------------------------------
+
+We will use a built-in utility that watches an EPICS PV. It tells the
+RunEngine to suspend when the PV's value goes high. When it goes low
+again, the RunEngine resumes.
+
+.. ipython::
+
+    In [3]: pv_name = 'XF:23ID1-PPS{PSh}Pos-Sts'  # main shutter PV
+
+    In [4]: import bluesky.epics_callbacks
+
+    In [5]: my_s = bluesky.epics_callbacks.PVSuspender(RE, pv_name)
+
+The above is all that is required. It will watch the PV indefinitely.
+In the following example, the shuttle was closed in the middle of the
+second data point.
+
+.. ipython::
+
+    In [6]: RE(my_scan)
+    +------------+-------------------+----------------+----------------+
+    |   seq_num  |             time  |         theta  |    sclr_chan4  |
+    +------------+-------------------+----------------+----------------+
+    |         1  |  16:46:08.953815  |          0.03  |        290.00  |
+    Suspending....To get prompt hit Ctrl-C to pause the scan
+    |         2  |  16:46:20.868445  |          0.09  |        279.00  |
+    |         3  |  16:46:29.077690  |          0.16  |        284.00  |
+    |         4  |  16:46:33.540643  |          0.23  |        278.00  |
+    +------------+-------------------+----------------+----------------+
+
+Notice that the scan was suspended and then resumed.
+When it resumed, it went back to the last checkpoint and re-took
+the second data point cleanly.
 
 State Machine
 -------------
