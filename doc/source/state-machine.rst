@@ -22,9 +22,9 @@ a step.
 
 There are three ways to pause:
 
-1. Writing a scan with a planned pause step
-2. Pressing Ctrl+C
-3. Calling ``RE.request_pause()``
+1. Pressing Ctrl+C
+2. Writing a scan with a planned pause step
+3. Advanced: calling ``RE.request_pause()`` from a thread or event loop
 
 When the RunEngine is paused, it returns control to the user, who can then
 choose to resume, stop or abort.
@@ -62,13 +62,27 @@ If a scan does not include any 'checkpoint' messages, then it cannot be
 resumed after an interruption. If a pause is requested, the scan is aborted
 instead.
 
-Deferred Pause
---------------
+Example: Pausing a scan with Ctrl+C
+-----------------------------------
 
-When a *deferred pause* is requested, the RunEngine continues processing
-messages until the next checkpoint or the end of the scan, whichever happens
-first. When (if) it reaches a checkpoint, it pauses. Then it can be resumed
-from that checkpoint without repeating any work.
+.. ipython::
+    :verbatim:
+
+    In [1]: RE(my_scan)
+    ^C
+    Pausing...
+    In [2]:
+
+We have a command prompt back. We can resume like so:
+
+.. ipython::
+    :verbatim:
+
+    In [2]: RE.resume()
+    Resuming from last checkpoint...
+
+As explained above, we could also have chosen to end the scan, using
+``RE.stop()`` or ``RE.abort()``.
 
 .. _planned-pause:
 
@@ -86,31 +100,6 @@ to see the code of the scan itself. For now, we focus on how to use it.
     RE.resume()
     RE.resume()
     RE.stop()
-
-Example: Requesting a pause after a delay
------------------------------------------
-
-Suppose we want to pause a scan if it hasn't finished in a certian amount
-of time. Then, we can decide whether to continue or abort.
-
-The user cannot call ``RE.request_pause()`` directly while a scan is running
-because the user does not have control of the prompt. Thus, pause conditions
-must be set up in advance. Here is a example that pauses the scan after 5
-seconds.
-
-.. ipython:: python
-
-    from bluesky.examples import do_nothing
-    import asyncio
-    loop = asyncio.get_event_loop()
-    loop.call_later(5, RE.request_pause)  # Request a pause 5 seconds from now.
-
-.. ipython:: python
-
-    RE(do_nothing())
-    # Observe that the RunEngine is in a 'paused' state.
-    RE.state
-    RE.resume()
 
 Suspending
 ----------
@@ -130,6 +119,7 @@ RunEngine to suspend when the PV's value goes high. When it goes low
 again, the RunEngine resumes.
 
 .. ipython::
+    :verbatim:
 
     In [3]: pv_name = 'XF:23ID1-PPS{PSh}Pos-Sts'  # main shutter PV
 
@@ -142,6 +132,7 @@ In the following example, the shuttle was closed in the middle of the
 second data point.
 
 .. ipython::
+    :verbatim:
 
     In [6]: RE(my_scan)
     +------------+-------------------+----------------+----------------+
@@ -158,6 +149,38 @@ Notice that the scan was suspended and then resumed.
 When it resumed, it went back to the last checkpoint and re-took
 the second data point cleanly.
 
+Deferred Pause
+--------------
+
+When a *deferred pause* is requested, the RunEngine continues processing
+messages until the next checkpoint or the end of the scan, whichever happens
+first. When (if) it reaches a checkpoint, it pauses. Then it can be resumed
+from that checkpoint without repeating any work.
+
+Advanced Example: Requesting a pause from the asyncio event loop
+----------------------------------------------------------------
+
+Since the user does not control of the prompt, calls to ``RE.request_pause``
+must be planned in advance. Here is a example that pauses the scan after 5
+seconds.
+
+.. ipython:: python
+
+    from bluesky.examples import do_nothing
+    import asyncio
+    loop = asyncio.get_event_loop()
+    # Request a pause 5 seconds from now.
+    loop.call_later(5, RE.request_pause, True)  # or False to pause immediately
+
+.. ipython:: python
+
+    RE(do_nothing())
+    # Observe that the RunEngine is in a 'paused' state.
+    RE.state
+    RE.resume()
+
+Above, we passed ``True`` to ``RE.request_pause`` to request a deferred pause.
+
 State Machine
 -------------
 
@@ -165,7 +188,7 @@ The RunEngine has a state machine defining its phases of operation and the
 allowed transitions between them. As illustrated above, it can be inspected via
 the ``state`` property.
 
-.. ipython:: pytohn
+.. ipython:: python
 
     RE.state
 
