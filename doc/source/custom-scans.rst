@@ -273,12 +273,16 @@ we can generate many Events.
 Fly Scans
 ---------
 
-TODO
+.. warning::
+
+    An interface for fly scans has been tested (on real motors), but it is not
+    yet documented.
 
 Registering Custom Commands
 ---------------------------
 
-TODO
+.. automethod:: bluesky.run_engine.RunEngine.register_command
+.. automethod:: bluesky.run_engine.RunEngine.unregister_command
 
 Making Scans Reusable
 ---------------------

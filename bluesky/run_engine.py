@@ -965,7 +965,7 @@ class Dispatcher:
 
     def subscribe(self, name, func):
         """
-        Register a function to consume Event documents.
+        Register a function to consume documents.
 
         The Run Engine can execute callback functions at the start and end
         of a scan, and after the insertion of new Event Descriptors

@@ -102,41 +102,41 @@ def collector(field, output):
 
 
 class LivePlot(CallbackBase):
+    """
+    Build a function that updates a plot from a stream of Events.
+
+    Note: If your figure blocks the main thread when you are trying to
+    scan with this callback, call `plt.ion()` in your IPython session.
+
+    Parameters
+    ----------
+    y : str
+        the name of a data field in an Event
+    x : str, optional
+        the name of a data field in an Event
+        If None, use the Event's sequence number.
+    legend_keys : list, optional
+        The list of keys to extract from the RunStart document and format
+        in the legend of the plot. The legend will always show the
+        scan_id followed by a colon ("1: ").  Each
+    xlim : tuple
+        passed to Axes.set_xlim
+    ylim : tuple
+        passed to Axes.set_ylim
+    All additional keyword arguments are passed through to ``Axes.plot``.
+
+    Returns
+    -------
+    func : function
+        expects one argument, an Event dictionary
+
+    Examples
+    --------
+    >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
+    >>> RE(my_scan, my_plotter)
+    """
     def __init__(self, y, x=None, legend_keys=None, xlim=None, ylim=None,
                  **kwargs):
-        """
-        Build a function that updates a plot from a stream of Events.
-
-        Note: If your figure blocks the main thread when you are trying to
-        scan with this callback, call `plt.ion()` in your IPython session.
-
-        Parameters
-        ----------
-        y : str
-            the name of a data field in an Event
-        x : str, optional
-            the name of a data field in an Event
-            If None, use the Event's sequence number.
-        legend_keys : list, optional
-            The list of keys to extract from the RunStart document and format
-            in the legend of the plot. The legend will always show the
-            scan_id followed by a colon ("1: ").  Each
-        xlim : tuple
-            passed to Axes.set_xlim
-        ylim : tuple
-            passed to Axes.set_ylim
-        All additional keyword arguments are passed through to ``Axes.plot``.
-
-        Returns
-        -------
-        func : function
-            expects one argument, an Event dictionary
-
-        Examples
-        --------
-        >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
-        >>> RE(my_scan, subs={'event': my_plotter})
-        """
         super().__init__()
         fig, ax = plt.subplots()
         if legend_keys is None:
@@ -223,7 +223,7 @@ class LiveTable(CallbackBase):
     --------
     Show a table with motor and detector readings..
 
-    >>> RE(stepscan(motor, det), subs={'all': LiveTable(['motor', 'det'])})
+    >>> RE(stepscan(motor, det), LiveTable(['motor', 'det']))
     +------------+-------------------+----------------+----------------+
     |   seq_num  |             time  |         motor  |   sum(det_2d)  |
     +------------+-------------------+----------------+----------------+
