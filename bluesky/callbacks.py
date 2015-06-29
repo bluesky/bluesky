@@ -5,8 +5,11 @@ import sys
 from itertools import count
 import asyncio
 from prettytable import PrettyTable
+
+import matplotlib.backends.backend_qt5
+from matplotlib.backends.backend_qt5 import _create_qApp
 import matplotlib.pyplot as plt
-from collections import OrderedDict
+
 from .utils import doc_type
 from datetime import datetime
 import numpy as np
@@ -14,8 +17,7 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
-import matplotlib.backends.backend_qt5
-from matplotlib.backends.backend_qt5 import _create_qApp
+
 _create_qApp()
 qApp = matplotlib.backends.backend_qt5.qApp
 
