@@ -93,116 +93,24 @@ Example: Requesting a pause after a delay
 Suppose we want to pause a scan if it hasn't finished in a certian amount
 of time. Then, we can decide whether to continue or abort.
 
-The user cannot call ``RE.request_pause()`` directly while a scan is running.
-It can only be a done from a separate thread. Here is a example code for a
-pausing a scan if it goes on for more than 2 seconds.
-
-.. ipython:: python
-
-    import threading
-    from time import sleep
-    class SimplePausingAgent:
-        def __init__(self, RE):
-            self.RE = RE
-        def issue_request(self, defer, delay=0):
-            def requester():
-                sleep(delay)
-                self.RE.request_pause(defer)
-            thread = threading.Thread(target=requester)
-            thread.start()
-
-We'll try it on a dummy scan that just loops through checkpoints for several
+The user cannot call ``RE.request_pause()`` directly while a scan is running
+because the user does not have control of the prompt. Thus, pause conditions
+must be set up in advance. Here is a example that pauses the scan after 5
 seconds.
 
 .. ipython:: python
 
     from bluesky.examples import do_nothing
-    agent = SimplePausingAgent(RE)
-    # Pause the scan two seconds from when this is executed:
-    agent.issue_request(hard=False, delay=2)
+    import asyncio
+    loop = asyncio.get_event_loop()
+    loop.call_later(5, RE.request_pause)  # Request a pause 5 seconds from now.
+
+.. ipython:: python
+
     RE(do_nothing())
     # Observe that the RunEngine is in a 'paused' state.
     RE.state
     RE.resume()
-
-In some cases you may wish to prohibit resuming until whatever condition
-that required the pause has passed. For example, an agent might request a
-pause if the beam current becomes too low. It should sustain the pause request
-utnil the beam current has recovered. To accomplish this, include a name and
-a function with the pause request.
-
-.. ipython:: python
-
-    class PausingAgent:
-        def __init__(self, RE, name):
-            self.RE = RE
-            self.name = name
-        def issue_request(self, hard, delay=0):
-            def callback():
-                return self.permission
-            def requester():
-                sleep(delay)
-                self.permission = False
-                self.RE.request_pause(hard, self.name, callback)
-            thread = threading.Thread(target=requester)
-            thread.start()
-
-When ``resume`` is called, the RunEngine will call ``callback()`` to check
-whether is has permission to lift the pause.
-
-.. ipython:: python
-
-    agent = PausingAgent(RE, 'Timed Pausing Agent')
-    agent.issue_request(hard=False, delay=2)
-    RE(do_nothing())
-    RE.state
-
-This time, if we attempted to resume, the RunEngine will return a list of
-names of pause requests that must be revoked before the pause can be lifted.
-
-.. ipython:: python
-
-    RE.resume()  # not allowed!
-    agent.permission = True
-    RE.resume()
-
-When ``resume`` is called, the RunEngine will call ``callback()`` to check
-whether is has permission to lift the pause.
-
-Example: Use a file to trigger a pause
---------------------------------------
-
-The example above can be adapted to do something a little different.
-Instead of pausing based on a
-timed delay, we can monitor a PV or a file. The example below regularly
-checks a filepath. If it find a file there, it requests a pause.
-
-.. ipython:: python
-
-    class FileBasedPausingAgent:
-        def __init__(self, RE, name, filepath, hard=False):
-            self.RE = RE
-            self.name = name
-            self.filepath = filepath
-            self.hard = hard
-            def callback():
-                return self.permission
-            def requester():
-                while True:
-                    sleep(1)  # Check every second.
-                    if self.permission:
-                        if os.path.isfile(self.filepath):
-                            # The file has been created! Request a pause.
-                            self.permission = False
-                            self.RE.request_pause(self.hard, self.name,
-                                                  callback)
-                    else:
-                        if not os.path.isfile(self.filepath):
-                            # The file is gone. Give permission to resume.
-                            self.permission = True
-            thread = threading.Thread(target=requester)
-            thread.start()
-
 
 State Machine
 -------------
