@@ -44,7 +44,7 @@ class PVSuspender:
             # in the case where either have never been
             # called or have already fully cycled once
             if self._should_suspend(value):
-                self._ev = asyncio.Event()
+                self._ev = asyncio.Event(loop=self._loop)
 
                 self._loop.call_soon_threadsafe(
                     self.RE.request_suspend,
