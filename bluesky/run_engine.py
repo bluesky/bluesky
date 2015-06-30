@@ -937,7 +937,7 @@ class RunEngine:
         jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
         if name != DocumentNames.event:
-            loop.call_soon(self.dispatcher.process, name, doc)
+            self.dispatcher.process(name, doc)
         else:
             start_time = loop.time()
             dummy = expiring_function(self.dispatcher.process, name, doc)
