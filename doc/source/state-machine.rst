@@ -125,7 +125,7 @@ again, the RunEngine resumes.
 
     In [4]: import bluesky.epics_callbacks
 
-    In [5]: my_s = bluesky.epics_callbacks.PVSuspender(RE, pv_name)
+    In [5]: my_s = bluesky.epics_callbacks.PVBoolHigh(RE, pv_name)
 
 The above is all that is required. It will watch the PV indefinitely.
 In the following example, the shuttle was closed in the middle of the
@@ -148,6 +148,16 @@ second data point.
 Notice that the scan was suspended and then resumed.
 When it resumed, it went back to the last checkpoint and re-took
 the second data point cleanly.
+
+Built-in PV Monitors for Conditionally Suspending
+-------------------------------------------------
+
+.. autoclass:: bluesky.epics_callbacks.PVSuspendBoolHigh
+.. autoclass:: bluesky.epics_callbacks.PVSuspendBoolLow
+.. autoclass:: bluesky.epics_callbacks.PVSuspendFloor
+.. autoclass:: bluesky.epics_callbacks.PVSuspendCeil
+.. autoclass:: bluesky.epics_callbacks.PVSuspendInBand
+.. autoclass:: bluesky.epics_callbacks.PVSuspendOutBand
 
 Deferred Pause
 --------------
