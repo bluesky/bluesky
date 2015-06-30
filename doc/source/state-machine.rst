@@ -24,33 +24,22 @@ There are three ways to pause:
 
 1. Pressing Ctrl+C
 2. Writing a scan with a planned pause step
-3. Advanced: calling ``RE.request_pause()`` from a thread or event loop
+3. Advanced: Requesting a pause from a thread or event loop
 
 When the RunEngine is paused, it returns control to the user, who can then
-choose to resume, stop or abort.
+choose to resume, stop or abort. It is also possible to resume automatically:
+see :ref:`suspending`
 
 Resuming
 --------
 
-Scans are composed of granular instructions like 'read' and 'set'. These
-instructions can optionally include one or more 'checkpoint' messages,
-indicating a place where it is safe to resume after an interruption. For
-example, the built-in step-scans include a checkpoint before each step. If the
-scan is interrupted in the middle of a step, it will resume from the beginning
-of that step. There is no possibility of data being recorded twice.
+Use ``RE.resume()`` to resume a paused scan. It will "rewind" to the last
+checkpoint and continue from there. If a scan has no checkpoints or has not yet
+reached a checkpoint, the RunEngine has no safe place to resume. If told to
+pause, it will abort instead.
 
-When the RunEngnine is paused, use ``RE.resume()`` to resume from the last
-checkpoint. If a scan has no checkpoints or has not yet reached a
-checkpoint, the RunEngine has no safe place to resume. If paused, it will
-abort instead.
-
-Stopping or Aborting
---------------------
-
-To stop a paused scan, use ``RE.stop()`` or ``RE.abort()``. In both cases, any
-data that has been generated will be saved. The only difference is that
-aborted runs are marked with ``exit_status: 'abort'`` instead of
-``exit_status: 'success'``, which may be a useful distinction during analysis.
+What's a Checkpoint?
+++++++++++++++++++++
 
 Scans are specified as a sequence of messages, simple instructions
 like 'read' and 'set'. The instructions can optionally include one or more
@@ -61,6 +50,14 @@ interruption. For example, checkpoints are placed before each step of an
 If a scan does not include any 'checkpoint' messages, then it cannot be
 resumed after an interruption. If a pause is requested, the scan is aborted
 instead.
+
+Stopping or Aborting
+--------------------
+
+To stop a paused scan, use ``RE.stop()`` or ``RE.abort()``. In both cases, any
+data that has been generated will be saved. The only difference is that
+aborted runs are marked with ``exit_status: 'abort'`` instead of
+``exit_status: 'success'``, which may be a useful distinction during analysis.
 
 Example: Pausing a scan with Ctrl+C
 -----------------------------------
@@ -80,6 +77,7 @@ We have a command prompt back. We can resume like so:
 
     In [2]: RE.resume()
     Resuming from last checkpoint...
+    Out[2]: ['bad06177-32af-47c8-a1b5-2c3e068ac30a']
 
 As explained above, we could also have chosen to end the scan, using
 ``RE.stop()`` or ``RE.abort()``.
@@ -100,6 +98,8 @@ to see the code of the scan itself. For now, we focus on how to use it.
     RE.resume()
     RE.resume()
     RE.stop()
+
+.. _suspending:
 
 Suspending
 ----------
@@ -172,6 +172,26 @@ messages until the next checkpoint or the end of the scan, whichever happens
 first. When (if) it reaches a checkpoint, it pauses. Then it can be resumed
 from that checkpoint without repeating any work.
 
+Advanced: Pause or Suspend Programmatically
+-------------------------------------------
+
+Request a Pause
++++++++++++++++
+
+This method is called when Ctrl+C is pressed or when a 'pause' Message is
+processed. It can also be called by user-defined agents. See the next example.
+
+.. automethod:: bluesky.run_engine.RunEngine.request_pause
+
+Request a Suspension
+++++++++++++++++++++
+
+This method is used by the ``PVSuspend*`` classes above. It can also be called
+by user-defined agents.
+
+.. automethod:: bluesky.run_engine.RunEngine.request_suspend
+
+
 Advanced Example: Requesting a pause from the asyncio event loop
 ----------------------------------------------------------------
 
@@ -235,3 +255,5 @@ A panic is similar to a pause. It is different in the following ways:
   aborts the ongoing run without the option of resuming it.
 * If a panic happens while the RunEngine is in the 'paused' state, it is
   possible to resume after ``RE.all_is_well()`` has been called.
+
+.. automethod:: bluesky.run_engine.RunEngine.panic

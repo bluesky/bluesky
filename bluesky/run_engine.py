@@ -517,8 +517,11 @@ class RunEngine:
 
     def request_suspend(self, fut):
         """
-        Request that the run suspend itself until the future is
-        finished.
+        Request that the run suspend itself until the future is finished.
+
+        Parameters
+        ----------
+        fut : asyncio.Future
         """
         if not self.resumable:
             print("No checkpoint; cannot suspend. Aborting...")
