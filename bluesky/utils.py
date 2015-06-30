@@ -3,7 +3,7 @@ from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
-from collections import OrderedDict
+from collections import OrderedDict, Iterable
 import sys
 
 import logging

@@ -517,8 +517,11 @@ class RunEngine:
 
     def request_suspend(self, fut):
         """
-        Request that the run suspend itself until the future is
-        finished.
+        Request that the run suspend itself until the future is finished.
+
+        Parameters
+        ----------
+        fut : asyncio.Future
         """
         if not self.resumable:
             print("No checkpoint; cannot suspend. Aborting...")
@@ -867,22 +870,23 @@ class RunEngine:
     @asyncio.coroutine
     def _logbook(self, msg):
         if self.logbook:
-            d = msg.kwargs
             input_message, = msg.args
-            msg = []
-            msg.append('Header uid: {uid}')
-            msg.append('')
-            msg.append('Scan Plan')
-            msg.append('---------')
-            msg.append(input_message)
-            msg.append('')
-            msg.append('Metadata')
-            msg.append('--------')
-            msg.append(_run_engine_log_template(self._metadata_per_run))
-            log_message = '\n'.join(msg)
+            output = []
+            output.append('Header uid: {uid}')
+            output.append('')
+            output.append('Scan Plan')
+            output.append('---------')
+            output.append(input_message)
+            output.append('')
+            output.append('Metadata')
+            output.append('--------')
+            output.append(_run_engine_log_template(self._metadata_per_run))
+            log_message = '\n'.join(output)
 
+            d = {}
             d['uid'] = self._run_start_uid
-            d.update(self.md)
+            d.update(self._metadata_per_run)
+            d.update(msg.kwargs)
             return self.logbook(log_message, d)
 
     @asyncio.coroutine
@@ -964,7 +968,7 @@ class Dispatcher:
 
     def subscribe(self, name, func):
         """
-        Register a function to consume Event documents.
+        Register a function to consume documents.
 
         The Run Engine can execute callback functions at the start and end
         of a scan, and after the insertion of new Event Descriptors

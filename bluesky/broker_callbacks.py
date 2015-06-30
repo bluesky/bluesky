@@ -8,21 +8,20 @@ from .callbacks import CallbackBase
 
 
 class LiveImage(CallbackBase):
+    """
+    Stream 2D images in a cross-section viewer.
 
+    Parameters
+    ----------
+    field : string
+        name of data field in an Event
+
+    Note
+    ----
+    Requires a matplotlib fix that is not released as of this writing. The
+    relevant commit is a951b7.
+    """
     def __init__(self, field):
-        """
-        Stream 2D images in a cross-section viewer.
-
-        Parameters
-        ----------
-        field : string
-            name of data field in an Event
-
-        Note
-        ----
-        Required a matplotlib fix not released as of this writing. The
-        relevant commit is a951b7.
-        """
         super().__init__()
         self.field = field
         fig = plt.figure()

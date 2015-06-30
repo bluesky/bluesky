@@ -20,6 +20,7 @@ Programmable Scans
 
 * Running can be cleanly **paused and later aborted or resumed** at
   user-defined checkpoints.
+* Scans can automatically supend and resume in response to external conditions.
 * In addition to the built-in scans, you can specify **custom scans and 
   "macros"** in a simple, procedural way using basic Python sytnax (e.g.,
   for-loops) and a small set of commands. There are many documented examples.

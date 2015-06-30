@@ -5,8 +5,11 @@ import sys
 from itertools import count
 import asyncio
 from prettytable import PrettyTable
+
+import matplotlib.backends.backend_qt5
+from matplotlib.backends.backend_qt5 import _create_qApp
 import matplotlib.pyplot as plt
-from collections import OrderedDict
+
 from .utils import doc_type
 from datetime import datetime
 import numpy as np
@@ -14,8 +17,7 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
-import matplotlib.backends.backend_qt5
-from matplotlib.backends.backend_qt5 import _create_qApp
+
 _create_qApp()
 qApp = matplotlib.backends.backend_qt5.qApp
 
@@ -100,36 +102,41 @@ def collector(field, output):
 
 
 class LivePlot(CallbackBase):
-    def __init__(self, y, x=None, legend_keys=None, **kwargs):
-        """
-        Build a function that updates a plot from a stream of Events.
+    """
+    Build a function that updates a plot from a stream of Events.
 
-        Note: If your figure blocks the main thread when you are trying to
-        scan with this callback, call `plt.ion()` in your IPython session.
+    Note: If your figure blocks the main thread when you are trying to
+    scan with this callback, call `plt.ion()` in your IPython session.
 
-        Parameters
-        ----------
-        y : str
-            the name of a data field in an Event
-        x : str, optional
-            the name of a data field in an Event
-            If None, use the Event's sequence number.
-        legend_keys : list, optional
-            The list of keys to extract from the RunStart document and format
-            in the legend of the plot. The legend will always show the
-            scan_id followed by a colon ("1: ").  Each
-        All additional keyword arguments are passed through to ``Axes.plot``.
+    Parameters
+    ----------
+    y : str
+        the name of a data field in an Event
+    x : str, optional
+        the name of a data field in an Event
+        If None, use the Event's sequence number.
+    legend_keys : list, optional
+        The list of keys to extract from the RunStart document and format
+        in the legend of the plot. The legend will always show the
+        scan_id followed by a colon ("1: ").  Each
+    xlim : tuple
+        passed to Axes.set_xlim
+    ylim : tuple
+        passed to Axes.set_ylim
+    All additional keyword arguments are passed through to ``Axes.plot``.
 
-        Returns
-        -------
-        func : function
-            expects one argument, an Event dictionary
+    Returns
+    -------
+    func : function
+        expects one argument, an Event dictionary
 
-        Examples
-        --------
-        >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
-        >>> RE(my_scan, subs={'event': my_plotter})
-        """
+    Examples
+    --------
+    >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
+    >>> RE(my_scan, my_plotter)
+    """
+    def __init__(self, y, x=None, legend_keys=None, xlim=None, ylim=None,
+                 **kwargs):
         super().__init__()
         fig, ax = plt.subplots()
         if legend_keys is None:
@@ -144,6 +151,10 @@ class LivePlot(CallbackBase):
         self.ax = ax
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
+        if xlim is not None:
+            self.ax.set_xlim(*xlim)
+        if ylim is not None:
+            self.ax.set_ylim(*ylim)
         self.ax.margins(.1)
         self.kwargs = kwargs
         self.lines = []
@@ -212,7 +223,7 @@ class LiveTable(CallbackBase):
     --------
     Show a table with motor and detector readings..
 
-    >>> RE(stepscan(motor, det), subs={'all': LiveTable(['motor', 'det'])})
+    >>> RE(stepscan(motor, det), LiveTable(['motor', 'det']))
     +------------+-------------------+----------------+----------------+
     |   seq_num  |             time  |         motor  |   sum(det_2d)  |
     +------------+-------------------+----------------+----------------+
@@ -244,7 +255,8 @@ class LiveTable(CallbackBase):
         self.rowwise = rowwise
         if fields is None:
             fields = []
-        self.fields = _get_obj_fields(fields)
+        # prettytable does not allow nonunique names
+        self.fields = list(set(_get_obj_fields(fields)))
         self.field_column_names = [field for field in self.fields]
         self.num_events_since_last_header = 0
         self.print_header_interval = print_header_interval
