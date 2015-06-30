@@ -147,10 +147,15 @@ second data point.
 
 Notice that the scan was suspended and then resumed.
 When it resumed, it went back to the last checkpoint and re-took
-the second data point cleanly.
+the second data point cleanly. As with pausing, if a scan with no checkpoints
+is supended, the scan is immediately aborted because it cannot be cleanly
+resumed.
 
 Built-in PV Monitors for Conditionally Suspending
 -------------------------------------------------
+
+The example above demonstrates ``PVSuspendBoolHigh``. Several other variants
+are built in, and it is straightforward to write customized ones.
 
 .. autoclass:: bluesky.epics_callbacks.PVSuspendBoolHigh
 .. autoclass:: bluesky.epics_callbacks.PVSuspendBoolLow
