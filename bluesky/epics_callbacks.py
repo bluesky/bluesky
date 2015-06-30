@@ -2,7 +2,7 @@ import epics
 import asyncio
 from abc import ABCMeta, abstractmethod, abstractproperty
 import operator
-
+from threading import Lock
 
 class PVSuspenderBase(metaclass=ABCMeta):
     """An ABC to manage the callbacks between asyincio and pyepics.
@@ -38,6 +38,7 @@ class PVSuspenderBase(metaclass=ABCMeta):
 
         self._pv = epics.PV(pv_name, auto_monitor=True)
         self._pv.add_callback(self)
+        self._lock = Lock()
 
     @abstractmethod
     def _should_suspend(self, value):
@@ -85,26 +86,25 @@ class PVSuspenderBase(metaclass=ABCMeta):
         This expects the massive blob that comes from pyepics
         """
         value = kwargs['value']
-        # TODO does this need thread locking? Depends on if
-        # more than one thread can service the same PV at the
-        # pyepics layer.
-        if self._ev is None:
-            # in the case where either have never been
-            # called or have already fully cycled once
-            if self._should_suspend(value):
-                self._ev = asyncio.Event(loop=self._loop)
 
-                self._loop.call_soon_threadsafe(
-                    self.RE.request_suspend,
-                    self._ev.wait(),
-                    self._sleep)
-        else:
-            if self._should_resume(value):
-                def local():
-                    self._loop.call_later(self._sleep, self._ev.set)
-                self._loop.call_soon_threadsafe(local)
-                # clear that we have an event
-                self._ev = None
+        with self._lock:
+            if self._ev is None:
+                # in the case where either have never been
+                # called or have already fully cycled once
+                if self._should_suspend(value):
+                    self._ev = asyncio.Event(loop=self._loop)
+
+                    self._loop.call_soon_threadsafe(
+                        self.RE.request_suspend,
+                        self._ev.wait(),
+                        self._sleep)
+            else:
+                if self._should_resume(value):
+                    def local():
+                        self._loop.call_later(self._sleep, self._ev.set)
+                    self._loop.call_soon_threadsafe(local)
+                    # clear that we have an event
+                    self._ev = None
 
 
 class PVSuspendBoolHigh(PVSuspenderBase):
