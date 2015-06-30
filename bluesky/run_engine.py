@@ -248,6 +248,7 @@ class RunEngine:
         self._describe_cache.clear()
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
+        self._teed_sequence_counters.clear()
         self._block_groups.clear()
 
     def _clear_call_cache(self):
@@ -499,7 +500,8 @@ class RunEngine:
         self._genstack.append((msg for msg in list(self._msg_cache)))
         self._new_gen = True
         self._msg_cache = deque()
-        self._sequence_counters = self._teed_sequence_counters
+        self._sequence_counters.clear()
+        self._sequence_counters.update(self._teed_sequence_counters)
         self._resume_event_loop()
         return self._run_start_uids
 
@@ -527,6 +529,8 @@ class RunEngine:
             print("Suspending....To get prompt hit Ctrl-C to pause the scan")
             wait_msg = Msg('wait_for', [fut, ])
             new_msg_lst = [wait_msg, ] + list(self._msg_cache)
+            self._sequence_counters.clear()
+            self._sequence_counters.update(self._teed_sequence_counters)
             self._msg_cache = deque()
             self._genstack.append((msg for msg in new_msg_lst))
             self._new_gen = True
