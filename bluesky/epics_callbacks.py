@@ -112,6 +112,24 @@ class PVSuspendBoolHigh(PVSuspenderBase):
     """
     Suspender which suspends the scan when a boolean PV
     goes high and resumes when the value goes low.
+
+    Parameters
+    ----------
+
+    RE : RunEngine
+        The run engine instance this should work on
+
+    pv_name : str
+        The PV to watch for changes to determine if the
+        scan should be suspended
+
+    sleep : float, optional
+        How long to wait in seconds after the resume condition is met
+        before marking the event as done.  Defaults to 0
+
+    loop : BaseEventLoop, optional
+        The event loop to work on
+
     """
     def _should_suspend(self, value):
         return bool(value)
@@ -124,6 +142,24 @@ class PVSuspendBoolLow(PVSuspenderBase):
     """
     Suspender which suspends the scan when a boolean PV
     goes low and resumes when the value goes high.
+
+    Parameters
+    ----------
+
+    RE : RunEngine
+        The run engine instance this should work on
+
+    pv_name : str
+        The PV to watch for changes to determine if the
+        scan should be suspended
+
+    sleep : float, optional
+        How long to wait in seconds after the resume condition is met
+        before marking the event as done.  Defaults to 0
+
+    loop : BaseEventLoop, optional
+        The event loop to work on
+
     """
     def _should_suspend(self, value):
         return not bool(value)
