@@ -305,7 +305,7 @@ class _PVSuspendBandBase(PVSuspenderBase):
         self._top = band_top
 
 
-class PVSuspenderInBand(_PVSuspendBandBase):
+class PVSuspendInBand(_PVSuspendBandBase):
     """
     A suspender class to keep a scalar PV with in a band.  Suspends if
     the value leaves the band, resume when it re-enters.
@@ -339,7 +339,7 @@ class PVSuspenderInBand(_PVSuspendBandBase):
         return not (self._bot < value < self._top)
 
 
-class PVSuspenderOutBand(_PVSuspendBandBase):
+class PVSuspendOutBand(_PVSuspendBandBase):
     """
     A suspender class to keep a scalar PV out of a band.  Suspends if
     the value enters the band and resumes when it leaves.
