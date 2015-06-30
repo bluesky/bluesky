@@ -249,3 +249,90 @@ class PVSuspendCeil(_PVThreshold):
     @property
     def _op(self):
         return operator.gt
+
+
+class _PVSuspendBandBase(PVSuspenderBase):
+    """
+    Private base-class for suspenders based on keeping a scalar inside
+    or outside of a band
+    """
+    def __init__(self, RE, pv, band_bottom, band_top, **kwargs):
+        super().__init__(RE, pv, **kwargs)
+        if not band_bottom < band_top:
+            raise ValueError("The bottom of the band must be strictly "
+                             "less than the top of the band.\n"
+                             "bottom: {}\ttop: {}".format(
+                                 band_bottom, band_top)
+                             )
+        self._bot = band_bottom
+        self._top = band_top
+
+
+class PVSuspenderInBand(_PVSuspendBandBase):
+    """
+    A suspender class to keep a scalar PV with in a band.  Suspends if
+    the value leaves the band, resume when it re-enters.
+
+    Parameters
+    ----------
+
+    RE : RunEngine
+        The run engine instance this should work on
+
+    pv_name : str
+        The PV to watch for changes to determine if the
+        scan should be suspended
+
+    band_bottom, band_top : float
+        The top and bottom of the band.  `band_top` must be
+        strictly greater than `band_bottom`.
+
+    sleep : float, optional
+        How long to wait in seconds after the resume condition is met
+        before marking the event as done.  Defaults to 0
+
+    loop : BaseEventLoop, optional
+        The event loop to work on
+
+    """
+    def _should_resume(self, value):
+        return self._bot < value < self._top
+
+    def _should_suspend(self, value):
+        return not (self._bot < value < self._top)
+
+
+class PVSuspenderOutBand(_PVSuspendBandBase):
+    """
+    A suspender class to keep a scalar PV out of a band.  Suspends if
+    the value enters the band and resumes when it leaves.
+
+    This is mostly here because it is the opposite of `PVSuspenderInBand`.
+
+    Parameters
+    ----------
+
+    RE : RunEngine
+        The run engine instance this should work on
+
+    pv_name : str
+        The PV to watch for changes to determine if the
+        scan should be suspended
+
+    band_bottom, band_top : float
+        The top and bottom of the band.  `band_top` must be
+        strictly greater than `band_bottom`.
+
+    sleep : float, optional
+        How long to wait in seconds after the resume condition is met
+        before marking the event as done.  Defaults to 0
+
+    loop : BaseEventLoop, optional
+        The event loop to work on
+
+    """
+    def _should_resume(self, value):
+        return not (self._bot < value < self._top)
+
+    def _should_suspend(self, value):
+        return (self._bot < value < self._top)
