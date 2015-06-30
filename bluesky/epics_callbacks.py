@@ -7,9 +7,8 @@ class PVSuspender:
     A class to manage the callback interface between asyincio and
     pyepics.
 
-    This will probably be a base class eventually.
     """
-    def __init__(self, RE, pv_name, sleep=0, loop=None):
+    def __init__(self, RE, pv_name, *, sleep=0, loop=None):
         """
         Parameters
         ----------
@@ -53,7 +52,7 @@ class PVSuspender:
         suspend : bool
             True means suspend
         """
-        return bool(value)
+        raise NotImplementedError()
 
     def _should_resume(self, value):
         """
@@ -71,7 +70,7 @@ class PVSuspender:
         suspend : bool
             True means resume
         """
-        return not bool(value)
+        raise NotImplementedError()
 
     def __call__(self, **kwargs):
         """
@@ -101,3 +100,63 @@ class PVSuspender:
                 self._loop.call_soon_threadsafe(local)
                 # clear that we have an event
                 self._ev = None
+
+
+class PVSuspendFloor(PVSuspender):
+    def __init__(self, RE, pv, suspend_thresh, *,
+                 resume_thresh=None, **kwargs):
+        super().__init__(RE, pv, **kwargs)
+        self._suspend_thresh = suspend_thresh
+        if resume_thresh is None:
+            resume_thresh = suspend_thresh
+        self._resume_thresh = resume_thresh
+        if resume_thresh < suspend_thresh:
+            raise ValueError("Resume threshold must be equal or greater "
+                             "than suspend threshold, you passed: "
+                             "suspend: {}  resume: {}".format(
+                                 suspend_thresh, resume_thresh))
+
+    def _should_resume(self, value):
+        return value > self._resume_thresh
+
+    def _should_suspend(self, value):
+        return value < self._suspend_thresh
+
+
+class PVSuspendCeil(PVSuspender):
+    def __init__(self, RE, pv, suspend_thresh, *,
+                 resume_thresh=None, **kwargs):
+        super().__init__(RE, pv, **kwargs)
+        self._suspend_thresh = suspend_thresh
+        if resume_thresh is None:
+            resume_thresh = suspend_thresh
+        self._resume_thresh = resume_thresh
+        if resume_thresh > suspend_thresh:
+            raise ValueError("Resume threshold must be equal or less "
+                             "than suspend threshold, you passed: "
+                             "suspend: {}  resume: {}".format(
+                                 suspend_thresh, resume_thresh))
+
+    def _should_resume(self, value):
+        return value < self._resume_thresh
+
+    def _should_suspend(self, value):
+        return value > self._suspend_thresh
+
+
+class PVSuspendBoolHigh(PVSuspender):
+
+    def _should_suspend(self, value):
+        return bool(value)
+
+    def _should_resume(self, value):
+        return not bool(value)
+
+
+class PVSuspendBoolLow(PVSuspender):
+
+    def _should_suspend(self, value):
+        return not bool(value)
+
+    def _should_resume(self, value):
+        return bool(value)
