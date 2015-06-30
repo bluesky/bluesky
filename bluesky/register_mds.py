@@ -22,6 +22,7 @@ def _make_insert_func(func):
 known_run_start_keys = ['time', 'scan_id', 'beamline_id', 'beamline_config',
                         'uid', 'owner', 'group', 'project']
 
+
 def _insert_run_start(doc):
     "Add a beamline config that, for now, only knows the time."
     doc['beamline_config'] = _make_blc()
@@ -35,7 +36,7 @@ def _insert_run_start(doc):
             except KeyError:
                 doc['custom'] = {}
             doc['custom'][key] = doc.pop(key)
-    return _make_insert_func(mds.insert_run_start)(doc)
+    return mds.insert_run_start(**doc)
 
 
 insert_funcs = {DocumentNames.event: _make_insert_func(mds.insert_event),
