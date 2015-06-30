@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 import operator
 from threading import Lock
 
+
 class PVSuspenderBase(metaclass=ABCMeta):
     """An ABC to manage the callbacks between asyincio and pyepics.
 
