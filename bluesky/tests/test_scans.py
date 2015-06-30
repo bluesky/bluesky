@@ -135,7 +135,12 @@ def test_center():
 def test_legacy_scans():
     # smoke tests
     ascan.detectors.append(det)
-    ascan.RE = RE
+    for _re in [ascan.RE, dscan.RE, ct.RE]:
+        _re.md['owner'] = 'test_owner'
+        _re.md['group'] = 'Grant No. 12345'
+        _re.md['config'] = {'detector_model': 'XYZ', 'pixel_size': 10}
+        _re.md['beamline_id'] = 'test_beamline'
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         ascan(motor, 0, 5, 5)
