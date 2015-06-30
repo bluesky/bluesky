@@ -199,7 +199,7 @@ class RunEngine:
         self._msg_cache = None  # may be used to hold recently processed msgs
         self._genstack = deque()  # stack of generators to work off of
         self._new_gen = True  # flag if we need to prime the generator
-        self._exit_status = 'fail'  # pessimistic default
+        self._exit_status = 'success'  # pessimistic default
         self._reason = ''
         self._task = None
         self._command_registry = {
@@ -258,7 +258,7 @@ class RunEngine:
         self._new_gen = True
         self._exception = None
         self._run_start_uids.clear()
-        self._exit_status = 'fail'
+        self._exit_status = 'success'
         self._reason = ''
         self._task = None
 
