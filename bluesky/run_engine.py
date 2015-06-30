@@ -651,16 +651,13 @@ class RunEngine:
                                          "received before the 'open_run' "
                                          "message")
         self._clear_run_cache()
-        self._run_is_open = True
         self._run_start_uid = new_uid()
         self._run_start_uids.append(self._run_start_uid)
-
         # Metadata can come from history, __call__, or the open_run Msg.
         self._metadata_per_run = {k: v for k, v in self.md.items()
                                   if k in self.persistent_fields}
         self._metadata_per_run.update(self._metadata_per_call)
         self._metadata_per_run.update(msg.kwargs)
-
         for field in self._REQUIRED_FIELDS:
             if field not in self._metadata_per_run:
                 raise KeyError("The field '{0}' was not specified as is "
@@ -681,6 +678,7 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid, time=ttime.time(),
                    **self._metadata_per_run)
         yield from self.emit(DocumentNames.start, doc)
+        self._run_is_open = True
         self.debug("*** Emitted RunStart:\n%s" % doc)
 
     @asyncio.coroutine
