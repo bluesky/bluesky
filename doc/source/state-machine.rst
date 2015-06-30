@@ -125,7 +125,7 @@ again, the RunEngine resumes.
 
     In [4]: import bluesky.epics_callbacks
 
-    In [5]: my_s = bluesky.epics_callbacks.PVBoolHigh(RE, pv_name)
+    In [5]: my_s = bluesky.epics_callbacks.PVSuspendBoolHigh(RE, pv_name)
 
 The above is all that is required. It will watch the PV indefinitely.
 In the following example, the shuttle was closed in the middle of the
