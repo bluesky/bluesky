@@ -1,15 +1,19 @@
 import warnings
 from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
-                        assert_less)
-from bluesky.scans import *
-from bluesky.callbacks import *
+                        assert_less, assert_is)
+
+from bluesky.callbacks import collector, CallbackCounter
+from bluesky.scans import (Ascan, LinAscan, LogAscan,
+                           LinDscan, LogDscan, AdaptiveAscan,
+                           AdaptiveDscan, Count, Center)
+
 from bluesky.standard_config import ascan, dscan, ct
-from bluesky import RunEngine
+from bluesky import Msg
 from bluesky.examples import motor, det, SynGauss
 from bluesky.tests.utils import setup_test_run_engine
 import asyncio
 import time as ttime
-
+import numpy as np
 loop = asyncio.get_event_loop()
 
 RE = setup_test_run_engine()
