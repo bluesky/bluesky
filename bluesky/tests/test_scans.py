@@ -163,6 +163,13 @@ def test_legacy_scans():
         ct(animal='lion', subs={'start': assert_lion})
 
 
+def test_legacy_scan_state():
+    assert_is(ascan.RE, dscan.RE)
+    assert_is(ascan.RE, ct.RE)
+    assert_is(ascan.detectors, dscan.detectors)
+    assert_is(ascan.detectors, ct.detectors)
+
+
 def test_set():
     scan = LinAscan([det], motor, 1, 5, 3)
     assert_equal(scan.start, 1)
