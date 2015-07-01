@@ -1,11 +1,24 @@
+from functools import partial
 from nose.tools import assert_equal
+import asyncio
 import epics
-p = None
+import time as ttime
+
+from bluesky import Msg
+from bluesky.epics_callbacks import (PVSuspendBoolHigh,
+                                     PVSuspendBoolLow,
+                                     PVSuspendFloor,
+                                     PVSuspendCeil,
+                                     PVSuspendInBand,
+                                     PVSuspendOutBand)
+
+from bluesky.tests.utils import setup_test_run_engine
+RE = setup_test_run_engine()
+loop = asyncio.get_event_loop()
 
 
 def test_epics_smoke():
 
-    print(p)
     pv = epics.PV('BSTEST:VAL')
     pv.value = 123456
     print(pv)
@@ -16,3 +29,40 @@ def test_epics_smoke():
         pv.put(j, wait=True)
         ret = pv.get(use_monitor=False)
         assert_equal(ret, j)
+
+
+def _test_suspender(suspender_class, sc_args, start_val, fail_val,
+                    resume_val, wait_time):
+
+    my_suspender = suspender_class(RE, 'BSTEST:VAL', *sc_args, sleep=wait_time)
+    print(my_suspender._lock)
+    pv = epics.PV('BSTEST:VAL')
+    putter = partial(pv.put, wait=True)
+    # make sure we start at good value!
+    putter(start_val)
+    # dumb scan
+    scan = [Msg('checkpoint'), Msg('sleep', None, .2)]
+    # paranoid
+    assert_equal(RE.state, 'idle')
+
+    start = ttime.time()
+    # queue up fail and resume conditions
+    loop.call_later(.1, putter, fail_val)
+    loop.call_later(1, putter, resume_val)
+    # start the scan
+    RE(scan)
+    stop = ttime.time()
+    # paranoid clean up of pv call back
+    my_suspender._pv.disconnect()
+    # assert we waited at least 2 seconds + the settle time
+    print(stop - start)
+    assert stop - start > 1 + wait_time + .2
+
+
+def test_suspending():
+    yield _test_suspender, PVSuspendBoolHigh, (), 0, 1, 0, .5
+    yield _test_suspender, PVSuspendBoolLow, (), 1, 0, 1, .5
+    yield _test_suspender, PVSuspendFloor, (.5,), 1, 0, 1, .5
+    yield _test_suspender, PVSuspendCeil, (.5,), 0, 1, 0, .5
+    yield _test_suspender, PVSuspendInBand, (.5, 1.5), 1, 0, 1, .5
+    yield _test_suspender, PVSuspendOutBand, (.5, 1.5), 0, 1, 0, .5
