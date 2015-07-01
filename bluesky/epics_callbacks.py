@@ -36,10 +36,10 @@ class PVSuspenderBase(metaclass=ABCMeta):
         self.RE = RE
         self._ev = None
         self._sleep = sleep
+        self._lock = Lock()
 
         self._pv = epics.PV(pv_name, auto_monitor=True)
         self._pv.add_callback(self)
-        self._lock = Lock()
 
     @abstractmethod
     def _should_suspend(self, value):
@@ -97,12 +97,14 @@ class PVSuspenderBase(metaclass=ABCMeta):
 
                     self._loop.call_soon_threadsafe(
                         self.RE.request_suspend,
-                        self._ev.wait(),
-                        self._sleep)
+                        self._ev.wait())
             else:
                 if self._should_resume(value):
+                    ev = self._ev.set
+                    sleep = self._sleep
+
                     def local():
-                        self._loop.call_later(self._sleep, self._ev.set)
+                        self._loop.call_later(sleep, ev)
                     self._loop.call_soon_threadsafe(local)
                     # clear that we have an event
                     self._ev = None
@@ -231,12 +233,12 @@ class PVSuspendFloor(_PVThreshold):
 
     """
     def _validate(self):
-        if self.resume_thresh < self.suspend_thresh:
+        if self._resume_thresh < self._suspend_thresh:
             raise ValueError("Resume threshold must be equal or greater "
                              "than suspend threshold, you passed: "
                              "suspend: {}  resume: {}".format(
-                                 self.suspend_thresh,
-                                 self.resume_thresh))
+                                 self._suspend_thresh,
+                                 self._resume_thresh))
 
     @property
     def _op(self):
@@ -276,12 +278,12 @@ class PVSuspendCeil(_PVThreshold):
 
     """
     def _validate(self):
-        if self.resume_thresh > self.suspend_thresh:
+        if self._resume_thresh > self._suspend_thresh:
             raise ValueError("Resume threshold must be equal or less "
                              "than suspend threshold, you passed: "
                              "suspend: {}  resume: {}".format(
-                                 self.suspend_thresh,
-                                 self.resume_thresh))
+                                 self._suspend_thresh,
+                                 self._resume_thresh))
 
     @property
     def _op(self):
