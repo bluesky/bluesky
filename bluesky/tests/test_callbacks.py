@@ -89,10 +89,15 @@ def test_table():
     fout.seek(0)
 
     for ln, kn in zip(fout, KNOWN_TABLE.split('\n')):
+        # this is to strip the `\n` from the print output
         ln = ln.rstrip()
+
         if ln[0] == '+':
+            # test the full line on the divider lines
             assert_equal(ln, kn)
         else:
+            # skip the 'time' column on data rows
+            # this is easier than faking up times in the scan!
             assert_equal(ln[:17], kn[:17])
             assert_equal(ln[31:], kn[31:])
 
