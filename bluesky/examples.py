@@ -4,7 +4,7 @@ from collections import deque
 import numpy as np
 from .run_engine import Msg
 
-from .callbacks import *
+loop = asyncio.get_event_loop()
 
 
 class Base:

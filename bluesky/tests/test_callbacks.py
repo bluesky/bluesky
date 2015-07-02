@@ -1,9 +1,13 @@
-from nose.tools import assert_in, assert_equal, assert_raises
-from bluesky.run_engine import RunEngine, Msg
-from bluesky.examples import *
+from nose.tools import assert_equal, assert_raises
+from bluesky.run_engine import Msg
+from bluesky.examples import (motor, det, stepscan)
+from bluesky.scans import AdaptiveAscan
+from bluesky.callbacks import (CallbackCounter, LiveTable)
 from bluesky.tests.utils import setup_test_run_engine
 from nose.tools import raises
-
+import contextlib
+import sys
+import tempfile
 
 RE = setup_test_run_engine()
 
