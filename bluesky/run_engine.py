@@ -960,6 +960,7 @@ class RunEngine:
         self._scan_cb_registry.process(name, doc)
         if name != DocumentNames.event:
             self.dispatcher.process(name, doc)
+            logger.info("Emitting %s document: %r", name, doc)
         else:
             start_time = loop.time()
             dummy = expiring_function(self.dispatcher.process, name, doc)
