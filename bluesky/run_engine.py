@@ -3,6 +3,7 @@ import itertools
 import types
 import time as ttime
 import sys
+import logging
 from itertools import count, tee
 from collections import namedtuple, deque, defaultdict, Iterable
 import uuid
@@ -19,6 +20,8 @@ from pkg_resources import resource_filename as rs_fn
 
 from .utils import (CallbackRegistry, SignalHandler, ExtendedList,
                     normalize_subs_input)
+
+logger = logging.getLogger(__name__)
 
 
 __all__ = ['Msg', 'RunEngineStateMachine', 'RunEngine', 'Dispatcher',
@@ -113,10 +116,24 @@ class RunEngineStateMachine(StateMachine):
         ]
 
 
+class LoggingPropertyMachine(PropertyMachine):
+    def __init__(self, machine_type, *, logger=None):
+        super().__init__(machine_type)
+        self._logger = logger
+
+    def __set__(self, obj, value):
+        old_value = self.__get__(obj)
+        super().__set__(obj, value)
+        value = self.__get__(obj)
+        if self._logger is not None:
+            self._logger.info("Change state on %r from %r -> %r",
+                              obj, old_value, value)
+
+
 class RunEngine:
 
     _loop = loop  # just a convenient way to inspect the global event loop
-    state = PropertyMachine(RunEngineStateMachine)
+    state = LoggingPropertyMachine(RunEngineStateMachine, logger=logger)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe']
 
@@ -583,6 +600,7 @@ class RunEngine:
                     self._msg_cache.append(msg)
                 self._new_gen = False
                 coro = self._command_registry[msg.command]
+                logger.debug("Processing message %r", msg)
                 self.debug("About to process: {0}, {1}".format(coro, msg))
                 yield from asyncio.sleep(0.001)  # TODO Do we need this?
                 response = yield from coro(msg)
@@ -595,11 +613,14 @@ class RunEngine:
             self._exit_status = 'abort'
             yield from asyncio.sleep(0.001)  # TODO Do we need this?
             if isinstance(self._exception, PanicError):
+                logger.critical("RE paniced")
                 self._exit_status = 'fail'
                 raise self._exception
+            logger.error("Run aborted")
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
             self._reason = str(err)
+            logger.error("Run aborted")
             raise err
         finally:
             self.state = 'idle'
@@ -644,6 +665,7 @@ class RunEngine:
     def increment_scan_id(self):
         scan_id = self.md.get('scan_id', 0) + 1
         self.md['scan_id'] = scan_id
+        logger.debug("New transient id %d", scan_id)
         return scan_id
 
     @asyncio.coroutine
@@ -687,6 +709,7 @@ class RunEngine:
         yield from self.emit(DocumentNames.start, doc)
         self._run_is_open = True
         self.debug("*** Emitted RunStart:\n%s" % doc)
+        logger.debug("Starting new run:  %s", self._run_start_uid)
 
     @asyncio.coroutine
     def _close_run(self, msg):
@@ -697,6 +720,8 @@ class RunEngine:
         yield from self.emit(DocumentNames.stop, doc)
         self.debug("*** Emitted RunStop:\n%s" % doc)
         self._run_is_open = False
+        logger.debug("Stopping run %s with run_stop %s",
+                     self._run_start_uid, doc['uid'])
 
     @asyncio.coroutine
     def _create(self, msg):
@@ -922,6 +947,7 @@ class RunEngine:
 
         This, like subscriptions passed to __call__, apply to one run only.
         """
+        logger.debug("Adding subsription %r", msg)
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
