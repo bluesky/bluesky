@@ -48,7 +48,7 @@ def test_check_storage():
 
 def test_connect_channelarchiver():
     # Just test failure, not success.
-    assert_raises(RuntimeError, connect_channelarchiver, 'http://a.b.c')
+    assert_raises(RuntimeError, connect_channelarchiver, 'http://bnl.gov/asfoijewapfoia')
 
 
 def test_connect_pv():
