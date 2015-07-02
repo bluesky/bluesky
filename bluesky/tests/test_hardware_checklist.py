@@ -1,5 +1,6 @@
 import uuid
 import nose
+from bluesky.testing.noseclasses import KnownFailureTest
 from nose.tools import assert_raises
 from bluesky.hardware_checklist import *
 
@@ -23,6 +24,9 @@ def test_connect_mds_mongodb():
 
 
 def test_connect_fs_mongodb():
+    raise KnownFailureTest
+    # FS does not have fancy connection_config that MDS does
+    # Once it is caught up, this will be pass.
     try:
         import filestore
     except ImportError:
