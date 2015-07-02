@@ -1,5 +1,6 @@
 from functools import partial
-from nose.tools import assert_equal
+import sys
+from nose.tools import assert_equal, assert_greater
 import asyncio
 import epics
 import time as ttime
@@ -13,6 +14,7 @@ from bluesky.suspenders import (PVSuspendBoolHigh,
                                 PVSuspendOutBand)
 
 from bluesky.tests.utils import setup_test_run_engine
+from bluesky.testing.noseclasses import KnownFailureTest
 RE = setup_test_run_engine()
 loop = asyncio.get_event_loop()
 
@@ -34,6 +36,9 @@ def test_epics_smoke():
 def _test_suspender(suspender_class, sc_args, start_val, fail_val,
                     resume_val, wait_time):
 
+    if sys.platform == 'darwin':
+        # OSX event loop is different; resolve this later
+        raise KnownFailureTest()
     my_suspender = suspender_class(RE, 'BSTEST:VAL', *sc_args, sleep=wait_time)
     print(my_suspender._lock)
     pv = epics.PV('BSTEST:VAL')
@@ -56,7 +61,7 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     my_suspender._pv.disconnect()
     # assert we waited at least 2 seconds + the settle time
     print(stop - start)
-    assert stop - start > 1 + wait_time + .2
+    assert_greater(stop - start, 1 + wait_time + .2)
 
 
 def test_suspending():
