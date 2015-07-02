@@ -137,7 +137,7 @@ def assert_pv_less(pv, value):
 
 def assert_pv_in_band(pv, low, high):
     actual = _skeptical_caget(pv)
-    if not ((actual > low) and (actual < high)):
+    if not low < actual < high:
         raise AssertionError("PV %s returned %f but a value between %f and %f "
                              " was expected." % (pv, actual, low, high))
 
