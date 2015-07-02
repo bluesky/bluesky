@@ -53,19 +53,6 @@ dscan = LegacyDscan(RE)
 ct = LegacyCount(RE)
 
 
-def rollcall():
-    """Return a list of objects that look like hardware.
-
-    This is crude -- it just looks for objects that have the methods 'read' and
-    'describe'.
-    """
-    objs = []
-    for obj in globals():
-        if hasattr(obj, 'read') and hasattr(obj, 'describe'):
-            objs.append(obj)
-    return objs
-
-
 def olog_wrapper(logbook, logbooks):
     """Wrap a olog logbook for use with RunEngine
 
