@@ -1,3 +1,4 @@
+import uuid
 import nose
 from nose.tools import assert_raises
 from bluesky.hardware_checklist import *
@@ -9,8 +10,11 @@ def test_connect_mds_mongodb():
     except ImportError:
         raise nose.SkipTest
     from metadatastore.utils.testing import mds_setup, mds_teardown
+    from metadatastore.commands import insert_beamline_config
     try:
         mds_setup()
+        # Until we insert something, the db is not actually created.
+        bc = insert_beamline_config({}, time=0., uid=str(uuid.uuid4()))
         connect_mds_mongodb()
     except:
         raise
