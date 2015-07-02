@@ -1,4 +1,6 @@
 from collections import deque
+import itertools
+from boltons.iterutils import chunked
 from lmfit.models import GaussianModel, LinearModel
 import numpy as np
 from .run_engine import Msg
@@ -613,3 +615,37 @@ class Center(ScanBase):
             self.output_mutable['x'] = np.array(seen_x)
             self.output_mutable['y'] = np.array(seen_y)
             self.output_mutable['model'] = res
+
+
+class ScanND(ScanBase):
+    def _gen(self):
+        dets = self.detectors
+        for d in dets:
+            yield Msg('configure', d)
+        for step in self._steps:
+            yield Msg('checkpoint')
+            for motor, step in zip(self.motors, step):
+                yield Msg('set', self.motor, step, block_group='A')
+                yield Msg('wait', None, 'A')
+                yield Msg('create')
+                yield Msg('read', self.motor)
+            for det in dets:
+                yield Msg('trigger', det, block_group='B')
+            for det in dets:
+                yield Msg('wait', None, 'B')
+            for det in dets:
+                yield Msg('read', det)
+            yield Msg('save')
+        for d in dets:
+            yield Msg('deconfigure', d)
+
+
+class Meshscan(ScanND):
+    def __init__(detectors, *args):
+        self.detectors = detectors
+        self.motors = []
+        steps = []
+        for motor, start, stop, num in chunked(args):
+            self.motors.append(motor)
+            steps.append(np.linspace(start, stop, num=num, endpoint=True))
+        self._steps = itertools.product(steps)
