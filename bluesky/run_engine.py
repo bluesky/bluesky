@@ -199,7 +199,7 @@ class RunEngine:
         self._msg_cache = None  # may be used to hold recently processed msgs
         self._genstack = deque()  # stack of generators to work off of
         self._new_gen = True  # flag if we need to prime the generator
-        self._exit_status = 'fail'  # pessimistic default
+        self._exit_status = 'success'  # optimistic default
         self._reason = ''
         self._task = None
         self._command_registry = {
@@ -248,6 +248,7 @@ class RunEngine:
         self._describe_cache.clear()
         self._descriptor_uids.clear()
         self._sequence_counters.clear()
+        self._teed_sequence_counters.clear()
         self._block_groups.clear()
 
     def _clear_call_cache(self):
@@ -258,7 +259,7 @@ class RunEngine:
         self._new_gen = True
         self._exception = None
         self._run_start_uids.clear()
-        self._exit_status = 'fail'
+        self._exit_status = 'success'
         self._reason = ''
         self._task = None
 
@@ -499,7 +500,8 @@ class RunEngine:
         self._genstack.append((msg for msg in list(self._msg_cache)))
         self._new_gen = True
         self._msg_cache = deque()
-        self._sequence_counters = self._teed_sequence_counters
+        self._sequence_counters.clear()
+        self._sequence_counters.update(self._teed_sequence_counters)
         self._resume_event_loop()
         return self._run_start_uids
 
@@ -530,6 +532,8 @@ class RunEngine:
             print("Suspending....To get prompt hit Ctrl-C to pause the scan")
             wait_msg = Msg('wait_for', [fut, ])
             new_msg_lst = [wait_msg, ] + list(self._msg_cache)
+            self._sequence_counters.clear()
+            self._sequence_counters.update(self._teed_sequence_counters)
             self._msg_cache = deque()
             self._genstack.append((msg for msg in new_msg_lst))
             self._new_gen = True
@@ -654,16 +658,13 @@ class RunEngine:
                                          "received before the 'open_run' "
                                          "message")
         self._clear_run_cache()
-        self._run_is_open = True
         self._run_start_uid = new_uid()
         self._run_start_uids.append(self._run_start_uid)
-
         # Metadata can come from history, __call__, or the open_run Msg.
         self._metadata_per_run = {k: v for k, v in self.md.items()
                                   if k in self.persistent_fields}
         self._metadata_per_run.update(self._metadata_per_call)
         self._metadata_per_run.update(msg.kwargs)
-
         for field in self._REQUIRED_FIELDS:
             if field not in self._metadata_per_run:
                 raise KeyError("The field '{0}' was not specified as is "
@@ -684,6 +685,7 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid, time=ttime.time(),
                    **self._metadata_per_run)
         yield from self.emit(DocumentNames.start, doc)
+        self._run_is_open = True
         self.debug("*** Emitted RunStart:\n%s" % doc)
 
     @asyncio.coroutine
@@ -942,7 +944,7 @@ class RunEngine:
         jsonschema.validate(doc, schemas[name])
         self._scan_cb_registry.process(name, doc)
         if name != DocumentNames.event:
-            loop.call_soon(self.dispatcher.process, name, doc)
+            self.dispatcher.process(name, doc)
         else:
             start_time = loop.time()
             dummy = expiring_function(self.dispatcher.process, name, doc)

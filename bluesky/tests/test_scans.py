@@ -1,15 +1,19 @@
 import warnings
 from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
-                        assert_less)
-from bluesky.scans import *
-from bluesky.callbacks import *
+                        assert_less, assert_is)
+
+from bluesky.callbacks import collector, CallbackCounter
+from bluesky.scans import (Ascan, LinAscan, LogAscan,
+                           LinDscan, LogDscan, AdaptiveAscan,
+                           AdaptiveDscan, Count, Center)
+
 from bluesky.standard_config import ascan, dscan, ct
-from bluesky import RunEngine
+from bluesky import Msg
 from bluesky.examples import motor, det, SynGauss
 from bluesky.tests.utils import setup_test_run_engine
 import asyncio
 import time as ttime
-
+import numpy as np
 loop = asyncio.get_event_loop()
 
 RE = setup_test_run_engine()
@@ -135,7 +139,12 @@ def test_center():
 def test_legacy_scans():
     # smoke tests
     ascan.detectors.append(det)
-    ascan.RE = RE
+    for _re in [ascan.RE, dscan.RE, ct.RE]:
+        _re.md['owner'] = 'test_owner'
+        _re.md['group'] = 'Grant No. 12345'
+        _re.md['config'] = {'detector_model': 'XYZ', 'pixel_size': 10}
+        _re.md['beamline_id'] = 'test_beamline'
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         ascan(motor, 0, 5, 5)
@@ -152,6 +161,13 @@ def test_legacy_scans():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         ct(animal='lion', subs={'start': assert_lion})
+
+
+def test_legacy_scan_state():
+    assert_is(ascan.RE, dscan.RE)
+    assert_is(ascan.RE, ct.RE)
+    assert_is(ascan.detectors, dscan.detectors)
+    assert_is(ascan.detectors, ct.detectors)
 
 
 def test_set():
