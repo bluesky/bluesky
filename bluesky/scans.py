@@ -26,23 +26,38 @@ class ScanBase(Struct):
     """
     def __iter__(self):
         yield Msg('open_run')
-        yield Msg('logbook', None, self.logmsg(), **self.logdict())
+        yield from self._pre_scan()
         yield from self._gen()
+        yield from self._post_scan()
         yield Msg('close_run')
 
-    def logmsg(self):
+    def _pre_scan(self):
+        yield Msg('logbook', None, self.logmsg(), **self.logdict())
+
+    def _post_scan(self):
+        yield from []
+
+    def _call_str(self):
         args = []
         for k in self._fields:
             args.append("{k}={{{k}!r}}".format(k=k))
 
-        call_str = "RE({{scn_cls}}({args}))".format(args=', '.join(args))
+        return ["RE({{scn_cls}}({args}))".format(args=', '.join(args)), ]
+
+    def _logmsg(self):
+
+        call_str = self._call_str()
 
         msgs = ['Scan Class: {scn_cls}', '']
         for k in self._fields:
             msgs.append('{k}: {{{k}!r}}'.format(k=k))
         msgs.append('')
         msgs.append('To call:')
-        msgs.append(call_str)
+        msgs.extend(call_str)
+        return msgs
+
+    def logmsg(self):
+        msgs = self._logmsg()
         return '\n'.join(msgs)
 
     def logdict(self):
@@ -165,16 +180,46 @@ class Dscan(Scan1D):
     steps : list
         list of positions relative to current position
     """
-    def _gen(self):
+    def _pre_scan(self):
         ret = yield Msg('read', self.motor)
         if len(ret.keys()) > 1:
             raise NotImplementedError("Can't DScan this motor")
         key, = ret.keys()
-        current_value = ret[key]['value']
-        self._steps = self.steps + current_value
+        self._init_pos = ret[key]['value']
+        yield from super()._pre_scan()
+
+    def logdict(self):
+        logdict = super().logdict()
+        try:
+            init_pos = self._init_pos
+        except AttributeError:
+            raise RuntimeError("Trying to create an olog entry for a DScan "
+                               "without running the _pre_scan code to get "
+                               "the baseline position.")
+        logdict['init_pos'] = init_pos
+        return logdict
+
+    def _call_str(self):
+
+        call_str = ["{motor!r}.set({init_pos})", ]
+        call_str.extend(super()._call_str())
+        return call_str
+
+    def _gen(self):
+        self._steps = self.steps + self._init_pos
         yield from super()._gen()
+
+    def _post_scan(self):
+        yield from super()._post_scan()
+        try:
+            init_pos = self._init_pos
+            delattr(self, '_init_pos')
+        except AttributeError:
+            raise RuntimeError("Trying to run _post_scan code for a DScan "
+                               "without running the _pre_scan code to get "
+                               "the baseline position.")
         # Return the motor to its original position.
-        yield Msg('set', self.motor, current_value, block_group='A')
+        yield Msg('set', self.motor, init_pos, block_group='A')
         yield Msg('wait', None, 'A')
 
 
@@ -447,7 +492,7 @@ class AdaptiveDscan(AdaptiveScanBase):
 class Center(ScanBase):
     RANGE = 2  # in sigma, first sample this range around the guess
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
-    NUM_SAMPLES = 10 
+    NUM_SAMPLES = 10
 
     def __init__(self, detectors, target_field, motor, initial_center,
                  initial_width, tolerance=0.1, output_mutable=None):
