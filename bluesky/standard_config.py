@@ -81,3 +81,8 @@ def olog_wrapper(logbook, logbooks):
                     logbooks=logbooks)
 
     return _logbook_log
+
+
+def show_debug_logs():
+    logging.basicConfig()
+    logging.getLogger('bluesky').setLevel(logging.DEBUG)
