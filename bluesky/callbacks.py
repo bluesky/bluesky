@@ -256,7 +256,7 @@ class LiveTable(CallbackBase):
         if fields is None:
             fields = []
         # prettytable does not allow nonunique names
-        self.fields = list(set(_get_obj_fields(fields)))
+        self.fields = sorted(set(_get_obj_fields(fields)))
         self.field_column_names = [field for field in self.fields]
         self.num_events_since_last_header = 0
         self.print_header_interval = print_header_interval
