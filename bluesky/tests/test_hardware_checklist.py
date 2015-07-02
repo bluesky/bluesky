@@ -63,4 +63,5 @@ def test_connect_pv():
     assert_pv_greater(pv_name, 4)
     assert_pv_less(pv_name, 6)
     assert_pv_in_band(pv_name, 4, 6)
+    assert_raises(AssertionError, assert_pv_in_band, pv_name, 2, 4)
     assert_pv_out_of_band(pv_name, 2, 4)
