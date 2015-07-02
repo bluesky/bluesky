@@ -5,9 +5,16 @@ this is *essential* but it is extremely useful and generally recommended.
 import os
 import logging
 import history
-from .run_engine import RunEngine
-from .legacy_scans import LegacyAscan, LegacyDscan, LegacyCount
-from .register_mds import register_mds
+from bluesky.run_engine import RunEngine
+from bluesky.legacy_scans import LegacyAscan, LegacyDscan, LegacyCount
+from bluesky.register_mds import register_mds
+from bluesky.hardware_checklist import (connect_mds_mongodb,
+                                        connect_fs_mongodb, connect_olog,
+                                        connect_channelarchiver,
+                                        check_storage, connect_pv,
+                                        assert_pv_equal, assert_pv_greater,
+                                        assert_pv_less, assert_pv_in_band,
+                                        assert_pv_out_of_band)
 
 
 logger = logging.getLogger(__name__)
