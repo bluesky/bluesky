@@ -5,11 +5,12 @@ from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
 from bluesky.callbacks import collector, CallbackCounter
 from bluesky.scans import (Ascan, LinAscan, LogAscan,
                            LinDscan, LogDscan, AdaptiveAscan,
-                           AdaptiveDscan, Count, Center)
+                           AdaptiveDscan, Count, Center,
+                           OuterProductScan, InnerProductScan)
 
 from bluesky.standard_config import ascan, dscan, ct
 from bluesky import Msg
-from bluesky.examples import motor, det, SynGauss
+from bluesky.examples import motor, det, SynGauss, motor1, motor2
 from bluesky.tests.utils import setup_test_run_engine
 import asyncio
 import time as ttime
@@ -24,6 +25,24 @@ def traj_checker(scan, expected_traj):
     callback = collector('motor', actual_traj)
     RE(scan, subs={'event': callback})
     assert_equal(actual_traj, list(expected_traj))
+
+
+def multi_traj_checker(scan, expected_traj):
+    motors = expected_traj.keys()
+    print('MOTORS', motors)
+    actual_traj = {m: [] for m in motors}
+    callbacks = [collector(m._name, actual_traj[m]) for m in motors]
+    print('CALLBACKS', callbacks)
+    RE(scan, subs={'event': callbacks})
+    for m in motors:
+        assert_equal(actual_traj[m], list(expected_traj[m]))
+
+
+def test_outer_product_scan():
+    traj1 = [1, 2, 3]
+    traj2 = [10, 20]
+    scan = OuterProductScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2)
+    yield multi_traj_checker, scan, {motor1: traj1, motor2: traj2}
 
 
 def test_ascan():

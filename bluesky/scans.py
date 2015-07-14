@@ -1,6 +1,7 @@
 from collections import deque
 import itertools
 from boltons.iterutils import chunked
+from cycler import cycler
 from lmfit.models import GaussianModel, LinearModel
 import numpy as np
 from .run_engine import Msg
@@ -618,17 +619,24 @@ class Center(ScanBase):
 
 
 class ScanND(ScanBase):
+    _fields = ['detectors', 'cycler']
+
     def _gen(self):
+        self.motors = self.cycler.keys
+        self._last_set_point = {m: None for m in self.motors}
         dets = self.detectors
         for d in dets:
             yield Msg('configure', d)
-        for step in self._steps:
+        for step in list(self.cycler):
             yield Msg('checkpoint')
-            for motor, step in zip(self.motors, step):
-                yield Msg('set', self.motor, step, block_group='A')
+            for motor, pos in step.items():
+                if pos == self._last_set_point[motor]:
+                    # This step does not move this motor.
+                    continue
+                yield Msg('set', motor, pos, block_group='A')
                 yield Msg('wait', None, 'A')
                 yield Msg('create')
-                yield Msg('read', self.motor)
+                yield Msg('read', motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
             for det in dets:
@@ -640,12 +648,27 @@ class ScanND(ScanBase):
             yield Msg('deconfigure', d)
 
 
-class Meshscan(ScanND):
-    def __init__(detectors, *args):
+class _ProductScanBase(ScanND):
+    def __init__(self, detectors, *args):
         self.detectors = detectors
-        self.motors = []
-        steps = []
-        for motor, start, stop, num in chunked(args):
-            self.motors.append(motor)
-            steps.append(np.linspace(start, stop, num=num, endpoint=True))
-        self._steps = itertools.product(steps)
+        self.cycler = None
+        for motor, start, stop, num in chunked(args, 4):
+            steps = np.linspace(start, stop, num=num, endpoint=True)
+            c = cycler(motor, steps)
+            # Special case first pass because their is no
+            # mutliplicative identity for cyclers.
+            if self.cycler is None:
+                self.cycler = c
+            else:
+                getattr(self.cycler, self._op)(c)
+                # The line above is admittedly abstract.
+                # One example would act like this:
+                # self.cycler *= cycler(motor, steps)
+
+
+class OuterProductScan(_ProductScanBase):
+    _op = '__imul__'
+
+
+class InnerProductScan(_ProductScanBase):
+    _op = '__iadd__'
