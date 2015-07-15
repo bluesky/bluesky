@@ -70,6 +70,13 @@ dtscan = sc.DeltaTemperatureScan(RE)
 hklscan = sc.OuterProductHKLScan(RE)
 hklmesh = sc.InnerProductHKLScan(RE)
 
+# Provide global aliases to RunEngine methods.
+resume = RE.resume
+stop = RE.stop
+abort = RE.abort
+panic = RE.panic
+all_is_well = RE.all_is_well
+
 
 def olog_wrapper(logbook, logbooks):
     """Wrap an olog logbook for use with RunEngine
