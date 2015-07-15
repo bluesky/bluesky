@@ -83,4 +83,4 @@ Contents
    custom-scans
    object_api
    nsls2_checklist
-   legacy_api
+   shortcut_api
