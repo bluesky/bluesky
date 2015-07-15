@@ -791,3 +791,47 @@ class OuterProductDeltaScan(_OuterProductScanBase):
         for motor, start, stop, num in chunked(self.args, 4):
             yield Msg('set', motor, self._offsets[motor], block_group='A')
         yield Msg('wait', None, 'A')
+
+
+class Tweak(ScanBase):
+    """
+    Move and motor and read a detector with an interactive prompt.
+
+    Parameters
+    ----------
+    detetector : Reader
+    target_field : string
+        data field whose output is the focus of the adaptive tuning
+    motor : Mover
+    """
+    _fields = ['detector', 'target_field', 'motor', 'step']
+    prompt_str = '{0}, {1:.3}, {2}, ({3}) '
+
+    def _gen(self):
+        d = self.detector
+        target_field = self.target_field
+        motor = self.motor
+        step = self.step
+        yield Msg('configure', d)
+        while True:
+            ret_mot = yield Msg('read', motor)
+            key, = ret_mot.keys()
+            pos = ret_mot[key]['value']
+            yield Msg('trigger', d, block_group='A')
+            yield Msg('wait', None, 'A')
+            reading = d.read()[target_field]['value']
+            prompt = prompt_str.format(motor._name, pos, reading, step)
+            new_step = input(prompt)
+            if new_step:
+                try:
+                    step = float(new_step)
+                except ValueError:
+                    break
+            yield Msg('set', motor, pos + step, block_group='A')
+            print('Motor moving...')
+            sys.stdout.flush()
+            yield Msg('wait', None, 'A')
+            clear_output(wait=True)
+            # stackoverflow.com/a/12586667/380231
+            print('\x1b[1A\x1b[2K\x1b[1A')
+        yield Msg('deconfigure', d)
