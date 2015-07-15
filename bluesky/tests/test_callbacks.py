@@ -98,7 +98,7 @@ def test_table():
         else:
             # skip the 'time' column on data rows
             # this is easier than faking up times in the scan!
-            assert_equal(ln[:17], kn[:17])
+            assert_equal(ln[:16], kn[:16])
             assert_equal(ln[31:], kn[31:])
 
 
