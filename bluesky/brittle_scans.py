@@ -2,8 +2,7 @@
 These "scans" bundle a Message generator with an instance of the RunEngine,
 combining two separate concepts -- instructions and execution -- into one
 object. This makes the interface less flexible and somewhat less "Pythonic"
-but more convenient to users who are not acclimated to using tab-completion and
-"up-arrow" for quick iteration during experiments.
+but more condensed.
 
 This module is meant to be run in a namespace where several global
 variables have been defined. If some variables are left undefined, the
