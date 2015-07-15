@@ -535,13 +535,13 @@ class Center(ScanBase):
             Must have 'update' method.  Mutable object to provide a side-band to
             return fitting parameters + data points
         """
-        self.motor = motor
-        self.dets = detectors
+        self.detectors = detectors
         self.target_field = target_field
+        self.motor = motor
         self.initial_center = initial_center
         self.initial_width = initial_width
         self.output_mutable = output_mutable
-        self.tol = tolerance
+        self.tolerance = tolerance
 
     @property
     def min_cen(self):
@@ -553,12 +553,12 @@ class Center(ScanBase):
 
     def _gen(self):
         # For thread safety (paranoia) make copies of stuff
-        dets = self.dets
-        motor = self.motor
+        dets = self.detectors
         target_field = self.target_field
+        motor = self.motor
         initial_center = self.initial_center
         initial_width = self.initial_width
-        tol = self.tol
+        tol = self.tolerance
         min_cen = self.min_cen
         max_cen = self.max_cen
         seen_x = deque()
