@@ -232,6 +232,15 @@ class InnerProductHKLScan(_PrimitiveScan):
 # hkcircle
 
 
+class Tweak(_PrimitiveScan):
+    "tw"
+    _scan_class = scans.Tweak
+
+    def __call__(motor, step, *, **kwargs):
+        global master_det, master_det_field
+        super().__call__(master_det, master_det_field, motor, step, **kwargs)
+
+
 def _set_acquire_time(time):
     global dets
     for det in dets:
