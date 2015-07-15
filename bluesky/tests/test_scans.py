@@ -39,6 +39,7 @@ def multi_traj_checker(scan, expected_data):
 
 
 def test_outer_product_ascan():
+    motor.set(0)
     scan = OuterProductAbsScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
@@ -53,6 +54,7 @@ def test_outer_product_ascan():
 
 
 def test_inner_product_ascan():
+    motor.set(0)
     scan = InnerProductAbsScan([det], 3, motor1, 1, 3, motor2, 10, 30)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
@@ -67,6 +69,7 @@ def test_outer_product_dscan():
     scan = OuterProductDeltaScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
+    motor.set(0)
     motor1.set(5)
     motor2.set(8)
     expected_data = [
@@ -80,6 +83,7 @@ def test_outer_product_dscan():
 
 
 def test_inner_product_dscan():
+    motor.set(0)
     motor1.set(5)
     motor2.set(8)
     scan = InnerProductDeltaScan([det], 3, motor1, 1, 3, motor2, 10, 30)
