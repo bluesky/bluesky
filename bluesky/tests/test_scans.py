@@ -206,40 +206,6 @@ def test_center():
     assert_less(abs(d['center']), 0.1)
 
 
-def test_legacy_scans():
-    # smoke tests
-    ascan.detectors.append(det)
-    for _re in [ascan.RE, dscan.RE, ct.RE]:
-        _re.md['owner'] = 'test_owner'
-        _re.md['group'] = 'Grant No. 12345'
-        _re.md['config'] = {'detector_model': 'XYZ', 'pixel_size': 10}
-        _re.md['beamline_id'] = 'test_beamline'
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        ascan(motor, 0, 5, 5)
-        dscan(motor, 0, 5, 5)
-        ct()
-
-    # test that metadata is passed
-    # notice that we can pass subs to the RE as well
-
-    def assert_lion(doc):
-        assert_in('animal', doc)
-        assert_equal(doc['animal'], 'lion')
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        ct(animal='lion', subs={'start': assert_lion})
-
-
-def test_legacy_scan_state():
-    assert_is(ascan.RE, dscan.RE)
-    assert_is(ascan.RE, ct.RE)
-    assert_is(ascan.detectors, dscan.detectors)
-    assert_is(ascan.detectors, ct.detectors)
-
-
 def test_set():
     scan = AbsScan([det], motor, 1, 5, 3)
     assert_equal(scan.start, 1)
