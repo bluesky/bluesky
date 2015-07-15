@@ -103,17 +103,17 @@ class Count(_PrimitiveScan):
 
 class AbsoluteScan(_StepScan):
     "ascan"
-    _scan_class = scans.LinAscan
+    _scan_class = scans.AbsScan
 
 
 class OuterProductAbsoluteScan(_OuterProductScan):
     "mesh"
-    _scan_class = scans.OuterProductAbsoluteScan
+    _scan_class = scans.OuterProductAbsScan
 
 
 class InnerProductAbsoluteScan(_InnerProductScan):
     "a2scan, a3scan, etc."
-    _scan_class = scans.InnerProductAbsoluteScan
+    _scan_class = scans.InnerProductAbsScan
 
 
 class DeltaScan(_StepScan):
@@ -149,12 +149,12 @@ class _TemperatureScan(_HardcodedMotorStepScan):
 
 class AbsoluteTemperatureScan(_TemperatureScan):
     "tscan"
-    _scan_class = scans.LinAscan
+    _scan_class = scans.AbsScan
 
 
 class DeltaTemperatureScan(_TemperatureScan):
     "dtscan"
-    _scan_class = scans.LinDscan
+    _scan_class = scans.DeltaScan
 
 
 ### Basic Reciprocal Space Scans (p. 147) ###
@@ -162,7 +162,7 @@ class DeltaTemperatureScan(_TemperatureScan):
 
 class HScan(_HardcodedMotorStepScan):
     "hscan"
-    _scan_class = scans.LinAscan
+    _scan_class = scans.AbsScan
 
     @property
     def _motor(self):
@@ -172,7 +172,7 @@ class HScan(_HardcodedMotorStepScan):
 
 class KScan(_HardcodedMotorStepScan):
     "kscan"
-    _scan_class = scans.LinAscan
+    _scan_class = scans.AbsScan
 
     @property
     def _motor(self):
@@ -182,7 +182,7 @@ class KScan(_HardcodedMotorStepScan):
 
 class LScan(_HardcodedMotorStepScan):
     "lscan"
-    _scan_class = scans.LinAscan
+    _scan_class = scans.AbsScan
 
     @property
     def _motor(self):
@@ -192,7 +192,7 @@ class LScan(_HardcodedMotorStepScan):
 
 class OuterProductHKLScan(_PrimitiveScan):
     "hklmesh"
-    _scan_class = scans.OuterProductAbsoluteScan
+    _scan_class = scans.OuterProductAbsScan
 
     def __call__(self, Q1, start1, finish1, intervals1, Q2, start2, finish2,
                  intervals2, time, *, **kwargs):
@@ -211,7 +211,7 @@ class OuterProductHKLScan(_PrimitiveScan):
 
 class InnerProductHKLScan(_PrimitiveScan):
     "hklscan"
-    _scan_class = scans.InnerProductAbsoluteScan
+    _scan_class = scans.InnerProductAbsScan
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l, finish_l,
                  intervals, time, *, **kwargs):
