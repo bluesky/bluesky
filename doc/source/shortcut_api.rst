@@ -1,54 +1,49 @@
-Legacy Scan API
+Simple Scan API
 ***************
 
-.. warning::
+This "simple scan API" provides a condensed syntax to execute common
+tasks. By necessity, it does not provide the full functionality. For
+this reason, the simple scan API is ideal for simple tasks and for
+novice users, but it is generally not recommended for developing new
+scans or performing complex tasks.
 
-   The commands covered below are supported for backward-compatibility with
-   the ophyd Run Engine. They are not compatible with all the features in
-   bluesky.
-
-Basic Built-in Scans
---------------------
-
-Overview
-========
-
-At startup, ophyd creates Python objects representing different kinds of
-scan: ``ct``, ``ascan``, ``dscan``, and others. Various scan settings
-can be inspected and configured using their attribures, such as::
-
-    ct.default_detectors
-
-To run a scan, call it like a function.::
-
-    ct()
-
-Count
-=====
-
-A *count* triggers all detectors once.
+The scope of this module is currently limited to reproducing the
+most commonly used parts of SPEC, a popular interactive command
+interface used in spectroscopy and diffraction. The names and
+signatures of the functions in this module closely match their
+SPEC counterparts.
 
 Specify Detectors
-^^^^^^^^^^^^^^^^^
-To specify which detectors to scan, set the ``default_detectors`` attribute of
-a Python object called ``ct``.::
+-----------------
 
-    ct.default_detectors = [my_detector1, my_detector2]
+The global variable ``DETS`` is a list of a detector objects.
 
-Note that ``my_detector1`` and ``my_detector2`` are not in quotes. They are
-ophyd objects already defined by the configuration profile at startup.
+.. ipython:: python
 
-Run the Scan
-^^^^^^^^^^^^
+    DETS = [det1, det2]
 
-To run the scan, call ``ct`` like a function.::
+Like any Python list, you can append and remove elements.
 
-    ct()
+.. ipython:: python
 
-The data is automatically stored and also printed to the screen.
+    DETS.append(det)
+    DETS.remove(det1)
+    DETS
+
+There are other global variables particular to certain kinds of scan.
+They are addressed below.
+
+Count
+-----
+
+A ``ct`` scan reads all the detectors in the global list ``DETS`` for an
+acquisition time specified by ``time``. If no time is specified, 1 second is
+the default.
+
+``ct(time=1)``
 
 An Aside: Record Metadata with the Scan
-=======================================
+---------------------------------------
 
 Basic metadata, such as the time, is automatically recorded. To include custom
 metadata with the scan, add keyword arguments like so::
@@ -66,36 +61,104 @@ This is much more useful than, say, ``'sampleA_width5_height10'``. In fact,
 to encourage good practices, we do not allow the ``sample`` field to be a
 string or a number: it *must* be a Python dictionary.
 
-Absolute Scan
-=============
+Motor Scans
+-----------
 
-An *absolute scan* or "A-scan" varies something in even-sized steps and
-triggers detectors after each step.
+Like ``ct``, the motor scans read from all the detectors in the global list
+``DETS``.
 
-Set the detectors the same as with ``ct()`` above.
+Absolute Scans
+^^^^^^^^^^^^^^
 
-``ascan`` requires some arguments. The first is an ophyd object representing
-a "positioner" -- a motor, a temperature controller, or any hardware that can be written to. The others are a start position, a stop position, and the
-number of points to sample.
+An ``ascan`` ("absolute scan") scans one motor in equal-sized steps.
 
-For example, if I have a positioner called ``motor``, I can take measurements
-at 0, 1, 2, and 3.::
+.. code-block:: python
 
-    ascan(motor1, 0, 3, 4)
+    ascan(motor, start, finish, intervals, time)
 
-Alternatively, you may specify the step size instead. The number of points will
-be inferred.::
+Note that ``intervals`` counts the number of *steps* which is one less
+than the number of *data points*. This follows the convention in SPEC.
+Outside of the simple API, we revert to the Python convention of counting
+data points, not steps.
 
-    ascan(motor1, 0, 3, step=1)
+An ``a2scan`` scans two motors together along different trajectories,
+again in equal-sized steps. (We think of this as the "inner product" of two
+trajectories.)
 
-As illustrated with ``ct`` in the previous section, ``ascan`` accepts
-custom keyword arguments, passed with the scan as metadata.::
+.. code-block:: python
 
-    ascan(motor1, 0, 3, 4, label='B', mood='skeptical')
+    a2scan(motor1, start1, finish1, motor2, start2, finish2, intervals, time)
 
-Delta Scan
-==========
+.. code-block:: python
 
-``dscan`` matches the syntax of ``ascan``, but ``start`` and ``stop`` are
-interpreted as relative to the current position. Recall that one can check
-the current positions with the command ``wh_pos()``.
+    a3scan(motor1, start1, finish1, motor2, start2, finish2, motor3, 
+           start3, finish3, intervals, time)
+
+We provide ``a2scan`` and ``a3scan`` for convenience, but in fact both of them
+support any number of motors. This is valid:::
+
+    a2scan(motor1, start1, finish1, motor2, start2, finish2, motor3, start3,
+           finish3, motor4, start4, finish4, intervals, time)
+
+Delta Scans
+^^^^^^^^^^^
+
+A ``dscan`` ("delta scan") scans one motor in equal-size steps, specified
+relative to the motor's current position.::
+
+    dscan(motor, start, finish, intervals, time)
+
+``lup`` is an alias for ``dscan``. And as with ``ascan`` above, there is a
+``d2scan`` and a ``d3scan``, each of which accept an unlimited number of
+motors.
+
+Mesh Scan
+^^^^^^^^^
+
+A ``mesh`` scan scans any number of motors in a mesh. (We think of this as the
+"other product" of the trajectories.)::
+
+    mesh(motor1, start1, finish1, intervals1, motor2, start2, finish2,
+         intervals2, time)
+
+As with ``a2scan`` and ``a3scan``, ``mesh`` accepts any number of motors.
+Notice that the number of intervals is specified sepraately for each motor.
+
+Scans Tied to Particular Motors / Controllers
+---------------------------------------------
+
+Theta Two Theta
+^^^^^^^^^^^^^^^
+
+This scan requires the global variables ``TH_MOTOR`` ("theta motor") and
+``TTH_MOTOR`` ("two theta motor").
+
+A ``th2th`` ("theta two theta") scans steps the two theta motor through a
+given range while stepping the theta motor through half that range.::
+
+    th2th(start, finish, intervals, time)
+
+Temperature Scans
+^^^^^^^^^^^^^^^^^
+
+Temperature scans require the global variable ``TEMP_CONTROLLER``.
+
+A ``tscan`` steps the temperature controller through equally-spaced temperature
+set points. An optional ``sleep`` argument specifies a thermalization time. As
+in SPEC, it is zero by default.::
+
+    tscan(start, finish, intervals, time, sleep=0)
+
+There is also ``dtscan``, a relative temperature scan.
+
+Tweak
+-----
+
+Tweak is an interactive scan that reads a field from one detector, displays
+the result, and prompts the user to specify where to step the motor next.
+It requires the global variable ``MASTER_DET`` (which detectors to use,
+such as ``sclr``) and ``MASTER_DET_FIELD`` (the name of the field in that
+detector to read out, such as ``'sclr_chan4'``). Note that the former is a
+readable object and the latter is a string of text.::
+
+    tw(motor, step)
