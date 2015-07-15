@@ -14,15 +14,7 @@ from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         assert_pv_equal, assert_pv_greater,
                                         assert_pv_less, assert_pv_in_band,
                                         assert_pv_out_of_band)
-from .brittle_scans import (Count, AbsoluteScan, DeltaScan,
-                              InnerProductAbsoluteScan,
-                              OuterProductAbsoluteScan,
-                              InnerProductDeltaScan,
-                              ThetaTwoThetaScan,
-                              HScan, KScan, LScan,
-                              OuterProductHKLScan, InnerProductHKLScan,
-                              AbsoluteTemperatureScan, DeltaTemperatureScan)
-
+import bluesky.brittle_scans as bs
 
 logger = logging.getLogger(__name__)
 
@@ -63,24 +55,24 @@ register_mds(RE)  # subscribes to MDS-related callbacks
 
 
 # Instantiate brittle scans.
-ct = count = Count(RE)
-ascan = AbsoluteScan(RE)
-mesh = OuterProductAbsoluteScan(RE)
-a2scan = a3scan = InnerProductAbsoluteScan(RE)
-dscan = lup = DeltaScan(RE)
-d2scan = d3scan = InnerProductDeltaScan(RE)
-th2th = ThetaTwoThetaScan(RE)
-hscan = HScan(RE)
-kscan = KScan(RE)
-lscan = LScan(RE)
-tscan = AbsoluteTemperatureScan(RE)
-dtscan = DeltaTemperatureScan(RE)
-hklscan = OuterProductHKLScan(RE)
-hklmesh = InnerProductHKLScan(RE)
+ct = count = bs.Count(RE)
+ascan = bs.AbsoluteScan(RE)
+mesh = bs.OuterProductAbsoluteScan(RE)
+a2scan = a3scan = bs.InnerProductAbsoluteScan(RE)
+dscan = lup = bs.DeltaScan(RE)
+d2scan = d3scan = bs.InnerProductDeltaScan(RE)
+th2th = bs.ThetaTwoThetaScan(RE)
+hscan = bs.HScan(RE)
+kscan = bs.KScan(RE)
+lscan = bs.LScan(RE)
+tscan = bs.AbsoluteTemperatureScan(RE)
+dtscan = bs.DeltaTemperatureScan(RE)
+hklscan = bs.OuterProductHKLScan(RE)
+hklmesh = bs.InnerProductHKLScan(RE)
 
 
 def olog_wrapper(logbook, logbooks):
-    """Wrap a olog logbook for use with RunEngine
+    """Wrap an olog logbook for use with RunEngine
 
     The admittedly confusing parameter names reflect our understanding of Olog
     conventions.
