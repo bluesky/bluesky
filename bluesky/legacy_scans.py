@@ -5,7 +5,7 @@ All of these are deprecated. See bluesky/scans.py for new versions.
 
 
 import warnings
-from .scans import LinDscan, LinAscan, Count
+from .scans import DeltaScan, AbsScan, Count
 
 def _deprecation_warning(old, new):
     warnings.warn("{old} is deprecated, and it does not provide "
@@ -44,15 +44,15 @@ class _LegacyScan:
 
 class LegacyAscan(_LegacyScan):
     def __call__(self, motor, start, stop, num, **kwargs):
-        _deprecation_warning('ascan', 'LinAscan')
-        curried = lambda dets: LinAscan(dets, motor, start, stop, num)
+        _deprecation_warning('ascan', 'AbsScan')
+        curried = lambda dets: AbsScan(dets, motor, start, stop, num)
         super()._run(curried, **kwargs)
 
 
 class LegacyDscan(_LegacyScan):
     def __call__(self, motor, start, stop, num, **kwargs):
-        _deprecation_warning('dscan', 'LinDscan')
-        curried = lambda dets: LinDscan(dets, motor, start, stop, num)
+        _deprecation_warning('dscan', 'DeltaScan')
+        curried = lambda dets: DeltaScan(dets, motor, start, stop, num)
         super()._run(curried, **kwargs)
 
 

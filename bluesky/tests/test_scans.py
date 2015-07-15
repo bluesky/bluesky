@@ -3,10 +3,10 @@ from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
                         assert_less, assert_is)
 
 from bluesky.callbacks import collector, CallbackCounter
-from bluesky.scans import (Ascan, LinAscan, LogAscan,
-                           LinDscan, LogDscan, AdaptiveAscan,
-                           AdaptiveDscan, Count, Center,
-                           OuterProductScan, InnerProductScan)
+from bluesky.scans import (AbsListScan, AbsScan, LogAbsScan,
+                           DeltaListScan, DeltaScan, LogDeltaScan,
+                           AdaptiveAbsScan, AdaptiveDeltaScan, Count, Center,
+                           OuterProductAbsScan, InnerProductAbsScan)
 
 from bluesky.standard_config import ascan, dscan, ct
 from bluesky import Msg
@@ -41,53 +41,53 @@ def multi_traj_checker(scan, expected_traj):
 def test_outer_product_scan():
     traj1 = [1, 2, 3]
     traj2 = [10, 20]
-    scan = OuterProductScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2)
+    scan = OuterProductAbsScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2)
     yield multi_traj_checker, scan, {motor1: traj1, motor2: traj2}
 
 
 def test_ascan():
     traj = [1, 2, 3]
-    scan = Ascan([det], motor, traj)
+    scan = AbsListScan([det], motor, traj)
     yield traj_checker, scan, traj
 
 
 def test_dscan():
     traj = np.array([1, 2, 3]) - 4
     motor.set(-4)
-    scan = Ascan([det], motor, traj)
+    scan = DeltaListScan([det], motor, traj)
     yield traj_checker, scan, traj
 
 
 def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
-    scan = LinAscan([det], motor, 0, 10, 5)
+    scan = AbsScan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_log_ascan():
     traj = np.logspace(0, 10, 5)
-    scan = LogAscan([det], motor, 0, 10, 5)
+    scan = LogAbsScan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
-    scan = LinDscan([det], motor, 0, 10, 5)
+    scan = DeltaScan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_log_dscan():
     traj = np.logspace(0, 10, 5) + 6
     motor.set(6)
-    scan = LogDscan([det], motor, 0, 10, 5)
+    scan = LogDeltaScan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_adaptive_ascan():
-    scan1 = AdaptiveAscan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
-    scan2 = AdaptiveAscan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
-    scan3 = AdaptiveAscan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
+    scan1 = AdaptiveAbsScan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
+    scan2 = AdaptiveAbsScan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
+    scan3 = AdaptiveAbsScan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -107,9 +107,9 @@ def test_adaptive_ascan():
 
 
 def test_adaptive_dscan():
-    scan1 = AdaptiveDscan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
-    scan2 = AdaptiveDscan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
-    scan3 = AdaptiveDscan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
+    scan1 = AdaptiveDeltaScan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
+    scan2 = AdaptiveDeltaScan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
+    scan3 = AdaptiveDeltaScan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -190,7 +190,7 @@ def test_legacy_scan_state():
 
 
 def test_set():
-    scan = LinAscan([det], motor, 1, 5, 3)
+    scan = AbsScan([det], motor, 1, 5, 3)
     assert_equal(scan.start, 1)
     assert_equal(scan.stop, 5)
     assert_equal(scan.num, 3)

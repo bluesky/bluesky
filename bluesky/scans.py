@@ -152,7 +152,7 @@ class Scan1D(ScanBase):
             yield Msg('deconfigure', d)
 
 
-class Ascan(Scan1D):
+class AbsListScan(Scan1D):
     """
     Absolute scan over one variable in user-specified steps
 
@@ -170,7 +170,7 @@ class Ascan(Scan1D):
         yield from super()._gen()
 
 
-class Dscan(Scan1D):
+class DeltaListScan(Scan1D):
     """
     Delta (relative) scan over one variable in user-specified steps
 
@@ -226,7 +226,7 @@ class Dscan(Scan1D):
         yield Msg('wait', None, 'A')
 
 
-class LinAscan(Scan1D):
+class AbsScan(Scan1D):
     """
     Absolute scan over one variable in equally spaced steps
 
@@ -247,7 +247,7 @@ class LinAscan(Scan1D):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = LinAscan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = AbsScan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -260,7 +260,7 @@ class LinAscan(Scan1D):
         yield from super()._gen()
 
 
-class LogAscan(Scan1D):
+class LogAbsScan(Scan1D):
     """
     Absolute scan over one variable in log-spaced steps
 
@@ -281,7 +281,7 @@ class LogAscan(Scan1D):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogAscan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = LogAbsScan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -294,7 +294,7 @@ class LogAscan(Scan1D):
         yield from super()._gen()
 
 
-class LinDscan(Dscan):
+class DeltaScan(DeltaListScan):
     """
     Delta (relative) scan over one variable in equally spaced steps
 
@@ -315,7 +315,7 @@ class LinDscan(Dscan):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = LinDscan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = DeltaScan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -328,7 +328,7 @@ class LinDscan(Dscan):
         yield from super()._gen()
 
 
-class LogDscan(Dscan):
+class LogDeltaScan(DeltaListScan):
     """
     Delta (relative) scan over one variable in log-spaced steps
 
@@ -349,7 +349,7 @@ class LogDscan(Dscan):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogDscan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = LogDeltaScan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -362,7 +362,7 @@ class LogDscan(Dscan):
         yield from super()._gen()
 
 
-class AdaptiveScanBase(Scan1D):
+class _AdaptiveScanBase(Scan1D):
     _fields = ['detectors', 'target_field', 'motor', 'start', 'stop',
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
@@ -424,7 +424,7 @@ class AdaptiveScanBase(Scan1D):
             yield Msg('deconfigure', d)
 
 
-class AdaptiveAscan(AdaptiveScanBase):
+class AdaptiveAbsScan(_AdaptiveScanBase):
     """
     Absolute scan over one variable with adaptively tuned step size
 
@@ -454,7 +454,7 @@ class AdaptiveAscan(AdaptiveScanBase):
         yield from super()._gen()
 
 
-class AdaptiveDscan(AdaptiveScanBase):
+class AdaptiveDeltaScan(_AdaptiveScanBase):
     """
     Delta (relative) scan over one variable with adaptively tuned step size
 
