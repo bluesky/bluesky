@@ -6,7 +6,6 @@ import os
 import logging
 import history
 from bluesky.run_engine import RunEngine
-from bluesky.legacy_scans import LegacyAscan, LegacyDscan, LegacyCount
 from bluesky.register_mds import register_mds
 from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         connect_fs_mongodb, connect_olog,
@@ -15,6 +14,16 @@ from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         assert_pv_equal, assert_pv_greater,
                                         assert_pv_less, assert_pv_in_band,
                                         assert_pv_out_of_band)
+from .primitive_scans import (Count, AbsoluteScan, DeltaScan,
+                              InnerProductAbsoluteScan,
+                              OuterProductAbsoluteScan,
+                              InnerProductDeltaScan,
+                              ThetaTwoThetaScan,
+                              HScan, KScan, LScan,
+                              AbsoluteTemperatureScan,
+                              DeltaTemperatureScan,
+                              OuterProductHKLScan, InnerProductHKLScan,
+                              AbsoluteTemperatureScan, DeltaTemperatureScan)
 
 
 logger = logging.getLogger(__name__)
@@ -54,10 +63,22 @@ except KeyError:
     RE.md['owner'] = getuser()
 register_mds(RE)  # subscribes to MDS-related callbacks
 
-# Instantiate legacy API objects.
-ascan = LegacyAscan(RE)
-dscan = LegacyDscan(RE)
-ct = LegacyCount(RE)
+
+# Instantiate primitive scans.
+ct = count = Count(RE)
+ascan = AbsoluteScan(RE)
+mesh = OuterProductAbsoluteScan(RE)
+a2scan = a3scan = InnerProductAbsoluteScan(RE)
+dscan = lup = DeltaScan(RE)
+d2scan = d3scan = InnerProductDeltaScan(RE)
+th2th = ThetaTwoThetaScan(RE)
+hscan = HScan(RE)
+kscan = KScan(RE)
+lscan = LScan(RE)
+tscan = AbsoluteTemperatureScan(RE)
+dtscan = DeltaTemperatureScan(RE)
+hklscan = OuterProductHKLScan(RE)
+hklmesh = InnerProductHKLScan(RE)
 
 
 def olog_wrapper(logbook, logbooks):
