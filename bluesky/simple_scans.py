@@ -8,15 +8,15 @@ This module is meant to be run in a namespace where several global
 variables have been defined. If some variables are left undefined, the
 associated scans will be not usable.
 
-    dets  # list of detectors
-    master_det  # detector to use for tw
-    master_det_field  # detector field to use for tw
-    h_motor
-    k_motor
-    l_motor
-    th_motor
-    tth_motor
-    temp_controller
+    DETS  # list of detectors
+    MASTER_DET  # detector to use for tw
+    MASTER_DET_FIELD  # detector field to use for tw
+    H_MOTOR
+    K_MOTOR
+    L_MOTOR
+    TH_MOTOR
+    TTH_MOTOR
+    TEMP_CONTROLLER
 
 Page numbers in the code comments refer to the SPEC manual at
 http://www.certif.com/downloads/css_docs/spec_man.pdf
@@ -39,7 +39,7 @@ class _PrimitiveScan:
                                  "names. Avoid: {0}".format(RE_params))
 
     def __call__(self, *args, subs=None, **kwargs):
-        global dets
+        global DETS
         scan_kwargs = dict()
         # Any kwargs valid for the scan go to the scan, not the RE.
         for k, v in kwargs.items():
@@ -63,6 +63,7 @@ class _OuterProductScan(_PrimitiveScan):
             # intervals -> intervals + 1
             args[4*i + 3] += 1
         super.__call__(*args, **kwargs)
+
 
 class _InnerProductScan(_PrimitiveScan):
     def __call__(self, *args, **kwargs):
@@ -132,10 +133,10 @@ class ThetaTwoThetaScan(_InnerProductScan):
     _scan_class = scans.InnerProductDeltaScan
 
     def __call__(self, start, finish, intervals, time, **kwargs):
-        global th_motor
-        global tth_motor
-        super.__call__(tth_motor, start, finish,
-                       th_motor, start/2, finish/2, intervals, time, **kwargs)
+        global TH_MOTOR
+        global TTH_MOTOR
+        super.__call__(TTH_MOTOR, start, finish,
+                       TH_MOTOR, start/2, finish/2, intervals, time, **kwargs)
 
 
 ### Temperature Scans (p. 148) ###
@@ -151,8 +152,8 @@ class _TemperatureScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        global temp_controller
-        return temp_controller
+        global TEMP_CONTROLLER
+        return TEMP_CONTROLLER
 
 
 class AbsoluteTemperatureScan(_TemperatureScan):
@@ -174,8 +175,8 @@ class HScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        global h_motor
-        return h_motor
+        global H_MOTOR
+        return H_MOTOR
 
 
 class KScan(_HardcodedMotorStepScan):
@@ -184,8 +185,8 @@ class KScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        global l_motor
-        return l_motor
+        global K_MOTOR
+        return K_MOTOR
 
 
 class LScan(_HardcodedMotorStepScan):
@@ -194,8 +195,8 @@ class LScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        global l_motor
-        return l_motor
+        global L_MOTOR
+        return L_MOTOR
 
 
 class OuterProductHKLScan(_PrimitiveScan):
@@ -207,9 +208,9 @@ class OuterProductHKLScan(_PrimitiveScan):
         # To be clear, like all other functions in this module, this
         # eye-gouging API is for compatbility with SPEC, not the author's
         # idea of good Python code.
-        global h_motor, k_motor, l_motor
+        global H_MOTOR, K_MOTOR, L_MOTOR
         _set_acquire_time(time)
-        _motor_mapping = {'H': h_motor, 'K': k_motor, 'L': l_motor}
+        _motor_mapping = {'H': H_MOTOR, 'K': K_MOTOR, 'L': L_MOTOR}
         motor1 = _motor_mapping[Q1]
         motor2 = _motor_mapping[Q2]
         # Note that intervals + 1 is handled in the base class.
@@ -223,7 +224,7 @@ class InnerProductHKLScan(_PrimitiveScan):
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l, finish_l,
                  intervals, time, **kwargs):
-        global h_motor, k_motor, l_motor
+        global H_MOTOR, K_MOTOR, L_MOTOR
         _set_acquire_time(time)
         super.__call__(self, intervals, start_h, finish_h, start_k, finish_k,
                        start_l, finish_l, **kwargs)
@@ -245,11 +246,11 @@ class Tweak(_PrimitiveScan):
     _scan_class = scans.Tweak
 
     def __call__(motor, step, **kwargs):
-        global master_det, master_det_field
-        super().__call__(master_det, master_det_field, motor, step, **kwargs)
+        global MASTER_DET, MASTER_DET_FIELD
+        super().__call__(MASTER_DET, MASTER_DET_FIELD, motor, step, **kwargs)
 
 
 def _set_acquire_time(time):
-    global dets
-    for det in dets:
+    global DETS
+    for det in DETS:
         det.acquire_time = time
