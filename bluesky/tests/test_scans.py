@@ -103,10 +103,10 @@ def test_ascan():
 
 
 def test_dscan():
-    traj = np.array([1, 2, 3]) - 4
+    traj = np.array([1, 2, 3])
     motor.set(-4)
     scan = DeltaListScan([det], motor, traj)
-    yield traj_checker, scan, traj
+    yield traj_checker, scan, traj - 4
 
 
 def test_lin_ascan():
