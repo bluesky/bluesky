@@ -30,6 +30,7 @@ class _PrimitiveScan:
 
     def __init__(self, RE):
         self.RE = RE
+        self.subs = None
         self.params = list(signature(self._scan_class).parameters.keys())
         RE_params = list(signature(RE.__call__).parameters.keys())
         if set(RE_params) & set(self.params):
@@ -45,6 +46,7 @@ class _PrimitiveScan:
             if k in self.params:
                 scan_kwargs[k] = kwargs.pop(k)
         scan = self._scan_class(dets, *args, **scan_kwargs)
+        scan.subs = self.subs
         self.RE(scan, **kwargs)  # to pass to RE, you must use kwargs
 
 
