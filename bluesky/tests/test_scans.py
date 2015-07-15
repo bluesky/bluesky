@@ -6,7 +6,8 @@ from bluesky.callbacks import collector, CallbackCounter
 from bluesky.scans import (AbsListScan, AbsScan, LogAbsScan,
                            DeltaListScan, DeltaScan, LogDeltaScan,
                            AdaptiveAbsScan, AdaptiveDeltaScan, Count, Center,
-                           OuterProductAbsScan, InnerProductAbsScan)
+                           OuterProductAbsScan, InnerProductAbsScan,
+                           OuterProductDeltaScan, InnerProductDeltaScan)
 
 from bluesky.standard_config import ascan, dscan, ct
 from bluesky import Msg
@@ -27,22 +28,68 @@ def traj_checker(scan, expected_traj):
     assert_equal(actual_traj, list(expected_traj))
 
 
-def multi_traj_checker(scan, expected_traj):
-    motors = expected_traj.keys()
-    print('MOTORS', motors)
-    actual_traj = {m: [] for m in motors}
-    callbacks = [collector(m._name, actual_traj[m]) for m in motors]
-    print('CALLBACKS', callbacks)
-    RE(scan, subs={'event': callbacks})
-    for m in motors:
-        assert_equal(actual_traj[m], list(expected_traj[m]))
+def multi_traj_checker(scan, expected_data):
+    actual_data = []
+
+    def collect_data(event):
+        actual_data.append(event['data'])
+
+    RE(scan, subs={'event': collect_data})
+    assert_equal(actual_data, expected_data)
 
 
-def test_outer_product_scan():
-    traj1 = [1, 2, 3]
-    traj2 = [10, 20]
+def test_outer_product_ascan():
     scan = OuterProductAbsScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2)
-    yield multi_traj_checker, scan, {motor1: traj1, motor2: traj2}
+    # Note: motor1 is the first motor specified, and so it is the "slow"
+    # axis, matching the numpy convention.
+    expected_data = [
+        {'motor2': 10.0, 'det': 1.0, 'motor1': 1.0},
+        {'motor2': 20.0, 'det': 1.0, 'motor1': 1.0},
+        {'motor2': 10.0, 'det': 1.0, 'motor1': 2.0},
+        {'motor2': 20.0, 'det': 1.0, 'motor1': 2.0},
+        {'motor2': 10.0, 'det': 1.0, 'motor1': 3.0},
+        {'motor2': 20.0, 'det': 1.0, 'motor1': 3.0}]
+    yield multi_traj_checker, scan, expected_data
+
+
+def test_inner_product_ascan():
+    scan = InnerProductAbsScan([det], 3, motor1, 1, 3, motor2, 10, 30)
+    # Note: motor1 is the first motor specified, and so it is the "slow"
+    # axis, matching the numpy convention.
+    expected_data = [
+        {'motor2': 10.0, 'det': 1.0, 'motor1': 1.0},
+        {'motor2': 20.0, 'det': 1.0, 'motor1': 2.0},
+        {'motor2': 30.0, 'det': 1.0, 'motor1': 3.0}]
+    yield multi_traj_checker, scan, expected_data
+
+
+def test_outer_product_dscan():
+    scan = OuterProductDeltaScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2)
+    # Note: motor1 is the first motor specified, and so it is the "slow"
+    # axis, matching the numpy convention.
+    motor1.set(5)
+    motor2.set(8)
+    expected_data = [
+        {'motor2': 18.0, 'det': 1.0, 'motor1': 6.0},
+        {'motor2': 28.0, 'det': 1.0, 'motor1': 6.0},
+        {'motor2': 18.0, 'det': 1.0, 'motor1': 7.0},
+        {'motor2': 28.0, 'det': 1.0, 'motor1': 7.0},
+        {'motor2': 18.0, 'det': 1.0, 'motor1': 8.0},
+        {'motor2': 28.0, 'det': 1.0, 'motor1': 8.0}]
+    yield multi_traj_checker, scan, expected_data
+
+
+def test_inner_product_dscan():
+    motor1.set(5)
+    motor2.set(8)
+    scan = InnerProductDeltaScan([det], 3, motor1, 1, 3, motor2, 10, 30)
+    # Note: motor1 is the first motor specified, and so it is the "slow"
+    # axis, matching the numpy convention.
+    expected_data = [
+        {'motor2': 18.0, 'det': 1.0, 'motor1': 6.0},
+        {'motor2': 28.0, 'det': 1.0, 'motor1': 7.0},
+        {'motor2': 38.0, 'det': 1.0, 'motor1': 8.0}]
+    yield multi_traj_checker, scan, expected_data
 
 
 def test_ascan():

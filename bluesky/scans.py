@@ -638,7 +638,9 @@ class ScanND(ScanBase):
                     continue
                 yield Msg('set', motor, pos, block_group='A')
                 yield Msg('wait', None, 'A')
+                self._last_set_point[motor] = pos
                 yield Msg('create')
+            for motor in self.motors:
                 yield Msg('read', motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
@@ -698,6 +700,7 @@ class _InnerProductScanBase(ScanND):
                 self.cycler = c
             else:
                 self.cycler += c
+        yield from super()._pre_scan()
 
 
 class InnerProductAbsScan(_InnerProductScanBase):
@@ -713,9 +716,9 @@ class InnerProductAbsScan(_InnerProductScanBase):
     *args : motor1, start1, stop1, motor2, start2, stop2, ...
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
-    def _gen(self):
+    def _pre_scan(self):
         self._offsets = defaultdict(lambda: 0)
-        yield from super()._gen()
+        yield from super()._pre_scan()
 
 
 class InnerProductDeltaScan(_InnerProductScanBase):
@@ -732,13 +735,15 @@ class InnerProductDeltaScan(_InnerProductScanBase):
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
     def _pre_scan(self):
+        self._offsets = {}
         for motor, start, stop, in chunked(self.args, 3):
-            ret = yield Msg('read', self.motor)
+            ret = yield Msg('read', motor)
             if len(ret.keys()) > 1:
                 raise NotImplementedError("Can't DScan this motor")
             key, = ret.keys()
             current_value = ret[key]['value']
             self._offsets[motor] = current_value
+        yield from super()._pre_scan()
 
     def _post_scan(self):
         # Return the motor to its original position.
@@ -776,8 +781,9 @@ class OuterProductDeltaScan(_OuterProductScanBase):
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
     def _pre_scan(self):
+        self._offsets = {}
         for motor, start, stop, num in chunked(self.args, 4):
-            ret = yield Msg('read', self.motor)
+            ret = yield Msg('read', motor)
             if len(ret.keys()) > 1:
                 raise NotImplementedError("Can't DScan this motor")
             key, = ret.keys()

@@ -72,7 +72,7 @@ class _InnerProductScan(_PrimitiveScan):
 
 class _StepScan(_PrimitiveScan):
 
-    def __call__(self, motor, start, finish, intervals, time, *, **kwargs):
+    def __call__(self, motor, start, finish, intervals, time, **kwargs):
         _set_acquire_time(time)
         super.__call__(motor, start, finish, intervals + 1, **kwargs)
 
@@ -80,7 +80,7 @@ class _StepScan(_PrimitiveScan):
 class _HardcodedMotorStepScan(_PrimitiveScan):
     # Subclasses must define self._motor as a property.
 
-    def __call__(self, start, finish, intervals, time, *, **kwargs):
+    def __call__(self, start, finish, intervals, time, **kwargs):
         _set_acquire_time(time)
         super.__call__(self._motor, start, finish, intervals + 1, **kwargs)
 
@@ -92,7 +92,7 @@ class Count(_PrimitiveScan):
     "ct"
     _scan_class = scans.Count
     
-    def __call__(self, time=1, *, **kwargs):
+    def __call__(self, time=1, **kwargs):
         _set_acquire_time(time)
         super.__call__(**kwargs)
 
@@ -117,7 +117,7 @@ class InnerProductAbsoluteScan(_InnerProductScan):
 
 class DeltaScan(_StepScan):
     "dscan (also known as lup)"
-    _scan_class = scans.LinDscan
+    _scan_class = scans.DeltaScan
 
 
 class InnerProductDeltaScan(_InnerProductScan):
@@ -129,7 +129,7 @@ class ThetaTwoThetaScan(_InnerProductScan):
     "th2th"
     _scan_class = scans.InnerProductDeltaScan
 
-    def __call__(self, start, finish, intervals, time, *, **kwargs):
+    def __call__(self, start, finish, intervals, time, **kwargs):
         global th_motor
         global tth_motor
         super.__call__(tth_motor, start, finish,
@@ -194,7 +194,7 @@ class OuterProductHKLScan(_PrimitiveScan):
     _scan_class = scans.OuterProductAbsScan
 
     def __call__(self, Q1, start1, finish1, intervals1, Q2, start2, finish2,
-                 intervals2, time, *, **kwargs):
+                 intervals2, time, **kwargs):
         # To be clear, like all other functions in this module, this
         # eye-gouging API is for compatbility with SPEC, not the author's
         # idea of good Python code.
@@ -213,7 +213,7 @@ class InnerProductHKLScan(_PrimitiveScan):
     _scan_class = scans.InnerProductAbsScan
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l, finish_l,
-                 intervals, time, *, **kwargs):
+                 intervals, time, **kwargs):
         global h_motor, k_motor, l_motor
         _set_acquire_time(time)
         super.__call__(self, intervals, start_h, finish_h, start_k, finish_k,
@@ -235,7 +235,7 @@ class Tweak(_PrimitiveScan):
     "tw"
     _scan_class = scans.Tweak
 
-    def __call__(motor, step, *, **kwargs):
+    def __call__(motor, step, **kwargs):
         global master_det, master_det_field
         super().__call__(master_det, master_det_field, motor, step, **kwargs)
 
