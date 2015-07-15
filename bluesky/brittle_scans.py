@@ -71,7 +71,7 @@ class _InnerProductScan(_PrimitiveScan):
 
 class _StepScan(_PrimitiveScan):
 
-    def __call__(self, motor, start, finish, intervals, time, **kwargs):
+    def __call__(self, motor, start, finish, intervals, time, *, **kwargs):
         _set_acquire_time(time)
         super.__call__(motor, start, finish, intervals + 1, **kwargs)
 
@@ -79,7 +79,7 @@ class _StepScan(_PrimitiveScan):
 class _HardcodedMotorStepScan(_PrimitiveScan):
     # Subclasses must define self._motor as a property.
 
-    def __call__(self, start, finish, intervals, time, **kwargs):
+    def __call__(self, start, finish, intervals, time, *, **kwargs):
         _set_acquire_time(time)
         super.__call__(self._motor, start, finish, intervals + 1, **kwargs)
 
@@ -91,7 +91,7 @@ class Count(_PrimitiveScan):
     "ct"
     _scan_class = scans.Count
     
-    def __call__(self, time=1, **kwargs):
+    def __call__(self, time=1, *, **kwargs):
         _set_acquire_time(time)
         super.__call__(**kwargs)
 
@@ -128,11 +128,11 @@ class ThetaTwoThetaScan(_InnerProductScan):
     "th2th"
     _scan_class = scans.InnerProductDeltaScan
 
-    def __call__(self, start, finish, intervals, time):
+    def __call__(self, start, finish, intervals, time, *, **kwargs):
         global th_motor
         global tth_motor
         super.__call__(tth_motor, start, finish,
-                       th_motor, start/2, finish/2, intervals, time)
+                       th_motor, start/2, finish/2, intervals, time, **kwargs)
 
 
 ### Temperature Scans (p. 148) ###
@@ -193,7 +193,7 @@ class OuterProductHKLScan(_PrimitiveScan):
     _scan_class = scans.OuterProductAbsoluteScan
 
     def __call__(self, Q1, start1, finish1, intervals1, Q2, start2, finish2,
-                 intervals2, time):
+                 intervals2, time, *, **kwargs):
         # To be clear, like all other functions in this module, this
         # eye-gouging API is for compatbility with SPEC, not the author's
         # idea of good Python code.
@@ -204,7 +204,7 @@ class OuterProductHKLScan(_PrimitiveScan):
         motor2 = _motor_mapping[Q2]
         # Note that intervals + 1 is handled in the base class.
         super.__call__(motor1, start1, finish1, intervals1,
-                       motor2, start2, finish2, intervals2)
+                       motor2, start2, finish2, intervals2, **kwargs)
 
 
 class InnerProductHKLScan(_PrimitiveScan):
@@ -212,11 +212,11 @@ class InnerProductHKLScan(_PrimitiveScan):
     _scan_class = scans.InnerProductAbsoluteScan
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l, finish_l,
-                 intervals, time):
+                 intervals, time, *, **kwargs):
         global h_motor, k_motor, l_motor
         _set_acquire_time(time)
         super.__call__(self, intervals, start_h, finish_h, start_k, finish_k,
-                       start_l, finish_l)
+                       start_l, finish_l, **kwargs)
 
 
 ### Special Reciprocal Space Scans ###
