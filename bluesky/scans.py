@@ -1,4 +1,4 @@
-from collections import deque
+from collections import deque, defaultdict
 import itertools
 from boltons.iterutils import chunked
 from cycler import cycler
@@ -657,12 +657,12 @@ class _OuterProductScanBase(ScanND):
 
     def __init__(self, detectors, *args):
         self.detectors = detectors
-        self._args = args
+        self.args = args
 
-    def _gen(self):
+    def _pre_scan(self):
         # Build a Cycler for ScanND.
         self.cycler = None
-        for motor, start, stop, num in chunked(args, 4):
+        for motor, start, stop, num in chunked(self.args, 4):
             offset = self._offsets[motor]
             steps = offset + np.linspace(start, stop, num=num, endpoint=True)
             c = cycler(motor, steps)
@@ -672,7 +672,7 @@ class _OuterProductScanBase(ScanND):
                 self.cycler = c
             else:
                 self.cycler *= c
-        yield from super()._gen()
+        yield from super()._pre_scan()
 
 
 class _InnerProductScanBase(ScanND):
@@ -682,13 +682,13 @@ class _InnerProductScanBase(ScanND):
     def __init__(self, detectors, num, *args):
         self.detectors = detectors
         self.num = num
-        self._args = args
+        self.args = args
 
-    def _gen(self):
+    def _pre_scan(self):
         # Build a Cycler for ScanND.
         num = self.num
         self.cycler = None
-        for motor, start, stop, in chunked(args, 3):
+        for motor, start, stop, in chunked(self.args, 3):
             offset = self._offsets[motor]
             steps = offset + np.linspace(start, stop, num=num, endpoint=True)
             c = cycler(motor, steps)
@@ -698,7 +698,6 @@ class _InnerProductScanBase(ScanND):
                 self.cycler = c
             else:
                 self.cycler += c
-        yield from super()._gen()
 
 
 class InnerProductAbsScan(_InnerProductScanBase):
@@ -715,7 +714,7 @@ class InnerProductAbsScan(_InnerProductScanBase):
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
     def _gen(self):
-        self._offsets = defaultdict(0)
+        self._offsets = defaultdict(lambda: 0)
         yield from super()._gen()
 
 
@@ -732,17 +731,19 @@ class InnerProductDeltaScan(_InnerProductScanBase):
     *args : motor1, start1, stop1, motor2, start2, stop2, ...
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
-    def _gen(self):
-        for motor, start, stop, in chunked(self._args, 3):
+    def _pre_scan(self):
+        for motor, start, stop, in chunked(self.args, 3):
             ret = yield Msg('read', self.motor)
             if len(ret.keys()) > 1:
                 raise NotImplementedError("Can't DScan this motor")
             key, = ret.keys()
             current_value = ret[key]['value']
             self._offsets[motor] = current_value
-        yield from super()._gen()
+
+    def _post_scan(self):
         # Return the motor to its original position.
-        for motor, start, stop, in chunked(self._args, 3):
+        yield from super()._post_scan()
+        for motor, start, stop, in chunked(self.args, 3):
             yield Msg('set', motor, self._offsets[motor], block_group='A')
         yield Msg('wait', None, 'A')
 
@@ -758,9 +759,9 @@ class OuterProductAbsScan(_OuterProductScanBase):
     *args : motor1, start1, stop1, num1, motor2, start2, stop2, num2, ...
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
-    def _gen(self):
-        self._offsets = defaultdict(0)
-        yield from super()._gen()
+    def _pre_scan(self):
+        self._offsets = defaultdict(lambda: 0)
+        yield from super()._pre_scan()
 
 
 class OuterProductDeltaScan(_OuterProductScanBase):
@@ -774,16 +775,19 @@ class OuterProductDeltaScan(_OuterProductScanBase):
     *args : motor1, start1, stop1, num1, motor2, start2, stop2, num2, ...
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
-    def _gen(self):
-        for motor, start, stop, num in chunked(self._args, 4):
+    def _pre_scan(self):
+        for motor, start, stop, num in chunked(self.args, 4):
             ret = yield Msg('read', self.motor)
             if len(ret.keys()) > 1:
                 raise NotImplementedError("Can't DScan this motor")
             key, = ret.keys()
             current_value = ret[key]['value']
             self._offsets[motor] = current_value
-        yield from super()._gen()
+        yield from super()._pre_scan()
+
+    def _post_scan(self):
         # Return the motor to its original position.
-        for motor, start, stop, num in chunked(self._args, 4):
+        yield from super()._post_scan()
+        for motor, start, stop, num in chunked(self.args, 4):
             yield Msg('set', motor, self._offsets[motor], block_group='A')
         yield Msg('wait', None, 'A')
