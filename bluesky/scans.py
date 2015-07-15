@@ -99,14 +99,13 @@ class Count(ScanBase):
     >>> c = Count([det1, det2, det3], 5, 1)
     >>> RE(c)
     """
+    # We define _fields not for Struct, but for ScanBase.log* methods.
+    _fields = ['detectors', 'num', 'delay']
 
-    # This class does not actually use Struct because there are defaults.
     def __init__(self, detectors, num=1, delay=0):
         self.detectors = detectors
         self.num = num
         self.delay = delay
-        # We define _fields not for Struct, but for ScanBase.log* methods.
-        self._fields = ['detectors', 'num', 'delay']
 
     def _gen(self):
         dets = self.detectors
@@ -496,6 +495,10 @@ class Center(ScanBase):
     RANGE = 2  # in sigma, first sample this range around the guess
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
     NUM_SAMPLES = 10
+    NUM_SAMPLES = 10 
+    # We define _fields not for Struct, but for ScanBase.log* methods.
+    _fields = ['detectors', 'target_field', 'motor', 'initial_center',
+               'initial_width', 'tolerance', 'output_mutable']
 
     def __init__(self, detectors, target_field, motor, initial_center,
                  initial_width, tolerance=0.1, output_mutable=None):
@@ -649,6 +652,9 @@ class ScanND(ScanBase):
 
 
 class _OuterProductScanBase(ScanND):
+    # We define _fields not for Struct, but for ScanBase.log* methods.
+    _fields = ['detectors', 'args']
+
     def __init__(self, detectors, *args):
         self.detectors = detectors
         self.cycler = None
@@ -665,6 +671,9 @@ class _OuterProductScanBase(ScanND):
 
 
 class _InnerProductScanBase(ScanND):
+    # We define _fields not for Struct, but for ScanBase.log* methods.
+    _fields = ['detectors', 'num', 'args']
+
     def __init__(self, detectors, num, *args):
         self._args = args
         self.detectors = detectors
