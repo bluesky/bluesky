@@ -14,7 +14,7 @@ from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         assert_pv_equal, assert_pv_greater,
                                         assert_pv_less, assert_pv_in_band,
                                         assert_pv_out_of_band)
-import bluesky.shortcuts as sc
+import bluesky.simple_scans as bss
 
 logger = logging.getLogger(__name__)
 
@@ -54,21 +54,21 @@ except KeyError:
 register_mds(RE)  # subscribes to MDS-related callbacks
 
 
-# Instantiate shortcuts.
-ct = count = sc.Count(RE)
-ascan = sc.AbsoluteScan(RE)
-mesh = sc.OuterProductAbsoluteScan(RE)
-a2scan = a3scan = sc.InnerProductAbsoluteScan(RE)
-dscan = lup = sc.DeltaScan(RE)
-d2scan = d3scan = sc.InnerProductDeltaScan(RE)
-th2th = sc.ThetaTwoThetaScan(RE)
-hscan = sc.HScan(RE)
-kscan = sc.KScan(RE)
-lscan = sc.LScan(RE)
-tscan = sc.AbsoluteTemperatureScan(RE)
-dtscan = sc.DeltaTemperatureScan(RE)
-hklscan = sc.OuterProductHKLScan(RE)
-hklmesh = sc.InnerProductHKLScan(RE)
+# Instantiate simple scans.
+ct = count = bss.Count(RE)
+ascan = bss.AbsoluteScan(RE)
+mesh = bss.OuterProductAbsoluteScan(RE)
+a2scan = a3scan = bss.InnerProductAbsoluteScan(RE)
+dscan = lup = bss.DeltaScan(RE)
+d2scan = d3scan = bss.InnerProductDeltaScan(RE)
+th2th = bss.ThetaTwoThetaScan(RE)
+hscan = bss.HScan(RE)
+kscan = bss.KScan(RE)
+lscan = bss.LScan(RE)
+tscan = bss.AbsoluteTemperatureScan(RE)
+dtscan = bss.DeltaTemperatureScan(RE)
+hklscan = bss.OuterProductHKLScan(RE)
+hklmesh = bss.InnerProductHKLScan(RE)
 
 # Provide global aliases to RunEngine methods.
 resume = RE.resume

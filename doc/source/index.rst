@@ -82,4 +82,4 @@ Contents
    custom-scans
    object_api
    nsls2_checklist
-   shortcut_api
+   simple_api
