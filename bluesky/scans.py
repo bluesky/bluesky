@@ -657,6 +657,10 @@ class _OuterProductScanBase(ScanND):
 
     def __init__(self, detectors, *args):
         self.detectors = detectors
+        self._args = args
+
+    def _gen(self):
+        # Build a Cycler for ScanND.
         self.cycler = None
         for motor, start, stop, num in chunked(args, 4):
             offset = self._offsets[motor]
@@ -668,6 +672,7 @@ class _OuterProductScanBase(ScanND):
                 self.cycler = c
             else:
                 self.cycler *= c
+        yield from super()._gen()
 
 
 class _InnerProductScanBase(ScanND):
@@ -675,8 +680,13 @@ class _InnerProductScanBase(ScanND):
     _fields = ['detectors', 'num', 'args']
 
     def __init__(self, detectors, num, *args):
-        self._args = args
         self.detectors = detectors
+        self.num = num
+        self._args = args
+
+    def _gen(self):
+        # Build a Cycler for ScanND.
+        num = self.num
         self.cycler = None
         for motor, start, stop, in chunked(args, 3):
             offset = self._offsets[motor]
@@ -688,6 +698,7 @@ class _InnerProductScanBase(ScanND):
                 self.cycler = c
             else:
                 self.cycler += c
+        yield from super()._gen()
 
 
 class InnerProductAbsScan(_InnerProductScanBase):
@@ -698,6 +709,8 @@ class InnerProductAbsScan(_InnerProductScanBase):
     ----------
     detectors : list
         list of 'readable' objects
+    num : integer
+        number of steps
     *args : motor1, start1, stop1, motor2, start2, stop2, ...
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
@@ -707,6 +720,18 @@ class InnerProductAbsScan(_InnerProductScanBase):
 
 
 class InnerProductDeltaScan(_InnerProductScanBase):
+    """
+    Delta (relative) scan over one multi-motor trajectory
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    num : integer
+        number of steps
+    *args : motor1, start1, stop1, motor2, start2, stop2, ...
+        motors can be any 'setable' object (motor, temp controller, etc.)
+    """
     def _gen(self):
         for motor, start, stop, in chunked(self._args, 3):
             ret = yield Msg('read', self.motor)
@@ -714,7 +739,7 @@ class InnerProductDeltaScan(_InnerProductScanBase):
                 raise NotImplementedError("Can't DScan this motor")
             key, = ret.keys()
             current_value = ret[key]['value']
-            self._offset[motor] = current_value
+            self._offsets[motor] = current_value
         yield from super()._gen()
         # Return the motor to its original position.
         for motor, start, stop, in chunked(self._args, 3):
@@ -724,13 +749,13 @@ class InnerProductDeltaScan(_InnerProductScanBase):
 
 class OuterProductAbsScan(_OuterProductScanBase):
     """
-    Absolute scan over one multi-motor trajectory
+    Absolute scan over a mesh; each motor is on an independent trajectory
 
     Parameters
     ----------
     detectors : list
         list of 'readable' objects
-    *args : motor1, start1, stop1, motor2, start2, stop2, ...
+    *args : motor1, start1, stop1, num1, motor2, start2, stop2, num2, ...
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
     def _gen(self):
@@ -739,6 +764,16 @@ class OuterProductAbsScan(_OuterProductScanBase):
 
 
 class OuterProductDeltaScan(_OuterProductScanBase):
+    """
+    Delta scan over a mesh; each motor is on an independent trajectory
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    *args : motor1, start1, stop1, num1, motor2, start2, stop2, num2, ...
+        motors can be any 'setable' object (motor, temp controller, etc.)
+    """
     def _gen(self):
         for motor, start, stop, num in chunked(self._args, 4):
             ret = yield Msg('read', self.motor)
@@ -746,7 +781,7 @@ class OuterProductDeltaScan(_OuterProductScanBase):
                 raise NotImplementedError("Can't DScan this motor")
             key, = ret.keys()
             current_value = ret[key]['value']
-            self._offset[motor] = current_value
+            self._offsets[motor] = current_value
         yield from super()._gen()
         # Return the motor to its original position.
         for motor, start, stop, num in chunked(self._args, 4):
