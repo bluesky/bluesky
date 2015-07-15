@@ -142,6 +142,13 @@ class ThetaTwoThetaScan(_InnerProductScan):
 
 
 class _TemperatureScan(_HardcodedMotorStepScan):
+
+    def __call__(self, start, finish, intervals, time, sleep=0, **kwargs):
+        self._sleep = sleep
+        _set_acquire_time(time)
+        self._motor.settle_time = sleep
+        super.__call__(self._motor, start, finish, intervals + 1, **kwargs)
+
     @property
     def _motor(self):
         global temp_controller
