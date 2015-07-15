@@ -14,14 +14,12 @@ from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         assert_pv_equal, assert_pv_greater,
                                         assert_pv_less, assert_pv_in_band,
                                         assert_pv_out_of_band)
-from .primitive_scans import (Count, AbsoluteScan, DeltaScan,
+from .brittle_scans import (Count, AbsoluteScan, DeltaScan,
                               InnerProductAbsoluteScan,
                               OuterProductAbsoluteScan,
                               InnerProductDeltaScan,
                               ThetaTwoThetaScan,
                               HScan, KScan, LScan,
-                              AbsoluteTemperatureScan,
-                              DeltaTemperatureScan,
                               OuterProductHKLScan, InnerProductHKLScan,
                               AbsoluteTemperatureScan, DeltaTemperatureScan)
 
@@ -64,7 +62,7 @@ except KeyError:
 register_mds(RE)  # subscribes to MDS-related callbacks
 
 
-# Instantiate primitive scans.
+# Instantiate brittle scans.
 ct = count = Count(RE)
 ascan = AbsoluteScan(RE)
 mesh = OuterProductAbsoluteScan(RE)
