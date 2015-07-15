@@ -24,11 +24,11 @@ We begin with the simplest useful example of live feedback, a table.
 .. ipython:: python
     :suppress:
 
-    from bluesky.scans import Ascan
+    from bluesky.scans import AbsListScan, AbsScan
     dets = [det1, det2, det3]
     table = LiveTable(dets)
     RE.subscribe('all', table)  # Subscribe table to all future runs.
-    my_scan = Ascan(dets, motor, [1,2,4,8])
+    my_scan = AbsListScan(dets, motor, [1,2,4,8])
 
 .. ipython:: python
 
@@ -114,7 +114,7 @@ set plot limits in advance.
 
 .. ipython:: python
 
-    class PlottingAscan(Ascan):
+    class PlottingAbsScan(AbsScan):
         @property
         def subs(self):
             lp = LivePlot(self.detectors[0], self.motor,

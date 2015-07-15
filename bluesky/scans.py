@@ -713,7 +713,7 @@ class InnerProductAbsScan(_InnerProductScanBase):
         list of 'readable' objects
     num : integer
         number of steps
-    *args : motor1, start1, stop1, motor2, start2, stop2, ...
+    motor1, start1, stop1, ..., motorN, startN, stopN : list
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
     def _pre_scan(self):
@@ -731,7 +731,7 @@ class InnerProductDeltaScan(_InnerProductScanBase):
         list of 'readable' objects
     num : integer
         number of steps
-    *args : motor1, start1, stop1, motor2, start2, stop2, ...
+    motor1, start1, stop1, ..., motorN, startN, stopN : list
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
     def _pre_scan(self):
@@ -761,7 +761,7 @@ class OuterProductAbsScan(_OuterProductScanBase):
     ----------
     detectors : list
         list of 'readable' objects
-    *args : motor1, start1, stop1, num1, motor2, start2, stop2, num2, ...
+    motor1, start1, stop1, num1, ..., motorN, startN, stopN, numN : list
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
     def _pre_scan(self):
@@ -777,7 +777,7 @@ class OuterProductDeltaScan(_OuterProductScanBase):
     ----------
     detectors : list
         list of 'readable' objects
-    *args : motor1, start1, stop1, num1, motor2, start2, stop2, num2, ...
+    motor1, start1, stop1, num1, ..., motorN, startN, stopN, numN : list
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
     def _pre_scan(self):

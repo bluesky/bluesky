@@ -14,21 +14,30 @@ Count
 Absolute Scans
 --------------
 
-.. autofunction:: LinAscan
-.. autofunction:: LogAscan
-.. autofunction:: Ascan
+.. autofunction:: AbsScan
+.. autofunction:: LogAbsScan
+.. autofunction:: AbsListScan
+.. autofunction:: InnerProductAbsScan
+.. autofunction:: OuterProductAbsScan
 
 Relative (Delta) Scans
 ----------------------
 
-.. autofunction:: LinDscan
-.. autofunction:: LogDscan
-.. autofunction:: Dscan
+.. autofunction:: DeltaScan
+.. autofunction:: LogDeltaScan
+.. autofunction:: DeltaListScan
+.. autofunction:: InnerProductDeltaScan
+.. autofunction:: OuterProductDeltaScan
 
 .. _builtin-adaptive-scans:
 
 Adative Scans
 -------------
 
-.. autofunction:: AdaptiveAscan
-.. autofunction:: AdaptiveDscan
+.. autofunction:: AdaptiveAbsScan
+.. autofunction:: AdaptiveDeltaScan
+
+Interactive Scans
+-----------------
+
+.. autofunction:: Tweak

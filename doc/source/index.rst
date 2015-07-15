@@ -11,7 +11,6 @@ components:
   `specified but flexible <http://nsls-ii.github.io/arch/metadatastore-format.html>`__
   way.
 
-
 Key Features
 ------------
 

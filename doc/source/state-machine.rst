@@ -123,9 +123,9 @@ again, the RunEngine resumes.
 
     In [3]: pv_name = 'XF:23ID1-PPS{PSh}Pos-Sts'  # main shutter PV
 
-    In [4]: import bluesky.epics_callbacks
+    In [4]: import bluesky.suspenders
 
-    In [5]: my_s = bluesky.epics_callbacks.PVSuspendBoolHigh(RE, pv_name)
+    In [5]: my_s = bluesky.suspenders.PVSuspendBoolHigh(RE, pv_name)
 
 The above is all that is required. It will watch the PV indefinitely.
 In the following example, the shuttle was closed in the middle of the
@@ -157,12 +157,12 @@ Built-in PV Monitors for Conditionally Suspending
 The example above demonstrates ``PVSuspendBoolHigh``. Several other variants
 are built in, and it is straightforward to write customized ones.
 
-.. autoclass:: bluesky.epics_callbacks.PVSuspendBoolHigh
-.. autoclass:: bluesky.epics_callbacks.PVSuspendBoolLow
-.. autoclass:: bluesky.epics_callbacks.PVSuspendFloor
-.. autoclass:: bluesky.epics_callbacks.PVSuspendCeil
-.. autoclass:: bluesky.epics_callbacks.PVSuspendInBand
-.. autoclass:: bluesky.epics_callbacks.PVSuspendOutBand
+.. autoclass:: bluesky.suspenders.PVSuspendBoolHigh
+.. autoclass:: bluesky.suspenders.PVSuspendBoolLow
+.. autoclass:: bluesky.suspenders.PVSuspendFloor
+.. autoclass:: bluesky.suspenders.PVSuspendCeil
+.. autoclass:: bluesky.suspenders.PVSuspendInBand
+.. autoclass:: bluesky.suspenders.PVSuspendOutBand
 
 Deferred Pause
 --------------
