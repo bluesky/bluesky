@@ -1,17 +1,14 @@
 Simple Scan API
 ***************
 
-This "simple scan API" provides a condensed syntax to execute common
-tasks. By necessity, it does not provide the full functionality. For
-this reason, the simple scan API is ideal for simple tasks and for
-novice users, but it is generally not recommended for developing new
-scans or performing complex tasks.
+This "simple scan API" provides a condensed syntax to execute common tasks.
 
-The scope of this module is currently limited to reproducing the
-most commonly used parts of SPEC, a popular interactive command
-interface used in spectroscopy and diffraction. The names and
-signatures of the functions in this module closely match their
-SPEC counterparts.
+Some of the names and signatures of the functions in this module closely match
+some core "macros" in SPEC, control software used in X-ray diffraction
+experiments. Other functions introduce new functionality.
+
+The simple API is not necessarily recommended for developing new scans.
+It is backed by a more explicit API suited for development work.
 
 Specify Detectors
 -----------------
