@@ -9,7 +9,9 @@ This module is meant to be run in a namespace where several global
 variables have been defined. If some variables are left undefined, the
 associated scans will be not usable.
 
-    dets
+    dets  # list of detectors
+    master_det  # detector to use for tw
+    master_det_field  # detector field to use for tw
     h_motor
     k_motor
     l_motor
