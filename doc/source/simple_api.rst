@@ -206,7 +206,7 @@ Tweak
 
 Tweak is an interactive scan that reads a field from one detector, displays
 the result, and prompts the user to specify where to step the motor next.
-It requires the setting ``gs.MASTER_DET`` (which detectors to use,
+It requires the setting ``gs.MASTER_DET`` (which detector to use,
 such as ``sclr``) and ``MASTER_DET_FIELD`` (the name of the field in that
 detector to read out, such as ``'sclr_chan4'``). Note that the former is a
 readable object and the latter is a string of text.
