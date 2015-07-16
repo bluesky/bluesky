@@ -820,12 +820,14 @@ class Tweak(ScanBase):
         step = self.step
         yield Msg('configure', d)
         while True:
+            yield Msg('create')
             ret_mot = yield Msg('read', motor)
             key, = ret_mot.keys()
             pos = ret_mot[key]['value']
             yield Msg('trigger', d, block_group='A')
             yield Msg('wait', None, 'A')
-            reading = d.read()[target_field]['value']
+            reading = Msg('read', d)[target_field]['value']
+            yield Msg('save')
             prompt = prompt_str.format(motor._name, pos, reading, step)
             new_step = input(prompt)
             if new_step:
