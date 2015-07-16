@@ -4,7 +4,7 @@ from bluesky.run_engine import RunEngine
 
 
 class BaseDescriptor:
-    """A descriptor that forbids negative values"""
+    # Adapted from http://nbviewer.ipython.org/urls/gist.github.com/ChrisBeaumont/5758381/raw/descriptor_writeup.ipynb
     def __init__(self, default):
         self.default = default
         self.contents = WeakKeyDictionary()
