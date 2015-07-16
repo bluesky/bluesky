@@ -14,6 +14,7 @@ from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         assert_pv_equal, assert_pv_greater,
                                         assert_pv_less, assert_pv_in_band,
                                         assert_pv_out_of_band)
+from bluesky.global_state import GlobalState
 import bluesky.simple_scans as bss
 
 logger = logging.getLogger(__name__)
@@ -45,37 +46,35 @@ def get_history():
         return history.History(':memory:')
 
 
-RE = RunEngine(get_history())
-try:
-    RE.md['owner']
-except KeyError:
-    from getpass import getuser
-    RE.md['owner'] = getuser()
-register_mds(RE)  # subscribes to MDS-related callbacks
+gs = GlobalState()
+gs.RE.md = get_history()
+from getpass import getuser
+gs.RE.md['owner'] = getuser()
+register_mds(gs.RE)  # subscribes to MDS-related callbacks
 
 
 # Instantiate simple scans.
-ct = count = bss.Count(RE)
-ascan = bss.AbsoluteScan(RE)
-mesh = bss.OuterProductAbsoluteScan(RE)
-a2scan = a3scan = bss.InnerProductAbsoluteScan(RE)
-dscan = lup = bss.DeltaScan(RE)
-d2scan = d3scan = bss.InnerProductDeltaScan(RE)
-th2th = bss.ThetaTwoThetaScan(RE)
-hscan = bss.HScan(RE)
-kscan = bss.KScan(RE)
-lscan = bss.LScan(RE)
-tscan = bss.AbsoluteTemperatureScan(RE)
-dtscan = bss.DeltaTemperatureScan(RE)
-hklscan = bss.OuterProductHKLScan(RE)
-hklmesh = bss.InnerProductHKLScan(RE)
+ct = count = bss.Count(gs.RE)
+ascan = bss.AbsoluteScan(gs.RE)
+mesh = bss.OuterProductAbsoluteScan(gs.RE)
+a2scan = a3scan = bss.InnerProductAbsoluteScan(gs.RE)
+dscan = lup = bss.DeltaScan(gs.RE)
+d2scan = d3scan = bss.InnerProductDeltaScan(gs.RE)
+th2th = bss.ThetaTwoThetaScan(gs.RE)
+hscan = bss.HScan(gs.RE)
+kscan = bss.KScan(gs.RE)
+lscan = bss.LScan(gs.RE)
+tscan = bss.AbsoluteTemperatureScan(gs.RE)
+dtscan = bss.DeltaTemperatureScan(gs.RE)
+hklscan = bss.OuterProductHKLScan(gs.RE)
+hklmesh = bss.InnerProductHKLScan(gs.RE)
 
 # Provide global aliases to RunEngine methods.
-resume = RE.resume
-stop = RE.stop
-abort = RE.abort
-panic = RE.panic
-all_is_well = RE.all_is_well
+resume = gs.RE.resume
+stop = gs.RE.stop
+abort = gs.RE.abort
+panic = gs.RE.panic
+all_is_well = gs.RE.all_is_well
 
 
 def olog_wrapper(logbook, logbooks):
