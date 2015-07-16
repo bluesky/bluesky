@@ -2,14 +2,11 @@ Simple Scan Interface
 =====================
 
 .. ipython:: python
+    :suppress:
 
     from bluesky.examples import det1, det2, det3, det
     from bluesky.standard_config import gs
     from bluesky.standard_config import *  # the simple scan instances
-
-
-.. ipython:: python
-
     gs.DETS = [det]
 
 The simple scan interface provides a condensed syntax to execute common tasks.
