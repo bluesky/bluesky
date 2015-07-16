@@ -8,6 +8,8 @@ Simple Scan Interface
     from bluesky.standard_config import gs
     from bluesky.standard_config import *  # the simple scan instances
     gs.DETS = [det]
+    from bluesky.tests.utils import setup_test_run_engine
+    gs.RE = setup_test_run_engine()
 
 The simple scan interface provides a condensed syntax to execute common tasks.
 
