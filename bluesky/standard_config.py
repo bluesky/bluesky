@@ -16,6 +16,7 @@ from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         assert_pv_out_of_band)
 from bluesky.global_state import GlobalState
 import bluesky.simple_scans as bss
+from bluesky.callbacks import LiveTable, LivePlot, print_metadata
 
 logger = logging.getLogger(__name__)
 
