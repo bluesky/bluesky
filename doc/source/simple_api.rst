@@ -4,11 +4,13 @@ Simple Scan Interface
 .. ipython:: python
 
     from bluesky.examples import det1, det2, det3, det
-    %run -i ../bluesky/standard_config.py
+    from bluesky.standard_config import gs
+    from bluesky.standard_config import *  # the simple scan instances
+
 
 .. ipython:: python
 
-    DETS = [det]
+    gs.DETS = [det]
 
 The simple scan interface provides a condensed syntax to execute common tasks.
 
@@ -28,57 +30,81 @@ Specify Detectors
     automatically specified at startup. In that case, you may not need to do
     anything unless you need to inspect or customize that list.
 
-The global variable ``DETS`` is a list of a detector objects. It controls
+The setting ``gs.DETS`` is a list of a detector objects. It controls
 which detectors are triggered and read by all the simple scans.
+(Incidentally, ``gs`` stands for "global state" or "global settings." Why
+ can't it just be plain ``DETS``? Global variables are best avoided in Python,
+ and the ``gs.`` part provides useful input validation.)
 
 .. ipython:: python
 
-    DETS = [det1, det2]
+    gs.DETS = [det1, det2]
 
 Like any Python list, you can append and remove elements.
 
 .. ipython:: python
 
-    DETS.append(det3)
-    DETS.remove(det1)
-    DETS
+    gs.DETS.append(det3)
+    gs.DETS.remove(det1)
+    gs.DETS
 
-There are other global variables particular to certain kinds of scan.
+There are other settings particular to certain kinds of scan.
 They are addressed below.
+
+Usage Example
+-------------
+
+Calling a scan generates a set of instructions and executes them. This
+"count" command acquires one reading from the detectors.
+
+.. ipython:: python
+
+    ct()
+
+In the standard, out-of-the-box configuration of bluesky, data is automatically saved and logged.
+
+Out of the box, it does not print or plot the data , but live tables and plots
+can be easily added. As with the detectors above, this may already be configured
+in your IPython profile. Here is one way to add a table to every ``ct``
+scan. (More on ``ct`` below.)
+
+.. ipython:: python
+
+    ct.subs = LiveTable(gs.DETS)  # Print all the detectors' readings.
+    ct()
+
+The ``subs`` attribute stands for "subscriptions", about which you can read
+more in :doc:`callbacks`.
+
+The table will appear for all future scans; it only has to be set up once.
+Observe:
+
+.. ipython:: python
+
+    ct()
+
+If there are many detectors and the table is too wide, you can be more
+selective.
+
+.. ipython:: python
+
+    ct.subs = LiveTable([det2])
+    ct()
 
 Count
 -----
 
-A ``ct`` ("count") scan reads all the detectors in the global list ``DETS`` for 
+A ``ct`` ("count") scan reads all the detectors in the list ``DETS`` for 
 a given acquisition time. If no time is specified, 1 second is the default.
 
-.. ipython:: python
+.. code-block:: python
 
     ct(time=1)
-
-An Aside: Record Metadata with the Scan
----------------------------------------
-
-Basic metadata, such as the time, is automatically recorded. To include custom
-metadata with the scan, add keyword arguments like so::
-
-    ct(color='red')
-
-These can be strings, numbers, or even Python dictionaries. This is a useful
-way to capture detailed information in a structured way.::
-
-    ct(attempt=3, sample={name: 'A', 'width': 5, 'height': 10})
-
-By breaking out the sample information into separate fields, it becomes
-possible to search on individual attributes and use them in later analysis.
-This is much more useful than, say, ``'sampleA_width5_height10'``. In fact,
-to encourage good practices, we do not allow the ``sample`` field to be a
-string or a number: it *must* be a Python dictionary.
 
 Motor Scans
 -----------
 
-Like ``ct``, the motor scans read from all the detectors in the global list
+Like ``ct``, the motor scans read from all the detectors in the list
 ``DETS``.
 
 Absolute Scans
@@ -109,7 +135,9 @@ trajectories.)
            start3, finish3, intervals, time)
 
 We provide ``a2scan`` and ``a3scan`` for convenience, but in fact both of them
-support any number of motors. This is valid:::
+support any number of motors. This is valid:
+
+.. code-block:: python
 
     a2scan(motor1, start1, finish1, motor2, start2, finish2, motor3, start3,
            finish3, motor4, start4, finish4, intervals, time)
@@ -118,7 +146,9 @@ Delta Scans
 ^^^^^^^^^^^
 
 A ``dscan`` ("delta scan") scans one motor in equal-size steps, specified
-relative to the motor's current position.::
+relative to the motor's current position.
+
+.. code-block:: python
 
     dscan(motor, start, finish, intervals, time)
 
@@ -130,7 +160,9 @@ Mesh Scan
 ^^^^^^^^^
 
 A ``mesh`` scan scans any number of motors in a mesh. (We think of this as the
-"other product" of the trajectories.)::
+"other product" of the trajectories.)
+
+.. code-block:: python
 
     mesh(motor1, start1, finish1, intervals1, motor2, start2, finish2,
          intervals2, time)
@@ -144,22 +176,26 @@ Scans Tied to Particular Motors / Controllers
 Theta Two Theta
 ^^^^^^^^^^^^^^^
 
-This scan requires the global variables ``TH_MOTOR`` ("theta motor") and
-``TTH_MOTOR`` ("two theta motor").
+This scan requires the settings ``gs.TH_MOTOR`` ("theta motor") and
+``gs.TTH_MOTOR`` ("two theta motor").
 
 A ``th2th`` ("theta two theta") scans steps the two theta motor through a
-given range while stepping the theta motor through half that range.::
+given range while stepping the theta motor through half that range.
+
+.. code-block:: python
 
     th2th(start, finish, intervals, time)
 
 Temperature Scans
 ^^^^^^^^^^^^^^^^^
 
-Temperature scans require the global variable ``TEMP_CONTROLLER``.
+Temperature scans require the setting ``gs.TEMP_CONTROLLER``.
 
 A ``tscan`` steps the temperature controller through equally-spaced temperature
 set points. An optional ``sleep`` argument specifies a thermalization time. As
-in SPEC, it is zero by default.::
+in SPEC, it is zero by default.
+
+.. code-block:: python
 
     tscan(start, finish, intervals, time, sleep=0)
 
@@ -170,9 +206,11 @@ Tweak
 
 Tweak is an interactive scan that reads a field from one detector, displays
 the result, and prompts the user to specify where to step the motor next.
-It requires the global variable ``MASTER_DET`` (which detectors to use,
+It requires the setting ``gs.MASTER_DET`` (which detectors to use,
 such as ``sclr``) and ``MASTER_DET_FIELD`` (the name of the field in that
 detector to read out, such as ``'sclr_chan4'``). Note that the former is a
-readable object and the latter is a string of text.::
+readable object and the latter is a string of text.
+
+.. code-block:: python
 
     tw(motor, step)

@@ -24,7 +24,6 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 from inspect import signature
 from bluesky import scans
 from boltons.iterutils import chunked
-import bluesky.standard_config as std_cfg
 
 
 class _PrimitiveScan:
@@ -45,9 +44,10 @@ class _PrimitiveScan:
         for k, v in kwargs.items():
             if k in self.params:
                 scan_kwargs[k] = kwargs.pop(k)
-        scan = self._scan_class(std_cfg.bs.DETS, *args, **scan_kwargs)
+        from bluesky.standard_config import gs
+        scan = self._scan_class(gs.DETS, *args, **scan_kwargs)
         scan.subs = self.subs
-        self.RE(scan, **kwargs)  # to pass to RE, you must use kwargs
+        return self.RE(scan, **kwargs)  # to pass to RE, you must use kwargs
 
 
 ### Mid-level base classes ###
@@ -62,7 +62,7 @@ class _OuterProductScan(_PrimitiveScan):
         for i, _ in enumerate(chunked(args, 4)):
             # intervals -> intervals + 1
             args[4*i + 3] += 1
-        super.__call__(*args, **kwargs)
+        return super().__call__(*args, **kwargs)
 
 
 class _InnerProductScan(_PrimitiveScan):
@@ -70,14 +70,14 @@ class _InnerProductScan(_PrimitiveScan):
         time = args.pop(-1)
         intervals = args.pop(-1) + 1
         _set_acquire_time(time)
-        super.__call__(intervals, *args, **kwargs)
+        return super().__call__(intervals, *args, **kwargs)
 
 
 class _StepScan(_PrimitiveScan):
 
     def __call__(self, motor, start, finish, intervals, time, **kwargs):
         _set_acquire_time(time)
-        super.__call__(motor, start, finish, intervals + 1, **kwargs)
+        return super().__call__(motor, start, finish, intervals + 1, **kwargs)
 
 
 class _HardcodedMotorStepScan(_PrimitiveScan):
@@ -85,7 +85,8 @@ class _HardcodedMotorStepScan(_PrimitiveScan):
 
     def __call__(self, start, finish, intervals, time, **kwargs):
         _set_acquire_time(time)
-        super.__call__(self._motor, start, finish, intervals + 1, **kwargs)
+        return super().__call__(self._motor, start, finish, intervals + 1,
+                              **kwargs)
 
 
 ### Counts (p. 140) ###
@@ -97,7 +98,7 @@ class Count(_PrimitiveScan):
     
     def __call__(self, time=1, **kwargs):
         _set_acquire_time(time)
-        super.__call__(**kwargs)
+        return super().__call__(**kwargs)
 
 
 ### Motor Scans (p. 146) ###
@@ -133,10 +134,12 @@ class ThetaTwoThetaScan(_InnerProductScan):
     _scan_class = scans.InnerProductDeltaScan
 
     def __call__(self, start, finish, intervals, time, **kwargs):
-        TTH_MOTOR = std_cfg.bs.TTH_MOTOR
-        TH_MOTOR = std_cfg.bs.TH_MOTOR
-        super.__call__(TTH_MOTOR, start, finish,
-                       TH_MOTOR, start/2, finish/2, intervals, time, **kwargs)
+        from bluesky.standard_config import gs
+        TTH_MOTOR = gs.TTH_MOTOR
+        TH_MOTOR = gs.TH_MOTOR
+        return super().__call__(TTH_MOTOR, start, finish,
+                              TH_MOTOR, start/2, finish/2, intervals, time,
+                              **kwargs)
 
 
 ### Temperature Scans (p. 148) ###
@@ -148,11 +151,13 @@ class _TemperatureScan(_HardcodedMotorStepScan):
         self._sleep = sleep
         _set_acquire_time(time)
         self._motor.settle_time = sleep
-        super.__call__(self._motor, start, finish, intervals + 1, **kwargs)
+        return super().__call__(self._motor, start, finish, intervals + 1,
+                              **kwargs)
 
     @property
     def _motor(self):
-        return std_cfg.bs.TEMP_CONTROLLER
+        from bluesky.standard_config import gs
+        return gs.TEMP_CONTROLLER
 
 
 class AbsoluteTemperatureScan(_TemperatureScan):
@@ -174,7 +179,8 @@ class HScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        return std_cfg.bs.H_MOTOR
+        from bluesky.standard_config import gs
+        return gs.H_MOTOR
 
 
 class KScan(_HardcodedMotorStepScan):
@@ -183,7 +189,8 @@ class KScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        return std_cfg.bs.K_MOTOR
+        from bluesky.standard_config import gs
+        return gs.K_MOTOR
 
 
 class LScan(_HardcodedMotorStepScan):
@@ -192,7 +199,8 @@ class LScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        return std_cfg.bs.L_MOTOR
+        from bluesky.standard_config import gs
+        return gs.L_MOTOR
 
 
 class OuterProductHKLScan(_PrimitiveScan):
@@ -204,16 +212,17 @@ class OuterProductHKLScan(_PrimitiveScan):
         # To be clear, like all other functions in this module, this
         # eye-gouging API is for compatbility with SPEC, not the author's
         # idea of good Python code.
-        H_MOTOR = std_cfg.bs.H_MOTOR
-        K_MOTOR = std_cfg.bs.K_MOTOR
-        L_MOTOR = std_cfg.bs.L_MOTOR
+        from bluesky.standard_config import gs
+        H_MOTOR = gs.H_MOTOR
+        K_MOTOR = gs.K_MOTOR
+        L_MOTOR = gs.L_MOTOR
         _set_acquire_time(time)
         _motor_mapping = {'H': H_MOTOR, 'K': K_MOTOR, 'L': L_MOTOR}
         motor1 = _motor_mapping[Q1]
         motor2 = _motor_mapping[Q2]
         # Note that intervals + 1 is handled in the base class.
-        super.__call__(motor1, start1, finish1, intervals1,
-                       motor2, start2, finish2, intervals2, **kwargs)
+        return super().__call__(motor1, start1, finish1, intervals1,
+                              motor2, start2, finish2, intervals2, **kwargs)
 
 
 class InnerProductHKLScan(_PrimitiveScan):
@@ -222,12 +231,13 @@ class InnerProductHKLScan(_PrimitiveScan):
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l, finish_l,
                  intervals, time, **kwargs):
-        H_MOTOR = std_cfg.bs.H_MOTOR
-        K_MOTOR = std_cfg.bs.K_MOTOR
-        L_MOTOR = std_cfg.bs.L_MOTOR
+        from bluesky.standard_config import gs
+        H_MOTOR = gs.H_MOTOR
+        K_MOTOR = gs.K_MOTOR
+        L_MOTOR = gs.L_MOTOR
         _set_acquire_time(time)
-        super.__call__(self, intervals, start_h, finish_h, start_k, finish_k,
-                       start_l, finish_l, **kwargs)
+        return super().__call__(self, intervals, start_h, finish_h, start_k,
+                              finish_k, start_l, finish_l, **kwargs)
 
 
 ### Special Reciprocal Space Scans ###
@@ -246,12 +256,14 @@ class Tweak(_PrimitiveScan):
     _scan_class = scans.Tweak
 
     def __call__(motor, step, **kwargs):
-        MASTER_DET = std_cfg.bs.MASTER_DET
-        MASTER_DET_FIELD = std_cfg.bs.MASTER_DET_FIELD
-        super().__call__(MASTER_DET, MASTER_DET_FIELD, motor, step, **kwargs)
+        from bluesky.standard_config import gs
+        MASTER_DET = gs.MASTER_DET
+        MASTER_DET_FIELD = gs.MASTER_DET_FIELD
+        return super().__call__(MASTER_DET, MASTER_DET_FIELD, motor, step,
+                                **kwargs)
 
 
 def _set_acquire_time(time):
-    global DETS
-    for det in DETS:
+    from bluesky.standard_config import gs
+    for det in gs.DETS:
         det.acquire_time = time
