@@ -1,8 +1,8 @@
 """
-This module creates an instance of the RunEngine and configures it. None of
-this is *essential* but it is extremely useful and generally recommended.
+None of this is essential, but it is useful and generally recommended.
 """
 import os
+from getpass import getuser
 import logging
 import history
 from bluesky.run_engine import RunEngine
@@ -14,8 +14,8 @@ from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         assert_pv_equal, assert_pv_greater,
                                         assert_pv_less, assert_pv_in_band,
                                         assert_pv_out_of_band)
-from bluesky.global_state import GlobalState
-import bluesky.simple_scans as bss
+from bluesky.global_state import gs
+from bluesky.spec_api import *
 from bluesky.callbacks import LiveTable, LivePlot, print_metadata
 
 logger = logging.getLogger(__name__)
@@ -47,35 +47,9 @@ def get_history():
         return history.History(':memory:')
 
 
-gs = GlobalState()
 gs.RE.md = get_history()
-from getpass import getuser
 gs.RE.md['owner'] = getuser()
 register_mds(gs.RE)  # subscribes to MDS-related callbacks
-
-
-# Instantiate simple scans.
-ct = count = bss.Count()
-ascan = bss.AbsoluteScan()
-mesh = bss.OuterProductAbsoluteScan()
-a2scan = a3scan = bss.InnerProductAbsoluteScan()
-dscan = lup = bss.DeltaScan()
-d2scan = d3scan = bss.InnerProductDeltaScan()
-th2th = bss.ThetaTwoThetaScan()
-hscan = bss.HScan()
-kscan = bss.KScan()
-lscan = bss.LScan()
-tscan = bss.AbsoluteTemperatureScan()
-dtscan = bss.DeltaTemperatureScan()
-hklscan = bss.OuterProductHKLScan()
-hklmesh = bss.InnerProductHKLScan()
-
-# Provide global aliases to RunEngine methods.
-resume = gs.RE.resume
-stop = gs.RE.stop
-abort = gs.RE.abort
-panic = gs.RE.panic
-all_is_well = gs.RE.all_is_well
 
 
 def olog_wrapper(logbook, logbooks):
