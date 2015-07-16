@@ -75,11 +75,11 @@ Contents
 .. toctree::
    :maxdepth: 1
 
-   workflow
    simple_api
    scans
    callbacks
    state-machine
+   metadata 
    custom-scans
    object_api
    nsls2_checklist
