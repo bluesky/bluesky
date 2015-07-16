@@ -24,6 +24,7 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 from inspect import signature
 from bluesky import scans
 from boltons.iterutils import chunked
+import bluesky.standard_config as std_cfg
 
 
 class _PrimitiveScan:
@@ -39,13 +40,12 @@ class _PrimitiveScan:
                                  "names. Avoid: {0}".format(RE_params))
 
     def __call__(self, *args, subs=None, **kwargs):
-        global DETS
         scan_kwargs = dict()
         # Any kwargs valid for the scan go to the scan, not the RE.
         for k, v in kwargs.items():
             if k in self.params:
                 scan_kwargs[k] = kwargs.pop(k)
-        scan = self._scan_class(dets, *args, **scan_kwargs)
+        scan = self._scan_class(std_cfg.bs.DETS, *args, **scan_kwargs)
         scan.subs = self.subs
         self.RE(scan, **kwargs)  # to pass to RE, you must use kwargs
 
@@ -133,8 +133,8 @@ class ThetaTwoThetaScan(_InnerProductScan):
     _scan_class = scans.InnerProductDeltaScan
 
     def __call__(self, start, finish, intervals, time, **kwargs):
-        global TH_MOTOR
-        global TTH_MOTOR
+        TTH_MOTOR = std_cfg.bs.TTH_MOTOR
+        TH_MOTOR = std_cfg.bs.TH_MOTOR
         super.__call__(TTH_MOTOR, start, finish,
                        TH_MOTOR, start/2, finish/2, intervals, time, **kwargs)
 
@@ -152,8 +152,7 @@ class _TemperatureScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        global TEMP_CONTROLLER
-        return TEMP_CONTROLLER
+        return std_cfg.bs.TEMP_CONTROLLER
 
 
 class AbsoluteTemperatureScan(_TemperatureScan):
@@ -175,8 +174,7 @@ class HScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        global H_MOTOR
-        return H_MOTOR
+        return std_cfg.bs.H_MOTOR
 
 
 class KScan(_HardcodedMotorStepScan):
@@ -185,8 +183,7 @@ class KScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        global K_MOTOR
-        return K_MOTOR
+        return std_cfg.bs.K_MOTOR
 
 
 class LScan(_HardcodedMotorStepScan):
@@ -195,8 +192,7 @@ class LScan(_HardcodedMotorStepScan):
 
     @property
     def _motor(self):
-        global L_MOTOR
-        return L_MOTOR
+        return std_cfg.bs.L_MOTOR
 
 
 class OuterProductHKLScan(_PrimitiveScan):
@@ -208,7 +204,9 @@ class OuterProductHKLScan(_PrimitiveScan):
         # To be clear, like all other functions in this module, this
         # eye-gouging API is for compatbility with SPEC, not the author's
         # idea of good Python code.
-        global H_MOTOR, K_MOTOR, L_MOTOR
+        H_MOTOR = std_cfg.bs.H_MOTOR
+        K_MOTOR = std_cfg.bs.K_MOTOR
+        L_MOTOR = std_cfg.bs.L_MOTOR
         _set_acquire_time(time)
         _motor_mapping = {'H': H_MOTOR, 'K': K_MOTOR, 'L': L_MOTOR}
         motor1 = _motor_mapping[Q1]
@@ -224,7 +222,9 @@ class InnerProductHKLScan(_PrimitiveScan):
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l, finish_l,
                  intervals, time, **kwargs):
-        global H_MOTOR, K_MOTOR, L_MOTOR
+        H_MOTOR = std_cfg.bs.H_MOTOR
+        K_MOTOR = std_cfg.bs.K_MOTOR
+        L_MOTOR = std_cfg.bs.L_MOTOR
         _set_acquire_time(time)
         super.__call__(self, intervals, start_h, finish_h, start_k, finish_k,
                        start_l, finish_l, **kwargs)
@@ -246,7 +246,8 @@ class Tweak(_PrimitiveScan):
     _scan_class = scans.Tweak
 
     def __call__(motor, step, **kwargs):
-        global MASTER_DET, MASTER_DET_FIELD
+        MASTER_DET = std_cfg.bs.MASTER_DET
+        MASTER_DET_FIELD = std_cfg.bs.MASTER_DET_FIELD
         super().__call__(MASTER_DET, MASTER_DET_FIELD, motor, step, **kwargs)
 
 
