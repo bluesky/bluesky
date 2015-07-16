@@ -1,5 +1,5 @@
-Experiment Metadata
-===================
+Recording Metadata
+==================
 
 Usage Example
 -------------

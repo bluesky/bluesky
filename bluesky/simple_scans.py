@@ -28,15 +28,9 @@ from boltons.iterutils import chunked
 
 class _PrimitiveScan:
 
-    def __init__(self, RE):
-        self.RE = RE
+    def __init__(self):
         self.subs = None
         self.params = list(signature(self._scan_class).parameters.keys())
-        RE_params = list(signature(RE.__call__).parameters.keys())
-        if set(RE_params) & set(self.params):
-            raise AssertionError("The names of the scan's arguments clash "
-                                 "the RunEngine arguments. Use different "
-                                 "names. Avoid: {0}".format(RE_params))
 
     def __call__(self, *args, subs=None, **kwargs):
         scan_kwargs = dict()
@@ -45,9 +39,16 @@ class _PrimitiveScan:
             if k in self.params:
                 scan_kwargs[k] = kwargs.pop(k)
         from bluesky.standard_config import gs
+
+        RE_params = list(signature(gs.RE.__call__).parameters.keys())
+        if set(RE_params) & set(self.params):
+            raise AssertionError("The names of the scan's arguments clash "
+                                 "the RunEngine arguments. Use different "
+                                 "names. Avoid: {0}".format(RE_params))
+
         scan = self._scan_class(gs.DETS, *args, **scan_kwargs)
         scan.subs = self.subs
-        return self.RE(scan, **kwargs)  # to pass to RE, you must use kwargs
+        return gs.RE(scan, **kwargs)  # to pass to RE, you must use kwargs
 
 
 ### Mid-level base classes ###

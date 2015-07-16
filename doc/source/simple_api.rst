@@ -2,14 +2,15 @@ Simple Scan Interface
 =====================
 
 .. ipython:: python
-    :suppress:
+   :suppress:
 
-    from bluesky.examples import det1, det2, det3, det
-    from bluesky.standard_config import gs
-    from bluesky.standard_config import *  # the simple scan instances
-    gs.DETS = [det]
-    from bluesky.tests.utils import setup_test_run_engine
-    gs.RE = setup_test_run_engine()
+   from bluesky.examples import det1, det2, det3, det
+   from bluesky.standard_config import gs
+   from bluesky.standard_config import *  # the simple scan instances
+   from bluesky.tests.utils import setup_test_run_engine
+   gs.DETS = [det]
+   gs.RE = setup_test_run_engine()
+
 
 The simple scan interface provides a condensed syntax to execute common tasks.
 
@@ -32,8 +33,8 @@ Specify Detectors
 The setting ``gs.DETS`` is a list of a detector objects. It controls
 which detectors are triggered and read by all the simple scans.
 (Incidentally, ``gs`` stands for "global state" or "global settings." Why
- can't it just be plain ``DETS``? Global variables are best avoided in Python,
- and the ``gs.`` part provides useful input validation.)
+can't it just be plain ``DETS``? Global variables are best avoided in Python,
+and the ``gs.`` part provides useful input validation.)
 
 .. ipython:: python
 

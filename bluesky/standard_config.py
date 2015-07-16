@@ -55,20 +55,20 @@ register_mds(gs.RE)  # subscribes to MDS-related callbacks
 
 
 # Instantiate simple scans.
-ct = count = bss.Count(gs.RE)
-ascan = bss.AbsoluteScan(gs.RE)
-mesh = bss.OuterProductAbsoluteScan(gs.RE)
-a2scan = a3scan = bss.InnerProductAbsoluteScan(gs.RE)
-dscan = lup = bss.DeltaScan(gs.RE)
-d2scan = d3scan = bss.InnerProductDeltaScan(gs.RE)
-th2th = bss.ThetaTwoThetaScan(gs.RE)
-hscan = bss.HScan(gs.RE)
-kscan = bss.KScan(gs.RE)
-lscan = bss.LScan(gs.RE)
-tscan = bss.AbsoluteTemperatureScan(gs.RE)
-dtscan = bss.DeltaTemperatureScan(gs.RE)
-hklscan = bss.OuterProductHKLScan(gs.RE)
-hklmesh = bss.InnerProductHKLScan(gs.RE)
+ct = count = bss.Count()
+ascan = bss.AbsoluteScan()
+mesh = bss.OuterProductAbsoluteScan()
+a2scan = a3scan = bss.InnerProductAbsoluteScan()
+dscan = lup = bss.DeltaScan()
+d2scan = d3scan = bss.InnerProductDeltaScan()
+th2th = bss.ThetaTwoThetaScan()
+hscan = bss.HScan()
+kscan = bss.KScan()
+lscan = bss.LScan()
+tscan = bss.AbsoluteTemperatureScan()
+dtscan = bss.DeltaTemperatureScan()
+hklscan = bss.OuterProductHKLScan()
+hklmesh = bss.InnerProductHKLScan()
 
 # Provide global aliases to RunEngine methods.
 resume = gs.RE.resume
