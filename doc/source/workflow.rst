@@ -1,84 +1,8 @@
-An Example Workflow
+Experiment Metadata
 ===================
 
-.. ipython:: python
-   :okwarning:
-   :suppress:
-
-   from bluesky.examples import det1, det2, det
-   from bluesky.callbacks import LiveTable, print_metadata
-   from bluesky import RunEngine
-   RE = RunEngine()
-   RE.verbose = False
-   RE.md['owner'] = 'Jane'
-   RE.md['group'] = 'Grant No. 12345'
-   RE.md['config'] = {'detector_model': 'XYZ', 'pxiel_size': 10}
-   RE.md['beamline_id'] = 'demo'
-   from bluesky.scans import Count
-
-.. note::
-
-   This example assumes that you are running with a standard configuration.
-   If not, simply run ``from bluesky.standard_config import *``.
-
-Defining and Running a Scan
----------------------------
-
-Decide on the detectors of interest and instantiate a scan.
-
-.. ipython:: python
-
-   dets = [det1, det2]  # favorite detectors
-   c = Count(dets)
-
-Now ``c`` encapsulates scan instructions and the detector list. Run the scan.
-
-.. ipython:: python
-
-   RE(c)
-
-It worked, but we could use a little more feedback.
-
-To see a live-updating table during collection, we'll add a
-:doc:`subscription <callbacks>`. (Don't worry, you don't have to type this
-every time. You can make it happen automatically at startup.)
-
-.. ipython:: python
-
-    token = RE.subscribe('all', LiveTable(['det1', 'det2']))
-
-Run the scan again.
-
-.. ipython:: python
-
-   RE(c)
-
-Make a second instance ``Count``, configured to take multiple measurements.
-
-.. ipython:: python
-
-   more_c = Count(dets, 5)
-   RE(more_c)
-
-Make some changes to the parameters---say, take 2 measurements intead of 5---
-and run again.
-
-.. ipython:: python
-
-    more_c.num = 2
-    RE(more_c)
-
-.. ipython:: python
-    :suppress:
-
-    RE.unsubscribe(token)
-    RE.subscribe('start', print_metadata)
-
-Handling Metadata
------------------
-
-Usage
-+++++
+Usage Example
+-------------
 
 Metadata can be specified like so. It will be stored with the data.
 
@@ -112,8 +36,8 @@ Additional metadata can be specified when the scan is run.
 
     RE(c, experimenter='Emily', mood='excited')
 
-Persistence
-+++++++++++
+Persistence Between Scans
+-------------------------
 
 The following fields are automatically reused between runs unless overridden.
 
@@ -153,7 +77,7 @@ To start fresh:
     RE.md.clear()
 
 Required Fields
-+++++++++++++++
+---------------
 
 Some fields and required by our Document specification, and the RunEngine will
 raise a ``KeyError`` if they are not set. These fields are:
