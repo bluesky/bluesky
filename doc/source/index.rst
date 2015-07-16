@@ -76,10 +76,10 @@ Contents
    :maxdepth: 1
 
    workflow
+   simple_api
    scans
    callbacks
    state-machine
    custom-scans
    object_api
    nsls2_checklist
-   simple_api

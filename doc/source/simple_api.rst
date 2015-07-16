@@ -1,19 +1,35 @@
-Simple Scan API
-***************
+Simple Scan Interface
+=====================
 
-This "simple scan API" provides a condensed syntax to execute common tasks.
+.. ipython:: python
+
+    from bluesky.examples import det1, det2, det3, det
+    %run -i ../bluesky/standard_config.py
+
+.. ipython:: python
+
+    DETS = [det]
+
+The simple scan interface provides a condensed syntax to execute common tasks.
 
 Some of the names and signatures of the functions in this module closely match
 some core "macros" in SPEC, control software used in X-ray diffraction
 experiments. Other functions introduce new functionality.
 
-The simple API is not necessarily recommended for developing new scans.
-It is backed by a more explicit API suited for development work.
+The simple interface is not necessarily recommended for developing new scans.
+It is backed by a more explicit :doc:`scans` suited for development work.
 
 Specify Detectors
 -----------------
 
-The global variable ``DETS`` is a list of a detector objects.
+.. note::
+
+    If you are using a IPython profile, a list of detectors might be
+    automatically specified at startup. In that case, you may not need to do
+    anything unless you need to inspect or customize that list.
+
+The global variable ``DETS`` is a list of a detector objects. It controls
+which detectors are triggered and read by all the simple scans.
 
 .. ipython:: python
 
@@ -23,7 +39,7 @@ Like any Python list, you can append and remove elements.
 
 .. ipython:: python
 
-    DETS.append(det)
+    DETS.append(det3)
     DETS.remove(det1)
     DETS
 
@@ -33,11 +49,12 @@ They are addressed below.
 Count
 -----
 
-A ``ct`` scan reads all the detectors in the global list ``DETS`` for an
-acquisition time specified by ``time``. If no time is specified, 1 second is
-the default.
+A ``ct`` ("count") scan reads all the detectors in the global list ``DETS`` for 
+a given acquisition time. If no time is specified, 1 second is the default.
 
-``ct(time=1)``
+.. ipython:: python
+
+    ct(time=1)
 
 An Aside: Record Metadata with the Scan
 ---------------------------------------
