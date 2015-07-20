@@ -23,13 +23,14 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
 from inspect import signature
 from bluesky import scans
+from bluesky.callbacks import LiveTable, LivePlot
 from boltons.iterutils import chunked
+from bluesky.standard_config import gs
 
 
 class _PrimitiveScan:
 
     def __init__(self):
-        self.subs = None
         self.params = list(signature(self._scan_class).parameters.keys())
 
     def __call__(self, *args, subs=None, **kwargs):
@@ -46,9 +47,13 @@ class _PrimitiveScan:
                                  "the RunEngine arguments. Use different "
                                  "names. Avoid: {0}".format(RE_params))
 
-        scan = self._scan_class(gs.DETS, *args, **scan_kwargs)
-        scan.subs = self.subs
-        return gs.RE(scan, **kwargs)  # to pass to RE, you must use kwargs
+        self.scan = self._scan_class(gs.DETS, *args, **scan_kwargs)
+        if subs is None:
+            subs = self.subs
+        # Any remainging kwargs go the RE. To be safe, no args are passed
+        # to RE; RE args effectively become keyword-only arguments.
+        return gs.RE(self.scan, subs, **kwargs)
+
 
 
 ### Mid-level base classes ###
@@ -57,37 +62,74 @@ class _PrimitiveScan:
 # interval. SPEC counts "bonds;" idiomatic Python counts "sites."
 
 class _OuterProductScan(_PrimitiveScan):
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, subs=None, **kwargs):
+        args = list(args)
         time = args.pop(-1)
-        _set_acquire_time(time)
+        original_times = _set_acquire_time(time)
         for i, _ in enumerate(chunked(args, 4)):
             # intervals -> intervals + 1
             args[4*i + 3] += 1
-        return super().__call__(*args, **kwargs)
+        result = super().__call__(*args, subs=subs, **kwargs)
+        _unset_acquire_time(original_times)
+        return result
+
+    @property
+    def subs(self):
+        table = LiveTable(self.scan.motors + gs.TABLE_COLS)
+        plot = LivePlot(gs.PLOT_Y, self.scan.motors[0]._name)
+        return [table, plot]
 
 
 class _InnerProductScan(_PrimitiveScan):
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, subs=None, **kwargs):
+        args = list(args)
         time = args.pop(-1)
         intervals = args.pop(-1) + 1
-        _set_acquire_time(time)
-        return super().__call__(intervals, *args, **kwargs)
+        original_times = _set_acquire_time(time)
+        result = super().__call__(intervals, *args, subs=subs, **kwargs)
+        _unset_acquire_time(original_times)
+        return result
+
+    @property
+    def subs(self):
+        table = LiveTable(self.scan.motors + gs.TABLE_COLS)
+        plot = LivePlot(gs.PLOT_Y, self.scan.motors[0]._name)
+        return [table, plot]
 
 
 class _StepScan(_PrimitiveScan):
 
-    def __call__(self, motor, start, finish, intervals, time, **kwargs):
-        _set_acquire_time(time)
-        return super().__call__(motor, start, finish, intervals + 1, **kwargs)
+    def __call__(self, motor, start, finish, intervals, time,
+                 subs=None, **kwargs):
+        original_times = _set_acquire_time(time)
+        result = super().__call__(motor, start, finish, intervals + 1,
+                                  subs=subs, **kwargs)
+        _unset_acquire_time(original_times)
+        return result
+
+    @property
+    def subs(self):
+        table = LiveTable([self.scan.motor] + gs.TABLE_COLS)
+        plot = LivePlot(gs.PLOT_Y, self.scan.motor._name)
+        return [table, plot]
 
 
 class _HardcodedMotorStepScan(_PrimitiveScan):
     # Subclasses must define self._motor as a property.
 
-    def __call__(self, start, finish, intervals, time, **kwargs):
-        _set_acquire_time(time)
-        return super().__call__(self._motor, start, finish, intervals + 1,
-                              **kwargs)
+    def __call__(self, start, finish, intervals, time, subs=None,
+                 **kwargs):
+        original_times = _set_acquire_time(time)
+        result = super().__call__(self._motor, start, finish,
+                                  intervals + 1, subs=subs, **kwargs)
+        _unset_acquire_time(original_times)
+        return result
+
+    @property
+    def subs(self):
+        table = LiveTable([self.scan.motor] + gs.TABLE_COLS)
+        plot = LivePlot(gs.PLOT_Y, self.scan.motor._name)
+        return [table, plot]
 
 
 ### Counts (p. 140) ###
@@ -96,10 +138,15 @@ class _HardcodedMotorStepScan(_PrimitiveScan):
 class Count(_PrimitiveScan):
     "ct"
     _scan_class = scans.Count
-    
-    def __call__(self, time=1, **kwargs):
-        _set_acquire_time(time)
-        return super().__call__(**kwargs)
+
+    def __call__(self, time=None, subs=None, **kwargs):
+        if subs is None:
+            table = LiveTable(gs.TABLE_COLS)
+            subs = [table]
+        original_times = _set_acquire_time(time)
+        result = super().__call__(subs=subs, **kwargs)
+        _unset_acquire_time(original_times)
+        return result
 
 
 ### Motor Scans (p. 146) ###
@@ -134,13 +181,14 @@ class ThetaTwoThetaScan(_InnerProductScan):
     "th2th"
     _scan_class = scans.InnerProductDeltaScan
 
-    def __call__(self, start, finish, intervals, time, **kwargs):
-        from bluesky.standard_config import gs
+    def __call__(self, start, finish, intervals, time=None, **kwargs):
         TTH_MOTOR = gs.TTH_MOTOR
         TH_MOTOR = gs.TH_MOTOR
-        return super().__call__(TTH_MOTOR, start, finish,
-                              TH_MOTOR, start/2, finish/2, intervals, time,
-                              **kwargs)
+        original_times = _set_acquire_time(time)
+        result = super().__call__(TTH_MOTOR, start, finish,
+                                  TH_MOTOR, start/2, finish/2,
+                                  intervals, time, **kwargs)
+        _unset_acquire_time(original_times)
 
 
 ### Temperature Scans (p. 148) ###
@@ -148,12 +196,15 @@ class ThetaTwoThetaScan(_InnerProductScan):
 
 class _TemperatureScan(_HardcodedMotorStepScan):
 
-    def __call__(self, start, finish, intervals, time, sleep=0, **kwargs):
+    def __call__(self, start, finish, intervals, time=None, sleep=0,
+                 **kwargs):
         self._sleep = sleep
-        _set_acquire_time(time)
+        original_times = _set_acquire_time(time)
         self._motor.settle_time = sleep
-        return super().__call__(self._motor, start, finish, intervals + 1,
-                              **kwargs)
+        result = super().__call__(self._motor, start, finish, intervals + 1,
+                                  **kwargs)
+        _unset_acquire_time(original_times)
+        return result
 
     @property
     def _motor(self):
@@ -209,7 +260,7 @@ class OuterProductHKLScan(_PrimitiveScan):
     _scan_class = scans.OuterProductAbsScan
 
     def __call__(self, Q1, start1, finish1, intervals1, Q2, start2, finish2,
-                 intervals2, time, **kwargs):
+                 intervals2, time=None, **kwargs):
         # To be clear, like all other functions in this module, this
         # eye-gouging API is for compatbility with SPEC, not the author's
         # idea of good Python code.
@@ -217,28 +268,32 @@ class OuterProductHKLScan(_PrimitiveScan):
         H_MOTOR = gs.H_MOTOR
         K_MOTOR = gs.K_MOTOR
         L_MOTOR = gs.L_MOTOR
-        _set_acquire_time(time)
+        original_times = _set_acquire_time(time)
         _motor_mapping = {'H': H_MOTOR, 'K': K_MOTOR, 'L': L_MOTOR}
         motor1 = _motor_mapping[Q1]
         motor2 = _motor_mapping[Q2]
         # Note that intervals + 1 is handled in the base class.
-        return super().__call__(motor1, start1, finish1, intervals1,
-                              motor2, start2, finish2, intervals2, **kwargs)
+        result = super().__call__(motor1, start1, finish1, intervals1,
+                                  motor2, start2, finish2, intervals2,
+                                  **kwargs)
+        _unset_acquire_time(original_times)
+        return result
 
 
 class InnerProductHKLScan(_PrimitiveScan):
     "hklscan"
     _scan_class = scans.InnerProductAbsScan
 
-    def __call__(self, start_h, finish_h, start_k, finish_k, start_l, finish_l,
-                 intervals, time, **kwargs):
+    def __call__(self, start_h, finish_h, start_k, finish_k, start_l,
+                 finish_l, intervals, time=None, **kwargs):
         from bluesky.standard_config import gs
         H_MOTOR = gs.H_MOTOR
         K_MOTOR = gs.K_MOTOR
         L_MOTOR = gs.L_MOTOR
-        _set_acquire_time(time)
-        return super().__call__(self, intervals, start_h, finish_h, start_k,
-                              finish_k, start_l, finish_l, **kwargs)
+        original_times = _set_acquire_time(time)
+        result = super().__call__(intervals, start_h, finish_h, start_k,
+                                  finish_k, start_l, finish_l, **kwargs)
+        _unset_acquire_time(original_times)
 
 
 ### Special Reciprocal Space Scans ###
@@ -260,11 +315,22 @@ class Tweak(_PrimitiveScan):
         from bluesky.standard_config import gs
         MASTER_DET = gs.MASTER_DET
         MASTER_DET_FIELD = gs.MASTER_DET_FIELD
-        return super().__call__(MASTER_DET, MASTER_DET_FIELD, motor, step,
-                                **kwargs)
+        return super().__call__(MASTER_DET, MASTER_DET_FIELD, motor,
+                                step, **kwargs)
 
 
 def _set_acquire_time(time):
     from bluesky.standard_config import gs
+    if time is None:
+        time = gs.COUNT_TIME
+    original_times = {}
     for det in gs.DETS:
-        det.acquire_time = time
+        if hasattr(det, 'count_time'):
+            original_times[det] = det.count_time
+            det.count_time = time
+    return original_times
+
+
+def _unset_acquire_time(original_times):
+    for det, time in original_times.items():
+        det.count_time = time
