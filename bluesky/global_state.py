@@ -2,7 +2,7 @@
 This module creates a singleton object to store settings such as which
 RunEngine and detectors the simple scan interface should invoke.
 """
-from traitlets import HasTraits, TraitType
+from traitlets import HasTraits, TraitType, Unicode
 from collections import Iterable
 from bluesky.run_engine import RunEngine
 
@@ -52,7 +52,7 @@ class DetectorList(TraitType):
 def validate_detector(det):
     if isinstance(det, str):
         raise TypeError("{0} is a string, not a Readable object "
-                        "(Do not use quotes)").format(det)
+                        "(Do not use quotes)".format(det))
     required_methods = ['read', 'trigger']
     for method in required_methods:
         if not hasattr(det, method):
@@ -65,7 +65,7 @@ class GlobalState(HasTraits):
     RE = RunEngineTraitType()
     DETS = DetectorList()
     MASTER_DET = Readable()
-    MASTER_DET_FIELD = Readable()
+    MASTER_DET_FIELD = Unicode()
     H_MOTOR = Readable()
     K_MOTOR = Readable()
     L_MOTOR = Readable()
