@@ -2,7 +2,7 @@
 This module creates a singleton object to store settings such as which
 RunEngine and detectors the simple scan interface should invoke.
 """
-from traitlets import HasTraits, TraitType, Unicode
+from traitlets import HasTraits, TraitType, Unicode, List, Float
 from collections import Iterable
 from bluesky.run_engine import RunEngine
 
@@ -72,6 +72,9 @@ class GlobalState(HasTraits):
     TH_MOTOR = Readable()
     TTH_MOTOR = Readable()
     TEMP_CONTROLLER = Readable()
+    TABLE_COLS = List()
+    PLOT_Y = Unicode()
+    COUNT_TIME = Float(1.0)
 
 
 gs = GlobalState()  # a singleton instance
