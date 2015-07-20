@@ -33,6 +33,17 @@ class Readable(TraitType):
             self.error(obj, value)
         return value
 
+class Movable(TraitType):
+
+    info_text = 'a Movable (positioner-like) object'
+
+    def validate(self, obj, value):
+        try:
+            validate_movable(value)
+        except TypeError:
+            self.error(obj, value)
+        return value
+
 
 class DetectorList(TraitType):
 
@@ -60,6 +71,17 @@ def validate_detector(det):
                             "a '{1}' method'".format(det, method))
 
 
+def validate_movable(movable):
+    if isinstance(movable, str):
+        raise TypeError("{0} is a string, not a Movable object "
+                        "(Do not use quotes)".format(det))
+    required_methods = ['read', 'set']
+    for method in required_methods:
+        if not hasattr(movable, method):
+            raise TypeError("{0} is not a Movable; it does not have "
+                            "a '{1}' method'".format(det, method))
+
+
 class GlobalState(HasTraits):
     "A bucket of validated global state used by the simple scan API"
     RE = RunEngineTraitType()
@@ -69,9 +91,9 @@ class GlobalState(HasTraits):
     H_MOTOR = Readable()
     K_MOTOR = Readable()
     L_MOTOR = Readable()
-    TH_MOTOR = Readable()
-    TTH_MOTOR = Readable()
-    TEMP_CONTROLLER = Readable()
+    TH_MOTOR = Movable()
+    TTH_MOTOR = Movable()
+    TEMP_CONTROLLER = Movable()
     TABLE_COLS = List()
     PLOT_Y = Unicode()
     COUNT_TIME = Float(1.0)
