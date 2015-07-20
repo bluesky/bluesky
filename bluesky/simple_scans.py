@@ -152,17 +152,17 @@ class Count(_PrimitiveScan):
 ### Motor Scans (p. 146) ###
 
 
-class AbsoluteScan(_StepScan):
+class AbsScan(_StepScan):
     "ascan"
     _scan_class = scans.AbsScan
 
 
-class OuterProductAbsoluteScan(_OuterProductScan):
+class OuterProductAbsScan(_OuterProductScan):
     "mesh"
     _scan_class = scans.OuterProductAbsScan
 
 
-class InnerProductAbsoluteScan(_InnerProductScan):
+class InnerProductAbsScan(_InnerProductScan):
     "a2scan, a3scan, etc."
     _scan_class = scans.InnerProductAbsScan
 
@@ -212,7 +212,7 @@ class _TemperatureScan(_HardcodedMotorStepScan):
         return gs.TEMP_CONTROLLER
 
 
-class AbsoluteTemperatureScan(_TemperatureScan):
+class AbsTemperatureScan(_TemperatureScan):
     "tscan"
     _scan_class = scans.AbsScan
 
