@@ -660,6 +660,9 @@ class _OuterProductScanBase(ScanND):
     def __init__(self, detectors, *args):
         self.detectors = detectors
         self.args = args
+        self.motors = []
+        for motor, start, stop, in chunked(self.args, 3):
+            self.motors.append(motor)
 
     def _pre_scan(self):
         # Build a Cycler for ScanND.
@@ -685,6 +688,9 @@ class _InnerProductScanBase(ScanND):
         self.detectors = detectors
         self.num = num
         self.args = args
+        self.motors = []
+        for motor, start, stop, in chunked(self.args, 3):
+            self.motors.append(motor)
 
     def _pre_scan(self):
         # Build a Cycler for ScanND.
