@@ -658,10 +658,12 @@ class _OuterProductScanBase(ScanND):
     _fields = ['detectors', 'args']
 
     def __init__(self, detectors, *args):
+        if len(args) % 4 != 0:
+            raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
         self.args = args
         self.motors = []
-        for motor, start, stop, in chunked(self.args, 3):
+        for motor, start, stop, num in chunked(self.args, 4):
             self.motors.append(motor)
 
     def _pre_scan(self):
@@ -685,6 +687,8 @@ class _InnerProductScanBase(ScanND):
     _fields = ['detectors', 'num', 'args']
 
     def __init__(self, detectors, num, *args):
+        if len(args) % 3 != 0:
+            raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
         self.num = num
         self.args = args

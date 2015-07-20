@@ -62,9 +62,13 @@ class _PrimitiveScan:
 # interval. SPEC counts "bonds;" idiomatic Python counts "sites."
 
 class _OuterProductScan(_PrimitiveScan):
-    def __call__(self, *args, subs=None, **kwargs):
+    def __call__(self, *args, time=None, subs=None, **kwargs):
         args = list(args)
-        time = args.pop(-1)
+        if len(args) % 4 == 1:
+            if time is None:
+                time = args.pop(-1)
+            else:
+                raise ValueError("wrong number of positional arguments")
         original_times = _set_acquire_time(time)
         for i, _ in enumerate(chunked(args, 4)):
             # intervals -> intervals + 1
@@ -81,9 +85,13 @@ class _OuterProductScan(_PrimitiveScan):
 
 
 class _InnerProductScan(_PrimitiveScan):
-    def __call__(self, *args, subs=None, **kwargs):
+    def __call__(self, *args, time=None, subs=None, **kwargs):
         args = list(args)
-        time = args.pop(-1)
+        if len(args) % 3 == 2:
+            if time is None:
+                time = args.pop(-1)
+            else:
+                raise ValueError("wrong number of positional arguments")
         intervals = args.pop(-1) + 1
         original_times = _set_acquire_time(time)
         result = super().__call__(intervals, *args, subs=subs, **kwargs)
@@ -99,7 +107,7 @@ class _InnerProductScan(_PrimitiveScan):
 
 class _StepScan(_PrimitiveScan):
 
-    def __call__(self, motor, start, finish, intervals, time,
+    def __call__(self, motor, start, finish, intervals, time=None,
                  subs=None, **kwargs):
         original_times = _set_acquire_time(time)
         result = super().__call__(motor, start, finish, intervals + 1,
@@ -117,7 +125,7 @@ class _StepScan(_PrimitiveScan):
 class _HardcodedMotorStepScan(_PrimitiveScan):
     # Subclasses must define self._motor as a property.
 
-    def __call__(self, start, finish, intervals, time, subs=None,
+    def __call__(self, start, finish, intervals, time=None, subs=None,
                  **kwargs):
         original_times = _set_acquire_time(time)
         result = super().__call__(self._motor, start, finish,
@@ -201,8 +209,7 @@ class _TemperatureScan(_HardcodedMotorStepScan):
         self._sleep = sleep
         original_times = _set_acquire_time(time)
         self._motor.settle_time = sleep
-        result = super().__call__(self._motor, start, finish, intervals + 1,
-                                  **kwargs)
+        result = super().__call__(start, finish, intervals + 1, **kwargs)
         _unset_acquire_time(original_times)
         return result
 
