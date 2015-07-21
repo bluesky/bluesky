@@ -11,7 +11,6 @@ components:
   `specified but flexible <http://nsls-ii.github.io/arch/metadatastore-format.html>`__
   way.
 
-
 Key Features
 ------------
 
@@ -76,11 +75,11 @@ Contents
 .. toctree::
    :maxdepth: 1
 
-   workflow
+   simple_api
    scans
    callbacks
    state-machine
+   metadata 
    custom-scans
    object_api
    nsls2_checklist
-   legacy_api

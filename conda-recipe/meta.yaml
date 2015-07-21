@@ -33,7 +33,6 @@ test:
     - 'bluesky'
     - 'bluesky.examples'
     - 'bluesky.callbacks'
-    - 'bluesky.legacy_scans'
     - 'bluesky.register_mds'
     - 'bluesky.standard_config'
 

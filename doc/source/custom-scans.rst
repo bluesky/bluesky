@@ -316,13 +316,13 @@ By contrast, bluesky's built-in scans are reusable.
 
 .. ipython:: python
 
-    from bluesky.scans import Ascan
-    s = Ascan([det], motor, [1, 2, 3])
+    from bluesky.scans import AbsListScan
+    s = AbsListScan([det], motor, [1, 2, 3])
     count_messages(s)
     count_messages(s)  # reusable!
 
-How does that work? ``Ascan`` is not function that returns a generator; it is
-an iterable class that returns a fresh generator upon each new iteration.
+How does that work? ``AbsListScan`` is not function that returns a generator;
+it is an iterable class that returns a fresh generator upon each new iteration.
 
 You can use that same pattern to make our ``stepscan`` example---or any custom
 scan---reusable. Follow this pattern:

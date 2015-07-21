@@ -1,12 +1,11 @@
 """
-This module creates an instance of the RunEngine and configures it. None of
-this is *essential* but it is extremely useful and generally recommended.
+None of this is essential, but it is useful and generally recommended.
 """
 import os
+from getpass import getuser
 import logging
 import history
 from bluesky.run_engine import RunEngine
-from bluesky.legacy_scans import LegacyAscan, LegacyDscan, LegacyCount
 from bluesky.register_mds import register_mds
 from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         connect_fs_mongodb, connect_olog,
@@ -15,7 +14,9 @@ from bluesky.hardware_checklist import (connect_mds_mongodb,
                                         assert_pv_equal, assert_pv_greater,
                                         assert_pv_less, assert_pv_in_band,
                                         assert_pv_out_of_band)
-
+from bluesky.global_state import gs
+from bluesky.spec_api import *
+from bluesky.callbacks import LiveTable, LivePlot, print_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -46,22 +47,13 @@ def get_history():
         return history.History(':memory:')
 
 
-RE = RunEngine(get_history())
-try:
-    RE.md['owner']
-except KeyError:
-    from getpass import getuser
-    RE.md['owner'] = getuser()
-register_mds(RE)  # subscribes to MDS-related callbacks
-
-# Instantiate legacy API objects.
-ascan = LegacyAscan(RE)
-dscan = LegacyDscan(RE)
-ct = LegacyCount(RE)
+gs.RE.md = get_history()
+gs.RE.md['owner'] = getuser()
+register_mds(gs.RE)  # subscribes to MDS-related callbacks
 
 
 def olog_wrapper(logbook, logbooks):
-    """Wrap a olog logbook for use with RunEngine
+    """Wrap an olog logbook for use with RunEngine
 
     The admittedly confusing parameter names reflect our understanding of Olog
     conventions.

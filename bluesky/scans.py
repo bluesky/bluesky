@@ -1,4 +1,7 @@
-from collections import deque
+from collections import deque, defaultdict
+import itertools
+from boltons.iterutils import chunked
+from cycler import cycler
 from lmfit.models import GaussianModel, LinearModel
 import numpy as np
 from .run_engine import Msg
@@ -26,23 +29,38 @@ class ScanBase(Struct):
     """
     def __iter__(self):
         yield Msg('open_run')
-        yield Msg('logbook', None, self.logmsg(), **self.logdict())
+        yield from self._pre_scan()
         yield from self._gen()
+        yield from self._post_scan()
         yield Msg('close_run')
 
-    def logmsg(self):
+    def _pre_scan(self):
+        yield Msg('logbook', None, self.logmsg(), **self.logdict())
+
+    def _post_scan(self):
+        yield from []
+
+    def _call_str(self):
         args = []
         for k in self._fields:
             args.append("{k}={{{k}!r}}".format(k=k))
 
-        call_str = "RE({{scn_cls}}({args}))".format(args=', '.join(args))
+        return ["RE({{scn_cls}}({args}))".format(args=', '.join(args)), ]
+
+    def _logmsg(self):
+
+        call_str = self._call_str()
 
         msgs = ['Scan Class: {scn_cls}', '']
         for k in self._fields:
             msgs.append('{k}: {{{k}!r}}'.format(k=k))
         msgs.append('')
         msgs.append('To call:')
-        msgs.append(call_str)
+        msgs.extend(call_str)
+        return msgs
+
+    def logmsg(self):
+        msgs = self._logmsg()
         return '\n'.join(msgs)
 
     def logdict(self):
@@ -81,14 +99,13 @@ class Count(ScanBase):
     >>> c = Count([det1, det2, det3], 5, 1)
     >>> RE(c)
     """
+    # We define _fields not for Struct, but for ScanBase.log* methods.
+    _fields = ['detectors', 'num', 'delay']
 
-    # This class does not actually use Struct because there are defaults.
     def __init__(self, detectors, num=1, delay=0):
         self.detectors = detectors
         self.num = num
         self.delay = delay
-        # We define _fields not for Struct, but for ScanBase.log* methods.
-        self._fields = ['detectors', 'num', 'delay']
 
     def _gen(self):
         dets = self.detectors
@@ -134,7 +151,7 @@ class Scan1D(ScanBase):
             yield Msg('deconfigure', d)
 
 
-class Ascan(Scan1D):
+class AbsListScan(Scan1D):
     """
     Absolute scan over one variable in user-specified steps
 
@@ -152,7 +169,7 @@ class Ascan(Scan1D):
         yield from super()._gen()
 
 
-class Dscan(Scan1D):
+class DeltaListScan(Scan1D):
     """
     Delta (relative) scan over one variable in user-specified steps
 
@@ -165,20 +182,50 @@ class Dscan(Scan1D):
     steps : list
         list of positions relative to current position
     """
-    def _gen(self):
+    def _pre_scan(self):
         ret = yield Msg('read', self.motor)
         if len(ret.keys()) > 1:
             raise NotImplementedError("Can't DScan this motor")
         key, = ret.keys()
-        current_value = ret[key]['value']
-        self._steps = self.steps + current_value
+        self._init_pos = ret[key]['value']
+        yield from super()._pre_scan()
+
+    def logdict(self):
+        logdict = super().logdict()
+        try:
+            init_pos = self._init_pos
+        except AttributeError:
+            raise RuntimeError("Trying to create an olog entry for a DScan "
+                               "without running the _pre_scan code to get "
+                               "the baseline position.")
+        logdict['init_pos'] = init_pos
+        return logdict
+
+    def _call_str(self):
+
+        call_str = ["{motor!r}.set({init_pos})", ]
+        call_str.extend(super()._call_str())
+        return call_str
+
+    def _gen(self):
+        self._steps = self.steps + self._init_pos
         yield from super()._gen()
+
+    def _post_scan(self):
+        yield from super()._post_scan()
+        try:
+            init_pos = self._init_pos
+            delattr(self, '_init_pos')
+        except AttributeError:
+            raise RuntimeError("Trying to run _post_scan code for a DScan "
+                               "without running the _pre_scan code to get "
+                               "the baseline position.")
         # Return the motor to its original position.
-        yield Msg('set', self.motor, current_value, block_group='A')
+        yield Msg('set', self.motor, init_pos, block_group='A')
         yield Msg('wait', None, 'A')
 
 
-class LinAscan(Scan1D):
+class AbsScan(Scan1D):
     """
     Absolute scan over one variable in equally spaced steps
 
@@ -199,7 +246,7 @@ class LinAscan(Scan1D):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = LinAscan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = AbsScan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -212,7 +259,7 @@ class LinAscan(Scan1D):
         yield from super()._gen()
 
 
-class LogAscan(Scan1D):
+class LogAbsScan(Scan1D):
     """
     Absolute scan over one variable in log-spaced steps
 
@@ -233,7 +280,7 @@ class LogAscan(Scan1D):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogAscan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = LogAbsScan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -246,7 +293,7 @@ class LogAscan(Scan1D):
         yield from super()._gen()
 
 
-class LinDscan(Dscan):
+class DeltaScan(DeltaListScan):
     """
     Delta (relative) scan over one variable in equally spaced steps
 
@@ -267,7 +314,7 @@ class LinDscan(Dscan):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = LinDscan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = DeltaScan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -280,7 +327,7 @@ class LinDscan(Dscan):
         yield from super()._gen()
 
 
-class LogDscan(Dscan):
+class LogDeltaScan(DeltaListScan):
     """
     Delta (relative) scan over one variable in log-spaced steps
 
@@ -301,7 +348,7 @@ class LogDscan(Dscan):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogDscan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = LogDeltaScan(motor1, [det1, det2], 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -314,7 +361,7 @@ class LogDscan(Dscan):
         yield from super()._gen()
 
 
-class AdaptiveScanBase(Scan1D):
+class _AdaptiveScanBase(Scan1D):
     _fields = ['detectors', 'target_field', 'motor', 'start', 'stop',
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
@@ -376,7 +423,7 @@ class AdaptiveScanBase(Scan1D):
             yield Msg('deconfigure', d)
 
 
-class AdaptiveAscan(AdaptiveScanBase):
+class AdaptiveAbsScan(_AdaptiveScanBase):
     """
     Absolute scan over one variable with adaptively tuned step size
 
@@ -406,7 +453,7 @@ class AdaptiveAscan(AdaptiveScanBase):
         yield from super()._gen()
 
 
-class AdaptiveDscan(AdaptiveScanBase):
+class AdaptiveDeltaScan(_AdaptiveScanBase):
     """
     Delta (relative) scan over one variable with adaptively tuned step size
 
@@ -447,7 +494,11 @@ class AdaptiveDscan(AdaptiveScanBase):
 class Center(ScanBase):
     RANGE = 2  # in sigma, first sample this range around the guess
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
+    NUM_SAMPLES = 10
     NUM_SAMPLES = 10 
+    # We define _fields not for Struct, but for ScanBase.log* methods.
+    _fields = ['detectors', 'target_field', 'motor', 'initial_center',
+               'initial_width', 'tolerance', 'output_mutable']
 
     def __init__(self, detectors, target_field, motor, initial_center,
                  initial_width, tolerance=0.1, output_mutable=None):
@@ -484,13 +535,13 @@ class Center(ScanBase):
             Must have 'update' method.  Mutable object to provide a side-band to
             return fitting parameters + data points
         """
-        self.motor = motor
-        self.dets = detectors
+        self.detectors = detectors
         self.target_field = target_field
+        self.motor = motor
         self.initial_center = initial_center
         self.initial_width = initial_width
         self.output_mutable = output_mutable
-        self.tol = tolerance
+        self.tolerance = tolerance
 
     @property
     def min_cen(self):
@@ -502,12 +553,12 @@ class Center(ScanBase):
 
     def _gen(self):
         # For thread safety (paranoia) make copies of stuff
-        dets = self.dets
-        motor = self.motor
+        dets = self.detectors
         target_field = self.target_field
+        motor = self.motor
         initial_center = self.initial_center
         initial_width = self.initial_width
-        tol = self.tol
+        tol = self.tolerance
         min_cen = self.min_cen
         max_cen = self.max_cen
         seen_x = deque()
@@ -568,3 +619,237 @@ class Center(ScanBase):
             self.output_mutable['x'] = np.array(seen_x)
             self.output_mutable['y'] = np.array(seen_y)
             self.output_mutable['model'] = res
+
+
+class ScanND(ScanBase):
+    _fields = ['detectors', 'cycler']
+
+    def _gen(self):
+        self.motors = self.cycler.keys
+        self._last_set_point = {m: None for m in self.motors}
+        dets = self.detectors
+        for d in dets:
+            yield Msg('configure', d)
+        for step in list(self.cycler):
+            yield Msg('checkpoint')
+            for motor, pos in step.items():
+                if pos == self._last_set_point[motor]:
+                    # This step does not move this motor.
+                    continue
+                yield Msg('set', motor, pos, block_group='A')
+                yield Msg('wait', None, 'A')
+                self._last_set_point[motor] = pos
+                yield Msg('create')
+            for motor in self.motors:
+                yield Msg('read', motor)
+            for det in dets:
+                yield Msg('trigger', det, block_group='B')
+            for det in dets:
+                yield Msg('wait', None, 'B')
+            for det in dets:
+                yield Msg('read', det)
+            yield Msg('save')
+        for d in dets:
+            yield Msg('deconfigure', d)
+
+
+class _OuterProductScanBase(ScanND):
+    # We define _fields not for Struct, but for ScanBase.log* methods.
+    _fields = ['detectors', 'args']
+
+    def __init__(self, detectors, *args):
+        if len(args) % 4 != 0:
+            raise ValueError("wrong number of positional arguments")
+        self.detectors = detectors
+        self.args = args
+        self.motors = []
+        for motor, start, stop, num in chunked(self.args, 4):
+            self.motors.append(motor)
+
+    def _pre_scan(self):
+        # Build a Cycler for ScanND.
+        self.cycler = None
+        for motor, start, stop, num in chunked(self.args, 4):
+            offset = self._offsets[motor]
+            steps = offset + np.linspace(start, stop, num=num, endpoint=True)
+            c = cycler(motor, steps)
+            # Special case first pass because their is no
+            # mutliplicative identity for cyclers.
+            if self.cycler is None:
+                self.cycler = c
+            else:
+                self.cycler *= c
+        yield from super()._pre_scan()
+
+
+class _InnerProductScanBase(ScanND):
+    # We define _fields not for Struct, but for ScanBase.log* methods.
+    _fields = ['detectors', 'num', 'args']
+
+    def __init__(self, detectors, num, *args):
+        if len(args) % 3 != 0:
+            raise ValueError("wrong number of positional arguments")
+        self.detectors = detectors
+        self.num = num
+        self.args = args
+        self.motors = []
+        for motor, start, stop, in chunked(self.args, 3):
+            self.motors.append(motor)
+
+    def _pre_scan(self):
+        # Build a Cycler for ScanND.
+        num = self.num
+        self.cycler = None
+        for motor, start, stop, in chunked(self.args, 3):
+            offset = self._offsets[motor]
+            steps = offset + np.linspace(start, stop, num=num, endpoint=True)
+            c = cycler(motor, steps)
+            # Special case first pass because their is no
+            # mutliplicative identity for cyclers.
+            if self.cycler is None:
+                self.cycler = c
+            else:
+                self.cycler += c
+        yield from super()._pre_scan()
+
+
+class InnerProductAbsScan(_InnerProductScanBase):
+    """
+    Absolute scan over one multi-motor trajectory
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    num : integer
+        number of steps
+    motor1, start1, stop1, ..., motorN, startN, stopN : list
+        motors can be any 'setable' object (motor, temp controller, etc.)
+    """
+    def _pre_scan(self):
+        self._offsets = defaultdict(lambda: 0)
+        yield from super()._pre_scan()
+
+
+class InnerProductDeltaScan(_InnerProductScanBase):
+    """
+    Delta (relative) scan over one multi-motor trajectory
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    num : integer
+        number of steps
+    motor1, start1, stop1, ..., motorN, startN, stopN : list
+        motors can be any 'setable' object (motor, temp controller, etc.)
+    """
+    def _pre_scan(self):
+        self._offsets = {}
+        for motor, start, stop, in chunked(self.args, 3):
+            ret = yield Msg('read', motor)
+            if len(ret.keys()) > 1:
+                raise NotImplementedError("Can't DScan this motor")
+            key, = ret.keys()
+            current_value = ret[key]['value']
+            self._offsets[motor] = current_value
+        yield from super()._pre_scan()
+
+    def _post_scan(self):
+        # Return the motor to its original position.
+        yield from super()._post_scan()
+        for motor, start, stop, in chunked(self.args, 3):
+            yield Msg('set', motor, self._offsets[motor], block_group='A')
+        yield Msg('wait', None, 'A')
+
+
+class OuterProductAbsScan(_OuterProductScanBase):
+    """
+    Absolute scan over a mesh; each motor is on an independent trajectory
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    motor1, start1, stop1, num1, ..., motorN, startN, stopN, numN : list
+        motors can be any 'setable' object (motor, temp controller, etc.)
+    """
+    def _pre_scan(self):
+        self._offsets = defaultdict(lambda: 0)
+        yield from super()._pre_scan()
+
+
+class OuterProductDeltaScan(_OuterProductScanBase):
+    """
+    Delta scan over a mesh; each motor is on an independent trajectory
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    motor1, start1, stop1, num1, ..., motorN, startN, stopN, numN : list
+        motors can be any 'setable' object (motor, temp controller, etc.)
+    """
+    def _pre_scan(self):
+        self._offsets = {}
+        for motor, start, stop, num in chunked(self.args, 4):
+            ret = yield Msg('read', motor)
+            if len(ret.keys()) > 1:
+                raise NotImplementedError("Can't DScan this motor")
+            key, = ret.keys()
+            current_value = ret[key]['value']
+            self._offsets[motor] = current_value
+        yield from super()._pre_scan()
+
+    def _post_scan(self):
+        # Return the motor to its original position.
+        yield from super()._post_scan()
+        for motor, start, stop, num in chunked(self.args, 4):
+            yield Msg('set', motor, self._offsets[motor], block_group='A')
+        yield Msg('wait', None, 'A')
+
+
+class Tweak(ScanBase):
+    """
+    Move and motor and read a detector with an interactive prompt.
+
+    Parameters
+    ----------
+    detetector : Reader
+    target_field : string
+        data field whose output is the focus of the adaptive tuning
+    motor : Mover
+    """
+    _fields = ['detector', 'target_field', 'motor', 'step']
+    prompt_str = '{0}, {1:.3}, {2}, ({3}) '
+
+    def _gen(self):
+        d = self.detector
+        target_field = self.target_field
+        motor = self.motor
+        step = self.step
+        yield Msg('configure', d)
+        while True:
+            yield Msg('create')
+            ret_mot = yield Msg('read', motor)
+            key, = ret_mot.keys()
+            pos = ret_mot[key]['value']
+            yield Msg('trigger', d, block_group='A')
+            yield Msg('wait', None, 'A')
+            reading = Msg('read', d)[target_field]['value']
+            yield Msg('save')
+            prompt = prompt_str.format(motor._name, pos, reading, step)
+            new_step = input(prompt)
+            if new_step:
+                try:
+                    step = float(new_step)
+                except ValueError:
+                    break
+            yield Msg('set', motor, pos + step, block_group='A')
+            print('Motor moving...')
+            sys.stdout.flush()
+            yield Msg('wait', None, 'A')
+            clear_output(wait=True)
+            # stackoverflow.com/a/12586667/380231
+            print('\x1b[1A\x1b[2K\x1b[1A')
+        yield Msg('deconfigure', d)

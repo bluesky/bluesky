@@ -1,7 +1,7 @@
 from nose.tools import assert_equal, assert_raises
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
-from bluesky.scans import AdaptiveAscan
+from bluesky.scans import AdaptiveAbsScan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
 from bluesky.tests.utils import setup_test_run_engine
 from nose.tools import raises
@@ -83,7 +83,7 @@ def _print_redirect():
 def test_table():
     with _print_redirect() as fout:
         table = LiveTable(['det', 'motor'])
-        ad_scan = AdaptiveAscan([det], 'det', motor, -15, 5, .01, 1, .05, True)
+        ad_scan = AdaptiveAbsScan([det], 'det', motor, -15, 5, .01, 1, .05, True)
         RE(ad_scan, subs={'all': [table]})
 
     fout.seek(0)
@@ -98,7 +98,7 @@ def test_table():
         else:
             # skip the 'time' column on data rows
             # this is easier than faking up times in the scan!
-            assert_equal(ln[:17], kn[:17])
+            assert_equal(ln[:16], kn[:16])
             assert_equal(ln[31:], kn[31:])
 
 
