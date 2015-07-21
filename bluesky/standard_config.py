@@ -2,6 +2,7 @@
 None of this is essential, but it is useful and generally recommended.
 """
 import os
+import asyncio
 from getpass import getuser
 import logging
 import history
@@ -19,6 +20,11 @@ from bluesky.spec_api import *
 from bluesky.callbacks import LiveTable, LivePlot, print_metadata
 
 logger = logging.getLogger(__name__)
+
+
+loop = asyncio.get_event_loop()
+loop.set_debug(False)
+
 
 
 ### Set up a History object to handle peristence (scan ID, etc.)
@@ -88,7 +94,7 @@ def show_debug_logs():
 
 
 def basic_checklist(ca_url=None, disk_storage=None, pv_names=None,
-                    pv_conditions=None):
+                    pv_conditions=None, swallow_errors=False):
     """
     Run checklist of functions that ensure the setup is working.
 
@@ -129,46 +135,49 @@ def basic_checklist(ca_url=None, disk_storage=None, pv_names=None,
                    ('PV:BEAR', 'bear is 4-6', assert_pv_in_band, 4, 6)])
     """
     print("  Attempting to connect to metadatastore mongodb...")
-    _try_and_print(connect_mds_mongodb)
+    _try_and_print(connect_mds_mongodb, swallow_errors=swallow_errors)
     print("  Attempting to connect to filestore mongodb...")
-    _try_and_print(connect_fs_mongodb)
+    _try_and_print(connect_fs_mongodb, swallow_errors=swallow_errors)
     print("  Attempting to connect to the olog...")
-    _try_and_print(connect_olog)
+    _try_and_print(connect_olog, swallow_errors=swallow_errors)
 
     if ca_url is None:
         print("- Skipping channel arciver check; no URL was provided.")
     else:
         print("  Attempting to connect to the channel archiver...")
-        _try_and_print(connect_channelarchiver, ca_url)
+        _try_and_print(connect_channelarchiver, ca_url,
+                       swallow_errors=swallow_errors)
     if disk_storage is None:
         print("- Skipping storage disk check; no disks were specified.")
     else:
         for disk, required_free in disk_storage:
             print("  Checking that %s has at least %d bytes free..." %
                   (disk, required_free))
-            _try_and_print(check_storage, disk, required_free)
+            _try_and_print(check_storage, disk, required_free,
+                           swallow_errors=swallow_errors)
 
     if pv_names is None:
         print("- Skipping PV responsiveness checks; no PV names were given.")
     else:
         for pv_name in pv_names:
             print("  Checking that the PV '%s' is responsive..." % pv_name)
-            _try_and_print(connect_pv, pv_name)
+            _try_and_print(connect_pv, pv_name, swallow_errors=swallow_errors)
 
     if pv_conditions is None:
         print("- Skipping PV conditions; none were specified.")
     else:
         for pv_name, msg, func, *args in pv_conditions:
             print("  Checking that %s..." % msg)
-            _try_and_print(func, pv_name, *args)
+            _try_and_print(func, pv_name, *args, swallow_errors=swallow_errors)
 
 
-def _try_and_print(func, *args):
+def _try_and_print(func, *args, swallow_errors=False):
     "Gratuitous function to print a checkmark or X on the preceding line"
     try:
         func(*args)
     except:
         print('\x1b[1A\u2717')
-        raise
+        if not swallow_errors:
+            raise
     else:
         print('\x1b[1A\u2713')
