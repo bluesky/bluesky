@@ -70,9 +70,12 @@ class _OuterProductScan(_PrimitiveScan):
             else:
                 raise ValueError("wrong number of positional arguments")
         original_times = _set_acquire_time(time)
-        for i, _ in enumerate(chunked(args, 4)):
+        for i, _ in enumerate(chunked(list(args), 4)):
             # intervals -> intervals + 1
             args[4*i + 3] += 1
+            # never snake; SPEC doesn't know how
+            if i != 0:
+                args.insert(4*(i + 1), False)
         result = super().__call__(*args, subs=subs, **kwargs)
         _unset_acquire_time(original_times)
         return result

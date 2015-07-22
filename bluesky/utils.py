@@ -1,11 +1,14 @@
 import signal
+import operator
+from functools import reduce
 from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
 from collections import OrderedDict, Iterable
 import sys
-
+import numpy as np
+from cycler import cycler 
 import logging
 logger = logging.getLogger(__name__)
 
@@ -357,3 +360,40 @@ def normalize_subs_input(subs):
         raise ValueError("Subscriptions should be a callable, a list of "
                          "callables, or a dictionary mapping subscription "
                          "names to lists of callables.")
+
+
+def snake_cyclers(cyclers, snake_booleans):
+    """
+    Combine cyclers with a 'snaking' back-and-forth order.
+
+    Parameters
+    ----------
+    cyclers : cycler.Cycler
+        or any iterable that yields dictionaries of lists
+    snake_booleans : list
+        a list of the same length as cyclers indicating whether each cycler
+        should 'snake' (True) or not (False). Note that the first boolean
+        does not make a difference because the first (slowest) dimension
+        does not repeat.
+
+    Returns
+    -------
+    result : cycler
+    """
+    if len(cyclers) != len(snake_booleans):
+        raise ValueError("number of cyclers does not match number of booleans")
+    lengths = []
+    new_cyclers = []
+    for c in cyclers:
+        lengths.append(len(c))
+    total_length = np.product(lengths)
+    for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
+        num_tiles = np.product(lengths[:i])
+        num_repeats = np.product(lengths[i+1:])
+        for k, v in c._transpose().items():
+            if snake:
+                v = v + v[::-1]
+            v2 = np.tile(np.repeat(v, num_repeats), num_tiles)
+            expanded = v2[:total_length]
+            new_cyclers.append(cycler(k, expanded))
+    return reduce(operator.add, new_cyclers)

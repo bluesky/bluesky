@@ -5,7 +5,7 @@ from cycler import cycler
 from lmfit.models import GaussianModel, LinearModel
 import numpy as np
 from .run_engine import Msg
-from .utils import Struct
+from .utils import Struct, snake_cyclers
 
 
 class ScanBase(Struct):
@@ -658,28 +658,35 @@ class _OuterProductScanBase(ScanND):
     _fields = ['detectors', 'args']
 
     def __init__(self, detectors, *args):
-        if len(args) % 4 != 0:
+        args = list(args)
+        # The first (slowest) axis is never "snaked." Insert False to
+        # make it easy to iterate over the chunks or args..
+        args.insert(4, False)
+        if len(args) % 5 != 0:
             raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
-        self.args = args
+        self._args = args
         self.motors = []
-        for motor, start, stop, num in chunked(self.args, 4):
+        for motor, start, stop, num, snake in chunked(self.args, 5):
             self.motors.append(motor)
 
     def _pre_scan(self):
         # Build a Cycler for ScanND.
-        self.cycler = None
-        for motor, start, stop, num in chunked(self.args, 4):
+        cyclers = []
+        snake_booleans = []
+        for motor, start, stop, num, snake in chunked(self.args, 5):
             offset = self._offsets[motor]
             steps = offset + np.linspace(start, stop, num=num, endpoint=True)
             c = cycler(motor, steps)
-            # Special case first pass because their is no
-            # mutliplicative identity for cyclers.
-            if self.cycler is None:
-                self.cycler = c
-            else:
-                self.cycler *= c
+            cyclers.append(c)
+            snake_booleans.append(snake)
+        self.cycler = snake_cyclers(cyclers, snake_booleans)
         yield from super()._pre_scan()
+
+    @property
+    def args(self):
+        # Do this so that args is not settable. Too complex to allow updates.
+        return self._args
 
 
 class _InnerProductScanBase(ScanND):
@@ -691,10 +698,15 @@ class _InnerProductScanBase(ScanND):
             raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
         self.num = num
-        self.args = args
+        self._args = args
         self.motors = []
         for motor, start, stop, in chunked(self.args, 3):
             self.motors.append(motor)
+
+    @property
+    def args(self):
+        # Do this so that args is not settable. Too complex to allow updates.
+        return self._args
 
     def _pre_scan(self):
         # Build a Cycler for ScanND.
@@ -771,8 +783,14 @@ class OuterProductAbsScan(_OuterProductScanBase):
     ----------
     detectors : list
         list of 'readable' objects
-    motor1, start1, stop1, num1, ..., motorN, startN, stopN, numN : list
+    motor1, start1, stop1, num1, \
+    motor2, start2, stop2, num2, snake2, \
+    ..., motorN, startN, stopN, numN, snakeN : list
         motors can be any 'setable' object (motor, temp controller, etc.)
+        Notice that the first motor is followed by start, stop, num.
+        All other motors are followed by start, stop, num, snake where snake
+        is a boolean indicating whether to following snake-like, winding
+        trajectory or a simple left-to-right trajectory.
     """
     def _pre_scan(self):
         self._offsets = defaultdict(lambda: 0)
@@ -787,12 +805,18 @@ class OuterProductDeltaScan(_OuterProductScanBase):
     ----------
     detectors : list
         list of 'readable' objects
-    motor1, start1, stop1, num1, ..., motorN, startN, stopN, numN : list
+    motor1, start1, stop1, num1, \
+    motor2, start2, stop2, num2, snake2, \
+    ..., motorN, startN, stopN, numN, snakeN : list
         motors can be any 'setable' object (motor, temp controller, etc.)
+        Notice that the first motor is followed by start, stop, num.
+        All other motors are followed by start, stop, num, snake where snake
+        is a boolean indicating whether to following snake-like, winding
+        trajectory or a simple left-to-right trajectory.
     """
     def _pre_scan(self):
         self._offsets = {}
-        for motor, start, stop, num in chunked(self.args, 4):
+        for motor, start, stop, num, snake in chunked(self.args, 5):
             ret = yield Msg('read', motor)
             if len(ret.keys()) > 1:
                 raise NotImplementedError("Can't DScan this motor")
@@ -804,7 +828,7 @@ class OuterProductDeltaScan(_OuterProductScanBase):
     def _post_scan(self):
         # Return the motor to its original position.
         yield from super()._post_scan()
-        for motor, start, stop, num in chunked(self.args, 4):
+        for motor, start, stop, num, snake in chunked(self.args, 5):
             yield Msg('set', motor, self._offsets[motor], block_group='A')
         yield Msg('wait', None, 'A')
 
