@@ -4,6 +4,7 @@ Useful callbacks for the Run Engine
 import sys
 from itertools import count
 import asyncio
+import warnings
 from prettytable import PrettyTable
 
 import matplotlib.backends.backend_qt5
@@ -334,8 +335,10 @@ class LiveTable(CallbackBase):
                 try:
                     import filestore.api as fsapi
                     val = fsapi.retrieve(val)
-                except (ImportError, KeyError):
-                    pass
+                except Exception as exc:
+                    warnings.warn(UserWarning, "Attempt to read {0} raised {1}"
+                                  "".format(field, exc))
+                    val = 'Not Available'
             if isinstance(val, np.ndarray) or isinstance(val, list):
                 val = np.sum(np.asarray(val))
             try:
