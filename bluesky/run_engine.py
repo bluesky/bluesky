@@ -475,12 +475,13 @@ class RunEngine:
         self._genstack.append(gen)
         self._new_gen = True
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            self._task = loop.create_task(self._run())
-            loop.run_forever()
-            if self._task.done() and not self._task.cancelled():
-                exc = self._task.exception()
-                if exc is not None:
-                    raise exc
+            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:  # ^Z
+                self._task = loop.create_task(self._run())
+                loop.run_forever()
+                if self._task.done() and not self._task.cancelled():
+                    exc = self._task.exception()
+                    if exc is not None:
+                        raise exc
 
         return self._run_start_uids
 
@@ -526,13 +527,14 @@ class RunEngine:
         # may be called by 'resume' or 'abort'
         self.state = 'running'
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            if self._task.done():
-                return
-            loop.run_forever()
-            if self._task.done() and not self._task.cancelled():
-                exc = self._task.exception()
-                if exc is not None:
-                    raise exc
+            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:  # ^Z
+                if self._task.done():
+                    return
+                loop.run_forever()
+                if self._task.done() and not self._task.cancelled():
+                    exc = self._task.exception()
+                    if exc is not None:
+                        raise exc
 
     def request_suspend(self, fut):
         """
@@ -655,9 +657,15 @@ class RunEngine:
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
         if self.state.is_running:
-            if self._sigint_handler.interrupted:
+            if self._sigtstp_handler.interrupted:
                 self.debug("RunEngine detected a SIGINT (Ctrl+C)")
                 loop.call_soon(self.request_pause, False, 'SIGINT')
+                self._sigtstp_handler.interrupted = False
+            if self._sigint_handler.interrupted:
+                self.debug("RunEngine detected a SIGTSTP (Ctrl+Z)")
+                print("RunEngine will pause and then abort.")
+                self.request_pause(False, 'SIGTSTP')
+                self.abort()
                 self._sigint_handler.interrupted = False
 
         loop.call_later(0.1, self._check_for_signals)
