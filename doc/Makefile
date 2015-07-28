@@ -197,4 +197,4 @@ pseudoxml:
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
 
 gh-pages:
-	cd .. && git checkout gh-pages && git rm -rf . && touch .nojekyll && mv doc/build/html/* . && rm -rf doc && git add -A && git commit -a --amend -m "Makefile is force-commiting new build." && git push origin gh-pages -f && cd .. && git checkout --
+	cd .. && git checkout gh-pages && git rm -rf . && touch .nojekyll && mv doc/build/html/* . && rm -rf doc && git add -A && git commit -a --amend -m "Makefile is force-commiting new build." && git push NSLS-II gh-pages -f && cd .. && git checkout --
