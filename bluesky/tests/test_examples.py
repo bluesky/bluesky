@@ -313,7 +313,7 @@ def test_suspend_resume():
     pid = os.getpid()
 
     def sim_kill():
-        os.kill(pid, signal.SIGINT)
+        os.kill(pid, signal.SIGTSTP)
 
     scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
     assert_equal(RE.state, 'idle')
@@ -342,7 +342,7 @@ def test_suspend_abort():
     pid = os.getpid()
 
     def sim_kill():
-        os.kill(pid, signal.SIGINT)
+        os.kill(pid, signal.SIGTSTP)
 
     scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
     assert_equal(RE.state, 'idle')
