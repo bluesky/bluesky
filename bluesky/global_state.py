@@ -3,6 +3,7 @@ This module creates a singleton object to store settings such as which
 RunEngine and detectors the simple scan interface should invoke.
 """
 from traitlets import HasTraits, TraitType, Unicode, List, Float
+import itertools
 from collections import Iterable
 from bluesky.run_engine import RunEngine
 
@@ -57,6 +58,10 @@ class ReadableList(TraitType):
                 validate_readable(det)
             except TypeError:
                 self.error(obj, value)
+        # The data keys taken together must be unique.
+        data_keys = itertools.chain([obj.describe() for det in value])
+        if len(set(data_keys)) < len(data_keys):
+            self.error(obj, value)
         return value
 
 
