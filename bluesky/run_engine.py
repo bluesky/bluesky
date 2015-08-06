@@ -201,7 +201,6 @@ class RunEngine:
         self._run_is_open = False  # if we have emitted a RunStart, no RunStop
         self._deferred_pause_requested = False  # pause at next 'checkpoint'
         self._sigint_handler = None  # intercepts Ctrl+C
-        self._sigtstp_handler = None  # intercepts Ctrl+Z
         self._exception = None  # stored and then raised in the _run loop
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
