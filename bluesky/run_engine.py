@@ -734,7 +734,16 @@ class RunEngine:
         obj = msg.obj
         self._objs_read.append(obj)
         if obj not in self._describe_cache:
-            self._describe_cache[obj] = obj.describe()
+            # Validate that there is no data key name collision.
+            data_keys = obj.describe()
+            keys = data_keys.keys()  # that is, field names
+            for known_obj, known_data_keys in self._describe_cache.items():
+                known_keys = known_data_keys.keys()  # that is, field names
+                if len(set(known_keys) & set(keys)) > 0:
+                    raise ValueError("Data keys (field names) from {0!r} "
+                                     "collide with those from {1!r}"
+                                     "".format(obj, old_obj))
+            self._describe_cache[obj] = data_keys
         ret = obj.read(*msg.args, **msg.kwargs)
         self._read_cache.append(ret)
         return ret
