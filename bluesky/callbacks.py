@@ -4,6 +4,7 @@ Useful callbacks for the Run Engine
 import sys
 from itertools import count
 import asyncio
+import warnings
 from prettytable import PrettyTable
 
 import matplotlib.backends.backend_qt5
@@ -251,7 +252,7 @@ class LiveTable(CallbackBase):
 
     """
     base_fields = ['seq_num', 'time']
-    base_field_widths = [8, 15]
+    base_field_widths = [8, 10]
     data_field_width = 12
     max_pre_decimal = 5
     max_post_decimal = 2
@@ -326,16 +327,19 @@ class LiveTable(CallbackBase):
             # self._print_table_header()
 
     def event(self, event_document):
-        event_time = str(datetime.fromtimestamp(event_document['time']).time())
-        row = [event_document['seq_num'], event_time]
+        event_time = datetime.fromtimestamp(event_document['time']).time()
+        rounded_time = str(event_time)[:10]
+        row = [event_document['seq_num'], rounded_time]
         for field in self.fields:
             val = event_document['data'].get(field, '')
             if field in self._filestore_keys:
                 try:
                     import filestore.api as fsapi
                     val = fsapi.retrieve(val)
-                except (ImportError, KeyError):
-                    pass
+                except Exception as exc:
+                    warnings.warn(UserWarning, "Attempt to read {0} raised {1}"
+                                  "".format(field, exc))
+                    val = 'Not Available'
             if isinstance(val, np.ndarray) or isinstance(val, list):
                 val = np.sum(np.asarray(val))
             try:

@@ -15,6 +15,7 @@ import json
 import jsonschema
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
+from super_state_machine.errors import TransitionError
 import numpy as np
 from pkg_resources import resource_filename as rs_fn
 
@@ -199,8 +200,7 @@ class RunEngine:
         self._bundling = False  # if we are in the middle of bundling readings
         self._run_is_open = False  # if we have emitted a RunStart, no RunStop
         self._deferred_pause_requested = False  # pause at next 'checkpoint'
-        self._sigint_handler = None
-        self._sigtstp_handler = None
+        self._sigint_handler = None  # intercepts Ctrl+C
         self._exception = None  # stored and then raised in the _run loop
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
@@ -217,8 +217,8 @@ class RunEngine:
         self._genstack = deque()  # stack of generators to work off of
         self._new_gen = True  # flag if we need to prime the generator
         self._exit_status = 'success'  # optimistic default
-        self._reason = ''
-        self._task = None
+        self._reason = ''  # reason for abort
+        self._task = None  # asyncio.Task associated with call to self._run
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -557,23 +557,24 @@ class RunEngine:
 
     def abort(self, reason=''):
         """
-        Stop a paused scan and mark it as aborted.
+        Stop a running or paused scan and mark it as aborted.
         """
-        # The state machine does not capture the whole picture.
-        if not self.state.is_paused:
-            raise RuntimeError("The RunEngine is the {0} state. You can only "
-                               "resume for the paused state.".format(
-                                   self.state))
+        if self.state.is_idle:
+            raise TransitionError("RunEngine is already idle.")
         print("Aborting....")
         self._reason = reason
         self._exception = RequestAbort()
         self._task.cancel()
-        self._resume_event_loop()
+        if self.state == 'paused':
+            self._resume_event_loop()
 
     def stop(self):
+        if self.state.is_idle:
+            raise TransitionError("RunEngine is already idle.")
         print("Stopping...")
         self._exception = RequestStop()
-        self._resume_event_loop()
+        if self.state == 'paused':
+            self._resume_event_loop()
 
     @asyncio.coroutine
     def _run(self):
@@ -656,9 +657,21 @@ class RunEngine:
         # Check for pause requests from keyboard.
         if self.state.is_running:
             if self._sigint_handler.interrupted:
-                self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-                loop.call_soon(self.request_pause, False, 'SIGINT')
                 self._sigint_handler.interrupted = False
+                with SignalHandler(signal.SIGINT) as second_sigint_handler:
+                    self.debug("RunEngine detected a SIGINT (Ctrl+C)")
+                    # We know we will either pause or abort, so we can
+                    # hold up the scan now. Wait until 0.5 seconds pass or
+                    # we catch a second SIGINT, whichever happens first.
+                    for i in range(10):
+                        ttime.sleep(0.05)
+                        if second_sigint_handler.interrupted:
+                            self.debug("RunEngine detected as second SIGINT")
+                            loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
+                            break
+                    else:
+                        loop.call_soon(self.request_pause, False, 'SIGINT')
+                        print(PAUSE_MSG)
 
         loop.call_later(0.1, self._check_for_signals)
 
@@ -1102,3 +1115,17 @@ class IllegalMessageSequence(Exception):
 
 class FailedPause(Exception):
     pass
+
+
+PAUSE_MSG = """
+Your RunEngine is entering a paused state. These are your options for changing
+the state of the RunEngine:
+
+resume()  --> will resume the scan
+ abort()  --> will kill the scan with an 'aborted' state to indicate
+              the scan was interrupted
+  stop()  --> will kill the scan with a 'finished' state to indicate
+              the scan stopped normally
+
+Pro Tip: Next time, if you want to abort, tap Ctrl+C twice quickly.
+"""

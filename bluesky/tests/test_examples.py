@@ -11,6 +11,7 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
 from bluesky.callbacks import LivePlot
 from bluesky import RunEngine, Msg, PanicError
 from bluesky.tests.utils import setup_test_run_engine
+from bluesky.testing.noseclasses import KnownFailureTest
 import os
 import signal
 import asyncio
@@ -303,7 +304,7 @@ def test_suspend():
     assert_equal(RE.state, 'idle')
 
 
-def test_suspend_resume():
+def test_pause_resume():
     ev = asyncio.Event()
 
     def done():
@@ -332,7 +333,7 @@ def test_suspend_resume():
     assert stop - start > 2
 
 
-def test_suspend_abort():
+def test_pause_abort():
     ev = asyncio.Event()
 
     def done():
@@ -358,6 +359,35 @@ def test_suspend_abort():
     stop = ttime.time()
 
     assert mid - start > 1
+    assert stop - start < 2
+
+
+def test_abort():
+    raise KnownFailureTest
+    ev = asyncio.Event()
+
+    def done():
+        print("Done")
+        ev.set()
+
+    pid = os.getpid()
+
+    def sim_kill():
+        os.kill(pid, signal.SIGINT)
+        ttime.sleep(0.1)
+        os.kill(pid, signal.SIGINT)
+
+    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
+    RE.verbose = True
+    assert_equal(RE.state, 'idle')
+    start = ttime.time()
+    # loop.call_later(1, sim_kill)
+    # loop.call_later(2, done)
+
+    RE(scan)
+    assert_equal(RE.state, 'idle')
+    stop = ttime.time()
+
     assert stop - start < 2
 
 

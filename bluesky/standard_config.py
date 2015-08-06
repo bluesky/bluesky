@@ -26,6 +26,10 @@ loop = asyncio.get_event_loop()
 loop.set_debug(False)
 
 
+# pylab-esque imports
+from time import sleep
+import numpy as np
+
 
 ### Set up a History object to handle peristence (scan ID, etc.)
 
