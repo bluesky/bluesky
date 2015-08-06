@@ -742,7 +742,7 @@ class RunEngine:
                 if len(set(known_keys) & set(keys)) > 0:
                     raise ValueError("Data keys (field names) from {0!r} "
                                      "collide with those from {1!r}"
-                                     "".format(obj, old_obj))
+                                     "".format(obj, known_obj))
             self._describe_cache[obj] = data_keys
         ret = obj.read(*msg.args, **msg.kwargs)
         self._read_cache.append(ret)

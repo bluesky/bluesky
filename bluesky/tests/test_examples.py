@@ -6,7 +6,7 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               wait_multiple, motor1, motor2, conditional_pause,
                               loop, checkpoint_forever, simple_scan_saving,
                               stepscan, MockFlyer, fly_gen, panic_timer,
-                              conditional_break
+                              conditional_break, SynGauss
                               )
 from bluesky.callbacks import LivePlot
 from bluesky import RunEngine, Msg, PanicError
@@ -388,3 +388,20 @@ def test_seqnum_nonrepeated():
     RE(gen(), {'event': f})
     RE.resume()
     assert_equal(seq_nums, [1, 2, 2, 3])
+
+
+def test_duplicate_keys():
+    # two detectors, same data keys
+    det1 = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+    det2 = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+    def gen():
+        yield(Msg('open_run'))
+        yield(Msg('create'))
+        yield(Msg('trigger', det1))
+        yield(Msg('trigger', det2))
+        yield(Msg('read', det1))
+        yield(Msg('read', det2))
+        yield(Msg('save'))
+
+    with assert_raises(ValueError):
+        RE(gen())
