@@ -58,8 +58,10 @@ class ReadableList(TraitType):
                 validate_readable(det)
             except TypeError:
                 self.error(obj, value)
+        # Read the scary line below as "flatten data key names"
+        data_keys = list(itertools.chain.from_iterable(
+                             [list(det.describe().keys()) for det in value]))
         # The data keys taken together must be unique.
-        data_keys = itertools.chain([obj.describe() for det in value])
         if len(set(data_keys)) < len(data_keys):
             self.error(obj, value)
         return value
