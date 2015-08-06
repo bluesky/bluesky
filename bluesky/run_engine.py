@@ -661,11 +661,14 @@ class RunEngine:
                 with SignalHandler(signal.SIGINT) as second_sigint_handler:
                     self.debug("RunEngine detected a SIGINT (Ctrl+C)")
                     # We know we will either pause or abort, so we can
-                    # hold up the scan now....
-                    ttime.sleep(0.5)  # give user time to hit Ctrl+C again
-                    if second_sigint_handler.interrupted:
-                        self.debug("RunEngine detected as second SIGINT")
-                        loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
+                    # hold up the scan now. Wait until 0.5 seconds pass or
+                    # we catch a second SIGINT, whichever happens first.
+                    for i in range(10):
+                        ttime.sleep(0.05)
+                        if second_sigint_handler.interrupted:
+                            self.debug("RunEngine detected as second SIGINT")
+                            loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
+                            break
                     else:
                         loop.call_soon(self.request_pause, False, 'SIGINT')
                         print(PAUSE_MSG)
