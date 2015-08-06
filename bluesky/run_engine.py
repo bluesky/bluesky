@@ -559,18 +559,14 @@ class RunEngine:
 
     def abort(self, reason=''):
         """
-        Stop a paused scan and mark it as aborted.
+        Stop a running or paused scan and mark it as aborted.
         """
-        # The state machine does not capture the whole picture.
-        if not self.state.is_paused:
-            raise RuntimeError("The RunEngine is the {0} state. You can only "
-                               "resume for the paused state.".format(
-                                   self.state))
         print("Aborting....")
         self._reason = reason
         self._exception = RequestAbort()
         self._task.cancel()
-        self._resume_event_loop()
+        if self.state == 'paused':
+            self._resume_event_loop()
 
     def stop(self):
         print("Stopping...")
@@ -658,14 +654,12 @@ class RunEngine:
         # Check for pause requests from keyboard.
         if self.state.is_running:
             if self._sigtstp_handler.interrupted:
-                self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-                loop.call_soon(self.request_pause, False, 'SIGINT')
+                self.debug("RunEngine detected a SIGTSTP (Ctrl+Z)")
+                loop.call_soon(self.request_pause, False, 'SIGTSTP')
                 self._sigtstp_handler.interrupted = False
             if self._sigint_handler.interrupted:
-                self.debug("RunEngine detected a SIGTSTP (Ctrl+Z)")
-                print("RunEngine will pause and then abort.")
-                self.request_pause(False, 'SIGTSTP')
-                self.abort()
+                self.debug("RunEngine detected a SIGINT (Ctrl+C)")
+                loop.call_soon(self.abort, "SIGINT (Ctrl+C) detected")
                 self._sigint_handler.interrupted = False
 
         loop.call_later(0.1, self._check_for_signals)
