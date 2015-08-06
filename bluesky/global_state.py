@@ -18,7 +18,7 @@ class RunEngineTraitType(TraitType):
 
     def validate(self, obj, value):
         if not isinstance(value, RunEngine):
-            self.error(obj, vluae)
+            self.error(obj, value)
         return value
 
 
@@ -28,7 +28,7 @@ class Readable(TraitType):
 
     def validate(self, obj, value):
         try:
-            validate_detector(value)
+            validate_readable(value)
         except TypeError:
             self.error(obj, value)
         return value
@@ -45,7 +45,7 @@ class Movable(TraitType):
         return value
 
 
-class DetectorList(TraitType):
+class ReadableList(TraitType):
 
     info_text = 'a list or iterable of Readable (detector-like) objects'
 
@@ -54,21 +54,22 @@ class DetectorList(TraitType):
             self.error(obj, value)
         for det in value:
             try:
-                validate_detector(det)
+                validate_readable(det)
             except TypeError:
                 self.error(obj, value)
         return value
 
 
-def validate_detector(det):
+def validate_readable(det):
     if isinstance(det, str):
         raise TypeError("{0} is a string, not a Readable object "
                         "(Do not use quotes)".format(det))
     required_methods = ['read', 'trigger']
     for method in required_methods:
         if not hasattr(det, method):
-            raise TypeError("{0} is not a detector; it does not have "
-                            "a '{1}' method'".format(det, method))
+            raise TypeError("{0} is not a Readable (detector-like) object; "
+                            "it does not have a "
+                            "'{1}' method'".format(det, method))
 
 
 def validate_movable(movable):
@@ -78,14 +79,15 @@ def validate_movable(movable):
     required_methods = ['read', 'set']
     for method in required_methods:
         if not hasattr(movable, method):
-            raise TypeError("{0} is not a Movable; it does not have "
+            raise TypeError("{0} is not a Movable (positioner-like) object; "
+                            "it does not have "
                             "a '{1}' method'".format(det, method))
 
 
 class GlobalState(HasTraits):
     "A bucket of validated global state used by the simple scan API"
     RE = RunEngineTraitType()
-    DETS = DetectorList()
+    DETS = ReadableList()
     MASTER_DET = Readable()
     MASTER_DET_FIELD = Unicode()
     H_MOTOR = Readable()
