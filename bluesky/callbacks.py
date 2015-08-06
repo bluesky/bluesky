@@ -252,7 +252,7 @@ class LiveTable(CallbackBase):
 
     """
     base_fields = ['seq_num', 'time']
-    base_field_widths = [8, 15]
+    base_field_widths = [8, 10]
     data_field_width = 12
     max_pre_decimal = 5
     max_post_decimal = 2
@@ -327,8 +327,9 @@ class LiveTable(CallbackBase):
             # self._print_table_header()
 
     def event(self, event_document):
-        event_time = str(datetime.fromtimestamp(event_document['time']).time())
-        row = [event_document['seq_num'], event_time]
+        event_time = datetime.fromtimestamp(event_document['time']).time()
+        rounded_time = str(event_time)[:10]
+        row = [event_document['seq_num'], rounded_time]
         for field in self.fields:
             val = event_document['data'].get(field, '')
             if field in self._filestore_keys:
