@@ -15,6 +15,7 @@ import json
 import jsonschema
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
+from super_state_machine.errors import TransitionError
 import numpy as np
 from pkg_resources import resource_filename as rs_fn
 
@@ -475,13 +476,12 @@ class RunEngine:
         self._genstack.append(gen)
         self._new_gen = True
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:  # ^Z
-                self._task = loop.create_task(self._run())
-                loop.run_forever()
-                if self._task.done() and not self._task.cancelled():
-                    exc = self._task.exception()
-                    if exc is not None:
-                        raise exc
+            self._task = loop.create_task(self._run())
+            loop.run_forever()
+            if self._task.done() and not self._task.cancelled():
+                exc = self._task.exception()
+                if exc is not None:
+                    raise exc
 
         return self._run_start_uids
 
@@ -527,14 +527,13 @@ class RunEngine:
         # may be called by 'resume' or 'abort'
         self.state = 'running'
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
-            with SignalHandler(signal.SIGTSTP) as self._sigtstp_handler:  # ^Z
-                if self._task.done():
-                    return
-                loop.run_forever()
-                if self._task.done() and not self._task.cancelled():
-                    exc = self._task.exception()
-                    if exc is not None:
-                        raise exc
+            if self._task.done():
+                return
+            loop.run_forever()
+            if self._task.done() and not self._task.cancelled():
+                exc = self._task.exception()
+                if exc is not None:
+                    raise exc
 
     def request_suspend(self, fut):
         """
@@ -561,6 +560,8 @@ class RunEngine:
         """
         Stop a running or paused scan and mark it as aborted.
         """
+        if self.state.is_idle:
+            raise TransitionError("RunEngine is already idle.")
         print("Aborting....")
         self._reason = reason
         self._exception = RequestAbort()
@@ -569,9 +570,12 @@ class RunEngine:
             self._resume_event_loop()
 
     def stop(self):
+        if self.state.is_idle:
+            raise TransitionError("RunEngine is already idle.")
         print("Stopping...")
         self._exception = RequestStop()
-        self._resume_event_loop()
+        if self.state == 'paused':
+            self._resume_event_loop()
 
     @asyncio.coroutine
     def _run(self):
@@ -653,14 +657,19 @@ class RunEngine:
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
         if self.state.is_running:
-            if self._sigtstp_handler.interrupted:
-                self.debug("RunEngine detected a SIGTSTP (Ctrl+Z)")
-                loop.call_soon(self.request_pause, False, 'SIGTSTP')
-                self._sigtstp_handler.interrupted = False
             if self._sigint_handler.interrupted:
-                self.debug("RunEngine detected a SIGINT (Ctrl+C)")
-                loop.call_soon(self.abort, "SIGINT (Ctrl+C) detected")
                 self._sigint_handler.interrupted = False
+                with SignalHandler(signal.SIGINT) as second_sigint_handler:
+                    self.debug("RunEngine detected a SIGINT (Ctrl+C)")
+                    # We know we will either pause or abort, so we can
+                    # hold up the scan now....
+                    ttime.sleep(0.5)  # give user time to hit Ctrl+C again
+                    if second_sigint_handler.interrupted:
+                        self.debug("RunEngine detected as second SIGINT")
+                        loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
+                    else:
+                        loop.call_soon(self.request_pause, False, 'SIGINT')
+                        print(PAUSE_MSG)
 
         loop.call_later(0.1, self._check_for_signals)
 
@@ -1104,3 +1113,17 @@ class IllegalMessageSequence(Exception):
 
 class FailedPause(Exception):
     pass
+
+
+PAUSE_MSG = """
+Your RunEngine is entering a paused state. These are your options for changing
+the state of the RunEngine:
+
+resume()  --> will resume the scan
+ abort()  --> will kill the scan with an 'aborted' state to indicate
+              the scan was interrupted
+  stop()  --> will kill the scan with a 'finished' state to indicate
+              the scan stopped normally
+
+Pro Tip: Next time, if you want to abort, tap Ctrl+C twice quickly.
+"""
