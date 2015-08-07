@@ -150,7 +150,7 @@ class LivePlot(CallbackBase):
     def __init__(self, y, x=None, legend_keys=None, xlim=None, ylim=None,
                  **kwargs):
         super().__init__()
-        fig, ax = plt.subplots()
+        fig, ax = plt.gcf(), plt.gca()
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
