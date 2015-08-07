@@ -739,7 +739,7 @@ class RunEngine:
             keys = data_keys.keys()  # that is, field names
             for known_obj, known_data_keys in self._describe_cache.items():
                 known_keys = known_data_keys.keys()  # that is, field names
-                if len(set(known_keys) & set(keys)) > 0:
+                if set(known_keys) & set(keys):
                     raise ValueError("Data keys (field names) from {0!r} "
                                      "collide with those from {1!r}"
                                      "".format(obj, known_obj))
