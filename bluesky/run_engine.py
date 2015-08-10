@@ -136,6 +136,7 @@ class RunEngine:
     _loop = loop  # just a convenient way to inspect the global event loop
     state = LoggingPropertyMachine(RunEngineStateMachine, logger=logger)
     _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
+    _RESERVED_FIELDS = ['scan_type', 'scan_args']
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe']
 
     def __init__(self, md=None, logbook=None):
@@ -464,6 +465,21 @@ class RunEngine:
                                      "of functions. The offending entry is\n "
                                      "{0}".format(func))
                 self._temp_callback_ids.add(self.subscribe(name, func))
+
+        # Glean information about the scan and add it to the metadata.
+        for key in self._RESERVED_FIELDS:
+            if key in metadata:
+                raise ValueError("The metadata field {0} is reserved by the "
+                                 "RunEngine. Choose a different name."
+                                 "".format(key))
+        metadata['scan_type'] = getattr(type(plan), '__name__')
+        # The built-in scans have a _fields attribute that lists the names
+        # of the attributes that define their parameters.
+        if hasattr(plan, '_fields'):
+            scan_args = {}
+            for field in plan._fields:
+                scan_args[field] = getattr(plan, field)
+            metadata['scan_args'] = scan_args
 
         self._metadata_per_call = metadata
 
