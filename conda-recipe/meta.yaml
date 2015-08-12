@@ -37,5 +37,5 @@ test:
     - 'bluesky.standard_config'
 
 about:
-  home: https://github.com/NSLS-II/dataportal
+  home: https://github.com/NSLS-II/bluesky
   license: BSD
