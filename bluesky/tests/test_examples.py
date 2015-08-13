@@ -161,7 +161,7 @@ def test_simple_scan_saving():
     yield run, simple_scan_saving, det, motor
 
 
-def print_event_time(doc):
+def print_event_time(name, doc):
     print('===== EVENT TIME:', doc['time'], '=====')
 
 
@@ -240,14 +240,14 @@ def _md(md):
 
 
 def validate_dict_cb(key, val):
-    def callback(doc):
+    def callback(name, doc):
         assert_in(key, doc)
         assert_equal(doc[key], val)
     return callback
 
 
 def validate_dict_cb_opposite(key):
-    def callback(doc):
+    def callback(name, doc):
         assert_not_in(key, doc)
     return callback
 
@@ -412,7 +412,7 @@ def test_seqnum_nonrepeated():
 
     seq_nums = []
 
-    def f(doc):
+    def f(name, doc):
         seq_nums.append(doc['seq_num'])
 
     RE(gen(), {'event': f})

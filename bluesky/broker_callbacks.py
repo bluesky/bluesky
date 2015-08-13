@@ -69,7 +69,7 @@ def post_run(callback):
     |         1  |  14:02:32.099807  |          5.00  |          1.00  |
     +------------+-------------------+----------------+----------------+
     """
-    def f(stop_doc):
+    def f(name, stop_doc):
         uid = stop_doc['run_start']
         start, = find_run_starts(uid=uid)
         descriptors = find_event_descriptors(run_start=uid)

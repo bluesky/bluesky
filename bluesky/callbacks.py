@@ -50,11 +50,9 @@ class CallbackBase(object):
     def __init__(self):
         super().__init__()
 
-    def __call__(self, doc):
-        """Inspect the document, infer its type, and dispatch it."""
-        doc_name = doc_type(doc)
-        doc_func = getattr(self, doc_name)
-        doc_func(doc)
+    def __call__(self, name, doc):
+        "Dispatch to methods expecting particular doc types."
+        return getattr(self, name)(doc)
 
     def event(self, doc):
         logger.debug("CallbackBase: I'm an event with doc = {}".format(doc))
@@ -76,11 +74,11 @@ class CallbackCounter:
         self.counter = count()
         self(None)  # Start counting at 1.
 
-    def __call__(self, doc):
+    def __call__(self, name, doc):
         self.value = next(self.counter)
 
 
-def print_metadata(doc):
+def print_metadata(name, doc):
     "Print all fields except uid and time."
     for field, value in sorted(doc.items()):
         # uid is returned by the RunEngine, and time is self-evident
@@ -107,7 +105,7 @@ def collector(field, output):
     func : function
         expects one argument, an Event dictionary
     """
-    def f(event):
+    def f(name, event):
         output.append(event['data'][field])
 
     return f
