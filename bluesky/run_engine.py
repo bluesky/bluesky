@@ -995,7 +995,7 @@ class RunEngine:
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
-        self._scan_cb_registry.process(name, doc)
+        self._scan_cb_registry.process(name, name, doc)
         if name != DocumentNames.event:
             self.dispatcher.process(name, doc)
             logger.info("Emitting %s document: %r", name.name, doc)
@@ -1020,7 +1020,7 @@ class Dispatcher:
         self._token_mapping = dict()
 
     def process(self, name, doc):
-        self.cb_registry.process(name, doc)
+        self.cb_registry.process(name, name, doc)
 
     def subscribe(self, name, func):
         """
