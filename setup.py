@@ -1,4 +1,5 @@
 from __future__ import (absolute_import, division, print_function)
+import versioneer
 
 try:
     from setuptools import setup
@@ -10,7 +11,8 @@ except ImportError:
 
 setup(
     name='bluesky',
-    version='0.1.0',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     author='danielballan',
     author_email=None,
     license="BSD (3-clause)",
