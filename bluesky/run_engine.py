@@ -233,6 +233,8 @@ class RunEngine:
             'pause': self._pause,
             'collect': self._collect,
             'kickoff': self._kickoff,
+            'open': self._open,
+            'close': self._close,
             'logbook': self._logbook,
             'configure': self._configure,
             'deconfigure': self._deconfigure,
@@ -818,16 +820,24 @@ class RunEngine:
     def _kickoff(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.kickoff(*msg.args, **msg.kwargs)
-
         if block_group:
-            p_event = asyncio.Event()
+            self._configure_block(ret, block_grounp):
+        return ret
 
-            def done_callback():
-                loop.call_soon_threadsafe(p_event.set)
+    @asyncio.coroutine
+    def _open(self, msg):
+        block_group = msg.kwargs.pop('block_group', None)
+        ret = msg.obj.open()
+        if block_group:
+            self._configure_block(ret, block_grounp):
+        return ret
 
-            ret.finished_cb = done_callback
-            self._block_groups[block_group].add(p_event.wait())
-
+    @asyncio.coroutine
+    def _close(self, msg):
+        block_group = msg.kwargs.pop('block_group', None)
+        ret = msg.obj.close()
+        if block_group:
+            self._configure_block(ret, block_grounp):
         return ret
 
     @asyncio.coroutine
@@ -866,35 +876,29 @@ class RunEngine:
     def _null(self, msg):
         pass
 
+    def _configure_block(self, ret, block_group):
+        p_event = asyncio.Event()
+
+        def done_callback():
+            loop.call_soon_threadsafe(p_event.set)
+
+        ret.finished_cb = done_callback
+        self._block_groups[block_group].add(p_event.wait())
+
     @asyncio.coroutine
     def _set(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
         if block_group:
-            p_event = asyncio.Event()
-
-            def done_callback():
-                loop.call_soon_threadsafe(p_event.set)
-
-            ret.finished_cb = done_callback
-            self._block_groups[block_group].add(p_event.wait())
-
+            self._configure_block(ret, block_grounp):
         return ret
 
     @asyncio.coroutine
     def _trigger(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
-
         if block_group:
-            p_event = asyncio.Event()
-
-            def done_callback():
-                loop.call_soon_threadsafe(p_event.set)
-
-            ret.finished_cb = done_callback
-            self._block_groups[block_group].add(p_event.wait())
-
+            self._configure_block(ret, block_grounp):
         return ret
 
     @asyncio.coroutine
