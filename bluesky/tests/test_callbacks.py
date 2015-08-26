@@ -61,7 +61,7 @@ def test_subscribe_msg():
 
 
 def test_unknown_cb_raises():
-    def f(doc):
+    def f(name, doc):
         pass
     # Dispatches catches this case.
     assert_raises(KeyError, RE.subscribe, 'not a thing', f)
