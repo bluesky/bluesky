@@ -478,7 +478,7 @@ class RunEngine:
         if hasattr(plan, '_fields'):
             scan_args = {}
             for field in plan._fields:
-                scan_args[field] = getattr(plan, field)
+                scan_args[field] = repr(getattr(plan, field))
             metadata['scan_args'] = scan_args
 
         self._metadata_per_call = metadata
