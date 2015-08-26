@@ -11,7 +11,6 @@ import matplotlib.backends.backend_qt5
 from matplotlib.backends.backend_qt5 import _create_qApp
 import matplotlib.pyplot as plt
 
-from .utils import doc_type
 from datetime import datetime
 import numpy as np
 
