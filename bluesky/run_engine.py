@@ -908,7 +908,6 @@ class RunEngine:
     @asyncio.coroutine
     def _trigger(self, msg):
         block_group = msg.kwargs.pop('block_group', None)
-        self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
 
         if block_group:
