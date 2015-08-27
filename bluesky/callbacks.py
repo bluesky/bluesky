@@ -51,7 +51,7 @@ class CallbackBase(object):
 
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
-        return getattr(self, name)(doc)
+        return getattr(self, name.name)(doc)
 
     def event(self, doc):
         logger.debug("CallbackBase: I'm an event with doc = {}".format(doc))
