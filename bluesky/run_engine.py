@@ -1020,7 +1020,7 @@ class Dispatcher:
         self._token_mapping = dict()
 
     def process(self, name, doc):
-        self.cb_registry.process(name, name, doc)
+        self.cb_registry.process(name, name.name, doc)
 
     def subscribe(self, name, func):
         """
