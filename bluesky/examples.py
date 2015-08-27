@@ -55,6 +55,9 @@ class Base:
             self._cb()
             self._cb = None
 
+    def stop(self):
+        pass
+
 
 class Reader(Base):
     _klass = 'reader'
