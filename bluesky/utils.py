@@ -8,7 +8,7 @@ import itertools
 from collections import OrderedDict, Iterable
 import sys
 import numpy as np
-from cycler import cycler 
+from cycler import cycler
 import logging
 logger = logging.getLogger(__name__)
 

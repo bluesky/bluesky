@@ -14,7 +14,7 @@ def _make_blc():
 # For why this function is necessary, see
 # http://stackoverflow.com/a/13355291/1221924
 def _make_insert_func(func):
-    def inserter(doc):
+    def inserter(name, doc):
         return func(**doc)
     return inserter
 
@@ -23,7 +23,7 @@ known_run_start_keys = ['time', 'scan_id', 'beamline_id', 'beamline_config',
                         'uid', 'owner', 'group', 'project']
 
 
-def _insert_run_start(doc):
+def _insert_run_start(name, doc):
     "Add a beamline config that, for now, only knows the time."
     doc['beamline_config'] = _make_blc()
     # Move dynamic keys into 'custom' for MDS API.

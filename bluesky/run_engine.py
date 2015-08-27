@@ -841,7 +841,7 @@ class RunEngine:
                 descriptor_uid = new_uid()
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid)
-                self.emit(DocumentNames.descriptor, doc)
+                yield from self.emit(DocumentNames.descriptor, doc)
                 self.debug("Emitted Event Descriptor:\n%s" % doc)
                 self._descriptor_uids[objs_read] = descriptor_uid
                 self._sequence_counters[objs_read] = count(1)
@@ -859,7 +859,7 @@ class RunEngine:
             ev['descriptor'] = descriptor_uid
             ev['seq_num'] = seq_num
             ev['uid'] = event_uid
-            self.emit(DocumentNames.event, ev)
+            yield from self.emit(DocumentNames.event, ev)
             self.debug("Emitted Event:\n%s" % ev)
 
     @asyncio.coroutine
@@ -1015,7 +1015,7 @@ class Dispatcher:
 
     def __init__(self):
         self.cb_registry = CallbackRegistry(allowed_sigs=DocumentNames,
-                                            halt_on_exception=False)
+                                            halt_on_exception=True)
         self._counter = count()
         self._token_mapping = dict()
 
