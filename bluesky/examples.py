@@ -55,9 +55,6 @@ class Base:
             self._cb()
             self._cb = None
 
-    def stop(self):
-        pass
-
 
 class Reader(Base):
     _klass = 'reader'
@@ -109,6 +106,9 @@ class Mover(Base):
         return self
 
     def settle(self):
+        pass
+
+    def stop(self):
         pass
 
 
