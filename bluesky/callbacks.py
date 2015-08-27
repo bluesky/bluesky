@@ -71,7 +71,7 @@ class CallbackCounter:
     # Wrap itertools.count in something we can use as a callback.
     def __init__(self):
         self.counter = count()
-        self(None)  # Start counting at 1.
+        self(None, 'start')  # Start counting at 1.
 
     def __call__(self, name, doc):
         self.value = next(self.counter)

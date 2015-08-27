@@ -31,7 +31,7 @@ def traj_checker(scan, expected_traj):
 def multi_traj_checker(scan, expected_data):
     actual_data = []
 
-    def collect_data(event):
+    def collect_data(name, event):
         actual_data.append(event['data'])
 
     RE(scan, subs={'event': collect_data})

@@ -288,7 +288,7 @@ def test_suspend():
 
     out = []
 
-    def ev_cb(ev):
+    def ev_cb(name, ev):
         out.append(ev)
     # trigger the suspend right after the check point
     loop.call_later(.1, local_suspend)

@@ -12,7 +12,7 @@ import tempfile
 RE = setup_test_run_engine()
 
 
-def exception_raiser(doc):
+def exception_raiser(name, doc):
     raise Exception("Hey look it's an exception that better not kill the "
                     "scan!!")
 
