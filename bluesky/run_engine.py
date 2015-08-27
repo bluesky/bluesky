@@ -170,6 +170,8 @@ class RunEngine:
             skipped
         logbook
             callable accepting a message and an optional dict
+        ignore_callback_exceptions
+            boolean, True by default
 
         Methods
         -------
@@ -244,6 +246,7 @@ class RunEngine:
 
         # public dispatcher for callbacks processed on the main thread
         self.dispatcher = Dispatcher()
+        self.ignore_callback_exceptions = True
         self.event_timeout = 0.1
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
@@ -294,6 +297,14 @@ class RunEngine:
     @property
     def resumable(self):
         return self._msg_cache is not None
+
+    @property
+    def ignore_callback_exceptions(self):
+        return not self.dispatcher.halt_on_exception
+
+    @ignore_callback_exceptions.setter
+    def ignore_callback_exceptions(self, val):
+        self.dispatcher.halt_on_exception = not val
 
     def register_command(self, name, func):
         """
@@ -995,7 +1006,7 @@ class RunEngine:
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
-        self._scan_cb_registry.process(name, name, doc)
+        self._scan_cb_registry.process(name, name.name, doc)
         if name != DocumentNames.event:
             self.dispatcher.process(name, doc)
             logger.info("Emitting %s document: %r", name.name, doc)
@@ -1015,12 +1026,12 @@ class Dispatcher:
 
     def __init__(self):
         self.cb_registry = CallbackRegistry(allowed_sigs=DocumentNames,
-                                            halt_on_exception=True)
+                                            halt_on_exception=False)
         self._counter = count()
         self._token_mapping = dict()
 
     def process(self, name, doc):
-        self.cb_registry.process(name, name, doc)
+        self.cb_registry.process(name, name.name, doc)
 
     def subscribe(self, name, func):
         """

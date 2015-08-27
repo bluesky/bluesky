@@ -51,7 +51,7 @@ class CallbackBase(object):
 
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
-        return getattr(self, name.name)(doc)
+        return getattr(self, name)(doc)
 
     def event(self, doc):
         logger.debug("CallbackBase: I'm an event with doc = {}".format(doc))
@@ -71,7 +71,7 @@ class CallbackCounter:
     # Wrap itertools.count in something we can use as a callback.
     def __init__(self):
         self.counter = count()
-        self(None)  # Start counting at 1.
+        self(None, {})  # Pass a fake doc to prime the counter (start at 1).
 
     def __call__(self, name, doc):
         self.value = next(self.counter)

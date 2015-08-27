@@ -8,7 +8,7 @@ RE = setup_test_run_engine()
 
 
 def test_custom_metadata():
-    def assert_lion(doc):
+    def assert_lion(name, doc):
         assert_in('animal', doc)
         assert_equal(doc['animal'], 'lion')
 
