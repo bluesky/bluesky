@@ -672,7 +672,7 @@ class RunEngine:
             # Some might not support partial collection. We swallow errors.
             for obj in self._uncollected:
                 try:
-                    obj.collect()
+                    yield from self._collect(Msg('collect', obj))
                 except Exception:
                     logger.error("Failed to collect %r", obj)
             sys.stdout.flush()
