@@ -670,7 +670,7 @@ class RunEngine:
                     logger.error("Failed to stop %r", obj)
             # Try to collect any flyers that were kicked off but not finished.
             # Some might not support partial collection. We swallow errors.
-            for obj in self._uncollected:
+            for obj in list(self._uncollected):
                 try:
                     yield from self._collect(Msg('collect', obj))
                 except Exception:
