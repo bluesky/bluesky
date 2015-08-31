@@ -28,7 +28,7 @@ class ScanBase(Struct):
     related messages will work.
     """
     def __iter__(self):
-        yield Msg('open_run')
+        yield Msg('open_run', **getattr(self, 'md', {}))
         yield from self._pre_scan()
         yield from self._gen()
         yield from self._post_scan()
@@ -495,7 +495,6 @@ class Center(ScanBase):
     RANGE = 2  # in sigma, first sample this range around the guess
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
     NUM_SAMPLES = 10
-    NUM_SAMPLES = 10 
     # We define _fields not for Struct, but for ScanBase.log* methods.
     _fields = ['detectors', 'target_field', 'motor', 'initial_center',
                'initial_width', 'tolerance', 'output_mutable']
@@ -583,9 +582,9 @@ class Center(ScanBase):
 
         model = GaussianModel() + LinearModel()
         guesses = {'amplitude': np.max(seen_y),
-                'center': initial_center,
-                'sigma': initial_width,
-                'slope': 0, 'intercept': 0}
+                   'center': initial_center,
+                   'sigma': initial_width,
+                   'slope': 0, 'intercept': 0}
         while True:
             x = np.asarray(seen_x)
             y = np.asarray(seen_y)
@@ -595,8 +594,8 @@ class Center(ScanBase):
             if np.abs(old_guess['center'] - guesses['center']) < tol:
                 break
             next_cen = np.clip(guesses['center'] +
-                            np.random.randn(1) * guesses['sigma'],
-                            min_cen, max_cen)
+                               np.random.randn(1) * guesses['sigma'],
+                               min_cen, max_cen)
             yield Msg('set', motor, next_cen)
             yield Msg('create')
             ret_mot = yield Msg('read', motor)
