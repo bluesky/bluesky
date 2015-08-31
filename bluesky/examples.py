@@ -108,6 +108,9 @@ class Mover(Base):
     def settle(self):
         pass
 
+    def stop(self):
+        pass
+
 
 class SynGauss(Reader):
     """
