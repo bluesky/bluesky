@@ -735,7 +735,7 @@ class RunEngine:
     @asyncio.coroutine
     def _open_run(self, msg):
         if self._run_is_open:
-            raise IllegalMessageSequence("A 'close_run' messgae was not "
+            raise IllegalMessageSequence("A 'close_run' message was not "
                                          "received before the 'open_run' "
                                          "message")
         self._clear_run_cache()
