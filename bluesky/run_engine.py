@@ -50,11 +50,13 @@ class DocumentNames(Enum):
     start = 'start'
     descriptor = 'descriptor'
     event = 'event'
+    bulk_events = 'bulk_events'
 
 SCHEMA_PATH = 'schema'
 SCHEMA_NAMES = {DocumentNames.start: 'run_start.json',
                 DocumentNames.stop: 'run_stop.json',
                 DocumentNames.event: 'event.json',
+                DocumentNames.bulk_events: 'bulk_events.json',
                 DocumentNames.descriptor: 'event_descriptor.json'}
 fn = '{}/{{}}'.format(SCHEMA_PATH)
 schemas = {}
@@ -867,6 +869,7 @@ class RunEngine:
     def _collect(self, msg):
         obj = msg.obj
         data_keys_list = obj.describe()
+        bulk_data = {}
         for data_keys in data_keys_list:
             objs_read = frozenset(data_keys)
             if objs_read not in self._descriptor_uids:
@@ -878,7 +881,12 @@ class RunEngine:
                 self.debug("Emitted Event Descriptor:\n%s" % doc)
                 self._descriptor_uids[objs_read] = descriptor_uid
                 self._sequence_counters[objs_read] = count(1)
+            else:
+                descriptor_uid = self._descriptor_uids[objs_read]
 
+            bulk_data[descriptor_uid] = []
+
+        emit_events = msg.kwargs.pop('emit_events', False)
         for ev in obj.collect():
             objs_read = frozenset(ev['data'])
             seq_num = next(self._sequence_counters[objs_read])
@@ -892,9 +900,14 @@ class RunEngine:
             ev['descriptor'] = descriptor_uid
             ev['seq_num'] = seq_num
             ev['uid'] = event_uid
-            yield from self.emit(DocumentNames.event, ev)
-            self.debug("Emitted Event:\n%s" % ev)
 
+            bulk_data[descriptor_uid].append(ev)
+            if emit_events:
+                yield from self.emit(DocumentNames.event, ev)
+                self.debug("Emitted Event:\n%s" % ev)
+
+        yield from self.emit(DocumentNames.bulk_events, bulk_data)
+        self.debug("Emitted bulk events")
         self._uncollected.remove(msg.obj)
 
     @asyncio.coroutine

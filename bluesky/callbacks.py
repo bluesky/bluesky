@@ -54,16 +54,19 @@ class CallbackBase(object):
         return getattr(self, name)(doc)
 
     def event(self, doc):
-        logger.debug("CallbackBase: I'm an event with doc = {}".format(doc))
+        logger.debug("CallbackBase: I'm an event with doc = %r", doc)
+
+    def bulk_events(self, doc):
+        logger.debug("CallbackBase: I'm an event with a big doc")
 
     def descriptor(self, doc):
-        logger.debug("CallbackBase: I'm a descriptor with doc = {}".format(doc))
+        logger.debug("CallbackBase: I'm a descriptor with doc = %r", doc)
 
     def start(self, doc):
-        logger.debug("CallbackBase: I'm a start with doc = {}".format(doc))
+        logger.debug("CallbackBase: I'm a start with doc = %r", doc)
 
     def stop(self, doc):
-        logger.debug("CallbackBase: I'm a stop with doc = {}".format(doc))
+        logger.debug("CallbackBase: I'm a stop with doc = %r", doc)
 
 
 class CallbackCounter:
