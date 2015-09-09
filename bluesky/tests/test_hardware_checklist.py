@@ -17,13 +17,13 @@ def test_connect_mds_mongodb():
         mds_setup()
         # Until we insert something, the db is not actually created.
 
-        mdsc.insert_run_start(scan_id=3022013,
-                              beamline_id='testbed',
-                              owner='tester',
-                              group='awesome-devs',
-                              project='Nikea',
-                              time=time.time(),
-                              uid=str(uuid.uuid4()))
+        mdsc.insert_runstart(scan_id=3022013,
+                             beamline_id='testbed',
+                             owner='tester',
+                             group='awesome-devs',
+                             project='Nikea',
+                             time=time.time(),
+                             uid=str(uuid.uuid4()))
         connect_mds_mongodb()
 
     except:
@@ -57,7 +57,8 @@ def test_check_storage():
 
 def test_connect_channelarchiver():
     # Just test failure, not success.
-    assert_raises(RuntimeError, connect_channelarchiver, 'http://bnl.gov/asfoijewapfoia')
+    assert_raises(RuntimeError, connect_channelarchiver,
+                  'http://bnl.gov/asfoijewapfoia')
 
 
 def test_connect_pv():
