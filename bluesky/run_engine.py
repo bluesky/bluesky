@@ -886,7 +886,6 @@ class RunEngine:
 
             bulk_data[descriptor_uid] = []
 
-        emit_events = msg.kwargs.pop('emit_events', False)
         for ev in obj.collect():
             objs_read = frozenset(ev['data'])
             seq_num = next(self._sequence_counters[objs_read])
@@ -902,9 +901,6 @@ class RunEngine:
             ev['uid'] = event_uid
 
             bulk_data[descriptor_uid].append(ev)
-            if emit_events:
-                yield from self.emit(DocumentNames.event, ev)
-                self.debug("Emitted Event:\n%s" % ev)
 
         yield from self.emit(DocumentNames.bulk_events, bulk_data)
         self.debug("Emitted bulk events")
