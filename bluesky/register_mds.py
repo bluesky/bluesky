@@ -1,14 +1,11 @@
 import metadatastore.api as mds
+from metadatastore.commands import bulk_insert_events
 import copy
 import time as ttime
 from bluesky.run_engine import DocumentNames
 
 
 __all__ = ['register_mds']
-
-
-def _make_blc():
-    return mds.insert_beamline_config({}, time=ttime.time())
 
 
 # For why this function is necessary, see
@@ -19,13 +16,12 @@ def _make_insert_func(func):
     return inserter
 
 
-known_run_start_keys = ['time', 'scan_id', 'beamline_id', 'beamline_config',
-                        'uid', 'owner', 'group', 'project']
+known_run_start_keys = ['time', 'scan_id', 'beamline_id', 'uid', 'owner',
+                        'group', 'project']
 
 
 def _insert_run_start(name, doc):
-    "Add a beamline config that, for now, only knows the time."
-    doc['beamline_config'] = _make_blc()
+    """Add a beamline config that, for now, only knows the time."""
     # Move dynamic keys into 'custom' for MDS API.
     # We should change this in MDS to save the time of copying here:
     doc = copy.deepcopy(doc)
@@ -39,9 +35,16 @@ def _insert_run_start(name, doc):
     return mds.insert_run_start(**doc)
 
 
+def _insert_bulk_events(name, doc):
+    "Add a beamline config that, for now, only knows the time."
+    for desc_uid, events in doc.items():
+        bulk_insert_events(desc_uid, events)
+
+
 insert_funcs = {DocumentNames.event: _make_insert_func(mds.insert_event),
+                DocumentNames.bulk_events: _insert_bulk_events,
                 DocumentNames.descriptor: _make_insert_func(
-                    mds.insert_event_descriptor),
+                    mds.insert_descriptor),
                 DocumentNames.start: _insert_run_start,  # see above
                 DocumentNames.stop: _make_insert_func(mds.insert_run_stop)}
 

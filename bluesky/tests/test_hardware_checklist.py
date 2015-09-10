@@ -2,21 +2,30 @@ import uuid
 import nose
 from bluesky.testing.noseclasses import KnownFailureTest
 from nose.tools import assert_raises
+import time
 from bluesky.hardware_checklist import *
 
 
 def test_connect_mds_mongodb():
     try:
-        import metadatastore
+        from metadatastore.utils.testing import mds_setup, mds_teardown
+        import metadatastore.commands as mdsc
     except ImportError:
         raise nose.SkipTest
-    from metadatastore.utils.testing import mds_setup, mds_teardown
-    from metadatastore.commands import insert_beamline_config
+
     try:
         mds_setup()
         # Until we insert something, the db is not actually created.
-        bc = insert_beamline_config({}, time=0., uid=str(uuid.uuid4()))
+
+        mdsc.insert_run_start(scan_id=3022013,
+                             beamline_id='testbed',
+                             owner='tester',
+                             group='awesome-devs',
+                             project='Nikea',
+                             time=time.time(),
+                             uid=str(uuid.uuid4()))
         connect_mds_mongodb()
+
     except:
         raise
     finally:
@@ -48,7 +57,8 @@ def test_check_storage():
 
 def test_connect_channelarchiver():
     # Just test failure, not success.
-    assert_raises(RuntimeError, connect_channelarchiver, 'http://bnl.gov/asfoijewapfoia')
+    assert_raises(RuntimeError, connect_channelarchiver,
+                  'http://bnl.gov/asfoijewapfoia')
 
 
 def test_connect_pv():

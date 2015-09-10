@@ -1,0 +1,49 @@
+{
+    "patternProperties": {
+        "^.*$": {
+            "type": "array",
+            "items": {
+                "type": "object",
+
+                "properties": {
+                    "data": {
+                        "type": "object",
+                        "description": "The actual measument data"
+                    },
+                    "timestamps": {
+                        "type": "object",
+                        "description": "The timestamps of the individual measument data"
+                    },
+                    "descriptor": {
+                        "type": "string",
+                        "description": "UID to point back to Descriptor for this event stream"
+                    },
+                    "seq_num": {
+                        "type": "integer",
+                        "description": "Sequence number to identify the location of this Event in the Event stream"
+                    },
+                    "time": {
+                        "type": "number",
+                        "description": "The event time.  This maybe different than the timestamps on each of the data entries"
+                    },
+                    "uid": {
+                        "type": "string",
+                        "description": "Globally unique identifier for this Event"
+                    }
+                },
+                "required": [
+                    "uid",
+                    "data",
+                    "timestamps",
+                    "time",
+                    "descriptor",
+                    "seq_num"
+                ],
+                "additionalProperties": false,
+                "type": "object",
+                "title": "event",
+                "description": "Document to record a quanta of collected data"
+            }
+        }
+    }
+}
