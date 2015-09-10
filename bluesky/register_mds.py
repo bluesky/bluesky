@@ -21,7 +21,7 @@ known_run_start_keys = ['time', 'scan_id', 'beamline_id', 'uid', 'owner',
 
 
 def _insert_run_start(name, doc):
-    """Add a beamline config that, for now, only knows the time."""
+    """Rearrange the dict for unpacking it into the MDS API."""
     # Move dynamic keys into 'custom' for MDS API.
     # We should change this in MDS to save the time of copying here:
     doc = copy.deepcopy(doc)
@@ -36,7 +36,7 @@ def _insert_run_start(name, doc):
 
 
 def _insert_bulk_events(name, doc):
-    "Add a beamline config that, for now, only knows the time."
+    """Bulk insert each event stream in doc."""
     for desc_uid, events in doc.items():
         bulk_insert_events(desc_uid, events)
 
