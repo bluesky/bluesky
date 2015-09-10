@@ -20,7 +20,7 @@ known_run_start_keys = ['time', 'scan_id', 'beamline_id', 'uid', 'owner',
                         'group', 'project']
 
 
-def _insert_runstart(name, doc):
+def _insert_run_start(name, doc):
     """Add a beamline config that, for now, only knows the time."""
     # Move dynamic keys into 'custom' for MDS API.
     # We should change this in MDS to save the time of copying here:
@@ -32,7 +32,7 @@ def _insert_runstart(name, doc):
             except KeyError:
                 doc['custom'] = {}
             doc['custom'][key] = doc.pop(key)
-    return mds.insert_runstart(**doc)
+    return mds.insert_run_start(**doc)
 
 
 def _insert_bulk_events(name, doc):
@@ -45,8 +45,8 @@ insert_funcs = {DocumentNames.event: _make_insert_func(mds.insert_event),
                 DocumentNames.bulk_events: _insert_bulk_events,
                 DocumentNames.descriptor: _make_insert_func(
                     mds.insert_descriptor),
-                DocumentNames.start: _insert_runstart,  # see above
-                DocumentNames.stop: _make_insert_func(mds.insert_runstop)}
+                DocumentNames.start: _insert_run_start,  # see above
+                DocumentNames.stop: _make_insert_func(mds.insert_run_stop)}
 
 
 def register_mds(runengine):
