@@ -17,7 +17,7 @@ def test_connect_mds_mongodb():
         mds_setup()
         # Until we insert something, the db is not actually created.
 
-        mdsc.insert_runstart(scan_id=3022013,
+        mdsc.insert_run_start(scan_id=3022013,
                              beamline_id='testbed',
                              owner='tester',
                              group='awesome-devs',
