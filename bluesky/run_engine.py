@@ -466,9 +466,9 @@ class RunEngine:
 
         # Register temporary subscriptions. Save tokens to unsubscribe later.
         subs = normalize_subs_input(subs)
-        try:
+        if hasattr(plan, 'subs'):
             scan_subs = normalize_subs_input(plan.subs)
-        except AttributeError:
+        else:
             scan_subs = {}
         self._clear_call_cache()
         for name, funcs in itertools.chain(subs.items(), scan_subs.items()):
