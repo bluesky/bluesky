@@ -5,7 +5,6 @@ import os
 import logging
 from collections import namedtuple
 import requests
-import filestore.conf
 import epics
 import pymongo
 import pyOlog
@@ -21,7 +20,7 @@ def connect_mds_mongodb():
 
 
 def connect_fs_mongodb():
-    import metadatastore.conf
+    import filestore.conf
     _connect_mongodb('filestore', filestore.conf.connection_config)
 
 
