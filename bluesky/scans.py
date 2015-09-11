@@ -2,7 +2,6 @@ from collections import deque, defaultdict
 import itertools
 from boltons.iterutils import chunked
 from cycler import cycler
-from lmfit.models import GaussianModel, LinearModel
 import numpy as np
 from .run_engine import Msg
 from .utils import Struct, snake_cyclers
@@ -535,6 +534,10 @@ class Center(ScanBase):
             Must have 'update' method.  Mutable object to provide a side-band to
             return fitting parameters + data points
         """
+        try:
+            from lmfit.models import GaussianModel, LinearModel
+        except ImportError:
+            raise ImportError("This scan requires the package lmfit.")
         self.detectors = detectors
         self.target_field = target_field
         self.motor = motor
