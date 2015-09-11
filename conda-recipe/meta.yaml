@@ -24,6 +24,8 @@ requirements:
     - filestore
     - matplotlib
     - prettytable
+    - cycler
+    - traitlets
     - history
 
 test:
