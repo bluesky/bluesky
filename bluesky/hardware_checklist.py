@@ -7,8 +7,6 @@ from collections import namedtuple
 import requests
 import epics
 import pymongo
-import pyOlog
-import pyOlog.conf
 
 
 logger = logging.getLogger(__name__)
@@ -46,6 +44,8 @@ def _connect_mongodb(name, connection_config):
 
 
 def connect_olog():
+    import pyOlog
+    import pyOlog.conf
     paths = pyOlog.conf.Config.conf_files
     found_file = False
     for path in paths:
