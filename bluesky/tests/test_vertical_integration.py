@@ -1,7 +1,5 @@
 from nose import SkipTest
-from dataportal import DataBroker as db
 from bluesky.examples import stepscan, det, motor
-from bluesky.standard_config import gs
 
 def setup():
     try:
@@ -24,7 +22,12 @@ def test_scan_and_get_data():
     try:
         import metadatastore
     except ImportError:
-        raise SkipTest("metadatastore is not installed")
+        raise SkipTest
+    try:
+        from dataportal import DataBroker as db
+    except ImportError:
+        raise SkipTest
+    from bluesky.standard_config import gs
     uid = gs.RE(stepscan(det, motor), group='foo', beamline_id='testing',
              config={})
 

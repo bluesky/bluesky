@@ -5,7 +5,6 @@ import os
 import logging
 from collections import namedtuple
 import requests
-import metadatastore.conf
 import filestore.conf
 import epics
 import pymongo
@@ -17,10 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 def connect_mds_mongodb():
+    import metadatastore.conf
     _connect_mongodb('metadatastore', metadatastore.conf.connection_config)
 
 
 def connect_fs_mongodb():
+    import metadatastore.conf
     _connect_mongodb('filestore', filestore.conf.connection_config)
 
 
