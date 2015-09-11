@@ -9,7 +9,6 @@ from bluesky.scans import (AbsListScan, AbsScan, LogAbsScan,
                            OuterProductAbsScan, InnerProductAbsScan,
                            OuterProductDeltaScan, InnerProductDeltaScan)
 
-from bluesky.standard_config import ascan, dscan, ct
 from bluesky import Msg
 from bluesky.examples import motor, det, SynGauss, motor1, motor2
 from bluesky.tests.utils import setup_test_run_engine

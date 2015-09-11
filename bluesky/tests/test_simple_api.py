@@ -1,12 +1,17 @@
+import nose
 from nose.tools import assert_raises
 from traitlets import TraitError
-from bluesky.global_state import gs
 from bluesky.examples import motor, motor1, motor2, det
-from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan, d3scan,
-                              mesh, tscan, dtscan, th2th)
 
 
 def test_basic_usage():
+    try:
+        import metadatastore
+    except ImportError:
+        raise nose.SkipTest
+    from bluesky.global_state import gs
+    from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
+                                  d3scan, mesh, tscan, dtscan, th2th)
     gs.DETS = [det]
     with assert_raises(TraitError):
         gs.DETS = [det, det]  # no duplicate data keys

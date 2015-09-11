@@ -5,22 +5,20 @@ import os
 import logging
 from collections import namedtuple
 import requests
-import metadatastore.conf
-import filestore.conf
 import epics
 import pymongo
-import pyOlog
-import pyOlog.conf
 
 
 logger = logging.getLogger(__name__)
 
 
 def connect_mds_mongodb():
+    import metadatastore.conf
     _connect_mongodb('metadatastore', metadatastore.conf.connection_config)
 
 
 def connect_fs_mongodb():
+    import filestore.conf
     _connect_mongodb('filestore', filestore.conf.connection_config)
 
 
@@ -46,6 +44,8 @@ def _connect_mongodb(name, connection_config):
 
 
 def connect_olog():
+    import pyOlog
+    import pyOlog.conf
     paths = pyOlog.conf.Config.conf_files
     found_file = False
     for path in paths:
