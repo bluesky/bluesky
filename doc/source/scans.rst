@@ -76,8 +76,8 @@ Relative (Delta) Scans
 
 .. _builtin-adaptive-scans:
 
-Adative Scans
--------------
+Adaptive Scans
+--------------
 
 .. autofunction:: AdaptiveAbsScan
 .. autofunction:: AdaptiveDeltaScan
