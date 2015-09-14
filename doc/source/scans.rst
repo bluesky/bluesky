@@ -81,6 +81,7 @@ Adative Scans
 
 .. autofunction:: AdaptiveAbsScan
 .. autofunction:: AdaptiveDeltaScan
+.. autofunction:: Center
 
 Interactive Scans
 -----------------
