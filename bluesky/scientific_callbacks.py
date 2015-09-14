@@ -33,6 +33,12 @@ class PeakStats(CollectThenCompute):
         self.min = None
         super().__init__()
 
+    def __getitem__(self, key):
+        if key in ['com', 'cen', 'max', 'min']:
+            return getattr(self, key)
+        else:
+            raise KeyError
+
     def compute(self):
         "This method is called at run-stop time by the superclass."
         x = []
