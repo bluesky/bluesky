@@ -55,8 +55,8 @@ class PeakStats(CollectThenCompute):
         x = np.array(x)
         y = np.array(y)
         # Compute x value at min and max of y
-        self.min = x[np.argmax(y)]
-        self.max = x[np.argmin(y)]
+        self.max = x[np.argmax(y)]
+        self.min = x[np.argmin(y)]
         self.com = np.interp(center_of_mass(y), x, y)
         self.x_data = x
         self.y_data = y
