@@ -466,9 +466,9 @@ class RunEngine:
 
         # Register temporary subscriptions. Save tokens to unsubscribe later.
         subs = normalize_subs_input(subs)
-        try:
+        if hasattr(plan, 'subs'):
             scan_subs = normalize_subs_input(plan.subs)
-        except AttributeError:
+        else:
             scan_subs = {}
         self._clear_call_cache()
         for name, funcs in itertools.chain(subs.items(), scan_subs.items()):
@@ -497,7 +497,10 @@ class RunEngine:
                 scan_args[field] = repr(getattr(plan, field))
             metadata['scan_args'] = scan_args
 
-        self._metadata_per_call = metadata
+        if hasattr(plan, 'md'):
+            self._metadata_per_call.update(plan.md)
+        # If kwargs to __call__ collide with plan.md, kwargs win.
+        self._metadata_per_call.update(metadata)
 
         self.state = 'running'
         gen = iter(plan)  # no-op on generators; needed for classes
