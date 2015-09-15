@@ -18,6 +18,11 @@ class PeakStats(CollectThenCompute):
         y : string
             field name for the y variable (e.g., a detector)
 
+        Note
+        ----
+        It is assumed that the two fields, x and y, are recorded in the same
+        Event stream.
+
         Attributes
         ----------
         com : center of mass
@@ -45,13 +50,13 @@ class PeakStats(CollectThenCompute):
         y = []
         for event in self._events:
             try:
-                x.append(event['data'][self.x])
+                _x = event['data'][self.x]
+                _y = event['data'][self.y]
             except KeyError:
                 pass
-            try:
-                y.append(event['data'][self.y])
-            except KeyError:
-                pass
+            else:
+                x.append(_x)
+                y.append(_y)
         x = np.array(x)
         y = np.array(y)
         # Compute x value at min and max of y
