@@ -5,6 +5,8 @@ import sys
 from itertools import count
 import asyncio
 import warnings
+import operator
+import threading
 from prettytable import PrettyTable
 
 import matplotlib.backends.backend_qt5
@@ -208,7 +210,7 @@ class LivePlot(CallbackBase):
 
 
 def format_num(x, max_len=11, pre=5, post=5):
-    if (abs(x) > 10**pre or abs(x) < 10**-post) and x != 0:
+    if (abs(x) > 10 ** pre or abs(x) < 10 ** -post) and x != 0:
         x = '%.{}e'.format(post) % x
     else:
         x = '%{}.{}f'.format(pre, post) % x
@@ -216,40 +218,14 @@ def format_num(x, max_len=11, pre=5, post=5):
     return x
 
 
-class LiveTable(CallbackBase):
+class TableBase(CallbackBase):
     """
-    Build a function that prints data from each Event as a row in a table.
-
     Parameters
     ----------
     fields : list, optional
         names of data fields to include in addition to 'seq_num'
-    rowwise : bool
-        If True, append each row to stdout. If False, reprint the full updated
-        table each time. This is useful if other messsages are interspersed.
-    print_header_interval : int
-        The number of events to process and print their rows before printing
-        the header again
-
-    Examples
-    --------
-    Show a table with motor and detector readings..
-
-    >>> RE(stepscan(motor, det), LiveTable(['motor', 'det']))
-    +------------+-------------------+----------------+----------------+
-    |   seq_num  |             time  |         motor  |   sum(det_2d)  |
-    +------------+-------------------+----------------+----------------+
-    |         1  |  12:46:47.503068  |         -5.00  |        449.77  |
-    |         3  |  12:46:47.682788  |         -3.00  |        460.60  |
-    |         4  |  12:46:47.792307  |         -2.00  |        584.77  |
-    |         5  |  12:46:47.915401  |         -1.00  |       1056.37  |
-    |         7  |  12:46:48.120626  |          1.00  |       1056.50  |
-    |         8  |  12:46:48.193028  |          2.00  |        583.33  |
-    |         9  |  12:46:48.318454  |          3.00  |        460.99  |
-    |        10  |  12:46:48.419579  |          4.00  |        451.53  |
-    +------------+-------------------+----------------+----------------+
-
-
+    use_filestore : bool
+        Query filestore for external data
     """
     base_fields = ['seq_num', 'time']
     base_field_widths = [8, 10]
@@ -257,24 +233,21 @@ class LiveTable(CallbackBase):
     max_pre_decimal = 5
     max_post_decimal = 2
 
-    def __init__(self, fields=None, rowwise=True, print_header_interval=50,
-                 max_post_decimal=2, max_pre_decimal=5, data_field_width=12,
-                 logbook=None):
+    def __init__(self, fields=None, max_post_decimal=2, max_pre_decimal=5,
+                 data_field_width=12, logbook=None, use_filestore=True):
         self.data_field_width = data_field_width
         self.max_pre_decimal = max_pre_decimal
         self.max_post_decimal = max_post_decimal
-        super(LiveTable, self).__init__()
-        self.rowwise = rowwise
+        super(TableBase, self).__init__()
         if fields is None:
             fields = []
         # prettytable does not allow nonunique names
         self.fields = sorted(set(_get_obj_fields(fields)))
         self.field_column_names = [field for field in self.fields]
-        self.num_events_since_last_header = 0
-        self.print_header_interval = print_header_interval
         self.logbook = logbook
+        self.use_filestore = use_filestore
         self._filestore_keys = set()
-        # self.create_table()
+        self._lock = threading.Lock()
 
     def create_table(self):
         self.table = PrettyTable(field_names=(self.base_fields +
@@ -283,24 +256,46 @@ class LiveTable(CallbackBase):
         self.table.align = 'r'
         # format the placeholder fields for the base fields so that the
         # heading prints at the correct width
-        base_fields = [' '*width for width in self.base_field_widths]
+        base_fields = [' ' * width for width in self.base_field_widths]
         # format placeholder fields for the data fields so that the heading
         # prints at the correct width
-        data_fields = [' '*self.data_field_width for _ in self.fields]
+        data_fields = [' ' * self.data_field_width for _ in self.fields]
         self.table.add_row(base_fields + data_fields)
-        if self.rowwise:
-            self._print_table_header()
-        sys.stdout.flush()
-
-    def _print_table_header(self):
-        print('\n'.join(str(self.table).split('\n')[:3]))
 
     ### RunEngine document callbacks
 
     def start(self, start_document):
         self.run_start_uid = start_document['uid']
         self.scan_id = start_document['scan_id']
-        self.create_table()
+
+    def document_to_row(self, event_document):
+        event_time = datetime.fromtimestamp(event_document['time']).time()
+        rounded_time = str(event_time)[:10]
+        row = [event_document['seq_num'], rounded_time]
+
+        for field in self.fields:
+            val = event_document['data'].get(field, '')
+            if field in self._filestore_keys:
+                try:
+                    import filestore.api as fsapi
+                    val = fsapi.retrieve(val)
+                except Exception as exc:
+                    warnings.warn(UserWarning, "Attempt to read {0} raised {1}"
+                                  "".format(field, exc))
+                    val = 'Not Available'
+
+            if isinstance(val, np.ndarray) or isinstance(val, list):
+                val = np.sum(np.asarray(val))
+            try:
+                val = format_num(val,
+                                 max_len=self.data_field_width,
+                                 pre=self.max_pre_decimal,
+                                 post=self.max_post_decimal)
+            except Exception:
+                val = str(val)[:self.data_field_width]
+            row.append(val)
+
+        return row
 
     def descriptor(self, descriptor):
         # find all keys that are filestore keys
@@ -312,60 +307,24 @@ class LiveTable(CallbackBase):
         # see if any are being shown in the table
         reprint_header = False
         new_names = []
-        for key in self.field_column_names:
-            if key in self._filestore_keys:
-                reprint_header = True
-                print('%s is a non-scalar field. '
-                           'Computing the sum instead' % key)
-                key = 'sum(%s)' % key
-                key = key[:self.data_field_width]
-            new_names.append(key)
+        if not self.use_filestore:
+            new_names = [key for key in self.field_column_names
+                         if key not in self._filestore_keys]
+        else:
+            for key in self.field_column_names:
+                if key in self._filestore_keys:
+                    reprint_header = True
+                    print('%s is a non-scalar field. '
+                          'Computing the sum instead' % key)
+                    key = 'sum(%s)' % key
+                    key = key[:self.data_field_width]
+                new_names.append(key)
+
         self.field_column_names = new_names
         if reprint_header:
             print('\n\n')
             self.create_table()
             # self._print_table_header()
-
-    def event(self, event_document):
-        event_time = datetime.fromtimestamp(event_document['time']).time()
-        rounded_time = str(event_time)[:10]
-        row = [event_document['seq_num'], rounded_time]
-        for field in self.fields:
-            val = event_document['data'].get(field, '')
-            if field in self._filestore_keys:
-                try:
-                    import filestore.api as fsapi
-                    val = fsapi.retrieve(val)
-                except Exception as exc:
-                    warnings.warn(UserWarning, "Attempt to read {0} raised {1}"
-                                  "".format(field, exc))
-                    val = 'Not Available'
-            if isinstance(val, np.ndarray) or isinstance(val, list):
-                val = np.sum(np.asarray(val))
-            try:
-                val = format_num(val,
-                                 max_len=self.data_field_width,
-                                 pre=self.max_pre_decimal,
-                                 post=self.max_post_decimal)
-            except Exception:
-                val = str(val)[:self.data_field_width]
-            row.append(val)
-        self.table.add_row(row)
-
-        if self.rowwise:
-            # Print the last row of data only.
-            # [-1] is the bottom border
-            print(str(self.table).split('\n')[-2])
-            # only print header intermittently for rowwise table printing
-            if self.num_events_since_last_header >= self.print_header_interval:
-                self._print_table_header()
-                self.num_events_since_last_header = 0
-            self.num_events_since_last_header += 1
-        else:
-            # print the whole table
-            print(self.table)
-
-        sys.stdout.flush()
 
     def stop(self, stop_document):
         """Print the last row of the table
@@ -393,6 +352,147 @@ class LiveTable(CallbackBase):
         self.table.clear_rows()
         # reset the filestore keys
         self._filestore_keys = set()
+
+
+class LiveTable(TableBase):
+    """
+    Prints data from each Event as a row in a table. Rows are printed as
+    events come in, making this a "live" table.
+
+    Parameters
+    ----------
+    fields : list, optional
+        names of data fields to include in addition to 'seq_num'
+    rowwise : bool
+        If True, print each row to stdout. If False, reprint the full updated
+        table each time. This is useful if other messsages are interspersed.
+    print_header_interval : int
+        The number of events to process and print their rows before printing
+        the header again
+    use_filestore : bool
+        Query filestore for external data
+
+    Examples
+    --------
+    Show a table with motor and detector readings as the events are generated.
+
+    >>> RE(stepscan(motor, det), LiveTable(['motor', 'det']))
+    +------------+-------------------+----------------+----------------+
+    |   seq_num  |             time  |         motor  |   sum(det_2d)  |
+    +------------+-------------------+----------------+----------------+
+    |         1  |  12:46:47.503068  |         -5.00  |        449.77  |
+    |         3  |  12:46:47.682788  |         -3.00  |        460.60  |
+    |         4  |  12:46:47.792307  |         -2.00  |        584.77  |
+    |         5  |  12:46:47.915401  |         -1.00  |       1056.37  |
+    |         7  |  12:46:48.120626  |          1.00  |       1056.50  |
+    |         8  |  12:46:48.193028  |          2.00  |        583.33  |
+    |         9  |  12:46:48.318454  |          3.00  |        460.99  |
+    |        10  |  12:46:48.419579  |          4.00  |        451.53  |
+    +------------+-------------------+----------------+----------------+
+
+
+    """
+    def __init__(self, *args, print_header_interval=50, rowwise=True,
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.rowwise = rowwise
+        self.num_events_since_last_header = 0
+        self.print_header_interval = print_header_interval
+
+    def create_table(self):
+        super().create_table()
+
+        if self.rowwise:
+            self._print_table_header()
+        sys.stdout.flush()
+
+    def _print_table_header(self):
+        print('\n'.join(str(self.table).split('\n')[:3]))
+
+    def start(self, start_document):
+        super().start(start_document)
+        self.create_table()
+
+    def event(self, event_document):
+        row = self.document_to_row(event_document)
+        with self._lock:
+            self.table.add_row(row)
+
+            if self.rowwise:
+                # Print the last row of data only.
+                # [-1] is the bottom border
+                print(str(self.table).split('\n')[-2])
+                # only print header intermittently for rowwise table printing
+                if self.num_events_since_last_header >= self.print_header_interval:
+                    self._print_table_header()
+                    self.num_events_since_last_header = 0
+                self.num_events_since_last_header += 1
+            else:
+                # print the whole table
+                print(self.table)
+
+            sys.stdout.flush()
+
+
+class PostRunTable(TableBase):
+    """
+    Prints data from each Event as a row in a table. Events are buffered
+    during the run, and the whole table is printed out at the end.
+
+    Parameters
+    ----------
+    fields : list, optional
+        names of data fields to include in addition to 'seq_num'
+    use_filestore : bool
+        Query filestore for external data
+
+    Examples
+    --------
+    Show a table with motor and detector readings.
+
+    >>> RE(stepscan(motor, det), PostRunTable(['motor', 'det']))
+    +------------+-------------------+----------------+----------------+
+    |   seq_num  |             time  |         motor  |   sum(det_2d)  |
+    +------------+-------------------+----------------+----------------+
+    |         1  |  12:46:47.503068  |         -5.00  |        449.77  |
+    |         3  |  12:46:47.682788  |         -3.00  |        460.60  |
+    |         4  |  12:46:47.792307  |         -2.00  |        584.77  |
+    |         5  |  12:46:47.915401  |         -1.00  |       1056.37  |
+    |         7  |  12:46:48.120626  |          1.00  |       1056.50  |
+    |         8  |  12:46:48.193028  |          2.00  |        583.33  |
+    |         9  |  12:46:48.318454  |          3.00  |        460.99  |
+    |        10  |  12:46:48.419579  |          4.00  |        451.53  |
+    +------------+-------------------+----------------+----------------+
+
+
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._rows = []
+
+    def event(self, event_document):
+        try:
+            row = self.document_to_row(event_document)
+        except Exception as ex:
+            logger.error('Failed to generate row from document',
+                         exc_info=ex)
+        else:
+            with self._lock:
+                self._rows.append(row)
+
+    def stop(self, event_document):
+        self.create_table()
+        with self._lock:
+            try:
+                for row in sorted(self._rows, key=operator.itemgetter(0)):
+                    self.table.add_row(row)
+            except Exception as ex:
+                logger.error('Failed to add row to table',
+                             exc_info=ex)
+        print(self.table)
+
+        super().stop(event_document)
 
 
 def _get_obj_fields(fields):
