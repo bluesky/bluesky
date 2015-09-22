@@ -4,9 +4,6 @@ Check if expected databases and hardware are alive.
 import os
 import logging
 from collections import namedtuple
-import requests
-import epics
-import pymongo
 
 
 logger = logging.getLogger(__name__)
@@ -23,6 +20,7 @@ def connect_fs_mongodb():
 
 
 def _connect_mongodb(name, connection_config):
+    import pymongo
     cc = connection_config
     logger.debug("Attempting to connect to %s mongodb at host %s "
                  "and port %d", name, cc['host'], cc['port'])
@@ -79,6 +77,7 @@ def connect_channelarchiver(url):
     url : string
         For example, 'http://xf23id-ca.cs.nsls2.local:4800'
     """
+    import requests
     logger.debug("Attempting to connect to the channel archiver at: %s", url)
     response = requests.get(url)
     if not response:
@@ -105,6 +104,7 @@ def check_storage(path, required_free):
 
 def _skeptical_caget(pv):
     # Note: pv must be a scalar PV
+    import epics
     value = epics.caget(pv)
     if value is None:
         raise RuntimeError("Failed to connect to pv %s " % pv)
