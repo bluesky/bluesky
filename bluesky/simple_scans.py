@@ -31,7 +31,7 @@ from bluesky.standard_config import gs
 class _PrimitiveScan:
 
     def __init__(self):
-        self.params = list(signature(self._scan_class).parameters.keys())
+        self.params = list(signature(self.scan_class).parameters.keys())
 
     def __call__(self, *args, subs=None, **kwargs):
         scan_kwargs = dict()
@@ -47,7 +47,7 @@ class _PrimitiveScan:
                                  "the RunEngine arguments. Use different "
                                  "names. Avoid: {0}".format(RE_params))
 
-        self.scan = self._scan_class(gs.DETS, *args, **scan_kwargs)
+        self.scan = self.scan_class(gs.DETS, *args, **scan_kwargs)
         if subs is None:
             subs = self.subs
         # Any remainging kwargs go the RE. To be safe, no args are passed
@@ -148,7 +148,7 @@ class _HardcodedMotorStepScan(_PrimitiveScan):
 
 class Count(_PrimitiveScan):
     "ct"
-    _scan_class = scans.Count
+    scan_class = scans.Count
 
     def __call__(self, time=None, subs=None, **kwargs):
         if subs is None:
@@ -165,32 +165,32 @@ class Count(_PrimitiveScan):
 
 class AbsScan(_StepScan):
     "ascan"
-    _scan_class = scans.AbsScan
+    scan_class = scans.AbsScan
 
 
 class OuterProductAbsScan(_OuterProductScan):
     "mesh"
-    _scan_class = scans.OuterProductAbsScan
+    scan_class = scans.OuterProductAbsScan
 
 
 class InnerProductAbsScan(_InnerProductScan):
     "a2scan, a3scan, etc."
-    _scan_class = scans.InnerProductAbsScan
+    scan_class = scans.InnerProductAbsScan
 
 
 class DeltaScan(_StepScan):
     "dscan (also known as lup)"
-    _scan_class = scans.DeltaScan
+    scan_class = scans.DeltaScan
 
 
 class InnerProductDeltaScan(_InnerProductScan):
     "d2scan, d3scan, etc."
-    _scan_class = scans.InnerProductDeltaScan
+    scan_class = scans.InnerProductDeltaScan
 
 
 class ThetaTwoThetaScan(_InnerProductScan):
     "th2th"
-    _scan_class = scans.InnerProductDeltaScan
+    scan_class = scans.InnerProductDeltaScan
 
     def __call__(self, start, finish, intervals, time=None, **kwargs):
         TTH_MOTOR = gs.TTH_MOTOR
@@ -224,12 +224,12 @@ class _TemperatureScan(_HardcodedMotorStepScan):
 
 class AbsTemperatureScan(_TemperatureScan):
     "tscan"
-    _scan_class = scans.AbsScan
+    scan_class = scans.AbsScan
 
 
 class DeltaTemperatureScan(_TemperatureScan):
     "dtscan"
-    _scan_class = scans.DeltaScan
+    scan_class = scans.DeltaScan
 
 
 ### Basic Reciprocal Space Scans (p. 147) ###
@@ -237,7 +237,7 @@ class DeltaTemperatureScan(_TemperatureScan):
 
 class HScan(_HardcodedMotorStepScan):
     "hscan"
-    _scan_class = scans.AbsScan
+    scan_class = scans.AbsScan
 
     @property
     def _motor(self):
@@ -247,7 +247,7 @@ class HScan(_HardcodedMotorStepScan):
 
 class KScan(_HardcodedMotorStepScan):
     "kscan"
-    _scan_class = scans.AbsScan
+    scan_class = scans.AbsScan
 
     @property
     def _motor(self):
@@ -257,7 +257,7 @@ class KScan(_HardcodedMotorStepScan):
 
 class LScan(_HardcodedMotorStepScan):
     "lscan"
-    _scan_class = scans.AbsScan
+    scan_class = scans.AbsScan
 
     @property
     def _motor(self):
@@ -267,7 +267,7 @@ class LScan(_HardcodedMotorStepScan):
 
 class OuterProductHKLScan(_PrimitiveScan):
     "hklmesh"
-    _scan_class = scans.OuterProductAbsScan
+    scan_class = scans.OuterProductAbsScan
 
     def __call__(self, Q1, start1, finish1, intervals1, Q2, start2, finish2,
                  intervals2, time=None, **kwargs):
@@ -292,7 +292,7 @@ class OuterProductHKLScan(_PrimitiveScan):
 
 class InnerProductHKLScan(_PrimitiveScan):
     "hklscan"
-    _scan_class = scans.InnerProductAbsScan
+    scan_class = scans.InnerProductAbsScan
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l,
                  finish_l, intervals, time=None, **kwargs):
@@ -319,7 +319,7 @@ class InnerProductHKLScan(_PrimitiveScan):
 
 class Tweak(_PrimitiveScan):
     "tw"
-    _scan_class = scans.Tweak
+    scan_class = scans.Tweak
 
     def __call__(motor, step, **kwargs):
         from bluesky.standard_config import gs
