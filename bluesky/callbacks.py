@@ -517,6 +517,8 @@ class LiveRaster(CallbackBase):
         im = self.ax.imshow(self._Idata, norm=self._norm,
                             cmap=self.cmap, interpolation='none')
         self.im = im
+        cb = self.fig.colorbar(im)
+        cb.set_label('I')
 
     def event(self, doc):
         seq_num = doc['seq_num']
