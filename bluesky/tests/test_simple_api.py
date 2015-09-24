@@ -23,6 +23,7 @@ def test_basic_usage():
     gs.RE.md['config'] = {}
     # without count time specified
     ct()
+    ct(num=3)  # passing kwargs through to scan
     ascan(motor, 1, 2, 2)
     a2scan(motor, 1, 2, 2)
     a3scan(motor, 1, 2, 2)

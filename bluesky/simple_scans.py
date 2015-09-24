@@ -36,7 +36,7 @@ class _PrimitiveScan:
     def __call__(self, *args, subs=None, **kwargs):
         scan_kwargs = dict()
         # Any kwargs valid for the scan go to the scan, not the RE.
-        for k, v in kwargs.items():
+        for k, v in kwargs.copy().items():
             if k in self.params:
                 scan_kwargs[k] = kwargs.pop(k)
         from bluesky.standard_config import gs
