@@ -1,4 +1,6 @@
 import numpy as np
+from cycler import cycler
+import matplotlib.pyplot as plt
 from scipy.ndimage import center_of_mass
 from bluesky.callbacks import CollectThenCompute
 
@@ -67,14 +69,14 @@ class PeakStats(CollectThenCompute):
         self.y_data = y
 
 
-def plot_peak_stats(ax, peak_stats):
+def plot_peak_stats(peak_stats, ax=None):
     """
     Plot data and various peak statistics.
 
     Parameters
     ----------
-    ax : matplotlib.Axes
     peak_stats : PeakStats
+    ax : matplotlib.Axes, optional
 
     Returns
     -------
@@ -87,8 +89,12 @@ def plot_peak_stats(ax, peak_stats):
     # Plot points, vertical lines, and a legend. Collect Artist objs to return.
     points, = ax.plot(ps.x_data, ps.y_data, 'o')
     vlines = []
-    for attr in ['cen', 'com', 'max', 'min']:
-        vlines.append(ax.axvline(getattr(ps, attr), label=attr))
+    styles = cycler('color', list('krgb'))
+    for style, attr in zip(styles, ['cen', 'com', 'max', 'min']):
+        val = getattr(ps, attr)
+        if val is None:
+            continue
+        vlines.append(ax.axvline(val, label=attr, **style))
     legend = ax.legend(loc='best')
     arts = {'points': points, 'vlines': vlines, 'legend': legend}
     return arts
