@@ -3,6 +3,7 @@ Useful callbacks for the Run Engine
 """
 import sys
 from itertools import count
+from collections import deque
 import warnings
 from prettytable import PrettyTable
 
@@ -383,3 +384,34 @@ def _get_obj_fields(fields):
                                  "'describe' method that return a dict.")
             string_fields.extend(field_list)
     return string_fields
+
+
+class CollectThenCompute(CallbackBase):
+
+    def __init__(self):
+        self._start_doc = None
+        self._stop_doc = None
+        self._events = deque()
+        self._descriptors = deque()
+
+    def start(self, doc):
+        self._start_doc = doc
+
+    def descriptor(self, doc):
+        self._descriptors.append(doc)
+
+    def event(self, doc):
+        self._events.append(doc)
+
+    def stop(self, doc):
+        self._stop_doc = doc
+        self.compute()
+
+    def reset(self):
+        self._start_doc = None
+        self._stop_doc = None
+        self._events.clear()
+        self._descriptors.clear()
+
+    def compute(self):
+        raise NotImplementedError("This method must be defined by a subclass.")
