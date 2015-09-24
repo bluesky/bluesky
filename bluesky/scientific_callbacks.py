@@ -61,12 +61,12 @@ class PeakStats(CollectThenCompute):
                 y.append(_y)
         x = np.array(x)
         y = np.array(y)
+        self.x_data = x
+        self.y_data = y
         # Compute x value at min and max of y
         self.max = x[np.argmax(y)]
         self.min = x[np.argmin(y)]
-        self.com = np.interp(center_of_mass(y), x, y)
-        self.x_data = x
-        self.y_data = y
+        self.com = np.interp(center_of_mass(y), np.arange(len(x)), x)
 
 
 def plot_peak_stats(peak_stats, ax=None):
