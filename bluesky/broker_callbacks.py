@@ -1,7 +1,7 @@
-from dataportal import DataBroker as db
+from dataportal import DataBroker as db, get_events
 import filestore
 import filestore.api as fsapi
-from metadatastore.commands import find_event_descriptors, find_run_starts
+from metadatastore.commands import run_start_given_uid, descriptors_by_start
 import matplotlib.pyplot as plt
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 from .callbacks import CallbackBase
@@ -71,11 +71,11 @@ def post_run(callback):
     """
     def f(name, stop_doc):
         uid = stop_doc['run_start']
-        start, = find_run_starts(uid=uid)
-        descriptors = find_event_descriptors(run_start=uid)
+        start = run_start_given_uid(uid)
+        descriptors = descriptors_by_start(uid)
         # For convenience, I'll rely on the broker to get Events.
         header = db[uid]
-        events = db.fetch_events(header)
+        events = get_events(header)
         callback.start(start)
         for d in descriptors:
             callback.descriptor(d)

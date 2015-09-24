@@ -1,4 +1,5 @@
 from nose.tools import assert_equal, assert_raises
+from nose import SkipTest
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.scans import AdaptiveAbsScan
@@ -67,6 +68,16 @@ def test_unknown_cb_raises():
     assert_raises(KeyError, RE.subscribe, 'not a thing', f)
     # CallbackRegistry catches this case (different error).
     assert_raises(ValueError, RE._register_scan_callback, 'not a thing', f)
+
+
+def test_post_run():
+    try:
+        import dataportal
+    except ImportError:
+        raise SkipTest('requires dataportal')
+    from bluesky.broker_callbacks import post_run
+    RE(stepscan(det, motor), subs=post_run(LiveTable()))
+
 
 
 @contextlib.contextmanager
