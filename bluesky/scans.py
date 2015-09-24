@@ -555,6 +555,8 @@ class Center(ScanBase):
         return self.initial_center + self.RANGE_LIMIT * self.initial_width
 
     def _gen(self):
+        # We checked in the __init__ that this import works.
+        from lmfit.models import GaussianModel, LinearModel
         # For thread safety (paranoia) make copies of stuff
         dets = self.detectors
         target_field = self.target_field
