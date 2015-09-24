@@ -401,7 +401,7 @@ class CollectThenCompute(CallbackBase):
         self._descriptors.append(doc)
 
     def event(self, doc):
-        self._events.append(event)
+        self._events.append(doc)
 
     def stop(self, doc):
         self._stop_doc = doc
