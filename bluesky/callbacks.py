@@ -471,3 +471,56 @@ class LiveMesh(CallbackBase):
         offsets = np.vstack([self._xdata, self._ydata]).T
         self.sc.set_offsets(offsets)
         self.sc.set_array(np.asarray(self._Idata))
+
+
+class LiveRaster(CallbackBase):
+    """Simple callback that fills in values based on a raster
+
+    This simply wraps around a `AxesImage`.  seq_num is used to
+    determine which pixel to fill in
+
+    Parameters
+    ----------
+    raster_shap : tuple
+        The (row, col) shape of the raster
+
+    I : str
+        The field to use for the color of the markers
+
+    clim : tuple, optional
+       The color limits
+
+    cmap : str or colormap, optional
+       The color map to use
+    """
+    def __init__(self, raster_shape, I, *,
+                 clim=None, cmap='viridis'):
+        fig, ax = plt.subplots()
+        self.I = I
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_aspect('equal')
+        self.ax = ax
+        self.fig = fig
+        self._Idata = np.ones(raster_shape) * np.nan
+        self._norm = mcolors.Normalize()
+        if clim is not None:
+            self._norm.vmin, self._norm.vmax = clim
+        self.cmap = cmap
+        self.raster_shape = raster_shape
+        self.im = None
+
+    def start(self, doc):
+        if self.im is not None:
+            raise RuntimeError("Can not re-use LiveRaster")
+        self._Idata = np.ones(self.raster_shape) * np.nan
+        im = self.ax.imshow(self._Idata, norm=self._norm,
+                            cmap=self.cmap, interpolation='none')
+        self.im = im
+
+    def event(self, doc):
+        seq_num = doc['seq_num']
+        pos = np.unravel_index(seq_num, self.raster_shape)
+        self._Idata[pos] = doc['data'][self.I]
+
+        self.im.set_array(self._Idata)
