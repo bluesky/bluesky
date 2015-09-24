@@ -108,11 +108,6 @@ class LivePlot(CallbackBase):
         passed to Axes.set_ylim
     All additional keyword arguments are passed through to ``Axes.plot``.
 
-    Returns
-    -------
-    func : function
-        expects one argument, an Event dictionary
-
     Examples
     --------
     >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
