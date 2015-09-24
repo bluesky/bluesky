@@ -162,6 +162,61 @@ class SynGauss(Reader):
         return self._data
 
 
+class Syn2DGauss(Reader):
+    """
+    Evaluate a point on a Gaussian based on the value of a motor.
+
+    Parameters
+    ----------
+    noise : {'poisson', 'uniform', None}
+        Add noise to the gaussian peak.
+    noise_multiplier : float
+        Only relevant for 'uniform' noise. Multiply the random amount of
+        noise by 'noise_multiplier'
+
+    Example
+    -------
+    motor = Mover('motor', ['motor'])
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+    """
+    _klass = 'reader'
+
+    def __init__(self, name, motor0, motor_field0, motor1, motor_field1,
+                 center, Imax, sigma=1,
+                 noise=None, noise_multiplier=1):
+        super().__init__(name, [name, ])
+        self.ready = True
+        self._motor0 = motor0
+        self._motor_field0 = motor_field0
+        self._motor1 = motor1
+        self._motor_field1 = motor_field1
+        self.center = np.asarray(center)
+        self.Imax = Imax
+        self.sigma = sigma
+        self.noise = noise
+        self.noise_multiplier = noise_multiplier
+        if noise not in ('poisson', 'uniform', None):
+            raise ValueError("noise must be one of 'poisson', 'uniform', None")
+
+    def trigger(self, *, block_group=True):
+        self.ready = False
+        x = self._motor0._data[self._motor_field0]['value']
+        y = self._motor1._data[self._motor_field1]['value']
+        m = np.array([x, y])
+        v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
+        if self.noise == 'poisson':
+            v = int(np.random.poisson(np.round(v), 1))
+        elif self.noise == 'uniform':
+            v += np.random.uniform(-1, 1) * self.noise_multiplier
+        self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
+        ttime.sleep(0.05)  # simulate exposure time
+        self.ready = True
+        return self
+
+    def read(self):
+        return self._data
+
+
 class MockFlyer:
     """
     Class for mocking a flyscan API implemented with stepper motors.
