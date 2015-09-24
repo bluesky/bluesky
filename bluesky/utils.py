@@ -313,7 +313,7 @@ class ExtendedList(list):
 
 
 def normalize_subs_input(subs):
-    "Accept a callable, a list, or a dict. Normalize to a dict."
+    "Accept a callable, a list, or a dict. Normalize to a dict of lists."
     if subs is None:
         return {}
     if hasattr(subs, 'items'):
