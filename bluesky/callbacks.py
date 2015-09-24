@@ -521,8 +521,9 @@ class LiveRaster(CallbackBase):
         cb.set_label('I')
 
     def event(self, doc):
-        seq_num = doc['seq_num']
+        seq_num = doc['seq_num'] - 1
         pos = np.unravel_index(seq_num, self.raster_shape)
+
         self._Idata[pos] = doc['data'][self.I]
 
         self.im.set_array(self._Idata)
