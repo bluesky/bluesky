@@ -203,7 +203,8 @@ class Syn2DGauss(Reader):
         x = self._motor0._data[self._motor_field0]['value']
         y = self._motor1._data[self._motor_field1]['value']
         m = np.array([x, y])
-        v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
+        v = self.Imax * np.exp(
+            -np.sum((m - self.center)**2) / (2 * self.sigma**2))
         if self.noise == 'poisson':
             v = int(np.random.poisson(np.round(v), 1))
         elif self.noise == 'uniform':
