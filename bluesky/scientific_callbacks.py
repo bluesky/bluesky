@@ -3,11 +3,12 @@ from cycler import cycler
 import matplotlib.pyplot as plt
 from scipy.ndimage import center_of_mass
 from bluesky.callbacks import CollectThenCompute
+import lmfit
 
 
 class PeakStats(CollectThenCompute):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, edge_count=None):
         """
         Compute peak statsitics after a run finishes.
 
@@ -19,6 +20,10 @@ class PeakStats(CollectThenCompute):
             field name for the x variable (e.g., a motor)
         y : string
             field name for the y variable (e.g., a detector)
+
+        edge_count : int or None, optional
+            If not None, number of points at beginning and end to use
+            for quick and dirty background subtraction.
 
         Note
         ----
@@ -38,6 +43,9 @@ class PeakStats(CollectThenCompute):
         self.cen = None
         self.max = None
         self.min = None
+        self.nlls = None
+        self.lin_bkg = None
+        self._edge_count = edge_count
         super().__init__()
 
     def __getitem__(self, key):
@@ -63,10 +71,27 @@ class PeakStats(CollectThenCompute):
         y = np.array(y)
         self.x_data = x
         self.y_data = y
+        if self._edge_count is not None:
+            left_x = np.mean(x[:self._edge_count])
+            left_y = np.mean(y[:self._edge_count])
+
+            right_x = np.mean(x[-self._edge_count:])
+            right_y = np.mean(y[-self._edge_count:])
+
+            m = (right_y - left_y) / (right_x - left_x)
+            b = left_y - m * left_x
+            # don't do this in place to not mess with self.y_data
+            y = y - (m * x + b)
+            self.lin_bkg = {'m': m, 'b': b}
+
         # Compute x value at min and max of y
         self.max = x[np.argmax(y)]
         self.min = x[np.argmin(y)]
         self.com = np.interp(center_of_mass(y), np.arange(len(x)), x)
+
+        # reset y data
+        y = self.y_data
+        # insert lmfit
 
 
 def plot_peak_stats(peak_stats, ax=None):
