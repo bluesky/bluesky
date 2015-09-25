@@ -95,12 +95,12 @@ class PeakStats(CollectThenCompute):
         self.max = x[np.argmax(y)]
         self.min = x[np.argmin(y)]
         self.com = np.interp(center_of_mass(y), np.arange(len(x)), x)
-        avg = (np.max(y) + np.min(y)) / 2
-        crossings = np.where(np.diff(y > avg))[0]
+        mid = (np.max(y) + np.min(y)) / 2
+        crossings = np.where(np.diff(y > mid))[0]
         _cen_list = []
         for cr in crossings.ravel():
             _x = x[cr:cr+2]
-            _y = y[cr:cr+2] - avg
+            _y = y[cr:cr+2] - mid
 
             dx = np.diff(_x)
             dy = np.diff(_y)
