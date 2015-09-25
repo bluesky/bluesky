@@ -3,6 +3,7 @@ from cycler import cycler
 import matplotlib.pyplot as plt
 from scipy.ndimage import center_of_mass
 from bluesky.callbacks import CollectThenCompute
+import lmfit
 
 
 class PeakStats(CollectThenCompute):
@@ -42,6 +43,8 @@ class PeakStats(CollectThenCompute):
         self.cen = None
         self.max = None
         self.min = None
+        self.nlls = None
+        self.lin_bkg = None
         self._edge_count = edge_count
         super().__init__()
 
@@ -79,10 +82,16 @@ class PeakStats(CollectThenCompute):
             b = left_y - m * left_x
             # don't do this in place to not mess with self.y_data
             y = y - (m * x + b)
+            self.lin_bkg = {'m': m, 'b': b}
+
         # Compute x value at min and max of y
         self.max = x[np.argmax(y)]
         self.min = x[np.argmin(y)]
         self.com = np.interp(center_of_mass(y), np.arange(len(x)), x)
+
+        # reset y data
+        y = self.y_data
+        # insert lmfit
 
 
 def plot_peak_stats(peak_stats, ax=None):
