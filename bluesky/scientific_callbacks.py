@@ -3,7 +3,6 @@ from cycler import cycler
 import matplotlib.pyplot as plt
 from scipy.ndimage import center_of_mass
 from bluesky.callbacks import CollectThenCompute
-import lmfit
 
 
 class PeakStats(CollectThenCompute):
@@ -56,6 +55,14 @@ class PeakStats(CollectThenCompute):
 
     def compute(self):
         "This method is called at run-stop time by the superclass."
+        # clear all results
+        self.com = None
+        self.cen = None
+        self.max = None
+        self.min = None
+        self.nlls = None
+        self.lin_bkg = None
+
         x = []
         y = []
         for event in self._events:
@@ -88,6 +95,20 @@ class PeakStats(CollectThenCompute):
         self.max = x[np.argmax(y)]
         self.min = x[np.argmin(y)]
         self.com = np.interp(center_of_mass(y), np.arange(len(x)), x)
+        mid = (np.max(y) + np.min(y)) / 2
+        crossings = np.where(np.diff(y > mid))[0]
+        _cen_list = []
+        for cr in crossings.ravel():
+            _x = x[cr:cr+2]
+            _y = y[cr:cr+2] - mid
+
+            dx = np.diff(_x)
+            dy = np.diff(_y)
+            m = dy / dx
+            _cen_list.append((-_y[0] / m) + _x[0])
+
+        if _cen_list:
+            self.cen = np.mean(_cen_list)
 
         # reset y data
         y = self.y_data
