@@ -55,6 +55,14 @@ class PeakStats(CollectThenCompute):
 
     def compute(self):
         "This method is called at run-stop time by the superclass."
+        # clear all results
+        self.com = None
+        self.cen = None
+        self.max = None
+        self.min = None
+        self.nlls = None
+        self.lin_bkg = None
+
         x = []
         y = []
         for event in self._events:
