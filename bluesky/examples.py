@@ -147,7 +147,7 @@ class SynGauss(Reader):
 
     def trigger(self, *, block_group=True):
         self.ready = False
-        m = self._motor._data[self._motor_field]['value']
+        m = self._motor.read()[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
         if self.noise == 'poisson':
             v = int(np.random.poisson(np.round(v), 1))
@@ -200,8 +200,8 @@ class Syn2DGauss(Reader):
 
     def trigger(self, *, block_group=True):
         self.ready = False
-        x = self._motor0._data[self._motor_field0]['value']
-        y = self._motor1._data[self._motor_field1]['value']
+        x = self._motor0.read()[self._motor_field0]['value']
+        y = self._motor1.read()[self._motor_field1]['value']
         m = np.array([x, y])
         v = self.Imax * np.exp(
             -np.sum((m - self.center)**2) / (2 * self.sigma**2))
