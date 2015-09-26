@@ -316,12 +316,12 @@ def normalize_subs_input(subs):
     "Accept a callable, a list, or a dict. Normalize to a dict of lists."
     if subs is None:
         return {}
-    if hasattr(subs, 'items'):
+    if callable(subs):
+        return {'all': [subs]}
+    elif hasattr(subs, 'items'):
         return subs
     elif isinstance(subs, Iterable):
         return {'all': subs}
-    elif callable(subs):
-        return {'all': [subs]}
     else:
         raise ValueError("Subscriptions should be a callable, a list of "
                          "callables, or a dictionary mapping subscription "
