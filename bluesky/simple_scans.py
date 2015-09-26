@@ -66,8 +66,8 @@ class _BundledScan:
 
     def __init__(self):
         # subs and sub_factories can be set individually per instance
-        self.subs = self.default_subs
-        self.sub_factories = self.default_sub_factories
+        self.subs = list(self.default_subs)
+        self.sub_factories = list(self.default_sub_factories)
         self.params = list(signature(self.scan_class).parameters.keys())
 
     def __call__(self, *args, subs=None, sub_factories=None, **kwargs):
