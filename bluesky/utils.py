@@ -272,6 +272,7 @@ class StructMeta(type):
 class Struct(metaclass=StructMeta):
     "The _fields of any subclass become its attritubes and __init__ args."
     _fields = []
+
     def __init__(self, *args, **kwargs):
         bound = self.__signature__.bind(*args, **kwargs)
         for name, val in bound.arguments.items():
