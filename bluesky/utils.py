@@ -5,7 +5,7 @@ from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
-from collections import OrderedDict, Iterable
+from collections import Iterable
 import sys
 import numpy as np
 from cycler import cycler
