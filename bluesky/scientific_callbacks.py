@@ -43,6 +43,7 @@ class PeakStats(CollectThenCompute):
         self.max = None
         self.min = None
         self.nlls = None
+        self.fwhm = None
         self.lin_bkg = None
         self._edge_count = edge_count
         super().__init__()
@@ -61,6 +62,7 @@ class PeakStats(CollectThenCompute):
         self.max = None
         self.min = None
         self.nlls = None
+        self.fwhm = None
         self.lin_bkg = None
 
         x = []
@@ -109,6 +111,9 @@ class PeakStats(CollectThenCompute):
 
         if _cen_list:
             self.cen = np.mean(_cen_list)
+
+        if len(_cen_list) == 2:
+            self.fwhm = float(_cen_list[1] - _cen_list[0])
 
         # reset y data
         y = self.y_data
