@@ -97,15 +97,14 @@ class _BundledScan:
         # to RE; RE args effectively become keyword-only arguments.
         return gs.RE(self.scan, _subs, **kwargs)
 
-
-
-### Mid-level base classes ###
+# ## Mid-level base classes ###
 
 # These are responsible for popping off the time arg and adjusting the
 # interval. SPEC counts "bonds;" idiomatic Python counts "sites."
 
+
 class _OuterProductScan(_BundledScan):
-    default_sub_factories = [table_from_motors, plot_first_motor]
+    default_sub_factories = [table_from_motors]
 
     def __call__(self, *args, time=None, subs=None, **kwargs):
         args = list(args)
