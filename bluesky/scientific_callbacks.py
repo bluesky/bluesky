@@ -94,8 +94,8 @@ class PeakStats(CollectThenCompute):
             self.lin_bkg = {'m': m, 'b': b}
 
         # Compute x value at min and max of y
-        self.max = x[np.argmax(y)]
-        self.min = x[np.argmin(y)]
+        self.max = x[np.argmax(y)], self.y_data[np.argmax(y)],
+        self.min = x[np.argmin(y)], self.y_data[np.argmin(y)],
         self.com = np.interp(center_of_mass(y), np.arange(len(x)), x)
         mid = (np.max(y) + np.min(y)) / 2
         crossings = np.where(np.diff(y > mid))[0]
@@ -134,18 +134,36 @@ def plot_peak_stats(peak_stats, ax=None):
     arts : dict
         dictionary of matplotlib Artist objects, for further styling
     """
+    arts = {}
     ps = peak_stats  # for brevity
     if ax is None:
         fig, ax = plt.subplots()
+    ax.margins(.1)
     # Plot points, vertical lines, and a legend. Collect Artist objs to return.
     points, = ax.plot(ps.x_data, ps.y_data, 'o')
     vlines = []
-    styles = cycler('color', list('krgb'))
-    for style, attr in zip(styles, ['cen', 'com', 'max', 'min']):
+    styles = iter(cycler('color', 'krgbm'))
+    for style, attr in zip(styles, ['cen', 'com']):
+        print(style, attr)
         val = getattr(ps, attr)
         if val is None:
             continue
         vlines.append(ax.axvline(val, label=attr, **style))
+
+    for style, attr in zip(styles, ['max', 'min']):
+        print(style, attr)
+        val = getattr(ps, attr)
+        if val is None:
+            continue
+        vlines.append(ax.axvline(val[0], label=attr, lw=3, **style))
+        vlines.append(ax.axhline(val[1], lw=3, **style))
+
+    if ps.lin_bkg:
+        lb = ps.lin_bkg
+        ln, = ax.plot(ps.x_data, ps.x_data*lb['m'] + lb['b'],
+                      ls='--', lw=2, color='k')
+        arts['bkg'] = ln
+
     legend = ax.legend(loc='best')
-    arts = {'points': points, 'vlines': vlines, 'legend': legend}
+    arts.update({'points': points, 'vlines': vlines, 'legend': legend})
     return arts
