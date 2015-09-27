@@ -4,7 +4,7 @@ from boltons.iterutils import chunked
 from cycler import cycler
 import numpy as np
 from .run_engine import Msg
-from .utils import ScanStruct, snake_cyclers, normalize_subs_input
+from .utils import ScanStruct, snake_cyclers
 
 
 class ScanBase(ScanStruct):
@@ -26,14 +26,6 @@ class ScanBase(ScanStruct):
     you should provide an instance level ``_fields`` so that the logbook
     related messages will work.
     """
-    @property
-    def subs(self):
-        return self._subs
-
-    @subs.setter
-    def subs(self, value):
-        self._subs = normalize_subs_input(value)
-
     def __iter__(self):
         yield Msg('open_run')
         yield from self._pre_scan()

@@ -11,6 +11,7 @@ import numpy as np
 from cycler import cycler
 from traitlets import TraitType
 import logging
+from bluesky.utils import normalize_subs_input
 logger = logging.getLogger(__name__)
 
 
@@ -290,6 +291,14 @@ class ScanStruct(Struct):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._subs = {}
+
+    @property
+    def subs(self):
+        return self._subs
+
+    @subs.setter
+    def subs(self, value):
+        self._subs = normalize_subs_input(value)
 
 
 class ExtendedList(list):
