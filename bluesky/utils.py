@@ -9,9 +9,7 @@ from collections import Iterable
 import sys
 import numpy as np
 from cycler import cycler
-from traitlets import TraitType
 import logging
-from bluesky.utils import normalize_subs_input
 logger = logging.getLogger(__name__)
 
 
@@ -286,21 +284,6 @@ class Struct(metaclass=StructMeta):
             setattr(self, attr, val)
 
 
-class ScanStruct(Struct):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._subs = {}
-
-    @property
-    def subs(self):
-        return self._subs
-
-    @subs.setter
-    def subs(self, value):
-        self._subs = normalize_subs_input(value)
-
-
 class ExtendedList(list):
     "A list with some 'required' elements that can't be removed."
     # Elaborated version of http://stackoverflow.com/a/16380637/1221924
@@ -352,17 +335,15 @@ def normalize_subs_input(subs):
                          "names to lists of callables.")
 
 
-class Subs(TraitType):
+class Subs:
+    def __init__(self):
+        self._value = {}
 
-    default_value = dict()
-    info_text = 'mapping Document streams to callbacks or callback factories'
+    def __get__(self, instance, owner):
+        return self._value
 
-    def validate(self, obj, value):
-        try:
-            normalize_subs_input(value)
-        except TypeError:
-            self.error(obj, value)
-        return value
+    def __set__(self, instance, value):
+        self._value = normalize_subs_input(value)
 
 
 def snake_cyclers(cyclers, snake_booleans):
