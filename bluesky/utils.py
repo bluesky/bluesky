@@ -9,6 +9,7 @@ from collections import Iterable
 import sys
 import numpy as np
 from cycler import cycler
+from traitlets import TraitType
 import logging
 logger = logging.getLogger(__name__)
 
@@ -284,6 +285,13 @@ class Struct(metaclass=StructMeta):
             setattr(self, attr, val)
 
 
+class ScanStruct(Struct):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._subs = {}
+
+
 class ExtendedList(list):
     "A list with some 'required' elements that can't be removed."
     # Elaborated version of http://stackoverflow.com/a/16380637/1221924
@@ -313,6 +321,9 @@ class ExtendedList(list):
         super().remove(value)
 
 
+SUBS_NAMES = ['all', 'start', 'stop', 'event', 'descriptor']
+
+
 def normalize_subs_input(subs):
     "Accept a callable, a list, or a dict. Normalize to a dict of lists."
     if subs is None:
@@ -320,6 +331,9 @@ def normalize_subs_input(subs):
     if callable(subs):
         return {'all': [subs]}
     elif hasattr(subs, 'items'):
+        for key in subs:
+            if key not in SUBS_NAMES:
+                raise KeyError("Keys must be one of {!r:0}".format(SUBS_NAMES))
         return subs
     elif isinstance(subs, Iterable):
         return {'all': subs}
@@ -327,6 +341,19 @@ def normalize_subs_input(subs):
         raise ValueError("Subscriptions should be a callable, a list of "
                          "callables, or a dictionary mapping subscription "
                          "names to lists of callables.")
+
+
+class Subs(TraitType):
+
+    default_value = dict()
+    info_text = 'mapping Document streams to callbacks or callback factories'
+
+    def validate(self, obj, value):
+        try:
+            normalize_subs_input(value)
+        except TypeError:
+            self.error(obj, value)
+        return value
 
 
 def snake_cyclers(cyclers, snake_booleans):
