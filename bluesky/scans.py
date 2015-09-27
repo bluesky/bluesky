@@ -4,10 +4,10 @@ from boltons.iterutils import chunked
 from cycler import cycler
 import numpy as np
 from .run_engine import Msg
-from .utils import Struct, snake_cyclers
+from .utils import ScanStruct, snake_cyclers, normalize_subs_input
 
 
-class ScanBase(Struct):
+class ScanBase(ScanStruct):
     """
     This is a base class for writing reusable scans.
 
@@ -26,6 +26,14 @@ class ScanBase(Struct):
     you should provide an instance level ``_fields`` so that the logbook
     related messages will work.
     """
+    @property
+    def subs(self):
+        return self._subs
+
+    @subs.setter
+    def subs(self, value):
+        self._subs = normalize_subs_input(value)
+
     def __iter__(self):
         yield Msg('open_run')
         yield from self._pre_scan()
@@ -98,7 +106,7 @@ class Count(ScanBase):
     >>> c = Count([det1, det2, det3], 5, 1)
     >>> RE(c)
     """
-    # We define _fields not for Struct, but for ScanBase.log* methods.
+    # We define _fields not for ScanStruct, but for ScanBase.log* methods.
     _fields = ['detectors', 'num', 'delay']
 
     def __init__(self, detectors, num=1, delay=0):
@@ -495,7 +503,7 @@ class Center(ScanBase):
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
     NUM_SAMPLES = 10
     NUM_SAMPLES = 10 
-    # We define _fields not for Struct, but for ScanBase.log* methods.
+    # We define _fields not for ScanStruct, but for ScanBase.log* methods.
     _fields = ['detectors', 'target_field', 'motor', 'initial_center',
                'initial_width', 'tolerance', 'output_mutable']
 
@@ -659,7 +667,7 @@ class ScanND(ScanBase):
 
 
 class _OuterProductScanBase(ScanND):
-    # We define _fields not for Struct, but for ScanBase.log* methods.
+    # We define _fields not for ScanStruct, but for ScanBase.log* methods.
     _fields = ['detectors', 'args']
 
     def __init__(self, detectors, *args):
@@ -695,7 +703,7 @@ class _OuterProductScanBase(ScanND):
 
 
 class _InnerProductScanBase(ScanND):
-    # We define _fields not for Struct, but for ScanBase.log* methods.
+    # We define _fields not for ScanStruct, but for ScanBase.log* methods.
     _fields = ['detectors', 'num', 'args']
 
     def __init__(self, detectors, num, *args):
