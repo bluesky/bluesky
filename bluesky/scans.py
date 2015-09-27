@@ -674,8 +674,11 @@ class _OuterProductScanBase(ScanND):
         self.detectors = detectors
         self._args = args
         self.motors = []
+        shape = []
         for motor, start, stop, num, snake in chunked(self.args, 5):
             self.motors.append(motor)
+            shape.append(num)
+        self.shape = tuple(shape)
 
     def _pre_scan(self):
         # Build a Cycler for ScanND.
