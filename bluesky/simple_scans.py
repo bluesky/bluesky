@@ -29,7 +29,6 @@ from bluesky.standard_config import gs
 from bluesky.utils import normalize_subs_input, Subs
 from collections import defaultdict
 from itertools import filterfalse
-from traitlets import HasTraits
 
 ### Factory functions acting a shim between scans and callbacks ###
 
@@ -62,7 +61,7 @@ def plot_motor(scan):
     return LivePlot(gs.PLOT_Y, scan.motor._name)
 
 
-class _BundledScan(HasTraits):
+class _BundledScan:
     default_subs = {}  # subscriptions
     default_sub_factories = {}  # funcs that take a scan, return a sub
     # These are set to the defaults at init time.
