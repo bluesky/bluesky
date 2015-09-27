@@ -313,6 +313,9 @@ class ExtendedList(list):
         super().remove(value)
 
 
+SUBS_NAMES = ['all', 'start', 'stop', 'event', 'descriptor']
+
+
 def normalize_subs_input(subs):
     "Accept a callable, a list, or a dict. Normalize to a dict of lists."
     if subs is None:
@@ -320,6 +323,9 @@ def normalize_subs_input(subs):
     if callable(subs):
         return {'all': [subs]}
     elif hasattr(subs, 'items'):
+        for key in subs:
+            if key not in SUBS_NAMES:
+                raise KeyError("Keys must be one of {!r:0}".format(SUBS_NAMES))
         return subs
     elif isinstance(subs, Iterable):
         return {'all': subs}
@@ -327,6 +333,17 @@ def normalize_subs_input(subs):
         raise ValueError("Subscriptions should be a callable, a list of "
                          "callables, or a dictionary mapping subscription "
                          "names to lists of callables.")
+
+
+class Subs:
+    def __init__(self):
+        self._value = {}
+
+    def __get__(self, instance, owner):
+        return self._value
+
+    def __set__(self, instance, value):
+        self._value = normalize_subs_input(value)
 
 
 def snake_cyclers(cyclers, snake_booleans):
