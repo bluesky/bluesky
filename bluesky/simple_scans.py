@@ -107,7 +107,7 @@ def _update_lists(out, inp):
     """Updates a dict my merging lists
 
     """
-    for k, v in inp:
+    for k, v in inp.items():
         out[k].extend(v)
 
 
