@@ -26,8 +26,9 @@ from bluesky import scans
 from bluesky.callbacks import LiveTable, LivePlot
 from boltons.iterutils import chunked
 from bluesky.standard_config import gs
-from bluesky.utils import normalize_subs_input
-
+from bluesky.utils import normalize_subs_input, Subs
+from collections import defaultdict
+from itertools import filterfalse
 
 ### Factory functions acting a shim between scans and callbacks ###
 
@@ -61,13 +62,16 @@ def plot_motor(scan):
 
 
 class _BundledScan:
-    default_subs = []  # subscriptions
-    default_sub_factories = []  # functions that take a scan, return a sub
+    default_subs = {}  # subscriptions
+    default_sub_factories = {}  # funcs that take a scan, return a sub
+    # These are set to the defaults at init time.
+    subs = Subs()
+    sub_factories = Subs()
 
     def __init__(self):
         # subs and sub_factories can be set individually per instance
-        self.subs = self.default_subs
-        self.sub_factories = self.default_sub_factories
+        self.subs = dict(self.default_subs)
+        self.sub_factories = dict(self.default_sub_factories)
         self.params = list(signature(self.scan_class).parameters.keys())
 
     def __call__(self, *args, subs=None, sub_factories=None, **kwargs):
@@ -86,26 +90,41 @@ class _BundledScan:
 
         self.scan = self.scan_class(gs.DETS, *args, **scan_kwargs)
         # Combine subs passed as args and subs set up in subs attribute.
-        _subs = normalize_subs_input(subs)
-        _subs.update(normalize_subs_input(self.subs))
+        _subs = defaultdict(list)
+        _update_lists(_subs, normalize_subs_input(subs))
+        _update_lists(_subs, normalize_subs_input(self.subs))
         # Create a sub from each sub_factory.
-        _subs.update({k: [sf(self.scan) for sf in v] for k, v in
-                      normalize_subs_input(sub_factories).items()})
-        _subs.update({k: [sf(self.scan) for sf in v] for k, v in
-                      normalize_subs_input(self.sub_factories).items()})
+        _update_lists(_subs, _run_factories(sub_factories, self.scan))
+        _update_lists(_subs, _run_factories(self.sub_factories, self.scan))
+
         # Any remainging kwargs go the RE. To be safe, no args are passed
         # to RE; RE args effectively become keyword-only arguments.
         return gs.RE(self.scan, _subs, **kwargs)
 
 
+def _update_lists(out, inp):
+    """Updates a dict my merging lists
 
-### Mid-level base classes ###
+    """
+    for k, v in inp.items():
+        out[k].extend(v)
+
+
+def _run_factories(factories, scan):
+    factories = normalize_subs_input(factories)
+    return {k: list(filterfalse(lambda x: x is None,
+                                (sf(scan) for sf in v)))
+            for k, v in factories.items()}
+
+
+# ## Mid-level base classes ###
 
 # These are responsible for popping off the time arg and adjusting the
 # interval. SPEC counts "bonds;" idiomatic Python counts "sites."
 
+
 class _OuterProductScan(_BundledScan):
-    default_sub_factories = [table_from_motors, plot_first_motor]
+    default_sub_factories = {'all': [table_from_motors]}
 
     def __call__(self, *args, time=None, subs=None, **kwargs):
         args = list(args)
@@ -127,7 +146,7 @@ class _OuterProductScan(_BundledScan):
 
 
 class _InnerProductScan(_BundledScan):
-    default_sub_factories = [table_from_motors, plot_first_motor]
+    default_sub_factories = {'all': [table_from_motors, plot_first_motor]}
 
     def __call__(self, *args, time=None, subs=None, **kwargs):
         args = list(args)
@@ -144,7 +163,7 @@ class _InnerProductScan(_BundledScan):
 
 
 class _StepScan(_BundledScan):
-    default_sub_factories = [table_from_motor, plot_motor]
+    default_sub_factories = {'all': [table_from_motor, plot_motor]}
 
     def __call__(self, motor, start, finish, intervals, time=None,
                  subs=None, **kwargs):
@@ -157,7 +176,7 @@ class _StepScan(_BundledScan):
 
 class _HardcodedMotorStepScan(_BundledScan):
     # Subclasses must define self.motor as a property.
-    default_sub_factories = [table_from_motor, plot_motor]
+    default_sub_factories = {'all': [table_from_motor, plot_motor]}
 
     def __call__(self, start, finish, intervals, time=None, subs=None,
                  **kwargs):
@@ -174,7 +193,7 @@ class _HardcodedMotorStepScan(_BundledScan):
 class Count(_BundledScan):
     "ct"
     scan_class = scans.Count
-    default_sub_factories = [table_gs_only]
+    default_sub_factories = {'all': [table_gs_only]}
 
     def __call__(self, time=None, subs=None, **kwargs):
         if subs is None:

@@ -5,7 +5,7 @@ from weakref import ref, WeakKeyDictionary
 import types
 from inspect import Parameter, Signature
 import itertools
-from collections import OrderedDict, Iterable
+from collections import Iterable
 import sys
 import numpy as np
 from cycler import cycler
@@ -272,6 +272,7 @@ class StructMeta(type):
 class Struct(metaclass=StructMeta):
     "The _fields of any subclass become its attritubes and __init__ args."
     _fields = []
+
     def __init__(self, *args, **kwargs):
         bound = self.__signature__.bind(*args, **kwargs)
         for name, val in bound.arguments.items():
@@ -312,20 +313,37 @@ class ExtendedList(list):
         super().remove(value)
 
 
+SUBS_NAMES = ['all', 'start', 'stop', 'event', 'descriptor']
+
+
 def normalize_subs_input(subs):
     "Accept a callable, a list, or a dict. Normalize to a dict of lists."
     if subs is None:
         return {}
-    if hasattr(subs, 'items'):
+    if callable(subs):
+        return {'all': [subs]}
+    elif hasattr(subs, 'items'):
+        for key in subs:
+            if key not in SUBS_NAMES:
+                raise KeyError("Keys must be one of {!r:0}".format(SUBS_NAMES))
         return subs
     elif isinstance(subs, Iterable):
         return {'all': subs}
-    elif callable(subs):
-        return {'all': [subs]}
     else:
         raise ValueError("Subscriptions should be a callable, a list of "
                          "callables, or a dictionary mapping subscription "
                          "names to lists of callables.")
+
+
+class Subs:
+    def __init__(self):
+        self._value = {}
+
+    def __get__(self, instance, owner):
+        return self._value
+
+    def __set__(self, instance, value):
+        self._value = normalize_subs_input(value)
 
 
 def snake_cyclers(cyclers, snake_booleans):

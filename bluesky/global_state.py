@@ -34,6 +34,7 @@ class Readable(TraitType):
             self.error(obj, value)
         return value
 
+
 class Movable(TraitType):
 
     info_text = 'a Movable (positioner-like) object'

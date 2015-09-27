@@ -494,11 +494,12 @@ class LiveRaster(CallbackBase):
        The color map to use
     """
     def __init__(self, raster_shape, I, *,
-                 clim=None, cmap='viridis'):
+                 clim=None, cmap='viridis',
+                 xlabel='x', ylabel='y'):
         fig, ax = plt.subplots()
         self.I = I
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
         ax.set_aspect('equal')
         self.ax = ax
         self.fig = fig
@@ -518,7 +519,7 @@ class LiveRaster(CallbackBase):
                             cmap=self.cmap, interpolation='none')
         self.im = im
         cb = self.fig.colorbar(im)
-        cb.set_label('I')
+        cb.set_label(self.I)
 
     def event(self, doc):
         seq_num = doc['seq_num'] - 1

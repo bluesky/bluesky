@@ -1,9 +1,11 @@
-from nose.tools import assert_equal, assert_raises
+from collections import defaultdict
+from nose.tools import assert_equal, assert_raises, assert_true, assert_greater
 from nose import SkipTest
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
-from bluesky.scans import AdaptiveAbsScan
+from bluesky.scans import AdaptiveAbsScan, AbsScan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
+from bluesky.standard_config import ascan, gs
 from bluesky.tests.utils import setup_test_run_engine
 from nose.tools import raises
 import contextlib
@@ -44,6 +46,80 @@ def test_all():
 def _raising_callbacks_helper(stream_name, callback):
     RE(stepscan(det, motor), subs={stream_name: callback})
 
+
+def test_raising_ignored_or_not():
+    assert_true(RE.ignore_callback_exceptions)
+    def cb():
+        raise Exception
+    RE(stepscan(det, motor), subs=cb)
+    RE.ignore_callback_exceptions = False
+    _raising_callbacks_helper(all, cb)
+
+
+def test_subs_input():
+    called = defaultdict(lambda: False)
+    def cb1(name, doc):
+        called['cb1'] = True
+    def cb2(name, doc):
+        called['cb2'] = True
+    def cb3(name, doc):
+        called['cb3'] = True
+    obj_ascan = AbsScan([det], motor, 1, 3, 3)
+    obj_ascan.subs = cb1
+    RE(obj_ascan, subs=[cb2, cb3])
+    assert_true(called['cb1'])
+    assert_true(called['cb2'])
+    assert_true(called['cb3'])
+    for key in called:
+        called[key] = False
+
+    RE(obj_ascan, subs={'all': [cb2, cb3]})
+    assert_true(called['cb1'])
+    assert_true(called['cb2'])
+    assert_true(called['cb3'])
+    for key in called:
+        called[key] = False
+
+    gs.DETS = [det]
+    ascan.subs = cb1
+    ascan(motor, 1, 3, 2, subs={'all': [cb2, cb3]})
+    assert_true(called['cb1'])
+    assert_true(called['cb2'])
+    assert_true(called['cb3'])
+    for key in called:
+        called[key] = False
+
+    def cb_fact4(scan):
+        def cb4(name, doc):
+            called['cb4'] = True
+        return cb4
+
+    def cb_fact5(scan):
+        def cb5(name, doc):
+            called['cb5'] = True
+        return cb5
+
+    ascan.sub_factories = {'all': [cb_fact4]}
+    ascan(motor, 1, 3, 2,
+          subs={'all': [cb2, cb3]}, sub_factories={'all': [cb_fact5]})
+    assert_true(called['cb1'])
+    assert_true(called['cb2'])
+    assert_true(called['cb3'])
+    assert_true(called['cb4'])
+    assert_true(called['cb5'])
+    for key in called:
+        called[key] = False
+
+    # do it again, but rely on normalization
+    ascan(motor, 1, 3, 2,
+          subs=[cb2, cb3], sub_factories=cb_fact5)
+    assert_true(called['cb1'])
+    assert_true(called['cb2'])
+    assert_true(called['cb3'])
+    assert_true(called['cb4'])
+    assert_true(called['cb5'])
+    for key in called:
+        called[key] = False
 
 def test_subscribe_msg():
     assert RE.state == 'idle'
