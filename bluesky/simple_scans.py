@@ -225,9 +225,6 @@ class Count(_BundledScan):
     default_sub_factories = {'all': [table_gs_only]}
 
     def __call__(self, time=None, subs=None, **kwargs):
-        if subs is None:
-            table = LiveTable(gs.TABLE_COLS)
-            subs = [table]
         original_times = _set_acquire_time(time)
         result = super().__call__(subs=subs, **kwargs)
         _unset_acquire_time(original_times)
