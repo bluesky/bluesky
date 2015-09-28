@@ -26,7 +26,7 @@ class ScanBase(Struct):
     you should provide an instance level ``_fields`` so that the logbook
     related messages will work.
     """
-    subs = Subs()
+    subs = Subs({})
 
     def __iter__(self):
         yield Msg('open_run')

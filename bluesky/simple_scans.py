@@ -26,7 +26,7 @@ from bluesky import scans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster, _get_obj_fields
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
-from bluesky.utils import normalize_subs_input, Subs
+from bluesky.utils import normalize_subs_input, Subs, DefaultSubs
 from collections import defaultdict
 from itertools import filterfalse, chain
 
@@ -71,11 +71,11 @@ def raster(scan):
 
 
 class _BundledScan:
-    default_subs = {}  # subscriptions
-    default_sub_factories = {}  # funcs that take a scan, return a sub
+    default_subs = DefaultSubs({})
+    default_sub_factories = DefaultSubs({})
     # These are set to the defaults at init time.
-    subs = Subs()
-    sub_factories = Subs()
+    subs = Subs({})
+    sub_factories = Subs({})
 
     def __init__(self):
         # subs and sub_factories can be set individually per instance
@@ -347,6 +347,7 @@ class OuterProductHKLScan(_BundledScan):
 
 class InnerProductHKLScan(_BundledScan):
     "hklscan"
+    default_subs_factories = {'start': [lambda name, doc: True]}
     scan_class = scans.InnerProductAbsScan
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l,
