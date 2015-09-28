@@ -241,7 +241,7 @@ class AbsScan(_StepScan):
 
 class OuterProductAbsScan(_OuterProductScan):
     "mesh"
-    default_sub_factories = {'all': [raster]}
+    default_sub_factories = {'all': [table_from_motors, raster]}
     scan_class = scans.OuterProductAbsScan
 
 
