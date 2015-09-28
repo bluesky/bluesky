@@ -66,9 +66,12 @@ def raster(scan):
     "Set up a LiveRaster by inspect a scan and gs."
     if len(scan.shape) != 2:
         return None
-    xlab, ylab = _get_obj_fields(scan.motors)
+    # first motor is 'slow' -> Y axis
+    ylab, xlab = _get_obj_fields(scan.motors)
+    # shape goes in (rr, cc)
+    # extents go in (x, y)
     return LiveRaster(scan.shape, gs.MASTER_DET_FIELD, xlabel=xlab,
-                      ylabel=ylab, extent=list(chain(*scan.extents)))
+                      ylabel=ylab, extent=list(chain(*scan.extents[::-1])))
 
 
 def peakstats_first_motor(scan):
