@@ -644,9 +644,11 @@ class ScanND(ScanBase):
                     # This step does not move this motor.
                     continue
                 yield Msg('set', motor, pos, block_group='A')
-                yield Msg('wait', None, 'A')
                 self._last_set_point[motor] = pos
-                yield Msg('create')
+
+            yield Msg('wait', None, 'A')
+            yield Msg('create')
+
             for motor in self.motors:
                 yield Msg('read', motor)
             for det in dets:
