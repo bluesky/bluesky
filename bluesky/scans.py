@@ -496,7 +496,7 @@ class Center(ScanBase):
     RANGE = 2  # in sigma, first sample this range around the guess
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
     NUM_SAMPLES = 10
-    NUM_SAMPLES = 10 
+    NUM_SAMPLES = 10
     # We define _fields not for Struct, but for ScanBase.log* methods.
     _fields = ['detectors', 'target_field', 'motor', 'initial_center',
                'initial_width', 'tolerance', 'output_mutable']
@@ -674,8 +674,17 @@ class _OuterProductScanBase(ScanND):
         self.detectors = detectors
         self._args = args
         self.motors = []
+        shape = []
+        extent = []
+        snaking = []
         for motor, start, stop, num, snake in chunked(self.args, 5):
             self.motors.append(motor)
+            shape.append(num)
+            extent.append([start, stop])
+            snaking.append(snake)
+        self.shape = tuple(shape)
+        self.extents = tuple(extent)
+        self.snaking = tuple(snaking)
 
     def _pre_scan(self):
         # Build a Cycler for ScanND.
