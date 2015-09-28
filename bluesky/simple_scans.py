@@ -25,7 +25,7 @@ from inspect import signature
 from bluesky import scans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster, _get_obj_fields
 from boltons.iterutils import chunked
-from bluesky.standard_config import gs
+from bluesky.global_state import gs
 from bluesky.utils import normalize_subs_input, Subs
 from collections import defaultdict
 from itertools import filterfalse, chain
@@ -89,7 +89,7 @@ class _BundledScan:
         for k, v in kwargs.copy().items():
             if k in self.params:
                 scan_kwargs[k] = kwargs.pop(k)
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
 
         RE_params = list(signature(gs.RE.__call__).parameters.keys())
         if set(RE_params) & set(self.params):
@@ -273,7 +273,7 @@ class _TemperatureScan(_HardcodedMotorStepScan):
 
     @property
     def motor(self):
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         return gs.TEMP_CONTROLLER
 
 
@@ -296,7 +296,7 @@ class HScan(_HardcodedMotorStepScan):
 
     @property
     def motor(self):
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         return gs.H_MOTOR
 
 
@@ -306,7 +306,7 @@ class KScan(_HardcodedMotorStepScan):
 
     @property
     def motor(self):
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         return gs.K_MOTOR
 
 
@@ -316,7 +316,7 @@ class LScan(_HardcodedMotorStepScan):
 
     @property
     def motor(self):
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         return gs.L_MOTOR
 
 
@@ -329,7 +329,7 @@ class OuterProductHKLScan(_BundledScan):
         # To be clear, like all other functions in this module, this
         # eye-gouging API is for compatbility with SPEC, not the author's
         # idea of good Python code.
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         H_MOTOR = gs.H_MOTOR
         K_MOTOR = gs.K_MOTOR
         L_MOTOR = gs.L_MOTOR
@@ -351,7 +351,7 @@ class InnerProductHKLScan(_BundledScan):
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l,
                  finish_l, intervals, time=None, **kwargs):
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         H_MOTOR = gs.H_MOTOR
         K_MOTOR = gs.K_MOTOR
         L_MOTOR = gs.L_MOTOR
@@ -377,7 +377,7 @@ class Tweak(_BundledScan):
     scan_class = scans.Tweak
 
     def __call__(motor, step, **kwargs):
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         MASTER_DET = gs.MASTER_DET
         MASTER_DET_FIELD = gs.MASTER_DET_FIELD
         return super().__call__(MASTER_DET, MASTER_DET_FIELD, motor,
@@ -385,7 +385,7 @@ class Tweak(_BundledScan):
 
 
 def _set_acquire_time(time):
-    from bluesky.standard_config import gs
+    from bluesky.global_state import gs
     if time is None:
         time = gs.COUNT_TIME
     original_times = {}
