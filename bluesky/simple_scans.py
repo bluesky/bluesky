@@ -54,12 +54,18 @@ def table_gs_only(scan):
 
 def plot_first_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    return LivePlot(gs.PLOT_Y, scan.motors[0]._name)
+    fig = None
+    if not gs.OVERPLOT:
+        fig = plt.figure()
+    return LivePlot(gs.PLOT_Y, scan.motors[0]._name, fig=fig)
 
 
 def plot_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    return LivePlot(gs.PLOT_Y, scan.motor._name)
+    fig = None
+    if not gs.OVERPLOT:
+        fig = plt.figure()
+    return LivePlot(gs.PLOT_Y, scan.motor._name, fig=fig)
 
 
 def raster(scan):

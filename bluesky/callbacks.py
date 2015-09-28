@@ -114,9 +114,13 @@ class LivePlot(CallbackBase):
     >>> RE(my_scan, my_plotter)
     """
     def __init__(self, y, x=None, legend_keys=None, xlim=None, ylim=None,
-                 **kwargs):
+                 fig=None, **kwargs):
         super().__init__()
-        fig, ax = plt.gcf(), plt.gca()
+        if fig is None:
+            # overplot (or, if no fig exists, one is made)
+            fig, ax = plt.gcf(), plt.gca()
+        else:
+            ax = fig.gca()
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
