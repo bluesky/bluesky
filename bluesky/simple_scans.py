@@ -22,6 +22,7 @@ Page numbers in the code comments refer to the SPEC manual at
 http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
 from inspect import signature
+import matplotlib.pyplot as plt
 from bluesky import scans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster, _get_obj_fields
 from bluesky.scientific_callbacks import PeakStats
