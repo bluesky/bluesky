@@ -521,6 +521,8 @@ class LiveRaster(CallbackBase):
                             cmap=self.cmap, interpolation='none',
                             extent=self.extent)
         self.im = im
+        self.ax.set_title('scan {uid} [{sid}]'.format(sid=doc['scan_id'],
+                                                      uid=doc['uid'][:6]))
         cb = self.fig.colorbar(im)
         cb.set_label(self.I)
 
