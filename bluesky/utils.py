@@ -335,15 +335,29 @@ def normalize_subs_input(subs):
                          "names to lists of callables.")
 
 
-class Subs:
-    def __init__(self):
-        self._value = {}
+class DefaultSubs:
+    """a class-level descriptor"""
+    def __init__(self, default):
+        self._value = default
 
     def __get__(self, instance, owner):
         return self._value
 
     def __set__(self, instance, value):
         self._value = normalize_subs_input(value)
+
+
+class Subs:
+    """a 'reusable' property"""
+    def __init__(self, default):
+        self.default = default
+        self.data = WeakKeyDictionary()
+
+    def __get__(self, instance, owner):
+        return self.data.get(instance, self.default)
+
+    def __set__(self, instance, value):
+        self.data[instance] = normalize_subs_input(value)
 
 
 def snake_cyclers(cyclers, snake_booleans):
