@@ -23,14 +23,14 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
 from inspect import signature
 from bluesky import scans
-from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
+from bluesky.callbacks import LiveTable, LivePlot, LiveRaster, _get_obj_fields
 from boltons.iterutils import chunked
 from bluesky.standard_config import gs
 from bluesky.utils import normalize_subs_input, Subs
 from collections import defaultdict
-from itertools import filterfalse
+from itertools import filterfalse, chain
 
-### Factory functions acting a shim between scans and callbacks ###
+# ## Factory functions acting a shim between scans and callbacks ###
 
 
 def table_from_motors(scan):
@@ -63,7 +63,11 @@ def plot_motor(scan):
 
 def raster(scan):
     "Set up a LiveRaster by inspect a scan and gs."
-    return LiveRaster(scan.shape, gs.MASTER_DET_FIELD)
+    if len(scan.shape) != 2:
+        return None
+    xlab, ylab = _get_obj_fields(scan.motors)
+    return LiveRaster(scan.shape, gs.MASTER_DET_FIELD, xlabel=xlab,
+                      ylabel=ylab, extent=list(chain(*scan.extents)))
 
 
 class _BundledScan:
@@ -220,7 +224,7 @@ class AbsScan(_StepScan):
 
 class OuterProductAbsScan(_OuterProductScan):
     "mesh"
-    default_sub_factories = {'all': raster}
+    default_sub_factories = {'all': [raster]}
     scan_class = scans.OuterProductAbsScan
 
 
