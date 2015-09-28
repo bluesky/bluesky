@@ -12,10 +12,10 @@ build:
 
 requirements:
   build:
-    - python >=3.4
+    - python >=3.4.3
 
   run:
-    - python >=3.4
+    - python >=3.4.3
     - jsonschema
     - super_state_machine
     - lmfit
