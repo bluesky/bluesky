@@ -24,6 +24,7 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 from inspect import signature
 from bluesky import scans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster, _get_obj_fields
+from bluesky.scientific_callbacks import PeakStats
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
 from bluesky.utils import normalize_subs_input, Subs, DefaultSubs
@@ -68,6 +69,22 @@ def raster(scan):
     xlab, ylab = _get_obj_fields(scan.motors)
     return LiveRaster(scan.shape, gs.MASTER_DET_FIELD, xlabel=xlab,
                       ylabel=ylab, extent=list(chain(*scan.extents)))
+
+
+def peakstats_first_motor(scan):
+    "Set up peakstats"
+    ps = PeakStats(_get_obj_fields([scan.motors[0]])[0],
+                   gs.MASTER_DET_FIELD, edge_count=3)
+    gs.PS = ps
+    return ps
+
+
+def peakstats(scan):
+    "Set up peakstats"
+    ps = PeakStats(_get_obj_fields([scan.motor])[0],
+                   gs.MASTER_DET_FIELD, edge_count=3)
+    gs.PS = ps
+    return ps
 
 
 class _BundledScan:
@@ -121,10 +138,11 @@ def _update_lists(out, inp):
 
 def _run_factories(factories, scan):
     factories = normalize_subs_input(factories)
-    return {k: list(filterfalse(lambda x: x is None,
-                                (sf(scan) for sf in v)))
-            for k, v in factories.items()}
-
+    out = {k: list(filterfalse(lambda x: x is None,
+                               (sf(scan) for sf in v)))
+           for k, v in factories.items()}
+    gs._SECRET_STASH = out
+    return out
 
 # ## Mid-level base classes ###
 
@@ -155,7 +173,8 @@ class _OuterProductScan(_BundledScan):
 
 
 class _InnerProductScan(_BundledScan):
-    default_sub_factories = {'all': [table_from_motors, plot_first_motor]}
+    default_sub_factories = {'all': [table_from_motors, plot_first_motor,
+                                     peakstats_first_motor]}
 
     def __call__(self, *args, time=None, subs=None, **kwargs):
         args = list(args)
@@ -172,7 +191,8 @@ class _InnerProductScan(_BundledScan):
 
 
 class _StepScan(_BundledScan):
-    default_sub_factories = {'all': [table_from_motor, plot_motor]}
+    default_sub_factories = {'all': [table_from_motor, plot_motor,
+                                     peakstats]}
 
     def __call__(self, motor, start, finish, intervals, time=None,
                  subs=None, **kwargs):
