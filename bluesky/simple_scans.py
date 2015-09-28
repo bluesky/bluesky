@@ -54,12 +54,18 @@ def table_gs_only(scan):
 
 def plot_first_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    return LivePlot(gs.PLOT_Y, scan.motors[0]._name)
+    fig = None
+    if not gs.OVERPLOT:
+        fig = plt.figure()
+    return LivePlot(gs.PLOT_Y, scan.motors[0]._name, fig=fig)
 
 
 def plot_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    return LivePlot(gs.PLOT_Y, scan.motor._name)
+    fig = None
+    if not gs.OVERPLOT:
+        fig = plt.figure()
+    return LivePlot(gs.PLOT_Y, scan.motor._name, fig=fig)
 
 
 def raster(scan):
@@ -228,9 +234,6 @@ class Count(_BundledScan):
     default_sub_factories = {'all': [table_gs_only]}
 
     def __call__(self, time=None, subs=None, **kwargs):
-        if subs is None:
-            table = LiveTable(gs.TABLE_COLS)
-            subs = [table]
         original_times = _set_acquire_time(time)
         result = super().__call__(subs=subs, **kwargs)
         _unset_acquire_time(original_times)
@@ -247,7 +250,7 @@ class AbsScan(_StepScan):
 
 class OuterProductAbsScan(_OuterProductScan):
     "mesh"
-    default_sub_factories = {'all': [raster]}
+    default_sub_factories = {'all': [table_from_motors, raster]}
     scan_class = scans.OuterProductAbsScan
 
 
