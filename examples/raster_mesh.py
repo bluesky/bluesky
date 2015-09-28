@@ -1,5 +1,6 @@
 from bluesky.examples import Mover, SynGauss, Syn2DGauss
-from bluesky.spec_api import mesh
+import bluesky.simple_scans as bss
+import bluesky.spec_api as bsa
 import bluesky.callbacks
 from bluesky.standard_config import gs
 import bluesky.qt_kicker
@@ -23,8 +24,10 @@ ysteps = 25
 xsteps = 20
 
 # hook up the live raster callback
-cb = bluesky.callbacks.LiveRaster((ysteps + 1, xsteps + 1),
-                                  'theta_gamma_det', clim=[0, 1])
-
+#cb = bluesky.callbacks.LiveRaster((ysteps + 1, xsteps + 1),
+#                                  'theta_gamma_det', clim=[0, 1])
+mesha = bss.OuterProductAbsScan()
 # run a mesh scan
-mesh(theta, -2.5, 2.5, ysteps, gamma, -2, 2, xsteps, False, subs=cb)
+gs.MASTER_DET_FIELD = 'theta_gamma_det'
+
+# bsa.mesh(theta, -2.5, 2.5, ysteps, gamma, -2, 2, xsteps, False)

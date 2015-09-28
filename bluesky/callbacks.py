@@ -495,7 +495,7 @@ class LiveRaster(CallbackBase):
     """
     def __init__(self, raster_shape, I, *,
                  clim=None, cmap='viridis',
-                 xlabel='x', ylabel='y'):
+                 xlabel='x', ylabel='y', extent=None):
         fig, ax = plt.subplots()
         self.I = I
         ax.set_xlabel(xlabel)
@@ -507,16 +507,19 @@ class LiveRaster(CallbackBase):
         self._norm = mcolors.Normalize()
         if clim is not None:
             self._norm.vmin, self._norm.vmax = clim
+        self.clim = clim
         self.cmap = cmap
         self.raster_shape = raster_shape
         self.im = None
+        self.extent = extent
 
     def start(self, doc):
         if self.im is not None:
             raise RuntimeError("Can not re-use LiveRaster")
         self._Idata = np.ones(self.raster_shape) * np.nan
         im = self.ax.imshow(self._Idata, norm=self._norm,
-                            cmap=self.cmap, interpolation='none')
+                            cmap=self.cmap, interpolation='none',
+                            extent=self.extent)
         self.im = im
         cb = self.fig.colorbar(im)
         cb.set_label(self.I)
@@ -526,5 +529,7 @@ class LiveRaster(CallbackBase):
         pos = np.unravel_index(seq_num, self.raster_shape)
 
         self._Idata[pos] = doc['data'][self.I]
+        if self.clim is None:
+            self.im.set_clim(np.nanmin(self._Idata), np.nanmax(self._Idata))
 
         self.im.set_array(self._Idata)
