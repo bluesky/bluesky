@@ -21,11 +21,15 @@ class Base:
     def __repr__(self):
         return '{}: {}'.format(self._klass, self._name)
 
-    def configure(self, *args, **kwargs):
-        pass
+    @property
+    def state(self):
+        return {}
 
-    def deconfigure(self, *args, **kwargs):
-        pass
+    def configure(self, state=None):
+        return self.state, self.state
+
+    def deconfigure(self):
+        return self.state
 
     @property
     def done(self):
