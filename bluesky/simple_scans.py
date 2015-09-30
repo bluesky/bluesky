@@ -139,14 +139,26 @@ class _BundledScan:
 
 
 def _update_lists(out, inp):
-    """Updates a dict my merging lists
+    """Extends dictionary `out` lists with those in `inp`
 
+    Assumes dictionaries where all values are lists
     """
     for k, v in inp.items():
-        out[k].extend(v)
+        try:
+            out[k].extend(v)
+        except KeyError:
+            out[k] = list(v)
 
 
 def _run_factories(factories, scan):
+    '''Run sub factory functions for a scan
+
+    Factory functions should return lists, which will be added onto the
+    subscription key (e.g., 'all' or 'start') specified in the factory
+    definition.
+
+    If the factory function returns None, the list will not be modified.
+    '''
     factories = normalize_subs_input(factories)
     out = {k: list(filterfalse(lambda x: x is None,
                                (sf(scan) for sf in v)))
