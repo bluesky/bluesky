@@ -7,6 +7,9 @@ from .run_engine import Msg
 from .utils import Struct, snake_cyclers, Subs
 
 
+_ATTRS_FOR_CONFIGURE = ['num', 'shape']
+
+
 class ScanBase(Struct):
     """
     This is a base class for writing reusable scans.
@@ -20,13 +23,16 @@ class ScanBase(Struct):
     - optionally, a class level ``_fields`` attribute which is used to
       construct the init signature via meta-class magic.
 
-
     If you do not use the class-level ``_fields`` and write a custom
     ``__init__`` (which you need to do if you want to have optional kwargs)
     you should provide an instance level ``_fields`` so that the logbook
     related messages will work.
     """
     subs = Subs({})
+
+    @property
+    def objects(self):
+        return {obj: list(obj.describe().keys()) for obj in self._objects}
 
     def __iter__(self):
         yield Msg('open_run')
@@ -37,9 +43,19 @@ class ScanBase(Struct):
 
     def _pre_scan(self):
         yield Msg('logbook', None, self.logmsg(), **self.logdict())
+        for obj in self.objects:
+            conf = {}
+            for attr in _ATTRS_FOR_CONFIGURE:
+                try:
+                    conf[attr] = getattr(self, attr)
+                except AttributeError:
+                    continue
+            conf.update(self.configuration[obj])
+            yield Msg('configure', obj, state=conf)
 
     def _post_scan(self):
-        yield from []
+        for obj in self.objects:
+            yield Msg('deconfigure', obj)
 
     def _call_str(self):
         args = []
@@ -108,11 +124,13 @@ class Count(ScanBase):
         self.num = num
         self.delay = delay
 
+    def _pre_scan(self):
+        self._objects = self.detectors
+        yield from super()._pre_scan()
+
     def _gen(self):
         dets = self.detectors
         delay = self.delay
-        for d in dets:
-            yield Msg('configure', d)
         for i in range(self.num):
             yield Msg('checkpoint')
             yield Msg('create')
@@ -124,17 +142,18 @@ class Count(ScanBase):
                 yield Msg('read', det)
             yield Msg('save')
             yield Msg('sleep', None, delay)
-        for d in dets:
-            yield Msg('deconfigure', d)
 
 
 class Scan1D(ScanBase):
     _fields = ['detectors', 'motor', 'steps']
 
+    def _pre_scan(self):
+        self._objects = self.detectors + [self.motor]
+        self.num = len(self.steps)
+        yield from super()._pre_scan()
+
     def _gen(self):
         dets = self.detectors
-        for d in dets:
-            yield Msg('configure', d)
         for step in self._steps:
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
@@ -148,8 +167,6 @@ class Scan1D(ScanBase):
             for det in dets:
                 yield Msg('read', det)
             yield Msg('save')
-        for d in dets:
-            yield Msg('deconfigure', d)
 
 
 class AbsListScan(Scan1D):
@@ -367,6 +384,11 @@ class _AdaptiveScanBase(Scan1D):
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
 
+
+    def _pre_scan(self):
+        self._objects = self.detectors + [self.motor]
+        yield from super()._pre_scan()
+
     def _gen(self):
         start = self.start + self._offset
         stop = self.stop + self._offset
@@ -379,8 +401,6 @@ class _AdaptiveScanBase(Scan1D):
         motor = self.motor
         dets = self.detectors
         target_field = self.target_field
-        for d in dets:
-            yield Msg('configure', d)
         while next_pos < stop:
             yield Msg('checkpoint')
             yield Msg('set', motor, next_pos)
@@ -420,8 +440,6 @@ class _AdaptiveScanBase(Scan1D):
                 past_I = cur_I
                 step = 0.2 * new_step + 0.8 * step
             next_pos += step
-        for d in dets:
-            yield Msg('deconfigure', d)
 
 
 class AdaptiveAbsScan(_AdaptiveScanBase):
@@ -548,6 +566,10 @@ class Center(ScanBase):
         self.output_mutable = output_mutable
         self.tolerance = tolerance
 
+    def _pre_scan(self):
+        self._objects = self.detectors + [self.motor]
+        yield from super()._pre_scan()
+
     @property
     def min_cen(self):
         return self.initial_center - self.RANGE_LIMIT * self.initial_width
@@ -631,12 +653,15 @@ class Center(ScanBase):
 class ScanND(ScanBase):
     _fields = ['detectors', 'cycler']
 
-    def _gen(self):
+    def _pre_scan(self):
         self.motors = self.cycler.keys
+        self.num = len(self.cycler)
+        self.objects = self.detectors + self.motors
+        yield from super()._pre_scan()
+
+    def _gen(self):
         self._last_set_point = {m: None for m in self.motors}
         dets = self.detectors
-        for d in dets:
-            yield Msg('configure', d)
         for step in list(self.cycler):
             yield Msg('checkpoint')
             for motor, pos in step.items():
@@ -658,8 +683,6 @@ class ScanND(ScanBase):
             for det in dets:
                 yield Msg('read', det)
             yield Msg('save')
-        for d in dets:
-            yield Msg('deconfigure', d)
 
 
 class _OuterProductScanBase(ScanND):
@@ -865,12 +888,15 @@ class Tweak(ScanBase):
     _fields = ['detector', 'target_field', 'motor', 'step']
     prompt_str = '{0}, {1:.3}, {2}, ({3}) '
 
+    def _pre_scan(self):
+        self._objects = [self.detector, self.motor]
+        yield from super()._pre_scan()
+
     def _gen(self):
         d = self.detector
         target_field = self.target_field
         motor = self.motor
         step = self.step
-        yield Msg('configure', d)
         while True:
             yield Msg('create')
             ret_mot = yield Msg('read', motor)
@@ -894,4 +920,3 @@ class Tweak(ScanBase):
             clear_output(wait=True)
             # stackoverflow.com/a/12586667/380231
             print('\x1b[1A\x1b[2K\x1b[1A')
-        yield Msg('deconfigure', d)
