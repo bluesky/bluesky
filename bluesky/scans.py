@@ -50,7 +50,8 @@ class ScanBase(Struct):
                     conf[attr] = getattr(self, attr)
                 except AttributeError:
                     continue
-            conf.update(self.configuration[obj])
+            if hasattr(self, 'configuration'):
+                conf.update(self.configuration.get(obj, {}))
             yield Msg('configure', obj, state=conf)
 
     def _post_scan(self):
