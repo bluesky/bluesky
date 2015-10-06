@@ -220,7 +220,7 @@ class DeltaListScan(Scan1D):
     steps : list
         list of positions relative to current position
     """
-    _derived_fields = super()._derived_fields + ['init_pos']
+    _derived_fields = ['num', 'init_pos']
 
     def _pre_scan(self):
         ret = yield Msg('read', self.motor)
