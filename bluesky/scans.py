@@ -34,6 +34,19 @@ class ScanBase(Struct):
     def objects(self):
         return {obj: list(obj.describe().keys()) for obj in self._objects}
 
+    @property
+    def md(self):
+        # Refresh scan_args; leave other keys (if any) alone.
+        scan_args = {}
+        for field in self._fields:
+            scan_args[field] = repr(getattr(plan, field))
+        self._md['scan_args'] = scan_args
+        return self._md
+
+    @md.setter
+    def md(self, val):
+        self._md = val
+
     def __iter__(self):
         yield Msg('open_run')
         yield from self._pre_scan()

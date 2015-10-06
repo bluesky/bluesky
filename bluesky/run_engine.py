@@ -482,21 +482,13 @@ class RunEngine:
                                      "{0}".format(func))
                 self._temp_callback_ids.add(self.subscribe(name, func))
 
-        # Glean information about the scan and add it to the metadata.
         for key in self._RESERVED_FIELDS:
             if key in metadata:
                 raise ValueError("The metadata field {0} is reserved by the "
                                  "RunEngine. Choose a different name."
                                  "".format(key))
-        metadata['scan_type'] = getattr(type(plan), '__name__')
-        # The built-in scans have a _fields attribute that lists the names
-        # of the attributes that define their parameters.
-        if hasattr(plan, '_fields'):
-            scan_args = {}
-            for field in plan._fields:
-                scan_args[field] = repr(getattr(plan, field))
-            metadata['scan_args'] = scan_args
 
+        metadata['scan_type'] = getattr(type(plan), '__name__')
         if hasattr(plan, 'md'):
             self._metadata_per_call.update(plan.md)
         # If kwargs to __call__ collide with plan.md, kwargs win.

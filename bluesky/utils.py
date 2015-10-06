@@ -277,6 +277,7 @@ class Struct(metaclass=StructMeta):
         bound = self.__signature__.bind(*args, **kwargs)
         for name, val in bound.arguments.items():
             setattr(self, name, val)
+        self._md = {}
 
     def set(self, **kwargs):
         "Update attributes as keyword arguments."
