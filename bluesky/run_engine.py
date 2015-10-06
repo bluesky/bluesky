@@ -137,7 +137,7 @@ class RunEngine:
 
     _loop = loop  # just a convenient way to inspect the global event loop
     state = LoggingPropertyMachine(RunEngineStateMachine, logger=logger)
-    _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group', 'config']
+    _REQUIRED_FIELDS = ['beamline_id', 'owner', 'group']
     _RESERVED_FIELDS = ['scan_type', 'scan_args']
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe']
 
