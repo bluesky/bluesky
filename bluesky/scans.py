@@ -48,11 +48,13 @@ class ScanBase(Struct):
         yield Msg('open_run')
         yield from self._pre_scan()
         for flyer in self.flyers:
-            yield Msg('kickoff', flyer)
+            yield Msg('kickoff', flyer, block_group='_flyers')
+            yield Msg('wait', None, '_flyers')
         yield from self._gen()
-        yield from self._post_scan()
         for flyer in self.flyers:
-            yield Msg('collect', flyer)
+            yield Msg('collect', flyer, block_group='_flyers')
+            yield Msg('wait', None, '_flyers')
+        yield from self._post_scan()
         yield Msg('close_run')
 
     def _pre_scan(self):
