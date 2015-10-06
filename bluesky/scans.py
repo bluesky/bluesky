@@ -50,8 +50,12 @@ class ScanBase(Struct):
     def __iter__(self):
         yield Msg('open_run')
         yield from self._pre_scan()
+        for flyer in self.flyers:
+            yield Msg('kickoff', flyer)
         yield from self._gen()
         yield from self._post_scan()
+        for flyer in self.flyers:
+            yield Msg('collect', flyer)
         yield Msg('close_run')
 
     def _pre_scan(self):
