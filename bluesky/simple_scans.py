@@ -109,6 +109,8 @@ class _BundledScan:
         self.subs = dict(self.default_subs)
         self.sub_factories = dict(self.default_sub_factories)
         self.params = list(signature(self.scan_class).parameters.keys())
+        self.configuration = {}
+        self.flyers = []
 
     def __call__(self, *args, subs=None, sub_factories=None, **kwargs):
         scan_kwargs = dict()
@@ -132,6 +134,10 @@ class _BundledScan:
         # Create a sub from each sub_factory.
         _update_lists(_subs, _run_factories(sub_factories, self.scan))
         _update_lists(_subs, _run_factories(self.sub_factories, self.scan))
+
+        # Set up scan attributes.
+        self.scan.configuration = self.configuration
+        self.scan.flyers = self.flyers
 
         # Any remainging kwargs go the RE. To be safe, no args are passed
         # to RE; RE args effectively become keyword-only arguments.
