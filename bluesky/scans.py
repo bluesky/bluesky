@@ -7,9 +7,6 @@ from .run_engine import Msg
 from .utils import Struct, snake_cyclers, Subs
 
 
-_ATTRS_FOR_CONFIGURE = ['num', 'shape']
-
-
 class ScanBase(Struct):
     """
     This is a base class for writing reusable scans.
@@ -61,12 +58,7 @@ class ScanBase(Struct):
     def _pre_scan(self):
         yield Msg('logbook', None, self.logmsg(), **self.logdict())
         for obj in self.objects:
-            conf = {}
-            for attr in _ATTRS_FOR_CONFIGURE:
-                try:
-                    conf[attr] = getattr(self, attr)
-                except AttributeError:
-                    continue
+            conf = self.md
             conf.update(self.configuration.get(obj, {}))
             yield Msg('configure', obj, state=conf)
 
