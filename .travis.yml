@@ -32,7 +32,7 @@ install:
   - source activate testenv
   - conda install --yes boltons prettytable -c lightsource2
   - conda install --yes super_state_machine cycler history databroker xray-vision lmfit -c tacaswell
-  - conda install --yes pymongo=2.6.3 pcaspy -c tacaswell
+  - conda install --yes pymongo=2.6.3 pcaspy pyepics readline -c tacaswell
   - pip install coveralls
   - python setup.py install
 
