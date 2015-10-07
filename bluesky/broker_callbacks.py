@@ -69,6 +69,8 @@ def post_run(callback):
     +------------+-------------------+----------------+----------------+
     """
     def f(name, stop_doc):
+        if name != 'stop':
+            return
         uid = stop_doc['run_start']
         start = run_start_given_uid(uid)
         descriptors = descriptors_by_start(uid)
