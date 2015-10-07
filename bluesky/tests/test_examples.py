@@ -218,27 +218,6 @@ def _md(md):
     RE(scan, project='sitting')
     RE(scan, subs={'start': validate_dict_cb('project', 'sitting')})
 
-    # Persistent values are white-listed, so this should not persist.
-    RE(scan, mood='excited')
-    RE(scan, subs={'start': validate_dict_cb_opposite('mood')})
-
-    # Add 'mood' to the whitelist and check that it persists.
-    RE.persistent_fields.append('mood')
-    assert_in('mood', RE.persistent_fields)
-    RE(scan, mood='excited')
-    RE(scan, subs={'start': validate_dict_cb('mood', 'excited')})
-
-    # Remove 'project' from the whitelist and check that is stops persisting.
-    RE.persistent_fields.remove('project')
-    assert_not_in('project', RE.persistent_fields)
-    RE(scan, project='standing')
-    RE(scan)
-    RE(scan, subs={'start': validate_dict_cb_opposite('project')})
-
-    # Removing a field required by our Document spec is not allowed.
-    assert_raises(ValueError, RE.persistent_fields.remove, 'beamline_id')
-
-
 def validate_dict_cb(key, val):
     def callback(name, doc):
         assert_in(key, doc)

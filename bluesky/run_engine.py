@@ -634,15 +634,17 @@ class RunEngine:
         except (FailedPause, RequestAbort, asyncio.CancelledError):
             self._exit_status = 'abort'
             yield from asyncio.sleep(0.001)  # TODO Do we need this?
+            logger.error("Run aborted")
+            logger.error("%s", self._exception)
             if isinstance(self._exception, PanicError):
                 logger.critical("RE paniced")
                 self._exit_status = 'fail'
                 raise self._exception
-            logger.error("Run aborted")
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
             self._reason = str(err)
             logger.error("Run aborted")
+            logger.error("%s", err)
             raise err
         finally:
             self.state = 'idle'
@@ -735,7 +737,7 @@ class RunEngine:
         self.increment_scan_id()
 
         # Metadata can come from history, __call__, or the open_run Msg.
-        self._metadata_per_run = self.md.copy()
+        self._metadata_per_run = dict(self.md)
         self._metadata_per_run.update(self._metadata_per_call)
         self._metadata_per_run.update(msg.kwargs)
 
@@ -750,7 +752,7 @@ class RunEngine:
         # The metadata is final. Validate it now, at the last moment.
         # Use copy for some reasonable (admittedly not total) protection
         # against users mutating the md with their validator.
-        self.md_validator(self._metadata_per_run.copy())
+        self.md_validator(dict(self._metadata_per_run))
 
         doc = dict(uid=self._run_start_uid, time=ttime.time(),
                    **self._metadata_per_run)
@@ -994,7 +996,7 @@ class RunEngine:
         if not hasattr(obj, 'configure'):
             return None
         self._configured.add(obj)  # add first in case of failure below
-        result = obj.configure(kwargs.get(state))
+        result = obj.configure(kwargs.get('state'))
         return result
 
     @asyncio.coroutine

@@ -1,5 +1,4 @@
-from dataportal import DataBroker as db, get_events
-import filestore
+from databroker import DataBroker as db, get_events
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
 import matplotlib.pyplot as plt
