@@ -718,12 +718,6 @@ class RunEngine:
 
         loop.call_later(0.1, self._check_for_signals)
 
-    def increment_scan_id(self):
-        scan_id = self.md.get('scan_id', 0) + 1
-        self.md['scan_id'] = scan_id
-        logger.debug("New transient id %d", scan_id)
-        return scan_id
-
     @asyncio.coroutine
     def _wait_for(self, msg):
         futs = msg.obj
@@ -738,7 +732,11 @@ class RunEngine:
         self._clear_run_cache()
         self._run_start_uid = new_uid()
         self._run_start_uids.append(self._run_start_uid)
-        self.increment_scan_id()
+
+        # Increment scan ID
+        scan_id = self.md.get('scan_id', 0) + 1
+        self.md['scan_id'] = scan_id
+        logger.debug("New transient id %d", scan_id)
 
         # Metadata can come from history, __call__, or the open_run Msg.
         self._metadata_per_run = dict(self.md)
