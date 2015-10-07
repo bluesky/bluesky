@@ -998,8 +998,7 @@ class RunEngine:
         if not hasattr(obj, 'configure'):
             return None
         self._configured.add(obj)  # add first in case of failure below
-        result = obj.configure(kwargs.get('state'))
-        return result
+        return obj.configure(kwargs.get('state'))
 
     @asyncio.coroutine
     def _deconfigure(self, msg):
