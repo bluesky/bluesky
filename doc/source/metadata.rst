@@ -69,11 +69,17 @@ reused by default, as we can see below.
     ct()
     ct(sample={'color': 'blue', 'dimensions': [3, 1, 4]})
 
-To add a custom field to the list of peristent fields, use
-``RE.persistent_fields.append('experimenter')``. Use
-``RE.persistent_fields.remove('experimenter')`` to stop persisting it.
-Fields that are required by our Document specification---owner, group,
-beamline_id, and config---cannot be removed. (More on these below.)
+To make a custom field persist between sessions, add it to ``RE.md``.
+
+.. ipython:: python
+
+    RE.md['color'] = 'blue'
+
+Now it will be included in the metadata of every scan until it is deleted:
+
+.. ipython:: python
+
+    del RE.md['color']
 
 To review the metadata before running ascan, check ``gs.RE.md``, which
 behaves like a Python dictionary.
