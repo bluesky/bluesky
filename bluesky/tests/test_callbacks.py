@@ -49,11 +49,11 @@ def _raising_callbacks_helper(stream_name, callback):
 
 def test_raising_ignored_or_not():
     assert_true(RE.ignore_callback_exceptions)
-    def cb():
+    def cb(name, doc):
         raise Exception
     RE(stepscan(det, motor), subs=cb)
     RE.ignore_callback_exceptions = False
-    _raising_callbacks_helper(all, cb)
+    _raising_callbacks_helper('all', cb)
 
 
 def test_subs_input():

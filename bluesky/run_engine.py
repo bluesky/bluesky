@@ -309,11 +309,11 @@ class RunEngine:
 
     @property
     def ignore_callback_exceptions(self):
-        return not self.dispatcher.halt_on_exception
+        return self.dispatcher.ignore_exceptions
 
     @ignore_callback_exceptions.setter
     def ignore_callback_exceptions(self, val):
-        self.dispatcher.halt_on_exception = not val
+        self.dispatcher.ignore_exceptions = val
 
     def register_command(self, name, func):
         """
@@ -1049,8 +1049,7 @@ class Dispatcher:
     """Dispatch documents to user-defined consumers on the main thread."""
 
     def __init__(self):
-        self.cb_registry = CallbackRegistry(allowed_sigs=DocumentNames,
-                                            halt_on_exception=False)
+        self.cb_registry = CallbackRegistry(allowed_sigs=DocumentNames)
         self._counter = count()
         self._token_mapping = dict()
 
@@ -1108,6 +1107,14 @@ class Dispatcher:
         """
         for public_token in self._token_mapping.keys():
             self.unsubscribe(public_token)
+
+    @property
+    def ignore_exceptions(self):
+        return self.cb_registry.ignore_exceptions
+
+    @ignore_exceptions.setter
+    def ignore_exceptions(self, val):
+        self.cb_registry.ignore_exceptions = val
 
 
 def new_uid():
