@@ -5,7 +5,7 @@ from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.scans import AdaptiveAbsScan, AbsScan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
-from bluesky.standard_config import ascan, gs
+from bluesky.standard_config import ascan, mesh, gs
 from bluesky.tests.utils import setup_test_run_engine
 from nose.tools import raises
 import contextlib
@@ -76,6 +76,27 @@ def test_subs_input():
             pass
         return cb5
 
+    # Test input normalization on OO scans
+    obj_ascan = AbsScan([det], motor, 1, 5, 4)
+    obj_ascan.subs = cb1
+    assert_equal(obj_ascan.subs, {'all': [cb1]})
+    obj_ascan.subs.update({'start': [cb2]})
+    assert_equal(obj_ascan.subs, {'all': [cb1], 'start': [cb2]})
+    obj_ascan.subs = [cb2, cb3]
+    assert_equal(obj_ascan.subs, {'all': [cb2, cb3]})
+
+    # Test input normalization on simple scans
+    assert_equal(mesh.subs, mesh.default_subs)
+    mesh.subs.update({'start': [cb2]})
+    expected = dict(mesh.default_subs)
+    expected.update({'start': [cb2]})
+    assert_equal(mesh.subs, expected)
+    mesh.subs = cb2
+    assert_equal(mesh.subs, {'all': [cb2]})
+    mesh.subs = [cb2, cb3]
+    assert_equal(mesh.subs, {'all': [cb2, cb3]})
+    mesh.subs.update({'start': [cb1]})
+    assert_equal(mesh.subs, {'all': [cb2, cb3], 'start': [cb1]})
 
 def test_subscribe_msg():
     assert RE.state == 'idle'
