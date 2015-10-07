@@ -18,6 +18,7 @@ def test_basic_usage():
     gs.TEMP_CONTROLLER = motor
     gs.TH_MOTOR = motor1
     gs.TTH_MOTOR = motor2
+    gs.RE.md['owner'] = 'test'
     gs.RE.md['group'] = 'test'
     gs.RE.md['beamline_id'] = 'test'
     gs.RE.md['config'] = {}

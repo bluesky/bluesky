@@ -57,69 +57,25 @@ def test_raising_ignored_or_not():
 
 
 def test_subs_input():
-    called = defaultdict(lambda: False)
     def cb1(name, doc):
-        called['cb1'] = True
+        pass
+
     def cb2(name, doc):
-        called['cb2'] = True
+        pass
+
     def cb3(name, doc):
-        called['cb3'] = True
-    obj_ascan = AbsScan([det], motor, 1, 3, 3)
-    obj_ascan.subs = cb1
-    RE(obj_ascan, subs=[cb2, cb3])
-    assert_true(called['cb1'])
-    assert_true(called['cb2'])
-    assert_true(called['cb3'])
-    for key in called:
-        called[key] = False
-
-    RE(obj_ascan, subs={'all': [cb2, cb3]})
-    assert_true(called['cb1'])
-    assert_true(called['cb2'])
-    assert_true(called['cb3'])
-    for key in called:
-        called[key] = False
-
-    gs.DETS = [det]
-    ascan.subs = cb1
-    ascan(motor, 1, 3, 2, subs={'all': [cb2, cb3]})
-    assert_true(called['cb1'])
-    assert_true(called['cb2'])
-    assert_true(called['cb3'])
-    for key in called:
-        called[key] = False
+        pass
 
     def cb_fact4(scan):
         def cb4(name, doc):
-            called['cb4'] = True
+            pass
         return cb4
 
     def cb_fact5(scan):
         def cb5(name, doc):
-            called['cb5'] = True
+            pass
         return cb5
 
-    ascan.sub_factories = {'all': [cb_fact4]}
-    ascan(motor, 1, 3, 2,
-          subs={'all': [cb2, cb3]}, sub_factories={'all': [cb_fact5]})
-    assert_true(called['cb1'])
-    assert_true(called['cb2'])
-    assert_true(called['cb3'])
-    assert_true(called['cb4'])
-    assert_true(called['cb5'])
-    for key in called:
-        called[key] = False
-
-    # do it again, but rely on normalization
-    ascan(motor, 1, 3, 2,
-          subs=[cb2, cb3], sub_factories=cb_fact5)
-    assert_true(called['cb1'])
-    assert_true(called['cb2'])
-    assert_true(called['cb3'])
-    assert_true(called['cb4'])
-    assert_true(called['cb5'])
-    for key in called:
-        called[key] = False
 
 def test_subscribe_msg():
     assert RE.state == 'idle'
@@ -148,9 +104,9 @@ def test_unknown_cb_raises():
 
 def test_post_run():
     try:
-        import dataportal
+        import databroker
     except ImportError:
-        raise SkipTest('requires dataportal')
+        raise SkipTest('requires databroker')
     from bluesky.broker_callbacks import post_run
     RE(stepscan(det, motor), subs=post_run(LiveTable()))
 

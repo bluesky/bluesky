@@ -277,11 +277,17 @@ class Struct(metaclass=StructMeta):
         bound = self.__signature__.bind(*args, **kwargs)
         for name, val in bound.arguments.items():
             setattr(self, name, val)
+        self.setup_attrs()  # separate method so custom __init__ can reuse
 
     def set(self, **kwargs):
         "Update attributes as keyword arguments."
         for attr, val in kwargs.items():
             setattr(self, attr, val)
+
+    def setup_attrs(self):
+        self._md = {}
+        self.configuration = {}
+        self.flyers = []
 
 
 class ExtendedList(list):

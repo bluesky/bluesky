@@ -109,6 +109,8 @@ class _BundledScan:
         self.subs = dict(self.default_subs)
         self.sub_factories = dict(self.default_sub_factories)
         self.params = list(signature(self.scan_class).parameters.keys())
+        self.configuration = {}
+        self.flyers = []
 
     def __call__(self, *args, subs=None, sub_factories=None, **kwargs):
         scan_kwargs = dict()
@@ -132,6 +134,10 @@ class _BundledScan:
         # Create a sub from each sub_factory.
         _update_lists(_subs, _run_factories(sub_factories, self.scan))
         _update_lists(_subs, _run_factories(self.sub_factories, self.scan))
+
+        # Set up scan attributes.
+        self.scan.configuration = self.configuration
+        self.scan.flyers = self.flyers
 
         # Any remainging kwargs go the RE. To be safe, no args are passed
         # to RE; RE args effectively become keyword-only arguments.
@@ -173,7 +179,7 @@ def _run_factories(factories, scan):
 
 
 class _OuterProductScan(_BundledScan):
-    default_sub_factories = {'all': [table_from_motors]}
+    default_sub_factories = DefaultSubs({'all': [table_from_motors]})
 
     def __call__(self, *args, time=None, subs=None, **kwargs):
         args = list(args)
@@ -195,8 +201,9 @@ class _OuterProductScan(_BundledScan):
 
 
 class _InnerProductScan(_BundledScan):
-    default_sub_factories = {'all': [table_from_motors, plot_first_motor,
-                                     peakstats_first_motor]}
+    default_sub_factories = DefaultSubs(
+        {'all': [table_from_motors, plot_first_motor,
+                 peakstats_first_motor]})
 
     def __call__(self, *args, time=None, subs=None, **kwargs):
         args = list(args)
@@ -213,8 +220,9 @@ class _InnerProductScan(_BundledScan):
 
 
 class _StepScan(_BundledScan):
-    default_sub_factories = {'all': [table_from_motor, plot_motor,
-                                     peakstats]}
+    default_sub_factories = DefaultSubs(
+        {'all': [table_from_motor, plot_motor,
+                 peakstats]})
 
     def __call__(self, motor, start, finish, intervals, time=None,
                  subs=None, **kwargs):
@@ -227,7 +235,8 @@ class _StepScan(_BundledScan):
 
 class _HardcodedMotorStepScan(_BundledScan):
     # Subclasses must define self.motor as a property.
-    default_sub_factories = {'all': [table_from_motor, plot_motor]}
+    default_sub_factories = DefaultSubs(
+        {'all': [table_from_motor, plot_motor]})
 
     def __call__(self, start, finish, intervals, time=None, subs=None,
                  **kwargs):
@@ -244,7 +253,7 @@ class _HardcodedMotorStepScan(_BundledScan):
 class Count(_BundledScan):
     "ct"
     scan_class = scans.Count
-    default_sub_factories = {'all': [table_gs_only]}
+    default_sub_factories = DefaultSubs({'all': [table_gs_only]})
 
     def __call__(self, time=None, subs=None, **kwargs):
         original_times = _set_acquire_time(time)
@@ -263,7 +272,7 @@ class AbsScan(_StepScan):
 
 class OuterProductAbsScan(_OuterProductScan):
     "mesh"
-    default_sub_factories = {'all': [table_from_motors, raster]}
+    default_sub_factories = DefaultSubs({'all': [table_from_motors, raster]})
     scan_class = scans.OuterProductAbsScan
 
 

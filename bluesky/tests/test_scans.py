@@ -1,6 +1,7 @@
 import warnings
 from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
                         assert_less, assert_is)
+from nose import SkipTest
 
 from bluesky.callbacks import collector, CallbackCounter
 from bluesky.scans import (AbsListScan, AbsScan, LogAbsScan,
@@ -231,6 +232,10 @@ def test_count():
 
 
 def test_center():
+    try:
+        import lmfit
+    except ImportError:
+        raise SkipTest("requires lmfit")
     assert_true(not RE._run_is_open)
     det = SynGauss('det', motor, 'motor', 0, 1000, 1, 'poisson', True)
     d = {}

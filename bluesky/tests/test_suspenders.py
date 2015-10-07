@@ -1,18 +1,11 @@
 from functools import partial
 import sys
 from nose.tools import assert_equal, assert_greater
+from nose import SkipTest
 import asyncio
-import epics
 import time as ttime
 
 from bluesky import Msg
-from bluesky.suspenders import (PVSuspendBoolHigh,
-                                PVSuspendBoolLow,
-                                PVSuspendFloor,
-                                PVSuspendCeil,
-                                PVSuspendInBand,
-                                PVSuspendOutBand)
-
 from bluesky.tests.utils import setup_test_run_engine
 from bluesky.testing.noseclasses import KnownFailureTest
 RE = setup_test_run_engine()
@@ -21,6 +14,10 @@ loop = asyncio.get_event_loop()
 
 def test_epics_smoke():
 
+    try:
+        import epics
+    except ImportError:
+        raise SkipTest
     pv = epics.PV('BSTEST:VAL')
     pv.value = 123456
     print(pv)
@@ -36,6 +33,10 @@ def test_epics_smoke():
 def _test_suspender(suspender_class, sc_args, start_val, fail_val,
                     resume_val, wait_time):
 
+    try:
+        import epics
+    except ImportError:
+        raise SkipTest
     if sys.platform == 'darwin':
         # OSX event loop is different; resolve this later
         raise KnownFailureTest()
@@ -65,6 +66,16 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
 
 
 def test_suspending():
+    try:
+        from bluesky.suspenders import (PVSuspendBoolHigh,
+                                        PVSuspendBoolLow,
+                                        PVSuspendFloor,
+                                        PVSuspendCeil,
+                                        PVSuspendInBand,
+                                        PVSuspendOutBand)
+    except ImportError:
+        raise SkipTest
+
     yield _test_suspender, PVSuspendBoolHigh, (), 0, 1, 0, .5
     yield _test_suspender, PVSuspendBoolLow, (), 1, 0, 1, .5
     yield _test_suspender, PVSuspendFloor, (.5,), 1, 0, 1, .5
