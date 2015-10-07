@@ -155,6 +155,10 @@ class RunEngine:
         md_validator : callable, optional
             a function that raises and prevents starting a run if it deems
             the metadata to be invalid or incomplete
+            Expected signature: f(md)
+            Function should raise if md is invalid. What that means is
+            completely up to the user. The function's return value is
+            ignored.
 
         logbook : callable, optional
             logbook(msg, properties=dict)
