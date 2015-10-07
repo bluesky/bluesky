@@ -167,12 +167,12 @@ class Scan1D(ScanBase):
 
     def _pre_scan(self):
         self._objects = list(self.detectors) + [self.motor]
-        self.num = len(self._steps)
+        self.num = len(self._abs_steps)
         yield from super()._pre_scan()
 
     def _gen(self):
         dets = self.detectors
-        for step in self._steps:
+        for step in self._abs_steps:
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
             yield Msg('wait', None, 'A')
@@ -201,7 +201,7 @@ class AbsListScan(Scan1D):
         list of positions
     """
     def _pre_scan(self):
-        self._steps = self.steps
+        self._abs_steps = self.steps
         yield from super()._pre_scan()
 
 
@@ -226,7 +226,7 @@ class DeltaListScan(Scan1D):
             raise NotImplementedError("Can't DScan this motor")
         key, = ret.keys()
         self.init_pos = ret[key]['value']
-        self._steps = self.steps + self.init_pos
+        self._abs_steps = self.steps + self.init_pos
         yield from super()._pre_scan()
 
     def logdict(self):
@@ -293,7 +293,7 @@ class AbsScan(Scan1D):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
 
     def _pre_scan(self):
-        self._steps = np.linspace(self.start, self.stop, self.num)
+        self._abs_steps = np.linspace(self.start, self.stop, self.num)
         yield from super()._pre_scan()
 
 
@@ -327,7 +327,7 @@ class LogAbsScan(Scan1D):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
 
     def _pre_scan(self):
-        self._steps = np.logspace(self.start, self.stop, self.num)
+        self._abs_steps = np.logspace(self.start, self.stop, self.num)
         yield from super()._pre_scan()
 
     def _gen(self):
