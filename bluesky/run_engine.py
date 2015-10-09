@@ -675,9 +675,17 @@ class RunEngine:
             sys.stdout.flush()
             # Emit RunStop if necessary.
             if self._run_is_open:
-                yield from self._close_run(Msg('close_run'))
+                try:
+                    yield from self._close_run(Msg('close_run'))
+                except Exception:
+                    logger.error("Failed to close run %r", self._run_start_uid)
+                    # Exceptions from the callbacks should be re-raised.
+                    # Close the loop first.
+                    for task in asyncio.Task.all_tasks(loop):
+                        task.cancel()
+                    loop.stop()
+                    raise
                 self._run_is_open = False
-
             for task in asyncio.Task.all_tasks(loop):
                 task.cancel()
             loop.stop()
