@@ -773,15 +773,14 @@ class RunEngine:
 
     @asyncio.coroutine
     def _close_run(self, msg):
+        logger.debug("Stopping run %s", self._run_start_uid)
+        self._run_is_open = False
         doc = dict(run_start=self._run_start_uid,
                    time=ttime.time(), uid=new_uid(),
                    exit_status=self._exit_status,
                    reason=self._reason)
         yield from self.emit(DocumentNames.stop, doc)
         self.debug("*** Emitted RunStop:\n%s" % doc)
-        self._run_is_open = False
-        logger.debug("Stopping run %s with run_stop %s",
-                     self._run_start_uid, doc['uid'])
 
     @asyncio.coroutine
     def _create(self, msg):
