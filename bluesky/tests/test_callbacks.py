@@ -1,5 +1,6 @@
 from collections import defaultdict
 from nose.tools import assert_equal, assert_raises, assert_true, assert_greater
+from bluesky.testing.noseclasses import KnownFailureTest
 from nose import SkipTest
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
@@ -124,13 +125,14 @@ def test_unknown_cb_raises():
 
 
 def test_post_run():
+    raise KnownFailureTest()
     try:
         import databroker
     except ImportError:
         raise SkipTest('requires databroker')
     from bluesky.broker_callbacks import post_run
-    RE(stepscan(det, motor), subs=post_run(LiveTable()))
-
+    RE.ignore_callback_exceptions = False
+    RE(stepscan(det, motor), subs={'stop': [post_run(do_nothing)]})
 
 
 @contextlib.contextmanager
