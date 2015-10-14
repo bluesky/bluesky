@@ -143,6 +143,14 @@ def test_dscan():
     yield traj_checker, scan, traj - 4
 
 
+def test_dscan_list_input():
+    # GH225
+    traj = [1, 2, 3]
+    motor.set(-4)
+    scan = DeltaListScan([det], motor, traj)
+    yield traj_checker, scan, np.array(traj) - 4
+
+
 def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
     scan = AbsScan([det], motor, 0, 10, 5)

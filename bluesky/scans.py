@@ -226,7 +226,7 @@ class DeltaListScan(Scan1D):
             raise NotImplementedError("Can't DScan this motor")
         key, = ret.keys()
         self.init_pos = ret[key]['value']
-        self._abs_steps = self.steps + self.init_pos
+        self._abs_steps = np.asarray(self.steps) + self.init_pos
         yield from super()._pre_scan()
 
     def logdict(self):
