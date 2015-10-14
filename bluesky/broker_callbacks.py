@@ -46,7 +46,10 @@ def post_run(callback):
     Parameters
     ----------
     callback : callable
-        a function that accepts all four Documents
+        Expected signature ::
+
+            def func(doc_name, doc):
+                pass
 
     Returns
     -------
@@ -77,10 +80,10 @@ def post_run(callback):
         # For convenience, I'll rely on the broker to get Events.
         header = db[uid]
         events = get_events(header)
-        callback.start(start)
+        callback('start', start)
         for d in descriptors:
-            callback.descriptor(d)
+            callback('descriptor', d)
         for e in events:
-            callback.event(e)
-        callback.stop(stop_doc)
+            callback('event', e)
+        callback('stop', stop_doc)
     return f

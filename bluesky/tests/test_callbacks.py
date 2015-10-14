@@ -1,12 +1,10 @@
-from collections import defaultdict
-from nose.tools import assert_equal, assert_raises, assert_true, assert_greater
-from bluesky.testing.noseclasses import KnownFailureTest
+from nose.tools import assert_equal, assert_raises, assert_true
 from nose import SkipTest
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.scans import AdaptiveAbsScan, AbsScan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
-from bluesky.standard_config import ascan, mesh, gs
+from bluesky.standard_config import mesh
 from bluesky.tests.utils import setup_test_run_engine
 from nose.tools import raises
 import contextlib
@@ -17,8 +15,7 @@ RE = setup_test_run_engine()
 
 
 def exception_raiser(name, doc):
-    raise Exception("Hey look it's an exception that better not kill the "
-                    "scan!!")
+    raise Exception("it's an exception that better not kill the scan!!")
 
 
 def test_main_thread_callback_exceptions():
@@ -122,17 +119,6 @@ def test_unknown_cb_raises():
     assert_raises(KeyError, RE.subscribe, 'not a thing', f)
     # CallbackRegistry catches this case (different error).
     assert_raises(ValueError, RE._register_scan_callback, 'not a thing', f)
-
-
-def test_post_run():
-    raise KnownFailureTest()
-    try:
-        import databroker
-    except ImportError:
-        raise SkipTest('requires databroker')
-    from bluesky.broker_callbacks import post_run
-    RE.ignore_callback_exceptions = False
-    RE(stepscan(det, motor), subs={'stop': [post_run(do_nothing)]})
 
 
 @contextlib.contextmanager

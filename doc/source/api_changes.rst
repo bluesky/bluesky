@@ -1,8 +1,22 @@
-v0.3.0
-------
-
 API Changes
 ===========
+
+
+v0.4.0
+------
+* `broker_callbacks.post_run` API and docstring brought into agreement.
+  The API is change to expect a callable with signature
+  ``foo(doc_name, doc)`` rather than:
+    - a callable which takes a document (as documented)
+    - an object with ``start``, ``descriptor``, ``event`` and ``stop``
+      methods (as implemented).
+
+  If classes derived from `CallbackBase` are being used this will not
+  not have any effect on user code.
+
+
+v0.3.0
+------
 
 * Removed ``RunEngine.persistent_fields``; all fields in ``RE.md`` persist
   between runs by default.
