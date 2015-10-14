@@ -653,7 +653,7 @@ class RunEngine:
         finally:
             self.state = 'idle'
             # in case we were interrupted between 'configure' and 'deconfigure'
-            for obj in self._configured:
+            for obj in list(self._configured):
                 try:
                     obj.deconfigure()
                 except Exception:
