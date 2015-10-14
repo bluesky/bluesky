@@ -2,19 +2,6 @@ API Changes
 ===========
 
 
-v0.4.0
-------
-* `broker_callbacks.post_run` API and docstring brought into agreement.
-  The API is change to expect a callable with signature
-  ``foo(doc_name, doc)`` rather than:
-    - a callable which takes a document (as documented)
-    - an object with ``start``, ``descriptor``, ``event`` and ``stop``
-      methods (as implemented).
-
-  If classes derived from `CallbackBase` are being used this will not
-  not have any effect on user code.
-
-
 v0.3.0
 ------
 
@@ -32,5 +19,14 @@ v0.3.0
   it sees fit. The ``configure`` method always has a new return value, a tuple
   of dicts describing its old and new states:
   ``old, new = obj.configure(state)``
-
 * Removed method ``increment_scan_id``
+* `broker_callbacks.post_run` API and docstring brought into agreement.
+  The API is change to expect a callable with signature
+  ``foo(doc_name, doc)`` rather than:
+    - a callable which takes a document (as documented)
+    - an object with ``start``, ``descriptor``, ``event`` and ``stop``
+      methods (as implemented).
+
+  If classes derived from `CallbackBase` are being used this will not
+  not have any effect on user code.
+
