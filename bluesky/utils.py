@@ -45,8 +45,8 @@ class CallbackRegistry:
     See matplotlib.cbook.CallbackRegistry. This is a simplified since
     ``bluesky`` is python3.4+ only!
     """
-    def __init__(self, halt_on_exception=True, allowed_sigs=None):
-        self.halt_on_exception = halt_on_exception
+    def __init__(self, ignore_exceptions=False, allowed_sigs=None):
+        self.ignore_exceptions = ignore_exceptions
         self.allowed_sigs = allowed_sigs
         self.callbacks = dict()
         self._cid = 0
@@ -151,10 +151,10 @@ class CallbackRegistry:
                 except ReferenceError:
                     self._remove_proxy(func)
                 except Exception as e:
-                    if self.halt_on_exception:
-                        raise
-                    else:
+                    if self.ignore_exceptions:
                         exceptions.append((e, sys.exc_info()[2]))
+                    else:
+                        raise
         return exceptions
 
 

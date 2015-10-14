@@ -1,9 +1,5 @@
 {
     "properties": {
-        "config": {
-            "type": ["object"],
-            "description": "Meta-data regrading slow-chaning configuration, such as equipment specifications and calibration"
-        },
         "project": {
             "type": "string",
             "description": "Name of project that this run is part of"
@@ -42,7 +38,6 @@
         "time",
         "group",
         "owner",
-        "config",
         "beamline_id"
      ],
     "type": "object",

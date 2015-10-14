@@ -198,13 +198,22 @@ def test_md_history():
 
 def _md(md):
     RE = RunEngine(md)
+    RE.ignore_callback_exceptions = False
     scan = simple_scan(motor)
     assert_raises(KeyError, RE, scan)  # missing owner, beamline_id
     scan = simple_scan(motor)
     assert_raises(KeyError, RE, scan, owner='dan')
+    scan = simple_scan(motor)
     RE(scan, owner='dan', beamline_id='his desk',
        group='some group', config={})  # this should work
-    RE(scan)  # and now this should work, reusing metadata
+    scan = simple_scan(motor)
+    assert_raises(KeyError, RE, scan)  # this should fail; none was persisted
+    RE.md['owner'] = 'dan'
+    RE.md['group'] = 'some group'
+    RE.md['config'] = {}
+    RE.md['beamline_id'] = 'his desk'
+    scan = simple_scan(motor)
+    RE(scan)  # this should work
     RE.md.clear()
     scan = simple_scan(motor)
     assert_raises(KeyError, RE, scan)
@@ -213,10 +222,25 @@ def _md(md):
     RE.md['group'] = 'some group'
     RE.md['config'] = {}
     RE.md['beamline_id'] = 'his desk'
+    scan = simple_scan(motor)
     RE(scan)
-    # Do optional values persist?
+
+    # Check persistence.
+    scan = simple_scan(motor)
     RE(scan, project='sitting')
-    RE(scan, subs={'start': validate_dict_cb('project', 'sitting')})
+    # 'project' should not persist
+    scan = simple_scan(motor)
+    RE(scan, subs={'start': [validate_dict_cb_opposite('project')]})
+    # ...unless we add it to RE.md
+    RE.md['project'] = 'sitting'
+    scan = simple_scan(motor)
+    RE(scan, subs={'start': [validate_dict_cb('project', 'sitting')]})
+    # new values to 'project' passed in the call update the value in md
+    scan = simple_scan(motor)
+    RE(scan, project='standing',
+       subs={'start': [validate_dict_cb('project', 'standing')]})
+    assert_equal(RE.md['project'], 'standing')
+
 
 def validate_dict_cb(key, val):
     def callback(name, doc):

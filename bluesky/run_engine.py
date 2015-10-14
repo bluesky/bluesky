@@ -309,11 +309,11 @@ class RunEngine:
 
     @property
     def ignore_callback_exceptions(self):
-        return not self.dispatcher.halt_on_exception
+        return self.dispatcher.ignore_exceptions
 
     @ignore_callback_exceptions.setter
     def ignore_callback_exceptions(self, val):
-        self.dispatcher.halt_on_exception = not val
+        self.dispatcher.ignore_exceptions = val
 
     def register_command(self, name, func):
         """
@@ -675,9 +675,17 @@ class RunEngine:
             sys.stdout.flush()
             # Emit RunStop if necessary.
             if self._run_is_open:
-                yield from self._close_run(Msg('close_run'))
+                try:
+                    yield from self._close_run(Msg('close_run'))
+                except Exception:
+                    logger.error("Failed to close run %r", self._run_start_uid)
+                    # Exceptions from the callbacks should be re-raised.
+                    # Close the loop first.
+                    for task in asyncio.Task.all_tasks(loop):
+                        task.cancel()
+                    loop.stop()
+                    raise
                 self._run_is_open = False
-
             for task in asyncio.Task.all_tasks(loop):
                 task.cancel()
             loop.stop()
@@ -765,15 +773,14 @@ class RunEngine:
 
     @asyncio.coroutine
     def _close_run(self, msg):
+        logger.debug("Stopping run %s", self._run_start_uid)
+        self._run_is_open = False
         doc = dict(run_start=self._run_start_uid,
                    time=ttime.time(), uid=new_uid(),
                    exit_status=self._exit_status,
                    reason=self._reason)
         yield from self.emit(DocumentNames.stop, doc)
         self.debug("*** Emitted RunStop:\n%s" % doc)
-        self._run_is_open = False
-        logger.debug("Stopping run %s with run_stop %s",
-                     self._run_start_uid, doc['uid'])
 
     @asyncio.coroutine
     def _create(self, msg):
@@ -1049,8 +1056,7 @@ class Dispatcher:
     """Dispatch documents to user-defined consumers on the main thread."""
 
     def __init__(self):
-        self.cb_registry = CallbackRegistry(allowed_sigs=DocumentNames,
-                                            halt_on_exception=False)
+        self.cb_registry = CallbackRegistry(allowed_sigs=DocumentNames)
         self._counter = count()
         self._token_mapping = dict()
 
@@ -1108,6 +1114,14 @@ class Dispatcher:
         """
         for public_token in self._token_mapping.keys():
             self.unsubscribe(public_token)
+
+    @property
+    def ignore_exceptions(self):
+        return self.cb_registry.ignore_exceptions
+
+    @ignore_exceptions.setter
+    def ignore_exceptions(self, val):
+        self.cb_registry.ignore_exceptions = val
 
 
 def new_uid():
