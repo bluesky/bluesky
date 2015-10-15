@@ -33,6 +33,16 @@ class ScanBase(Struct):
     _derived_fields = []
 
     @property
+    def _fields(self):
+        "Subclasses are required to define this. See class docstring above."
+        raise NotImplementedError
+
+    @property
+    def _objects(self):
+        "Subclasses are required to define this. See class docstring above."
+        raise NotImplementedError
+
+    @property
     def objects(self):
         return {obj: list(obj.describe().keys()) for obj in self._objects}
 
