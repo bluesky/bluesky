@@ -652,13 +652,6 @@ class RunEngine:
             raise err
         finally:
             self.state = 'idle'
-            # in case we were interrupted between 'configure' and 'deconfigure'
-            for obj in list(self._configured):
-                try:
-                    obj.deconfigure()
-                except Exception:
-                    logger.error("Failed to deconfigure %r", obj)
-                self._configured.remove(obj)
             # call stop() on every movable object we ever set() or kickoff()
             for obj in self._movable_objs_touched:
                 try:
@@ -672,6 +665,13 @@ class RunEngine:
                     yield from self._collect(Msg('collect', obj))
                 except Exception:
                     logger.error("Failed to collect %r", obj)
+            # in case we were interrupted between 'configure' and 'deconfigure'
+            for obj in list(self._configured):
+                try:
+                    obj.deconfigure()
+                except Exception:
+                    logger.error("Failed to deconfigure %r", obj)
+                self._configured.remove(obj)
             sys.stdout.flush()
             # Emit RunStop if necessary.
             if self._run_is_open:
