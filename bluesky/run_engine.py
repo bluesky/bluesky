@@ -825,9 +825,11 @@ class RunEngine:
             yield from self.emit(DocumentNames.descriptor, doc)
             self.debug("*** Emitted Event Descriptor:\n%s" % doc)
             self._descriptor_uids[objs_read] = descriptor_uid
-            self._sequence_counters[objs_read] = count(1)
         else:
             descriptor_uid = self._descriptor_uids[objs_read]
+        # This is a separate check because it can be reset on resume.
+        if objs_read not in self._sequence_counters:
+            self._sequence_counters[objs_read] = count(1)
         self._bundling = False
 
         # Events
