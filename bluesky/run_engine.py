@@ -490,7 +490,7 @@ class RunEngine:
 
         metadata_kw['scan_type'] = getattr(type(plan), '__name__')
         self._plan = plan
-        self._metadata_per_call = metadata_kw
+        self._metadata_per_call.update(metadata_kw)
 
         self.state = 'running'
         gen = iter(plan)  # no-op on generators; needed for classes
@@ -747,7 +747,7 @@ class RunEngine:
         logger.debug("New transient id %d", scan_id)
 
         # Metadata can come from history, __call__, or the open_run Msg.
-        self._metadata_per_run = dict(self.md)
+        self._metadata_per_run.update(self.md)
         if hasattr(self._plan, 'md'):
             self._metadata_per_run.update(self._plan.md)
         self._metadata_per_run.update(self._metadata_per_call)
