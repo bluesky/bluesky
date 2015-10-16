@@ -1,5 +1,6 @@
 import logging
-from .run_engine import (Msg, RunEngine, PanicError, RunInterrupt)
+from .run_engine import (Msg, RunEngine, PanicError, RunInterrupt,
+                         IllegalMessageSequence)
 from .scans import *
 
 logger = logging.getLogger(__name__)

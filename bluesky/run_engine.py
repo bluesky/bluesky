@@ -787,6 +787,11 @@ class RunEngine:
 
     @asyncio.coroutine
     def _create(self, msg):
+        if self._bundling:
+            raise IllegalMessageSequence("A second 'create' message is not "
+                                         "allowed until the current event "
+                                         "bundle is closed with a 'save' "
+                                         "message.")
         self._read_cache.clear()
         self._objs_read.clear()
         self._bundling = True
@@ -812,6 +817,10 @@ class RunEngine:
 
     @asyncio.coroutine
     def _save(self, msg):
+        if not self._bundling:
+            raise IllegalMessageSequence("A 'create' message must be sent, to "
+                                         "open an event bundle, before that "
+                                         "bundle can be saved with 'save'.")
         # The Event Descriptor is uniquely defined by the set of objects
         # read in this Event grouping.
         objs_read = frozenset(self._objs_read)
