@@ -230,6 +230,7 @@ class RunEngine:
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
+        self._plan = None  # the scan plan instance from __call__
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -292,6 +293,7 @@ class RunEngine:
         self._exit_status = 'success'
         self._reason = ''
         self._task = None
+        self._plan = None
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -421,11 +423,11 @@ class RunEngine:
         """
         return self._scan_cb_registry.connect(name, func)
 
-    def __call__(self, plan, subs=None, **metadata):
+    def __call__(self, plan, subs=None, **metadata_kw):
         """Run the scan defined by ``plan``
 
-        Any keyword arguments other than those listed below will be
-        interpreted as metadata and recorded with the run.
+        Any keyword arguments other than those listed below will be interpreted
+        as metadata and recorded with the run.
 
         Parameters
         ----------
@@ -486,11 +488,9 @@ class RunEngine:
                                      "{0}".format(func))
                 self._temp_callback_ids.add(self.subscribe(name, func))
 
-        metadata['scan_type'] = getattr(type(plan), '__name__')
-        if hasattr(plan, 'md'):
-            self._metadata_per_call.update(plan.md)
-        # If kwargs to __call__ collide with plan.md, kwargs win.
-        self._metadata_per_call.update(metadata)
+        metadata_kw['scan_type'] = getattr(type(plan), '__name__')
+        self._plan = plan
+        self._metadata_per_call.update(metadata_kw)
 
         self.state = 'running'
         gen = iter(plan)  # no-op on generators; needed for classes
@@ -747,7 +747,9 @@ class RunEngine:
         logger.debug("New transient id %d", scan_id)
 
         # Metadata can come from history, __call__, or the open_run Msg.
-        self._metadata_per_run = dict(self.md)
+        self._metadata_per_run.update(self.md)
+        if hasattr(self._plan, 'md'):
+            self._metadata_per_run.update(self._plan.md)
         self._metadata_per_run.update(self._metadata_per_call)
         self._metadata_per_run.update(msg.kwargs)
 
@@ -757,7 +759,6 @@ class RunEngine:
                 # Stored value has been overriden by __call__ or Msg.
                 # Update the stored value.
                 self.md[field] = new_val
-
 
         # The metadata is final. Validate it now, at the last moment.
         # Use copy for some reasonable (admittedly not total) protection
