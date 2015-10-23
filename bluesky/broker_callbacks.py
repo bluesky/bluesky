@@ -114,7 +114,7 @@ def exporter_factory(field, template):
     """
     # validate user input
     if not '{N}' in template:
-        raise ValueError("format_stirng must include '{N}'")
+        raise ValueError("template must include '{N}'")
 
     def f(h):
         imgs = get_images(h, field)
