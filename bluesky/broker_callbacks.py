@@ -4,6 +4,9 @@ from metadatastore.commands import run_start_given_uid, descriptors_by_start
 import matplotlib.pyplot as plt
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 from .callbacks import CallbackBase
+import tifffile
+import numpy as np
+from databroker import get_images
 
 
 class LiveImage(CallbackBase):
@@ -86,4 +89,48 @@ def post_run(callback):
         for e in events:
             callback('event', e)
         callback('stop', stop_doc)
+    return f
+
+
+def exporter_factory(field, template):
+    """
+    Build a function that, given a header, exports tiff files.
+
+    The file names will incorporate the contents of the Header.
+
+    Parameters
+    ----------
+    field : str
+        a data key, e.g., 'pe1_image_lightfield'
+    template : str
+        A templated file path, where curly brackets will be filled in with
+        the attributes of 'h', a Header, and 'N', a sequential number.
+        e.g., "dir/scan{h.start.scan_id}_by_{h.start.experimenter}_{N}.tiff"
+
+    Returns
+    -------
+    f : function
+        a function that accepts a header and saves TIFF files
+    """
+    # validate user input
+    if not '{N}' in template:
+        raise ValueError("format_stirng must include '{N}'")
+
+    def f(h):
+        imgs = get_images(h, field)
+        # Fill in h, defer filling in N.
+        _template = template.format(h=h, N='{N}')
+        for i, img in enumerate(imgs):
+            filename = _template.format(N=i)
+            tifffile.imsave(filename, np.asarray(img))
+
+    # Write a customized docstring for f based on what is specifcally does.
+    f.__doc__ = """
+Export sequentially-numbered TIFF files from the {field} field.
+
+Parameters
+----------
+h : Header
+    a header from the databroker
+""".format(field=field)
     return f
