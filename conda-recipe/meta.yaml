@@ -31,6 +31,7 @@ requirements:
 test:
   requires:
     - nslsii_dev_configuration
+    - pcaspy
   imports:
     - 'bluesky'
     - 'bluesky.examples'
