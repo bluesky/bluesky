@@ -607,31 +607,40 @@ class RunEngine:
         self._reason = ''
         try:
             while True:
-                if self._exception is not None:
-                    raise self._exception
-                # Send last response; get new message but don't process it yet.
                 try:
-                    msg = self._genstack[-1].send(
-                        response if not self._new_gen else None)
+                    if self._exception is not None:
+                        raise self._exception
+                    # Send last response;
+                    # get new message but don't process it yet.
+                    try:
+                        msg = self._genstack[-1].send(
+                            response if not self._new_gen else None)
 
-                except StopIteration:
-                    self._genstack.pop()
-                    if len(self._genstack):
-                        continue
-                    else:
-                        raise
-                if (self._msg_cache is not None and
-                        msg.command not in self._UNCACHEABLE_COMMANDS):
-                    # We have a checkpoint.
-                    self._msg_cache.append(msg)
-                self._new_gen = False
-                coro = self._command_registry[msg.command]
-                logger.debug("Processing message %r", msg)
-                self.debug("About to process: {0}, {1}".format(coro, msg))
-                yield from asyncio.sleep(0.001)  # TODO Do we need this?
-                response = yield from coro(msg)
-                self.debug('RE.state: ' + self.state)
-                self.debug('msg: {}\n   response: {}'.format(msg, response))
+                    except StopIteration:
+                        self._genstack.pop()
+                        if len(self._genstack):
+                            continue
+                        else:
+                            raise
+                    if (self._msg_cache is not None and
+                            msg.command not in self._UNCACHEABLE_COMMANDS):
+                        # We have a checkpoint.
+                        self._msg_cache.append(msg)
+                    self._new_gen = False
+                    coro = self._command_registry[msg.command]
+                    logger.debug("Processing message %r", msg)
+                    self.debug("About to process: {0}, {1}".format(coro, msg))
+                    yield from asyncio.sleep(0.001)  # TODO Do we need this?
+                    response = yield from coro(msg)
+                    self.debug('RE.state: ' + self.state)
+                    self.debug('msg: {}\n  response: {}'.format(msg, response))
+                except KeyboardInterrupt:
+                    # This only happens if some external code captures SIGINT
+                    # -- overriding the RunEngine -- and then raises instead
+                    # of (properly) calling the RunEngine's handler.
+                    # See https://github.com/NSLS-II/bluesky/pull/242
+                    loop.call_soon(self.request_pause, False, 'SIGINT')
+                    print(PAUSE_MSG)
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             yield from asyncio.sleep(0.001)  # TODO Do we need this?
