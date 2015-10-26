@@ -641,7 +641,7 @@ class RunEngine:
             logger.error("Run aborted")
             logger.error("%s", self._exception)
             if isinstance(self._exception, PanicError):
-                logger.critical("RE paniced")
+                logger.critical("RE panicked")
                 self._exit_status = 'fail'
                 raise self._exception
         except Exception as err:
