@@ -753,13 +753,6 @@ class RunEngine:
         self._metadata_per_run.update(self._metadata_per_call)
         self._metadata_per_run.update(msg.kwargs)
 
-        for field, val in list(self.md.items()):
-            new_val = self._metadata_per_run[field]
-            if val != new_val:
-                # Stored value has been overriden by __call__ or Msg.
-                # Update the stored value.
-                self.md[field] = new_val
-
         # The metadata is final. Validate it now, at the last moment.
         # Use copy for some reasonable (admittedly not total) protection
         # against users mutating the md with their validator.
