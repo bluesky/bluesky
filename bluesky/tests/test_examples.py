@@ -235,11 +235,12 @@ def _md(md):
     RE.md['project'] = 'sitting'
     scan = simple_scan(motor)
     RE(scan, subs={'start': [validate_dict_cb('project', 'sitting')]})
-    # new values to 'project' passed in the call update the value in md
+    # new values to 'project' passed in the call override the value in md
     scan = simple_scan(motor)
     RE(scan, project='standing',
        subs={'start': [validate_dict_cb('project', 'standing')]})
-    assert_equal(RE.md['project'], 'standing')
+    # ...but they do not update the value in md
+    assert_equal(RE.md['project'], 'sitting')
 
 
 def validate_dict_cb(key, val):

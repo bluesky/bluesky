@@ -103,8 +103,6 @@ raise a ``KeyError`` if they are not set. These fields are:
 * owner
 * group
 * beamline_id (e.g., 'csx')
-* config, a dictionary describing the hardware, calibration, dead pixels on
-  detectors, etc.
 
 ``standard_config.py`` fills some of these in automatically (e.g., 'owner'
 defaults to the username of the UNIX user currently logged in).
