@@ -395,6 +395,17 @@ def test_abort():
     assert stop - start < 2
 
 
+def test_rogue_sigint():
+    def bad_scan():
+        yield Msg('open_run')
+        yield Msg('checkpoint')
+        raise KeyboardInterrupt
+
+    RE(bad_scan())
+    assert_equal(RE.state, 'paused')
+    RE.abort()
+
+
 def test_seqnum_nonrepeated():
     def gen():
         yield Msg('open_run')
