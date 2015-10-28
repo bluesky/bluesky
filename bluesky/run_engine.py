@@ -608,6 +608,14 @@ class RunEngine:
         try:
             while True:
                 try:
+                    # This 'yield from' must be here to ensure that this
+                    # coroutine breaks out of its current bevior before trying
+                    # to get the next message from the top of the generator
+                    # stack in case there has been a pause requested.
+                    # Without this the next message after the pause may be
+                    # processed first on resume (instead of the first
+                    # message in self._msg_cache).
+                    yield from asyncio.sleep(0.0001)
                     if self._exception is not None:
                         raise self._exception
                     # Send last response;
@@ -630,7 +638,6 @@ class RunEngine:
                     coro = self._command_registry[msg.command]
                     logger.debug("Processing message %r", msg)
                     self.debug("About to process: {0}, {1}".format(coro, msg))
-                    yield from asyncio.sleep(0.001)  # TODO Do we need this?
                     response = yield from coro(msg)
                     self.debug('RE.state: ' + self.state)
                     self.debug('msg: {}\n  response: {}'.format(msg, response))
