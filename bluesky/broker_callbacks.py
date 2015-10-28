@@ -1,3 +1,4 @@
+import os
 from databroker import DataBroker as db, get_events
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
@@ -120,8 +121,14 @@ def exporter_factory(field, template):
         imgs = get_images(h, field)
         # Fill in h, defer filling in N.
         _template = template.format(h=h, N='{N}')
-        for i, img in enumerate(imgs):
-            filename = _template.format(N=i)
+        filenames = [_template.format(N=i) for i in range(len(imgs))]
+        # First check that none of the filenames exist.
+        for filename in filenames:
+            if os.path.isfile(filename):
+                raise FileExistsError("There is already a file at {}. Delete "
+                                      "it and try again.".format(filename))
+        # Write files.
+        for filename, img in zip(filenames, imgs):
             tifffile.imsave(filename, np.asarray(img))
 
     # Write a customized docstring for f based on what is specifcally does.
