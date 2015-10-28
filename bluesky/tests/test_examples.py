@@ -9,7 +9,7 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               conditional_break, SynGauss
                               )
 from bluesky.callbacks import LivePlot
-from bluesky import RunEngine, Msg, PanicError
+from bluesky import RunEngine, Msg, PanicError, IllegalMessageSequence
 from bluesky.tests.utils import setup_test_run_engine
 from bluesky.testing.noseclasses import KnownFailureTest
 import os
@@ -430,7 +430,9 @@ def test_seqnum_nonrepeated():
     def f(name, doc):
         seq_nums.append(doc['seq_num'])
 
+    RE.verbose = True
     RE(gen(), {'event': f})
+    print("RESUMING!!!!")
     RE.resume()
     assert_equal(seq_nums, [1, 2, 2, 3])
 
@@ -450,3 +452,27 @@ def test_duplicate_keys():
 
     with assert_raises(ValueError):
         RE(gen())
+
+
+def test_illegal_sequences():
+
+    def gen1():
+        # two 'create' msgs in a row
+        yield(Msg('open_run'))
+        yield(Msg('create'))
+        yield(Msg('create'))
+        yield(Msg('close_run'))
+
+    with assert_raises(IllegalMessageSequence):
+        RE(gen1())
+
+    def gen2():
+        # two 'save' msgs in a row
+        yield(Msg('open_run'))
+        yield(Msg('create'))
+        yield(Msg('save'))
+        yield(Msg('save'))
+        yield(Msg('close_run'))
+
+    with assert_raises(IllegalMessageSequence):
+        RE(gen1())

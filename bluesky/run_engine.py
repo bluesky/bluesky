@@ -528,6 +528,11 @@ class RunEngine:
             raise PanicError("Run Engine is panicked. If are you sure all is "
                              "well, call the all_is_well() method.")
 
+        # This is needed to 'cancel' an open bundling (e.g. create) if
+        # the pause happens after a 'checkpoint', after a 'create', but before
+        # the paired 'save'.
+        self._bundling = False
+
         # Check that all pause requests have been released.
         outstanding_requests = []
         for name, func in list(self._pause_requests.items()):
@@ -608,6 +613,14 @@ class RunEngine:
         try:
             while True:
                 try:
+                    # This 'yield from' must be here to ensure that this
+                    # coroutine breaks out of its current bevior before trying
+                    # to get the next message from the top of the generator
+                    # stack in case there has been a pause requested.
+                    # Without this the next message after the pause may be
+                    # processed first on resume (instead of the first
+                    # message in self._msg_cache).
+                    yield from asyncio.sleep(0.0001)
                     if self._exception is not None:
                         raise self._exception
                     # Send last response;
@@ -630,7 +643,6 @@ class RunEngine:
                     coro = self._command_registry[msg.command]
                     logger.debug("Processing message %r", msg)
                     self.debug("About to process: {0}, {1}".format(coro, msg))
-                    yield from asyncio.sleep(0.001)  # TODO Do we need this?
                     response = yield from coro(msg)
                     self.debug('RE.state: ' + self.state)
                     self.debug('msg: {}\n  response: {}'.format(msg, response))
@@ -787,6 +799,11 @@ class RunEngine:
 
     @asyncio.coroutine
     def _create(self, msg):
+        if self._bundling:
+            raise IllegalMessageSequence("A second 'create' message is not "
+                                         "allowed until the current event "
+                                         "bundle is closed with a 'save' "
+                                         "message.")
         self._read_cache.clear()
         self._objs_read.clear()
         self._bundling = True
@@ -812,6 +829,10 @@ class RunEngine:
 
     @asyncio.coroutine
     def _save(self, msg):
+        if not self._bundling:
+            raise IllegalMessageSequence("A 'create' message must be sent, to "
+                                         "open an event bundle, before that "
+                                         "bundle can be saved with 'save'.")
         # The Event Descriptor is uniquely defined by the set of objects
         # read in this Event grouping.
         objs_read = frozenset(self._objs_read)
