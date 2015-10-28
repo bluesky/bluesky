@@ -528,6 +528,11 @@ class RunEngine:
             raise PanicError("Run Engine is panicked. If are you sure all is "
                              "well, call the all_is_well() method.")
 
+        # This is needed to 'cancel' an open bundling (e.g. create) if
+        # the pause happens after a 'checkpoint', after a 'create', but before
+        # the paired 'save'.
+        self._bundling = False
+
         # Check that all pause requests have been released.
         outstanding_requests = []
         for name, func in list(self._pause_requests.items()):
