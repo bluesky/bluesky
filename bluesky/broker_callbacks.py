@@ -117,7 +117,7 @@ def make_tiff_exporter(field, template):
     if not '{N}' in template:
         raise ValueError("template must include '{N}'")
 
-    def f(h):
+    def f(h, dryrun=False):
         imgs = get_images(h, field)
         # Fill in h, defer filling in N.
         _template = template.format(h=h, N='{N}')
@@ -127,9 +127,11 @@ def make_tiff_exporter(field, template):
             if os.path.isfile(filename):
                 raise FileExistsError("There is already a file at {}. Delete "
                                       "it and try again.".format(filename))
-        # Write files.
-        for filename, img in zip(filenames, imgs):
-            tifffile.imsave(filename, np.asarray(img))
+        if not dryrun:
+            # Write files.
+            for filename, img in zip(filenames, imgs):
+                tifffile.imsave(filename, np.asarray(img))
+        return filenames
 
     # Write a customized docstring for f based on what is specifcally does.
     f.__doc__ = """
@@ -139,5 +141,14 @@ Parameters
 ----------
 h : Header
     a header from the databroker
+dryrun : bool
+    Set to True to return list of filenames without actually writing files.
+    False by default.
+
+Returns
+-------
+filenames : list
+    list of filenames where files were written (or, if dryrun, *would* be
+    written)
 """.format(field=field)
     return f
