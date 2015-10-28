@@ -1,5 +1,7 @@
 from collections import deque, defaultdict
 import itertools
+import functools
+import operator
 from boltons.iterutils import chunked
 from cycler import cycler
 import numpy as np
@@ -141,9 +143,9 @@ class Count(ScanBase):
         self.delay = delay
         self.setup_attrs()
 
-    def _pre_scan(self):
-        self._objects = self.detectors
-        yield from super()._pre_scan()
+    @property
+    def _objects(self):
+        return self.detectors
 
     def _gen(self):
         dets = self.detectors
@@ -162,13 +164,13 @@ class Count(ScanBase):
 
 
 class Scan1D(ScanBase):
+    "Use AbsListScan or DeltaListScan. Subclasses must define _abs_steps."
     _fields = ['detectors', 'motor', 'steps']
-    _derived_fields = ['num']
+    _derived_fields = []
 
-    def _pre_scan(self):
-        self._objects = list(self.detectors) + [self.motor]
-        self.num = len(self._abs_steps)
-        yield from super()._pre_scan()
+    @property
+    def _objects(self):
+        return list(self.detectors) + [self.motor]
 
     def _gen(self):
         dets = self.detectors
@@ -200,9 +202,9 @@ class AbsListScan(Scan1D):
     steps : list
         list of positions
     """
-    def _pre_scan(self):
-        self._abs_steps = self.steps
-        yield from super()._pre_scan()
+    @property
+    def _abs_steps(self):
+        return self.steps
 
 
 class DeltaListScan(Scan1D):
@@ -218,15 +220,21 @@ class DeltaListScan(Scan1D):
     steps : list
         list of positions relative to current position
     """
-    _derived_fields = ['num', 'init_pos']
+    _derived_fields = Scan1D._derived_fields + ['init_pos']
+
+    @property
+    def init_pos(self):
+        "None unless a scan is running"
+        return getattr(self, '_init_pos', None)
 
     def _pre_scan(self):
+        "Get current position for the motor."
         ret = yield Msg('read', self.motor)
         if len(ret.keys()) > 1:
-            raise NotImplementedError("Can't DScan this motor")
+            raise NotImplementedError("Can't DScan a multiaxis motor")
         key, = ret.keys()
-        self.init_pos = ret[key]['value']
-        self._abs_steps = np.asarray(self.steps) + self.init_pos
+        self._init_pos = ret[key]['value']
+        self._abs_steps = np.asarray(self.steps) + self._init_pos
         yield from super()._pre_scan()
 
     def logdict(self):
@@ -253,7 +261,7 @@ class DeltaListScan(Scan1D):
         yield from super()._post_scan()
         try:
             init_pos = self.init_pos
-            delattr(self, 'init_pos')
+            delattr(self, '_init_pos')
         except AttributeError:
             raise RuntimeError("Trying to run _post_scan code for a DScan "
                                "without running the _pre_scan code to get "
@@ -263,7 +271,7 @@ class DeltaListScan(Scan1D):
         yield Msg('wait', None, 'A')
 
 
-class AbsScan(Scan1D):
+class AbsScan(AbsListScan):
     """
     Absolute scan over one variable in equally spaced steps
 
@@ -291,13 +299,14 @@ class AbsScan(Scan1D):
     >>> RE(my_scan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    _derived_fields = AbsListScan._derived_fields + ['steps']
 
-    def _pre_scan(self):
-        self._abs_steps = np.linspace(self.start, self.stop, self.num)
-        yield from super()._pre_scan()
+    @property
+    def steps(self):
+        return np.linspace(self.start, self.stop, self.num)
 
 
-class LogAbsScan(Scan1D):
+class LogAbsScan(AbsListScan):
     """
     Absolute scan over one variable in log-spaced steps
 
@@ -324,11 +333,12 @@ class LogAbsScan(Scan1D):
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
+    _derived_fields = AbsListScan._derived_fields + ['steps']
 
-    def _pre_scan(self):
-        self._abs_steps = np.logspace(self.start, self.stop, self.num)
-        yield from super()._pre_scan()
+    @property
+    def steps(self):
+        return np.logspace(self.start, self.stop, self.num)
 
     def _gen(self):
         yield from super()._gen()
@@ -361,11 +371,12 @@ class DeltaScan(DeltaListScan):
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
+    _derived_fields = DeltaListScan._derived_fields + ['steps']
 
-    def _pre_scan(self):
-        self.steps = np.linspace(self.start, self.stop, self.num)
-        yield from super()._pre_scan()
+    @property
+    def steps(self):
+        return np.linspace(self.start, self.stop, self.num)
 
 
 class LogDeltaScan(DeltaListScan):
@@ -395,11 +406,12 @@ class LogDeltaScan(DeltaListScan):
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
+    _derived_fields = DeltaListScan._derived_fields + ['steps']
 
-    def _pre_scan(self):
-        self.steps = np.logspace(self.start, self.stop, self.num)
-        yield from super()._pre_scan()
+    @property
+    def steps(self):
+        return np.logspace(self.start, self.stop, self.num)
 
 
 class _AdaptiveScanBase(ScanBase):
@@ -407,14 +419,13 @@ class _AdaptiveScanBase(ScanBase):
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
 
-
-    def _pre_scan(self):
-        self._objects = list(self.detectors) + [self.motor]
-        yield from super()._pre_scan()
+    @property
+    def _objects(self):
+        return list(self.detectors) + [self.motor]
 
     def _gen(self):
-        start = self.start + self._offset
-        stop = self.stop + self._offset
+        start = self.start + self._init_pos
+        stop = self.stop + self._init_pos
         next_pos = start
         step = (self.max_step - self.min_step) / 2
 
@@ -490,9 +501,10 @@ class AdaptiveAbsScan(_AdaptiveScanBase):
     backstep : bool
         whether backward steps are allowed -- this is concern with some motors
     """
-    def _gen(self):
-        self._offset = 0
-        yield from super()._gen()
+    @property
+    def _init_pos(self):
+        # facilitate code-sharing with AdaptiveDeltaScan
+        return 0
 
 
 class AdaptiveDeltaScan(_AdaptiveScanBase):
@@ -520,16 +532,31 @@ class AdaptiveDeltaScan(_AdaptiveScanBase):
     backstep : bool
         whether backward steps are allowed -- this is concern with some motors
     """
-    def _gen(self):
+    @property
+    def init_pos(self):
+        "None unless a scan is running"
+        return getattr(self, '_init_pos', None)
+
+    def _pre_scan(self):
         ret = yield Msg('read', self.motor)
         if len(ret.keys()) > 1:
-            raise NotImplementedError("Can't DScan this motor")
+            raise NotImplementedError("Can't DScan a multiaxis motor")
         key, = ret.keys()
         current_value = ret[key]['value']
-        self._offset = current_value
-        yield from super()._gen()
+        self._init_pos = current_value
+        yield from super()._pre_scan()
+
+    def _post_scan(self):
+        yield from super()._post_scan()
+        try:
+            init_pos = self.init_pos
+            delattr(self, '_init_pos')
+        except AttributeError:
+            raise RuntimeError("Trying to run _post_scan code for a DScan "
+                               "without running the _pre_scan code to get "
+                               "the baseline position.")
         # Return the motor to its original position.
-        yield Msg('set', self.motor, current_value, block_group='A')
+        yield Msg('set', self.motor, init_pos, block_group='A')
         yield Msg('wait', None, 'A')
 
 
@@ -590,9 +617,9 @@ class Center(ScanBase):
         self.tolerance = tolerance
         self.setup_attrs()
 
-    def _pre_scan(self):
-        self._objects = list(self.detectors) + [self.motor]
-        yield from super()._pre_scan()
+    @property
+    def _objects(self):
+        return list(self.detectors) + [self.motor]
 
     @property
     def min_cen(self):
@@ -678,11 +705,13 @@ class ScanND(ScanBase):
     _fields = ['detectors', 'cycler']
     _derived_fields = ['motors', 'num']
 
-    def _pre_scan(self):
-        self.motors = self.cycler.keys
-        self.num = len(self.cycler)
-        self._objects = list(self.detectors) + list(self.motors)
-        yield from super()._pre_scan()
+    @property
+    def motors(self):
+        return self.cycler.keys
+
+    @property
+    def _objects(self):
+        return list(self.detectors) + list(self.motors)
 
     def _gen(self):
         self._last_set_point = {m: None for m in self.motors}
@@ -715,6 +744,12 @@ class _OuterProductScanBase(ScanND):
     _fields = ['detectors', 'args']
     _derived_fields = ['motors', 'shape', 'num', 'extents', 'snaking']
 
+    # Overriding ScanND is the only way to do this; we cannot build the cycler
+    # until we measure the initial positions at the beginning of the run.
+    @property
+    def motors(self):
+        return self._motors
+
     def __init__(self, detectors, *args):
         args = list(args)
         # The first (slowest) axis is never "snaked." Insert False to
@@ -723,34 +758,37 @@ class _OuterProductScanBase(ScanND):
         if len(args) % 5 != 0:
             raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
+        self._motors = []
         self._args = args
-        self.motors = []
         shape = []
         extent = []
         snaking = []
         for motor, start, stop, num, snake in chunked(self.args, 5):
-            self.motors.append(motor)
+            self._motors.append(motor)
             shape.append(num)
             extent.append([start, stop])
             snaking.append(snake)
         self.shape = tuple(shape)
-        self.num = np.product(self.shape)
         self.extents = tuple(extent)
         self.snaking = tuple(snaking)
         self.setup_attrs()
 
-    def _pre_scan(self):
+    @property
+    def cycler(self):
         # Build a Cycler for ScanND.
         cyclers = []
         snake_booleans = []
         for motor, start, stop, num, snake in chunked(self.args, 5):
-            offset = self._offsets[motor]
-            steps = offset + np.linspace(start, stop, num=num, endpoint=True)
+            init_pos = self._init_pos[motor]
+            steps = init_pos + np.linspace(start, stop, num=num, endpoint=True)
             c = cycler(motor, steps)
             cyclers.append(c)
             snake_booleans.append(snake)
-        self.cycler = snake_cyclers(cyclers, snake_booleans)
-        yield from super()._pre_scan()
+        return snake_cyclers(cyclers, snake_booleans)
+
+    @property
+    def num(self):
+        return len(self.cycler)
 
     @property
     def args(self):
@@ -763,16 +801,22 @@ class _InnerProductScanBase(ScanND):
     _fields = ['detectors', 'num', 'args']
     _derived_fields = ['motors', 'extents']
 
+    # Overriding ScanND is the only way to do this; we cannot build the cycler
+    # until we measure the initial positions at the beginning of the run.
+    @property
+    def motors(self):
+        return self._motors
+
     def __init__(self, detectors, num, *args):
         if len(args) % 3 != 0:
             raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
         self.num = num
         self._args = args
-        self.motors = []
+        self._motors = []
         extents = []
         for motor, start, stop, in chunked(self.args, 3):
-            self.motors.append(motor)
+            self._motors.append(motor)
             extents.append([start, stop])
         self.extents = tuple(extents)
         self.setup_attrs()
@@ -782,21 +826,17 @@ class _InnerProductScanBase(ScanND):
         # Do this so that args is not settable. Too complex to allow updates.
         return self._args
 
-    def _pre_scan(self):
+    @property
+    def cycler(self):
         # Build a Cycler for ScanND.
-        num = self.num
-        self.cycler = None
+        cyclers = []
         for motor, start, stop, in chunked(self.args, 3):
-            offset = self._offsets[motor]
-            steps = offset + np.linspace(start, stop, num=num, endpoint=True)
+            init_pos = self._init_pos[motor]
+            steps = init_pos + np.linspace(start, stop, num=self.num,
+                                           endpoint=True)
             c = cycler(motor, steps)
-            # Special case first pass because their is no
-            # mutliplicative identity for cyclers.
-            if self.cycler is None:
-                self.cycler = c
-            else:
-                self.cycler += c
-        yield from super()._pre_scan()
+            cyclers.append(c)
+        return functools.reduce(operator.add, cyclers)
 
 
 class InnerProductAbsScan(_InnerProductScanBase):
@@ -812,9 +852,11 @@ class InnerProductAbsScan(_InnerProductScanBase):
     motor1, start1, stop1, ..., motorN, startN, stopN : list
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
-    def _pre_scan(self):
-        self._offsets = defaultdict(lambda: 0)
-        yield from super()._pre_scan()
+
+    @property
+    def _init_pos(self):
+        "Makes code re-use between Delta and Abs varieties easier"
+        return defaultdict(lambda: 0)
 
 
 class InnerProductDeltaScan(_InnerProductScanBase):
@@ -830,22 +872,37 @@ class InnerProductDeltaScan(_InnerProductScanBase):
     motor1, start1, stop1, ..., motorN, startN, stopN : list
         motors can be any 'setable' object (motor, temp controller, etc.)
     """
+    _derived_fields = _InnerProductScanBase._derived_fields + ['init_pos']
+
+    @property
+    def init_pos(self):
+        "None unless a scan is running"
+        return getattr(self, '_init_pos', None)
+
     def _pre_scan(self):
-        self._offsets = {}
+        "Get current position for each motor."
+        self._init_pos = {}
         for motor, start, stop, in chunked(self.args, 3):
             ret = yield Msg('read', motor)
             if len(ret.keys()) > 1:
-                raise NotImplementedError("Can't DScan this motor")
+                raise NotImplementedError("Can't DScan a multiaxis motor")
             key, = ret.keys()
             current_value = ret[key]['value']
-            self._offsets[motor] = current_value
+            self._init_pos[motor] = current_value
         yield from super()._pre_scan()
 
     def _post_scan(self):
-        # Return the motor to its original position.
         yield from super()._post_scan()
+        try:
+            init_pos = self.init_pos
+            delattr(self, '_init_pos')
+        except AttributeError:
+            raise RuntimeError("Trying to run _post_scan code for a DScan "
+                               "without running the _pre_scan code to get "
+                               "the baseline position.")
+        # Return the motors to their original positions.
         for motor, start, stop, in chunked(self.args, 3):
-            yield Msg('set', motor, self._offsets[motor], block_group='A')
+            yield Msg('set', motor, init_pos[motor], block_group='A')
         yield Msg('wait', None, 'A')
 
 
@@ -866,9 +923,11 @@ class OuterProductAbsScan(_OuterProductScanBase):
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     """
-    def _pre_scan(self):
-        self._offsets = defaultdict(lambda: 0)
-        yield from super()._pre_scan()
+
+    @property
+    def _init_pos(self):
+        "Makes code re-use between Delta and Abs varieties easier"
+        return defaultdict(lambda: 0)
 
 
 class OuterProductDeltaScan(_OuterProductScanBase):
@@ -888,22 +947,37 @@ class OuterProductDeltaScan(_OuterProductScanBase):
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     """
+    _derived_fields = _OuterProductScanBase._derived_fields + ['init_pos']
+
+    @property
+    def init_pos(self):
+        "None unless a scan is running"
+        return getattr(self, '_init_pos', None)
+
     def _pre_scan(self):
-        self._offsets = {}
+        "Get current position for each motor."
+        self._init_pos = {}
         for motor, start, stop, num, snake in chunked(self.args, 5):
             ret = yield Msg('read', motor)
             if len(ret.keys()) > 1:
-                raise NotImplementedError("Can't DScan this motor")
+                raise NotImplementedError("Can't DScan a multiaxis motor")
             key, = ret.keys()
             current_value = ret[key]['value']
-            self._offsets[motor] = current_value
+            self._init_pos[motor] = current_value
         yield from super()._pre_scan()
 
     def _post_scan(self):
         # Return the motor to its original position.
         yield from super()._post_scan()
+        try:
+            init_pos = self.init_pos
+            delattr(self, '_init_pos')
+        except AttributeError:
+            raise RuntimeError("Trying to run _post_scan code for a DScan "
+                               "without running the _pre_scan code to get "
+                               "the baseline position.")
         for motor, start, stop, num, snake in chunked(self.args, 5):
-            yield Msg('set', motor, self._offsets[motor], block_group='A')
+            yield Msg('set', motor, init_pos[motor], block_group='A')
         yield Msg('wait', None, 'A')
 
 
@@ -921,9 +995,9 @@ class Tweak(ScanBase):
     _fields = ['detector', 'target_field', 'motor', 'step']
     prompt_str = '{0}, {1:.3}, {2}, ({3}) '
 
-    def _pre_scan(self):
-        self._objects = [self.detector, self.motor]
-        yield from super()._pre_scan()
+    @property
+    def _objects(self):
+        return [self.detector, self.motor]
 
     def _gen(self):
         d = self.detector

@@ -38,7 +38,7 @@ from itertools import filterfalse, chain
 def table_from_motors(scan):
     "Setup a LiveTable by inspecting a scan and gs."
     # > 1 motor
-    return LiveTable(scan.motors + gs.TABLE_COLS)
+    return LiveTable(list(scan.motors) + gs.TABLE_COLS)
 
 
 def table_from_motor(scan):
@@ -58,7 +58,7 @@ def plot_first_motor(scan):
     fig = None
     if not gs.OVERPLOT:
         fig = plt.figure()
-    return LivePlot(gs.PLOT_Y, scan.motors[0]._name, fig=fig)
+    return LivePlot(gs.PLOT_Y, list(scan.motors)[0]._name, fig=fig)
 
 
 def plot_motor(scan):
@@ -83,7 +83,7 @@ def raster(scan):
 
 def peakstats_first_motor(scan):
     "Set up peakstats"
-    ps = PeakStats(_get_obj_fields([scan.motors[0]])[0],
+    ps = PeakStats(_get_obj_fields([list(scan.motors)[0]])[0],
                    gs.MASTER_DET_FIELD, edge_count=3)
     gs.PS = ps
     return ps
