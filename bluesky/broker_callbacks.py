@@ -1,9 +1,13 @@
+import os
 from databroker import DataBroker as db, get_events
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
 import matplotlib.pyplot as plt
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 from .callbacks import CallbackBase
+import tifffile
+import numpy as np
+from databroker import get_images
 
 
 class LiveImage(CallbackBase):
@@ -86,4 +90,65 @@ def post_run(callback):
         for e in events:
             callback('event', e)
         callback('stop', stop_doc)
+    return f
+
+
+def make_tiff_exporter(field, template):
+    """
+    Build a function that, given a header, exports tiff files.
+
+    The file names will incorporate the contents of the Header.
+
+    Parameters
+    ----------
+    field : str
+        a data key, e.g., 'pe1_image_lightfield'
+    template : str
+        A templated file path, where curly brackets will be filled in with
+        the attributes of 'h', a Header, and 'N', a sequential number.
+        e.g., "dir/scan{h.start.scan_id}_by_{h.start.experimenter}_{N}.tiff"
+
+    Returns
+    -------
+    f : function
+        a function that accepts a header and saves TIFF files
+    """
+    # validate user input
+    if not '{N}' in template:
+        raise ValueError("template must include '{N}'")
+
+    def f(h, dryrun=False):
+        imgs = get_images(h, field)
+        # Fill in h, defer filling in N.
+        _template = template.format(h=h, N='{N}')
+        filenames = [_template.format(N=i) for i in range(len(imgs))]
+        # First check that none of the filenames exist.
+        for filename in filenames:
+            if os.path.isfile(filename):
+                raise FileExistsError("There is already a file at {}. Delete "
+                                      "it and try again.".format(filename))
+        if not dryrun:
+            # Write files.
+            for filename, img in zip(filenames, imgs):
+                tifffile.imsave(filename, np.asarray(img))
+        return filenames
+
+    # Write a customized docstring for f based on what is specifcally does.
+    f.__doc__ = """
+Export sequentially-numbered TIFF files from the {field} field.
+
+Parameters
+----------
+h : Header
+    a header from the databroker
+dryrun : bool
+    Set to True to return list of filenames without actually writing files.
+    False by default.
+
+Returns
+-------
+filenames : list
+    list of filenames where files were written (or, if dryrun, *would* be
+    written)
+""".format(field=field)
     return f
