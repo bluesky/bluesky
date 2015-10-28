@@ -93,7 +93,7 @@ def post_run(callback):
     return f
 
 
-def exporter_factory(field, template):
+def make_tiff_exporter(field, template):
     """
     Build a function that, given a header, exports tiff files.
 
