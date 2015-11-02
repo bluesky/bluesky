@@ -327,7 +327,7 @@ class LogAbsScan(AbsListScan):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogAbsScan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = LogAbsScan([det1, det2], motor, 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
@@ -400,7 +400,7 @@ class LogDeltaScan(DeltaListScan):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogDeltaScan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = LogDeltaScan([det1, det2], motor, 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
