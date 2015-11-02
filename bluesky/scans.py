@@ -292,7 +292,7 @@ class AbsScan(AbsListScan):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = AbsScan(motor1, [det1, det2], 0, 1, 10)
+    >>> my_scan = AbsScan([det1, det2], motor, 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
