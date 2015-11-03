@@ -22,14 +22,14 @@ class Base:
         return '{}: {}'.format(self._klass, self._name)
 
     @property
-    def state(self):
+    def configuration(self):
         return {}
 
-    def configure(self, state=None):
-        return self.state, self.state
+    def configure(self, configuration=None):
+        return self.configuration, self.configuration
 
     def deconfigure(self):
-        return self.state
+        return self.configuration
 
     @property
     def done(self):
