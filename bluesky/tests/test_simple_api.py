@@ -1,7 +1,7 @@
 import nose
 from nose.tools import assert_raises
 from traitlets import TraitError
-from bluesky.examples import motor, motor1, motor2, det
+from bluesky.examples import motor, motor1, motor2, det, det1, det2, FlyMagic
 
 
 def test_basic_usage():
@@ -59,3 +59,6 @@ def test_basic_usage():
     tscan(1, 2, 2, time=0.1)
     dtscan(1, 2, 2, time=0.1)
     th2th(1, 2, 2, time=0.1)
+    flyer = FlyMagic('wheee', motor, det1, det2)
+    gs.FLYERS = [flyer]
+    ct()
