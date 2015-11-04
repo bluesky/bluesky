@@ -261,8 +261,10 @@ class RunEngine:
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
 
-        # private registry of blocking callbacks
-        self._scan_cb_registry = CallbackRegistry(allowed_sigs=DocumentNames)
+        # private registry of "critical" callbacks
+        # which get a lossless Event stream and abort a run if they raise
+        self._lossless_cb_registry = CallbackRegistry(
+            allowed_sigs=DocumentNames)
 
         self.verbose = False
 
@@ -419,13 +421,41 @@ class RunEngine:
                 print("Cannot pause from {0} state. "
                       "Ignoring request.".format(self.state))
 
-    def _register_scan_callback(self, name, func):
-        """Register a callback to be processed by the scan thread.
+    def _subscribe_lossless(self, name, func):
+        """Register a callback function to consume documents.
 
-        Functions registered here are guaranteed to be run (there is no Queue
-        involved) and they block the scan's progress until they return.
+        Functions registered here are considered "critical." They receive
+        a lossless stream of Event documents. If they generate an exception
+        they always abort the run. (In contrast, exceptions from normal
+        subscriptions are ignored by default.)
+
+        The Run Engine can execute callback functions at the start and end
+        of a scan, and after the insertion of new Event Descriptors
+        and Events.
+
+        Parameters
+        ----------
+        name : {'start', 'descriptor', 'event', 'stop', 'all'}
+        func : callable
+            expecting signature like ``f(name, document)``
+            where name is a string and document is a dict
+
+        Returns
+        -------
+        token : int
+            an integer token that can be used to unsubscribe
         """
-        return self._scan_cb_registry.connect(name, func)
+        return self._lossless_cb_registry.connect(name, func)
+
+    def _unsubscribe_lossless(self, token):
+        """Un-register a 'critical' callback function.
+
+        Parameters
+        ----------
+        token : int
+            an integer token returned by _subscribe_lossless
+        """
+        self._lossless_cb_registry.disconnect(token)
 
     def __call__(self, plan, subs=None, **metadata_kw):
         """Run the scan defined by ``plan``
@@ -1100,7 +1130,7 @@ class RunEngine:
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
-        self._scan_cb_registry.process(name, name.name, doc)
+        self._lossless_cb_registry.process(name, name.name, doc)
         if name != DocumentNames.event:
             self.dispatcher.process(name, doc)
             logger.info("Emitting %s document: %r", name.name, doc)
@@ -1128,7 +1158,7 @@ class Dispatcher:
 
     def subscribe(self, name, func):
         """
-        Register a function to consume documents.
+        Register a callback function to consume documents.
 
         The Run Engine can execute callback functions at the start and end
         of a scan, and after the insertion of new Event Descriptors
@@ -1138,7 +1168,8 @@ class Dispatcher:
         ----------
         name: {'start', 'descriptor', 'event', 'stop', 'all'}
         func: callable
-            expecting signature like ``f(mongoengine.Document)``
+            expecting signature like ``f(name, document)``
+            where name is a string and document is a dict
 
         Returns
         -------

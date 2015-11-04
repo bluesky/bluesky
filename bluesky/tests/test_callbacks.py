@@ -118,7 +118,7 @@ def test_unknown_cb_raises():
     # Dispatches catches this case.
     assert_raises(KeyError, RE.subscribe, 'not a thing', f)
     # CallbackRegistry catches this case (different error).
-    assert_raises(ValueError, RE._register_scan_callback, 'not a thing', f)
+    assert_raises(ValueError, RE._subscribe_lossless, 'not a thing', f)
 
 
 @contextlib.contextmanager

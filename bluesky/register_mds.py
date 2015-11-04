@@ -76,4 +76,4 @@ def register_mds(runengine):
     scan : ophyd.scans.Scan
     """
     for name in insert_funcs.keys():
-        runengine._register_scan_callback(name, insert_funcs[name])
+        runengine._subscribe_lossless(name, insert_funcs[name])
