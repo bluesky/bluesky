@@ -35,6 +35,24 @@ def _insert_run_start(name, doc):
     return mds.insert_run_start(**doc)
 
 
+known_descriptor_keys = ['run_start', 'data_keys', 'time', 'uid']
+
+
+def _insert_descriptor(name, doc):
+    """Rearrange the dict for unpacking it into the MDS API."""
+    # Move dynamic keys into 'custom' for MDS API.
+    # We should change this in MDS to save the time of copying here:
+    doc = copy.deepcopy(doc)
+    for key in list(doc):
+        if key not in known_descriptor_keys:
+            try:
+                doc['custom']
+            except KeyError:
+                doc['custom'] = {}
+            doc['custom'][key] = doc.pop(key)
+    return mds.insert_descriptor(**doc)
+
+
 def _insert_bulk_events(name, doc):
     """Bulk insert each event stream in doc."""
     for desc_uid, events in doc.items():
@@ -44,8 +62,7 @@ def _insert_bulk_events(name, doc):
 
 insert_funcs = {DocumentNames.event: _make_insert_func(mds.insert_event),
                 DocumentNames.bulk_events: _insert_bulk_events,
-                DocumentNames.descriptor: _make_insert_func(
-                    mds.insert_descriptor),
+                DocumentNames.descriptor: _insert_descriptor,  # see above
                 DocumentNames.start: _insert_run_start,  # see above
                 DocumentNames.stop: _make_insert_func(mds.insert_run_stop)}
 
