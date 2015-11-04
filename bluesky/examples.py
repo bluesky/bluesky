@@ -115,6 +115,9 @@ class Mover(Base):
     def stop(self):
         pass
 
+    def trigger(self):
+        return None
+
 
 class SynGauss(Reader):
     """
@@ -364,6 +367,8 @@ class FlyMagic(Base):
             ttime.sleep(0.01)
         self._time = None
 
+    def stop(self):
+        pass
 
 motor = Mover('motor', ['motor'])
 motor1 = Mover('motor1', ['motor1'], sleep_time=.1)
