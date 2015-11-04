@@ -883,12 +883,13 @@ class RunEngine:
                 dks = self._describe_cache[obj]
                 # Mark each data_key with a 'group' ID which will be matched
                 # to the object's configuration, shared by all obj's data keys.
-                group = hash(frozenset(dks))  # unique id for this object
+                group = str(hash(frozenset(dks)))  # unique id for this object
                 for field, dk in dks.items():
                     dk['group'] = group
                 data_keys.update(dks)
                 configuration[group] = self._configuration_cache[obj]
-                configuration_times[group] = self._configuration_times_cache[obj]
+                configuration_times[group] = \
+                    self._configuration_times_cache[obj]
             _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
