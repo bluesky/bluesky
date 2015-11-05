@@ -38,7 +38,8 @@ def _insert_run_start(name, doc):
 def _insert_bulk_events(name, doc):
     """Bulk insert each event stream in doc."""
     for desc_uid, events in doc.items():
-        bulk_insert_events(desc_uid, events)
+        if events:
+            bulk_insert_events(desc_uid, events)
 
 
 insert_funcs = {DocumentNames.event: _make_insert_func(mds.insert_event),
