@@ -1,5 +1,5 @@
-from history import History
 import nose
+from nose import SkipTest
 from nose.tools import (assert_equal, assert_is, assert_is_none, assert_raises,
                         assert_true, assert_in, assert_not_in)
 from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
@@ -200,6 +200,10 @@ def test_md_dict():
 
 
 def test_md_history():
+    try:
+        from history import History
+    except ImportError:
+        raise SkipTest()
     yield _md, History(':memory:')
 
 

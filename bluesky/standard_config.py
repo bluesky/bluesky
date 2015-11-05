@@ -5,7 +5,7 @@ import os
 import asyncio
 from getpass import getuser
 import logging
-import history
+import warnings
 from bluesky.run_engine import RunEngine
 from bluesky.register_mds import register_mds
 from bluesky.hardware_checklist import (connect_mds_mongodb,
@@ -20,6 +20,34 @@ from bluesky.spec_api import *
 from bluesky.callbacks import LiveTable, LivePlot, LiveMesh, print_metadata
 from databroker import DataBroker as db, get_events, get_images, get_table
 
+# pylab-esque imports
+from time import sleep
+import numpy as np
+
+try:
+    import history
+
+    def get_history():
+        target_path = os.path.join(os.path.expanduser('~'), '.bluesky',
+                                   'metadata_history.db')
+        try:
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            if os.path.isfile(target_path):
+                print('Found metadata history in existing file.')
+            else:
+                print('Storing metadata history in a new file.')
+            return history.History(target_path)
+        except IOError as exc:
+            print(exc)
+            print('Storing History in memory; it will not persist.')
+            return history.History(':memory:')
+
+except ImportError:
+    warnings.warn("You do not have history installed, your metadata will not"
+                  "be persistent or have any history of the values.")
+
+    def get_history():
+        return dict()
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +55,6 @@ logger = logging.getLogger(__name__)
 loop = asyncio.get_event_loop()
 loop.set_debug(False)
 
-
-# pylab-esque imports
-from time import sleep
-import numpy as np
 
 
 ### Set up a History object to handle peristence (scan ID, etc.)
@@ -42,21 +66,6 @@ if ENV_VAR in os.environ:
 SEARCH_PATH.extend([os.path.expanduser('~/.config/bluesky/bluesky_history.db'),
                     '/etc/bluesky/bluesky_history.db'])
 
-
-def get_history():
-    target_path = os.path.join(os.path.expanduser('~'), '.bluesky',
-                               'metadata_history.db')
-    try:
-        os.makedirs(os.path.dirname(target_path), exist_ok=True)
-        if os.path.isfile(target_path):
-            print('Found metadata history in existing file.')
-        else:
-            print('Storing metadata history in a new file.')
-        return history.History(target_path)
-    except IOError as exc:
-        print(exc)
-        print('Storing History in memory; it will not persist.')
-        return history.History(':memory:')
 
 
 gs.RE.md = get_history()
