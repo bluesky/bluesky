@@ -849,8 +849,9 @@ class InnerProductAbsScan(_InnerProductScanBase):
         list of 'readable' objects
     num : integer
         number of steps
-    motor1, start1, stop1, ..., motorN, startN, stopN : list
-        motors can be any 'setable' object (motor, temp controller, etc.)
+    *args
+        patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
+        Motors can be any 'setable' object (motor, temp controller, etc.)
     """
 
     @property
@@ -869,8 +870,9 @@ class InnerProductDeltaScan(_InnerProductScanBase):
         list of 'readable' objects
     num : integer
         number of steps
-    motor1, start1, stop1, ..., motorN, startN, stopN : list
-        motors can be any 'setable' object (motor, temp controller, etc.)
+    *args
+        patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
+        Motors can be any 'setable' object (motor, temp controller, etc.)
     """
     _derived_fields = _InnerProductScanBase._derived_fields + ['init_pos']
 
@@ -914,10 +916,10 @@ class OuterProductAbsScan(_OuterProductScanBase):
     ----------
     detectors : list
         list of 'readable' objects
-    motor1, start1, stop1, num1, \
-    motor2, start2, stop2, num2, snake2, \
-    ..., motorN, startN, stopN, numN, snakeN : list
-        motors can be any 'setable' object (motor, temp controller, etc.)
+    *args
+        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
+        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
+        Motors can be any 'setable' object (motor, temp controller, etc.)
         Notice that the first motor is followed by start, stop, num.
         All other motors are followed by start, stop, num, snake where snake
         is a boolean indicating whether to following snake-like, winding
@@ -938,10 +940,10 @@ class OuterProductDeltaScan(_OuterProductScanBase):
     ----------
     detectors : list
         list of 'readable' objects
-    motor1, start1, stop1, num1, \
-    motor2, start2, stop2, num2, snake2, \
-    ..., motorN, startN, stopN, numN, snakeN : list
-        motors can be any 'setable' object (motor, temp controller, etc.)
+    *args
+        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
+        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
+        Motors can be any 'setable' object (motor, temp controller, etc.)
         Notice that the first motor is followed by start, stop, num.
         All other motors are followed by start, stop, num, snake where snake
         is a boolean indicating whether to following snake-like, winding
