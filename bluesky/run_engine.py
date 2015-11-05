@@ -892,6 +892,8 @@ class RunEngine:
     @asyncio.coroutine
     def _collect(self, msg):
         obj = msg.obj
+        self._uncollected.remove(obj)
+
         data_keys_list = obj.describe()
         bulk_data = {}
         for data_keys in data_keys_list:
@@ -928,7 +930,6 @@ class RunEngine:
 
         yield from self.emit(DocumentNames.bulk_events, bulk_data)
         self.debug("Emitted bulk events")
-        self._uncollected.remove(msg.obj)
 
     @asyncio.coroutine
     def _null(self, msg):
