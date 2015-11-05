@@ -188,6 +188,13 @@ def test_live_plotter():
     assert_equal(RE.state, 'idle')
 
 
+def test_sample_md_dict_requirement():
+    scan = simple_scan(motor)
+    # We avoid a json ValidationError and make a user-friendly ValueError.
+    assert_raises(ValueError, RE, scan, sample=1)
+    RE(scan, sample={'number': 1})  # should not raise
+
+
 def test_md_dict():
     yield _md, {}
 

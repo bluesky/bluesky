@@ -1238,3 +1238,10 @@ def _default_md_validator(md):
         if field not in md:
             raise KeyError("The field '{0}' was not specified as is "
                            "required.".format(field))
+        if 'sample' in md and not hasattr(md['sample'], 'keys'):
+            raise ValueError(
+                "You specified 'sample' metadata. We give this field special "
+                "significance in order to make your data easily searchable. "
+                "Therefore, you must make 'sample' a dictionary, like so: "
+                "GOOD: sample={'color': 'red', 'number': 5} "
+                "BAD: sample='red_5' ")
