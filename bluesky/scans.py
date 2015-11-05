@@ -254,9 +254,6 @@ class DeltaListScan(Scan1D):
         call_str.extend(super()._call_str())
         return call_str
 
-    def _gen(self):
-        yield from super()._gen()
-
     def _post_scan(self):
         yield from super()._post_scan()
         try:
@@ -339,9 +336,6 @@ class LogAbsScan(AbsListScan):
     @property
     def steps(self):
         return np.logspace(self.start, self.stop, self.num)
-
-    def _gen(self):
-        yield from super()._gen()
 
 
 class DeltaScan(DeltaListScan):
