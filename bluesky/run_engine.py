@@ -19,8 +19,7 @@ from super_state_machine.errors import TransitionError
 import numpy as np
 from pkg_resources import resource_filename as rs_fn
 
-from .utils import (CallbackRegistry, SignalHandler, ExtendedList,
-                    normalize_subs_input)
+from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
 
 logger = logging.getLogger(__name__)
 
