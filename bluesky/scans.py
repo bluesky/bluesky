@@ -1,5 +1,5 @@
 from collections import deque, defaultdict
-import itertools
+
 import functools
 import operator
 from boltons.iterutils import chunked
