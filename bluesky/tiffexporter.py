@@ -110,7 +110,7 @@ class TiffExporter(object):
         import tifffile
         from databroker import get_events
         if dryrun:
-            dryordo = lambda msg, f, *args, **kwargs:  print(msg)
+            dryordo = lambda msg, f, *args, **kwargs:  print('[dryrun]', msg)
         else:
             dryordo = lambda msg, f, *args, **kwargs:  f(*args, **kwargs)
         setmtime = lambda f, t: os.utime(f, (os.path.getatime(f), t))
