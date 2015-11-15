@@ -111,12 +111,7 @@ class TiffExporter(object):
             Exported output files.
         """
         import tifffile
-        if dryrun:
-            dryordo = lambda msg, f, *args, **kwargs:  print('[dryrun]', msg)
-        else:
-            dryordo = lambda msg, f, *args, **kwargs:  f(*args, **kwargs)
-        setmtime = lambda f, t: os.utime(f, (os.path.getatime(f), t))
-        noop = lambda : None
+        dryordo = _dryrun_pass if dryrun else _dryrun_call
         msgrm = "remove existing output {}"
         msgskip = "skip {f} already saved as {o}"
         outputfiles = self.naming(h)
@@ -147,7 +142,7 @@ class TiffExporter(object):
             if self.use_mtime:
                 isotime = datetime.datetime.fromtimestamp(etime).isoformat(' ')
                 msg = "adjust image file mtime to {}".format(isotime)
-                dryordo(msg, setmtime, f, etime)
+                dryordo(msg, _setmtime, f, etime)
         return rv
 
 
@@ -260,3 +255,18 @@ def _makesetofindices(n, select):
     if select is not None:
         indices = indices[select].flat
     return set(indices)
+
+
+def _dryrun_pass(msg, f, *args, **kwargs):
+    print('[dryrun]', msg)
+    return
+
+def _dryrun_call(msg, f, *args, **kwargs):
+    return f(*args, **kwargs)
+
+
+def _setmtime(filename, mtime):
+    "Set file modification time to a new value.  Preserve its access time."
+    atime = os.path.getatime(filename)
+    rv = os.utime(filename, (atime, mtime))
+    return rv
