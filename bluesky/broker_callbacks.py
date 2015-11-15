@@ -1,13 +1,8 @@
-import os
 from databroker import DataBroker as db, get_events
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
-import matplotlib.pyplot as plt
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 from .callbacks import CallbackBase
-import tifffile
-import numpy as np
-from databroker import get_images
 
 
 class LiveImage(CallbackBase):
@@ -25,9 +20,10 @@ class LiveImage(CallbackBase):
     relevant commit is a951b7.
     """
     def __init__(self, field):
+        from matplotlib.pyplot import figure
         super().__init__()
         self.field = field
-        fig = plt.figure()
+        fig = figure()
         self.cs = CrossSection(fig)
         self.cs._fig.show()
 

@@ -6,7 +6,10 @@
 
 import os.path
 import datetime
+import functools
+import numpy
 
+from databroker import get_events, get_images
 from bluesky.datanaming import DataNaming
 
 
@@ -108,7 +111,6 @@ class TiffExporter(object):
             Exported output files.
         """
         import tifffile
-        from databroker import get_events
         if dryrun:
             dryordo = lambda msg, f, *args, **kwargs:  print('[dryrun]', msg)
         else:
@@ -169,7 +171,6 @@ class TiffExporter(object):
         list
             Existing absolute output paths or an empty list.
         """
-        from databroker import get_events
         # avoid repeated calls to os.listdir
         dircache = {}
         filenames = self.naming(h)
@@ -242,9 +243,7 @@ class TiffExporter(object):
     @fetch.setter
     def fetch(self, value):
         if isinstance(value, str):
-            from functools import partial
-            from databroker import get_images
-            self._fetch = partial(get_images, name=value)
+            self._fetch = functools.partial(get_images, name=value)
         elif callable(value):
             self._fetch = value
         else:
@@ -254,9 +253,9 @@ class TiffExporter(object):
 
 # class TiffExporter
 
+# Local helpers --------------------------------------------------------------
 
 def _makesetofindices(n, select):
-    import numpy
     indices = numpy.arange(n)
     if select is not None:
         indices = indices[select].flat

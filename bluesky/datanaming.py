@@ -8,6 +8,8 @@
 import os.path
 import re
 
+from dataportal import get_events
+
 
 class DataNaming(object):
     """
@@ -73,7 +75,6 @@ class DataNaming(object):
         list
             Filenames generated for the header.
         """
-        from dataportal import get_events
         tparts = self._split_template(self.template)
         td = dict(h=h, start=h.start, scan_id=h.start.scan_id)
         td['stop'] = getattr(h, 'stop', None)
