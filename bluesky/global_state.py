@@ -47,9 +47,25 @@ class Movable(TraitType):
         return value
 
 
+class FlyableList(TraitType):
+
+    info_text = 'a list or iterable of Flyable (flyscan-able) objects'
+    default_value = []
+
+    def validate(self, obj, value):
+        if not isinstance(value, Iterable):
+            self.error(obj, value)
+        for flyable in value:
+            try:
+                validate_flyable(flyable)
+            except TypeError:
+                self.error(obj, value)
+
+
 class ReadableList(TraitType):
 
     info_text = 'a list or iterable of Readable (detector-like) objects'
+    default_value = []
 
     def validate(self, obj, value):
         if not isinstance(value, Iterable):
@@ -68,34 +84,35 @@ class ReadableList(TraitType):
         return value
 
 
-def validate_readable(det):
-    if isinstance(det, str):
-        raise TypeError("{0} is a string, not a Readable object "
-                        "(Do not use quotes)".format(det))
-    required_methods = ['read', 'trigger']
-    for method in required_methods:
-        if not hasattr(det, method):
-            raise TypeError("{0} is not a Readable (detector-like) object; "
-                            "it does not have a "
-                            "'{1}' method'".format(det, method))
+def method_validator_factory(name, required_methods):
+    "Make a validator function that checks that an object has certain methods."
+    def f(obj):
+        if isinstance(obj, str):
+            raise TypeError("{} is a string, not a {} object "
+                            "(Do not use quotes)".format(obj, name))
+        for method in required_methods:
+            if not hasattr(obj, method):
+                raise TypeError("{} is not a {} object; "
+                                "it does not have a "
+                                "'{}' method'".format(obj, name, method))
+    return f
 
 
-def validate_movable(movable):
-    if isinstance(movable, str):
-        raise TypeError("{0} is a string, not a Movable object "
-                        "(Do not use quotes)".format(det))
-    required_methods = ['read', 'set']
-    for method in required_methods:
-        if not hasattr(movable, method):
-            raise TypeError("{0} is not a Movable (positioner-like) object; "
-                            "it does not have "
-                            "a '{1}' method'".format(det, method))
+validate_readable = method_validator_factory('Readable',
+                                             ['read', 'describe', 'trigger'])
+validate_movable = method_validator_factory('Movable',
+                                            ['read', 'describe', 'trigger',
+                                             'set', 'stop'])
+validate_flyable = method_validator_factory('Flyable',
+                                            ['kickoff', 'collect', 'stop',
+                                             'describe'])
 
 
 class GlobalState(HasTraits):
     "A bucket of validated global state used by the simple scan API"
     RE = RunEngineTraitType()
     DETS = ReadableList()
+    FLYERS = FlyableList()
     MASTER_DET = Readable()
     MASTER_DET_FIELD = Unicode()
     H_MOTOR = Readable()

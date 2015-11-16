@@ -126,7 +126,8 @@ class _BundledScan:
                                  "the RunEngine arguments. Use different "
                                  "names. Avoid: {0}".format(RE_params))
 
-        self.scan = self.scan_class(gs.DETS, *args, **scan_kwargs)
+        global_dets = gs.DETS if gs.DETS is not None else []
+        self.scan = self.scan_class(global_dets, *args, **scan_kwargs)
         # Combine subs passed as args and subs set up in subs attribute.
         _subs = defaultdict(list)
         _update_lists(_subs, normalize_subs_input(subs))
@@ -137,7 +138,8 @@ class _BundledScan:
 
         # Set up scan attributes.
         self.scan.configuration = self.configuration
-        self.scan.flyers = self.flyers
+        global_flyers = gs.FLYERS if gs.FLYERS is not None else []
+        self.scan.flyers = list(set(list(self.flyers) + list(global_flyers)))
 
         # Any remainging kwargs go the RE. To be safe, no args are passed
         # to RE; RE args effectively become keyword-only arguments.
