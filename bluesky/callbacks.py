@@ -118,9 +118,10 @@ class LivePlot(CallbackBase):
         super().__init__()
         if fig is None:
             # overplot (or, if no fig exists, one is made)
-            fig, ax = plt.gcf(), plt.gca()
-        else:
-            ax = fig.gca()
+            fig = plt.gcf()
+
+        ax = fig.gca()
+
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
