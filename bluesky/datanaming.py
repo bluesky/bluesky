@@ -23,9 +23,9 @@ class DataNaming(object):
     template : str
         filename template where curly brackets are filled with entries from
         databroker header using the Python format mini-language.  Template
-        segments denoted with "<>", e.g., '<segment>' are silently omitted,
-        when their expansion fails.  The template expressions recognize the
-        following variables:
+        segments denoted with "<>", e.g., '<e.data[cs700]>' are silently
+        omitted when their expansion fails.  The template expressions
+        recognize the following variables:
 
         h    -- Header
         e    -- Event object from the Header h.
@@ -75,12 +75,12 @@ class DataNaming(object):
         list
             Filenames generated for the header.
         """
-        tparts = self._split_template(self.template)
+        cfmt = ConditionalFormat(self.template)
         td = dict(h=h, start=h.start, scan_id=h.start.scan_id)
         td['stop'] = getattr(h, 'stop', None)
         events = get_events(h, fill=False)
-        rv = [self._makename(tparts, td)
-                for td['N'], td['e'] in enumerate(events)]
+        names = [cfmt.format(**td) for td['N'], td['e'] in enumerate(events)]
+        rv = [os.path.join(self.prefix, n) for n in names]
         return rv
 
 
@@ -106,34 +106,101 @@ class DataNaming(object):
         return
 
 
-    def _makename(self, tparts, td):
-        nmparts = []
-        for seg, isopt in tparts:
-            try:
-                s = seg.format(**td)
-            except (AttributeError, KeyError):
-                if not isopt:  raise
-                s = ''
-            nmparts.append(s)
-        rv = ''.join(nmparts)
-        rv = os.path.join(self.prefix, rv)
-        return rv
-
-
     @staticmethod
     def _validate_template(t):
         "Raise ValueError for invalid template string."
         hasN = re.search(r'\{N\b', t)
         if not hasN:
             raise ValueError("template must include '{N}'")
-        tfixed = re.sub('[{][^}]*[}]', '', t)
-        cleft = tfixed.count('<')
-        cright = tfixed.count('>')
+        ConditionalFormat.validate(t)
+        return
+
+# class DataNaming
+
+# ----------------------------------------------------------------------------
+
+class ConditionalFormat:
+    """
+    Extend format mini-language with conditional segments '<segment>'.
+
+    String segments denoted with `<>`, for example "{first}< {mi}.> {last}"
+    are silently omitted when their format expansion fails.  The format
+    fields must use named keyword arguments, positional arguments are not
+    supported.
+
+    Parameters
+    ----------
+    s : str
+        The template string as for builtin str.format and optional
+        segments marked by "<>".
+
+    Raises
+    ------
+    ValueError
+        When string has unbalanced or nested segment markers '<>'.
+    """
+
+
+    @staticmethod
+    def validate(s):
+        """
+        Check syntax of conditional format template `s`.
+
+        Raises
+        ------
+        ValueError
+            When string has unbalanced or nested segment markers '<>'.
+        """
+        sliteral = re.sub('[{][^}]*[}]', '', s)
+        cleft = sliteral.count('<')
+        cright = sliteral.count('>')
         if cleft != cright:
             raise ValueError("Unbalanced segment markers '<', '>'")
-        if re.search('<[^>]<|>[^<]*>', t):
+        if re.search('<[^>]<|>[^<]*>', sliteral):
             raise ValueError("Nested or misordered segment markers '<', '>'")
         return
+
+
+    def __init__(self, s):
+        self.validate(s)
+        self._s = s
+        self._segments = tuple(self._split_template(s))
+        return
+
+
+    def __repr__(self):
+        rv = "ConditionalFormat({!r})".format(self.s)
+        return rv
+
+
+    def __str__(self):
+        return self.s
+
+
+    def format(self, **kwargs):
+        """
+        Perform a string formatting operation.
+
+        Omit optional segments denoted by '<>' when their expansion fails.
+        This function takes only keyword arguments, positional arguments
+        are not supported.
+        """
+        parts = []
+        for seg, isopt in self._segments:
+            try:
+                s = seg.format(**kwargs)
+            except (AttributeError, KeyError):
+                if not isopt:  raise
+                s = ''
+            parts.append(s)
+        rv = ''.join(parts)
+        return rv
+
+
+    @property
+    def s(self):
+        "The formatted template string with optional segments in '<>'."
+        return self._s
 
 
     @staticmethod
@@ -171,4 +238,4 @@ class DataNaming(object):
             if s:  rv.append((s, isopt))
         return rv
 
-# class DataNaming
+# class ConditionalFormat
