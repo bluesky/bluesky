@@ -12,6 +12,7 @@ import matplotlib.colors as mcolors
 from datetime import datetime
 import numpy as np
 
+import os
 import logging
 logger = logging.getLogger(__name__)
 
@@ -492,7 +493,7 @@ class LiveRaster(CallbackBase):
     clim : tuple, optional
        The color limits
 
-    cmap : str or colormap, optional
+    cmap n: str or colormap, optional
        The color map to use
     """
     def __init__(self, raster_shape, I, *,
@@ -537,3 +538,108 @@ class LiveRaster(CallbackBase):
             self.im.set_clim(np.nanmin(self._Idata), np.nanmax(self._Idata))
 
         self.im.set_array(self._Idata)
+
+def _write_spec_header(path, doc):
+    # write a new spec file header!
+    #F /home/xf11id/specfiles/test.spec
+    #E 1449179338.3418093
+    #D 2015-12-03 16:48:58.341809
+    #C xf11id  User = xf11id
+    #O [list of all motors, 10 per line]
+    session_manager = get_session_manager()
+    pos = session_manager.get_positioners()
+    spec_header = [
+        '#F %s' % path,
+        '#E %s' % int(doc['time']),
+        # time might need to be formatted specifically
+        '#D %s' % datetime.fromtimestamp(doc['time']),
+        '#C %s  User = %s' % (doc['owner'], doc['owner']),
+        'O0 {}'.format(' '.join(sorted(list(pos.keys()))))
+    ]
+    with open(path, 'w') as f:
+        f.write('\n'.join(spec_header))
+    return spec_header
+
+
+class LiveSpecFile(CallbackBase):
+    """Callback to export scalar values to a spec file for viewing
+
+    This class depends on
+
+    - the global state object in bluesky having an attribute called 'specpath'.
+      This lets the user interactively control where the spec file is getting
+      written.
+    - the session manager in IPython to get the last command that was typed in
+      at the command line
+    - the ophyd session manager to get the list of positioners
+
+    Example
+    -------
+    It is suggested to put this in the ipython profile:
+    >>> from bluesky.callbacks import LiveSpecFile
+    >>> live_specfile_callback = LiveSpecFile()
+    >>> gs.specpath = os.path.expanduser('~/specfiles/test.spec')
+    >>> gs.RE.subscribe('all', live_specfile_callback)
+    """
+    def start(self, doc):
+        global gs
+        from ophyd.session import get_session_manager
+        from IPython import get_ipython
+
+        self.specpath = os.specpath
+        if not os.path.exists(self.specpath):
+            spec_header = _write_spec_header(self.specpath, doc)
+        #else:
+        #    spec_header = get_spec_header()
+        last_command = list(
+            get_ipython().history_manager.get_range())[-1][2]
+        last_command = last_command.replace('(', ' ')
+        last_command = last_command.replace(')', ' ')
+        last_command = last_command.replace(',', ' ')
+        dets = eval(doc['detectors'])
+        self.acquisition_time = dets[0].acquire_time
+        # write a blank line between scans
+        with open(self.specpath, 'a') as f:
+            f.write('\n\n')
+        # write the new scan entry
+        with open(self.specpath, 'a') as f:
+            f.write('#S %s %s\n' % (doc['scan_id'], last_command))
+            f.write('#D %s\n' % datetime.fromtimestamp(doc['time']))
+            f.write('#T %s (Seconds)\n' % self.acquisition_time)
+        # write the motor positions
+        pos = get_session_manager().get_positioners()
+        positions = [str(v.position) for k, v in sorted(pos.items())]
+        with open(self.specpath, 'a') as f:
+            f.write('#P0 {0}\n'.format(' '.join(positions)))
+        # writing the list of motor names and their current values in
+        # a more human readable way. Apparently "#M" is not a used key in
+        # spec. Fingers crossed....
+        with open(self.specpath, 'a') as f:
+            for idx, (name, positioner) in enumerate(sorted(pos.items())):
+                f.write('#M%s %s %s\n' % (idx, name, str(positioner.position)))
+        print("RunStart document received in LiveSpecFile")
+        #raise
+        self.motorname = eval(doc['motor']).name
+
+    def descriptor(self, doc):
+        global gs
+        keys = sorted(list(doc['data_keys'].keys()))
+        keys.remove(self.motorname)
+        keys.insert(0, 'Seconds')
+        keys.insert(0, 'Epoch')
+        keys.insert(0, self.motorname)
+        with open(self.specpath, 'a') as f:
+            f.write('#N %s\n' % len(keys))
+            f.write('#L {0}    {1}\n'.format(keys[0],
+                                             '  '.join(keys[1:])))
+
+    def event(self, doc):
+        t = int(doc['time'])
+        vals = [v for k, v in sorted(doc['data'].items()) if k != self.motorname]
+        vals.insert(0, self.acquisition_time)
+        vals.insert(0, t)
+        vals.insert(0, doc['data'][self.motorname])
+        vals = [str(v) for v in vals]
+        with open(self.specpath, 'a') as f:
+            f.write('{0}  {1}\n'.format(vals[0], ' '.join(vals[1:])))
+
