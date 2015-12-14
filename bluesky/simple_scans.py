@@ -228,6 +228,23 @@ class _StepScan(_BundledScan):
 
     def __call__(self, motor, start, finish, intervals, time=None,
                  subs=None, **kwargs):
+        """Invoke the scan
+
+        Parameters
+        ----------
+        motor
+        start : number
+            The start point of the motion
+        finish : number
+            The finish point of the motion
+        intervals : int
+            The number of steps between `start` and `finish`
+        time : number
+            The acquire time of the detector(s)?
+        subs : dict
+            The temporary subscriptions to add to **this scan only**. These
+            subscriptions are **not** persistent
+        """
         original_times = _set_acquire_time(time)
         result = super().__call__(motor, start, finish, intervals + 1,
                                   subs=subs, **kwargs)
