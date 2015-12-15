@@ -890,28 +890,21 @@ class RunEngine:
         if objs_read not in self._descriptor_uids:
             # We don't not have an Event Descriptor for this set.
             data_keys = {}
-            config_values = {}
-            config_ts = {}  # timestamps
-            config_desc = {}
+            config = {}
             for obj in objs_read:
                 dks = self._describe_cache[obj]
-                dks = self._config_desc_cache[obj]
-                # Mark each data_key with a 'group' ID which will be matched
-                # to the object's configuration, shared by all obj's data keys.
                 name = obj.name
                 for field, dk in dks.items():
                     dk['object_name'] = name
                 data_keys.update(dks)
-                config_values[name] = self._config_values_cache[obj]
-                config_ts[name] = self._config_ts_cache[obj]
-                config_desc[name] = self._config_desc_cache[obj]
-            _fill_missing_fields(data_keys)  # TODO Move this to ophyd/controls
+                config[name] = {}
+                config[name]['data'] = self._config_values_cache[obj]
+                config[name]['timestamps'] = self._config_ts_cache[obj]
+                config[name]['data_keys'] = self._config_desc_cache[obj]
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid,
-                       configuration=config_values,
-                       configuration_timestamps=config_ts,
-                       configuration_descriptors=config_desc)
+                       configuration=config)
             yield from self.emit(DocumentNames.descriptor, doc)
             self.debug("*** Emitted Event Descriptor:\n%s" % doc)
             self._descriptor_uids[objs_read] = descriptor_uid
