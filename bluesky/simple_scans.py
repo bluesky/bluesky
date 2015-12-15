@@ -60,7 +60,7 @@ def plot_first_motor(scan):
     fig = plt.figure(fig_name)
     if not gs.OVERPLOT:
         fig.clf()
-    return LivePlot(gs.PLOT_Y, list(scan.motors)[0]._name, fig=fig)
+    return LivePlot(gs.PLOT_Y, list(scan.motors)[0].name, fig=fig)
 
 
 def plot_motor(scan):
@@ -71,7 +71,7 @@ def plot_motor(scan):
     fig = plt.figure(fig_name)
     if not gs.OVERPLOT:
         fig.clf()
-    return LivePlot(gs.PLOT_Y, scan.motor._name, fig=fig)
+    return LivePlot(gs.PLOT_Y, scan.motor.name, fig=fig)
 
 
 def raster(scan):

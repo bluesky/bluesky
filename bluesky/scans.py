@@ -1009,7 +1009,7 @@ class Tweak(ScanBase):
             yield Msg('wait', None, 'A')
             reading = Msg('read', d)[target_field]['value']
             yield Msg('save')
-            prompt = prompt_str.format(motor._name, pos, reading, step)
+            prompt = prompt_str.format(motor.name, pos, reading, step)
             new_step = input(prompt)
             if new_step:
                 try:
