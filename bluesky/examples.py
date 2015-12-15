@@ -21,15 +21,20 @@ class Base:
     def __repr__(self):
         return '{}: {}'.format(self._klass, self._name)
 
-    @property
-    def configuration(self):
+    def read_configuration(self):
+        return {}
+
+    def describe_configuration(self):
         return {}
 
     def configure(self, configuration=None):
-        return self.configuration, self.configuration
+        return {}, {}
 
-    def deconfigure(self):
-        return self.configuration
+    def stage(self):
+        pass
+
+    def unstage(self):
+        pass
 
     @property
     def done(self):
