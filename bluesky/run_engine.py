@@ -1106,7 +1106,7 @@ class RunEngine:
         return old, new
 
     @asyncio.coroutine
-    def _stage(self, msg)
+    def _stage(self, msg):
         _, obj, args, kwargs = msg
 
         self._staged.add(obj)  # add first in case of failure below
