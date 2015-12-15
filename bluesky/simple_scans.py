@@ -55,8 +55,7 @@ def table_gs_only(scan):
 
 def plot_first_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    fig_name = 'BlueSky: {} v {}'.format(list(scan.motors)[0]._name,
-                                         gs.PLOT_Y)
+    fig_name = 'BlueSky: {} v {}'.format(list(scan.motors)[0].name, gs.PLOT_Y)
     fig = plt.figure(fig_name)
     if not gs.OVERPLOT:
         fig.clf()
@@ -65,8 +64,7 @@ def plot_first_motor(scan):
 
 def plot_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    fig_name = 'BlueSky: {} v {}'.format(scan.motor._name,
-                                         gs.PLOT_Y)
+    fig_name = 'BlueSky: {} v {}'.format(scan.motor.name, gs.PLOT_Y)
 
     fig = plt.figure(fig_name)
     if not gs.OVERPLOT:
