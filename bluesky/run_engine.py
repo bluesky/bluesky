@@ -1248,20 +1248,6 @@ def _rearrange_into_parallel_dicts(readings):
     return data, timestamps
 
 
-def _fill_missing_fields(data_keys):
-    """This is a stop-gap until all describe() methods are complete."""
-    result = {}
-    for key, value in data_keys.items():
-        result[key] = {}
-        # required keys
-        result[key]['source'] = value.get('source')
-        result[key]['dtype'] = value.get('dtype', 'number')  # just guessing
-        result[key]['shape'] = value.get('shape', None)
-        if 'external' in value:
-            result[key]['external'] = value['external']
-    return result
-
-
 def _run_engine_log_template(metadata):
     template = []
     for key in metadata:
