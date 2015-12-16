@@ -6,7 +6,7 @@ TEMPLATES['long'] = """
 Scan Plan
 ---------
 {{ start.plan_type }}
-{%- for k, v in start.plan_args.items() %}
+{%- for k, v in start.plan_args | dictsort %}
     {{ k }}: {{ v }}
 {%-  endfor %}
 
