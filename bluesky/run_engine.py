@@ -12,13 +12,12 @@ import signal
 from enum import Enum
 
 
-import json
 import jsonschema
+from event_model import DocumentNames, schemas
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
 import numpy as np
-from pkg_resources import resource_filename as rs_fn
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
 
@@ -40,25 +39,6 @@ def expiring_function(func, *args, **kwargs):
 
     return dummy
 
-
-class DocumentNames(Enum):
-    stop = 'stop'
-    start = 'start'
-    descriptor = 'descriptor'
-    event = 'event'
-    bulk_events = 'bulk_events'
-
-SCHEMA_PATH = 'schema'
-SCHEMA_NAMES = {DocumentNames.start: 'run_start.json',
-                DocumentNames.stop: 'run_stop.json',
-                DocumentNames.event: 'event.json',
-                DocumentNames.bulk_events: 'bulk_events.json',
-                DocumentNames.descriptor: 'event_descriptor.json'}
-fn = '{}/{{}}'.format(SCHEMA_PATH)
-schemas = {}
-for name, filename in SCHEMA_NAMES.items():
-    with open(rs_fn('bluesky', fn.format(filename))) as fin:
-        schemas[name] = json.load(fin)
 
 
 loop = asyncio.get_event_loop()
