@@ -72,7 +72,7 @@ class ScanBase(Struct):
             # scan metadata in as configuration to every object.
             conf = self.md
             conf.update(self.configuration.get(obj, {}))
-            yield Msg('configure', obj, configuration=conf)
+            yield Msg('configure', obj, conf)
             yield Msg('stage', obj)
 
     def _post_scan(self):

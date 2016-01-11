@@ -492,7 +492,7 @@ def test_illegal_sequences():
         # 'configure' after 'create', before 'save'
         yield(Msg('open_run'))
         yield(Msg('create'))
-        yield(Msg('configure'))
+        yield(Msg('configure', motor, {}))
 
     with assert_raises(IllegalMessageSequence):
         RE(gen3())
@@ -510,7 +510,7 @@ def test_new_ev_desc():
         yield(Msg('create'))
         yield(Msg('read', motor))
         yield(Msg('save'))
-        yield(Msg('configure', motor))
+        yield(Msg('configure', motor, {}))
         yield(Msg('create'))
         yield(Msg('read', motor))
         yield(Msg('save'))
@@ -524,11 +524,11 @@ def test_new_ev_desc():
         # configure between two events and explicitly before any events
         # -> two descs
         yield(Msg('open_run'))
-        yield(Msg('configure', motor))
+        yield(Msg('configure', motor, {}))
         yield(Msg('create'))
         yield(Msg('read', motor))
         yield(Msg('save'))
-        yield(Msg('configure', motor))
+        yield(Msg('configure', motor, {}))
         yield(Msg('create'))
         yield(Msg('read', motor))
         yield(Msg('save'))
@@ -541,7 +541,7 @@ def test_new_ev_desc():
     def gen3():
         # configure once before any events -> one desc
         yield(Msg('open_run'))
-        yield(Msg('configure', motor))
+        yield(Msg('configure', motor, {}))
         yield(Msg('create'))
         yield(Msg('read', motor))
         yield(Msg('save'))
