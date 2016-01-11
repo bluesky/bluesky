@@ -27,7 +27,7 @@ class Base:
     def describe_configuration(self):
         return {}
 
-    def configure(self, configuration=None):
+    def configure(self, d):
         return {}, {}
 
     def stage(self):

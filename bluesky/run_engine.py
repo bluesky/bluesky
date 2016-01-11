@@ -1100,7 +1100,7 @@ class RunEngine:
             if obj in obj_set:
                 del self._descriptor_uids[obj_set]
 
-        old, new = obj.configure(kwargs.get('configuration'))
+        old, new = obj.configure(*args, **kwargs)
 
         self._cache_config(obj)
         return old, new
