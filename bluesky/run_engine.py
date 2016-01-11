@@ -1108,13 +1108,17 @@ class RunEngine:
     @asyncio.coroutine
     def _stage(self, msg):
         _, obj, args, kwargs = msg
-
+        # If an object has no 'stage' method, assume there is nothing to do.
+        if not hasattr(obj, 'stage'):
+            return
+        result = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
+        return result
 
     @asyncio.coroutine
     def _unstage(self, msg):
-        # If an object has no 'unstage' method, assume there is nothing to do.
         _, obj, args, kwargs = msg
+        # If an object has no 'unstage' method, assume there is nothing to do.
         if not hasattr(obj, 'unstage'):
             return
         result = obj.unstage()
