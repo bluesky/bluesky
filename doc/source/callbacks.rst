@@ -339,7 +339,7 @@ are registered as critical subscriptions.
 If your subscription requires the complete, lossless stream of Documents
 and you are will to accept the possibility of slowing down data
 collection while that stream in processed, you can register your own critical
-subscriptions. Use ``RE._register_scan_callback(name, func)`` where ``name``
+subscriptions. Use ``RE._subscribe_lossless(name, func)`` where ``name``
 if one of ``'start'``, ``'descriptor'``, ``'event'``, ``'stop'``, and ``func``
 is a callable that accepts a Python dictionary as its argument. Note that
 there is no ``'all'`` callback implemented for critical subscriptions.

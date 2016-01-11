@@ -9,27 +9,32 @@ loop = asyncio.get_event_loop()
 
 class Base:
     def __init__(self, name, fields):
-        self._name = name
+        self.name = name
         self._fields = fields
         self._cb = None
         self._ready = False
 
     def describe(self):
-        return {k: {'source': self._name, 'dtype': 'number', 'shape': None}
+        return {k: {'source': self.name, 'dtype': 'number', 'shape': None}
                 for k in self._fields}
 
     def __repr__(self):
-        return '{}: {}'.format(self._klass, self._name)
+        return '{}: {}'.format(self._klass, self.name)
 
-    @property
-    def state(self):
+    def read_configuration(self):
         return {}
 
-    def configure(self, state=None):
-        return self.state, self.state
+    def describe_configuration(self):
+        return {}
 
-    def deconfigure(self):
-        return self.state
+    def configure(self, d):
+        return {}, {}
+
+    def stage(self):
+        pass
+
+    def unstage(self):
+        pass
 
     @property
     def done(self):
@@ -160,7 +165,7 @@ class SynGauss(Reader):
             v = int(np.random.poisson(np.round(v), 1))
         elif self.noise == 'uniform':
             v += np.random.uniform(-1, 1) * self.noise_multiplier
-        self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
+        self._data = {self.name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
         return self
@@ -216,7 +221,7 @@ class Syn2DGauss(Reader):
             v = int(np.random.poisson(np.round(v), 1))
         elif self.noise == 'uniform':
             v += np.random.uniform(-1, 1) * self.noise_multiplier
-        self._data = {self._name: {'value': v, 'timestamp': ttime.time()}}
+        self._data = {self.name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
         return self
@@ -335,9 +340,9 @@ class FlyMagic(Base):
         return self
 
     def describe(self):
-        return [{k: {'source': self._name, 'dtype': 'number'}
+        return [{k: {'source': self.name, 'dtype': 'number'}
                  for k in [self._motor, self._det]},
-                {self._det2: {'source': self._name, 'dtype': 'number'}}]
+                {self._det2: {'source': self.name, 'dtype': 'number'}}]
 
     def collect(self):
         if self._time is None:
@@ -533,7 +538,7 @@ def cautious_stepscan(det, motor):
         ret_d = yield Msg('read', det)
         yield Msg('save')
         print("Value at {m} is {d}. Pausing.".format(
-            m=ret_m[motor._name]['value'], d=ret_d[det1._name]['value']))
+            m=ret_m[motor.name]['value'], d=ret_d[det1._name]['value']))
         yield Msg('pause', None, defer=True)
     yield Msg('close_run')
 

@@ -487,3 +487,69 @@ def test_illegal_sequences():
 
     with assert_raises(IllegalMessageSequence):
         RE(gen1())
+
+    def gen3():
+        # 'configure' after 'create', before 'save'
+        yield(Msg('open_run'))
+        yield(Msg('create'))
+        yield(Msg('configure', motor, {}))
+
+    with assert_raises(IllegalMessageSequence):
+        RE(gen3())
+
+
+def test_new_ev_desc():
+
+    descs = []
+    def collect_descs(name, doc):
+        descs.append(doc)
+
+    def gen1():
+        # configure between two events -> two descs
+        yield(Msg('open_run'))
+        yield(Msg('create'))
+        yield(Msg('read', motor))
+        yield(Msg('save'))
+        yield(Msg('configure', motor, {}))
+        yield(Msg('create'))
+        yield(Msg('read', motor))
+        yield(Msg('save'))
+        yield(Msg('close_run'))
+
+    descs.clear()
+    RE(gen1(), {'descriptor': collect_descs})
+    assert_equal(len(descs), 2)
+
+    def gen2():
+        # configure between two events and explicitly before any events
+        # -> two descs
+        yield(Msg('open_run'))
+        yield(Msg('configure', motor, {}))
+        yield(Msg('create'))
+        yield(Msg('read', motor))
+        yield(Msg('save'))
+        yield(Msg('configure', motor, {}))
+        yield(Msg('create'))
+        yield(Msg('read', motor))
+        yield(Msg('save'))
+        yield(Msg('close_run'))
+
+    descs.clear()
+    RE(gen2(), {'descriptor': collect_descs})
+    assert_equal(len(descs), 2)
+
+    def gen3():
+        # configure once before any events -> one desc
+        yield(Msg('open_run'))
+        yield(Msg('configure', motor, {}))
+        yield(Msg('create'))
+        yield(Msg('read', motor))
+        yield(Msg('save'))
+        yield(Msg('create'))
+        yield(Msg('read', motor))
+        yield(Msg('save'))
+        yield(Msg('close_run'))
+
+    descs.clear()
+    RE(gen3(), {'descriptor': collect_descs})
+    assert_equal(len(descs), 1)
