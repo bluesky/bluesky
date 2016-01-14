@@ -69,10 +69,7 @@ class ScanBase(Struct):
 
     def _pre_scan(self):
         for obj in self.objects:
-            # TODO: Revisit this. We probably do not actually want to be passing
-            # scan metadata in as configuration to every object.
-            conf = self.md
-            conf.update(self.configuration.get(obj, {}))
+            conf = self.configuration.get(obj, {})
             yield Msg('configure', obj, conf)
             yield Msg('stage', obj)
 
