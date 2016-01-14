@@ -36,7 +36,9 @@ class ScanBase(Struct):
 
     @property
     def objects(self):
-        return {obj: list(obj.describe().keys()) for obj in self._objects}
+        if not hasattr(self, '_objects') or self._objects is None:
+            self._objects = {obj: list(obj.describe().keys()) for obj in self._objects}
+        return self._objects
 
     @property
     def md(self):
