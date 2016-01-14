@@ -239,8 +239,7 @@ class _BoundMethodProxy:
             if self.inst is None:
                 return self.func == other.func and other.inst is None
             else:
-                return self.func == other.func and self.inst() == other.inst()
-        except Exception:
+                return self.func == other.func and self.inst() == other.inst() except Exception:
             return False
 
     def __ne__(self, other):
@@ -253,18 +252,18 @@ class _BoundMethodProxy:
         return self._hash
 
 
-# The following three code blocks are from David Beazley's
+# The following two code blocks are adapted from David Beazley's
 # 'Python 3 Metaprogramming' https://www.youtube.com/watch?v=sPiWg5jSoZI
-
-def make_signature(names):
-    return Signature(Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
-                     for name in names)
 
 
 class StructMeta(type):
     def __new__(cls, name, bases, clsdict):
         clsobj = super().__new__(cls, name, bases, clsdict)
-        sig = make_signature(clsobj._fields)
+        args_params  = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
+                        for name in clsobj._fields])
+        kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None)
+                         for name in ['pre_run', 'post_run']]
+        sig = Signature(args_params + kwargs_params)
         setattr(clsobj, '__signature__', sig)
         return clsobj
 

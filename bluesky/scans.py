@@ -35,14 +35,8 @@ class ScanBase(Struct):
     _derived_fields = []
 
     @property
-    def objects(self):
-        if not hasattr(self, '_objects') or self._objects is None:
-            self._objects = {obj: list(obj.describe().keys()) for obj in self._objects}
-        return self._objects
-
-    @property
     def md(self):
-        for field in self._fields + self._derived_fields + ['objects']:
+        for field in self._fields + self._derived_fields:
             self._md[field] = repr(getattr(self, field))
         # The 'plan_args' key is a dict of kwargs that recreate the object.
         # It is an intentionally redundant subset of the top-level metadata.
@@ -68,13 +62,11 @@ class ScanBase(Struct):
         yield Msg('close_run')
 
     def _pre_scan(self):
-        for obj in self.objects:
-            conf = self.configuration.get(obj, {})
-            yield Msg('configure', obj, conf)
+        for obj in self._objects:
             yield Msg('stage', obj)
 
     def _post_scan(self):
-        for obj in self.objects:
+        for obj in self._objects:
             yield Msg('unstage', obj)
 
     def _gen(self):
