@@ -183,7 +183,7 @@ def _run_factories(factories, scan):
 # interval. SPEC counts "bonds;" idiomatic Python counts "sites."
 
 
-class _OuterProductPlan(_BundledScan):
+class _OuterProductScan(_BundledScan):
     default_sub_factories = DefaultSubs({'all': [table_from_motors]})
 
     def __call__(self, *args, time=None, subs=None, **kwargs):
@@ -205,7 +205,7 @@ class _OuterProductPlan(_BundledScan):
         return result
 
 
-class _InnerProductPlan(_BundledScan):
+class _InnerProductScan(_BundledScan):
     default_sub_factories = DefaultSubs(
         {'all': [table_from_motors, plot_first_motor,
                  peakstats_first_motor]})
@@ -287,33 +287,33 @@ class Count(_BundledScan):
 ### Motor Scans (p. 146) ###
 
 
-class AbsScanPlan(_StepScan):
+class AbsScan(_StepScan):
     "ascan"
     plan_class = plans.AbsScanPlan
 
 
-class OuterProductAbsScanPlan(_OuterProductPlan):
+class OuterProductAbsScan(_OuterProductScan):
     "mesh"
     default_sub_factories = DefaultSubs({'all': [table_from_motors, raster]})
     plan_class = plans.OuterProductAbsScanPlan
 
 
-class InnerProductAbsScanPlan(_InnerProductPlan):
+class InnerProductAbsScan(_InnerProductScan):
     "a2scan, a3scan, etc."
     plan_class = plans.InnerProductAbsScanPlan
 
 
-class DeltaScanPlan(_StepScan):
+class DeltaScan(_StepScan):
     "dscan (also known as lup)"
     plan_class = plans.DeltaScanPlan
 
 
-class InnerProductDeltaScanPlan(_InnerProductPlan):
+class InnerProductDeltaScan(_InnerProductScan):
     "d2scan, d3scan, etc."
     plan_class = plans.InnerProductDeltaScanPlan
 
 
-class ThetaTwoThetaScan(_InnerProductPlan):
+class ThetaTwoThetaScan(_InnerProductScan):
     "th2th"
     plan_class = plans.InnerProductDeltaScanPlan
 
