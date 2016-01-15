@@ -15,8 +15,8 @@ Scan Plan
 Call:
     {{ start.signature }}
 {% endif %}
-Metaadata
----------
+Metadata
+--------
 {% for k, v in start.items() -%}
 {%- if k not in ['plan_type', 'plan_args'] -%}{{ k }} : {{ v }}
 {% endif -%}
@@ -63,7 +63,7 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None):
                 ensure : bool
                     If a property, tag or logbook is not in the Olog then
                     create the property, tag or logbook before making the log
-s                    entry. Seting ensure to True will set verify to False.
+                    entry. Seting ensure to True will set verify to False.
 
                 '''
                 pass
