@@ -557,7 +557,7 @@ class Center(PlanBase):
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
     NUM_SAMPLES = 10
     NUM_SAMPLES = 10
-    # We define _fields not for Struct, but for PlanBase.log* methods.
+    # We define _fields not for Struct, but for metadata in PlanBase.md.
     _fields = ['detectors', 'target_field', 'motor', 'initial_center',
                'initial_width', 'tolerance', 'output_mutable']
 
@@ -737,7 +737,7 @@ class PlanND(PlanBase):
 
 
 class _OuterProductPlanBase(PlanND):
-    # We define _fields not for Struct, but for PlanBase.log* methods.
+    # We define _fields not for Struct, but for metadata in PlanBase.md.
     _fields = ['detectors', 'args']
     _derived_fields = ['motors', 'shape', 'num', 'extents', 'snaking']
 
@@ -798,7 +798,7 @@ class _OuterProductPlanBase(PlanND):
 
 
 class _InnerProductPlanBase(PlanND):
-    # We define _fields not for Struct, but for PlanBase.log* methods.
+    # We define _fields not for Struct, but for metadata in PlanBase.md.
     _fields = ['detectors', 'num', 'args']
     _derived_fields = ['motors', 'extents']
 
