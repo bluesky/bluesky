@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 from bluesky import RunEngine
-from bluesky.scans import AdaptiveAscan
+from bluesky.plans import AdaptiveAscan
 from bluesky.examples import Mover, SynGauss
 from bluesky.callbacks import LivePlot, LiveTable
 from bluesky.tests.utils import setup_test_run_engine

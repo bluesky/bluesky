@@ -26,7 +26,7 @@ xsteps = 20
 # hook up the live raster callback
 #cb = bluesky.callbacks.LiveRaster((ysteps + 1, xsteps + 1),
 #                                  'theta_gamma_det', clim=[0, 1])
-mesha = bss.OuterProductAbsScan()
+mesha = bss.OuterProductAbsScanPlan()
 # run a mesh scan
 gs.MASTER_DET_FIELD = 'theta_gamma_det'
 bsa.mesh(theta, -2.5, 2.5, ysteps, gamma, -2, 2, xsteps, False)

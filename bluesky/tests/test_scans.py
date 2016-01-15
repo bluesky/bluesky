@@ -4,11 +4,11 @@ from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
 from nose import SkipTest
 
 from bluesky.callbacks import collector, CallbackCounter
-from bluesky.scans import (AbsListScan, AbsScan, LogAbsScan,
-                           DeltaListScan, DeltaScan, LogDeltaScan,
-                           AdaptiveAbsScan, AdaptiveDeltaScan, Count, Center,
-                           OuterProductAbsScan, InnerProductAbsScan,
-                           OuterProductDeltaScan, InnerProductDeltaScan)
+from bluesky.plans import (AbsListScanPlan, AbsScanPlan, LogAbsScanPlan,
+                           DeltaListScanPlan, DeltaScanPlan, LogDeltaScanPlan,
+                           AdaptiveAbsScanPlan, AdaptiveDeltaScanPlan, Count, Center,
+                           OuterProductAbsScanPlan, InnerProductAbsScanPlan,
+                           OuterProductDeltaScanPlan, InnerProductDeltaScanPlan)
 
 from bluesky import Msg
 from bluesky.examples import motor, det, SynGauss, motor1, motor2
@@ -40,7 +40,7 @@ def multi_traj_checker(scan, expected_data):
 
 def test_outer_product_ascan():
     motor.set(0)
-    scan = OuterProductAbsScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
+    scan = OuterProductAbsScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
                                False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
@@ -56,7 +56,7 @@ def test_outer_product_ascan():
 
 def test_outer_product_ascan_snaked():
     motor.set(0)
-    scan = OuterProductAbsScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2, True)
+    scan = OuterProductAbsScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -71,7 +71,7 @@ def test_outer_product_ascan_snaked():
 
 def test_inner_product_ascan():
     motor.set(0)
-    scan = InnerProductAbsScan([det], 3, motor1, 1, 3, motor2, 10, 30)
+    scan = InnerProductAbsScanPlan([det], 3, motor1, 1, 3, motor2, 10, 30)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -82,7 +82,7 @@ def test_inner_product_ascan():
 
 
 def test_outer_product_dscan():
-    scan = OuterProductDeltaScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
+    scan = OuterProductDeltaScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
                                  False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
@@ -100,7 +100,7 @@ def test_outer_product_dscan():
 
 
 def test_outer_product_dscan_snaked():
-    scan = OuterProductDeltaScan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
+    scan = OuterProductDeltaScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
                                  True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
@@ -120,7 +120,7 @@ def test_inner_product_dscan():
     motor.set(0)
     motor1.set(5)
     motor2.set(8)
-    scan = InnerProductDeltaScan([det], 3, motor1, 1, 3, motor2, 10, 30)
+    scan = InnerProductDeltaScanPlan([det], 3, motor1, 1, 3, motor2, 10, 30)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -132,14 +132,14 @@ def test_inner_product_dscan():
 
 def test_ascan():
     traj = [1, 2, 3]
-    scan = AbsListScan([det], motor, traj)
+    scan = AbsListScanPlan([det], motor, traj)
     yield traj_checker, scan, traj
 
 
 def test_dscan():
     traj = np.array([1, 2, 3])
     motor.set(-4)
-    scan = DeltaListScan([det], motor, traj)
+    scan = DeltaListScanPlan([det], motor, traj)
     yield traj_checker, scan, traj - 4
 
 
@@ -147,40 +147,40 @@ def test_dscan_list_input():
     # GH225
     traj = [1, 2, 3]
     motor.set(-4)
-    scan = DeltaListScan([det], motor, traj)
+    scan = DeltaListScanPlan([det], motor, traj)
     yield traj_checker, scan, np.array(traj) - 4
 
 
 def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
-    scan = AbsScan([det], motor, 0, 10, 5)
+    scan = AbsScanPlan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_log_ascan():
     traj = np.logspace(0, 10, 5)
-    scan = LogAbsScan([det], motor, 0, 10, 5)
+    scan = LogAbsScanPlan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
-    scan = DeltaScan([det], motor, 0, 10, 5)
+    scan = DeltaScanPlan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_log_dscan():
     traj = np.logspace(0, 10, 5) + 6
     motor.set(6)
-    scan = LogDeltaScan([det], motor, 0, 10, 5)
+    scan = LogDeltaScanPlan([det], motor, 0, 10, 5)
     yield traj_checker, scan, traj
 
 
 def test_adaptive_ascan():
-    scan1 = AdaptiveAbsScan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
-    scan2 = AdaptiveAbsScan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
-    scan3 = AdaptiveAbsScan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
+    scan1 = AdaptiveAbsScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
+    scan2 = AdaptiveAbsScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
+    scan3 = AdaptiveAbsScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -200,9 +200,9 @@ def test_adaptive_ascan():
 
 
 def test_adaptive_dscan():
-    scan1 = AdaptiveDeltaScan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
-    scan2 = AdaptiveDeltaScan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
-    scan3 = AdaptiveDeltaScan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
+    scan1 = AdaptiveDeltaScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
+    scan2 = AdaptiveDeltaScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
+    scan3 = AdaptiveDeltaScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -253,7 +253,7 @@ def test_center():
 
 
 def test_set():
-    scan = AbsScan([det], motor, 1, 5, 3)
+    scan = AbsScanPlan([det], motor, 1, 5, 3)
     assert_equal(scan.start, 1)
     assert_equal(scan.stop, 5)
     assert_equal(scan.num, 3)
