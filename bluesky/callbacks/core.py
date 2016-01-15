@@ -539,26 +539,6 @@ class LiveRaster(CallbackBase):
 
         self.im.set_array(self._Idata)
 
-def _write_spec_header(path, doc):
-    # write a new spec file header!
-    #F /home/xf11id/specfiles/test.spec
-    #E 1449179338.3418093
-    #D 2015-12-03 16:48:58.341809
-    #C xf11id  User = xf11id
-    #O [list of all motors, 10 per line]
-    session_manager = get_session_manager()
-    pos = session_manager.get_positioners()
-    spec_header = [
-        '#F %s' % path,
-        '#E %s' % int(doc['time']),
-        # time might need to be formatted specifically
-        '#D %s' % datetime.fromtimestamp(doc['time']),
-        '#C %s  User = %s' % (doc['owner'], doc['owner']),
-        'O0 {}'.format(' '.join(sorted(list(pos.keys()))))
-    ]
-    with open(path, 'w') as f:
-        f.write('\n'.join(spec_header))
-    return spec_header
 
 
 class LiveSpecFile(CallbackBase):
@@ -582,24 +562,67 @@ class LiveSpecFile(CallbackBase):
     >>> # Modify the spec file location like this:
     >>> # live_specfile_callback.filepath = '/some/new/filepath.spec'
     """
-    def __init__(self, filepath):
+    def __init__(self, specpath):
+        """
+        Parameters
+        ----------
+        specpath : str
+            The location on disk where you want the specfile to be written
+        """
         super().__init__()
-        self.filepath = filepath
+        self.specpath = specpath
+
+    def _write_spec_header(doc):
+        """
+        Parameters
+        ----------
+        doc : start document from bluesky
+
+        Returns
+        -------
+        spec_header : list
+            The spec header as a list of lines
+        """
+        # write a new spec file header!
+        #F /home/xf11id/specfiles/test.spec
+        #E 1449179338.3418093
+        #D 2015-12-03 16:48:58.341809
+        #C xf11id  User = xf11id
+        #O [list of all motors, all on one line]
+        session_manager = get_session_manager()
+        pos = session_manager.get_positioners()
+        spec_header = [
+            '#F %s' % self.specpath,
+            '#E %s' % int(doc['time']),
+            # time might need to be formatted specifically
+            '#D %s' % datetime.fromtimestamp(doc['time']),
+            '#C %s  User = %s' % (doc['owner'], doc['owner']),
+            'O0 {}'.format(' '.join(sorted(list(pos.keys()))))
+        ]
+        with open(self.specpath, 'w') as f:
+            f.write('\n'.join(spec_header))
+
+        return spec_header
 
     def start(self, doc):
         from ophyd.session import get_session_manager
         from IPython import get_ipython
 
         if not os.path.exists(self.specpath):
-            spec_header = _write_spec_header(self.specpath, doc)
-        #else:
-        #    spec_header = get_spec_header()
+            spec_header = self._write_spec_header(doc)
+        # grab the literal last command that the user typed at the command line
+        # in IPython and format it to remove the parentheses and commas
+        # e.g. dscan(th, 0, 1, 10, .1) -> dscan th 0 1 10 .1
         last_command = list(
             get_ipython().history_manager.get_range())[-1][2]
         last_command = last_command.replace('(', ' ')
         last_command = last_command.replace(')', ' ')
         last_command = last_command.replace(',', ' ')
         dets = eval(doc['detectors'])
+        # grab the acquisition time from one of the detectors.  This part does
+        # not need to be changed if the detectors do not have the same
+        # acquisition time. acquisition_time is just one of those things that
+        # SPEC needs
         self.acquisition_time = dets[0].acquire_time
         # write a blank line between scans
         with open(self.specpath, 'a') as f:
@@ -627,6 +650,9 @@ class LiveSpecFile(CallbackBase):
     def descriptor(self, doc):
         keys = sorted(list(doc['data_keys'].keys()))
         keys.remove(self.motorname)
+        # the order of the keys in SPEC is [acquisition_time, time_in_seconds,
+        #                                   all_the_other_motors_and_dets]
+        # Spec visualization software expects the keys in this order.
         keys.insert(0, 'Seconds')
         keys.insert(0, 'Epoch')
         keys.insert(0, self.motorname)
@@ -638,6 +664,9 @@ class LiveSpecFile(CallbackBase):
     def event(self, doc):
         t = int(doc['time'])
         vals = [v for k, v in sorted(doc['data'].items()) if k != self.motorname]
+        # the order of the keys in SPEC is [acquisition_time, time_in_seconds,
+        #                                   all_the_other_motors_and_dets]
+        # Spec visualization software expects the keys in this order.
         vals.insert(0, self.acquisition_time)
         vals.insert(0, t)
         vals.insert(0, doc['data'][self.motorname])
