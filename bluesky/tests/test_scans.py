@@ -275,3 +275,17 @@ def test_wait_for():
     RE(scan)
     stop = ttime.time()
     assert stop - start >= 2
+
+
+def test_pre_run_post_run():
+    c = Count([])
+    def f(x):
+        yield Msg('HEY', None)
+    c.pre_run = f
+    list(c)[0].command == 'HEY'
+
+    c = Count([])
+    def f(x):
+        yield Msg('HEY', None)
+    c.pre_run = f
+    list(c)[-1].command == 'HEY'

@@ -3,6 +3,7 @@ import operator
 from functools import reduce
 from weakref import ref, WeakKeyDictionary
 import types
+import inspect
 from inspect import Parameter, Signature
 import itertools
 from collections import Iterable
@@ -239,7 +240,8 @@ class _BoundMethodProxy:
             if self.inst is None:
                 return self.func == other.func and other.inst is None
             else:
-                return self.func == other.func and self.inst() == other.inst() except Exception:
+                return self.func == other.func and self.inst() == other.inst()
+        except Exception:
             return False
 
     def __ne__(self, other):
@@ -260,7 +262,7 @@ class StructMeta(type):
     def __new__(cls, name, bases, clsdict):
         clsobj = super().__new__(cls, name, bases, clsdict)
         args_params  = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
-                        for name in clsobj._fields])
+                        for name in clsobj._fields]
         kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None)
                          for name in ['pre_run', 'post_run']]
         sig = Signature(args_params + kwargs_params)
@@ -273,20 +275,24 @@ class Struct(metaclass=StructMeta):
     _fields = []
 
     def __init__(self, *args, **kwargs):
+        # Now bind default values of optional arguments.
+        # If it seems like there should be a cleaner way to do this, see
+        # http://bugs.python.org/msg221104
         bound = self.__signature__.bind(*args, **kwargs)
+        for name, param in self.__signature__.parameters.items():
+            if (name not in bound.arguments and
+                    param.default is not inspect._empty):
+                bound.arguments[name] = param.default
         for name, val in bound.arguments.items():
             setattr(self, name, val)
-        self.setup_attrs()  # separate method so custom __init__ can reuse
+        self._md = {}
+        self.configuration = {}
+        self.flyers = []
 
     def set(self, **kwargs):
         "Update attributes as keyword arguments."
         for attr, val in kwargs.items():
             setattr(self, attr, val)
-
-    def setup_attrs(self):
-        self._md = {}
-        self.configuration = {}
-        self.flyers = []
 
 
 SUBS_NAMES = ['all', 'start', 'stop', 'event', 'descriptor']

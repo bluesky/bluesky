@@ -72,12 +72,30 @@ class ScanBase(Struct):
         yield from self._post_scan()
 
     def _pre_scan(self):
+        """
+        Subclasses use this to inject some messages to be processed
+        before the run is opened -- for example, configuration or
+        taking some preliminary readings needed for metadata.
+        """
+        # prerun is expected to be a callable that takes the Scan object
+        # itself as its argument and returns a generator of messages
+        if self.pre_run is not None:
+            yield from self.pre_run(self)
         for obj in self._objects:
             yield Msg('stage', obj)
 
     def _post_scan(self):
+        """
+        Subclasses use this to inject some messages to be processed
+        after the run is closed -- for example, returning motors to
+        their original positions.
+        """
+        # postrun is expected to be a callable that takes the Scan object
+        # itself as its argument and returns a generator of messages
         for obj in self._objects:
             yield Msg('unstage', obj)
+        if self.post_run is not None:
+            yield from self.post_run(self)
 
     def _gen(self):
         raise NotImplementedError("ScanBase is a base class, you must "
@@ -112,11 +130,16 @@ class Count(ScanBase):
     """
     _fields = ['detectors', 'num', 'delay']
 
-    def __init__(self, detectors, num=1, delay=0):
+    def __init__(self, detectors, num=1, delay=0,
+                 pre_run=None, post_run=None):
         self.detectors = detectors
         self.num = num
         self.delay = delay
-        self.setup_attrs()
+        self.pre_run = pre_run
+        self.post_run = post_run
+        self._md = {}
+        self.configuration = {}
+        self.flyers = []
 
     @property
     def _objects(self):
@@ -539,7 +562,8 @@ class Center(ScanBase):
                'initial_width', 'tolerance', 'output_mutable']
 
     def __init__(self, detectors, target_field, motor, initial_center,
-                 initial_width, tolerance=0.1, output_mutable=None):
+                 initial_width, tolerance=0.1, output_mutable=None,
+                 pre_run=None, post_run=None):
         """
         Attempts to find the center of a peak by moving a motor.
 
@@ -584,7 +608,11 @@ class Center(ScanBase):
         self.initial_width = initial_width
         self.output_mutable = output_mutable
         self.tolerance = tolerance
-        self.setup_attrs()
+        self.pre_run = pre_run
+        self.post_run = post_run
+        self._md = {}
+        self.configuration = {}
+        self.flyers = []
 
     @property
     def _objects(self):
@@ -719,7 +747,7 @@ class _OuterProductScanBase(ScanND):
     def motors(self):
         return self._motors
 
-    def __init__(self, detectors, *args):
+    def __init__(self, detectors, *args, pre_run=None, post_run=None):
         args = list(args)
         # The first (slowest) axis is never "snaked." Insert False to
         # make it easy to iterate over the chunks or args..
@@ -740,7 +768,11 @@ class _OuterProductScanBase(ScanND):
         self.shape = tuple(shape)
         self.extents = tuple(extent)
         self.snaking = tuple(snaking)
-        self.setup_attrs()
+        self.pre_run = pre_run
+        self.post_run = post_run
+        self._md = {}
+        self.configuration = {}
+        self.flyers = []
 
     @property
     def cycler(self):
@@ -776,7 +808,7 @@ class _InnerProductScanBase(ScanND):
     def motors(self):
         return self._motors
 
-    def __init__(self, detectors, num, *args):
+    def __init__(self, detectors, num, *args, pre_run=None, post_run=None):
         if len(args) % 3 != 0:
             raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
@@ -788,7 +820,11 @@ class _InnerProductScanBase(ScanND):
             self._motors.append(motor)
             extents.append([start, stop])
         self.extents = tuple(extents)
-        self.setup_attrs()
+        self.pre_run = pre_run
+        self.post_run = post_run
+        self._md = {}
+        self.configuration = {}
+        self.flyers = []
 
     @property
     def args(self):
