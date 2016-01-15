@@ -1,4 +1,5 @@
 from io import StringIO
+from pprint import pformat
 TEMPLATES = {}
 TEMPLATES['long'] = """
 {{- start.plan_type }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})
@@ -150,4 +151,4 @@ class OlogCallback(CallbackBase):
                                     commands[-1][2],
                                     pformat(doc)))
         olog_status = self.client.log(document_content, logbooks='Data Acquisition')
-        print('client.log returned %s' % olog_status)
+        logger.debug('client.log returned %s' % olog_status)
