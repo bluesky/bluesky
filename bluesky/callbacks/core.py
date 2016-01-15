@@ -6,7 +6,6 @@ from itertools import count
 from collections import deque
 import warnings
 from prettytable import PrettyTable
-from pprint import pformat
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
