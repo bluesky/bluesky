@@ -1,12 +1,12 @@
 """
-These "scans" bundle a Message generator with an instance of the RunEngine,
+These "plans" bundle a Message generator with an instance of the RunEngine,
 combining two separate concepts -- instructions and execution -- into one
 object. This makes the interface less flexible and somewhat less "Pythonic"
 but more condensed.
 
 This module is meant to be run in a namespace where several global
 variables have been defined. If some variables are left undefined, the
-associated scans will be not usable.
+associated plans will be not usable.
 
     DETS  # list of detectors
     MASTER_DET  # detector to use for tw
@@ -23,7 +23,7 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
 from inspect import signature
 import matplotlib.pyplot as plt
-from bluesky import scans
+from bluesky import plans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster, _get_obj_fields
 from bluesky.scientific_callbacks import PeakStats
 from boltons.iterutils import chunked
@@ -32,7 +32,7 @@ from bluesky.utils import normalize_subs_input, Subs, DefaultSubs
 from collections import defaultdict
 from itertools import filterfalse, chain
 
-# ## Factory functions acting a shim between scans and callbacks ###
+# ## Factory functions acting a shim between plans and callbacks ###
 
 
 def table_from_motors(scan):
@@ -111,7 +111,7 @@ class _BundledScan:
         # subs and sub_factories can be set individually per instance
         self.subs = dict(self.default_subs)
         self.sub_factories = dict(self.default_sub_factories)
-        self.params = list(signature(self.scan_class).parameters.keys())
+        self.params = list(signature(self.plan_class).parameters.keys())
         self.configuration = {}
         self.flyers = []
 
@@ -130,7 +130,7 @@ class _BundledScan:
                                  "names. Avoid: {0}".format(RE_params))
 
         global_dets = gs.DETS if gs.DETS is not None else []
-        self.scan = self.scan_class(global_dets, *args, **scan_kwargs)
+        self.scan = self.plan_class(global_dets, *args, **scan_kwargs)
         # Combine subs passed as args and subs set up in subs attribute.
         _subs = defaultdict(list)
         _update_lists(_subs, normalize_subs_input(subs))
@@ -183,7 +183,7 @@ def _run_factories(factories, scan):
 # interval. SPEC counts "bonds;" idiomatic Python counts "sites."
 
 
-class _OuterProductScan(_BundledScan):
+class _OuterProductPlan(_BundledScan):
     default_sub_factories = DefaultSubs({'all': [table_from_motors]})
 
     def __call__(self, *args, time=None, subs=None, **kwargs):
@@ -205,7 +205,7 @@ class _OuterProductScan(_BundledScan):
         return result
 
 
-class _InnerProductScan(_BundledScan):
+class _InnerProductPlan(_BundledScan):
     default_sub_factories = DefaultSubs(
         {'all': [table_from_motors, plot_first_motor,
                  peakstats_first_motor]})
@@ -274,7 +274,7 @@ class _HardcodedMotorStepScan(_BundledScan):
 
 class Count(_BundledScan):
     "ct"
-    scan_class = scans.Count
+    plan_class = plans.Count
     default_sub_factories = DefaultSubs({'all': [table_gs_only]})
 
     def __call__(self, time=None, subs=None, **kwargs):
@@ -287,35 +287,35 @@ class Count(_BundledScan):
 ### Motor Scans (p. 146) ###
 
 
-class AbsScan(_StepScan):
+class AbsScanPlan(_StepScan):
     "ascan"
-    scan_class = scans.AbsScan
+    plan_class = plans.AbsScanPlan
 
 
-class OuterProductAbsScan(_OuterProductScan):
+class OuterProductAbsScanPlan(_OuterProductPlan):
     "mesh"
     default_sub_factories = DefaultSubs({'all': [table_from_motors, raster]})
-    scan_class = scans.OuterProductAbsScan
+    plan_class = plans.OuterProductAbsScanPlan
 
 
-class InnerProductAbsScan(_InnerProductScan):
+class InnerProductAbsScanPlan(_InnerProductPlan):
     "a2scan, a3scan, etc."
-    scan_class = scans.InnerProductAbsScan
+    plan_class = plans.InnerProductAbsScanPlan
 
 
-class DeltaScan(_StepScan):
+class DeltaScanPlan(_StepScan):
     "dscan (also known as lup)"
-    scan_class = scans.DeltaScan
+    plan_class = plans.DeltaScanPlan
 
 
-class InnerProductDeltaScan(_InnerProductScan):
+class InnerProductDeltaScanPlan(_InnerProductPlan):
     "d2scan, d3scan, etc."
-    scan_class = scans.InnerProductDeltaScan
+    plan_class = plans.InnerProductDeltaScanPlan
 
 
-class ThetaTwoThetaScan(_InnerProductScan):
+class ThetaTwoThetaScan(_InnerProductPlan):
     "th2th"
-    scan_class = scans.InnerProductDeltaScan
+    plan_class = plans.InnerProductDeltaScanPlan
 
     def __call__(self, start, finish, intervals, time=None, **kwargs):
         TTH_MOTOR = gs.TTH_MOTOR
@@ -349,12 +349,12 @@ class _TemperatureScan(_HardcodedMotorStepScan):
 
 class AbsTemperatureScan(_TemperatureScan):
     "tscan"
-    scan_class = scans.AbsScan
+    plan_class = plans.AbsScanPlan
 
 
 class DeltaTemperatureScan(_TemperatureScan):
     "dtscan"
-    scan_class = scans.DeltaScan
+    plan_class = plans.DeltaScanPlan
 
 
 ### Basic Reciprocal Space Scans (p. 147) ###
@@ -362,7 +362,7 @@ class DeltaTemperatureScan(_TemperatureScan):
 
 class HScan(_HardcodedMotorStepScan):
     "hscan"
-    scan_class = scans.AbsScan
+    plan_class = plans.AbsScanPlan
 
     @property
     def motor(self):
@@ -372,7 +372,7 @@ class HScan(_HardcodedMotorStepScan):
 
 class KScan(_HardcodedMotorStepScan):
     "kscan"
-    scan_class = scans.AbsScan
+    plan_class = plans.AbsScanPlan
 
     @property
     def motor(self):
@@ -382,7 +382,7 @@ class KScan(_HardcodedMotorStepScan):
 
 class LScan(_HardcodedMotorStepScan):
     "lscan"
-    scan_class = scans.AbsScan
+    plan_class = plans.AbsScanPlan
 
     @property
     def motor(self):
@@ -392,7 +392,7 @@ class LScan(_HardcodedMotorStepScan):
 
 class OuterProductHKLScan(_BundledScan):
     "hklmesh"
-    scan_class = scans.OuterProductAbsScan
+    plan_class = plans.OuterProductAbsScanPlan
 
     def __call__(self, Q1, start1, finish1, intervals1, Q2, start2, finish2,
                  intervals2, time=None, **kwargs):
@@ -417,7 +417,7 @@ class OuterProductHKLScan(_BundledScan):
 
 class InnerProductHKLScan(_BundledScan):
     "hklscan"
-    scan_class = scans.InnerProductAbsScan
+    plan_class = plans.InnerProductAbsScanPlan
 
     def __call__(self, start_h, finish_h, start_k, finish_k, start_l,
                  finish_l, intervals, time=None, **kwargs):
@@ -444,7 +444,7 @@ class InnerProductHKLScan(_BundledScan):
 
 class Tweak(_BundledScan):
     "tw"
-    scan_class = scans.Tweak
+    plan_class = plans.Tweak
 
     def __call__(motor, step, **kwargs):
         from bluesky.global_state import gs

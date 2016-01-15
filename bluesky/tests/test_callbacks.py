@@ -2,7 +2,7 @@ from nose.tools import assert_equal, assert_raises, assert_true
 from nose import SkipTest
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
-from bluesky.scans import AdaptiveAbsScan, AbsScan
+from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
 from bluesky.standard_config import mesh
 from bluesky.tests.utils import setup_test_run_engine
@@ -74,8 +74,8 @@ def test_subs_input():
             pass
         return cb5
 
-    # Test input normalization on OO scans
-    obj_ascan = AbsScan([det], motor, 1, 5, 4)
+    # Test input normalization on OO plans
+    obj_ascan = AbsScanPlan([det], motor, 1, 5, 4)
     obj_ascan.subs = cb1
     assert_equal(obj_ascan.subs, {'all': [cb1]})
     obj_ascan.subs.update({'start': [cb2]})
@@ -135,7 +135,7 @@ def _print_redirect():
 def test_table():
     with _print_redirect() as fout:
         table = LiveTable(['det', 'motor'])
-        ad_scan = AdaptiveAbsScan([det], 'det', motor, -15, 5, .01, 1, .05, True)
+        ad_scan = AdaptiveAbsScanPlan([det], 'det', motor, -15, 5, .01, 1, .05, True)
         RE(ad_scan, subs={'all': [table]})
 
     fout.seek(0)

@@ -73,7 +73,7 @@ def register_mds(runengine):
 
     Parameters
     ----------
-    scan : ophyd.scans.Scan
+    scan : ophyd.plans.Scan
     """
     for name in insert_funcs.keys():
         runengine._subscribe_lossless(name, insert_funcs[name])

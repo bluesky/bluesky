@@ -6,11 +6,11 @@ import bluesky.simple_scans as bss
 
 # Instantiate scans that imitate SPEC API.
 ct = count = bss.Count()
-ascan = bss.AbsScan()
-mesh = bss.OuterProductAbsScan()
-a2scan = a3scan = bss.InnerProductAbsScan()
-dscan = lup = bss.DeltaScan()
-d2scan = d3scan = bss.InnerProductDeltaScan()
+ascan = bss.AbsScanPlan()
+mesh = bss.OuterProductAbsScanPlan()
+a2scan = a3scan = bss.InnerProductAbsScanPlan()
+dscan = lup = bss.DeltaScanPlan()
+d2scan = d3scan = bss.InnerProductDeltaScanPlan()
 th2th = bss.ThetaTwoThetaScan()
 hscan = bss.HScan()
 kscan = bss.KScan()

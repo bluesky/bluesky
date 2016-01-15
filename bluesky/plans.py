@@ -9,9 +9,9 @@ from .run_engine import Msg
 from .utils import Struct, snake_cyclers, Subs
 
 
-class ScanBase(Struct):
+class PlanBase(Struct):
     """
-    This is a base class for writing reusable scans.
+    This is a base class for writing reusable plans.
 
     It provides a default entry in the logbook at the start of the scan and a
     __iter__ method.
@@ -98,12 +98,12 @@ class ScanBase(Struct):
             yield from self.post_run(self)
 
     def _gen(self):
-        raise NotImplementedError("ScanBase is a base class, you must "
+        raise NotImplementedError("PlanBase is a base class, you must "
                                   "sub-class it and override this method "
                                   "(_gen)")
 
 
-class Count(ScanBase):
+class Count(PlanBase):
     """
     Take one or more readings from the detectors. Do not move anything.
 
@@ -161,8 +161,8 @@ class Count(ScanBase):
             yield Msg('sleep', None, delay)
 
 
-class Scan1D(ScanBase):
-    "Use AbsListScan or DeltaListScan. Subclasses must define _abs_steps."
+class Scan1D(PlanBase):
+    "Use AbsListScanPlan or DeltaListScanPlan. Subclasses must define _abs_steps."
     _fields = ['detectors', 'motor', 'steps']
     _derived_fields = []
 
@@ -187,7 +187,7 @@ class Scan1D(ScanBase):
             yield Msg('save')
 
 
-class AbsListScan(Scan1D):
+class AbsListScanPlan(Scan1D):
     """
     Absolute scan over one variable in user-specified steps
 
@@ -205,7 +205,7 @@ class AbsListScan(Scan1D):
         return self.steps
 
 
-class DeltaListScan(Scan1D):
+class DeltaListScanPlan(Scan1D):
     """
     Delta (relative) scan over one variable in user-specified steps
 
@@ -266,7 +266,7 @@ class DeltaListScan(Scan1D):
         yield Msg('wait', None, 'A')
 
 
-class AbsScan(AbsListScan):
+class AbsScanPlan(AbsListScanPlan):
     """
     Absolute scan over one variable in equally spaced steps
 
@@ -287,21 +287,21 @@ class AbsScan(AbsListScan):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = AbsScan([det1, det2], motor, 0, 1, 10)
+    >>> my_scan = AbsScanPlan([det1, det2], motor, 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
-    _derived_fields = AbsListScan._derived_fields + ['steps']
+    _derived_fields = AbsListScanPlan._derived_fields + ['steps']
 
     @property
     def steps(self):
         return np.linspace(self.start, self.stop, self.num)
 
 
-class LogAbsScan(AbsListScan):
+class LogAbsScanPlan(AbsListScanPlan):
     """
     Absolute scan over one variable in log-spaced steps
 
@@ -322,21 +322,21 @@ class LogAbsScan(AbsListScan):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogAbsScan([det1, det2], motor, 0, 1, 10)
+    >>> my_scan = LogAbsScanPlan([det1, det2], motor, 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
-    _derived_fields = AbsListScan._derived_fields + ['steps']
+    _derived_fields = AbsListScanPlan._derived_fields + ['steps']
 
     @property
     def steps(self):
         return np.logspace(self.start, self.stop, self.num)
 
 
-class DeltaScan(DeltaListScan):
+class DeltaScanPlan(DeltaListScanPlan):
     """
     Delta (relative) scan over one variable in equally spaced steps
 
@@ -357,21 +357,21 @@ class DeltaScan(DeltaListScan):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = DeltaScan([det1, det2], motor, 0, 1, 10)
+    >>> my_scan = DeltaScanPlan([det1, det2], motor, 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
-    _derived_fields = DeltaListScan._derived_fields + ['steps']
+    _derived_fields = DeltaListScanPlan._derived_fields + ['steps']
 
     @property
     def steps(self):
         return np.linspace(self.start, self.stop, self.num)
 
 
-class LogDeltaScan(DeltaListScan):
+class LogDeltaScanPlan(DeltaListScanPlan):
     """
     Delta (relative) scan over one variable in log-spaced steps
 
@@ -392,21 +392,21 @@ class LogDeltaScan(DeltaListScan):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogDeltaScan([det1, det2], motor, 0, 1, 10)
+    >>> my_scan = LogDeltaScanPlan([det1, det2], motor, 0, 1, 10)
     >>> RE(my_scan)
     # Adjust a Parameter and run again.
     >>> my_scan.num = 100
     >>> RE(my_scan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
-    _derived_fields = DeltaListScan._derived_fields + ['steps']
+    _derived_fields = DeltaListScanPlan._derived_fields + ['steps']
 
     @property
     def steps(self):
         return np.logspace(self.start, self.stop, self.num)
 
 
-class _AdaptiveScanBase(ScanBase):
+class _AdaptivePlanBase(PlanBase):
     _fields = ['detectors', 'target_field', 'motor', 'start', 'stop',
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
@@ -468,7 +468,7 @@ class _AdaptiveScanBase(ScanBase):
             next_pos += step
 
 
-class AdaptiveAbsScan(_AdaptiveScanBase):
+class AdaptiveAbsScanPlan(_AdaptivePlanBase):
     """
     Absolute scan over one variable with adaptively tuned step size
 
@@ -495,11 +495,11 @@ class AdaptiveAbsScan(_AdaptiveScanBase):
     """
     @property
     def _init_pos(self):
-        # facilitate code-sharing with AdaptiveDeltaScan
+        # facilitate code-sharing with AdaptiveDeltaScanPlan
         return 0
 
 
-class AdaptiveDeltaScan(_AdaptiveScanBase):
+class AdaptiveDeltaScanPlan(_AdaptivePlanBase):
     """
     Delta (relative) scan over one variable with adaptively tuned step size
 
@@ -552,12 +552,12 @@ class AdaptiveDeltaScan(_AdaptiveScanBase):
         yield Msg('wait', None, 'A')
 
 
-class Center(ScanBase):
+class Center(PlanBase):
     RANGE = 2  # in sigma, first sample this range around the guess
     RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
     NUM_SAMPLES = 10
     NUM_SAMPLES = 10
-    # We define _fields not for Struct, but for ScanBase.log* methods.
+    # We define _fields not for Struct, but for PlanBase.log* methods.
     _fields = ['detectors', 'target_field', 'motor', 'initial_center',
                'initial_width', 'tolerance', 'output_mutable']
 
@@ -698,7 +698,7 @@ class Center(ScanBase):
             self.output_mutable['model'] = res
 
 
-class ScanND(ScanBase):
+class ScanND(PlanBase):
     _fields = ['detectors', 'cycler']
     _derived_fields = ['motors', 'num']
 
@@ -736,8 +736,8 @@ class ScanND(ScanBase):
             yield Msg('save')
 
 
-class _OuterProductScanBase(ScanND):
-    # We define _fields not for Struct, but for ScanBase.log* methods.
+class _OuterProductPlanBase(ScanND):
+    # We define _fields not for Struct, but for PlanBase.log* methods.
     _fields = ['detectors', 'args']
     _derived_fields = ['motors', 'shape', 'num', 'extents', 'snaking']
 
@@ -797,8 +797,8 @@ class _OuterProductScanBase(ScanND):
         return self._args
 
 
-class _InnerProductScanBase(ScanND):
-    # We define _fields not for Struct, but for ScanBase.log* methods.
+class _InnerProductPlanBase(ScanND):
+    # We define _fields not for Struct, but for PlanBase.log* methods.
     _fields = ['detectors', 'num', 'args']
     _derived_fields = ['motors', 'extents']
 
@@ -844,7 +844,7 @@ class _InnerProductScanBase(ScanND):
         return functools.reduce(operator.add, cyclers)
 
 
-class InnerProductAbsScan(_InnerProductScanBase):
+class InnerProductAbsScanPlan(_InnerProductPlanBase):
     """
     Absolute scan over one multi-motor trajectory
 
@@ -865,7 +865,7 @@ class InnerProductAbsScan(_InnerProductScanBase):
         return defaultdict(lambda: 0)
 
 
-class InnerProductDeltaScan(_InnerProductScanBase):
+class InnerProductDeltaScanPlan(_InnerProductPlanBase):
     """
     Delta (relative) scan over one multi-motor trajectory
 
@@ -879,7 +879,7 @@ class InnerProductDeltaScan(_InnerProductScanBase):
         patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
         Motors can be any 'setable' object (motor, temp controller, etc.)
     """
-    _derived_fields = _InnerProductScanBase._derived_fields + ['init_pos']
+    _derived_fields = _InnerProductPlanBase._derived_fields + ['init_pos']
 
     @property
     def init_pos(self):
@@ -913,7 +913,7 @@ class InnerProductDeltaScan(_InnerProductScanBase):
         yield Msg('wait', None, 'A')
 
 
-class OuterProductAbsScan(_OuterProductScanBase):
+class OuterProductAbsScanPlan(_OuterProductPlanBase):
     """
     Absolute scan over a mesh; each motor is on an independent trajectory
 
@@ -937,7 +937,7 @@ class OuterProductAbsScan(_OuterProductScanBase):
         return defaultdict(lambda: 0)
 
 
-class OuterProductDeltaScan(_OuterProductScanBase):
+class OuterProductDeltaScanPlan(_OuterProductPlanBase):
     """
     Delta scan over a mesh; each motor is on an independent trajectory
 
@@ -954,7 +954,7 @@ class OuterProductDeltaScan(_OuterProductScanBase):
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     """
-    _derived_fields = _OuterProductScanBase._derived_fields + ['init_pos']
+    _derived_fields = _OuterProductPlanBase._derived_fields + ['init_pos']
 
     @property
     def init_pos(self):
@@ -988,7 +988,7 @@ class OuterProductDeltaScan(_OuterProductScanBase):
         yield Msg('wait', None, 'A')
 
 
-class Tweak(ScanBase):
+class Tweak(PlanBase):
     """
     Move and motor and read a detector with an interactive prompt.
 
