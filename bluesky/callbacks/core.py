@@ -577,16 +577,19 @@ class LiveSpecFile(CallbackBase):
     -------
     It is suggested to put this in the ipython profile:
     >>> from bluesky.callbacks import LiveSpecFile
-    >>> live_specfile_callback = LiveSpecFile()
-    >>> gs.specpath = os.path.expanduser('~/specfiles/test.spec')
+    >>> live_specfile_callback = LiveSpecFile(os.path.expanduser('~/specfiles/test.spec'))
     >>> gs.RE.subscribe('all', live_specfile_callback)
+    >>> # Modify the spec file location like this:
+    >>> # live_specfile_callback.filepath = '/some/new/filepath.spec'
     """
+    def __init__(self, filepath):
+        super().__init__()
+        self.filepath = filepath
+
     def start(self, doc):
-        global gs
         from ophyd.session import get_session_manager
         from IPython import get_ipython
 
-        self.specpath = os.specpath
         if not os.path.exists(self.specpath):
             spec_header = _write_spec_header(self.specpath, doc)
         #else:
@@ -622,7 +625,6 @@ class LiveSpecFile(CallbackBase):
         self.motorname = eval(doc['motor']).name
 
     def descriptor(self, doc):
-        global gs
         keys = sorted(list(doc['data_keys'].keys()))
         keys.remove(self.motorname)
         keys.insert(0, 'Seconds')
