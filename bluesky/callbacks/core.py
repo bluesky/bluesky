@@ -493,7 +493,7 @@ class LiveRaster(CallbackBase):
     clim : tuple, optional
        The color limits
 
-    cmap n: str or colormap, optional
+    cmap : str or colormap, optional
        The color map to use
     """
     def __init__(self, raster_shape, I, *,
