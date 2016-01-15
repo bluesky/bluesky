@@ -161,7 +161,7 @@ class Count(PlanBase):
             yield Msg('sleep', None, delay)
 
 
-class Scan1D(PlanBase):
+class Plan1D(PlanBase):
     "Use AbsListScanPlan or DeltaListScanPlan. Subclasses must define _abs_steps."
     _fields = ['detectors', 'motor', 'steps']
     _derived_fields = []
@@ -187,7 +187,7 @@ class Scan1D(PlanBase):
             yield Msg('save')
 
 
-class AbsListScanPlan(Scan1D):
+class AbsListScanPlan(Plan1D):
     """
     Absolute scan over one variable in user-specified steps
 
@@ -205,7 +205,7 @@ class AbsListScanPlan(Scan1D):
         return self.steps
 
 
-class DeltaListScanPlan(Scan1D):
+class DeltaListScanPlan(Plan1D):
     """
     Delta (relative) scan over one variable in user-specified steps
 
@@ -218,7 +218,7 @@ class DeltaListScanPlan(Scan1D):
     steps : list
         list of positions relative to current position
     """
-    _derived_fields = Scan1D._derived_fields + ['init_pos']
+    _derived_fields = Plan1D._derived_fields + ['init_pos']
 
     @property
     def init_pos(self):
@@ -698,7 +698,7 @@ class Center(PlanBase):
             self.output_mutable['model'] = res
 
 
-class ScanND(PlanBase):
+class PlanND(PlanBase):
     _fields = ['detectors', 'cycler']
     _derived_fields = ['motors', 'num']
 
@@ -736,12 +736,12 @@ class ScanND(PlanBase):
             yield Msg('save')
 
 
-class _OuterProductPlanBase(ScanND):
+class _OuterProductPlanBase(PlanND):
     # We define _fields not for Struct, but for PlanBase.log* methods.
     _fields = ['detectors', 'args']
     _derived_fields = ['motors', 'shape', 'num', 'extents', 'snaking']
 
-    # Overriding ScanND is the only way to do this; we cannot build the cycler
+    # Overriding PlanND is the only way to do this; we cannot build the cycler
     # until we measure the initial positions at the beginning of the run.
     @property
     def motors(self):
@@ -776,7 +776,7 @@ class _OuterProductPlanBase(ScanND):
 
     @property
     def cycler(self):
-        # Build a Cycler for ScanND.
+        # Build a Cycler for PlanND.
         cyclers = []
         snake_booleans = []
         for motor, start, stop, num, snake in chunked(self.args, 5):
@@ -797,12 +797,12 @@ class _OuterProductPlanBase(ScanND):
         return self._args
 
 
-class _InnerProductPlanBase(ScanND):
+class _InnerProductPlanBase(PlanND):
     # We define _fields not for Struct, but for PlanBase.log* methods.
     _fields = ['detectors', 'num', 'args']
     _derived_fields = ['motors', 'extents']
 
-    # Overriding ScanND is the only way to do this; we cannot build the cycler
+    # Overriding PlanND is the only way to do this; we cannot build the cycler
     # until we measure the initial positions at the beginning of the run.
     @property
     def motors(self):
@@ -833,7 +833,7 @@ class _InnerProductPlanBase(ScanND):
 
     @property
     def cycler(self):
-        # Build a Cycler for ScanND.
+        # Build a Cycler for PlanND.
         cyclers = []
         for motor, start, stop, in chunked(self.args, 3):
             init_pos = self._init_pos[motor]
