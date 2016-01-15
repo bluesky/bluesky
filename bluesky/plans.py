@@ -98,9 +98,8 @@ class PlanBase(Struct):
             yield from self.post_run(self)
 
     def _gen(self):
-        raise NotImplementedError("PlanBase is a base class, you must "
-                                  "sub-class it and override this method "
-                                  "(_gen)")
+        "Subclasses should override this method to add the main plan content."
+        yield from []
 
 
 class Count(PlanBase):
