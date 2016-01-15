@@ -1,4 +1,5 @@
 from io import StringIO
+from pprint import pformat
 TEMPLATES = {}
 TEMPLATES['long'] = """
 {{- start.plan_type }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})
@@ -14,8 +15,8 @@ Scan Plan
 Call:
     {{ start.signature }}
 {% endif %}
-Metaadata
----------
+Metadata
+--------
 {% for k, v in start.items() -%}
 {%- if k not in ['plan_type', 'plan_args'] -%}{{ k }} : {{ v }}
 {% endif -%}
@@ -62,7 +63,7 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None):
                 ensure : bool
                     If a property, tag or logbook is not in the Olog then
                     create the property, tag or logbook before making the log
-s                    entry. Seting ensure to True will set verify to False.
+                    entry. Seting ensure to True will set verify to False.
 
                 '''
                 pass
@@ -120,3 +121,34 @@ def call_str(start, call_template=None):
         call_template = TEMPLATES['call']
     call_renderer = env.from_string(call_template)
     return call_renderer.render(start=start)
+
+
+class OlogCallback(CallbackBase):
+    """Example callback to customize the logbook.
+
+    This is not necessarily the best example of how to customize the log book,
+    but it is something that fits the needs of CHX
+
+    Example
+    -------
+    # add this callback to the run engine
+    >>> gs.RE.subscribe('start', OlogCallback())
+    # turn off the default logger
+    >>> gs.RE.logbook = None
+    """
+    def __init__(self):
+        # import a whole mess of stuff when this thing gets created
+        from pyOlog import SimpleOlogClient
+        self.client = SimpleOlogClient()
+
+    def start(self, doc):
+        from IPython import get_ipython
+        commands = list(get_ipython().history_manager.get_range())
+        document_content = ('%s: %s\n\n'
+                            'RunStart Document\n'
+                            '-----------------\n'
+                            '%s' % (doc['scan_id'],
+                                    commands[-1][2],
+                                    pformat(doc)))
+        olog_status = self.client.log(document_content, logbooks='Data Acquisition')
+        logger.debug('client.log returned %s' % olog_status)
