@@ -287,11 +287,11 @@ class AbsScanPlan(AbsListScanPlan):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = AbsScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_scan)
+    >>> my_plan = AbsScanPlan([det1, det2], motor, 0, 1, 10)
+    >>> RE(my_plan)
     # Adjust a Parameter and run again.
-    >>> my_scan.num = 100
-    >>> RE(my_scan)
+    >>> my_plan.num = 100
+    >>> RE(my_plan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
     _derived_fields = AbsListScanPlan._derived_fields + ['steps']
@@ -322,11 +322,11 @@ class LogAbsScanPlan(AbsListScanPlan):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogAbsScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_scan)
+    >>> my_plan = LogAbsScanPlan([det1, det2], motor, 0, 1, 10)
+    >>> RE(my_plan)
     # Adjust a Parameter and run again.
-    >>> my_scan.num = 100
-    >>> RE(my_scan)
+    >>> my_plan.num = 100
+    >>> RE(my_plan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
     _derived_fields = AbsListScanPlan._derived_fields + ['steps']
@@ -357,11 +357,11 @@ class DeltaScanPlan(DeltaListScanPlan):
     --------
     Scan motor1 from 0 to 1 in ten steps.
 
-    >>> my_scan = DeltaScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_scan)
+    >>> my_plan = DeltaScanPlan([det1, det2], motor, 0, 1, 10)
+    >>> RE(my_plan)
     # Adjust a Parameter and run again.
-    >>> my_scan.num = 100
-    >>> RE(my_scan)
+    >>> my_plan.num = 100
+    >>> RE(my_plan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
     _derived_fields = DeltaListScanPlan._derived_fields + ['steps']
@@ -392,11 +392,11 @@ class LogDeltaScanPlan(DeltaListScanPlan):
     --------
     Scan motor1 from 0 to 10 in ten log-spaced steps.
 
-    >>> my_scan = LogDeltaScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_scan)
+    >>> my_plan = LogDeltaScanPlan([det1, det2], motor, 0, 1, 10)
+    >>> RE(my_plan)
     # Adjust a Parameter and run again.
-    >>> my_scan.num = 100
-    >>> RE(my_scan)
+    >>> my_plan.num = 100
+    >>> RE(my_plan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
     _derived_fields = DeltaListScanPlan._derived_fields + ['steps']
