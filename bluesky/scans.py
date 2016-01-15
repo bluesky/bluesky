@@ -68,8 +68,8 @@ class ScanBase(Struct):
         for flyer in self.flyers:
             yield Msg('collect', flyer, block_group='_flyers')
             yield Msg('wait', None, '_flyers')
-        yield from self._post_scan()
         yield Msg('close_run')
+        yield from self._post_scan()
 
     def _pre_scan(self):
         for obj in self._objects:
