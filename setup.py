@@ -21,7 +21,8 @@ setup(
               'bluesky.callbacks'],
     package_data={'bluesky': ['schema/*.json']},
     install_requires=['jsonschema', 'traitlets', 'prettytable', 'cycler',
-                      'numpy', 'matplotlib', 'super_state_machine'],
+                      'numpy', 'matplotlib', 'super_state_machine',
+                      'historydict'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3.4",
