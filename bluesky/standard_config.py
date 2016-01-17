@@ -25,7 +25,7 @@ from time import sleep
 import numpy as np
 
 try:
-    import history
+    import historydict
 
     def get_history():
         target_path = os.path.join(os.path.expanduser('~'), '.bluesky',
@@ -36,14 +36,14 @@ try:
                 print('Found metadata history in existing file.')
             else:
                 print('Storing metadata history in a new file.')
-            return history.History(target_path)
+            return historydict.HistoryDict(target_path)
         except IOError as exc:
             print(exc)
-            print('Storing History in memory; it will not persist.')
-            return history.History(':memory:')
+            print('Storing HistoryDict in memory; it will not persist.')
+            return historydict.HistoryDict(':memory:')
 
 except ImportError:
-    warnings.warn("You do not have history installed, your metadata will not"
+    warnings.warn("You do not have historydict installed, your metadata will not"
                   "be persistent or have any history of the values.")
 
     def get_history():

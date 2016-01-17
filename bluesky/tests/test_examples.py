@@ -199,12 +199,12 @@ def test_md_dict():
     yield _md, {}
 
 
-def test_md_history():
+def test_md_historydict():
     try:
-        from history import History
+        from historydict import HistoryDict
     except ImportError:
         raise SkipTest()
-    yield _md, History(':memory:')
+    yield _md, HistoryDict(':memory:')
 
 
 def _md(md):
