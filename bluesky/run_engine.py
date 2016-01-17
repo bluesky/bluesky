@@ -148,7 +148,7 @@ class RunEngine:
             The default is a standard Python dictionary, but fancier objects
             can be used to store long-term history and persist it between
             sessions. The standard configuration instantiates a Run Engine with
-            history.History, a simple interface to a sqlite file. Any object
+            historydict.HistoryDict, a simple interface to a sqlite file. Any object
             supporting `__getitem__`, `__setitem__`, and `clear` will work.
 
         md_validator : callable, optional
@@ -796,7 +796,7 @@ class RunEngine:
         self.md['scan_id'] = scan_id
         logger.debug("New transient id %d", scan_id)
 
-        # Metadata can come from history, __call__, or the open_run Msg.
+        # Metadata can come from historydict, __call__, or the open_run Msg.
         self._metadata_per_run.update(self.md)
         if hasattr(self._plan, 'md'):
             self._metadata_per_run.update(self._plan.md)
