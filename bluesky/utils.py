@@ -301,20 +301,30 @@ SUBS_NAMES = ['all', 'start', 'stop', 'event', 'descriptor']
 def normalize_subs_input(subs):
     "Accept a callable, a list, or a dict. Normalize to a dict of lists."
     if subs is None:
-        return {}
-    if callable(subs):
-        return {'all': [subs]}
+        normalized = {}
+    elif callable(subs):
+        normalized = {'all': [subs]}
     elif hasattr(subs, 'items'):
-        for key in subs:
+        for key, funcs in list(subs.items()):
             if key not in SUBS_NAMES:
                 raise KeyError("Keys must be one of {!r:0}".format(SUBS_NAMES))
-        return subs
+            if callable(funcs):
+                subs[key] = [funcs]
+        normalized = subs
     elif isinstance(subs, Iterable):
-        return {'all': subs}
+        normalized = {'all': subs}
     else:
         raise ValueError("Subscriptions should be a callable, a list of "
                          "callables, or a dictionary mapping subscription "
                          "names to lists of callables.")
+    # Validates that all entries are callables.
+    for name, funcs in normalized.items():
+        for func in funcs:
+            if not callable(func):
+                raise ValueError("subs values must be functions or lists "
+                                "of functions. The offending entry is\n "
+                                "{0}".format(func))
+    return normalized
 
 
 class DefaultSubs:

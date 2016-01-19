@@ -243,6 +243,7 @@ class RunEngine:
             'stage': self._stage,
             'unstage': self._unstage,
             'subscribe': self._subscribe,
+            'unsubscribe': self._unsubscribe,
             'open_run': self._open_run,
             'close_run': self._close_run,
             'wait_for': self._wait_for,
@@ -499,29 +500,16 @@ class RunEngine:
                              "was aborted before it began. No records "
                              "of this run were created.")
 
-        # Register temporary subscriptions. Save tokens to unsubscribe later.
-        subs = normalize_subs_input(subs)
-        if hasattr(plan, 'subs'):
-            scan_subs = normalize_subs_input(plan.subs)
-        else:
-            scan_subs = {}
         self._clear_call_cache()
-        for name, funcs in itertools.chain(subs.items(), scan_subs.items()):
-            if not isinstance(funcs, Iterable):
-                # Take funcs to be a single function.
-                funcs = [funcs]
+        self.state = 'running'
+
+        for name, funcs in normalize_subs_input(subs).items():
             for func in funcs:
-                if not callable(func):
-                    raise ValueError("subs values must be functions or lists "
-                                     "of functions. The offending entry is\n "
-                                     "{0}".format(func))
                 self._temp_callback_ids.add(self.subscribe(name, func))
 
-        metadata_kw['plan_type'] = getattr(type(plan), '__name__')
         self._plan = plan
         self._metadata_per_call.update(metadata_kw)
 
-        self.state = 'running'
         gen = iter(plan)  # no-op on generators; needed for classes
         if not isinstance(gen, types.GeneratorType):
             # If plan does not support .send, we must wrap it in a generator.
@@ -798,8 +786,10 @@ class RunEngine:
 
         # Metadata can come from historydict, __call__, or the open_run Msg.
         self._metadata_per_run.update(self.md)
-        if hasattr(self._plan, 'md'):
-            self._metadata_per_run.update(self._plan.md)
+        # Set a plan_type here, but it could be overruled,
+        # which is useful if multiple plans were chained together.
+        plan_type = type(self._plan).__name__
+        self._metadata_per_run.update({'plan_type': plan_type})
         self._metadata_per_run.update(self._metadata_per_call)
         self._metadata_per_run.update(msg.kwargs)
 
@@ -1100,13 +1090,29 @@ class RunEngine:
         """
         Add a subscription after the run has started.
 
-        This, like subscriptions passed to __call__, apply to one run only.
+        This, like subscriptions passed to __call__, will be removed at the
+        end by the RunEngine.
         """
         logger.debug("Adding subsription %r", msg)
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
         return token
+
+    @asyncio.coroutine
+    def _unsubscribe(self, msg):
+        """
+        Remove a subscription during a call -- useful for a multi-run call
+        where subscriptions are wanted for some runs but not others.
+        """
+        logger.debug("Removing subscription %r", msg)
+        _, obj, args, kwargs = msg
+        try:
+            token = kwargs['token']
+        except AttributeError:
+            token, = args
+        self.unsubscribe(token)
+        self._temp_callback_ids.remove(token)
 
     @asyncio.coroutine
     def emit(self, name, doc):
