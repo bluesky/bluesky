@@ -8,8 +8,7 @@ import logging
 import warnings
 from bluesky.run_engine import RunEngine
 from bluesky.register_mds import register_mds
-from bluesky.hardware_checklist import (connect_mds_mongodb,
-                                        connect_fs_mongodb, connect_olog,
+from bluesky.hardware_checklist import (connect_olog,
                                         connect_channelarchiver,
                                         check_storage, connect_pv,
                                         assert_pv_equal, assert_pv_greater,
@@ -149,10 +148,6 @@ def basic_checklist(ca_url=None, disk_storage=None, pv_names=None,
                    ('PV:DOG', 'dog is at least 4', assert_pv_greater, 4),
                    ('PV:BEAR', 'bear is 4-6', assert_pv_in_band, 4, 6)])
     """
-    print("  Attempting to connect to metadatastore mongodb...")
-    _try_and_print(connect_mds_mongodb, swallow_errors=swallow_errors)
-    print("  Attempting to connect to filestore mongodb...")
-    _try_and_print(connect_fs_mongodb, swallow_errors=swallow_errors)
     print("  Attempting to connect to the olog...")
     _try_and_print(connect_olog, swallow_errors=swallow_errors)
 
