@@ -26,7 +26,7 @@ Examples:
 
 The full list of built-in commands is covered systematically
 :ref:`elsewhere <commands>`.
-Below, we build up a collection of example scans demonstrating a variety of
+Below, we build up a collection of example plans demonstrating a variety of
 use cases.
 
 Simplest Scan
@@ -307,16 +307,16 @@ them once. Observe:
 
 Why not just use a list? Generators support two-way commuication through a
 sophisticated language feature called coroutines, which makes it possible
-to write adaptive and responsive scans.
+to write adaptive and responsive plans.
 
 Reusable Scans
 ++++++++++++++
 
-By contrast, bluesky's built-in scans are reusable.
+By contrast, bluesky's built-in plans are reusable.
 
 .. ipython:: python
 
-    from bluesky.scans import AbsListScan
+    from bluesky.plans import AbsListScanPlan
     s = AbsListScan([det], motor, [1, 2, 3])
     count_messages(s)
     count_messages(s)  # reusable!
@@ -351,8 +351,8 @@ subclass bluesky's ``ScanBase`` class.
 
 .. ipython:: python
 
-    from bluesky.scans import ScanBase
-    class ReusableStepscan(ScanBase):
+    from bluesky.plans import PlanBase
+    class ReusableStepscan(PlanBase):
         _fields = ['det', 'motor']  # These magically become the args.
         def _gen(self):
             yield from stepscan(self.det, self.motor)

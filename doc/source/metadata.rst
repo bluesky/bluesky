@@ -17,7 +17,6 @@ identify and analyze the data later.
     gs.RE.md['beamline_id'] = 'demo'
     gs.RE.md['owner'] = 'demo'
     gs.RE.md['group'] = 'demo'
-    gs.RE.md['config'] = {}
 
 .. ipython:: python
 
@@ -58,7 +57,6 @@ The following fields are automatically reused between runs unless overridden.
 * owner
 * group
 * beamline_id
-* config (which should rarely change; see below)
 * scan_id (which is automatically incremented)
 
 Custom fields, like 'experimenter' and 'mood' in the example above, are not
@@ -106,3 +104,20 @@ raise a ``KeyError`` if they are not set. These fields are:
 
 ``standard_config.py`` fills some of these in automatically (e.g., 'owner'
 defaults to the username of the UNIX user currently logged in).
+
+Metadata Validator
+------------------
+
+Additional, customized metadata validation can be added to the RunEngine.
+For example, to ensure that a run will not be executed unless the parameter
+'sample_number' is specified, define a function that accepts a dictionary
+argument and raises if 'sample_number' is not found.
+
+.. code-block:: python
+
+    def ensure_sample_number(md):
+        if 'sample_number' not in md:
+            raise ValueError("You forgot the sample number.")
+
+Apply this function by setting ``RE.md_validator = ensure_sample_number``.
+The function will be executed immediately before each new run in opened.
