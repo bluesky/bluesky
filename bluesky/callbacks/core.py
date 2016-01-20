@@ -636,12 +636,16 @@ class LiveSpecFile(CallbackBase):
         # grab the literal last command that the user typed at the command line
         # in IPython and format it to remove the parentheses and commas
         # e.g. dscan(th, 0, 1, 10, .1) -> dscan th 0 1 10 .1
+        ipy_instance = get_ipython()
         last_command = list(
-            get_ipython().history_manager.get_range())[-1][2]
+            ipy_instance.history_manager.get_range())[-1][2]
         last_command = last_command.replace('(', ' ')
         last_command = last_command.replace(')', ' ')
         last_command = last_command.replace(',', ' ')
-        dets = eval(doc['detectors'])
+        tree = ast.parse(doc['detectors'])
+        self._name_finder.visit(tree)
+        detname = self._name_finder.name
+        self.acquisition_time = ipy_instance.user_global_ns[detname].acquire_time
         # grab the acquisition time from one of the detectors.  This part does
         # not need to be changed if the detectors do not have the same
         # acquisition time. acquisition_time is just one of those things that
