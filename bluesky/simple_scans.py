@@ -28,7 +28,8 @@ from bluesky.callbacks import LiveTable, LivePlot, LiveRaster, _get_obj_fields
 from bluesky.scientific_callbacks import PeakStats
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
-from bluesky.utils import normalize_subs_input, Subs, DefaultSubs
+from bluesky.utils import (normalize_subs_input, Subs, DefaultSubs,
+                           first_key_heuristic)
 from collections import defaultdict
 from itertools import filterfalse, chain
 
@@ -55,21 +56,23 @@ def table_gs_only(scan):
 
 def plot_first_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    fig_name = 'BlueSky: {} v {}'.format(list(scan.motors)[0].name, gs.PLOT_Y)
+    key = first_key_heuristic(list(scan.motors)[0])
+    fig_name = 'BlueSky: {} v {}'.format(key, gs.PLOT_Y)
     fig = plt.figure(fig_name)
     if not gs.OVERPLOT:
         fig.clf()
-    return LivePlot(gs.PLOT_Y, list(scan.motors)[0].name, fig=fig)
+    return LivePlot(gs.PLOT_Y, key, fig=fig)
 
 
 def plot_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    fig_name = 'BlueSky: {} v {}'.format(scan.motor.name, gs.PLOT_Y)
+    key = first_key_heuristic(scan.motor)
+    fig_name = 'BlueSky: {} v {}'.format(key, gs.PLOT_Y)
 
     fig = plt.figure(fig_name)
     if not gs.OVERPLOT:
         fig.clf()
-    return LivePlot(gs.PLOT_Y, scan.motor.name, fig=fig)
+    return LivePlot(gs.PLOT_Y, key, fig=fig)
 
 
 def raster(scan):
@@ -86,16 +89,16 @@ def raster(scan):
 
 def peakstats_first_motor(scan):
     "Set up peakstats"
-    ps = PeakStats(_get_obj_fields([list(scan.motors)[0]])[0],
-                   gs.MASTER_DET_FIELD, edge_count=3)
+    key = first_key_heuristic(list(scan.motors)[0])
+    ps = PeakStats(key, gs.MASTER_DET_FIELD, edge_count=3)
     gs.PS = ps
     return ps
 
 
 def peakstats(scan):
     "Set up peakstats"
-    ps = PeakStats(_get_obj_fields([scan.motor])[0],
-                   gs.MASTER_DET_FIELD, edge_count=3)
+    key = first_key_heuristic(scan.motor)
+    ps = PeakStats(key, gs.MASTER_DET_FIELD, edge_count=3)
     gs.PS = ps
     return ps
 

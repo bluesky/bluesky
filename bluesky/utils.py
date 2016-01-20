@@ -387,3 +387,30 @@ def snake_cyclers(cyclers, snake_booleans):
             expanded = v2[:total_length]
             new_cyclers.append(cycler(k, expanded))
     return reduce(operator.add, new_cyclers)
+
+
+def first_key_heuristic(device):
+    """
+    Get the fully-qualified data key for the first entry in read_attrs.
+
+    This will raise is that entry's `describe()` method does not return a
+    dictionary with exactly one key.
+    """
+    first_attr = device.read_attrs[0]
+    key, = getattr(device, first_attr).describe().keys()
+    return key
+
+
+def scalar_heuristic(device):
+    """
+    If a device like a motor has multiple read_fields, we need some way of
+    knowing which one is the 'primary' or 'scalar' position, the one to
+    use as the "initial position" when computing a relative trajecotry
+    or the one to plot against when automatically choosing at x variable.
+
+    This is a hot-fix in advance of the Winter 2016 cycle -- should be
+    rethought when there is time.
+    """
+    reading = device.read()
+    key = first_key_heuristic(device)
+    return reading[key]['value']

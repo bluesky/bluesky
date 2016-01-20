@@ -7,12 +7,31 @@ from .run_engine import Msg
 loop = asyncio.get_event_loop()
 
 
+class MockSignal:
+    "hotfix for 2016 winter cycle -- build out more thoroughly later"
+    def __init__(self, field):
+        self._field = field
+
+    def read(self):
+        return {self._field: (0, 0)}
+
+    def describe(self):
+        return {self._field: (0, 0)}
+
+
 class Base:
     def __init__(self, name, fields):
         self.name = name
         self._fields = fields
         self._cb = None
         self._ready = False
+        self.read_attrs = fields
+        self.configuration_attrs = []
+        for field in fields:
+            if isinstance(field, str):
+                # Flyers pass objects in as fields, not names.
+                # hotfix 2016 -- revisit this!
+                setattr(self, field, MockSignal(field))
 
     def describe(self):
         return {k: {'source': self.name, 'dtype': 'number', 'shape': None}
