@@ -668,7 +668,7 @@ class LiveSpecFile(CallbackBase):
                 f.write('#M%s %s %s\n' % (idx, name, str(positioner.position)))
         print("RunStart document received in LiveSpecFile")
         try:
-            tree = ast.parse(doc['motor'].name)
+            tree = ast.parse(doc['motor'])
             self._name_finder.visit(tree)
             self.motorname = self._name_finder.name
         except AttributeError:
