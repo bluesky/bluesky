@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from datetime import datetime
 import numpy as np
-
+import ast
 import os
 import logging
 logger = logging.getLogger(__name__)
@@ -540,6 +540,26 @@ class LiveRaster(CallbackBase):
         self.im.set_array(self._Idata)
 
 
+class _NameVisitor(ast.NodeVisitor):
+    """Helper class to specifically look for the keyword `name=` and extract
+    the value passed to the kwarg
+
+    Example
+    -------
+    >>> doc = db[-1]
+    >>> tree = ast.parse(doc.start.motor)
+    >>> visitor = _NameVisitor()
+    >>> visitor.visit(tree)
+    >>> motor_name = visitor.name
+    >>> print(motor_name)
+    diff_yh
+    """
+    def visit_keyword(self, node):
+        if node.arg == 'name':
+            self.name = node.value.s # stash the motor name and be done with it
+        else:
+            self.generic_visit(node) # keep visiting nodes
+
 
 class LiveSpecFile(CallbackBase):
     """Callback to export scalar values to a spec file for viewing
@@ -571,6 +591,7 @@ class LiveSpecFile(CallbackBase):
         """
         super().__init__()
         self.specpath = specpath
+        self._name_finder = _NameVisitor()
 
     def _write_spec_header(doc):
         """
@@ -645,7 +666,14 @@ class LiveSpecFile(CallbackBase):
                 f.write('#M%s %s %s\n' % (idx, name, str(positioner.position)))
         print("RunStart document received in LiveSpecFile")
         #raise
-        self.motorname = eval(doc['motor']).name
+        try:
+            tree = ast.parse(doc['motor'].name)
+            self._name_finder.visit(tree)
+            self.motorname = self._name_finder.name
+        except AttributeError:
+            # if there is no motor in the header, then just default the motor
+            # name to the scan type
+            self.motorname = doc.scan_type
 
     def descriptor(self, doc):
         keys = sorted(list(doc['data_keys'].keys()))
