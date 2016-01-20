@@ -28,7 +28,10 @@ class Base:
         self.read_attrs = fields
         self.configuration_attrs = []
         for field in fields:
-            setattr(self, field, MockSignal(field))
+            if isinstance(field, str):
+                # Flyers pass objects in as fields, not names.
+                # hotfix 2016 -- revisit this!
+                setattr(self, field, MockSignal(field))
 
     def describe(self):
         return {k: {'source': self.name, 'dtype': 'number', 'shape': None}
