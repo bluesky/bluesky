@@ -9,38 +9,6 @@ from collections import namedtuple
 logger = logging.getLogger(__name__)
 
 
-def connect_mds_mongodb():
-    import metadatastore.conf
-    _connect_mongodb('metadatastore', metadatastore.conf.connection_config)
-
-
-def connect_fs_mongodb():
-    import filestore.conf
-    _connect_mongodb('filestore', filestore.conf.connection_config)
-
-
-def _connect_mongodb(name, connection_config):
-    import pymongo
-    cc = connection_config
-    logger.debug("Attempting to connect to %s mongodb at host %s "
-                 "and port %d", name, cc['host'], cc['port'])
-    try:
-        mc = pymongo.MongoClient(cc['host'], cc['port'])
-    except Exception:
-        logger.debug("Failed to connect to %s mongodb.", name)
-        raise
-    else:
-        logger.debug("Successfully connected to %s mongodb.", name)
-    logger.debug("Attemping to find %s database called %s in mongodb.", name,
-                 cc['database'])
-    if cc['database'] in mc.database_names():
-        logger.debug("Database for %s successfully found.", name)
-    else:
-        logger.debug("Database for %s not found.", name)
-        raise RuntimeError("Database for %s called %s not found." %
-                           (name, cc['database']))
-
-
 def connect_olog():
     import pyOlog
     import pyOlog.conf
@@ -113,6 +81,7 @@ def _skeptical_caget(pv):
 
 def connect_pv(pv):
     _skeptical_caget(pv)
+
 
 def assert_pv_equal(pv, value):
     actual = _skeptical_caget(pv)

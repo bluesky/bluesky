@@ -6,50 +6,6 @@ import time
 from bluesky.hardware_checklist import *
 
 
-def test_connect_mds_mongodb():
-    try:
-        from metadatastore.utils.testing import mds_setup, mds_teardown
-        import metadatastore.commands as mdsc
-    except ImportError:
-        raise nose.SkipTest
-
-    try:
-        mds_setup()
-        # Until we insert something, the db is not actually created.
-
-        mdsc.insert_run_start(scan_id=3022013,
-                             beamline_id='testbed',
-                             owner='tester',
-                             group='awesome-devs',
-                             project='Nikea',
-                             time=time.time(),
-                             uid=str(uuid.uuid4()))
-        connect_mds_mongodb()
-
-    except:
-        raise
-    finally:
-        mds_teardown()
-
-
-def test_connect_fs_mongodb():
-    raise KnownFailureTest
-    # FS does not have fancy connection_config that MDS does
-    # Once it is caught up, this will be pass.
-    try:
-        import filestore
-    except ImportError:
-        raise nose.SkipTest
-    from filestore.utils.testing import fs_setup, fs_teardown
-    try:
-        fs_setup()
-        connect_fs_mongodb()
-    except:
-        raise
-    finally:
-        fs_teardown()
-
-
 def test_check_storage():
     check_storage('/', 1)
     assert_raises(RuntimeError, check_storage, '/', 10000000000000000000)
