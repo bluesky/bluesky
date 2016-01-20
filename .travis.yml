@@ -30,11 +30,13 @@ install:
   - conda update conda --yes
   - conda create -n testenv --yes nose python=$TRAVIS_PYTHON_VERSION scipy requests matplotlib jsonschema traitlets
   - source activate testenv
-  - conda install --yes  historydict boltons prettytable doct -c lightsource2
-  - conda install --yes super_state_machine cycler databroker xray-vision lmfit -c tacaswell
-  - conda remove metadatastore --yes
+  - conda install --yes metadatastore databroker historydict boltons prettytable doct -c lightsource2 -c conda-forge -c soft-matter
+  - conda remove metadatastore databroker filestore --yes
+  - conda install --yes super_state_machine cycler xray-vision lmfit -c tacaswell
+  - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
+  - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
   - 'pip install https://github.com/tacaswell/metadatastore/zipball/API_match_mds_schema#egg=metadatastore'
-  - conda install --yes pymongo=2.6.3 pcaspy pyepics readline -c tacaswell
+  - conda install --yes pymongo pcaspy pyepics readline -c tacaswell
   - pip install coveralls
   - python setup.py install
 
