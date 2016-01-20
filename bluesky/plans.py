@@ -539,11 +539,15 @@ class AdaptiveDeltaScanPlan(_AdaptivePlanBase):
         return getattr(self, '_init_pos', None)
 
     def _pre(self):
-        ret = yield Msg('read', self.motor)
-        if len(ret.keys()) > 1:
-            raise NotImplementedError("Can't DScan a multiaxis motor")
-        key, = ret.keys()
-        current_value = ret[key]['value']
+        try:
+            current_value = self.motor.position
+        except AttributeError:
+            ret = yield Msg('read', self.motor)
+            if len(ret.keys()) > 1:
+                raise NotImplementedError("Can't DScan a multiaxis motor")
+            key, = ret.keys()
+            current_value = ret[key]['value']
+
         self._init_pos = current_value
         yield from super()._pre()
 
@@ -899,11 +903,14 @@ class InnerProductDeltaScanPlan(_InnerProductPlanBase):
         "Get current position for each motor."
         self._init_pos = {}
         for motor, start, stop, in chunked(self.args, 3):
-            ret = yield Msg('read', motor)
-            if len(ret.keys()) > 1:
-                raise NotImplementedError("Can't DScan a multiaxis motor")
-            key, = ret.keys()
-            current_value = ret[key]['value']
+            try:
+                current_value = motor.position
+            except AttributeError:
+                ret = yield Msg('read', motor)
+                if len(ret.keys()) > 1:
+                    raise NotImplementedError("Can't DScan a multiaxis motor")
+                key, = ret.keys()
+                current_value = ret[key]['value']
             self._init_pos[motor] = current_value
         yield from super()._pre()
 
@@ -974,11 +981,14 @@ class OuterProductDeltaScanPlan(_OuterProductPlanBase):
         "Get current position for each motor."
         self._init_pos = {}
         for motor, start, stop, num, snake in chunked(self.args, 5):
-            ret = yield Msg('read', motor)
-            if len(ret.keys()) > 1:
-                raise NotImplementedError("Can't DScan a multiaxis motor")
-            key, = ret.keys()
-            current_value = ret[key]['value']
+            try:
+                current_value = motor.position
+            except AttributeError:
+                ret = yield Msg('read', motor)
+                if len(ret.keys()) > 1:
+                    raise NotImplementedError("Can't DScan a multiaxis motor")
+                key, = ret.keys()
+                current_value = ret[key]['value']
             self._init_pos[motor] = current_value
         yield from super()._pre()
 
