@@ -6,7 +6,8 @@ from boltons.iterutils import chunked
 from cycler import cycler
 import numpy as np
 from .run_engine import Msg
-from .utils import Struct, snake_cyclers, Subs, normalize_subs_input
+from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
+                    scalar_heuristic)
 
 
 class PlanBase(Struct):
@@ -236,11 +237,7 @@ class DeltaListScanPlan(Plan1D):
 
     def _pre(self):
         "Get current position for the motor."
-        ret = yield Msg('read', self.motor)
-        if len(ret.keys()) > 1:
-            raise NotImplementedError("Can't DScan a multiaxis motor")
-        key, = ret.keys()
-        self._init_pos = ret[key]['value']
+        self._init_pos = scalar_heuristic(self.motor)
         self._abs_steps = np.asarray(self.steps) + self._init_pos
         yield from super()._pre()
 
@@ -539,16 +536,7 @@ class AdaptiveDeltaScanPlan(_AdaptivePlanBase):
         return getattr(self, '_init_pos', None)
 
     def _pre(self):
-        try:
-            current_value = self.motor.position
-        except AttributeError:
-            ret = yield Msg('read', self.motor)
-            if len(ret.keys()) > 1:
-                raise NotImplementedError("Can't DScan a multiaxis motor")
-            key, = ret.keys()
-            current_value = ret[key]['value']
-
-        self._init_pos = current_value
+        self._init_pos = scalar_heuristic(self.motor)
         yield from super()._pre()
 
     def _post(self):
@@ -903,15 +891,7 @@ class InnerProductDeltaScanPlan(_InnerProductPlanBase):
         "Get current position for each motor."
         self._init_pos = {}
         for motor, start, stop, in chunked(self.args, 3):
-            try:
-                current_value = motor.position
-            except AttributeError:
-                ret = yield Msg('read', motor)
-                if len(ret.keys()) > 1:
-                    raise NotImplementedError("Can't DScan a multiaxis motor")
-                key, = ret.keys()
-                current_value = ret[key]['value']
-            self._init_pos[motor] = current_value
+            self._init_pos[motor] = scalar_heuristic(motor)
         yield from super()._pre()
 
     def _post(self):
@@ -981,15 +961,7 @@ class OuterProductDeltaScanPlan(_OuterProductPlanBase):
         "Get current position for each motor."
         self._init_pos = {}
         for motor, start, stop, num, snake in chunked(self.args, 5):
-            try:
-                current_value = motor.position
-            except AttributeError:
-                ret = yield Msg('read', motor)
-                if len(ret.keys()) > 1:
-                    raise NotImplementedError("Can't DScan a multiaxis motor")
-                key, = ret.keys()
-                current_value = ret[key]['value']
-            self._init_pos[motor] = current_value
+            self._init_pos[motor] = scalar_heuristic(motor)
         yield from super()._pre()
 
     def _post(self):
