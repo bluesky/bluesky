@@ -603,13 +603,15 @@ class LiveSpecFile(CallbackBase):
         -------
         spec_header : list
             The spec header as a list of lines
-        """
-        # write a new spec file header!
+        Note
+        ----
+        Writes a new spec file header that looks like this:
         #F /home/xf11id/specfiles/test.spec
         #E 1449179338.3418093
         #D 2015-12-03 16:48:58.341809
         #C xf11id  User = xf11id
         #O [list of all motors, all on one line]
+        """
         session_manager = get_session_manager()
         pos = session_manager.get_positioners()
         spec_header = [
@@ -665,7 +667,6 @@ class LiveSpecFile(CallbackBase):
             for idx, (name, positioner) in enumerate(sorted(pos.items())):
                 f.write('#M%s %s %s\n' % (idx, name, str(positioner.position)))
         print("RunStart document received in LiveSpecFile")
-        #raise
         try:
             tree = ast.parse(doc['motor'].name)
             self._name_finder.visit(tree)
@@ -676,6 +677,8 @@ class LiveSpecFile(CallbackBase):
             self.motorname = doc.scan_type
 
     def descriptor(self, doc):
+        """Write the header for the actual scan data
+        """
         keys = sorted(list(doc['data_keys'].keys()))
         keys.remove(self.motorname)
         # the order of the keys in SPEC is [acquisition_time, time_in_seconds,
@@ -690,6 +693,8 @@ class LiveSpecFile(CallbackBase):
                                              '  '.join(keys[1:])))
 
     def event(self, doc):
+        """Write one line of scan data
+        """
         t = int(doc['time'])
         vals = [v for k, v in sorted(doc['data'].items()) if k != self.motorname]
         # the order of the keys in SPEC is [acquisition_time, time_in_seconds,
