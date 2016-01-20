@@ -33,7 +33,7 @@ install:
   - conda install --yes boltons prettytable -c lightsource2
   - conda install --yes super_state_machine cycler databroker xray-vision lmfit -c tacaswell
   - conda remove metadatastore --yes
-  - 'pip install https://github.com/tacaswell/metadatastore/zipball/master#egg=metadatastore'
+  - 'pip install https://github.com/tacaswell/metadatastore/zipball/API_match_mds_schema#egg=metadatastore'
   - conda install --yes pymongo=2.6.3 pcaspy pyepics readline -c tacaswell
   - pip install coveralls historydict
   - python setup.py install
