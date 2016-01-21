@@ -1,10 +1,10 @@
-Bluesky Data Collection Interface
+Bluesky Data Collection Framework
 =================================
 
-Bluesky is Python package for interactive data collection. There are three
-components:
+Bluesky is light-weight Python package for interactive data collection. There
+are three components:
 
-* *Messages,* simple, single-step instructions,
+* *Messages,* simple, granular instructions,
 * a *Run Engine,* which processes the messages and coordinates collection, 
 * and *Documents*, Python dictionaries containing data and metadata, organized
   in a
@@ -59,9 +59,9 @@ Robustness
    :maxdepth: 1
    :hidden:
 
-   simple_api
    plans 
    callbacks
    state-machine
    metadata 
    custom-plans
+   simple_api

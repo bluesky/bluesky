@@ -538,7 +538,7 @@ def cautious_stepscan(det, motor):
         ret_d = yield Msg('read', det)
         yield Msg('save')
         print("Value at {m} is {d}. Pausing.".format(
-            m=ret_m[motor.name]['value'], d=ret_d[det1._name]['value']))
+            m=ret_m[motor.name]['value'], d=ret_d[det.name]['value']))
         yield Msg('pause', None, defer=True)
     yield Msg('close_run')
 

@@ -114,7 +114,7 @@ set plot limits in advance.
 
 .. ipython:: python
 
-    class PlottingAbsScan(AbsScan):
+    class PlottingAbsScan(AbsScanPlan):
         @property
         def subs(self):
             lp = LivePlot(self.detectors[0], self.motor,
@@ -137,7 +137,7 @@ The method ``RE.subscribe`` passes through to this method:
 .. automethod:: bluesky.run_engine.Dispatcher.subscribe
 
 
-*Critical subscriptions* are also applied to every scan. See below for more on
+*Lossless subscriptions* are also applied to every scan. See below for more on
 this topic.
 
 Running Callbacks on Old Data

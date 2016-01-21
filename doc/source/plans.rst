@@ -15,9 +15,10 @@ For example, this is a plan:
 Bluesky provides facilities for conveniently generating these plans for many
 common use cases, such as:
 
-* simple 1D linear- and log-spaced trajectories
-* simple or custom N-dimensional trajectories, such as a mesh
-* adaptive sampling, adjusting step size in response to measured slope
+* one-dimensional trajectories (e.g., linear-, log-, or unevenly-spaced)
+* trajectories that move multiple motors together
+* N-dimensional trajectories, such as a mesh
+* adaptive sampling, adjusting step size in response to readings
 
 These plans are generated Mad-Libs style: "fill in the blacks" with motor(s)
 and detector(s), and bluesky generates the set of intructions -- the plan.
@@ -129,17 +130,17 @@ Count
 .. autofunction:: AbsScanPlan
 .. autofunction:: LogAbsScanPlan
 .. autofunction:: AbsListScanPlan
-.. autofunction:: DeltaScan
-.. autofunction:: LogDeltaScan
-.. autofunction:: DeltaListScan
+.. autofunction:: DeltaScanPlan
+.. autofunction:: LogDeltaScanPlan
+.. autofunction:: DeltaListScanPlan
 
 N-dimensional Plans
 -------------------
 
 .. autofunction:: InnerProductAbsScanPlan
 .. autofunction:: OuterProductAbsScanPlan
-.. autofunction:: InnerProductDeltaScan
-.. autofunction:: OuterProductDeltaScan
+.. autofunction:: InnerProductDeltaScanPlan
+.. autofunction:: OuterProductDeltaScanPlan
 .. autofunction:: PlanND
 
 .. _builtin-adaptive-scans:

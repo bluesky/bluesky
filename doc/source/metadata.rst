@@ -13,21 +13,23 @@ identify and analyze the data later.
 
     from bluesky.standard_config import gs, ct
     from bluesky.examples import det
-    gs.DETS = [det]
-    gs.RE.md['beamline_id'] = 'demo'
-    gs.RE.md['owner'] = 'demo'
-    gs.RE.md['group'] = 'demo'
+    from bluesky.plans import Count
+    RE = gs.RE
+    RE.md['beamline_id'] = 'demo'
+    RE.md['owner'] = 'demo'
+    RE.md['group'] = 'demo'
 
 .. ipython:: python
 
-    gs.RE.md['project'] = 'my xray project'
-    gs.RE.md['sample'] = {'color': 'red', 'dimensions': [10, 20, 5]}
+    RE.md['project'] = 'my xray project'
+    RE.md['sample'] = {'color': 'red', 'dimensions': [10, 20, 5]}
 
 Or specified when the scan is run.
 
 .. ipython:: python
 
-    ct(experimenter='Emily', mood='excited')
+    plan = Count([det])
+    RE(plan, experimenter='Emily', mood='excited')
 
 .. note::
 
@@ -47,13 +49,24 @@ Or specified when the scan is run.
     the RunEngine inists that 'sample' be a dictionary. Any other fields
     you invent can be anything you want.
 
-Persistence Between Scans
--------------------------
+Required Fields
+---------------
 
-The following fields are automatically reused between runs unless overridden.
+Some fields and required by our Document specification, and the RunEngine will
+raise a ``KeyError`` if they are not set. These fields are:
 
-* sample
-* project
+* owner
+* group
+* beamline_id (e.g., 'csx')
+
+``standard_config.py`` fills some of these in automatically (e.g., 'owner'
+defaults to the username of the UNIX user currently logged in).
+
+Persistence Between Runs
+------------------------
+
+These fields are automatically reused between runs unless overridden.
+
 * owner
 * group
 * beamline_id
@@ -64,8 +77,7 @@ reused by default, as we can see below.
 
 .. ipython:: python
 
-    ct()
-    ct(sample={'color': 'blue', 'dimensions': [3, 1, 4]})
+    RE(plan, sample={'color': 'blue', 'dimensions': [3, 1, 4]})
 
 To make a custom field persist between sessions, add it to ``RE.md``.
 
@@ -79,31 +91,18 @@ Now it will be included in the metadata of every scan until it is deleted:
 
     del RE.md['color']
 
-To review the metadata before running ascan, check ``gs.RE.md``, which
+To review the metadata before running ascan, check ``RE.md``, which
 behaves like a Python dictionary.
 
 .. ipython:: python
 
-    gs.RE.md['sample']
+    RE.md['sample']
 
 To start fresh:
 
 .. ipython:: python
 
-    gs.RE.md.clear()
-
-Required Fields
----------------
-
-Some fields and required by our Document specification, and the RunEngine will
-raise a ``KeyError`` if they are not set. These fields are:
-
-* owner
-* group
-* beamline_id (e.g., 'csx')
-
-``standard_config.py`` fills some of these in automatically (e.g., 'owner'
-defaults to the username of the UNIX user currently logged in).
+    RE.md.clear()
 
 Metadata Validator
 ------------------

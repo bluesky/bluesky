@@ -1,33 +1,34 @@
-Writing Custom Scans
-====================
-
-.. ipython:: python
-   :suppress:
-
-    from bluesky import Msg
-    from bluesky.examples import motor
-
 Messages
---------
+========
 
-The RunEngine processes *messages*. A message is comprised of:
+The built-in plans are heavily customizable and can satisfy many applications. Most users can find everything they need in :doc:`plans`.
 
-* a command, such as 'read', 'set', or 'pause'
+This section explores Messages, the granular instructions that make up a plan,
+in depth.
+
+
+A message is comprised of:
+
+* a command string, such as 'read', 'set', or 'pause'
 * a target object, such as ``motor``, if applicable
 * positional arguments
 * keyword arguments
 
+
 Examples:
 
-.. ipython:: python
+.. code-block:: python
+
+   from bluesky import Msg
+   from bluesky.examples import motor
 
    Msg('read', motor)
    Msg('set', motor, 5)
 
-The full list of built-in commands is covered systematically
-:ref:`elsewhere <commands>`.
+The ``Msg`` object itself is a namedtuple.
+
 Below, we build up a collection of example plans demonstrating a variety of
-use cases.
+different commands and use cases.
 
 Simplest Scan
 -------------
@@ -36,7 +37,7 @@ Messages are passed to the RunEngine through a Python *generator* (more on
 these below). Here is a very simple scan that sets a motor's position to 5
 and reads the position back.
 
-.. ipython:: python
+.. code-block:: python
 
     def simple_scan(det, motor):
         yield Msg('set', motor, 5)
@@ -51,30 +52,13 @@ The RunEngine processes these messages like so:
 
 To read from a detector, we also need the 'trigger' command.
 
-.. ipython:: python
+.. code-block:: python
 
     def simple_scan(det, motor):
         yield Msg('set', motor, 5)
         yield Msg('read', motor)
         yield Msg('trigger', det)
         yield Msg('read', det)
-
-Setting Objects with Multiple Degrees of Freedom
-------------------------------------------------
-
-It's possible to 'set' an object with multiple degress of freedom.
-
-.. ipython:: python
-
-    def multi_set(multi_motor):
-        yield Msg('set', multi_motor, (), {'h': 1, 'k':2, 'l': 3})
-
-The dictionary in this message is passed to ``multi_motor.set`` as keyword
-arguments:
-
-.. code-block:: python
-
-    multi_motor.set(h=1, k=2, l=3)
 
 Making Scans Responsive
 -----------------------
@@ -83,7 +67,7 @@ Two-way communication is possible between the generator and the RunEngine.
 For example, the 'read' command responds with its reading. We can use it to
 make an on-the-fly decision about whether to continue or stop.
 
-.. ipython:: python
+.. code-block:: python
 
     def conditional_break(det, motor, threshold):
         """Set, trigger, read until the detector reads intensity < threshold"""
@@ -114,7 +98,7 @@ Sleeping is as simple as it sounds. It might be used, for example, to add
 extra delay to allow a sample to equilibrate to the temperature set by a
 temperature controller.
 
-.. ipython:: python
+.. code-block:: python
 
     def sleepy(det, motor):
         "Set, trigger motor, sleep for a fixed time, trigger detector, read"
@@ -137,7 +121,7 @@ keyword argument. This is just a label that we can use to refer to it later.
 Then, use 'wait' to tell the RunEngine to block progress until everything in
 that ``block_group`` reports that it is ready.
 
-.. ipython:: python
+.. code-block:: python
 
     def wait_one(det, motor):
         "Set, trigger, read"
@@ -149,7 +133,7 @@ that ``block_group`` reports that it is ready.
 By assigning multiple objects to the same ``block_group``, you can wait until
 the last one reports it is ready.
 
-.. ipython:: python
+.. code-block:: python
 
     def wait_multiple(det, motors):
         "Set motors, trigger all motors, wait for all motors to move."
@@ -164,7 +148,7 @@ If the above seems unnecessarily complex, here is the payoff. By using
 different ``block_group`` labels, you can wait for different groups at
 different points in the scan.
 
-.. ipython:: python
+.. code-block:: python
 
     def wait_complex(det, motors):
         "Set motors, trigger motors, wait for all motors to move in groups."
@@ -191,7 +175,7 @@ addressed :doc:`previously <state-machine>`.
 The 'checkpoint' command defines where a scan can be safely resumed after an
 interruption.
 
-.. ipython:: python
+.. code-block:: python
 
     def conditional_pause(det, motor, defer):
         for i in range(5):
@@ -210,7 +194,7 @@ The next example is a step scan that pauses after each data point is collected.
 :ref:`first pausing example <planned-pause>`.)
 
 
-.. ipython:: python
+.. code-block:: python
 
     def cautious_stepscan(det, motor):
         for i in range(-5, 5):
@@ -241,7 +225,7 @@ bundled as an Event, an Event Document is created and made available to
 To bundle data into an Event, use the 'create' and 'save' commands. Any
 'read' commands that occur between the two will be bundled into an Event.
 
-.. ipython:: python
+.. code-block:: python
 
     def simple_scan_saving(motor, det):
         "Set, trigger, read"
@@ -257,7 +241,7 @@ To bundle data into an Event, use the 'create' and 'save' commands. Any
 The above generates one Event. By looping through several create--save pairs,
 we can generate many Events.
 
-.. ipython:: python
+.. code-block:: python
 
     def stepscan(motor, det):
         yield Msg('open_run')
@@ -273,114 +257,27 @@ we can generate many Events.
 Fly Scans
 ---------
 
-.. warning::
+From the point of view of bluesky, a "fly scan" is any object that needs to
+be told to start and then, some time later, to return its data in bulk with
+no supervision in between. These two steps are called "kickoff" and "collect"
+respectively.
 
-    An interface for fly scans has been tested (on real motors), but it is not
-    yet documented.
+.. code-block:: python
+
+    def flyscan(flyer):
+        Msg('kickoff', flyer)
+        # some time later...
+        Msg('collect', flyer)
+
+Obviously, all of the interesting action is up to ``flyer`` -- but that is
+the point.
+
 
 Registering Custom Commands
 ---------------------------
 
+The RunEngine can be made to undersand any new commands. They can
+be registered using the following methods.
+
 .. automethod:: bluesky.run_engine.RunEngine.register_command
 .. automethod:: bluesky.run_engine.RunEngine.unregister_command
-
-Making Scans Reusable
----------------------
-
-Generators
-++++++++++
-
-Python generators are iterable, like lists, but you can only iterate through
-them once. Observe:
-
-.. ipython:: python
-
-    from bluesky.examples import motor, det
-    s = stepscan(motor, det)
-    def count_messages(s):
-        return len(list(s))
-
-    count_messages(s)
-    count_messages(s)  # not reusable -- no messages left
-
-``stepscan`` is a function that returns a generator. ``s`` is a generator.
-
-Why not just use a list? Generators support two-way commuication through a
-sophisticated language feature called coroutines, which makes it possible
-to write adaptive and responsive plans.
-
-Reusable Scans
-++++++++++++++
-
-By contrast, bluesky's built-in plans are reusable.
-
-.. ipython:: python
-
-    from bluesky.plans import AbsListScanPlan
-    s = AbsListScan([det], motor, [1, 2, 3])
-    count_messages(s)
-    count_messages(s)  # reusable!
-
-How does that work? ``AbsListScan`` is not function that returns a generator;
-it is an iterable class that returns a fresh generator upon each new iteration.
-
-You can use that same pattern to make our ``stepscan`` example---or any custom
-scan---reusable. Follow this pattern:
-
-.. ipython:: python
-
-    class ReusableStepscan:
-        def __init__(self, det, motor):
-            self.motor = motor
-            self.det = det
-        def __iter__(self):
-            return self._gen()
-        def _gen(self):
-            yield from stepscan(self.det, self.motor)
-
-    # Check that it works.
-    s = ReusableStepscan(det, motor)
-    count_messages(s)
-    count_messages(s)  # reusable!
-
-Extra Credit: Less Typing, More Magic
-+++++++++++++++++++++++++++++++++++++
-
-If the ``__init__`` and ``__iter__`` blocks above seems tedious and reptitive,
-subclass bluesky's ``ScanBase`` class.
-
-.. ipython:: python
-
-    from bluesky.plans import PlanBase
-    class ReusableStepscan(PlanBase):
-        _fields = ['det', 'motor']  # These magically become the args.
-        def _gen(self):
-            yield from stepscan(self.det, self.motor)
-
-    # Check that it works.
-    s = ReusableStepscan(det, motor)
-    count_messages(s)
-    count_messages(s)  # reusable!
-
-Additional Examples
--------------------
-
-Temperature Sweep
-+++++++++++++++++
-
-.. ipython:: python
-
-    import numpy as np
-    def temperature_sweep(det, temp_controller):
-        # scan a temperature controller from 100 to 150 in 50 steps
-        yield Msg('open_run')
-        for temp in np.linspace(100, 150, 50):
-            yield Msg('create')
-            # set the temperature controller
-            yield Msg('set', temp_controller, temp)
-            # wait one second for temperature to stabilize
-            yield Msg('sleep', None, 1)
-            # trigger acquisition of the detector
-            yield Msg('trigger', det)
-            yield Msg('save')
-        yield Msg('close_run')

@@ -15,28 +15,28 @@ SPEC. SPEC treats the *specification* of an experiment ("move a motor from 1
 to 5 in 5 strides") and its *execution* in one step. For example, in SPEC,
 typing
 
-```
-ascan th, 1, 5, 5
-```
+.. code-block:: bash
+
+    ascan th, 1, 5, 5
 
 both specifies and executes the scan. Fundamentally, bluesky separates these
 steps: first we generate a "plan" (a set of granular instructions)
 
-```python
-plan = AbsScanPlan(detectors, th, 1, 5, 4)
-```
+.. code-block:: python
+
+    plan = AbsScanPlan(detectors, th, 1, 5, 4)
 
 and then we pass the plan to a RunEninge for execution.
 
-```python
-RE(plan)
-```
+.. code-block:: python
+
+    RE(plan)
 
 To imitate the SPEC workflow, these two steps are lumped together.
 
-```python
-ascan(th, 1, 5, 5)  # this is bluesky's imitation of SPEC
-```
+.. code-block:: python
+
+    ascan(th, 1, 5, 5)  # this is bluesky's imitation of SPEC
 
 For simple tasks, the condensed syntax is clearly convenient; for others,
 maintaining that logical separation can be empowering. (See the section on
@@ -86,48 +86,9 @@ Like any Python list, you can append and remove elements.
     gs.DETS.remove(det1)
     gs.DETS
 
-There are other settings particular to certain kinds of scan.
-They are addressed below.
-
-Usage Example
--------------
-
-Calling a scan generates a set of instructions and executes them. This
-"count" command acquires one reading from the detectors.
-
-.. ipython:: python
-
-    ct()
-
-In the standard, out-of-the-box configuration of bluesky, data is automatically saved and logged.
-
-Out of the box, it does not print or plot the data , but live tables and plots
-can be easily added. As with the detectors above, this may already be configured
-in your IPython profile. Here is one way to add a table to every ``ct``
-scan. (More on ``ct`` below.)
-
-.. ipython:: python
-
-    ct.subs = LiveTable(gs.DETS)  # Print all the detectors' readings.
-    ct()
-
-The ``subs`` attribute stands for "subscriptions", about which you can read
-more in :doc:`callbacks`.
-
-The table will appear for all future scans; it only has to be set up once.
-Observe:
-
-.. ipython:: python
-
-    ct()
-
-If there are many detectors and the table is too wide, you can be more
-selective.
-
-.. ipython:: python
-
-    ct.subs = LiveTable([det2])
-    ct()
+There are other settings which control the output of the scans --
+``gs.TABLE_COLS`` and ``gs.PLOT_Y``  for example. Explore the contents of
+``gs`` by typing ``gs.<TAB>``.
 
 Count
 -----
