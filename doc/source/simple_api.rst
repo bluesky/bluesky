@@ -1,5 +1,52 @@
-Simple Scan Interface
-=====================
+(Optional) SPEC-like Interface
+==============================
+
+Conceptual Differences Between Bluesky and SPEC
+-----------------------------------------------
+
+Some scientists are familiar with `SPEC <http://www.certif.com/spec.html>`_,
+a domain-specific language for hardware control. It is possible to imitate the
+SPEC workflow on top of bluesky. Of course, we still adhere to the Python
+syntax so that we can employ the full power of the general-purpose Python
+language.
+
+It is useful to understand a key conceptual difference between bluesky and
+SPEC. SPEC treats the *specification* of an experiment ("move a motor from 1
+to 5 in 5 strides") and its *execution* in one step. For example, in SPEC,
+typing
+
+```
+ascan th, 1, 5, 5
+```
+
+both specifies and executes the scan. Fundamentally, bluesky separates these
+steps: first we generate a "plan" (a set of granular instructions)
+
+```python
+plan = AbsScanPlan(detectors, th, 1, 5, 4)
+```
+
+and then we pass the plan to a RunEninge for execution.
+
+```python
+RE(plan)
+```
+
+To imitate the SPEC workflow, these two steps are lumped together.
+
+```python
+ascan(th, 1, 5, 5)  # this is bluesky's imitation of SPEC
+```
+
+For simple tasks, the condensed syntax is clearly convenient; for others,
+maintaining that logical separation can be empowering. (See the section on
+:doc:`plans` for why.)
+
+Addiontally, SPEC maintains a global list of detectors that apply to all scans.
+Bluesky specifies detectors on a per-plan basis: for example, a "count" might
+involve different detectors than an "ascan". But, to imitate SPEC, bluesky
+provides a global "stash" of settings, ``gs``, including a customizable list of
+"standard" detectors, as illustrated below.
 
 .. ipython:: python
    :suppress:
@@ -11,15 +58,6 @@ Simple Scan Interface
    gs.DETS = [det]
    gs.RE = setup_test_run_engine()
 
-
-The simple scan interface provides a condensed syntax to execute common tasks.
-
-Some of the names and signatures of the functions in this module closely match
-some core "macros" in SPEC, control software used in X-ray diffraction
-experiments. Other functions introduce new functionality.
-
-The simple interface is not necessarily recommended for developing new scans.
-It is backed by a more explicit :doc:`scans` suited for development work.
 
 Specify Detectors
 -----------------
