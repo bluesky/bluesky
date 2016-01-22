@@ -109,7 +109,7 @@ There is another way to combine plans to accomodate this.
 
     def make_master_plan():
         yield from plan1
-        print('plan1 is complete')
+        print('plan1 is finished -- moving onto plan2')
         yield from plan2
 
     RE(make_master_plan())  # note the ()
@@ -118,6 +118,28 @@ Arbitrary Python code can go inside ``master_plan``. It could employ ``if``
 blocks, ``for`` loops -- anything except a ``return`` statement. If you want to
 know more about what is happening here, structures like this in Python are
 called *generators*.
+
+Here are a couple more useful recipes:
+
+.. code-block:: python
+
+    "Run plan1, wait for user confirmation, then run plan2."
+
+    def make_master_plan():
+        yield from plan1
+        # pause and consult the user
+        if input('continue? (y/n)') != 'y':
+            raise StopIteration
+        yield from plan2
+
+.. code-block:: python
+
+    "Run a plan several times, changing the step size each time."
+
+    def make_master_plan():
+        for num in range(5, 10):
+            plan1.num = num  # update the number of steps in the plan
+            yield from plan1
 
 Count
 -----
