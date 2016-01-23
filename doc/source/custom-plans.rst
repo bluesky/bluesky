@@ -276,8 +276,8 @@ the point.
 Registering Custom Commands
 ---------------------------
 
-The RunEngine can be made to undersand any new commands. They can
-be registered using the following methods.
+The RunEngine can be taught any new commands. They can be registered using the
+following methods.
 
 .. automethod:: bluesky.run_engine.RunEngine.register_command
 .. automethod:: bluesky.run_engine.RunEngine.unregister_command

@@ -18,7 +18,8 @@ Live Feedback and Processing
 Demo: live-updating table
 -------------------------
 
-We begin with the simplest useful example of live feedback, a table.
+We begin with the simplest useful example of live feedback, a table. We'll
+assume we already defined a plan, ready to use. (See :doc:`plans`.)
 
 .. ipython:: python
     :suppress:
@@ -28,11 +29,11 @@ We begin with the simplest useful example of live feedback, a table.
     dets = [det1, det2, det3]
     table = LiveTable(dets)
     RE.subscribe('all', table)  # Subscribe table to all future runs.
-    my_plan = AbsListScanPlan(dets, motor, [1,2,4,8])
+    plan = AbsListScanPlan(dets, motor, [1,2,4,8])
 
 .. ipython:: python
 
-    RE(my_plan)
+    RE(plan)
 
 .. ipython:: python
     :suppress:
@@ -66,15 +67,13 @@ argument to the call to the RunEngine.
 
 .. ipython:: python
 
-    dets = [det1, det2, det3]
-    RE(my_plan, LiveTable(dets))
+    RE(plan, LiveTable(dets))
 
 To use multiple callbacks, simply pass a list of them.
 
 .. ipython:: python
 
-    dets = [det1, det2, det3]
-    RE(my_plan, [LiveTable(dets), LivePlot(det1)])
+    RE(plan, [LiveTable(dets), LivePlot(det1)])
 
 .. note::
 
@@ -83,7 +82,7 @@ To use multiple callbacks, simply pass a list of them.
     .. ipython:: python
 
         dets = [det1, det2, det3]
-        RE(my_plan, subs={'all': [LiveTable(dets), LivePlot(det1)]})
+        RE(plan, subs={'all': [LiveTable(dets), LivePlot(det1)]})
 
     The allowed keys are 'all', 'start', 'stop', 'descriptor', and 'event',
     corresponding to the names of the Documents.
@@ -99,14 +98,14 @@ This simplest way is to simply "monkey-patch" the scan instance like so:
 
 .. ipython:: python
 
-    my_plan.subs = LiveTable(dets)
+    plan.subs = LiveTable(dets)
 
 As above, this can one callback, a list of callbacks, or a dictionary. They
 will be used automatically each time the scan is run.
 
 .. ipython:: python
 
-    RE(my_plan)
+    RE(plan)
 
 More complex subscriptions can configured using a property, which can inspect
 the internal state --- for example, using the range of motor positions to
@@ -140,8 +139,8 @@ The method ``RE.subscribe`` passes through to this method:
 *Lossless subscriptions* are also applied to every scan. See below for more on
 this topic.
 
-Running Callbacks on Old Data
-+++++++++++++++++++++++++++++
+Running Callbacks on Completed Runs
++++++++++++++++++++++++++++++++++++
 
 .. warning::
 
