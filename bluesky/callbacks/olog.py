@@ -1,5 +1,11 @@
 from io import StringIO
 from pprint import pformat
+import logging
+from . import CallbackBase
+
+
+logger = logging.getLogger(__name__)
+
 TEMPLATES = {}
 TEMPLATES['long'] = """
 {{- start.plan_type }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})
@@ -126,8 +132,9 @@ def call_str(start, call_template=None):
 class OlogCallback(CallbackBase):
     """Example callback to customize the logbook.
 
-    This is not necessarily the best example of how to customize the log book,
-    but it is something that fits the needs of CHX
+    This callback publishes the most recent IPython command (which of course
+    is not guaranteed to be the one that initiated the run in question) and
+    the full RunStart Document.
 
     Example
     -------
@@ -136,10 +143,12 @@ class OlogCallback(CallbackBase):
     # turn off the default logger
     >>> gs.RE.logbook = None
     """
-    def __init__(self):
-        # import a whole mess of stuff when this thing gets created
+    def __init__(self, logbook):
+        self.logbook = logbook
         from pyOlog import SimpleOlogClient
         self.client = SimpleOlogClient()
+        # Check at init time we are in an IPython session.
+        from IPython import get_ipython
 
     def start(self, doc):
         from IPython import get_ipython
@@ -150,5 +159,5 @@ class OlogCallback(CallbackBase):
                             '%s' % (doc['scan_id'],
                                     commands[-1][2],
                                     pformat(doc)))
-        olog_status = self.client.log(document_content, logbooks='Data Acquisition')
+        olog_status = self.client.log(document_content, logbooks=self.logbook)
         logger.debug('client.log returned %s' % olog_status)
