@@ -28,8 +28,9 @@ before_install:
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
   - conda update conda --yes
-  - conda create -n testenv --yes nose python=$TRAVIS_PYTHON_VERSION scipy requests matplotlib jsonschema traitlets
+  - conda create -n testenv --yes nose python=$TRAVIS_PYTHON_VERSION scipy requests matplotlib jsonschema traitlets pytest
   - source activate testenv
+  - pip install pytest-cov pytest-xdist
   - conda install --yes metadatastore databroker historydict boltons prettytable doct -c lightsource2 -c conda-forge -c soft-matter
   - conda remove metadatastore databroker filestore --yes
   - conda install --yes super_state_machine cycler xray-vision lmfit -c tacaswell
@@ -41,4 +42,4 @@ install:
   - python setup.py install
 
 script:
-  - python run_tests.py -v
+  - python run_tests.py -v -n4
