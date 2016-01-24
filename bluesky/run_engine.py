@@ -270,7 +270,7 @@ class RunEngine:
         self._metadata_per_run.clear()
         self._bundling = False
         self._run_is_open = False
-        self._msg_cache = None  # checkpoints can't rewind into a closed run
+        self._run_start_uid = new_uid()
         self._objs_read.clear()
         self._read_cache.clear()
         self._uncollected.clear()
@@ -289,6 +289,7 @@ class RunEngine:
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
         self._genstack = deque()
+        self._msg_cache = None
         self._new_gen = True
         self._exception = None
         self._run_start_uids.clear()
@@ -772,11 +773,10 @@ class RunEngine:
     @asyncio.coroutine
     def _open_run(self, msg):
         if self._run_is_open:
-            raise IllegalMessageSequence("A 'close_run' messgae was not "
+            raise IllegalMessageSequence("A 'close_run' messgage was not "
                                          "received before the 'open_run' "
                                          "message")
         self._clear_run_cache()
-        self._run_start_uid = new_uid()
         self._run_start_uids.append(self._run_start_uid)
 
         # Increment scan ID
@@ -807,12 +807,18 @@ class RunEngine:
 
     @asyncio.coroutine
     def _close_run(self, msg):
+        if not self._run_is_open:
+            raise IllegalMessageSequence("A 'close_run' message was received "
+                                         "but there is no run open. If this "
+                                         "occurred after a pause/resume, add "
+                                         "a 'checkpoint' message after the "
+                                         "'close_run' message.")
         logger.debug("Stopping run %s", self._run_start_uid)
-        self._run_is_open = False
         doc = dict(run_start=self._run_start_uid,
                    time=ttime.time(), uid=new_uid(),
                    exit_status=self._exit_status,
                    reason=self._reason)
+        self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
         self.debug("*** Emitted RunStop:\n%s" % doc)
 
