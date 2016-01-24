@@ -1,23 +1,11 @@
 #!/usr/bin/env python
-# This file is closely based on tests.py from matplotlib
-#
-# This allows running the matplotlib tests from the command line: e.g.
-#
-#   $ python run_tests.py -v -d
-#
-# The arguments are identical to the arguments accepted by nosetests.
-#
-# See https://nose.readthedocs.org/ for a detailed description of
-# these options.
+
+# tests require pytest-cov and pytest-xdist
 import os
 import signal
-import nose
+import sys
 from bluesky.testing.noseclasses import KnownFailure
-
-plugins = [KnownFailure]
-env = {"NOSE_WITH_COVERAGE": 1,
-       'NOSE_COVER_PACKAGE': ['bluesky'],
-       'NOSE_COVER_HTML': 1}
+import pytest
 
 try:
     from pcaspy import Driver, SimpleServer
@@ -57,7 +45,9 @@ def run():
     if p is not None:
         p.start()
     try:
-        nose.main(addplugins=[x() for x in plugins], env=env)
+        args = ['--cov bluesky']
+        args.extend(sys.argv)
+        pytest.main(args)
     finally:
         if p is not None:
             os.kill(p.pid, signal.SIGINT)
