@@ -81,6 +81,7 @@ class PlanBase(Struct):
         for token in tokens:
             yield Msg('unsubscribe', token)
         yield from self._post()
+        yield Msg('checkpoint')
 
     def _pre(self):
         """
