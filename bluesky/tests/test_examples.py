@@ -189,10 +189,9 @@ def test_live_plotter():
 
 
 def test_sample_md_dict_requirement():
-    scan = simple_scan(motor)
     # We avoid a json ValidationError and make a user-friendly ValueError.
-    assert_raises(ValueError, RE, scan, sample=1)
-    RE(scan, sample={'number': 1})  # should not raise
+    assert_raises(ValueError, RE, simple_scan(motor), sample=1)
+    RE(simple_scan(motor), sample={'number': 1})  # should not raise
 
 
 def test_md_dict():
@@ -553,3 +552,11 @@ def test_new_ev_desc():
     descs.clear()
     RE(gen3(), {'descriptor': collect_descs})
     assert_equal(len(descs), 1)
+
+
+def test_bad_checkpoint():
+    bad_plan = [Msg('open_run'), Msg('checkpoint'), Msg('close_run'),
+                Msg('pause')]
+    RE(bad_plan)
+    # Resuming will cause us to write the same close_run twice.
+    assert_raises(IllegalMessageSequence, RE.resume)
