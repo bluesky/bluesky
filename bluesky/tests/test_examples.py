@@ -378,10 +378,9 @@ def test_pause_abort():
     assert mid - start > 1
     assert stop - start < 2
 
-@pytest.raises(KnownFailure)
 def test_abort():
-    raise KnownFailure("This needs a better reason why we know it fails."
-                       "cc @danielballan @tacaswell")
+    pytest.xfail("This needs a better reason why we know it fails."
+                 "cc @danielballan @tacaswell")
     ev = asyncio.Event()
 
     def done():
