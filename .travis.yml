@@ -42,6 +42,10 @@ install:
   - conda install pymongo pcaspy pyepics readline -c tacaswell
   - pip install coveralls
   - python setup.py install
+  # Need to clean the python build directory (and other cruft) or pytest is
+  # going to find the build directory and get confused why there are two sets
+  # of every test file
+  - git clean -xfd
 
 script:
   - python run_tests.py --cov bluesky -srx -vv
