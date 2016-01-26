@@ -4,7 +4,6 @@
 import os
 import signal
 import sys
-from bluesky.testing.noseclasses import KnownFailure
 import pytest
 
 try:
@@ -45,7 +44,8 @@ def run():
     if p is not None:
         p.start()
     try:
-        args = ['--cov bluesky']
+        # adding rxs to show extra info on skips and xfails
+        args = ['--cov bluesky -srx -vv']
         args.extend(sys.argv)
         pytest.main(args)
     finally:
