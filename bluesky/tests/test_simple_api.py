@@ -1,4 +1,3 @@
-import nose
 from traitlets import TraitError
 from bluesky.examples import motor, motor1, motor2, det, det1, det2, FlyMagic
 import pytest
@@ -6,8 +5,9 @@ import pytest
 def test_basic_usage_for_smoke():
     try:
         import metadatastore
-    except ImportError:
-        pytest.skip('metadatastore is not installed. Cannot run basic usage test')
+    except ImportError as ie:
+        pytest.skip('metadatastore is not installed. Cannot run basic usage '
+                    'test. ImportError: {}'.format(ie))
     from bluesky.global_state import gs
     from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
                                   d3scan, mesh, tscan, dtscan, th2th)

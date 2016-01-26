@@ -240,8 +240,8 @@ def test_count():
 def test_center():
     try:
         import lmfit
-    except ImportError:
-        pytest.skip("requires lmfit")
+    except ImportError as ie:
+        pytest.skip("requires lmfit. ImportError: {}".format(ie))
     assert not RE._run_is_open
     det = SynGauss('det', motor, 'motor', 0, 1000, 1, 'poisson', True)
     d = {}

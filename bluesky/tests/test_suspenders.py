@@ -5,7 +5,6 @@ import time as ttime
 import pytest
 from bluesky import Msg
 from bluesky.tests.utils import setup_test_run_engine
-from bluesky.testing import KnownFailureTest
 
 
 RE = setup_test_run_engine()
@@ -16,8 +15,9 @@ def test_epics_smoke():
 
     try:
         import epics
-    except ImportError:
-        pytest.skip("epics is not installed. Skipping epics smoke test")
+    except ImportError as ie:
+        pytest.skip("epics is not installed. Skipping epics smoke test."
+                    "ImportError: {}".format(ie))
     pv = epics.PV('BSTEST:VAL')
     pv.value = 123456
     print(pv)
@@ -35,11 +35,11 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
 
     try:
         import epics
-    except ImportError:
-        pytest.skip("epics is not installed. Skipping suspenders test")
+    except ImportError as ie:
+        pytest.skip("epics is not installed. Skipping suspenders test"
+                    "ImportError: {}".format(ie))
     if sys.platform == 'darwin':
-        # OSX event loop is different; resolve this later
-        raise KnownFailureTest()
+        pytest.xfail('OSX event loop is different; resolve this later')
     my_suspender = suspender_class(RE, 'BSTEST:VAL', *sc_args, sleep=wait_time)
     print(my_suspender._lock)
     pv = epics.PV('BSTEST:VAL')
@@ -73,8 +73,8 @@ def test_suspending():
                                         PVSuspendCeil,
                                         PVSuspendInBand,
                                         PVSuspendOutBand)
-    except ImportError:
-        pytest.skip('bluesky suspenders not available')
+    except ImportError as ie:
+        pytest.skip('bluesky suspenders not available. ImportError: {}'.format(ie))
 
     yield _test_suspender, PVSuspendBoolHigh, (), 0, 1, 0, .5
     yield _test_suspender, PVSuspendBoolLow, (), 1, 0, 1, .5
