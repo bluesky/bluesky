@@ -1,19 +1,18 @@
 import nose
-from nose.tools import assert_raises
 from traitlets import TraitError
 from bluesky.examples import motor, motor1, motor2, det, det1, det2, FlyMagic
+import pytest
 
-
-def test_basic_usage():
+def test_basic_usage_for_smoke():
     try:
         import metadatastore
     except ImportError:
-        raise nose.SkipTest
+        pytest.skip('metadatastore is not installed. Cannot run basic usage test')
     from bluesky.global_state import gs
     from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
                                   d3scan, mesh, tscan, dtscan, th2th)
     gs.DETS = [det]
-    with assert_raises(TraitError):
+    with pytest.raises(TraitError):
         gs.DETS = [det, det]  # no duplicate data keys
     gs.TEMP_CONTROLLER = motor
     gs.TH_MOTOR = motor1
