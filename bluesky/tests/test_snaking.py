@@ -1,4 +1,3 @@
-from nose.tools import assert_equal
 from bluesky.utils import snake_cyclers
 from cycler import cycler
 
@@ -28,7 +27,7 @@ def test_snake_no_snaking():
         {'x': 1, 'y': 2, 'z': 3},
         {'x': 2, 'y': 2, 'z': 3},
         {'x': 3, 'y': 2, 'z': 3}]
-    assert_equal(actual, expected)
+    assert actual == expected
 
 def test_snake_all_snaking():
     actual = list(snake_cyclers([z, y, x], [False, True, True]))
@@ -51,7 +50,7 @@ def test_snake_all_snaking():
         {'x': 3, 'y': 2, 'z': 3},
         {'x': 2, 'y': 2, 'z': 3},
         {'x': 1, 'y': 2, 'z': 3}]
-    assert_equal(actual, expected)
+    assert actual == expected
 
 def test_snake_some_snaking():
     actual = list(snake_cyclers([z, y, x], [False, True, False]))
@@ -74,4 +73,4 @@ def test_snake_some_snaking():
         {'x': 1, 'y': 2, 'z': 3},
         {'x': 2, 'y': 2, 'z': 3},
         {'x': 3, 'y': 2, 'z': 3}]
-    assert_equal(actual, expected)
+    assert actual == expected
