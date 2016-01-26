@@ -1,13 +1,13 @@
 from functools import partial
 import sys
-from nose.tools import assert_equal, assert_greater
-from nose import SkipTest
 import asyncio
 import time as ttime
-
+import pytest
 from bluesky import Msg
 from bluesky.tests.utils import setup_test_run_engine
-from bluesky.testing.noseclasses import KnownFailureTest
+from bluesky.testing import KnownFailureTest
+
+
 RE = setup_test_run_engine()
 loop = asyncio.get_event_loop()
 
@@ -17,7 +17,7 @@ def test_epics_smoke():
     try:
         import epics
     except ImportError:
-        raise SkipTest
+        pytest.skip("epics is not installed. Skipping epics smoke test")
     pv = epics.PV('BSTEST:VAL')
     pv.value = 123456
     print(pv)
@@ -27,7 +27,7 @@ def test_epics_smoke():
     for j in range(1, 15):
         pv.put(j, wait=True)
         ret = pv.get(use_monitor=False)
-        assert_equal(ret, j)
+        assert ret == j
 
 
 def _test_suspender(suspender_class, sc_args, start_val, fail_val,
@@ -36,7 +36,7 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     try:
         import epics
     except ImportError:
-        raise SkipTest
+        pytest.skip("epics is not installed. Skipping suspenders test")
     if sys.platform == 'darwin':
         # OSX event loop is different; resolve this later
         raise KnownFailureTest()
@@ -49,7 +49,7 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     # dumb scan
     scan = [Msg('checkpoint'), Msg('sleep', None, .2)]
     # paranoid
-    assert_equal(RE.state, 'idle')
+    assert RE.state == 'idle'
 
     start = ttime.time()
     # queue up fail and resume conditions
@@ -62,7 +62,7 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     my_suspender._pv.disconnect()
     # assert we waited at least 2 seconds + the settle time
     print(stop - start)
-    assert_greater(stop - start, 1 + wait_time + .2)
+    assert stop - start > 1 + wait_time + .2
 
 
 def test_suspending():
@@ -74,7 +74,7 @@ def test_suspending():
                                         PVSuspendInBand,
                                         PVSuspendOutBand)
     except ImportError:
-        raise SkipTest
+        pytest.skip('bluesky suspenders not available')
 
     yield _test_suspender, PVSuspendBoolHigh, (), 0, 1, 0, .5
     yield _test_suspender, PVSuspendBoolLow, (), 1, 0, 1, .5
