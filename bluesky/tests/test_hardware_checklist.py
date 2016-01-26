@@ -6,11 +6,6 @@ from bluesky.hardware_checklist import (
 )
 import pytest
 
-try:
-    import requests
-except ImportError:
-    requests = None
-
 
 def test_check_storage():
     check_storage('/', 1)
@@ -18,9 +13,14 @@ def test_check_storage():
         check_storage('/', 10000000000000000000)
 
 
-@pytest.mark.skipif(requests is None, reason=('requests is required to test '
-                                              'channelarchiver connection'))
 def test_connect_channelarchiver():
+    try:
+        import requests
+    except ImportError as ie:
+        pytest.skip('requests is required to test channelarchiver connection.'
+                    'ImportError: {}'.format(ie))
+        requests = None
+
     # Just test failure, not success.
     with pytest.raises(RuntimeError):
         connect_channelarchiver('http://bnl.gov/asfoijewapfoia')
@@ -29,9 +29,9 @@ def test_connect_channelarchiver():
 def test_connect_pv():
     try:
         import epics
-    except ImportError:
+    except ImportError as ie:
         pytest.skip("Epics is not installed. Skipping epics test section of "
-                    "bluesky")
+                    "bluesky. ImportError: {}".format(ie))
     pv_name = 'BSTEST:VAL'
     connect_pv(pv_name)
     epics.caput(pv_name, 5, wait=True)
