@@ -1,8 +1,5 @@
 import warnings
-from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
-                        assert_less, assert_is)
-from nose import SkipTest
-
+import pytest
 from bluesky.callbacks import collector, CallbackCounter
 from bluesky.plans import (AbsListScanPlan, AbsScanPlan, LogAbsScanPlan,
                            DeltaListScanPlan, DeltaScanPlan, LogDeltaScanPlan,
@@ -25,7 +22,7 @@ def traj_checker(scan, expected_traj):
     actual_traj = []
     callback = collector('motor', actual_traj)
     RE(scan, subs={'event': callback})
-    assert_equal(actual_traj, list(expected_traj))
+    assert actual_traj == list(expected_traj)
 
 
 def multi_traj_checker(scan, expected_data):
@@ -35,7 +32,7 @@ def multi_traj_checker(scan, expected_data):
         actual_data.append(event['data'])
 
     RE(scan, subs={'event': collect_data})
-    assert_equal(actual_data, expected_data)
+    assert actual_data == expected_data
 
 
 def test_outer_product_ascan():
@@ -189,14 +186,14 @@ def test_adaptive_ascan():
 
     RE(scan1, subs={'event': [col, counter1]})
     RE(scan2, subs={'event': counter2})
-    assert_greater(counter1.value, counter2.value)
-    assert_equal(actual_traj[0], 0)
+    assert counter1.value > counter2.value
+    assert actual_traj[0] == 0
 
     actual_traj = []
     col = collector('motor', actual_traj)
     RE(scan3, {'event': col})
     monotonic_increasing = np.all(np.diff(actual_traj) > 0)
-    assert_true(monotonic_increasing)
+    assert monotonic_increasing
 
 
 def test_adaptive_dscan():
@@ -212,14 +209,14 @@ def test_adaptive_dscan():
     motor.set(1)
     RE(scan1, subs={'event': [col, counter1]})
     RE(scan2, subs={'event': counter2})
-    assert_greater(counter1.value, counter2.value)
-    assert_equal(actual_traj[0], 1)
+    assert counter1.value > counter2.value
+    assert actual_traj[0] == 1
 
     actual_traj = []
     col = collector('motor', actual_traj)
     RE(scan3, {'event': col})
     monotonic_increasing = np.all(np.diff(actual_traj) > 0)
-    assert_true(monotonic_increasing)
+    assert monotonic_increasing
 
 
 def test_count():
@@ -228,40 +225,40 @@ def test_count():
     motor.set(0)
     scan = Count([det])
     RE(scan, subs={'event': col})
-    assert_equal(actual_intensity[0], 1.)
+    assert actual_intensity[0] == 1.
 
     # multiple counts
     actual_intensity = []
     col = collector('det', actual_intensity)
     scan = Count([det], num=3, delay=0.05)
     RE(scan, subs={'event': col})
-    assert_equal(scan.num, 3)
-    assert_equal(actual_intensity, [1., 1., 1.])
+    assert scan.num == 3
+    assert actual_intensity == [1., 1., 1.]
 
 
 def test_center():
     try:
         import lmfit
     except ImportError:
-        raise SkipTest("requires lmfit")
-    assert_true(not RE._run_is_open)
+        pytest.skip("requires lmfit")
+    assert not RE._run_is_open
     det = SynGauss('det', motor, 'motor', 0, 1000, 1, 'poisson', True)
     d = {}
     cen = Center([det], 'det', motor, 0.1, 1.1, 0.01, d)
     RE(cen)
-    assert_less(abs(d['center']), 0.1)
+    assert abs(d['center'])  < 0.1
 
 
 def test_set():
     scan = AbsScanPlan([det], motor, 1, 5, 3)
-    assert_equal(scan.start, 1)
-    assert_equal(scan.stop, 5)
-    assert_equal(scan.num, 3)
+    assert scan.start == 1
+    assert scan.stop == 5
+    assert scan.num == 3
     scan.set(start=2)
-    assert_equal(scan.start, 2)
+    assert scan.start == 2
     scan.set(num=4)
-    assert_equal(scan.num, 4)
-    assert_equal(scan.start, 2)
+    assert scan.num == 4
+    assert scan.start == 2
 
 
 def test_wait_for():
