@@ -8,24 +8,10 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
 from bluesky.callbacks import LivePlot
 from bluesky import RunEngine, Msg, PanicError, IllegalMessageSequence
 from bluesky.tests.utils import setup_test_run_engine
-from bluesky.testing import KnownFailure
 import os
 import signal
 import asyncio
 import time as ttime
-
-try:
-    import matplotlib.pyplot as plt
-    del plt
-except ImportError:
-    skip_mpl = True
-else:
-    skip_mpl = False
-
-try:
-    import historydict
-except ImportError:
-    historydict = None
 
 RE = setup_test_run_engine()
 
@@ -180,8 +166,14 @@ def test_stateful_subscription():
     RE.unsubscribe(token)
     assert RE.state == 'idle'
 
-@pytest.mark.skipif(skip_mpl, reason='matplotlib is not installed')
 def test_live_plotter():
+    try:
+        import matplotlib.pyplot as plt
+        del plt
+    except ImportError as ie:
+        pytest.skip("Skipping live plot test because matplotlib is not installed."
+                    "Error was: {}".format(ie))
+
     my_plotter = LivePlot('det', 'motor')
     assert RE.state == 'idle'
     RE(stepscan(det, motor), subs={'all': my_plotter})
@@ -198,8 +190,12 @@ def test_sample_md_dict_requirement():
 def test_md_dict():
     yield _md, {}
 
-@pytest.mark.skip_if(historydict is None)
 def test_md_historydict():
+    try:
+        import historydict
+    except ImportError as ie:
+        pytest.skip('Skipping test because historydict cannot be imported. '
+                    'Error was {}'.foramt(ie))
     yield _md, historydict.HistoryDict(':memory:')
 
 
