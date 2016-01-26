@@ -1,12 +1,9 @@
-from nose.tools import assert_equal, assert_raises, assert_true
-from nose import SkipTest
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
 from bluesky.standard_config import mesh
 from bluesky.tests.utils import setup_test_run_engine
-from nose.tools import raises
 import contextlib
 import sys
 import tempfile
@@ -234,8 +231,3 @@ KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 |        69  |  04:17:25.8  |      1.51e-04  |          4.20  |
 |        70  |  04:17:25.9  |      7.67e-06  |          4.85  |
 +------------+--------------+----------------+----------------+"""
-
-
-if __name__ == '__main__':
-    import nose
-    nose.runmodule(argv=['-s', '--with-doctest'], exit=False)
