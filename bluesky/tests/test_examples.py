@@ -180,7 +180,7 @@ def test_stateful_subscription():
     RE.unsubscribe(token)
     assert RE.state == 'idle'
 
-pytest.mark.skip_if(skip_mpl)
+@pytest.mark.skip_if(skip_mpl)
 def test_live_plotter():
     my_plotter = LivePlot('det', 'motor')
     assert RE.state == 'idle'
