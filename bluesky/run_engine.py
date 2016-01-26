@@ -925,7 +925,7 @@ class RunEngine:
             def done_callback():
                 loop.call_soon_threadsafe(p_event.set)
 
-            ret.finished_cb = done_callback
+            ret.add_callback(done_callback)
             self._block_groups[block_group].add(p_event.wait())
 
         return ret
@@ -988,7 +988,7 @@ class RunEngine:
                 loop.call_soon_threadsafe(p_event.set)
                 self.debug("The object %r reports set is done." % msg.obj)
 
-            ret.finished_cb = done_callback
+            ret.add_callback(done_callback)
             self._block_groups[block_group].add(p_event.wait())
 
         return ret
@@ -1005,7 +1005,7 @@ class RunEngine:
                 loop.call_soon_threadsafe(p_event.set)
                 self.debug("The object %r reports trigger is done." % msg.obj)
 
-            ret.finished_cb = done_callback
+            ret.add_callback(done_callback)
             self._block_groups[block_group].add(p_event.wait())
 
         return ret
