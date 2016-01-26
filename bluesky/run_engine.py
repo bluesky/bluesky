@@ -237,6 +237,7 @@ class RunEngine:
             'sleep': self._sleep,
             'wait': self._wait,
             'checkpoint': self._checkpoint,
+            'clear_checkpoint': self._clear_checkpoint,
             'pause': self._pause,
             'collect': self._collect,
             'kickoff': self._kickoff,
@@ -1065,6 +1066,13 @@ class RunEngine:
         if self._deferred_pause_requested:
             self.state = 'paused'
             loop.stop()
+
+    @asyncio.coroutine
+    def _clear_checkpoint(self, msg):
+        # clear message cache
+        self._msg_cache = None
+        # clear stashed
+        self._teed_sequence_counters.clear()
 
     @asyncio.coroutine
     def _configure(self, msg):
