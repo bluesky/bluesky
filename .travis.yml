@@ -44,4 +44,4 @@ install:
   - python setup.py install
 
 script:
-  - python run_tests.py
+  - python run_tests.py --cov bluesky -srx -vv

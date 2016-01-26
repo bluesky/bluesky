@@ -45,9 +45,7 @@ def run():
         p.start()
     try:
         # adding rxs to show extra info on skips and xfails
-        args = ['--cov bluesky -srx -vv']
-        args.extend(sys.argv)
-        pytest.main(args)
+        pytest.main()
     finally:
         if p is not None:
             os.kill(p.pid, signal.SIGINT)
