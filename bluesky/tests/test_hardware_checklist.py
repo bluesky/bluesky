@@ -1,5 +1,4 @@
 import uuid
-from bluesky.testing import KnownFailureTest
 from bluesky.hardware_checklist import (
     assert_pv_equal, connect_pv, connect_channelarchiver, check_storage,
     assert_pv_greater, assert_pv_less, assert_pv_in_band, assert_pv_out_of_band
