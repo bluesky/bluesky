@@ -8,7 +8,7 @@ import contextlib
 import sys
 import tempfile
 import pytest
-
+# import numpy as numpy
 RE = setup_test_run_engine()
 
 
@@ -38,9 +38,9 @@ def test_all():
     assert c.value == 10 + 1 + 2
 
 
-@pytest.raises(Exception)
 def _raising_callbacks_helper(stream_name, callback):
-    RE(stepscan(det, motor), subs={stream_name: callback})
+    with pytest.raises(Exception):
+        RE(stepscan(det, motor), subs={stream_name: callback})
 
 
 def test_raising_ignored_or_not():
@@ -115,7 +115,7 @@ def test_unknown_cb_raises():
         pass
     # Dispatches catches this case.
     with pytest.raises(KeyError):
-        RE.subscripe('not a thing', f)
+        RE.subscribe('not a thing', f)
     # CallbackRegistry catches this case (different error).
     with pytest.raises(ValueError):
         RE._subscribe_lossless('not a thing', f)
@@ -150,8 +150,8 @@ def test_table():
         else:
             # skip the 'time' column on data rows
             # this is easier than faking up times in the scan!
-            assert np.all(ln[:16] == kn[:16])
-            assert np.all(ln[26:] == kn[26:])
+            assert ln[:16] == kn[:16]
+            assert ln[26:] == kn[26:]
 
 
 KNOWN_TABLE = """+------------+--------------+----------------+----------------+
