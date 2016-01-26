@@ -45,11 +45,15 @@ def run():
         p.start()
     try:
         # adding rxs to show extra info on skips and xfails
-        pytest.main()
+        ret = pytest.main()
     finally:
         if p is not None:
             os.kill(p.pid, signal.SIGINT)
             p.join()
 
+    return ret
+
 if __name__ == '__main__':
-    run()
+    return_code = run()
+
+    sys.exit(return_code)

@@ -10,7 +10,7 @@ setuptools.setup(
     author='danielballan',
     author_email=None,
     license="BSD (3-clause)",
-    url="https://github.com/danielballan/bluesky",
+    url="https://github.com/NSLS-II/bluesky",
     packages=setuptools.find_packages(),
     package_data={'bluesky': ['schema/*.json']},
     install_requires=['jsonschema', 'traitlets', 'prettytable', 'cycler',
@@ -19,5 +19,6 @@ setuptools.setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
     ],
 )
