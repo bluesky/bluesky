@@ -48,7 +48,7 @@ def test_outer_product_ascan():
         {'motor2': 20.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 10.0, 'det': 1.0, 'motor1': 3.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 3.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_outer_product_ascan_snaked():
@@ -63,7 +63,7 @@ def test_outer_product_ascan_snaked():
         {'motor2': 10.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 10.0, 'det': 1.0, 'motor1': 3.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 3.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_inner_product_ascan():
@@ -75,7 +75,7 @@ def test_inner_product_ascan():
         {'motor2': 10.0, 'det': 1.0, 'motor1': 1.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 30.0, 'det': 1.0, 'motor1': 3.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_outer_product_dscan():
@@ -93,7 +93,7 @@ def test_outer_product_dscan():
         {'motor2': 28.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 18.0, 'det': 1.0, 'motor1': 8.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 8.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_outer_product_dscan_snaked():
@@ -111,7 +111,8 @@ def test_outer_product_dscan_snaked():
         {'motor2': 18.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 18.0, 'det': 1.0, 'motor1': 8.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 8.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
+
 
 def test_inner_product_dscan():
     motor.set(0)
@@ -124,20 +125,20 @@ def test_inner_product_dscan():
         {'motor2': 18.0, 'det': 1.0, 'motor1': 6.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 38.0, 'det': 1.0, 'motor1': 8.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_ascan():
     traj = [1, 2, 3]
     scan = AbsListScanPlan([det], motor, traj)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_dscan():
     traj = np.array([1, 2, 3])
     motor.set(-4)
     scan = DeltaListScanPlan([det], motor, traj)
-    yield traj_checker, scan, traj - 4
+    traj_checker(scan, traj - 4)
 
 
 def test_dscan_list_input():
@@ -145,33 +146,33 @@ def test_dscan_list_input():
     traj = [1, 2, 3]
     motor.set(-4)
     scan = DeltaListScanPlan([det], motor, traj)
-    yield traj_checker, scan, np.array(traj) - 4
+    traj_checker(scan, np.array(traj) - 4)
 
 
 def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
     scan = AbsScanPlan([det], motor, 0, 10, 5)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_log_ascan():
     traj = np.logspace(0, 10, 5)
     scan = LogAbsScanPlan([det], motor, 0, 10, 5)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
     scan = DeltaScanPlan([det], motor, 0, 10, 5)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_log_dscan():
     traj = np.logspace(0, 10, 5) + 6
     motor.set(6)
     scan = LogDeltaScanPlan([det], motor, 0, 10, 5)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_adaptive_ascan():
