@@ -65,7 +65,7 @@ class PlanBase(Struct):
         # event of termination.
         tokens = set() 
         subs = normalize_subs_input(getattr(self, 'subs', {}))
-        for name, funcs in subs.items():
+        for name, func in subs.items():
             token = yield Msg('subscribe', name, func)
             tokens.add(token)
 
