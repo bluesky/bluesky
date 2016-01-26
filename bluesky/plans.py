@@ -65,9 +65,10 @@ class PlanBase(Struct):
         # event of termination.
         tokens = set() 
         subs = normalize_subs_input(getattr(self, 'subs', {}))
-        for name, func in subs.items():
-            token = yield Msg('subscribe', name, func)
-            tokens.add(token)
+        for name, funcs in subs.items():
+            for func in funcs:
+                token = yield Msg('subscribe', None, name, func)
+                tokens.add(token)
 
         yield Msg('open_run', **self.md)
         for flyer in self.flyers:
