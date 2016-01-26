@@ -8,6 +8,7 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
 from bluesky.callbacks import LivePlot
 from bluesky import RunEngine, Msg, PanicError, IllegalMessageSequence
 from bluesky.tests.utils import setup_test_run_engine
+from bluesky.testing import KnownFailure
 import os
 import signal
 import asyncio
@@ -377,8 +378,10 @@ def test_pause_abort():
     assert mid - start > 1
     assert stop - start < 2
 
-@pytest.mark.known_fail
+@pytest.raises(KnownFailure)
 def test_abort():
+    raise KnownFailure("This needs a better reason why we know it fails."
+                       "cc @danielballan @tacaswell")
     ev = asyncio.Event()
 
     def done():
