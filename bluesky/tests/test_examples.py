@@ -371,34 +371,15 @@ def test_pause_abort():
     assert mid - start > 1
     assert stop - start < 2
 
+
 def test_abort():
-    pytest.xfail("This needs a better reason why we know it fails."
-                 "cc @danielballan @tacaswell")
-    ev = asyncio.Event()
-
-    def done():
-        print("Done")
-        ev.set()
-
-    pid = os.getpid()
-
-    def sim_kill():
-        os.kill(pid, signal.SIGINT)
-        ttime.sleep(0.1)
-        os.kill(pid, signal.SIGINT)
-
-    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
-    RE.verbose = True
-    assert RE.state == 'idle'
-    start = ttime.time()
-    # loop.call_later(1, sim_kill)
-    # loop.call_later(2, done)
-
-    RE(scan)
-    assert RE.state == 'idle'
-    stop = ttime.time()
-
-    assert stop - start < 2
+    errmsg = ("Aborting is not successful from the test suite yet.  The new "
+              "plan, as can be seen in this function is to subprocess the "
+              "abort via two sequential SIGINT's because if we do it in the "
+              "pytest process it kills pytest.")
+    pytest.xfail(errmsg)
+    import subprocess
+    subprocess.check_call(['python', 'abort.py'], cwd = '.')
 
 
 def test_rogue_sigint():
