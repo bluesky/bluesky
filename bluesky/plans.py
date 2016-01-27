@@ -63,7 +63,7 @@ class PlanBase(Struct):
         # If the plan has a 'subs' attribute, yield a 'subscribe' Msg for
         # each one. The RunEngine will remove these at the end in the
         # event of termination.
-        tokens = set() 
+        tokens = set()
         subs = normalize_subs_input(getattr(self, 'subs', {}))
         for name, funcs in subs.items():
             for func in funcs:
