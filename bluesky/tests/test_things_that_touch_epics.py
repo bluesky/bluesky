@@ -7,7 +7,7 @@ from multiprocessing import Process
 import signal
 from bluesky import Msg
 from bluesky.tests.utils import setup_test_run_engine
-
+from bluesky.hardware_checklist import connect_pv
 
 RE = setup_test_run_engine()
 loop = asyncio.get_event_loop()
@@ -23,11 +23,7 @@ def setup_module():
         def to_subproc():
 
             prefix = 'BSTEST:'
-            pvdb = {
-                'VAL': {
-                    'prec': 3,
-                },
-            }
+            pvdb = {'VAL': {'prec': 3}}
 
             class myDriver(Driver):
                 def __init__(self):
