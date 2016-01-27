@@ -146,7 +146,7 @@ class CallbackRegistry:
                     self.allowed_sigs))
         exceptions = []
         if sig in self.callbacks:
-            for cid, func in self.callbacks[sig].items():
+            for cid, func in list(self.callbacks[sig].items()):
                 try:
                     func(*args, **kwargs)
                 except ReferenceError:

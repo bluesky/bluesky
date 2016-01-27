@@ -48,6 +48,7 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     putter(start_val)
     # dumb scan
     scan = [Msg('checkpoint'), Msg('sleep', None, .2)]
+    RE(scan)
     # paranoid
     assert RE.state == 'idle'
 
@@ -61,8 +62,9 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     # paranoid clean up of pv call back
     my_suspender._pv.disconnect()
     # assert we waited at least 2 seconds + the settle time
-    print(stop - start)
-    assert stop - start > 1 + wait_time + .2
+    delta = stop - start
+    print(delta)
+    assert delta > 1 + wait_time + .2
 
 
 def test_suspending():
