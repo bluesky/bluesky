@@ -1,23 +1,64 @@
 from functools import partial
 import sys
-from nose.tools import assert_equal, assert_greater
-from nose import SkipTest
 import asyncio
 import time as ttime
-
+import pytest
+from multiprocessing import Process
+import signal
 from bluesky import Msg
 from bluesky.tests.utils import setup_test_run_engine
-from bluesky.testing.noseclasses import KnownFailureTest
+
+
 RE = setup_test_run_engine()
 loop = asyncio.get_event_loop()
 
+pcaspy_process = None
+
+def setup_module():
+    try:
+        from pcaspy import Driver, SimpleServer
+    except ImportError as ie:
+        pytest.skip("pcaspy is not available. Skipping all suspenders test."
+                    "ImportError: {}".format(ie))
+        def to_subproc():
+
+            prefix = 'BSTEST:'
+            pvdb = {
+                'VAL': {
+                    'prec': 3,
+                },
+            }
+
+            class myDriver(Driver):
+                def __init__(self):
+                    super(myDriver, self).__init__()
+
+            server = SimpleServer()
+            server.createPV(prefix, pvdb)
+            driver = myDriver()
+
+            # process CA transactions
+            while True:
+                try:
+                    server.process(0.1)
+                except KeyboardInterrupt:
+                    break
+
+        pcaspy_process = Process(target=to_subproc)
+        pcaspy_process.start()
+
+def teardown_module():
+    if pcaspy_process is not None:
+        os.kill(ppcaspy_processpid, signal.SIGINT)
+        pcaspy_process.join()
 
 def test_epics_smoke():
 
     try:
         import epics
-    except ImportError:
-        raise SkipTest
+    except ImportError as ie:
+        pytest.skip("epics is not installed. Skipping epics smoke test."
+                    "ImportError: {}".format(ie))
     pv = epics.PV('BSTEST:VAL')
     pv.value = 123456
     print(pv)
@@ -27,7 +68,7 @@ def test_epics_smoke():
     for j in range(1, 15):
         pv.put(j, wait=True)
         ret = pv.get(use_monitor=False)
-        assert_equal(ret, j)
+        assert ret == j
 
 
 def _test_suspender(suspender_class, sc_args, start_val, fail_val,
@@ -35,11 +76,11 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
 
     try:
         import epics
-    except ImportError:
-        raise SkipTest
+    except ImportError as ie:
+        pytest.skip("epics is not installed. Skipping suspenders test"
+                    "ImportError: {}".format(ie))
     if sys.platform == 'darwin':
-        # OSX event loop is different; resolve this later
-        raise KnownFailureTest()
+        pytest.xfail('OSX event loop is different; resolve this later')
     my_suspender = suspender_class(RE, 'BSTEST:VAL', *sc_args, sleep=wait_time)
     print(my_suspender._lock)
     pv = epics.PV('BSTEST:VAL')
@@ -48,8 +89,9 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     putter(start_val)
     # dumb scan
     scan = [Msg('checkpoint'), Msg('sleep', None, .2)]
+    RE(scan)
     # paranoid
-    assert_equal(RE.state, 'idle')
+    assert RE.state == 'idle'
 
     start = ttime.time()
     # queue up fail and resume conditions
@@ -61,8 +103,9 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     # paranoid clean up of pv call back
     my_suspender._pv.disconnect()
     # assert we waited at least 2 seconds + the settle time
-    print(stop - start)
-    assert_greater(stop - start, 1 + wait_time + .2)
+    delta = stop - start
+    print(delta)
+    assert delta > 1 + wait_time + .2
 
 
 def test_suspending():
@@ -73,12 +116,30 @@ def test_suspending():
                                         PVSuspendCeil,
                                         PVSuspendInBand,
                                         PVSuspendOutBand)
-    except ImportError:
-        raise SkipTest
+    except ImportError as ie:
+        pytest.skip('bluesky suspenders not available. ImportError: {}'.format(ie))
 
-    yield _test_suspender, PVSuspendBoolHigh, (), 0, 1, 0, .5
-    yield _test_suspender, PVSuspendBoolLow, (), 1, 0, 1, .5
-    yield _test_suspender, PVSuspendFloor, (.5,), 1, 0, 1, .5
-    yield _test_suspender, PVSuspendCeil, (.5,), 0, 1, 0, .5
-    yield _test_suspender, PVSuspendInBand, (.5, 1.5), 1, 0, 1, .5
-    yield _test_suspender, PVSuspendOutBand, (.5, 1.5), 0, 1, 0, .5
+    _test_suspender(PVSuspendBoolHigh, (), 0, 1, 0, .5)
+    _test_suspender(PVSuspendBoolLow, (), 1, 0, 1, .5)
+    _test_suspender(PVSuspendFloor, (.5,), 1, 0, 1, .5)
+    _test_suspender(PVSuspendCeil, (.5,), 0, 1, 0, .5)
+    _test_suspender(PVSuspendInBand, (.5, 1.5), 1, 0, 1, .5)
+    _test_suspender(PVSuspendOutBand, (.5, 1.5), 0, 1, 0, .5)
+
+
+def test_connect_pv():
+    try:
+        import epics
+    except ImportError as ie:
+        pytest.skip("Epics is not installed. Skipping epics test section of "
+                    "bluesky. ImportError: {}".format(ie))
+    pv_name = 'BSTEST:VAL'
+    connect_pv(pv_name)
+    epics.caput(pv_name, 5, wait=True)
+    assert_pv_equal(pv_name, 5)
+    assert_pv_greater(pv_name, 4)
+    assert_pv_less(pv_name, 6)
+    assert_pv_in_band(pv_name, 4, 6)
+    with pytest.raises(AssertionError):
+        assert_pv_in_band(pv_name, 2, 4)
+    assert_pv_out_of_band(pv_name, 2, 4)
