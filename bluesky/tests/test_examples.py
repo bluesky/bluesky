@@ -48,23 +48,22 @@ def run(gen, *args, **kwargs):
 
 
 def test_simple():
-    yield run, simple_scan, motor
+    run(simple_scan, motor)
 
 
 def test_conditional_break():
-    yield run, conditional_break, det, motor, 0.2
+    run(conditional_break, det, motor, 0.2)
 
 
 def test_sleepy():
-    yield run, sleepy, det, motor
-
+    run(sleepy, det, motor)
 
 def test_wati_one():
-    yield run, wait_one, det, motor
+    run(wait_one, det, motor)
 
 
 def test_wait_multiple():
-    yield run, wait_multiple, det, [motor1, motor2]
+    run(wait_multiple, det, [motor1, motor2])
 
 
 def test_hard_pause():
@@ -146,7 +145,7 @@ def test_panic_timer():
 
 
 def test_simple_scan_saving():
-    yield run, simple_scan_saving, det, motor
+    run(simple_scan_saving, det, motor)
 
 
 def print_event_time(name, doc):
@@ -188,7 +187,7 @@ def test_sample_md_dict_requirement():
 
 
 def test_md_dict():
-    yield _md, {}
+    _md({})
 
 def test_md_historydict():
     try:
@@ -196,7 +195,7 @@ def test_md_historydict():
     except ImportError as ie:
         pytest.skip('Skipping test because historydict cannot be imported. '
                     'Error was {}'.foramt(ie))
-    yield _md, historydict.HistoryDict(':memory:')
+    _md(historydict.HistoryDict(':memory:'))
 
 
 def _md(md):

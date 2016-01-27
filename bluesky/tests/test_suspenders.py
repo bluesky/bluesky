@@ -119,9 +119,9 @@ def test_suspending():
     except ImportError as ie:
         pytest.skip('bluesky suspenders not available. ImportError: {}'.format(ie))
 
-    yield _test_suspender, PVSuspendBoolHigh, (), 0, 1, 0, .5
-    yield _test_suspender, PVSuspendBoolLow, (), 1, 0, 1, .5
-    yield _test_suspender, PVSuspendFloor, (.5,), 1, 0, 1, .5
-    yield _test_suspender, PVSuspendCeil, (.5,), 0, 1, 0, .5
-    yield _test_suspender, PVSuspendInBand, (.5, 1.5), 1, 0, 1, .5
-    yield _test_suspender, PVSuspendOutBand, (.5, 1.5), 0, 1, 0, .5
+    _test_suspender(PVSuspendBoolHigh, (), 0, 1, 0, .5)
+    _test_suspender(PVSuspendBoolLow, (), 1, 0, 1, .5)
+    _test_suspender(PVSuspendFloor, (.5,), 1, 0, 1, .5)
+    _test_suspender(PVSuspendCeil, (.5,), 0, 1, 0, .5)
+    _test_suspender(PVSuspendInBand, (.5, 1.5), 1, 0, 1, .5)
+    _test_suspender(PVSuspendOutBand, (.5, 1.5), 0, 1, 0, .5)
