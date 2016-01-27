@@ -213,8 +213,6 @@ def _md(md):
        group='some group', config={})  # this should work
     scan = simple_scan(motor)
     with pytest.raises(KeyError):
-        # TODO: Is this persistent thing still true?  I thought that something
-        # substantial changed recently. -ericdill
         RE(scan)  # this should fail; none was persisted
     RE.md['owner'] = 'dan'
     RE.md['group'] = 'some group'
