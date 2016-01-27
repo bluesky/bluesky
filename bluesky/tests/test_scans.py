@@ -1,8 +1,5 @@
 import warnings
-from nose.tools import (assert_equal, assert_greater, assert_in, assert_true,
-                        assert_less, assert_is)
-from nose import SkipTest
-
+import pytest
 from bluesky.callbacks import collector, CallbackCounter
 from bluesky.plans import (AbsListScanPlan, AbsScanPlan, LogAbsScanPlan,
                            DeltaListScanPlan, DeltaScanPlan, LogDeltaScanPlan,
@@ -25,7 +22,7 @@ def traj_checker(scan, expected_traj):
     actual_traj = []
     callback = collector('motor', actual_traj)
     RE(scan, subs={'event': callback})
-    assert_equal(actual_traj, list(expected_traj))
+    assert actual_traj == list(expected_traj)
 
 
 def multi_traj_checker(scan, expected_data):
@@ -35,7 +32,7 @@ def multi_traj_checker(scan, expected_data):
         actual_data.append(event['data'])
 
     RE(scan, subs={'event': collect_data})
-    assert_equal(actual_data, expected_data)
+    assert actual_data == expected_data
 
 
 def test_outer_product_ascan():
@@ -51,7 +48,7 @@ def test_outer_product_ascan():
         {'motor2': 20.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 10.0, 'det': 1.0, 'motor1': 3.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 3.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_outer_product_ascan_snaked():
@@ -66,7 +63,7 @@ def test_outer_product_ascan_snaked():
         {'motor2': 10.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 10.0, 'det': 1.0, 'motor1': 3.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 3.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_inner_product_ascan():
@@ -78,7 +75,7 @@ def test_inner_product_ascan():
         {'motor2': 10.0, 'det': 1.0, 'motor1': 1.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 30.0, 'det': 1.0, 'motor1': 3.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_outer_product_dscan():
@@ -96,7 +93,7 @@ def test_outer_product_dscan():
         {'motor2': 28.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 18.0, 'det': 1.0, 'motor1': 8.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 8.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_outer_product_dscan_snaked():
@@ -114,7 +111,8 @@ def test_outer_product_dscan_snaked():
         {'motor2': 18.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 18.0, 'det': 1.0, 'motor1': 8.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 8.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
+
 
 def test_inner_product_dscan():
     motor.set(0)
@@ -127,20 +125,20 @@ def test_inner_product_dscan():
         {'motor2': 18.0, 'det': 1.0, 'motor1': 6.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 38.0, 'det': 1.0, 'motor1': 8.0}]
-    yield multi_traj_checker, scan, expected_data
+    multi_traj_checker(scan, expected_data)
 
 
 def test_ascan():
     traj = [1, 2, 3]
     scan = AbsListScanPlan([det], motor, traj)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_dscan():
     traj = np.array([1, 2, 3])
     motor.set(-4)
     scan = DeltaListScanPlan([det], motor, traj)
-    yield traj_checker, scan, traj - 4
+    traj_checker(scan, traj - 4)
 
 
 def test_dscan_list_input():
@@ -148,33 +146,33 @@ def test_dscan_list_input():
     traj = [1, 2, 3]
     motor.set(-4)
     scan = DeltaListScanPlan([det], motor, traj)
-    yield traj_checker, scan, np.array(traj) - 4
+    traj_checker(scan, np.array(traj) - 4)
 
 
 def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
     scan = AbsScanPlan([det], motor, 0, 10, 5)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_log_ascan():
     traj = np.logspace(0, 10, 5)
     scan = LogAbsScanPlan([det], motor, 0, 10, 5)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
     scan = DeltaScanPlan([det], motor, 0, 10, 5)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_log_dscan():
     traj = np.logspace(0, 10, 5) + 6
     motor.set(6)
     scan = LogDeltaScanPlan([det], motor, 0, 10, 5)
-    yield traj_checker, scan, traj
+    traj_checker(scan, traj)
 
 
 def test_adaptive_ascan():
@@ -189,14 +187,14 @@ def test_adaptive_ascan():
 
     RE(scan1, subs={'event': [col, counter1]})
     RE(scan2, subs={'event': counter2})
-    assert_greater(counter1.value, counter2.value)
-    assert_equal(actual_traj[0], 0)
+    assert counter1.value > counter2.value
+    assert actual_traj[0] == 0
 
     actual_traj = []
     col = collector('motor', actual_traj)
     RE(scan3, {'event': col})
     monotonic_increasing = np.all(np.diff(actual_traj) > 0)
-    assert_true(monotonic_increasing)
+    assert monotonic_increasing
 
 
 def test_adaptive_dscan():
@@ -212,14 +210,14 @@ def test_adaptive_dscan():
     motor.set(1)
     RE(scan1, subs={'event': [col, counter1]})
     RE(scan2, subs={'event': counter2})
-    assert_greater(counter1.value, counter2.value)
-    assert_equal(actual_traj[0], 1)
+    assert counter1.value > counter2.value
+    assert actual_traj[0] == 1
 
     actual_traj = []
     col = collector('motor', actual_traj)
     RE(scan3, {'event': col})
     monotonic_increasing = np.all(np.diff(actual_traj) > 0)
-    assert_true(monotonic_increasing)
+    assert monotonic_increasing
 
 
 def test_count():
@@ -228,40 +226,40 @@ def test_count():
     motor.set(0)
     scan = Count([det])
     RE(scan, subs={'event': col})
-    assert_equal(actual_intensity[0], 1.)
+    assert actual_intensity[0] == 1.
 
     # multiple counts
     actual_intensity = []
     col = collector('det', actual_intensity)
     scan = Count([det], num=3, delay=0.05)
     RE(scan, subs={'event': col})
-    assert_equal(scan.num, 3)
-    assert_equal(actual_intensity, [1., 1., 1.])
+    assert scan.num == 3
+    assert actual_intensity == [1., 1., 1.]
 
 
 def test_center():
     try:
         import lmfit
-    except ImportError:
-        raise SkipTest("requires lmfit")
-    assert_true(not RE._run_is_open)
+    except ImportError as ie:
+        pytest.skip("requires lmfit. ImportError: {}".format(ie))
+    assert not RE._run_is_open
     det = SynGauss('det', motor, 'motor', 0, 1000, 1, 'poisson', True)
     d = {}
     cen = Center([det], 'det', motor, 0.1, 1.1, 0.01, d)
     RE(cen)
-    assert_less(abs(d['center']), 0.1)
+    assert abs(d['center'])  < 0.1
 
 
 def test_set():
     scan = AbsScanPlan([det], motor, 1, 5, 3)
-    assert_equal(scan.start, 1)
-    assert_equal(scan.stop, 5)
-    assert_equal(scan.num, 3)
+    assert scan.start == 1
+    assert scan.stop == 5
+    assert scan.num == 3
     scan.set(start=2)
-    assert_equal(scan.start, 2)
+    assert scan.start == 2
     scan.set(num=4)
-    assert_equal(scan.num, 4)
-    assert_equal(scan.start, 2)
+    assert scan.num == 4
+    assert scan.start == 2
 
 
 def test_wait_for():

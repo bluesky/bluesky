@@ -122,3 +122,5 @@ target/
 
 #ipython notebook stuff
 .ipynb_checkpoints/
+
+.tags

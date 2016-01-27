@@ -1,16 +1,14 @@
-from nose.tools import assert_equal, assert_raises, assert_true
-from nose import SkipTest
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
 from bluesky.standard_config import mesh
 from bluesky.tests.utils import setup_test_run_engine
-from nose.tools import raises
 import contextlib
 import sys
 import tempfile
-
+import pytest
+# import numpy as numpy
 RE = setup_test_run_engine()
 
 
@@ -31,22 +29,22 @@ def test_main_thread_callback_exceptions():
 def test_all():
     c = CallbackCounter()
     RE(stepscan(det, motor), subs={'all': c})
-    assert_equal(c.value, 10 + 1 + 2)  # events, descriptor, start and stop
+    assert c.value == 10 + 1 + 2  # events, descriptor, start and stop
 
     c = CallbackCounter()
     token = RE.subscribe('all', c)
     RE(stepscan(det, motor))
     RE.unsubscribe(token)
-    assert_equal(c.value, 10 + 1 + 2)
+    assert c.value == 10 + 1 + 2
 
 
-@raises(Exception)
 def _raising_callbacks_helper(stream_name, callback):
-    RE(stepscan(det, motor), subs={stream_name: callback})
+    with pytest.raises(Exception):
+        RE(stepscan(det, motor), subs={stream_name: callback})
 
 
 def test_raising_ignored_or_not():
-    assert_true(RE.ignore_callback_exceptions)
+    assert RE.ignore_callback_exceptions
     def cb(name, doc):
         raise Exception
     RE(stepscan(det, motor), subs=cb)
@@ -77,24 +75,24 @@ def test_subs_input():
     # Test input normalization on OO plans
     obj_ascan = AbsScanPlan([det], motor, 1, 5, 4)
     obj_ascan.subs = cb1
-    assert_equal(obj_ascan.subs, {'all': [cb1]})
+    assert obj_ascan.subs == {'all': [cb1]}
     obj_ascan.subs.update({'start': [cb2]})
-    assert_equal(obj_ascan.subs, {'all': [cb1], 'start': [cb2]})
+    assert obj_ascan.subs == {'all': [cb1], 'start': [cb2]}
     obj_ascan.subs = [cb2, cb3]
-    assert_equal(obj_ascan.subs, {'all': [cb2, cb3]})
+    assert obj_ascan.subs == {'all': [cb2, cb3]}
 
     # Test input normalization on simple scans
-    assert_equal(mesh.subs, mesh.default_subs)
+    assert mesh.subs == mesh.default_subs
     mesh.subs.update({'start': [cb2]})
     expected = dict(mesh.default_subs)
     expected.update({'start': [cb2]})
-    assert_equal(mesh.subs, expected)
+    assert mesh.subs == expected
     mesh.subs = cb2
-    assert_equal(mesh.subs, {'all': [cb2]})
+    assert mesh.subs == {'all': [cb2]}
     mesh.subs = [cb2, cb3]
-    assert_equal(mesh.subs, {'all': [cb2, cb3]})
+    assert mesh.subs == {'all': [cb2, cb3]}
     mesh.subs.update({'start': [cb1]})
-    assert_equal(mesh.subs, {'all': [cb2, cb3], 'start': [cb1]})
+    assert mesh.subs == {'all': [cb2, cb3], 'start': [cb1]}
 
 def test_subscribe_msg():
     assert RE.state == 'idle'
@@ -105,20 +103,22 @@ def test_subscribe_msg():
         yield from stepscan(det, motor)
 
     RE(counting_stepscan(det, motor))  # should advance c
-    assert_equal(c.value, 1)
+    assert c.value == 1
     RE(counting_stepscan(det, motor))  # should advance c
-    assert_equal(c.value, 2)
+    assert c.value == 2
     RE(stepscan(det, motor))  # should not
-    assert_equal(c.value, 2)
+    assert c.value == 2
 
 
 def test_unknown_cb_raises():
     def f(name, doc):
         pass
     # Dispatches catches this case.
-    assert_raises(KeyError, RE.subscribe, 'not a thing', f)
+    with pytest.raises(KeyError):
+        RE.subscribe('not a thing', f)
     # CallbackRegistry catches this case (different error).
-    assert_raises(ValueError, RE._subscribe_lossless, 'not a thing', f)
+    with pytest.raises(ValueError):
+        RE._subscribe_lossless('not a thing', f)
 
 
 @contextlib.contextmanager
@@ -146,12 +146,12 @@ def test_table():
 
         if ln[0] == '+':
             # test the full line on the divider lines
-            assert_equal(ln, kn)
+            assert ln == kn
         else:
             # skip the 'time' column on data rows
             # this is easier than faking up times in the scan!
-            assert_equal(ln[:16], kn[:16])
-            assert_equal(ln[26:], kn[26:])
+            assert ln[:16] == kn[:16]
+            assert ln[26:] == kn[26:]
 
 
 KNOWN_TABLE = """+------------+--------------+----------------+----------------+
@@ -231,8 +231,3 @@ KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 |        69  |  04:17:25.8  |      1.51e-04  |          4.20  |
 |        70  |  04:17:25.9  |      7.67e-06  |          4.85  |
 +------------+--------------+----------------+----------------+"""
-
-
-if __name__ == '__main__':
-    import nose
-    nose.runmodule(argv=['-s', '--with-doctest'], exit=False)

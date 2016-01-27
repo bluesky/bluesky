@@ -14,6 +14,8 @@ before_install:
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p /home/travis/mc
   - export PATH=/home/travis/mc/bin:$PATH
+  - conda config --set show_channel_urls True
+  - conda config --set always_yes True
   - export MDS_HOST=localhost
   - export MDS_DATABASE=test
   - export MDS_TIMEZONE=US/Eastern
@@ -27,18 +29,23 @@ before_install:
 
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
-  - conda update conda --yes
-  - conda create -n testenv --yes nose python=$TRAVIS_PYTHON_VERSION scipy requests matplotlib jsonschema traitlets
+  - conda update conda
+  - conda create -n testenv nose python=$TRAVIS_PYTHON_VERSION scipy requests matplotlib jsonschema traitlets pytest
   - source activate testenv
-  - conda install --yes metadatastore databroker historydict boltons prettytable doct -c lightsource2 -c conda-forge -c soft-matter
+  - pip install pytest-cov pytest-xdist
+  - conda install metadatastore databroker historydict boltons prettytable doct -c lightsource2 -c conda-forge -c soft-matter
   - conda remove metadatastore databroker filestore --yes
-  - conda install --yes super_state_machine cycler xray-vision lmfit -c tacaswell
+  - conda install super_state_machine cycler xray-vision lmfit -c tacaswell
   - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
   - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
   - 'pip install https://github.com/tacaswell/metadatastore/zipball/API_match_mds_schema#egg=metadatastore'
-  - conda install --yes pymongo pcaspy pyepics readline -c tacaswell
+  - conda install pymongo pcaspy pyepics readline -c tacaswell
   - pip install coveralls
   - python setup.py install
+  # Need to clean the python build directory (and other cruft) or pytest is
+  # going to find the build directory and get confused why there are two sets
+  # of every test file
+  - git clean -xfd
 
 script:
-  - python run_tests.py -v
+  - python run_tests.py --cov bluesky -vrxs
