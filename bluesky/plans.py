@@ -80,7 +80,7 @@ class PlanBase(Struct):
             yield Msg('wait', None, '_flyers')
         yield Msg('close_run')
         for token in tokens:
-            yield Msg('unsubscribe', token)
+            yield Msg('unsubscribe', None, token)
         yield from self._post()
         yield Msg('checkpoint')
 
