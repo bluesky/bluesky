@@ -48,4 +48,4 @@ install:
   - git clean -xfd
 
 script:
-  - python run_tests.py --cov bluesky -xrs -v
+  - python run_tests.py --cov bluesky -vrxs
