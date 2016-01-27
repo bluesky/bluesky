@@ -1123,7 +1123,7 @@ class RunEngine:
         _, obj, args, kwargs = msg
         try:
             token = kwargs['token']
-        except AttributeError:
+        except KeyError:
             token, = args
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
