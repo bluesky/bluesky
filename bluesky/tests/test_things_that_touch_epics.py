@@ -7,48 +7,53 @@ from multiprocessing import Process
 import signal
 from bluesky import Msg
 from bluesky.tests.utils import setup_test_run_engine
-from bluesky.hardware_checklist import connect_pv
+from bluesky.hardware_checklist import (
+    connect_pv, assert_pv_equal, assert_pv_greater, assert_pv_less,
+    assert_pv_in_band, assert_pv_out_of_band)
+import os
 
 RE = setup_test_run_engine()
 loop = asyncio.get_event_loop()
-
 pcaspy_process = None
 
-def setup_module():
+@pytest.fixture("module")
+def ensure_epics(request):
+    def teardown():
+        nonlocal pcaspy_process
+        os.kill(pcaspy_process.pid, signal.SIGINT)
+        pcaspy_process.join()
+    request.addfinalizer(teardown)
     try:
         from pcaspy import Driver, SimpleServer
     except ImportError as ie:
         pytest.skip("pcaspy is not available. Skipping all suspenders test."
                     "ImportError: {}".format(ie))
-        def to_subproc():
+    def to_subproc():
 
-            prefix = 'BSTEST:'
-            pvdb = {'VAL': {'prec': 3}}
+        prefix = 'BSTEST:'
+        pvdb = {'VAL': {'prec': 3}}
 
-            class myDriver(Driver):
-                def __init__(self):
-                    super(myDriver, self).__init__()
+        class myDriver(Driver):
+            def __init__(self):
+                super(myDriver, self).__init__()
 
-            server = SimpleServer()
-            server.createPV(prefix, pvdb)
-            driver = myDriver()
+        server = SimpleServer()
+        server.createPV(prefix, pvdb)
+        driver = myDriver()
 
-            # process CA transactions
-            while True:
-                try:
-                    server.process(0.1)
-                except KeyboardInterrupt:
-                    break
+        # process CA transactions
+        while True:
+            try:
+                server.process(0.1)
+            except KeyboardInterrupt:
+                break
 
-        pcaspy_process = Process(target=to_subproc)
-        pcaspy_process.start()
+    pcaspy_process = Process(target=to_subproc)
+    pcaspy_process.start()
 
-def teardown_module():
-    if pcaspy_process is not None:
-        os.kill(ppcaspy_processpid, signal.SIGINT)
-        pcaspy_process.join()
 
-def test_epics_smoke():
+def test_epics_smoke(ensure_epics):
+    # raise pytest.xfail("Epics integration testing is broken.")
 
     try:
         import epics
@@ -70,6 +75,7 @@ def test_epics_smoke():
 def _test_suspender(suspender_class, sc_args, start_val, fail_val,
                     resume_val, wait_time):
 
+    # raise pytest.xfail("Epics integration testing is broken.")
     try:
         import epics
     except ImportError as ie:
@@ -104,7 +110,8 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
     assert delta > 1 + wait_time + .2
 
 
-def test_suspending():
+def test_suspending(ensure_epics):
+    # raise pytest.xfail("Epics integration testing is broken.")
     try:
         from bluesky.suspenders import (PVSuspendBoolHigh,
                                         PVSuspendBoolLow,
@@ -123,7 +130,8 @@ def test_suspending():
     _test_suspender(PVSuspendOutBand, (.5, 1.5), 0, 1, 0, .5)
 
 
-def test_connect_pv():
+def test_connect_pv(ensure_epics):
+    # raise pytest.xfail("Epics integration testing is broken.")
     try:
         import epics
     except ImportError as ie:
