@@ -99,10 +99,10 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None):
             return
 
         atch = StringIO(long_msg.render(start=doc))
+        # monkey-patch a 'name' attribute onto StringIO
+        atch.name = 'long_description'
         desc = desc_msg.render(start=doc)
-        logbook_func(text=desc, properties={'start':doc},
-                attachments=[atch],
-                ensure=True)
+        logbook_func(text=desc, attachments=[atch], ensure=True)
     return lbcb
 
 def call_str(start, call_template=None):
