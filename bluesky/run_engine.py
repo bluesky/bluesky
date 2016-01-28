@@ -662,10 +662,16 @@ class RunEngine:
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
                     self._new_gen = False
-                    coro = self._command_registry[msg.command]
-                    logger.debug("Processing message %r", msg)
-                    self.debug("About to process: {0}, {1}".format(coro, msg))
-                    response = yield from coro(msg)
+                    try:
+                        coro = self._command_registry[msg.command]
+                        logger.debug("Processing message %r", msg)
+                        self.debug("About to process: {0}, {1}".
+                                   format(coro, msg))
+                        response = yield from coro(msg)
+                    except KeyboardInterrupt:
+                        raise
+                    except Exception as e:
+                        self._genstack[-1].throw(e)
                     self.debug('RE.state: ' + self.state)
                     self.debug('msg: {}\n  response: {}'.format(msg, response))
                 except KeyboardInterrupt:
