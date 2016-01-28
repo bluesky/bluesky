@@ -18,16 +18,18 @@ pcaspy_process = None
 
 @pytest.fixture("module")
 def ensure_epics(request):
-    def teardown():
-        nonlocal pcaspy_process
-        os.kill(pcaspy_process.pid, signal.SIGINT)
-        pcaspy_process.join()
-    request.addfinalizer(teardown)
     try:
         from pcaspy import Driver, SimpleServer
     except ImportError as ie:
         pytest.skip("pcaspy is not available. Skipping all suspenders test."
                     "ImportError: {}".format(ie))
+    def teardown():
+        nonlocal pcaspy_process
+        os.kill(pcaspy_process.pid, signal.SIGINT)
+        pcaspy_process.join()
+
+    request.addfinalizer(teardown)
+
     def to_subproc():
 
         prefix = 'BSTEST:'
@@ -53,7 +55,7 @@ def ensure_epics(request):
 
 
 def test_epics_smoke(ensure_epics):
-    # raise pytest.xfail("Epics integration testing is broken.")
+    # pytest.xfail("Epics integration testing is broken.")
 
     try:
         import epics
@@ -75,7 +77,7 @@ def test_epics_smoke(ensure_epics):
 def _test_suspender(suspender_class, sc_args, start_val, fail_val,
                     resume_val, wait_time):
 
-    # raise pytest.xfail("Epics integration testing is broken.")
+    # pytest.xfail("Epics integration testing is broken.")
     try:
         import epics
     except ImportError as ie:
@@ -111,7 +113,7 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
 
 
 def test_suspending(ensure_epics):
-    # raise pytest.xfail("Epics integration testing is broken.")
+    # pytest.xfail("Epics integration testing is unreliable.")
     try:
         from bluesky.suspenders import (PVSuspendBoolHigh,
                                         PVSuspendBoolLow,
@@ -131,7 +133,7 @@ def test_suspending(ensure_epics):
 
 
 def test_connect_pv(ensure_epics):
-    # raise pytest.xfail("Epics integration testing is broken.")
+    pytest.xfail("Epics integration testing is unreliable.")
     try:
         import epics
     except ImportError as ie:
