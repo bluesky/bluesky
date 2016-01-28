@@ -47,7 +47,10 @@ def test_raising_ignored_or_not():
     assert RE.ignore_callback_exceptions
     def cb(name, doc):
         raise Exception
-    RE(stepscan(det, motor), subs=cb)
+    # by default (with ignore... = True) it warns
+    with pytest.warns(UserWarning):
+        RE(stepscan(det, motor), subs=cb)
+
     RE.ignore_callback_exceptions = False
     _raising_callbacks_helper('all', cb)
 

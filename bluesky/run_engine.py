@@ -4,6 +4,7 @@ import types
 import time as ttime
 import sys
 import logging
+from warnings import warn
 from itertools import count, tee
 from collections import namedtuple, deque, defaultdict, Iterable
 import uuid
@@ -1156,7 +1157,13 @@ class Dispatcher:
         self._token_mapping = dict()
 
     def process(self, name, doc):
-        self.cb_registry.process(name, name.name, doc)
+        exceptions = self.cb_registry.process(name, name.name, doc)
+        for exc, traceback in exceptions:
+            warn("A %r was raised during the processing of a %s "
+                 "Document. The error will be ingored to avoid "
+                 "interrupting data collection. To investigate, "
+                 "set RunEngine.ignore_callback_exceptions = False "
+                 "and run again." % (exc, name.name))
 
     def subscribe(self, name, func):
         """
