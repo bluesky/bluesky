@@ -538,3 +538,25 @@ def test_bad_checkpoint():
     # Resuming will cause us to write the same close_run twice.
     with pytest.raises(IllegalMessageSequence):
         RE.resume()
+
+
+def test_clear_checkpoint():
+    bad_plan = [Msg('checkpoint'), Msg('clear_checkpoint'), Msg('pause'), 'lies']
+    silly_plan = [Msg('pause'), 'lies']
+    good_plan = [Msg('checkpoint'), Msg('pause')]
+    fine_plan = [Msg('clear_checkpoint')]
+
+    RE(good_plan)
+    assert RE.state == 'paused'
+    RE.stop()
+
+    RE(fine_plan)
+    assert RE.state == 'idle'
+
+    # this should raise an attribute error if the last entry in the plan
+    # is passed to the run engine
+    RE(bad_plan)
+    assert RE.state == 'idle'
+
+    RE(silly_plan)
+    assert RE.state == 'idle'
