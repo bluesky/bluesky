@@ -1,4 +1,4 @@
-from collections import deque, defaultdict
+from collections import deque, defaultdict, Iterable
 
 import functools
 import operator
@@ -31,7 +31,6 @@ class PlanBase(Struct):
     inspection will work.
     """
     subs = Subs({})
-    _derived_fields = []
 
     @property
     def md(self):
@@ -41,6 +40,13 @@ class PlanBase(Struct):
         self._md['plan_type'] = type(self).__name__
         self._md['plan_args'] = {field: repr(getattr(self, field))
                                  for field in self._fields}
+        for category, objs in self._objects.items():
+            # e.g., self.md['motors'] = ['motor1', 'motor2']
+            if isinstance(objs, Iterable):
+                self._md[category] = [obj.name for obj in objs]
+            else:
+                obj = objs
+                self._md[category] = obj.name
         return self._md
 
     def __iter__(self):
@@ -146,7 +152,7 @@ class Count(PlanBase):
 
     @property
     def _objects(self):
-        return self.detectors
+        return {'detectors': self.detectors}
 
     def _gen(self):
         dets = self.detectors
@@ -167,11 +173,10 @@ class Count(PlanBase):
 class Plan1D(PlanBase):
     "Use AbsListScanPlan or DeltaListScanPlan. Subclasses must define _abs_steps."
     _fields = ['detectors', 'motor', 'steps']
-    _derived_fields = []
 
     @property
     def _objects(self):
-        return list(self.detectors) + [self.motor]
+        return {'detectors': self.detectors, 'motor': self.motor}
 
     def _gen(self):
         dets = self.detectors
@@ -221,7 +226,6 @@ class DeltaListScanPlan(Plan1D):
     steps : list
         list of positions relative to current position
     """
-    _derived_fields = Plan1D._derived_fields + ['init_pos']
 
     @property
     def init_pos(self):
@@ -231,6 +235,7 @@ class DeltaListScanPlan(Plan1D):
     def _pre(self):
         "Get current position for the motor."
         self._init_pos = scalar_heuristic(self.motor)
+        self._md['init_pos'] = self.init_pos
         self._abs_steps = np.asarray(self.steps) + self._init_pos
         yield from super()._pre()
 
@@ -256,6 +261,7 @@ class DeltaListScanPlan(Plan1D):
         try:
             init_pos = self.init_pos
             delattr(self, '_init_pos')
+            del self._md['init_pos']
         except AttributeError:
             raise RuntimeError("Trying to run _post code for a DScan "
                                "without running the _pre code to get "
@@ -293,7 +299,6 @@ class AbsScanPlan(AbsListScanPlan):
     >>> RE(my_plan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
-    _derived_fields = AbsListScanPlan._derived_fields + ['steps']
 
     @property
     def steps(self):
@@ -328,7 +333,6 @@ class LogAbsScanPlan(AbsListScanPlan):
     >>> RE(my_plan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
-    _derived_fields = AbsListScanPlan._derived_fields + ['steps']
 
     @property
     def steps(self):
@@ -363,7 +367,6 @@ class DeltaScanPlan(DeltaListScanPlan):
     >>> RE(my_plan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
-    _derived_fields = DeltaListScanPlan._derived_fields + ['steps']
 
     @property
     def steps(self):
@@ -398,7 +401,6 @@ class LogDeltaScanPlan(DeltaListScanPlan):
     >>> RE(my_plan)
     """
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
-    _derived_fields = DeltaListScanPlan._derived_fields + ['steps']
 
     @property
     def steps(self):
@@ -412,7 +414,7 @@ class _AdaptivePlanBase(PlanBase):
 
     @property
     def _objects(self):
-        return list(self.detectors) + [self.motor]
+        return {'detectors': self.detectors, 'motor': self.motor}
 
     def _gen(self):
         start = self.start + self._init_pos
@@ -530,6 +532,7 @@ class AdaptiveDeltaScanPlan(_AdaptivePlanBase):
 
     def _pre(self):
         self._init_pos = scalar_heuristic(self.motor)
+        self._md['init_pos'] = self.init_pos
         yield from super()._pre()
 
     def _post(self):
@@ -537,6 +540,7 @@ class AdaptiveDeltaScanPlan(_AdaptivePlanBase):
         try:
             init_pos = self.init_pos
             delattr(self, '_init_pos')
+            del self._md['init_pos']
         except AttributeError:
             raise RuntimeError("Trying to run _post code for a DScan "
                                "without running the _pre code to get "
@@ -610,7 +614,7 @@ class Center(PlanBase):
 
     @property
     def _objects(self):
-        return list(self.detectors) + [self.motor]
+        return {'detectors': self.detectors, 'motor': self.motor}
 
     @property
     def min_cen(self):
@@ -694,7 +698,6 @@ class Center(PlanBase):
 
 class PlanND(PlanBase):
     _fields = ['detectors', 'cycler']
-    _derived_fields = ['motors', 'num']
 
     @property
     def motors(self):
@@ -702,7 +705,7 @@ class PlanND(PlanBase):
 
     @property
     def _objects(self):
-        return list(self.detectors) + list(self.motors)
+        return {'detectors': self.detectors, 'motors': self.motors}
 
     def _gen(self):
         self._last_set_point = {m: None for m in self.motors}
@@ -764,7 +767,8 @@ class _OuterProductPlanBase(PlanND):
         self.snaking = tuple(snaking)
         self.pre_run = pre_run
         self.post_run = post_run
-        self._md = {}
+        self._md = {'shape': self.shape, 'extents': self.extents,
+                    'snaking': self.snaking, 'num': self.num}
         self.configuration = {}
         self.flyers = []
 
@@ -783,7 +787,12 @@ class _OuterProductPlanBase(PlanND):
 
     @property
     def num(self):
-        return len(self.cycler)
+        # We could do len(cycler) but we dont know init_pos yet,
+        # so the cycler cannot be computed.
+        nums = [num for motor, start, stop, num, snake
+                in chunked(self.args, 5)]
+        total_steps = functools.reduce(operator.mul, nums)
+        return total_steps
 
     @property
     def args(self):
@@ -794,7 +803,6 @@ class _OuterProductPlanBase(PlanND):
 class _InnerProductPlanBase(PlanND):
     # We define _fields not for Struct, but for metadata in PlanBase.md.
     _fields = ['detectors', 'num', 'args']
-    _derived_fields = ['motors', 'extents']
 
     # Overriding PlanND is the only way to do this; we cannot build the cycler
     # until we measure the initial positions at the beginning of the run.
@@ -816,7 +824,7 @@ class _InnerProductPlanBase(PlanND):
         self.extents = tuple(extents)
         self.pre_run = pre_run
         self.post_run = post_run
-        self._md = {}
+        self._md = {'extents': self.extents}
         self.configuration = {}
         self.flyers = []
 
@@ -873,7 +881,6 @@ class InnerProductDeltaScanPlan(_InnerProductPlanBase):
         patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
         Motors can be any 'setable' object (motor, temp controller, etc.)
     """
-    _derived_fields = _InnerProductPlanBase._derived_fields + ['init_pos']
 
     @property
     def init_pos(self):
@@ -883,8 +890,10 @@ class InnerProductDeltaScanPlan(_InnerProductPlanBase):
     def _pre(self):
         "Get current position for each motor."
         self._init_pos = {}
+        self._md['init_pos'] = {}
         for motor, start, stop, in chunked(self.args, 3):
             self._init_pos[motor] = scalar_heuristic(motor)
+            self._md['init_pos'][motor.name] = self.init_pos[motor]
         yield from super()._pre()
 
     def _post(self):
@@ -892,6 +901,7 @@ class InnerProductDeltaScanPlan(_InnerProductPlanBase):
         try:
             init_pos = self.init_pos
             delattr(self, '_init_pos')
+            del self._md['init_pos']
         except AttributeError:
             raise RuntimeError("Trying to run _post code for a DScan "
                                "without running the _pre code to get "
@@ -943,7 +953,6 @@ class OuterProductDeltaScanPlan(_OuterProductPlanBase):
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     """
-    _derived_fields = _OuterProductPlanBase._derived_fields + ['init_pos']
 
     @property
     def init_pos(self):
@@ -953,8 +962,10 @@ class OuterProductDeltaScanPlan(_OuterProductPlanBase):
     def _pre(self):
         "Get current position for each motor."
         self._init_pos = {}
+        self._md['init_pos'] = {}
         for motor, start, stop, num, snake in chunked(self.args, 5):
             self._init_pos[motor] = scalar_heuristic(motor)
+            self._md['init_pos'][motor.name] = self.init_pos[motor]
         yield from super()._pre()
 
     def _post(self):
@@ -963,6 +974,7 @@ class OuterProductDeltaScanPlan(_OuterProductPlanBase):
         try:
             init_pos = self.init_pos
             delattr(self, '_init_pos')
+            del self._md['init_pos']
         except AttributeError:
             raise RuntimeError("Trying to run _post code for a DScan "
                                "without running the _pre code to get "
@@ -988,7 +1000,7 @@ class Tweak(PlanBase):
 
     @property
     def _objects(self):
-        return [self.detector, self.motor]
+        return {'detector': self.detector, 'motor': self.motor}
 
     def _gen(self):
         d = self.detector
