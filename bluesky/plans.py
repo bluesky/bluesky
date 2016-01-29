@@ -24,9 +24,6 @@ class PlanBase(Struct):
       set, which is used to stage/unstage everything
     - a class level ``_fields`` attribute which is used to
       construct the init signature via meta-class magic
-    - optionally, a class level ``_derived_fields`` attribute which is used to
-      indicate other attributes, beyond _fields, which should be included in
-      metadata
 
     If you do not use the class-level ``_fields`` and write a custom
     ``__init__`` (which you need to do if you want to have optional kwargs)
@@ -41,15 +38,9 @@ class PlanBase(Struct):
         """
         a metadata dictionary, passed to the 'open_run' Message
         """
-        for field in self._fields + self._derived_fields:
-            self._md[field] = repr(getattr(self, field))
-        # The 'plan_args' key is a dict of kwargs that recreate the object.
-        # It is an intentionally redundant subset of the top-level metadata.
-        plan_args = {}
-        for field in self._fields:
-            plan_args[field] = repr(getattr(self, field))
-        self._md['plan_args'] = plan_args
         self._md['plan_type'] = type(self).__name__
+        self._md['plan_args'] = {field: repr(getattr(self, field))
+                                 for field in self._fields}
         return self._md
 
     def __iter__(self):
