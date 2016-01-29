@@ -31,7 +31,7 @@ from bluesky.global_state import gs
 from bluesky.utils import (normalize_subs_input, Subs, DefaultSubs,
                            first_key_heuristic)
 from collections import defaultdict
-from itertools import filterfalse, chain
+from itertools import filterfalse, chain, count
 
 # ## Factory functions acting a shim between plans and callbacks ###
 
@@ -54,24 +54,40 @@ def table_gs_only(scan):
     return LiveTable(gs.TABLE_COLS)
 
 
+def _figure_name(base_name):
+    """Helper to compute figure name
+
+    This takes in a base name an return the name of the figure to use.
+
+    If gs.OVERPLOT, then this is a no-op.  If not gs.OVERPLOT then append '(N)'
+    to the end of the string until a non-existing figure is found
+
+    """
+    if not gs.OVERPLOT:
+        if not plt.fignum_exists(base_name):
+            pass
+        else:
+            for j in count(1):
+                numbered_template = '{} ({})'.format(base_name, j)
+                if not plt.fignum_exists(numbered_template):
+                    base_name = numbered_template
+                    break
+    return base_name
+
+
 def plot_first_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
     key = first_key_heuristic(list(scan.motors)[0])
-    fig_name = 'BlueSky: {} v {}'.format(key, gs.PLOT_Y)
+    fig_name = _figure_name('BlueSky {} v {}'.format(key, gs.PLOT_Y))
     fig = plt.figure(fig_name)
-    if not gs.OVERPLOT:
-        fig.clf()
     return LivePlot(gs.PLOT_Y, key, fig=fig)
 
 
 def plot_motor(scan):
     "Setup a LivePlot by inspecting a scan and gs."
     key = first_key_heuristic(scan.motor)
-    fig_name = 'BlueSky: {} v {}'.format(key, gs.PLOT_Y)
-
+    fig_name = _figure_name('BlueSky {} v {}'.format(key, gs.PLOT_Y))
     fig = plt.figure(fig_name)
-    if not gs.OVERPLOT:
-        fig.clf()
     return LivePlot(gs.PLOT_Y, key, fig=fig)
 
 
