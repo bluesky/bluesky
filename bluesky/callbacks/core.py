@@ -6,6 +6,7 @@ from itertools import count
 from collections import deque
 import warnings
 from prettytable import PrettyTable
+import jinja2
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -539,39 +540,46 @@ class LiveRaster(CallbackBase):
 
         self.im.set_array(self._Idata)
 
+env = jinja2.Environment()
 
-class _NameVisitor(ast.NodeVisitor):
-    """Helper class to specifically look for the keyword `name=` and extract
-    the value passed to the kwarg
+_SPEC_HEADER_TEMPLATE = env.from_string("""#F {filepath}
+#E {{ unix_time }}
+#D {{ readable_time }}
+#C {{ owner }}  User = {{ owner }}
+O0 {{ positioners | join(' ') }}""")
 
-    Example
-    -------
-    >>> doc = db[-1]
-    >>> tree = ast.parse(doc.start.motor)
-    >>> visitor = _NameVisitor()
-    >>> visitor.visit(tree)
-    >>> motor_name = visitor.name
-    >>> print(motor_name)
-    diff_yh
-    """
-    def visit_keyword(self, node):
-        if node.arg == 'name':
-            self.name = node.value.s # stash the motor name and be done with it
-        else:
-            self.generic_visit(node) # keep visiting nodes
+_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ start }} {{ stop }} {{ stides }} {{ time }}")
 
+_PLAN_TO_SPEC_MAPPING = {'AbsScanPlan': 'ascan',
+                         'DeltaScanPlan': 'dscan',
+                         'Count': 'count',
+                         'Tweak', 'tw'}
+
+_SPEC_START_TEMPLATE = env.from_string("""
+
+#S {{ scan_id }} {{ command }}
+#D {{ readable_time }}
+#T {{ acq_time }} (Seconds)""")
+
+_SPEC_DESCRIPTOR_TEMPLATE = env.from_string("""
+#N {{ length }}
+#L {{ motor_name }}    {{ unix_time }} {{ acq_time }} {{ data_keys | join(' ') }}""")
+
+_SPEC_EVENT_TEMPLATE = env.from_string(
+    """{{ motor_name }}  {{ unix_time }} {{ acq_time }} {{ values | join(' ') }}""")
 
 class LiveSpecFile(CallbackBase):
     """Callback to export scalar values to a spec file for viewing
 
-    This class depends on
+    Expect:
+        `
+    1. a descriptor named 'baseline'
+    2. an event for that descriptor
+    3. a descriptor named 'main'
+    4. events for that descriptor
 
-    - the global state object in bluesky having an attribute called 'specpath'.
-      This lets the user interactively control where the spec file is getting
-      written.
-    - the session manager in IPython to get the last command that was typed in
-      at the command line
-    - the ophyd session manager to get the list of positioners
+    Other documents can be issues before, between, and after, but
+    these must be issued and in this order.
 
     Example
     -------
@@ -589,11 +597,9 @@ class LiveSpecFile(CallbackBase):
         specpath : str
             The location on disk where you want the specfile to be written
         """
-        super().__init__()
         self.specpath = specpath
-        self._name_finder = _NameVisitor()
 
-    def _write_spec_header(doc):
+    def _write_spec_header(doc, pos_names):
         """
         Parameters
         ----------
@@ -612,102 +618,91 @@ class LiveSpecFile(CallbackBase):
         #C xf11id  User = xf11id
         #O [list of all motors, all on one line]
         """
-        session_manager = get_session_manager()
-        pos = session_manager.get_positioners()
-        spec_header = [
-            '#F %s' % self.specpath,
-            '#E %s' % int(doc['time']),
-            # time might need to be formatted specifically
-            '#D %s' % datetime.fromtimestamp(doc['time']),
-            '#C %s  User = %s' % (doc['owner'], doc['owner']),
-            'O0 {}'.format(' '.join(sorted(list(pos.keys()))))
-        ]
+        content = dict(filepath=self.specpath,
+                       unix_time=doc['time'],
+                       readable_time=datetime.fromtimestamp(doc['time']),
+                       owner=doc['owner'],
+                       positioners=pos_names)
         with open(self.specpath, 'w') as f:
-            f.write('\n'.join(spec_header))
-
-        return spec_header
+            f.write(_SPEC_HEADER_TEMPLATE.render(content))
 
     def start(self, doc):
-        from ophyd.session import get_session_manager
-        from IPython import get_ipython
-
         if not os.path.exists(self.specpath):
             spec_header = self._write_spec_header(doc)
-        # grab the literal last command that the user typed at the command line
-        # in IPython and format it to remove the parentheses and commas
-        # e.g. dscan(th, 0, 1, 10, .1) -> dscan th 0 1 10 .1
-        ipy_instance = get_ipython()
-        last_command = list(
-            ipy_instance.history_manager.get_range())[-1][2]
-        last_command = last_command.replace('(', ' ')
-        last_command = last_command.replace(')', ' ')
-        last_command = last_command.replace(',', ' ')
-        tree = ast.parse(doc['detectors'])
-        self._name_finder.visit(tree)
-        detname = self._name_finder.name
-        self.acquisition_time = ipy_instance.user_global_ns[detname].acquire_time
-        # grab the acquisition time from one of the detectors.  This part does
-        # not need to be changed if the detectors do not have the same
-        # acquisition time. acquisition_time is just one of those things that
-        # SPEC needs
-        self.acquisition_time = dets[0].acquire_time
-        # write a blank line between scans
-        with open(self.specpath, 'a') as f:
-            f.write('\n\n')
+        # TODO verify that list of positioners is unchanged  by reading file
+        # and parsing any existing contents.
+        plan_type = doc['plan_type']
+        plan_args = doc['plan_args']
+        if plan_type in ['AbsScanPlan', 'DeltaScanPlan']:
+            content = dict(scan_type=_PLAN_TO_SPEC_MAPPING[doc['plan_type']],
+                           start=plan_args['start'],
+                           stop=plan_args['stop'],
+                           strides=int(plan_args['num']) - 1,
+                           acq_time=plan_args['time'])
+            command = _SPEC_1D_COMMAND.render(content)
+            # Some of these are used in other methods too -- stash them.
+            self._unix_time = doc['time']
+            self._acq_time = plan_args['time']
+            self._motor = doc['motor']
+        else:
+            raise NotImplementedError("Do not know how to represent %s in "
+                                      "SPEC. If you really need this, ask."
+                                      % plan_type)
         # write the new scan entry
-        with open(self.specpath, 'a') as f:
-            f.write('#S %s %s\n' % (doc['scan_id'], last_command))
-            f.write('#D %s\n' % datetime.fromtimestamp(doc['time']))
-            f.write('#T %s (Seconds)\n' % self.acquisition_time)
-        # write the motor positions
-        pos = get_session_manager().get_positioners()
-        positions = [str(v.position) for k, v in sorted(pos.items())]
-        with open(self.specpath, 'a') as f:
-            f.write('#P0 {0}\n'.format(' '.join(positions)))
-        # writing the list of motor names and their current values in
-        # a more human readable way. Apparently "#M" is not a used key in
-        # spec. Fingers crossed....
-        with open(self.specpath, 'a') as f:
-            for idx, (name, positioner) in enumerate(sorted(pos.items())):
-                f.write('#M%s %s %s\n' % (idx, name, str(positioner.position)))
-        print("RunStart document received in LiveSpecFile")
-        try:
-            tree = ast.parse(doc['motor'])
-            self._name_finder.visit(tree)
-            self.motorname = self._name_finder.name
-        except AttributeError:
-            # if there is no motor in the header, then just default the motor
-            # name to the scan type
-            self.motorname = doc.scan_type
+        content = dict(command=command,
+                       scan_id=doc['scan_id'],
+                       readable_time=datettime.fromtimestamp(doc['time']),
+                       acq_time=plan_args['time'])
+        self._start_content = content  # can't write until after we see desc
+        self._start_doc = doc
 
     def descriptor(self, doc):
         """Write the header for the actual scan data
         """
-        keys = sorted(list(doc['data_keys'].keys()))
-        keys.remove(self.motorname)
-        # the order of the keys in SPEC is [acquisition_time, time_in_seconds,
-        #                                   all_the_other_motors_and_dets]
-        # Spec visualization software expects the keys in this order.
-        keys.insert(0, 'Seconds')
-        keys.insert(0, 'Epoch')
-        keys.insert(0, self.motorname)
+        if 'name' not in doc:
+            return
+        if doc['name'] == 'baseline':
+            self._baseline_desc_uid = doc['uid']
+            # Now we know all the positioners involved and can write the
+            # spec file.
+            pos_names = sorted([dk['object_name'] for dk in doc['data_keys']])
+            self._write_spec_header(self._start_doc, pos_names)
+            with open(self.specpath, 'a') as f:
+                f.write(_SPEC_SCAN_TEMPLATE.render(content))
+        if doc['name'] == 'main':
+            self._main_desc_uid = doc['main']
+            self._read_fields = sorted([k for k, v doc['data_keys'].items()
+                                        if v['object_name'] ! = self._motor])
+        content = dict(motor_name=self._motor,
+                       acq_time=self._acq_time,
+                       unix_time=self._unix_time,
+                       length=3 + len(read_fields))
         with open(self.specpath, 'a') as f:
-            f.write('#N %s\n' % len(keys))
-            f.write('#L {0}    {1}\n'.format(keys[0],
-                                             '  '.join(keys[1:])))
+            f.write(_SPEC_SCAN_TEMPLATE.render(content))
 
     def event(self, doc):
-        """Write one line of scan data
         """
-        t = int(doc['time'])
-        vals = [v for k, v in sorted(doc['data'].items()) if k != self.motorname]
-        # the order of the keys in SPEC is [acquisition_time, time_in_seconds,
-        #                                   all_the_other_motors_and_dets]
-        # Spec visualization software expects the keys in this order.
-        vals.insert(0, self.acquisition_time)
-        vals.insert(0, t)
-        vals.insert(0, doc['data'][self.motorname])
-        vals = [str(v) for v in vals]
-        with open(self.specpath, 'a') as f:
-            f.write('{0}  {1}\n'.format(vals[0], ' '.join(vals[1:])))
-
+        Two cases:
+        1. We have a 'baseline' event; write baseline motor positioners
+           and detector values.
+        2. We have a 'main' event; write one line of data.
+        """
+        data = doc['data']
+        if doc['descriptor'] == self._baseline_desc_uid:
+            # This is a 'baseline' event.
+            if self._wrote_baseline_values:
+                return
+            baseline = {k: str(data[v]) for k, v in sorted(data.items())]
+            with open(self.specpath, 'a') as f:
+                # using fmt strings; this operation would be a pain with jinja
+                for idx, (key, val) in enumerate(baseline):
+                    f.write('#M%s %s %s\n' % (idx, key, val)
+            self._wrote_baseline_values = True
+        selif doc['descriptor'] == self._main_desc_uid:
+            values = [str(data[v]) for k, v in self._read_fields]
+            content = dict(acq_time=self._acq_time,
+                           unix_time=self._unix_time,
+                           motor_name=self._motor,
+                           values=values)
+            with open(self.specpath, 'a') as f:
+                f.write(_SPEC_EVENT_TEMPLATE.render(content))
