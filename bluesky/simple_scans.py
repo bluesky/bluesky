@@ -91,6 +91,15 @@ def plot_motor(scan):
     return LivePlot(gs.PLOT_Y, key, fig=fig)
 
 
+def plot_seq_num(scan):
+    "Setup a LivePlot by inspecting a scan and gs."
+    if scan.num < 2:
+        return
+    fig_name = _figure_name('BlueSky: {} v sequence number'.format(gs.PLOT_Y))
+    fig = plt.figure(fig_name)
+    return LivePlot(gs.PLOT_Y, fig=fig)
+
+
 def raster(scan):
     "Set up a LiveRaster by inspect a scan and gs."
     if len(scan.shape) != 2:
@@ -294,7 +303,7 @@ class _HardcodedMotorStepScan(_BundledScan):
 class Count(_BundledScan):
     "ct"
     plan_class = plans.Count
-    default_sub_factories = DefaultSubs({'all': [table_gs_only]})
+    default_sub_factories = DefaultSubs({'all': [table_gs_only, plot_seq_num]})
 
     def __call__(self, time=None, subs=None, **kwargs):
         original_times = _set_acquire_time(time)
