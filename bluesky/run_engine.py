@@ -268,6 +268,10 @@ class RunEngine:
         loop.call_soon(self._check_for_trouble)
         loop.call_soon(self._check_for_signals)
 
+        # aliases for back-compatibility
+        self._unsubscribe_lossless = self.unsubscribe_lossless
+        self._subscribe_lossless = self.subscribe_lossless
+
     @property
     def _run_is_open(self):
         return self._run_start_uid is not None
@@ -423,7 +427,7 @@ class RunEngine:
                 print("Cannot pause from {0} state. "
                       "Ignoring request.".format(self.state))
 
-    def _subscribe_lossless(self, name, func):
+    def subscribe_lossless(self, name, func):
         """Register a callback function to consume documents.
 
         Functions registered here are considered "critical." They receive
@@ -449,7 +453,7 @@ class RunEngine:
         """
         return self._lossless_cb_registry.connect(name, func)
 
-    def _unsubscribe_lossless(self, token):
+    def unsubscribe_lossless(self, token):
         """Un-register a 'critical' callback function.
 
         Parameters
