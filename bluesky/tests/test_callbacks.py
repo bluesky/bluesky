@@ -116,11 +116,12 @@ def test_subscribe_msg():
 def test_unknown_cb_raises():
     def f(name, doc):
         pass
-    # Dispatches catches this case.
     with pytest.raises(KeyError):
         RE.subscribe('not a thing', f)
-    # CallbackRegistry catches this case (different error).
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
+        RE.subscribe_lossless('not a thing', f)
+    # back-compat alias for subscribe_lossless
+    with pytest.raises(KeyError):
         RE._subscribe_lossless('not a thing', f)
 
 

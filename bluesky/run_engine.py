@@ -251,17 +251,21 @@ class RunEngine:
             'wait_for': self._wait_for,
         }
 
-        # public dispatcher for callbacks processed on the main thread
+        # public dispatcher for callbacks
+        # The Dispatcher's public methods are exposed through the
+        # RunEngine for user convenience.
         self.dispatcher = Dispatcher()
         self.ignore_callback_exceptions = True
         self.event_timeout = 0.1
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
 
-        # private registry of "critical" callbacks
+        # private dispatcher of critical callbacks
         # which get a lossless Event stream and abort a run if they raise
-        self._lossless_cb_registry = CallbackRegistry(
-            allowed_sigs=DocumentNames)
+        # Ths subscribe/unsubscribe are exposed through the RunEngine
+        # as subscribe_lossless and unsubscribe_lossless, defined below
+        # to provide special docstrings.
+        self._lossless_dispatcher = Dispatcher()
 
         self.verbose = False
 
@@ -451,7 +455,7 @@ class RunEngine:
         token : int
             an integer token that can be used to unsubscribe
         """
-        return self._lossless_cb_registry.connect(name, func)
+        return self._lossless_dispatcher.subscribe(name, func)
 
     def unsubscribe_lossless(self, token):
         """Un-register a 'critical' callback function.
@@ -461,7 +465,7 @@ class RunEngine:
         token : int
             an integer token returned by _subscribe_lossless
         """
-        self._lossless_cb_registry.disconnect(token)
+        self._lossless_dispatcher.unsubscribe(token)
 
     def __call__(self, plan, subs=None, **metadata_kw):
         """Run the scan defined by ``plan``
@@ -1151,7 +1155,7 @@ class RunEngine:
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
-        self._lossless_cb_registry.process(name, name.name, doc)
+        self._lossless_dispatcher.process(name, doc)
         if name != DocumentNames.event:
             self.dispatcher.process(name, doc)
             logger.info("Emitting %s document: %r", name.name, doc)
