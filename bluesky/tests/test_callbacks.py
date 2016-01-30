@@ -139,7 +139,10 @@ def test_table():
     with _print_redirect() as fout:
         table = LiveTable(['det', 'motor'])
         ad_scan = AdaptiveAbsScanPlan([det], 'det', motor, -15, 5, .01, 1, .05, True)
-        RE(ad_scan, subs={'all': [table]})
+        # use lossless sub here because rows can get dropped
+        token = RE.subscribe_lossless('all', table)
+        RE(ad_scan)
+        RE.unsubscribe_lossless(token)
 
     fout.seek(0)
 
