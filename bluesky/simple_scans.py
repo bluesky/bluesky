@@ -93,8 +93,15 @@ def plot_motor(scan):
 
 def plot_seq_num(scan):
     "Setup a LivePlot by inspecting a scan and gs."
-    if scan.num < 2:
-        return
+    try:
+        num = scan.num
+    except AttributeError:
+        pass
+    else:
+        if num is None:
+            pass
+        elif num < 2:
+            return  # short-circuit -- do not plot one point
     fig_name = _figure_name('BlueSky: {} v sequence number'.format(gs.PLOT_Y))
     fig = plt.figure(fig_name)
     return LivePlot(gs.PLOT_Y, fig=fig)
