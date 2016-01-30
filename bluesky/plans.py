@@ -158,19 +158,28 @@ class Count(PlanBase):
         return self.detectors
 
     def _gen(self):
+        if self.num is None:
+            # Count(num=None) runs forever, awaiting user interruption.
+            while True:
+                yield from self._one_count()
+        else:
+            for _ in range(self.num):
+                yield from self._one_count()
+
+    def _one_count(self):
+        # This is broken out in a separate method so we can loop
+        # over it in different ways in _gen, above.
         dets = self.detectors
-        delay = self.delay
-        for i in range(self.num):
-            yield Msg('checkpoint')
-            yield Msg('create')
-            for det in dets:
-                yield Msg('trigger', det, block_group='A')
-            for det in dets:
-                yield Msg('wait', None, 'A')
-            for det in dets:
-                yield Msg('read', det)
-            yield Msg('save')
-            yield Msg('sleep', None, delay)
+        yield Msg('checkpoint')
+        yield Msg('create')
+        for det in dets:
+            yield Msg('trigger', det, block_group='A')
+        for det in dets:
+            yield Msg('wait', None, 'A')
+        for det in dets:
+            yield Msg('read', det)
+        yield Msg('save')
+        yield Msg('sleep', None, self.delay)
 
 
 class Plan1D(PlanBase):
