@@ -58,3 +58,14 @@ def test_post_run():
     assert len(output['stop']) == 1
     assert len(output['descriptor']) == 1
     assert len(output['event']) == 10
+
+
+def test_verify_files_saved():
+    try:
+        import databroker
+        del databroker
+    except ImportError as ie:
+        raise pytest.skip('skipping because databroker is not available\nMessage is:{}'.format(ie))
+    from bluesky.standard_config import gs
+    from bluesky.broker_callbacks import verify_files_saved
+    gs.RE(stepscan(det, motor), subs={'stop': verify_files_saved})
