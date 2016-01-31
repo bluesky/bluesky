@@ -1,13 +1,9 @@
-import os
 from databroker import DataBroker as db, get_events
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
 import matplotlib.pyplot as plt
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 from .callbacks import CallbackBase
-import tifffile
-import numpy as np
-from databroker import get_images
 
 
 class LiveImage(CallbackBase):
@@ -93,7 +89,7 @@ def post_run(callback):
     return f
 
 
-def make_tiff_exporter(field, template):
+def make_tiff_exporter(fetch=None, template=None, prefix=None, **kwargs):
     """
     Build a function that, given a header, exports tiff files.
 
@@ -101,54 +97,38 @@ def make_tiff_exporter(field, template):
 
     Parameters
     ----------
-    field : str
-        a data key, e.g., 'pe1_image_lightfield'
-    template : str
-        A templated file path, where curly brackets will be filled in with
-        the attributes of 'h', a Header, and 'N', a sequential number.
-        e.g., "dir/scan{h.start.scan_id}_by_{h.start.experimenter}_{N}.tiff"
+    fetch : str or callable object, optional
+        Set function that will generate 2D arrays from databroker Header.
+        When string, obtain arrays using ``get_images(h, NAME)``.
+        See the TiffExporter class for more details.
+    template : str, optional
+        Set filename template where curly brackets are filled with entries
+        from databroker Header.  See the DataNaming class for more details.
+    prefix : str, optional
+        Set filename prefix, a constant output directory that is prepended
+        to generated filenames.
+        Default is ''.
+    kwargs : TiffExporter attributes, optional
+        Use to set any additional attributes of the constructed TiffExporter
+        object.  Raise AttributeError when TiffExporter does not have such
+        attribute.
 
     Returns
     -------
-    f : function
-        a function that accepts a header and saves TIFF files
+    TiffExporter
+        a callable object that accepts a header and saves TIFF files.
+
+    See Also
+    --------
+    bluesky.datanaming.TiffExporter : configurable TIFF export from a header.
+    bluesky.datanaming.DataNaming : file name generation from a header.
     """
-    # validate user input
-    if not '{N}' in template:
-        raise ValueError("template must include '{N}'")
-
-    def f(h, dryrun=False):
-        imgs = get_images(h, field)
-        # Fill in h, defer filling in N.
-        _template = template.format(h=h, N='{N}')
-        filenames = [_template.format(N=i) for i in range(len(imgs))]
-        # First check that none of the filenames exist.
-        for filename in filenames:
-            if os.path.isfile(filename):
-                raise FileExistsError("There is already a file at {}. Delete "
-                                      "it and try again.".format(filename))
-        if not dryrun:
-            # Write files.
-            for filename, img in zip(filenames, imgs):
-                tifffile.imsave(filename, np.asarray(img))
-        return filenames
-
-    # Write a customized docstring for f based on what is specifcally does.
-    f.__doc__ = """
-Export sequentially-numbered TIFF files from the {field} field.
-
-Parameters
-----------
-h : Header
-    a header from the databroker
-dryrun : bool
-    Set to True to return list of filenames without actually writing files.
-    False by default.
-
-Returns
--------
-filenames : list
-    list of filenames where files were written (or, if dryrun, *would* be
-    written)
-""".format(field=field)
-    return f
+    from bluesky.tiffexporter import TiffExporter
+    te = TiffExporter(fetch=fetch, template=template, prefix=prefix)
+    # validate and apply keyword arguments
+    emsg = "Invalid keyword argument {}, TiffExporter has no such attribute."
+    for n, v in kwargs.items():
+        if not hasattr(te, n):
+            raise AttributeError(emsg.format(n))
+        setattr(te, n, v)
+    return te
