@@ -1,4 +1,5 @@
 import os
+import time as ttime
 from databroker import DataBroker as db, get_events
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
@@ -7,7 +8,7 @@ from xray_vision.backend.mpl.cross_section_2d import CrossSection
 from .callbacks import CallbackBase
 import tifffile
 import numpy as np
-from databroker import get_images
+from databroker import get_images, DataBroker as db
 
 
 class LiveImage(CallbackBase):
@@ -152,3 +153,25 @@ filenames : list
     written)
 """.format(field=field)
     return f
+
+
+def verify_files_saved(name, doc):
+    "This is a brute-force approach. We retrieve all the data."
+    ttime.sleep(0.1)  # Wati for data to be saved.
+    if name != 'stop':
+        return
+    print("  Verifying that all the run's Documents were saved...")
+    try:
+        header = db[doc['run_start']]
+    except Exception as e:
+        print("  Verification Failed! Error: {0}".format(e))
+        return
+    else:
+        print('\x1b[1A\u2713')  # print a checkmark on the previous line
+    print("  Verifying that all externally-stored files are accessible...")
+    try:
+        list(get_events(header, fill=True))
+    except Exception as e:
+        print("  Verification Failed! Error: {0}".format(e))
+    else:
+        print('\x1b[1A\u2713')  # print a checkmark on the previous line
