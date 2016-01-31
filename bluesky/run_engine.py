@@ -272,10 +272,6 @@ class RunEngine:
         loop.call_soon(self._check_for_trouble)
         loop.call_soon(self._check_for_signals)
 
-        # aliases for back-compatibility
-        self._unsubscribe_lossless = self.unsubscribe_lossless
-        self._subscribe_lossless = self.subscribe_lossless
-
     @property
     def _run_is_open(self):
         return self._run_start_uid is not None
@@ -466,6 +462,10 @@ class RunEngine:
             an integer token returned by _subscribe_lossless
         """
         self._lossless_dispatcher.unsubscribe(token)
+
+    # aliases for back-compatibility
+    _unsubscribe_lossless = unsubscribe_lossless
+    _subscribe_lossless = subscribe_lossless
 
     def __call__(self, plan, subs=None, **metadata_kw):
         """Run the scan defined by ``plan``
