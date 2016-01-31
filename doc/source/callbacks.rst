@@ -1,5 +1,5 @@
 Live Feedback and Processing
-============================
+****************************
 
 .. ipython:: python
    :suppress:
@@ -197,19 +197,45 @@ LiveImage
 
 .. autoclass:: bluesky.broker_callbacks.LiveImage
 
-Post-scan Data Export
-+++++++++++++++++++++
+Automated Post-scan Data Export
++++++++++++++++++++++++++++++++
 
-.. warning::
+Exporting Image Data as TIFF Files
+==================================
 
-    This isn't tested or documented yet, but it's possible.
+First, configure an "exporter", a Python function that composes a filename based
+on some metadata.
+
+The first argument is the name of the image field -- it might be 'image' or
+something like 'my_detector_image'. The second argument is a template (Python
+calls it a "format string") with metadata.
+
+.. code-block:: python
+
+    from bluesky.broker_callbacks import make_tiff_exporter, post_run
+
+    # Notice we put {N} where the sequential number, counting tiffs, goes.
+    exporter = make_tiff_exporter('image', 'output_dir/{start.scan_id}_{start.experimenter}_{start.color}_{N}.tiff')
+
+    def exporter_as_callback(name, doc):
+        if name == 'stop':
+            run_start_uid = doc['run_start']
+            header = db[run_start_uid]
+            exporter(header)
+
+Most metadata comes from the "start" document, hence ``start.scan_id`` above.
+(In a future release, information from the event, like ``event.seq_num`` should
+also be available. See
+`here <https://nsls-ii.github.io/architecture-overview.html>`_ for a more
+comprehensive explanation of what is in the documents.)
+
+Exporting All Data and Metadata in an HDF5 File
+===============================================
 
 Post-scan Data Validation
 +++++++++++++++++++++++++
 
-.. warning::
 
-    This isn't tested or documented yet, but it's possible.
 
 Writing Custom Callbacks
 ------------------------
