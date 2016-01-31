@@ -33,7 +33,7 @@ install:
   - conda install "conda<4"
   - conda create -n testenv nose python=$TRAVIS_PYTHON_VERSION scipy requests matplotlib jsonschema traitlets pytest coverage
   - source activate testenv
-  - conda install metadatastore databroker ophyd historydict boltons doct toolz tifffile pymongo pcaspy pyepics readline super_state_machine cycler xray-vision lmfit -c lightsource2 -c conda-forge -c soft-matter
+  - conda install metadatastore databroker ophyd historydict boltons doct toolz tifffile pymongo pcaspy pyepics readline super_state_machine cycler xray-vision lmfit event-model -c lightsource2 -c conda-forge -c soft-matter
   - conda remove metadatastore databroker filestore --yes
   - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
   - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
