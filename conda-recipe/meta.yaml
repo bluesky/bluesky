@@ -17,6 +17,7 @@ requirements:
   run:
     - python >=3.4.3
     - jsonschema
+    - event-model
     - super_state_machine
     - lmfit
     - numpy
