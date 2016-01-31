@@ -288,7 +288,8 @@ class Struct(metaclass=StructMeta):
         self._md = {}
         self.configuration = {}
         self.flyers = []
-        self.baseline_read = baseline_read
+        if self.baseline_read is None:
+            self.baseline_read = []
 
     def set(self, **kwargs):
         "Update attributes as keyword arguments."

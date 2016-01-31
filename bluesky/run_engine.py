@@ -200,6 +200,7 @@ class RunEngine:
         self._metadata_per_run = {}  # for one run, incorporating Msg metadata
         self._panic = False
         self._bundling = False  # if we are in the middle of bundling readings
+        self._bundle_name = None  # name given to event descriptor
         self._deferred_pause_requested = False  # pause at next 'checkpoint'
         self._sigint_handler = None  # intercepts Ctrl+C
         self._exception = None  # stored and then raised in the _run loop
@@ -214,7 +215,7 @@ class RunEngine:
         self._config_desc_cache = dict()  # " obj.describe_configuration()
         self._config_values_cache = dict()  # " obj.read_configuration() values
         self._config_ts_cache = dict()  # " obj.read_configuration() timestamps
-        self._descriptor_uids = dict()  # cache of all Descriptor uids
+        self._descriptors = dict()  # cache of {(name, objs_frozen_set): uid}
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo datapoints
         self._pause_requests = dict()  # holding {<name>: callable}
@@ -283,7 +284,7 @@ class RunEngine:
         self._config_desc_cache.clear()
         self._config_values_cache.clear()
         self._config_ts_cache.clear()
-        self._descriptor_uids.clear()
+        self._descriptors.clear()
         self._sequence_counters.clear()
         self._teed_sequence_counters.clear()
         self._block_groups.clear()
@@ -842,6 +843,13 @@ class RunEngine:
         self._read_cache.clear()
         self._objs_read.clear()
         self._bundling = True
+        self._bundle_name = None  # default
+        command, obj, args, kwargs = msg
+        try:
+            self._bundle_name = kwargs['name']
+        except KeyError:
+            if len(args) == 1:
+                self._bundle_name, = args
 
     @asyncio.coroutine
     def _read(self, msg):
@@ -883,12 +891,16 @@ class RunEngine:
             raise IllegalMessageSequence("A 'create' message must be sent, to "
                                          "open an event bundle, before that "
                                          "bundle can be saved with 'save'.")
+        # Short-circuit if nothing has been read. (Do not create empty Events.)
+        if not self._objs_read:
+            self._bundling = False
+            return
         # The Event Descriptor is uniquely defined by the set of objects
         # read in this Event grouping.
         objs_read = frozenset(self._objs_read)
 
         # Event Descriptor
-        if objs_read not in self._descriptor_uids:
+        if (self._bundle_name, objs_read) not in self._descriptors:
             # We don't not have an Event Descriptor for this set.
             data_keys = {}
             config = {}
@@ -905,12 +917,12 @@ class RunEngine:
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid,
-                       configuration=config)
+                       configuration=config, name=self._bundle_name)
             yield from self.emit(DocumentNames.descriptor, doc)
             self.debug("*** Emitted Event Descriptor:\n%s" % doc)
-            self._descriptor_uids[objs_read] = descriptor_uid
+            self._descriptors[(self._bundle_name, objs_read)] = descriptor_uid
         else:
-            descriptor_uid = self._descriptor_uids[objs_read]
+            descriptor_uid = self._descriptors[(self._bundle_name, objs_read)]
         # This is a separate check because it can be reset on resume.
         if objs_read not in self._sequence_counters:
             self._sequence_counters[objs_read] = count(1)
@@ -957,28 +969,32 @@ class RunEngine:
         obj = msg.obj
         self._uncollected.remove(obj)
 
+        # TODO Since Flyer.describe() return a *list* of data_keys it should
+        # probably have a different method name (describe_all?) *and* have some
+        # way of injecting a 'name' like the create msg does. For now, the name
+        # is hard-coded to None.
         data_keys_list = obj.describe()
         bulk_data = {}
         for data_keys in data_keys_list:
             objs_read = frozenset(data_keys)
-            if objs_read not in self._descriptor_uids:
+            if (None, objs_read) not in self._descriptors:
                 # We don't not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid)
                 yield from self.emit(DocumentNames.descriptor, doc)
                 self.debug("Emitted Event Descriptor:\n%s" % doc)
-                self._descriptor_uids[objs_read] = descriptor_uid
+                self._descriptors[(None, objs_read)] = descriptor_uid
                 self._sequence_counters[objs_read] = count(1)
             else:
-                descriptor_uid = self._descriptor_uids[objs_read]
+                descriptor_uid = self._descriptors[(None, objs_read)]
 
             bulk_data[descriptor_uid] = []
 
         for ev in obj.collect():
             objs_read = frozenset(ev['data'])
             seq_num = next(self._sequence_counters[objs_read])
-            descriptor_uid = self._descriptor_uids[objs_read]
+            descriptor_uid = self._descriptors[(None, objs_read)]
             event_uid = new_uid()
 
             reading = ev['data']
@@ -1085,9 +1101,9 @@ class RunEngine:
         # Invalidate any event descriptors that include this object.
         # New event descriptors, with this new configuration, will
         # be created for any future event documents.
-        for obj_set in list(self._descriptor_uids):
+        for name, obj_set in list(self._descriptors):
             if obj in obj_set:
-                del self._descriptor_uids[obj_set]
+                del self._descriptors[(name, obj_set)]
 
         old, new = obj.configure(*args, **kwargs)
 
