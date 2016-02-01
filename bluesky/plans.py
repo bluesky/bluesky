@@ -68,6 +68,16 @@ class PlanBase(Struct):
                 tokens.add(token)
 
         yield Msg('open_run', **self.md)
+        # Collect baseline readings on a group of detectors.
+        yield Msg('checkpoint')
+        yield Msg('create', None, 'baseline')
+        for det in self.baseline_read:
+            yield Msg('trigger', det, block_group='A')
+        yield Msg('wait', None, 'A')
+        for det in self.baseline_read:
+            yield Msg('read', det)
+        yield Msg('save')
+
         for flyer in self.flyers:
             yield Msg('kickoff', flyer, block_group='_flyers')
         yield Msg('wait', None, '_flyers')
@@ -75,7 +85,18 @@ class PlanBase(Struct):
         for flyer in self.flyers:
             yield Msg('collect', flyer, block_group='_flyers')
         yield Msg('wait', None, '_flyers')
+
+        # Collect readings for comparison with baseline.
+        yield Msg('checkpoint')
+        yield Msg('create', None, 'baseline')
+        for det in self.baseline_read:
+            yield Msg('trigger', det, block_group='A')
+        yield Msg('wait', None, 'A')
+        for det in self.baseline_read:
+            yield Msg('read', det)
+        yield Msg('save')
         yield Msg('close_run')
+
         for token in tokens:
             yield Msg('unsubscribe', None, token)
         yield from self._post()
@@ -140,12 +161,15 @@ class Count(PlanBase):
     _fields = ['detectors', 'num', 'delay']
 
     def __init__(self, detectors, num=1, delay=0,
-                 pre_run=None, post_run=None):
+                 pre_run=None, post_run=None, baseline_read=None):
         self.detectors = detectors
         self.num = num
         self.delay = delay
         self.pre_run = pre_run
         self.post_run = post_run
+        if baseline_read is None:
+            baseline_read = []
+        self.baseline_read = baseline_read
         self._md = {}
         self.configuration = {}
         self.flyers = []
@@ -192,7 +216,7 @@ class Plan1D(PlanBase):
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
             yield Msg('wait', None, 'A')
-            yield Msg('create')
+            yield Msg('create', None, 'main')
             yield Msg('read', self.motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
@@ -439,7 +463,7 @@ class _AdaptivePlanBase(PlanBase):
             yield Msg('checkpoint')
             yield Msg('set', motor, next_pos)
             yield Msg('wait', None, 'A')
-            yield Msg('create')
+            yield Msg('create', None, 'main')
             yield Msg('read', motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
@@ -567,7 +591,7 @@ class Center(PlanBase):
 
     def __init__(self, detectors, target_field, motor, initial_center,
                  initial_width, tolerance=0.1, output_mutable=None,
-                 pre_run=None, post_run=None):
+                 pre_run=None, post_run=None, baseline_read=None):
         """
         Attempts to find the center of a peak by moving a motor.
 
@@ -614,6 +638,9 @@ class Center(PlanBase):
         self.tolerance = tolerance
         self.pre_run = pre_run
         self.post_run = post_run
+        if baseline_read is None:
+            baseline_read = []
+        self.baseline_read = baseline_read
         self._md = {}
         self.configuration = {}
         self.flyers = []
@@ -648,7 +675,7 @@ class Center(PlanBase):
                              initial_center + self.RANGE * initial_width,
                              self.NUM_SAMPLES, endpoint=True):
             yield Msg('set', motor, x)
-            yield Msg('create')
+            yield Msg('create', None, 'main')
             ret_mot = yield Msg('read', motor)
             key, = ret_mot.keys()
             seen_x.append(ret_mot[key]['value'])
@@ -678,7 +705,7 @@ class Center(PlanBase):
                             np.random.randn(1) * guesses['sigma'],
                             min_cen, max_cen)
             yield Msg('set', motor, next_cen)
-            yield Msg('create')
+            yield Msg('create', None, 'main')
             ret_mot = yield Msg('read', motor)
             key, = ret_mot.keys()
             seen_x.append(ret_mot[key]['value'])
@@ -724,7 +751,7 @@ class PlanND(PlanBase):
                 self._last_set_point[motor] = pos
 
             yield Msg('wait', None, 'A')
-            yield Msg('create')
+            yield Msg('create', None, 'main')
 
             for motor in self.motors:
                 yield Msg('read', motor)
@@ -747,7 +774,8 @@ class _OuterProductPlanBase(PlanND):
     def motors(self):
         return self._motors
 
-    def __init__(self, detectors, *args, pre_run=None, post_run=None):
+    def __init__(self, detectors, *args, pre_run=None, post_run=None,
+                 baseline_read=None):
         args = list(args)
         # The first (slowest) axis is never "snaked." Insert False to
         # make it easy to iterate over the chunks or args..
@@ -770,6 +798,9 @@ class _OuterProductPlanBase(PlanND):
         self.snaking = tuple(snaking)
         self.pre_run = pre_run
         self.post_run = post_run
+        if baseline_read is None:
+            baseline_read = []
+        self.baseline_read = baseline_read
         self._md = {'shape': self.shape, 'extents': self.extents,
                     'snaking': self.snaking, 'num': self.num}
         self.configuration = {}
@@ -813,7 +844,8 @@ class _InnerProductPlanBase(PlanND):
     def motors(self):
         return self._motors
 
-    def __init__(self, detectors, num, *args, pre_run=None, post_run=None):
+    def __init__(self, detectors, num, *args, pre_run=None, post_run=None,
+                 baseline_read=None):
         if len(args) % 3 != 0:
             raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
@@ -827,6 +859,9 @@ class _InnerProductPlanBase(PlanND):
         self.extents = tuple(extents)
         self.pre_run = pre_run
         self.post_run = post_run
+        if baseline_read is None:
+            baseline_read = []
+        self.baseline_read = baseline_read
         self._md = {'extents': self.extents}
         self.configuration = {}
         self.flyers = []
@@ -1011,7 +1046,7 @@ class Tweak(PlanBase):
         motor = self.motor
         step = self.step
         while True:
-            yield Msg('create')
+            yield Msg('create', None, 'main')
             ret_mot = yield Msg('read', motor)
             key, = ret_mot.keys()
             pos = ret_mot[key]['value']

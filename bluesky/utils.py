@@ -264,7 +264,7 @@ class StructMeta(type):
         args_params  = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
                         for name in clsobj._fields]
         kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None)
-                         for name in ['pre_run', 'post_run']]
+                         for name in ['pre_run', 'post_run', 'baseline_read']]
         sig = Signature(args_params + kwargs_params)
         setattr(clsobj, '__signature__', sig)
         return clsobj
@@ -288,6 +288,8 @@ class Struct(metaclass=StructMeta):
         self._md = {}
         self.configuration = {}
         self.flyers = []
+        if self.baseline_read is None:
+            self.baseline_read = []
 
     def set(self, **kwargs):
         "Update attributes as keyword arguments."
