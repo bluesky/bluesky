@@ -20,10 +20,11 @@ class PlanBase(Struct):
     To create a new sub-class you need to over-ride two things:
 
     - a ``_gen`` method which yields the instructions of the scan.
-    - an ``_objects`` attribute, a list of all objects the scan can read or
-      set, which is used to stage/unstage everything
-    - a class level ``_fields`` attribute which is used to
-      construct the init signature via meta-class magic
+    - an ``_objects`` attribute, a list of arbitrary category names (such
+      'detectors' or 'motors') to lists of objects -- used for metadata and for
+      staging/unstagin all objects touched by a plan
+    - a class level ``_fields`` attribute which is used to construct the init
+      signature via meta-class magic
 
     If you do not use the class-level ``_fields`` and write a custom
     ``__init__`` (which you need to do if you want to have optional kwargs)
@@ -91,8 +92,9 @@ class PlanBase(Struct):
         # itself as its argument and returns a generator of messages
         if self.pre_run is not None:
             yield from self.pre_run(self)
-        for obj in self._objects:
-            yield Msg('stage', obj)
+        for objs in self._objects.values():
+            for obj in objs:
+                yield Msg('stage', obj)
 
     def _post(self):
         """
@@ -102,8 +104,9 @@ class PlanBase(Struct):
         """
         # postrun is expected to be a callable that takes the Scan object
         # itself as its argument and returns a generator of messages
-        for obj in self._objects:
-            yield Msg('unstage', obj)
+        for objs in self._objects.values():
+            for obj in objs:
+                yield Msg('unstage', obj)
         if self.post_run is not None:
             yield from self.post_run(self)
 
@@ -184,7 +187,7 @@ class Plan1D(PlanBase):
 
     @property
     def _objects(self):
-        return {'detectors': self.detectors, 'motor': self.motor}
+        return {'detectors': self.detectors, 'motors': [self.motor]}
 
     def _gen(self):
         dets = self.detectors
@@ -421,7 +424,7 @@ class _AdaptivePlanBase(PlanBase):
 
     @property
     def _objects(self):
-        return {'detectors': self.detectors, 'motor': self.motor}
+        return {'detectors': self.detectors, 'motors': [self.motor]}
 
     def _gen(self):
         start = self.start + self._init_pos
@@ -620,7 +623,7 @@ class Center(PlanBase):
 
     @property
     def _objects(self):
-        return {'detectors': self.detectors, 'motor': self.motor}
+        return {'detectors': self.detectors, 'motors': [self.motor]}
 
     @property
     def min_cen(self):
@@ -1003,7 +1006,7 @@ class Tweak(PlanBase):
 
     @property
     def _objects(self):
-        return {'detector': self.detector, 'motor': self.motor}
+        return {'detectors': [self.detector], 'motors': [self.motor]}
 
     def _gen(self):
         d = self.detector
