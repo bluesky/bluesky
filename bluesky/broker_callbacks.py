@@ -137,12 +137,6 @@ def LiveTiffExporter(CallbackBase):
     overwrite : bool
         default to False, raising an OSError if file exists
 
-    Returns
-    -------
-    f : function
-        a function that accepts a header and saves TIFF files
-
-
     Attributes
     ----------
     filenames : list of filenames written in ongoing or most recent run
