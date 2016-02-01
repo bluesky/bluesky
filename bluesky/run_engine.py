@@ -896,6 +896,7 @@ class RunEngine:
         # Short-circuit if nothing has been read. (Do not create empty Events.)
         if not self._objs_read:
             self._bundling = False
+            self._bundle_name = None
             return
         # The Event Descriptor is uniquely defined by the set of objects
         # read in this Event grouping.
@@ -929,6 +930,7 @@ class RunEngine:
         if objs_read not in self._sequence_counters:
             self._sequence_counters[objs_read] = count(1)
         self._bundling = False
+        self._bundle_name = None
 
         # Events
         seq_num = next(self._sequence_counters[objs_read])
