@@ -409,6 +409,6 @@ and you are will to accept the possibility of slowing down data
 collection while that stream in processed, you can register your own critical
 subscriptions.
 
-.. automethod:: bluesky.run_engine.subscribe_lossless
+.. automethod:: bluesky.run_engine.RunEngine.subscribe_lossless
 
-.. automethod:: bluesky.run_engine.unsubscribe_lossless
+.. automethod:: bluesky.run_engine.RunEngine.unsubscribe_lossless
