@@ -3,7 +3,7 @@ from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
 
 
-def path_plotter(plan, x_motor, y_motor, ax=None, probe_size=None):
+def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None):
     """Plot the raster path for this plan
 
     Parameters
