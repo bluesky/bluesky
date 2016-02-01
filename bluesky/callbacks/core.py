@@ -16,10 +16,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class CallbackBase(object):
-    def __init__(self):
-        super().__init__()
-
+class CallbackBase:
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
         return getattr(self, name)(doc)

@@ -1,5 +1,5 @@
 Live Feedback and Processing
-============================
+****************************
 
 .. ipython:: python
    :suppress:
@@ -13,32 +13,8 @@ Live Feedback and Processing
    RE.md['owner'] = 'Jane'
    RE.md['group'] = 'Grant No. 12345'
    RE.md['beamline_id'] = 'demo'
-   from bluesky.plans import Count
-
-Demo: live-updating table
--------------------------
-
-We begin with the simplest useful example of live feedback, a table. We'll
-assume we already defined a plan, ready to use. (See :doc:`plans`.)
-
-.. ipython:: python
-    :suppress:
-
-    from bluesky.plans import AbsListScanPlan, AbsScanPlan
-    from bluesky.callbacks import LiveTable
-    dets = [det1, det2, det3]
-    table = LiveTable(dets)
-    RE.subscribe('all', table)  # Subscribe table to all future runs.
-    plan = AbsListScanPlan(dets, motor, [1,2,4,8])
-
-.. ipython:: python
-
-    RE(plan)
-
-.. ipython:: python
-    :suppress:
-
-    RE.unsubscribe(0)
+   from bluesky.plans import Count, AbsScanPlan
+   plan = AbsScanPlan([det, det1, det2, det3], motor, 1, 4, 4)
 
 Overview of Callbacks
 ---------------------
@@ -48,13 +24,33 @@ dictionaries organized in a `specified but flexible
 <http://nsls-ii.github.io/architecture-overview.html>`__ way. These Documents
 contain the data and metadata generated during the plan's execution. Each time
 a new Document is created, the RunEngine passes it to a list of functions.
-These functions can do anyting: store the data to disk, transfer the data to a
-cluster, update a plot, print a message, etc. The functions are called
-"callbacks."
+These functions can do anyting: store the data to disk, print a line of text
+to the scren, add a point to a plot, or even transfer the data to a cluster
+for immediate processing. These functions are called "callbacks."
 
 We subscribe callbacks to the live stream of Documents. You can think of a
-subscription as a self-addressed stamped envelope. They tell the RunEngine,
-"When you create a Document, send it to this callback for processing."
+callback as a self-addressed stamped envelope. It tells the RunEngine,
+"When you create a Document, send it to this function for processing."
+
+In order to keep up with the scan and avoiding slowing down data collection,
+most subscriptions skip some Documents when they fall behind. A table might
+skip a row, a plot might skip a point. But *critical* subscriptions -- like
+saving the data -- are run in a lossless mode guananteed to process all
+the Docuemnts.
+
+Simplest Example
+----------------
+
+This example passes every Document to the ``print`` function, printing
+each Document as it is generated during data collection.
+
+.. code-block:: python
+
+    RE(plan, print)
+
+We will not show the lenthy output of this command here; the documents are not
+so nice to read in their raw form. See ``LiveTable`` below for a more refined
+implementation of this basic example.
 
 Ways to Invoke Callbacks
 ------------------------
@@ -62,66 +58,72 @@ Ways to Invoke Callbacks
 Subscribe on a per-run basis
 ++++++++++++++++++++++++++++
 
-To set up callbacks for a single use on a particular run, pass a second
-argument to the call to the RunEngine.
+As in the simple example above, pass a second argument to the RunEngine.
 
 .. ipython:: python
 
+    dets = [det1, det2, det3]
     RE(plan, LiveTable(dets))
 
-To use multiple callbacks, simply pass a list of them.
+``LiveTable`` takes a list of objects or names to tell it which data columns to
+show. It prints the lines one at a time, as data collection proceeds.
+
+To use multiple callbacks, you may pass a list of them.
 
 .. ipython:: python
 
     RE(plan, [LiveTable(dets), LivePlot(det1)])
 
-.. note::
+Use this more verbose form to filter the Documents by type, feeding only
+certain document types to certain callbacks.
 
-    **Advanced:** Note that this more explicit syntax is equivalent.
+.. code-block:: python
 
-    .. ipython:: python
+    # Give all documents to LiveTable and LivePlot.
+    # Send only 'start' Documents to the print function.
+    RE(plan, {'all': [LiveTable(dets), LivePlot(det1)], 'start': print})
 
-        dets = [det1, det2, det3]
-        RE(plan, subs={'all': [LiveTable(dets), LivePlot(det1)]})
+The allowed keys are 'all', 'start', 'stop', 'descriptor', and 'event',
+corresponding to the names of the Documents.
 
-    The allowed keys are 'all', 'start', 'stop', 'descriptor', and 'event',
-    corresponding to the names of the Documents.
-
-Subscribe each time a certain scan is used
+Subscribe each time a certain plan is used
 ++++++++++++++++++++++++++++++++++++++++++
 
-Often, the same subscriptions are useful each time a certain kind of scan is
-run. To associate particular callbacks with a given scan, give the scan
+Often, the same subscriptions are useful each time a certain kind of plan is
+run. To associate particular callbacks with a given plan, give the plan 
 a ``subs`` attribute.
-
-This simplest way is to simply "monkey-patch" the scan instance like so:
 
 .. ipython:: python
 
     plan.subs = LiveTable(dets)
 
-As above, this can one callback, a list of callbacks, or a dictionary. They
-will be used automatically each time the scan is run.
+As above, this can be one callback, a list of callbacks, or a dictionary. They
+will be used automatically each time the plan is executed by the Run Engine.
 
 .. ipython:: python
 
     RE(plan)
 
-More complex subscriptions can configured using a property, which can inspect
-the internal state --- for example, using the range of motor positions to
-set plot limits in advance.
+To customize the callback based on the content of the plan, use a subscription
+factory: a function that takes in a plan and returns a callback function. For
+example, ``LiveTable`` takes list of data columns to be displayed. A
+*subscription* requires us to update that list if we use different detectors. A
+*subscription factory* intercepts the plan before it is executed and can update
+the list of columns on the fly.
 
-.. ipython:: python
+.. code-block:: python
 
-    class PlottingAbsScan(AbsScanPlan):
-        @property
-        def subs(self):
-            lp = LivePlot(self.detectors[0], self.motor,
-                          xlim=(self.start, self.stop))
-            return lp
+    def table_of_detectors(plan):
+        dets = plan.detectors
+        return LiveTable(dets)
 
-Advanced: Subscribe for every scan
-++++++++++++++++++++++++++++++++++
+    plan.sub_factories = table_of_detectors
+
+Every time the plan is executed a new ``LiveTable`` is made on the fly, based
+with a list of columns that is updated to reflect the list of detectors.
+
+Subscribe for every run
++++++++++++++++++++++++
 
 The RunEngine itself can store a collection of subscriptions to be applied to
 every single scan it executes.
@@ -135,81 +137,166 @@ The method ``RE.subscribe`` passes through to this method:
 
 .. automethod:: bluesky.run_engine.Dispatcher.subscribe
 
+.. automethod:: bluesky.run_engine.Dispatcher.unsubscribe
 
-*Lossless subscriptions* are also applied to every scan. See below for more on
-this topic.
 
-Running Callbacks on Completed Runs
-+++++++++++++++++++++++++++++++++++
+Running Callbacks on Saved Data
++++++++++++++++++++++++++++++++
+
+Callbacks are designed to work live, but they also work retroactively on
+completed runs with data that has been saved to disk.
 
 .. warning::
 
     This subsection documents a feature that has not been released yet.
 
-If the data is being saved to metadatastore (as it is if you use the standard
+If the data is accessible from the Data Broker (as it is if you use the standard
 configuration) then you can feed data from the Data Broker in the callbacks.
 
-.. ipython:: python
-    :verbatim:
+.. code-block:: python
 
-    In [1]: from dataportal import DataBroker, stream
-    
-    In [2]: stream(header, LiveTable(cols))
+    from dataportal import DataBroker, stream
+    stream(header, callback_func) 
 
-Built-in Callbacks
-------------------
-
-LiveTable
-+++++++++
+Live Table
+----------
 
 As each data point is collected (i.e., as each Event Document is generated) a
 row is added to the table. For nonscalar detectors, such as area detectors,
 the sum is shown. (See LiveImage, below, to view the images themselves.)
 
 The only crucial parameter is the first one, which specifies which fields to
-include in the table. These can include specific fields (e.g., ``sclr_chan4``)
-or readable objects (e.g., ``sclr``). The other parameters adjust the display
-format.
+include in the table. These can include specific fields (e.g., the string
+``'sclr_chan4'``) or readable objects (e.g., the object ``sclr``).
+
+Numerous other parameters allow you to customize the display style.
 
 .. autoclass:: bluesky.callbacks.LiveTable
 
-LivePlot
-++++++++
+Live Plot for Scalar Data
+-------------------------
 
 Plot scalars.
 
-.. note::
-
-    In order to keep up with the scan, subscriptions skip over some Documents
-    when they fall behind. Be aware that plots may not show all points. (Don't
-    worry: *all* the data is still being saved.)
-
 .. autoclass:: bluesky.callbacks.LivePlot
 
-LiveImage
-+++++++++
-
-.. note::
-
-    In order to keep up with the scan, subscriptions skip over some Documents
-    when they fall behind. Be aware that plots may not show all points. (Don't
-    worry: *all* the data is still being saved.)
+Live Image Plot
+---------------
 
 .. autoclass:: bluesky.broker_callbacks.LiveImage
 
-Post-scan Data Export
-+++++++++++++++++++++
+Live Raster Plot (Heat Map)
+---------------------------
 
-.. warning::
+.. autoclass:: bluesky.callbacks.LiveRaster
 
-    This isn't tested or documented yet, but it's possible.
+Automated Data Export
+---------------------
 
-Post-scan Data Validation
-+++++++++++++++++++++++++
+Exporting Image Data as TIFF Files
+++++++++++++++++++++++++++++++++++
 
-.. warning::
+First, compose a filename template. This is a simple working example.
 
-    This isn't tested or documented yet, but it's possible.
+.. code-block:: python
+
+    template = "output_dir/{start.scan_id}_{event.seq_num}.tiff"
+
+The template can include metadata or event data from the scan.
+
+.. code-block:: python
+
+    template = ("output_dir/{start.scan_id}_{start.sample_name}_"
+                "{event.data.temperature}_{event.seq_num}.tiff")
+
+It can be handy to use the metadata to sort the images into directories.
+
+.. code-block:: python
+
+    template = "{start.user}/{start.scan_id}/{event.seq_num}.tiff"
+
+If each image data point is actually a stack of 2D image planes, the template
+must also include ``{i}``, which will count through the iamge planes in the
+stack.
+
+(Most metadata comes from the "start" document, hence ``start.scan_id`` above.
+See
+`here <https://nsls-ii.github.io/architecture-overview.html>`_ for a more
+comprehensive explanation of what is in the different documents.)
+
+Next, create an exporter.
+
+.. code-block:: python
+
+    from bluesky.broker_callbacks import LiveTiffExporter
+
+    exporter = LiveTiffExporter('image', template)
+
+Finally, to export all the images from a run when it finishes running, wrap the
+exporter in ``post_run`` and subscribe.
+
+.. code-block:: python
+
+    from bluesky.broker_callbacks import post_run
+
+    RE.subscribe('all', post_run(exporter))
+
+It also possible to write TIFFs live, hence the name ``LiveTiffExporter``, but
+there is an important disadvantage to this: in order to ensure that every image
+is saved, a lossless subscription must be used. And, as a consequence, the
+progress of the experiment may be intermittently slowed while data is written
+to disk. In some circumstances, this affect on the timing of the experiment may
+not be acceptable.
+
+.. code-block:: python
+
+    RE.subscribe_lossless('all', exporter)
+
+There are more configuration options avaiable, as given in detail below.
+
+.. autoclass:: bluesky.broker_callbacks.LiveTiffExporter
+
+Export All Data and Metadata in an HDF5 File
+++++++++++++++++++++++++++++++++++++++++++++
+
+A Stop Document is emitted at the end of every run. Subscribe to it, using it
+as a cue to load the dataset via the DataBroker and export an HDF5 file
+using `suitcase <https://nsls-ii.github.io/suitcase>`_.
+
+
+Working example:
+
+.. code-block:: python
+
+    from databroker import DataBroker as db
+    import suitcase
+
+    def suitcase_as_callback(name, doc):
+        if name != 'stop':
+            return
+        run_start_uid = doc['run_start']
+        header = db[run_start_uid]
+        filename = '{}.h5'.format(run_start_uid)
+        suitcase.export(header, filename)
+
+    RE.subscribe('stop', suitcase_as_callback)
+
+Verify Data Has Been Saved
+--------------------------
+
+The following verifies that all Documents and external files from a run have
+been saved to disk and are accessible from the DataBroker.  It prints a message
+indicating success or failure.
+
+Note: If the data collection machine is not able to access the machine where
+some external data is being saved, it will indicate failure. This can be a
+false alarm.
+
+.. code-block:: python
+
+    from bluesky.broker_callbacks import post_run, verify_files_saved
+
+    RE.subscribe('all', post_run(verify_files_saved))
 
 Writing Custom Callbacks
 ------------------------
@@ -279,7 +366,7 @@ it uses 'event' to see the data, and it uses 'stop' to draw the bottom border.
 A convenient pattern for this kind of subscription is a class with a method
 for each Document type.
 
-.. ipython:: python
+.. code-block:: python
 
     from bluesky.callbacks import CallbackBase
     class MyCallback(CallbackBase):
@@ -300,30 +387,8 @@ The base class, ``CallbackBase``, takes care of dispatching each Document to
 the corresponding method. If your application does not need all four, you may
 simple omit methods that aren't required.
 
-Advanced: Subscribing During a Scan
------------------------------------
-
-.. warning::
-
-    This section requires some familiarity with Messages, covered in
-    :doc:`custom-plans`. If you haven't at least skimmed that section of the
-    documents, head over to that page and then revisit this.
-
-Subscriptions can added and removing during the course of a scan.
-
-.. ipython:: python
-
-    def count_with_table(detectors):
-        table = LiveTable(detectors)
-        yield Msg('subscribe', None, 'start', table)
-        yield Msg('subscribe', None, 'descriptor', table)
-        yield Msg('subscribe', None, 'event', table)
-        yield Msg('subscribe', None, 'stop', table)
-        yield from Count(detectors)
-    RE(count_with_table(dets))
-
-Critical Lossless Subscriptions
--------------------------------
+Lossless Subscriptions for Critical Functions
+---------------------------------------------
 
 Because subscriptions are processed during a scan, it's possible that they
 can slow down data collection. We mitigate this by making the subscriptions
@@ -342,7 +407,8 @@ are registered as critical subscriptions.
 If your subscription requires the complete, lossless stream of Documents
 and you are will to accept the possibility of slowing down data
 collection while that stream in processed, you can register your own critical
-subscriptions. Use ``RE._subscribe_lossless(name, func)`` where ``name``
-if one of ``'start'``, ``'descriptor'``, ``'event'``, ``'stop'``, and ``func``
-is a callable that accepts a Python dictionary as its argument. Note that
-there is no ``'all'`` callback implemented for critical subscriptions.
+subscriptions.
+
+.. automethod:: bluesky.run_engine.subscribe_lossless
+
+.. automethod:: bluesky.run_engine.unsubscribe_lossless
