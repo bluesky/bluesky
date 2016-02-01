@@ -73,11 +73,11 @@ class PlanBase(Struct):
         yield Msg('open_run', **self.md)
         for flyer in self.flyers:
             yield Msg('kickoff', flyer, block_group='_flyers')
-            yield Msg('wait', None, '_flyers')
+        yield Msg('wait', None, '_flyers')
         yield from self._gen()
         for flyer in self.flyers:
             yield Msg('collect', flyer, block_group='_flyers')
-            yield Msg('wait', None, '_flyers')
+        yield Msg('wait', None, '_flyers')
         yield Msg('close_run')
         for token in tokens:
             yield Msg('unsubscribe', None, token)
@@ -158,19 +158,27 @@ class Count(PlanBase):
         return self.detectors
 
     def _gen(self):
+        if self.num is None:
+            # Count(num=None) runs forever, awaiting user interruption.
+            while True:
+                yield from self._one_count()
+        else:
+            for _ in range(self.num):
+                yield from self._one_count()
+
+    def _one_count(self):
+        # This is broken out in a separate method so we can loop
+        # over it in different ways in _gen, above.
         dets = self.detectors
-        delay = self.delay
-        for i in range(self.num):
-            yield Msg('checkpoint')
-            yield Msg('create')
-            for det in dets:
-                yield Msg('trigger', det, block_group='A')
-            for det in dets:
-                yield Msg('wait', None, 'A')
-            for det in dets:
-                yield Msg('read', det)
-            yield Msg('save')
-            yield Msg('sleep', None, delay)
+        yield Msg('checkpoint')
+        yield Msg('create')
+        for det in dets:
+            yield Msg('trigger', det, block_group='A')
+        yield Msg('wait', None, 'A')
+        for det in dets:
+            yield Msg('read', det)
+        yield Msg('save')
+        yield Msg('sleep', None, self.delay)
 
 
 class Plan1D(PlanBase):
@@ -192,8 +200,7 @@ class Plan1D(PlanBase):
             yield Msg('read', self.motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
-            for det in dets:
-                yield Msg('wait', None, 'B')
+            yield Msg('wait', None, 'B')
             for det in dets:
                 yield Msg('read', det)
             yield Msg('save')
@@ -443,8 +450,7 @@ class _AdaptivePlanBase(PlanBase):
             yield Msg('read', motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
-            for det in dets:
-                yield Msg('wait', None, 'B')
+            yield Msg('wait', None, 'B')
             for det in dets:
                 cur_det = yield Msg('read', det)
                 if target_field in cur_det:
@@ -653,8 +659,7 @@ class Center(PlanBase):
             seen_x.append(ret_mot[key]['value'])
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
-            for det in dets:
-                yield Msg('wait', None, 'B')
+            yield Msg('wait', None, 'B')
             for det in dets:
                 ret_det = yield Msg('read', det)
                 if target_field in ret_det:
@@ -684,8 +689,7 @@ class Center(PlanBase):
             seen_x.append(ret_mot[key]['value'])
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
-            for det in dets:
-                yield Msg('wait', None, 'B')
+            yield Msg('wait', None, 'B')
             for det in dets:
                 ret_det = yield Msg('read', det)
                 if target_field in ret_det:
@@ -732,8 +736,7 @@ class PlanND(PlanBase):
                 yield Msg('read', motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
-            for det in dets:
-                yield Msg('wait', None, 'B')
+            yield Msg('wait', None, 'B')
             for det in dets:
                 yield Msg('read', det)
             yield Msg('save')
