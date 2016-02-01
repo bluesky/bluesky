@@ -117,11 +117,11 @@ def verify_files_saved(name, doc):
         print('\x1b[1A\u2713')  # print a checkmark on the previous line
 
 
-def LiveTiffExporter(CallbackBase):
+class LiveTiffExporter(CallbackBase):
     """
-    Build a function that, given a header, exports tiff files.
+    Save TIFF files.
 
-    The file names will incorporate the contents of the Header.
+    Incorporate metadata and data from individual data points in the filenames.
 
     Parameters
     ----------
@@ -153,9 +153,9 @@ def LiveTiffExporter(CallbackBase):
         if not self.overwrite:
             if os.path.isfile(filename):
                 raise OSError("There is already a file at {}. Delete "
-                                      "it and try again.".format(filename))
+                              "it and try again.".format(filename))
         if not self.dryrun:
-            tifffile.imsave(filename, np.asarray(img))
+            tifffile.imsave(filename, np.asarray(image))
         self.filenames.append(filename)
 
     def start(self, doc):
@@ -165,16 +165,15 @@ def LiveTiffExporter(CallbackBase):
     def event(self, doc):
         if self.field not in doc['data']:
             return
-        fill_event(doc)
+        fill_event(doc)  # modifies in place
         image = np.asarray(doc['data']['field'])
         if image.ndim == 2:
-            filename = self.template.format(start=self._start,
-                                            event=self._event)
+            filename = self.template.format(start=self._start, event=doc)
             self._save_image(image, filename)
         if image.ndim == 3:
             for i, plane in enumerate(image):
-                filename = self. template.format(i=i, start=self._start,
-                                           event=self._event)
+                filename = self.template.format(i=i, start=self._start,
+                                                event=doc)
                 self._save_image(plane, filename)
         # RunEngine will ignore this return value, but it
         # might be handy for interactive use.
