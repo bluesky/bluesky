@@ -1,6 +1,10 @@
+import uuid
+from functools import wraps
 import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
+
+from bluesky import Msg
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None):
@@ -80,3 +84,76 @@ def print_summary(plan):
         elif cmd == 'save':
             print('  Read {}'.format(read_cache))
             read_cache = []
+
+
+def run_wrapper(plan, md=None, **kwargs):
+    """Automatically adds RunStart and RunStop Msgs around a plan
+
+    Yields
+    ------
+    Msg
+    """
+    if md is None:
+        md = dict()
+    md = dict(md)
+    md.update(kwargs)
+    yield Msg('open_run', None, **md)
+    try:
+        ret = yield from plan
+    except:
+        yield Msg('close_run', None, exit_status='error')
+    else:
+        yield Msg('close_run', None, exit_status='success')
+    return ret
+
+
+def event_wrapper(plan):
+    """Wrap an iterator with a create and save messages
+
+    Yields
+    ------
+    Msg
+    """
+    yield Msg('create')
+    ret = yield from plan
+    yield Msg('save')
+
+    return ret
+
+
+def wrap_with_decorator(wrapper):
+    """Paramaterized decorator for wrapping generators with wrappers
+
+    The wrapped function must be a generator and wrapper wrap an
+    iterable.
+    """
+    def outer(func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            ret = yield from wrapper(func(*args, **kwargs))
+            return ret
+        return inner
+    return outer
+
+
+@wrap_with_decorator(event_wrapper)
+def trigger_and_read(det_list):
+    """Trigger and read a list of detectors bundled into a single event
+    """
+    grp = str(uuid.uuid4())
+    for det in det_list:
+        yield Msg('trigger', det, wait_group=grp)
+    yield Msg('wait', None, grp)
+
+    for det in det_list:
+        yield Msg('read', det)
+
+
+@wrap_with_decorator(run_wrapper)
+def ct(dets, n):
+    """Count
+
+    Simple replacement for ct.
+    """
+    for j in range(n):
+        yield from trigger_and_read(dets)
