@@ -9,6 +9,7 @@ from xray_vision.backend.mpl.cross_section_2d import CrossSection
 from .callbacks import CallbackBase
 import tifffile
 import numpy as np
+import doct
 from databroker import DataBroker as db
 
 
@@ -160,9 +161,14 @@ class LiveTiffExporter(CallbackBase):
 
     def start(self, doc):
         self.filenames = []
-        self._start = doc
+        # Convert doc from dict into dottable dict, more convenient
+        # in Python format strings: doc.key == doc['key']
+        self._start = doct.Document('start', doc)
 
     def event(self, doc):
+        # Convert doc from dict into dottable dict, more convenient
+        # in Python format strings: doc.key == doc['key']
+        doc = doct.Document('event', doc)
         if self.field not in doc['data']:
             return
         fill_event(doc)  # modifies in place
