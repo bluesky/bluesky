@@ -92,7 +92,7 @@ class PlanBase(Struct):
         # itself as its argument and returns a generator of messages
         if self.pre_run is not None:
             yield from self.pre_run(self)
-        for obj in self._objects.values():
+        for objs in self._objects.values():
             for obj in objs:
                 yield Msg('stage', obj)
 
@@ -104,7 +104,7 @@ class PlanBase(Struct):
         """
         # postrun is expected to be a callable that takes the Scan object
         # itself as its argument and returns a generator of messages
-        for obj in self._objects.values():
+        for objs in self._objects.values():
             for obj in objs:
                 yield Msg('unstage', obj)
         if self.post_run is not None:
