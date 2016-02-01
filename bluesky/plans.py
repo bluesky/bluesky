@@ -92,7 +92,7 @@ class PlanBase(Struct):
         # itself as its argument and returns a generator of messages
         if self.pre_run is not None:
             yield from self.pre_run(self)
-        for obj in self._objects.values()
+        for obj in self._objects.values():
             for obj in objs:
                 yield Msg('stage', obj)
 
