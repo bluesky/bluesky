@@ -102,6 +102,7 @@ def run_wrapper(plan, md=None, **kwargs):
         ret = yield from plan
     except:
         yield Msg('close_run', None, exit_status='error')
+        raise
     else:
         yield Msg('close_run', None, exit_status='success')
     return ret
