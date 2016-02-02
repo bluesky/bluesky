@@ -300,19 +300,21 @@ SUBS_NAMES = ['all', 'start', 'stop', 'event', 'descriptor']
 
 def normalize_subs_input(subs):
     "Accept a callable, a list, or a dict. Normalize to a dict of lists."
+    normalized = {name: [] for name in SUBS_NAMES}
     if subs is None:
-        normalized = {}
+        pass
     elif callable(subs):
-        normalized = {'all': [subs]}
+        normalized['all'].append(subs)
     elif hasattr(subs, 'items'):
         for key, funcs in list(subs.items()):
             if key not in SUBS_NAMES:
                 raise KeyError("Keys must be one of {!r:0}".format(SUBS_NAMES))
             if callable(funcs):
-                subs[key] = [funcs]
-        normalized = subs
+                normalized[key].append(funcs)
+            else:
+                normalized[key].extend(funcs)
     elif isinstance(subs, Iterable):
-        normalized = {'all': subs}
+        normalized['all'].extend(subs)
     else:
         raise ValueError("Subscriptions should be a callable, a list of "
                          "callables, or a dictionary mapping subscription "
@@ -329,8 +331,8 @@ def normalize_subs_input(subs):
 
 class DefaultSubs:
     """a class-level descriptor"""
-    def __init__(self, default):
-        self._value = default
+    def __init__(self, default=None):
+        self._value = normalize_subs_input(default)
 
     def __get__(self, instance, owner):
         return self._value
@@ -341,8 +343,8 @@ class DefaultSubs:
 
 class Subs:
     """a 'reusable' property"""
-    def __init__(self, default):
-        self.default = default
+    def __init__(self, default=None):
+        self.default = normalize_subs_input(default)
         self.data = WeakKeyDictionary()
 
     def __get__(self, instance, owner):
