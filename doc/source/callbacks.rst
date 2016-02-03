@@ -91,36 +91,54 @@ Subscribe each time a certain plan is used
 
 Often, the same subscriptions are useful each time a certain kind of plan is
 run. To associate particular callbacks with a given plan, give the plan 
-a ``subs`` attribute.
+a ``subs`` attribute. All the built-in plans already have a ``subs``
+attribute, primed with a dictionary of empty lists.
 
 .. ipython:: python
 
-    plan.subs = LiveTable(dets)
+    plan.subs
 
-As above, this can be one callback, a list of callbacks, or a dictionary. They
-will be used automatically each time the plan is executed by the Run Engine.
+Append functions to these lists to route Documents to them every time the plan
+is executed.
+
+.. ipython:: python
+
+    plan.subs['all'].append(LiveTable(dets))
+
+Now our ``plan`` will invoke ``LiveTable`` every time.
 
 .. ipython:: python
 
     RE(plan)
 
+Now suppose we change the detectors used by the plan.
+
+.. ipython:: python
+
+    plan.detectors.remove(det3)
+    plan.detectors
+
+The ``LiveTable`` callback is now out of date; it still includes
+``[det1, det2, det3]``. How can we make this more convenient?
+
 To customize the callback based on the content of the plan, use a subscription
-factory: a function that takes in a plan and returns a callback function. For
-example, ``LiveTable`` takes list of data columns to be displayed. A
-*subscription* requires us to update that list if we use different detectors. A
-*subscription factory* intercepts the plan before it is executed and can update
-the list of columns on the fly.
+factory: a function that takes in a plan and returns a callback function.
 
 .. code-block:: python
 
-    def table_of_detectors(plan):
+    def make_table_with_detectors(plan):
         dets = plan.detectors
         return LiveTable(dets)
 
-    plan.sub_factories = table_of_detectors
+    plan.sub_factories['all'].append(make_table_with_detectors)
 
-Every time the plan is executed a new ``LiveTable`` is made on the fly, based
-with a list of columns that is updated to reflect the list of detectors.
+When the plan is executed, it passes *itself* as an argument to its own
+``sub_factories``, producing customized callbacks. In this examples, a new
+``LiveTable`` is made on the fly. Each time the plan is executed, new
+callbacks are made via factory functions like this one.
+
+A plan can have both normal subscriptions in ``plan.subs`` and subscription
+factories in ``plan.sub_factories``. All will be used.
 
 Subscribe for every run
 +++++++++++++++++++++++
@@ -129,9 +147,7 @@ The RunEngine itself can store a collection of subscriptions to be applied to
 every single scan it executes.
 
 Usually, if a subscription is useful for every single run, it should be added
-to a IPython configuration file and subscribed automatically at startup. This
-involves a more explicit API that exposes some of the details of how
-subscriptions work.
+to a IPython configuration file and subscribed automatically at startup.
 
 The method ``RE.subscribe`` passes through to this method:
 
