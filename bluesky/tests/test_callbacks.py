@@ -78,11 +78,11 @@ def test_subs_input():
     # Test input normalization on OO plans
     obj_ascan = AbsScanPlan([det], motor, 1, 5, 4)
     obj_ascan.subs = cb1
-    assert obj_ascan.subs == {'all': [cb1]}
+    assert obj_ascan.subs == {'all': [cb1], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
     obj_ascan.subs.update({'start': [cb2]})
-    assert obj_ascan.subs == {'all': [cb1], 'start': [cb2]}
+    assert obj_ascan.subs == {'all': [cb1], 'start': [cb2], 'stop': [], 'descriptor': [], 'event': []}
     obj_ascan.subs = [cb2, cb3]
-    assert obj_ascan.subs == {'all': [cb2, cb3]}
+    assert obj_ascan.subs == {'all': [cb2, cb3], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
 
     # Test input normalization on simple scans
     assert mesh.subs == mesh.default_subs
@@ -91,11 +91,11 @@ def test_subs_input():
     expected.update({'start': [cb2]})
     assert mesh.subs == expected
     mesh.subs = cb2
-    assert mesh.subs == {'all': [cb2]}
+    assert mesh.subs == {'all': [cb2], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
     mesh.subs = [cb2, cb3]
-    assert mesh.subs == {'all': [cb2, cb3]}
+    assert mesh.subs == {'all': [cb2, cb3], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
     mesh.subs.update({'start': [cb1]})
-    assert mesh.subs == {'all': [cb2, cb3], 'start': [cb1]}
+    assert mesh.subs == {'all': [cb2, cb3], 'start': [cb1], 'stop': [], 'descriptor': [], 'event': []}
 
 def test_subscribe_msg():
     assert RE.state == 'idle'
