@@ -553,7 +553,7 @@ _SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ start }} {{ stop
 
 _PLAN_TO_SPEC_MAPPING = {'AbsScanPlan': 'ascan',
                          'DeltaScanPlan': 'dscan',
-                         'Count': 'count',
+                         'Count': 'ct',
                          'Tweak': 'tw'}
 
 _SPEC_START_TEMPLATE = env.from_string("""
@@ -637,23 +637,28 @@ class LiveSpecFile(CallbackBase):
         # and parsing any existing contents.
         plan_type = doc['plan_type']
         plan_args = doc['plan_args']
-        if plan_type in ['AbsScanPlan', 'DeltaScanPlan', 'Count', 'Tweak']:
+        if plan_type in _PLAN_TO_SPEC_MAPPING.keys():
             # Some of these are used in other methods too -- stash them.
             self._unix_time = doc['time']
             self._acq_time = plan_args.get('time', -1)
-            self._motor = doc['motors']
+            content = dict(scan_type=_PLAN_TO_SPEC_MAPPING[doc['plan_type']],
+                           acq_time=self._acq_time)
+            if plan_type == 'Count':
+                # count has no motor. Have to fake one.
+                self._motor = ['Count']
+            else:
+                self._motor = doc['motors']
+                content['start'] = plan_args['start']
+                content['stop'] = plan_args['stop']
+                content['strides'] = int(plan_args['num']) - 1,
+            # We only support a single scanning motor right now.
             if len(self._motor) > 1:
                 raise NotImplementedError(
                     "Your scan has %s scanning motors. They are %s. SpecCallback"
                     " cannot handle multiple scanning motors. Please request "
                     "this feature at https://github.com/NSLS-II/bluesky/issues" %
-                    (len(self._motors), self._motors))
+                    (len(self._motor), self._motor))
             self._motor, = self._motor
-            content = dict(scan_type=_PLAN_TO_SPEC_MAPPING[doc['plan_type']],
-                           start=plan_args['start'],
-                           stop=plan_args['stop'],
-                           strides=int(plan_args['num']) - 1,
-                           acq_time=self._acq_time)
             command = _SPEC_1D_COMMAND_TEMPLATE.render(content)
         else:
             err_msg = ("Do not know how to represent %s in SPEC. If "
@@ -689,6 +694,8 @@ class LiveSpecFile(CallbackBase):
 #         print(doc)
         data = doc['data']
         values = [str(data[k]) for k in self._read_fields if k != self._motor]
+        if self._motor == "Count":
+            doc['data']['Count'] = -1
         content = dict(acq_time=self._acq_time,
                        unix_time=doc['time'],
                        motor_position=data[self._motor],
