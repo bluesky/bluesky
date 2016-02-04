@@ -561,7 +561,7 @@ _SPEC_START_TEMPLATE = env.from_string("""
 #S {{ scan_id }} {{ command }}
 #D {{ readable_time }}
 #T {{ acq_time }} (Seconds)
-#P0 {{ positioner_positions }}""")
+#P0 {{ positioner_positions | join(' ')}}""")
 
 _SPEC_DESCRIPTOR_TEMPLATE = env.from_string("""
 #N {{ length }}
@@ -653,8 +653,7 @@ class LiveSpecFile(CallbackBase):
                            start=plan_args['start'],
                            stop=plan_args['stop'],
                            strides=int(plan_args['num']) - 1,
-                           acq_time=self._acq_time,
-                           positioner_positions=self.positions)
+                           acq_time=self._acq_time)
             command = _SPEC_1D_COMMAND_TEMPLATE.render(content)
         else:
             err_msg = ("Do not know how to represent %s in SPEC. If "
@@ -666,7 +665,8 @@ class LiveSpecFile(CallbackBase):
         content = dict(command=command,
                        scan_id=doc['scan_id'],
                        readable_time=datetime.fromtimestamp(doc['time']),
-                       acq_time=self._acq_time)
+                       acq_time=self._acq_time,
+                       positioner_positions=self.positions)
         self._start_content = content  # can't write until after we see desc
         self._start_doc = doc
 
@@ -680,6 +680,7 @@ class LiveSpecFile(CallbackBase):
                        length=3 + len(self._read_fields),
                        data_keys=doc['data_keys'].keys())
         with open(self.specpath, 'a') as f:
+            f.write(_SPEC_START_TEMPLATE.render(self._start_content))
             f.write(_SPEC_DESCRIPTOR_TEMPLATE.render(content))
             f.write('\n')
 
