@@ -27,6 +27,7 @@ requirements:
     - cycler
     - traitlets
     - historydict
+    - jinja2
 
 test:
   requires:
