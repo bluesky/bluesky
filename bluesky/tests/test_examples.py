@@ -196,7 +196,7 @@ def test_md_historydict():
         import historydict
     except ImportError as ie:
         pytest.skip('Skipping test because historydict cannot be imported. '
-                    'Error was {}'.foramt(ie))
+                    'Error was {}'.format(ie))
     _md(historydict.HistoryDict(':memory:'))
 
 
