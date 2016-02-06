@@ -165,6 +165,7 @@ def test_stateful_subscription():
     RE.unsubscribe(token)
     assert RE.state == 'idle'
 
+
 def test_live_plotter():
     try:
         import matplotlib.pyplot as plt
@@ -188,6 +189,7 @@ def test_sample_md_dict_requirement():
 
 def test_md_dict():
     _md({})
+
 
 def test_md_historydict():
     try:

@@ -910,7 +910,7 @@ class RunEngine:
     def _save(self, msg):
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'save' message was sent but no "
-                                        "run is open.")
+                                         "run is open.")
         if not self._bundling:
             raise IllegalMessageSequence("A 'create' message must be sent, to "
                                          "open an event bundle, before that "
