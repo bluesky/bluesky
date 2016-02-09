@@ -38,7 +38,7 @@ install:
   - conda install super_state_machine cycler xray-vision lmfit -c tacaswell
   - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
   - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
-  - 'pip install https://github.com/tacaswell/metadatastore/zipball/API_match_mds_schema#egg=metadatastore'
+  - 'pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore'
   - conda install pymongo pcaspy pyepics readline -c tacaswell
   - pip install coveralls
   - python setup.py install

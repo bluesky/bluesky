@@ -165,6 +165,7 @@ def test_stateful_subscription():
     RE.unsubscribe(token)
     assert RE.state == 'idle'
 
+
 def test_live_plotter():
     try:
         import matplotlib.pyplot as plt
@@ -189,12 +190,13 @@ def test_sample_md_dict_requirement():
 def test_md_dict():
     _md({})
 
+
 def test_md_historydict():
     try:
         import historydict
     except ImportError as ie:
         pytest.skip('Skipping test because historydict cannot be imported. '
-                    'Error was {}'.foramt(ie))
+                    'Error was {}'.format(ie))
     _md(historydict.HistoryDict(':memory:'))
 
 
