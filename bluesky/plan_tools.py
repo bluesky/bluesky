@@ -223,3 +223,14 @@ def ct(dets, n, subs=None):
 
     ret = yield from plan_with_subs
     return ret
+
+
+def bind_to_run_engine(RE, gen_func, name):
+
+    def inner(*args, md=None, **kwargs):
+        if md is None:
+            md = {}
+        plan = gen_func(*args, **kwargs)
+        return RE(plan, **md)
+
+    return inner
