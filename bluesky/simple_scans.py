@@ -24,7 +24,7 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 from inspect import signature
 import matplotlib.pyplot as plt
 from bluesky import plans
-from bluesky.callbacks import LiveTable, LivePlot, LiveRaster, _get_obj_fields
+from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
 from bluesky.scientific_callbacks import PeakStats
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
@@ -112,7 +112,7 @@ def raster(scan):
     if len(scan.shape) != 2:
         return None
     # first motor is 'slow' -> Y axis
-    ylab, xlab = _get_obj_fields(scan.motors)
+    ylab, xlab = [first_key_heuristic(m) for m in scan.motors]
     # shape goes in (rr, cc)
     # extents go in (x, y)
     return LiveRaster(scan.shape, gs.MASTER_DET_FIELD, xlabel=xlab,
