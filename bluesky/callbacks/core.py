@@ -677,8 +677,10 @@ class LiveSpecFile(CallbackBase):
 
     def descriptor(self, doc):
         """Write the header for the actual scan data"""
+        # List all scalar fields, excluding the motor (x variable).
         self._read_fields = sorted([k for k, v in doc['data_keys'].items()
-                                    if v['object_name'] != self._motor])
+                                    if (v['object_name'] != self._motor
+                                        and not v['shape'])])
         content = dict(motor_name=self._motor,
                        acq_time=self._acq_time,
                        unix_time=self._unix_time,
