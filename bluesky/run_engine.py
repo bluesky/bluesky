@@ -432,6 +432,12 @@ class RunEngine:
                 self.state = 'paused'
                 if self.resumable:
                     loop.stop()
+                    # During pause, all motors should be stopped.
+                    for obj in self._movable_objs_touched:
+                        try:
+                            obj.stop()
+                        except Exception:
+                            logger.error("Failed to stop %r", obj)
                 else:
                     print("No checkpoint; cannot pause. Aborting...")
                     self._exception = FailedPause()
