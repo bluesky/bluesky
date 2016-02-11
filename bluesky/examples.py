@@ -1,4 +1,6 @@
 import asyncio
+from functools import wraps
+from threading import RLock
 import time as ttime
 from collections import deque
 import numpy as np
@@ -23,8 +25,6 @@ class Base:
     def __init__(self, name, fields):
         self.name = name
         self._fields = fields
-        self._cb = None
-        self._ready = False
         self.read_attrs = fields
         self.configuration_attrs = []
         for field in fields:
@@ -55,34 +55,6 @@ class Base:
     def unstage(self):
         pass
 
-    @property
-    def done(self):
-        return self.ready
-
-    @property
-    def finished_cb(self):
-        """
-        Callback to be run when the status is marked as finished
-
-        The call back has no arguments
-        """
-        return self._cb
-
-    @finished_cb.setter
-    def finished_cb(self, cb):
-        if self._cb is not None:
-            raise RuntimeError("Can not change the call back")
-        if self.done:
-            cb()
-        else:
-            self._cb = cb
-
-    def _finish(self):
-        self.ready = True
-        if self._cb is not None:
-            self._cb()
-            self._cb = None
-
 
 class Reader(Base):
     _klass = 'reader'
@@ -100,7 +72,9 @@ class Reader(Base):
         return data
 
     def trigger(self):
-        return self
+        status = Status()
+        status._finished()
+        return status
 
 
 class Mover(Base):
@@ -110,7 +84,6 @@ class Mover(Base):
         super(Mover, self).__init__(name, fields, **kwargs)
         self._data = {f: {'value': 0, 'timestamp': ttime.time()}
                       for f in self._fields}
-        self.ready = True
         self._fake_sleep = sleep_time
 
     def read(self):
@@ -121,7 +94,6 @@ class Mover(Base):
         if not trigger:
             raise NotImplementedError
         # block_group is handled by the RunEngine
-        self.ready = False
         if self._fake_sleep:
             ttime.sleep(self._fake_sleep)  # simulate moving time
         if isinstance(val, dict):
@@ -130,8 +102,9 @@ class Mover(Base):
         else:
             self._data = {f: {'value': val, 'timestamp': ttime.time()}
                           for f in self._fields}
-        self.ready = True
-        return self
+        status = Status()
+        status._finished()
+        return status
 
     def settle(self):
         pass
@@ -165,7 +138,6 @@ class SynGauss(Reader):
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
                  noise=None, noise_multiplier=1):
         super(SynGauss, self).__init__(name, [name, ])
-        self.ready = True
         self._motor = motor
         self._motor_field = motor_field
         self.center = center
@@ -177,7 +149,6 @@ class SynGauss(Reader):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
 
     def trigger(self, *, block_group=True):
-        self.ready = False
         m = self._motor.read()[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
         if self.noise == 'poisson':
@@ -186,8 +157,9 @@ class SynGauss(Reader):
             v += np.random.uniform(-1, 1) * self.noise_multiplier
         self._data = {self.name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
-        self.ready = True
-        return self
+        status = Status()
+        status._finished()
+        return status
 
     def read(self):
         return self._data
@@ -216,7 +188,6 @@ class Syn2DGauss(Reader):
                  center, Imax, sigma=1,
                  noise=None, noise_multiplier=1):
         super().__init__(name, [name, ])
-        self.ready = True
         self._motor0 = motor0
         self._motor_field0 = motor_field0
         self._motor1 = motor1
@@ -230,7 +201,6 @@ class Syn2DGauss(Reader):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
 
     def trigger(self, *, block_group=True):
-        self.ready = False
         x = self._motor0.read()[self._motor_field0]['value']
         y = self._motor1.read()[self._motor_field1]['value']
         m = np.array([x, y])
@@ -242,8 +212,9 @@ class Syn2DGauss(Reader):
             v += np.random.uniform(-1, 1) * self.noise_multiplier
         self._data = {self.name: {'value': v, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
-        self.ready = True
-        return self
+        status = Status()
+        status._finished()
+        return status
 
     def read(self):
         return self._data
@@ -260,12 +231,8 @@ class MockFlyer:
         self._steps = None
         self._future = None
         self._data = deque()
+        self._status = None
         self._cb = None
-        self.ready = False
-
-    @property
-    def done(self):
-        return self.ready
 
     def describe(self):
         dd = dict()
@@ -274,15 +241,16 @@ class MockFlyer:
         return [dd, ]
 
     def kickoff(self, start, stop, steps):
-        self.ready = False
         self._data = deque()
         self._steps = np.linspace(start, stop, steps)
+        status = Status()
         self._future = loop.run_in_executor(None, self._scan)
-        self._future.add_done_callback(lambda x: self._finish())
-        return self
+        self._future.add_done_callback(lambda x: status._finished())
+        self._status = status
+        return status
 
     def collect(self):
-        if not self.ready:
+        if not self._status.done:
             raise RuntimeError("No reading until done!")
 
         yield from self._data
@@ -311,32 +279,6 @@ class MockFlyer:
                     event['data'][k] = v['value']
                     event['timestamps'][k] = v['timestamp']
             self._data.append(event)
-        self._finish()
-
-    @property
-    def finished_cb(self):
-        """
-        Callback to be run when the status is marked as finished
-
-        The call back has no arguments
-        """
-        return self._cb
-
-    @finished_cb.setter
-    def finished_cb(self, cb):
-        if self._cb is not None:
-            raise RuntimeError("Can not change the call back")
-        if self.done:
-            cb()
-        else:
-            self._cb = cb
-
-    def _finish(self):
-        self.ready = True
-        if self._cb is not None:
-            self._cb()
-            self._cb = None
-
 
 class FlyMagic(Base):
     _klass = 'flyer'
@@ -356,7 +298,9 @@ class FlyMagic(Base):
     def kickoff(self):
         self._time = ttime.time()
         self._fly_count += 1
-        return self
+        status = Status()
+        status._finished()
+        return status
 
     def describe(self):
         return [{k: {'source': self.name, 'dtype': 'number'}
@@ -613,3 +557,81 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
                 yield Msg('save')
             # generate the end of the run document
             yield Msg('close_run')
+
+
+def _locked(func):
+    "an decorator for running a method with the instance's lock"
+    @wraps(func)
+    def f(self, *args, **kwargs):
+        with self._lock:
+            func(self, *args, **kwargs)
+    return f
+
+
+class Status:
+    """
+    This is a base class that provides a single-slot
+    call back for finished.
+    """
+    def __init__(self):
+        super().__init__()
+        self._lock = RLock()
+        self._callbacks = set()
+        self.ancestors = set()  # flat set of any objects combined to make this
+        self.done = False
+        self.success = False
+        self._done_count = 0
+
+    @_locked
+    def _finished(self):
+        self.done = True
+
+        for cb in list(self._callbacks):
+            cb()
+            self._callbacks.remove(cb)
+
+    @property
+    def callbacks(self):
+        """
+        Callbacks to be run when the status is marked as finished
+
+        The call back has no arguments
+        """
+        return self._callbacks
+
+    @_locked
+    def add_callback(self, cb):
+        if self.done:
+            cb()
+        else:
+            self._callbacks.add(cb)
+
+    def __and__(self, other):
+        composite = StatusBase()
+        composite.ancestors |= set([self, other])
+        composite.ancestors |= (self.ancestors | other.ancestors)
+
+        def inner():
+            with self._lock:
+                self._done_count += 1
+                if self._done_count == 2:
+                    composite._finished()
+
+        self.add_callback(inner)
+        other.add_callback(inner)
+        return composite
+
+    def __or__(self, other):
+        composite = StatusBase()
+        composite.ancestors |= set([self, other])
+        composite.ancestors |= (self.ancestors | other.ancestors)
+
+        def inner():
+            with self._lock:
+                self._done_count += 1
+                if self._done_count == 1:
+                    composite._finished()
+
+        self.add_callback(inner)
+        other.add_callback(inner)
+        return composite
