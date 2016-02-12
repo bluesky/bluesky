@@ -279,7 +279,6 @@ class RunEngine:
         # to provide special docstrings.
         self._lossless_dispatcher = Dispatcher()
 
-
         loop.call_soon(self._check_for_trouble)
         loop.call_soon(self._check_for_signals)
 
@@ -906,9 +905,9 @@ class RunEngine:
         "Read the object's configuration and cache it."
         config_values = {}
         config_ts = {}
-        for key, (val, ts) in obj.read_configuration().items():
-            config_values[key] = val
-            config_ts[key] = ts
+        for key, val in obj.read_configuration().items():
+            config_values[key] = val['value']
+            config_ts[key] = val['timestamp']
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
 
