@@ -393,12 +393,12 @@ def snake_cyclers(cyclers, snake_booleans):
 
 def first_key_heuristic(device):
     """
-    Get the fully-qualified data key for the first entry in read_attrs.
+    Get the fully-qualified data key for the first entry in describe().
 
     This will raise is that entry's `describe()` method does not return a
     dictionary with exactly one key.
     """
-    first_attr = device.read_attrs[0]
+    first_attr = next(iter(device.describe()))
     key, = getattr(device, first_attr).describe().keys()
     return key
 

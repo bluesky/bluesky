@@ -25,7 +25,6 @@ class Base:
         self._fields = fields
         self._cb = None
         self._ready = False
-        self.read_attrs = fields
         self.configuration_attrs = []
         for field in fields:
             if isinstance(field, str):
