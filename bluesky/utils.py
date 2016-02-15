@@ -398,9 +398,7 @@ def first_key_heuristic(device):
     This will raise is that entry's `describe()` method does not return a
     dictionary with exactly one key.
     """
-    first_attr = next(iter(device.describe()))
-    key, = getattr(device, first_attr).describe().keys()
-    return key
+    return next(iter(device.describe()))
 
 
 def scalar_heuristic(device):
