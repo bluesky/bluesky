@@ -697,9 +697,14 @@ class LiveSpecFile(CallbackBase):
         values = [str(data[k]) for k in self._read_fields]
         if self._motor == "Count":
             doc['data']['Count'] = -1
+        try:
+            mtr_pos = data[self._motor]
+        except KeyError:
+            self._motor += '_readback'
+            mtr_pos = data[self._motor]
         content = dict(acq_time=self._acq_time,
                        unix_time=doc['time'],
-                       motor_position=data[self._motor],
+                       motor_position=mtr_pos,
                        values=values)
         with open(self.specpath, 'a') as f:
             f.write(_SPEC_EVENT_TEMPLATE.render(content))
