@@ -1229,7 +1229,7 @@ class Dispatcher:
         exceptions = self.cb_registry.process(name, name.name, doc)
         for exc, traceback in exceptions:
             warn("A %r was raised during the processing of a %s "
-                 "Document. The error will be ingored to avoid "
+                 "Document. The error will be ignored to avoid "
                  "interrupting data collection. To investigate, "
                  "set RunEngine.ignore_callback_exceptions = False "
                  "and run again." % (exc, name.name))
