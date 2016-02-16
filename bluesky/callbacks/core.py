@@ -693,8 +693,9 @@ class LiveSpecFile(CallbackBase):
 
     def event(self, doc):
         """Write each event out"""""
+#         print(doc)
         data = doc['data']
-        values = [str(data[k]) for k in self._read_fields]
+        values = [str(data[k]) for k in self._read_fields if k != self._motor]
         if self._motor == "Count":
             doc['data']['Count'] = -1
         content = dict(acq_time=self._acq_time,
