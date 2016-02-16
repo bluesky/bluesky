@@ -693,7 +693,6 @@ class LiveSpecFile(CallbackBase):
 
     def event(self, doc):
         """Write each event out"""""
-#         print(doc)
         data = doc['data']
         values = [str(data[k]) for k in self._read_fields if k != self._motor]
         if self._motor == "Count":
