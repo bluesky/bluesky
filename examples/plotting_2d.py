@@ -25,6 +25,6 @@ def stepscan(det, motor):
 
 
 ic = LiveImage('det_2d')
-table_callback = LiveTable(fields=[motor.name, det_2d._name])
+table_callback = LiveTable(fields=[motor.name, det_2d.name])
 RE = setup_test_run_engine()
 RE(stepscan(det_2d, motor), subs={'event': ic, 'all': table_callback}, beamline_id='c08i')

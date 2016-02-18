@@ -39,7 +39,7 @@ class SynGauss2D(Reader):
         arr = self.gauss(self.dims, self.img_sigma) * v + np.random.random(
             self.dims) * .01
         fs_uid = save_ndarray(arr, self.output_dir)
-        self._data = {self._name: {'value': fs_uid, 'timestamp': ttime.time()}}
+        self._data = {self.name: {'value': fs_uid, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
         return self
@@ -94,7 +94,7 @@ class SynGauss2D(Reader):
         return y / np.sum(y)
 
     def describe(self):
-        return {self._name: {'source': self._name,
+        return {self.name: {'source': self.name,
                              'dtype': 'array',
                              'shape': list(self.dims),
                              'external': 'FILESTORE:'}}

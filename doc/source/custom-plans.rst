@@ -206,7 +206,7 @@ The next example is a step scan that pauses after each data point is collected.
             ret_d = yield Msg('read', det)
             yield Msg('save')
             print("Value at {m} is {d}. Pausing.".format(
-                m=ret_m[motor._name]['value'], d=ret_d[det1._name]['value']))
+                m=ret_m[motor.name]['value'], d=ret_d[det1.name]['value']))
             yield Msg('pause', None, hard=False)
 
 The 'create' and 'save' commands bundle and save the readings between them, as
