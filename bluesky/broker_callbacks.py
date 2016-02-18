@@ -7,7 +7,6 @@ from metadatastore.commands import run_start_given_uid, descriptors_by_start
 import matplotlib.pyplot as plt
 from xray_vision.backend.mpl.cross_section_2d import CrossSection
 from .callbacks import CallbackBase
-import tifffile
 import numpy as np
 import doct
 from databroker import DataBroker as db
@@ -143,6 +142,14 @@ class LiveTiffExporter(CallbackBase):
     filenames : list of filenames written in ongoing or most recent run
     """
     def __init__(self, field, template, dryrun=False, overwrite=False):
+        try:
+            import tifffile
+        except ImportError:
+            print("Tifffile is required by this callback. Please install"
+                  "tifffile and then try again."
+                  "\n\n\tpip install tifffile\n\nor\n\n\tconda install "
+                  "tifffile")
+            raise
         self.field = field
         self.template = template
         self.dryrun = dryrun
