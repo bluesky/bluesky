@@ -1,6 +1,7 @@
 import uuid
 from functools import wraps
 from itertools import count
+from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
@@ -131,16 +132,18 @@ def subscription_wrapper(plan, subs):
         # itself if this plan fails to do so.
         for token in tokens:
             yield Msg('unsubscribe', None, token)
+    return ret
 
 
 def fly_during(plan, flyers):
     for flyer in flyers:
         yield Msg('kickoff', flyer, block_group='_flyers')
     yield Msg('wait', None, '_flyers')
-    yield from plan
+    ret = yield from plan
     for flyer in flyers:
         yield Msg('collect', flyer, block_group='_flyers')
     yield Msg('wait', None, '_flyers')
+    return ret
 
 
 def run_wrapper(plan, md=None, **kwargs):
@@ -179,14 +182,69 @@ def event_wrapper(plan):
     return ret
 
 
-def stage_wrapper(plan, dets):
-    dets = list(dets)
-    yield from broadcast_msg('stage', dets)
+def stage_wrapper(plan):
+    """
+    This is a preprocessor that inserts 'stage' Messages.
+
+    The first time an object is read, set, triggered (or, for flyers,
+    the first time is it told to "kickoff") a 'stage' Msg is inserted first.
+
+    At the end, an 'unstage' Message issued for every 'stage' Message.
+    """
+    COMMANDS = ['read', 'set', 'trigger', 'kickoff']
+    devices_staged = []
+    ret = None
     try:
-        ret = yield from plan
+        while True:
+            msg = plan.send(ret)
+            if msg.command in COMMANDS and msg.obj not in devices_staged:
+                ret = yield Msg('stage', msg.obj)
+                if ret is None:
+                    # The generator may be being list-ified.
+                    # This is a hack to make that possible. Is it a good idea?
+                    ret = [msg.obj]
+                devices_staged.extend(ret)
+            ret = yield msg
     finally:
-        yield from broadcast_msg('unstage', dets[::-1])
+        yield from broadcast_msg('unstage', reversed(devices_staged))
     return ret
+
+
+def relative_set(plan, objects):
+    """
+    Interpret set messages on objects as relative to current position.
+    """
+    initial_positions = {}
+    ret = None
+    while True:
+        msg = plan.send(ret)
+        if msg.command == 'set' and msg.obj in objects:
+            if msg.obj not in initial_positions:
+                pos = scalar_heuristic(msg.obj)
+                initial_positions[msg.obj] = pos
+            rel_pos, = msg.args
+            abs_pos = initial_positions[msg.obj] + rel_pos
+            new_msg = msg._replace(args=(abs_pos,))
+            ret = yield new_msg
+        else:
+            ret = yield msg
+
+
+def put_back(plan, objects):
+    initial_positions = OrderedDict()
+    ret = None
+    try:
+        while True:
+            msg = plan.send(ret)
+            if msg.command == 'set' and msg.obj in objects:
+                if msg.obj not in initial_positions:
+                    pos = scalar_heuristic(msg.obj)
+                    initial_positions[msg.obj] = pos
+            ret = yield msg
+    finally:
+        for obj, pos in reversed(list(initial_positions.items())):
+            yield Msg('set', obj, pos, block_group='_restore')
+            yield Msg('wait', None, '_restore')
 
 
 def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
@@ -218,10 +276,10 @@ def trigger_and_read(det_list):
         yield Msg('read', det)
 
 
-def broadcast_msg(msg, objs):
+def broadcast_msg(command, objs, *args, **kwargs):
     return_vals = []
     for o in objs:
-        ret = yield Msg(msg, o)
+        ret = yield Msg(command, o, *args, **kwargs)
         return_vals.append(ret)
 
     return return_vals

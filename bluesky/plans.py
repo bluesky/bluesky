@@ -8,7 +8,9 @@ import numpy as np
 from .run_engine import Msg
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
                     scalar_heuristic, separate_devices)
-from .plan_tools import run_wrapper, subscription_wrapper, fly_during
+from .plan_tools import (run_wrapper, subscription_wrapper, fly_during,
+                         stage_wrapper, relative_set, put_back, repeater,
+                         trigger_and_read)
 
 
 class PlanBase(Struct):
@@ -20,10 +22,7 @@ class PlanBase(Struct):
 
     To create a new sub-class you need to over-ride two things:
 
-    - a ``_gen`` method which yields the instructions of the scan.
-    - an ``_objects`` attribute, a list of arbitrary category names (such
-      'detectors' or 'motors') to lists of objects -- used for metadata and for
-      staging/unstagin all objects touched by a plan
+    - a ``_inner_gen`` method which yields the instructions of the scan.
     - a class level ``_fields`` attribute which is used to construct the init
       signature via meta-class magic
 
@@ -34,70 +33,50 @@ class PlanBase(Struct):
     """
     subs = Subs({})
 
-    @property
-    def md(self):
-        """
-        a metadata dictionary, passed to the 'open_run' Message
-        """
-        self._md['plan_type'] = type(self).__name__
-        self._md['plan_args'] = {field: repr(getattr(self, field))
-                                 for field in self._fields}
-        for category, objs in self._objects.items():
-            # e.g., self.md['motors'] = ['motor1', 'motor2']
-            if isinstance(objs, Iterable):
-                self._md[category] = [obj.name for obj in objs]
-            else:
-                obj = objs
-                self._md[category] = obj.name
-        return self._md
+    def get_metadata(self):
+        return {}
 
     def __iter__(self):
         """
         yields messages
         """
-        yield from self._pre()
-        run = run_wrapper(fly_during(self._gen(), self.flyers), md=self.md)
-        yield from subscription_wrapper(run, self.subs)
-        yield from self._post()
+        md = self.get_metadata()
+        md['plan_args'] = {field: repr(getattr(self, field))
+                           for field in self._fields}
+        flyers = self.flyers
+
+        main_with_flyers = fly_during(self._main_gen(), self.flyers)
+        run = run_wrapper(self._inner_gen(main_with_flyers), md=md)
+        plan = self._outer_gen(subscription_wrapper(stage_wrapper(run),
+                                                    self.subs))
+        yield from plan
         yield Msg('checkpoint')
 
-    def _pre(self):
-        """
-        Subclasses use this to inject some messages to be processed
-        before the run is opened -- for example, configuration or
-        taking some preliminary readings needed for metadata.
-        """
-        # prerun is expected to be a callable that takes the Scan object
-        # itself as its argument and returns a generator of messages
-        if self.pre_run is not None:
-            yield from self.pre_run(self)
-        staged = []  # to track duplicates
-        for objs in self._objects.values():
-            for obj in objs:
-                root = obj.root
-                if root not in staged:
-                    yield Msg('stage', root)
-                    staged.append(root)
+    def _main_gen(self):
+        "Subclasses override this to provide the main plan content."
+        yield from []
 
-    def _post(self):
+    def _inner_gen(self, plan):
         """
-        Subclasses use this to inject some messages to be processed
-        after the run is closed -- for example, returning motors to
-        their original positions.
+        Subclasses may use this method to add messages inside the run.
+        
+        Subclasses should yield from super()._inner_gen().
+        Messages before and after this will be processed immedately after the
+        run is opened and immediate before it is closed.
         """
-        # postrun is expected to be a callable that takes the Scan object
-        # itself as its argument and returns a generator of messages
-        unstaged = []  # to track duplicates
-        for objs in self._objects.values():
-            for obj in reversed(list(objs)):
-                root = obj.root
-                if root not in unstaged:
-                    yield Msg('unstage', root)
-                    unstaged.append(root)
-        if self.post_run is not None:
-            yield from self.post_run(self)
+        yield from plan
 
-    def _gen(self):
+    def _outer_gen(self, plan):
+        """
+        Subclasses may use this method to add message before & after the run.
+
+        Subclasses should yield from super()._outer_gen().
+        Messages before and after this will be processed immedately before the
+        run is opened and immediate after it is closed.
+        """
+        yield from plan
+
+    def _main_gen(self):
         "Subclasses should override this method to add the main plan content."
         yield from []
 
@@ -129,22 +108,18 @@ class Count(PlanBase):
     """
     _fields = ['detectors', 'num', 'delay']
 
-    def __init__(self, detectors, num=1, delay=0,
-                 pre_run=None, post_run=None):
+    def __init__(self, detectors, num=1, delay=0):
         self.detectors = detectors
         self.num = num
         self.delay = delay
-        self.pre_run = pre_run
-        self.post_run = post_run
-        self._md = {}
-        self.configuration = {}
         self.flyers = []
 
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors}
+    def get_metadata(self):
+        md = super().get_metadata()
+        md.update({'detectors': [det.name for det in self.detectors]})
+        return md
 
-    def _gen(self):
+    def _main_gen(self):
         if self.num is None:
             # Count(num=None) runs forever, awaiting user interruption.
             while True:
@@ -157,14 +132,7 @@ class Count(PlanBase):
         # This is broken out in a separate method so we can loop
         # over it in different ways in _gen, above.
         dets = separate_devices(self.detectors)
-        yield Msg('checkpoint')
-        yield Msg('create', None, name='primary')
-        for det in dets:
-            yield Msg('trigger', det, block_group='A')
-        yield Msg('wait', None, 'A')
-        for det in dets:
-            yield Msg('read', det)
-        yield Msg('save')
+        yield from trigger_and_read(dets)
         yield Msg('sleep', None, self.delay)
 
 
@@ -172,11 +140,13 @@ class Plan1D(PlanBase):
     "Use AbsListScanPlan or DeltaListScanPlan. Subclasses must define _abs_steps."
     _fields = ['detectors', 'motor', 'steps']
 
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors, 'motors': [self.motor]}
+    def get_metadata(self):
+        md = super().get_metadata()
+        md.update({'detectors': [det.name for det in self.detectors],
+                   'motors': [self.motor.name]})
+        return md
 
-    def _gen(self):
+    def _main_gen(self):
         dets = separate_devices(self.detectors)
         for step in self._abs_steps:
             yield Msg('checkpoint')
@@ -204,9 +174,7 @@ class AbsListScanPlan(Plan1D):
     steps : list
         list of positions
     """
-    @property
-    def _abs_steps(self):
-        return self.steps
+    pass
 
 
 class DeltaListScanPlan(Plan1D):
@@ -222,49 +190,10 @@ class DeltaListScanPlan(Plan1D):
     steps : list
         list of positions relative to current position
     """
-
-    @property
-    def init_pos(self):
-        "None unless a scan is running"
-        return getattr(self, '_init_pos', None)
-
-    def _pre(self):
-        "Get current position for the motor."
-        self._init_pos = scalar_heuristic(self.motor)
-        self._md['init_pos'] = self.init_pos
-        self._abs_steps = np.asarray(self.steps) + self._init_pos
-        yield from super()._pre()
-
-    def logdict(self):
-        logdict = super().logdict()
-        try:
-            init_pos = self.init_pos
-        except AttributeError:
-            raise RuntimeError("Trying to create an olog entry for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        logdict['init_pos'] = init_pos
-        return logdict
-
-    def _call_str(self):
-
-        call_str = ["{motor!r}.set({init_pos})", ]
-        call_str.extend(super()._call_str())
-        return call_str
-
-    def _post(self):
-        yield from super()._post()
-        try:
-            init_pos = self.init_pos
-            delattr(self, '_init_pos')
-            del self._md['init_pos']
-        except AttributeError:
-            raise RuntimeError("Trying to run _post code for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        # Return the motor to its original position.
-        yield Msg('set', self.motor, init_pos, block_group='A')
-        yield Msg('wait', None, 'A')
+    def _outer_gen(self, plan):
+        "Rewrite 'set' messages relative to current position"
+        p = super()._outer_gen(plan)
+        yield from put_back(relative_set(p, [self.motor]), [self.motor])
 
 
 class AbsScanPlan(AbsListScanPlan):
@@ -408,14 +337,14 @@ class _AdaptivePlanBase(PlanBase):
                'min_step', 'max_step', 'target_delta', 'backstep']
     THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
 
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors, 'motors': [self.motor]}
+    def get_metadata(self):
+        md = super().get_metadata()
+        md.update({'detectors': [det.name for det in self.detectors],
+                   'motors': [self.motor.name]})
+        return md
 
-    def _gen(self):
-        start = self.start + self._init_pos
-        stop = self.stop + self._init_pos
-        next_pos = start
+    def _main_gen(self):
+        next_pos = self.start
         step = (self.max_step - self.min_step) / 2
 
         past_I = None
@@ -424,7 +353,7 @@ class _AdaptivePlanBase(PlanBase):
         motor = self.motor
         dets = separate_devices(self.detectors)
         target_field = self.target_field
-        while next_pos < stop:
+        while next_pos < self.stop:
             yield Msg('checkpoint')
             yield Msg('set', motor, next_pos)
             yield Msg('wait', None, 'A')
@@ -488,10 +417,7 @@ class AdaptiveAbsScanPlan(_AdaptivePlanBase):
     backstep : bool
         whether backward steps are allowed -- this is concern with some motors
     """
-    @property
-    def _init_pos(self):
-        # facilitate code-sharing with AdaptiveDeltaScanPlan
-        return 0
+    pass
 
 
 class AdaptiveDeltaScanPlan(_AdaptivePlanBase):
@@ -519,29 +445,10 @@ class AdaptiveDeltaScanPlan(_AdaptivePlanBase):
     backstep : bool
         whether backward steps are allowed -- this is concern with some motors
     """
-    @property
-    def init_pos(self):
-        "None unless a scan is running"
-        return getattr(self, '_init_pos', None)
-
-    def _pre(self):
-        self._init_pos = scalar_heuristic(self.motor)
-        self._md['init_pos'] = self.init_pos
-        yield from super()._pre()
-
-    def _post(self):
-        yield from super()._post()
-        try:
-            init_pos = self.init_pos
-            delattr(self, '_init_pos')
-            del self._md['init_pos']
-        except AttributeError:
-            raise RuntimeError("Trying to run _post code for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        # Return the motor to its original position.
-        yield Msg('set', self.motor, init_pos, block_group='A')
-        yield Msg('wait', None, 'A')
+    def _outer_gen(self, plan):
+        "Rewrite 'set' messages relative to current position"
+        p = super()._outer_gen(plan)
+        yield from put_back(relative_set(p, [self.motor]), [self.motor])
 
 
 class Center(PlanBase):
@@ -554,8 +461,7 @@ class Center(PlanBase):
                'initial_width', 'tolerance', 'output_mutable']
 
     def __init__(self, detectors, target_field, motor, initial_center,
-                 initial_width, tolerance=0.1, output_mutable=None,
-                 pre_run=None, post_run=None):
+                 initial_width, tolerance=0.1, output_mutable=None):
         """
         Attempts to find the center of a peak by moving a motor.
 
@@ -600,15 +506,13 @@ class Center(PlanBase):
         self.initial_width = initial_width
         self.output_mutable = output_mutable
         self.tolerance = tolerance
-        self.pre_run = pre_run
-        self.post_run = post_run
-        self._md = {}
-        self.configuration = {}
         self.flyers = []
 
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors, 'motors': [self.motor]}
+    def get_metadata(self):
+        md = super().get_metadata()
+        md.update({'detectors': [det.name for det in self.detectors],
+                   'motors': [self.motor.name]})
+        return md
 
     @property
     def min_cen(self):
@@ -618,7 +522,7 @@ class Center(PlanBase):
     def max_cen(self):
         return self.initial_center + self.RANGE_LIMIT * self.initial_width
 
-    def _gen(self):
+    def _main_gen(self):
         # We checked in the __init__ that this import works.
         from lmfit.models import GaussianModel, LinearModel
         # For thread safety (paranoia) make copies of stuff
@@ -695,11 +599,13 @@ class PlanND(PlanBase):
     def motors(self):
         return self.cycler.keys
 
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors, 'motors': self.motors}
+    def get_metadata(self):
+        md = super().get_metadata()
+        md.update({'detectors': [det.name for det in self.detectors],
+                   'motors': [motor.name for motor in self.motors]})
+        return md
 
-    def _gen(self):
+    def _main_gen(self):
         self._last_set_point = {m: None for m in self.motors}
         dets = separate_devices(self.detectors)
         for step in list(self.cycler):
@@ -727,13 +633,19 @@ class _OuterProductPlanBase(PlanND):
     _fields = ['detectors', 'args']
     _derived_fields = ['motors', 'shape', 'num', 'extents', 'snaking']
 
+    def get_metadata(self):
+        md = super().get_metadata()
+        md.update({'shape': self.shape, 'extents': self.extents,
+                   'snaking': self.snaking, 'num': len(self.cycler)})
+        return md
+
     # Overriding PlanND is the only way to do this; we cannot build the cycler
     # until we measure the initial positions at the beginning of the run.
     @property
     def motors(self):
         return self._motors
 
-    def __init__(self, detectors, *args, pre_run=None, post_run=None):
+    def __init__(self, detectors, *args):
         args = list(args)
         # The first (slowest) axis is never "snaked." Insert False to
         # make it easy to iterate over the chunks or args..
@@ -754,11 +666,6 @@ class _OuterProductPlanBase(PlanND):
         self.shape = tuple(shape)
         self.extents = tuple(extent)
         self.snaking = tuple(snaking)
-        self.pre_run = pre_run
-        self.post_run = post_run
-        self._md = {'shape': self.shape, 'extents': self.extents,
-                    'snaking': self.snaking, 'num': self.num}
-        self.configuration = {}
         self.flyers = []
 
     @property
@@ -767,21 +674,11 @@ class _OuterProductPlanBase(PlanND):
         cyclers = []
         snake_booleans = []
         for motor, start, stop, num, snake in chunked(self.args, 5):
-            init_pos = self._init_pos[motor]
-            steps = init_pos + np.linspace(start, stop, num=num, endpoint=True)
+            steps = np.linspace(start, stop, num=num, endpoint=True)
             c = cycler(motor, steps)
             cyclers.append(c)
             snake_booleans.append(snake)
         return snake_cyclers(cyclers, snake_booleans)
-
-    @property
-    def num(self):
-        # We could do len(cycler) but we dont know init_pos yet,
-        # so the cycler cannot be computed.
-        nums = [num for motor, start, stop, num, snake
-                in chunked(self.args, 5)]
-        total_steps = functools.reduce(operator.mul, nums)
-        return total_steps
 
     @property
     def args(self):
@@ -799,7 +696,12 @@ class _InnerProductPlanBase(PlanND):
     def motors(self):
         return self._motors
 
-    def __init__(self, detectors, num, *args, pre_run=None, post_run=None):
+    def get_metadata(self):
+        md = super().get_metadata()
+        md.update({'extents': self.extents})
+        return md
+
+    def __init__(self, detectors, num, *args):
         if len(args) % 3 != 0:
             raise ValueError("wrong number of positional arguments")
         self.detectors = detectors
@@ -811,9 +713,6 @@ class _InnerProductPlanBase(PlanND):
             self._motors.append(motor)
             extents.append([start, stop])
         self.extents = tuple(extents)
-        self.pre_run = pre_run
-        self.post_run = post_run
-        self._md = {'extents': self.extents}
         self.configuration = {}
         self.flyers = []
 
@@ -827,9 +726,7 @@ class _InnerProductPlanBase(PlanND):
         # Build a Cycler for PlanND.
         cyclers = []
         for motor, start, stop, in chunked(self.args, 3):
-            init_pos = self._init_pos[motor]
-            steps = init_pos + np.linspace(start, stop, num=self.num,
-                                           endpoint=True)
+            steps = np.linspace(start, stop, num=self.num, endpoint=True)
             c = cycler(motor, steps)
             cyclers.append(c)
         return functools.reduce(operator.add, cyclers)
@@ -849,11 +746,7 @@ class InnerProductAbsScanPlan(_InnerProductPlanBase):
         patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
         Motors can be any 'setable' object (motor, temp controller, etc.)
     """
-
-    @property
-    def _init_pos(self):
-        "Makes code re-use between Delta and Abs varieties easier"
-        return defaultdict(lambda: 0)
+    pass
 
 
 class InnerProductDeltaScanPlan(_InnerProductPlanBase):
@@ -871,34 +764,10 @@ class InnerProductDeltaScanPlan(_InnerProductPlanBase):
         Motors can be any 'setable' object (motor, temp controller, etc.)
     """
 
-    @property
-    def init_pos(self):
-        "None unless a scan is running"
-        return getattr(self, '_init_pos', None)
-
-    def _pre(self):
-        "Get current position for each motor."
-        self._init_pos = {}
-        self._md['init_pos'] = {}
-        for motor, start, stop, in chunked(self.args, 3):
-            self._init_pos[motor] = scalar_heuristic(motor)
-            self._md['init_pos'][motor.name] = self.init_pos[motor]
-        yield from super()._pre()
-
-    def _post(self):
-        yield from super()._post()
-        try:
-            init_pos = self.init_pos
-            delattr(self, '_init_pos')
-            del self._md['init_pos']
-        except AttributeError:
-            raise RuntimeError("Trying to run _post code for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        # Return the motors to their original positions.
-        for motor, start, stop, in chunked(self.args, 3):
-            yield Msg('set', motor, init_pos[motor], block_group='A')
-        yield Msg('wait', None, 'A')
+    def _outer_gen(self, plan):
+        "Rewrite 'set' messages relative to current position"
+        p = super()._outer_gen(plan)
+        yield from put_back(relative_set(p, self.motors), self.motors)
 
 
 class OuterProductAbsScanPlan(_OuterProductPlanBase):
@@ -918,11 +787,7 @@ class OuterProductAbsScanPlan(_OuterProductPlanBase):
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     """
-
-    @property
-    def _init_pos(self):
-        "Makes code re-use between Delta and Abs varieties easier"
-        return defaultdict(lambda: 0)
+    pass
 
 
 class OuterProductDeltaScanPlan(_OuterProductPlanBase):
@@ -942,35 +807,10 @@ class OuterProductDeltaScanPlan(_OuterProductPlanBase):
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     """
-
-    @property
-    def init_pos(self):
-        "None unless a scan is running"
-        return getattr(self, '_init_pos', None)
-
-    def _pre(self):
-        "Get current position for each motor."
-        self._init_pos = {}
-        self._md['init_pos'] = {}
-        for motor, start, stop, num, snake in chunked(self.args, 5):
-            self._init_pos[motor] = scalar_heuristic(motor)
-            self._md['init_pos'][motor.name] = self.init_pos[motor]
-        yield from super()._pre()
-
-    def _post(self):
-        # Return the motor to its original position.
-        yield from super()._post()
-        try:
-            init_pos = self.init_pos
-            delattr(self, '_init_pos')
-            del self._md['init_pos']
-        except AttributeError:
-            raise RuntimeError("Trying to run _post code for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        for motor, start, stop, num, snake in chunked(self.args, 5):
-            yield Msg('set', motor, init_pos[motor], block_group='A')
-        yield Msg('wait', None, 'A')
+    def _outer_gen(self, plan):
+        "Rewrite 'set' messages relative to current position"
+        p = super()._outer_gen(plan)
+        yield from put_back(relative_set(p, self.motors), self.motors)
 
 
 class Tweak(PlanBase):
@@ -987,11 +827,13 @@ class Tweak(PlanBase):
     _fields = ['detector', 'target_field', 'motor', 'step']
     prompt_str = '{0}, {1:.3}, {2}, ({3}) '
 
-    @property
-    def _objects(self):
-        return {'detectors': [self.detector], 'motors': [self.motor]}
+    def get_metadata(self):
+        md = super().get_metadata()
+        md.update({'detectors': [self.detector.name],
+                   'motors': [self.motor.name]})
+        return md
 
-    def _gen(self):
+    def _main_gen(self):
         d = self.detector
         target_field = self.target_field
         motor = self.motor
