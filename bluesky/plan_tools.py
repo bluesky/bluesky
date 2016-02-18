@@ -1,10 +1,14 @@
 import uuid
 from functools import wraps
+from itertools import count
+
 import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
 
 from bluesky import Msg
+from bluesky.utils import normalize_subs_input, scalar_heuristic
+from bluesky.callbacks import LiveTable, LivePlot
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None):
@@ -102,6 +106,7 @@ def run_wrapper(plan, md=None, **kwargs):
         ret = yield from plan
     except:
         yield Msg('close_run', None, exit_status='error')
+        raise
     else:
         yield Msg('close_run', None, exit_status='success')
     return ret
@@ -121,7 +126,32 @@ def event_wrapper(plan):
     return ret
 
 
-def wrap_with_decorator(wrapper):
+def stage_wrapper(plan, dets):
+    dets = list(dets)
+    yield from broadcast_msg('stage', dets)
+    try:
+        ret = yield from plan
+    finally:
+        yield from broadcast_msg('unstage', dets[::-1])
+    return ret
+
+
+def subscription_wrapper(plan, subs):
+    tokens = set()
+    subs = normalize_subs_input(subs)
+    for name, funcs in subs.items():
+        for func in funcs:
+            token = yield Msg('subscribe', None, name, func)
+            tokens.add(token)
+    try:
+        ret = yield from plan
+    finally:
+        for token in tokens:
+            yield Msg('unsubscribe', None, token)
+    return ret
+
+
+def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
     """Paramaterized decorator for wrapping generators with wrappers
 
     The wrapped function must be a generator and wrapper wrap an
@@ -130,7 +160,8 @@ def wrap_with_decorator(wrapper):
     def outer(func):
         @wraps(func)
         def inner(*args, **kwargs):
-            ret = yield from wrapper(func(*args, **kwargs))
+            ret = yield from wrapper(func(*args, **kwargs),
+                                     *outer_args, **outer_kwargs)
             return ret
         return inner
     return outer
@@ -149,11 +180,57 @@ def trigger_and_read(det_list):
         yield Msg('read', det)
 
 
+def broadcast_msg(msg, objs):
+    return_vals = []
+    for o in objs:
+        ret = yield Msg(msg, o)
+        return_vals.append(ret)
+
+    return return_vals
+
+
+def repeater(n, gen_func, *args, **kwargs):
+    it = range
+    if n is None:
+        n = 0
+        it = count
+
+    for j in it(n):
+        yield from gen_func(*args, **kwargs)
+
+
+def caching_repeater(n, plan):
+    lst_plan = list(plan)
+    for j in range(n):
+        yield from (m for m in lst_plan)
+
+
 @wrap_with_decorator(run_wrapper)
-def ct(dets, n):
+def ct(dets, n, subs=None):
     """Count
 
     Simple replacement for ct.
     """
-    for j in range(n):
-        yield from trigger_and_read(dets)
+    dets = list(dets)
+    if subs is None:
+        subs = {'all': [LiveTable(dets)]}
+    if n is None:
+        subs['all'].append(LivePlot(scalar_heuristic(dets[0])))
+
+    plan = stage_wrapper(repeater(n, trigger_and_read, dets),
+                         dets)
+    plan_with_subs = subscription_wrapper(plan, subs)
+
+    ret = yield from plan_with_subs
+    return ret
+
+
+def bind_to_run_engine(RE, gen_func, name):
+
+    def inner(*args, md=None, **kwargs):
+        if md is None:
+            md = {}
+        plan = gen_func(*args, **kwargs)
+        return RE(plan, **md)
+
+    return inner
