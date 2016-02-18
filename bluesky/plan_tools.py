@@ -90,6 +90,59 @@ def print_summary(plan):
             read_cache = []
 
 
+def subscription_wrapper(plan, subs):
+    """
+    Subscribe to callbacks, yield from plan, then unsubscribe.
+
+    Parameters
+    ----------
+    plan : iterable
+    subs : callable, list of callables, or dict of lists of callables
+         Documents of each type are routed to a list of functions.
+         Input is normalized to a dict of lists of functions, like so:
+
+         None -> {'all': [], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         func -> {'all': [func], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         [f1, f2] -> {'all': [f1, f2], 'start': [], 'stop': [], 'event': [],
+                      'descriptor': []}
+
+         {'event': [func]} ->  {'all': [], 'start': [], 'stop': [],
+                                'event': [func], 'descriptor': []}
+
+         Signature of functions must confirm to `f(name, doc)` where
+         name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
+         doc is a dictionary.
+    """
+    tokens = set()
+    subs = normalize_subs_input(subs)
+    for name, funcs in subs.items():
+        for func in funcs:
+            token = yield Msg('subscribe', None, name, func)
+            tokens.add(token)
+    try:
+        ret = yield from plan
+    finally:
+        # The RunEngine might never process these if the execution fails,
+        # but it keeps its own cache of tokens and will try to remove them
+        # itself if this plan fails to do so.
+        for token in tokens:
+            yield Msg('unsubscribe', None, token)
+
+
+def fly_during(plan, flyers):
+    for flyer in flyers:
+        yield Msg('kickoff', flyer, block_group='_flyers')
+    yield Msg('wait', None, '_flyers')
+    yield from plan
+    for flyer in flyers:
+        yield Msg('collect', flyer, block_group='_flyers')
+    yield Msg('wait', None, '_flyers')
+
+
 def run_wrapper(plan, md=None, **kwargs):
     """Automatically adds RunStart and RunStop Msgs around a plan
 
@@ -133,21 +186,6 @@ def stage_wrapper(plan, dets):
         ret = yield from plan
     finally:
         yield from broadcast_msg('unstage', dets[::-1])
-    return ret
-
-
-def subscription_wrapper(plan, subs):
-    tokens = set()
-    subs = normalize_subs_input(subs)
-    for name, funcs in subs.items():
-        for func in funcs:
-            token = yield Msg('subscribe', None, name, func)
-            tokens.add(token)
-    try:
-        ret = yield from plan
-    finally:
-        for token in tokens:
-            yield Msg('unsubscribe', None, token)
     return ret
 
 
@@ -205,6 +243,7 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
+@wrap_with_decorator(subscription_wrapper)
 @wrap_with_decorator(run_wrapper)
 def ct(dets, n, subs=None):
     """Count
@@ -214,14 +253,12 @@ def ct(dets, n, subs=None):
     dets = list(dets)
     if subs is None:
         subs = {'all': [LiveTable(dets)]}
-    if n is None:
+    if n != 1:
         subs['all'].append(LivePlot(scalar_heuristic(dets[0])))
 
     plan = stage_wrapper(repeater(n, trigger_and_read, dets),
                          dets)
-    plan_with_subs = subscription_wrapper(plan, subs)
-
-    ret = yield from plan_with_subs
+    ret = yield from plan
     return ret
 
 
