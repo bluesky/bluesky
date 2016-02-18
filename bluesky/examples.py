@@ -21,7 +21,6 @@ class MockSignal:
 
 class Base:
     def __init__(self, name, fields):
-        self._name = name
         self.name = name
         self._fields = fields
         self._cb = None
