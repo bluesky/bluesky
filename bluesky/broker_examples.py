@@ -1,8 +1,9 @@
 import numpy as np
-from .examples import Reader
+from .examples import Reader, motor, motor1, motor2, motor3
 from .run_engine import Msg
 from filestore.file_writers import save_ndarray
 import tempfile
+import time as ttime
 
 
 class SynGauss2D(Reader):
