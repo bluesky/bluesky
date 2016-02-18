@@ -28,7 +28,6 @@ requirements:
     - traitlets
     - historydict
     - jinja2
-    - tifffile
 
 test:
   requires:
