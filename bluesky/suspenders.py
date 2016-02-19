@@ -37,9 +37,27 @@ class PVSuspenderBase(metaclass=ABCMeta):
         self._ev = None
         self._sleep = sleep
         self._lock = Lock()
-
         self._pv = epics.PV(pv_name, auto_monitor=True)
-        self._pv.add_callback(self)
+        self._indx = None
+        self.install()
+
+    def install(self):
+        '''Install callback on PV
+
+        This (re)installs the required callbacks at the pyepics level
+        '''
+        if self._indx is not None:
+            self.remove()
+        self._indx = self._pv.add_callback(self)
+
+    def remove(self):
+        '''Disable the suspender
+
+        Removes the callback at the pyepics level
+        '''
+        if self._indx is not None:
+            self._pv.remove_callback(self._indx)
+            self._indx = None
 
     @abstractmethod
     def _should_suspend(self, value):
