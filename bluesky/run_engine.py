@@ -214,6 +214,7 @@ class RunEngine:
         self._deferred_pause_requested = False  # pause at next 'checkpoint'
         self._sigint_handler = None  # intercepts Ctrl+C
         self._exception = None  # stored and then raised in the _run loop
+        self._interrupted = False  # True if paused, aborted, or failed
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
         self._staged = set()  # objects staged, not yet unstaged
@@ -325,6 +326,7 @@ class RunEngine:
         self._reason = ''
         self._task = None
         self._plan = None
+        self._interrupted = False
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -426,6 +428,7 @@ class RunEngine:
             self._pause_requests[name] = callback
         # Now to the right pause state if we can.
         if not defer:
+            self._interrupted = True
             if self.state.can_pause:
                 print("Pausing...")
                 self.state = 'paused'
@@ -492,7 +495,8 @@ class RunEngine:
     _unsubscribe_lossless = unsubscribe_lossless
     _subscribe_lossless = subscribe_lossless
 
-    def __call__(self, plan, subs=None, **metadata_kw):
+    def __call__(self, plan, subs=None, *, raise_if_interrupted=False,
+                 **metadata_kw):
         """Run the scan defined by ``plan``
 
         Any keyword arguments other than those listed below will be interpreted
@@ -511,6 +515,12 @@ class RunEngine:
             - a dictionary, mapping specific subscriptions to callables or
               lists of callables; valid keys are {'all', 'start', 'stop',
               'event', 'descriptor'}
+        raise_if_interrupted : boolean
+            If the RunEngine is called from inside a script or a function, it
+            can be useful to make it raise an exception to halt further
+            execution of the script after a pause or a stop. If True, these
+            interruptions (that would normally not raise any exception) will
+            raise RunEngineInterrupted. False by default.
 
         Returns
         -------
@@ -562,6 +572,8 @@ class RunEngine:
                 exc = self._task.exception()
                 if exc is not None:
                     raise exc
+            if raise_if_interrupted and self._interrupted:
+                raise RunEngineInterrupted("RunEngine was interrupted.")
 
         return self._run_start_uids
 
@@ -600,6 +612,7 @@ class RunEngine:
         if outstanding_requests:
             return outstanding_requests
 
+        self._interrupted = False
         self._genstack.append((msg for msg in list(self._msg_cache)))
         self._new_gen = True
         self._msg_cache = deque()
@@ -648,6 +661,7 @@ class RunEngine:
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Aborting....")
+        self._interrupted = True
         self._reason = reason
         self._exception = RequestAbort()
         self._task.cancel()
@@ -658,6 +672,7 @@ class RunEngine:
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Stopping...")
+        self._interrupted = True
         self._exception = RequestStop()
         if self.state == 'paused':
             self._resume_event_loop()
@@ -773,6 +788,7 @@ class RunEngine:
         if self.state.is_running:
             # Check for panic.
             if self._panic:
+                self._interrupted = True
                 self._exit_status = 'fail'
                 exc = PanicError("Something told the Run Engine to "
                                  "panic after the run began. "
@@ -1125,6 +1141,7 @@ class RunEngine:
             self._teed_sequence_counters[key] = counter_copy2
 
         if self._deferred_pause_requested:
+            self._interrupted = True
             self.state = 'paused'
             loop.stop()
 
@@ -1337,7 +1354,7 @@ class PanicError(Exception):
     pass
 
 
-class RunInterrupt(KeyboardInterrupt):
+class RunEngineInterrupted(Exception):
     pass
 
 

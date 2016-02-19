@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 from .run_engine import Msg
 from .run_engine import RunEngine
 from .run_engine import PanicError
-from .run_engine import RunInterrupt
+from .run_engine import RunEngineInterrupted
 from .run_engine import IllegalMessageSequence
 
 from .plans import PlanBase
