@@ -592,11 +592,6 @@ class RunEngine:
             raise PanicError("Run Engine is panicked. If are you sure all is "
                              "well, call the all_is_well() method.")
 
-        # This is needed to 'cancel' an open bundling (e.g. create) if
-        # the pause happens after a 'checkpoint', after a 'create', but before
-        # the paired 'save'.
-        self._bundling = False
-
         # Check that all pause requests have been released.
         outstanding_requests = []
         for name, func in list(self._pause_requests.items()):
@@ -609,13 +604,21 @@ class RunEngine:
             return outstanding_requests
 
         self._interrupted = False
+        self._rewind()
+        self._resume_event_loop()
+        return self._run_start_uids
+
+    def _rewind(self):
+        "Clean up in preparation for resuming from a pause or suspension."
         self._genstack.append((msg for msg in list(self._msg_cache)))
         self._new_gen = True
         self._msg_cache = deque()
         self._sequence_counters.clear()
         self._sequence_counters.update(self._teed_sequence_counters)
-        self._resume_event_loop()
-        return self._run_start_uids
+        # This is needed to 'cancel' an open bundling (e.g. create) if
+        # the pause happens after a 'checkpoint', after a 'create', but before
+        # the paired 'save'.
+        self._bundling = False
 
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
@@ -643,12 +646,8 @@ class RunEngine:
         else:
             print("Suspending....To get prompt hit Ctrl-C to pause the scan")
             wait_msg = Msg('wait_for', [fut, ])
-            new_msg_lst = [wait_msg, ] + list(self._msg_cache)
-            self._sequence_counters.clear()
-            self._sequence_counters.update(self._teed_sequence_counters)
-            self._msg_cache = deque()
-            self._genstack.append((msg for msg in new_msg_lst))
-            self._new_gen = True
+            self._msg_cache.insert(0, wait_msg)
+            self._rewind()
 
     def abort(self, reason=''):
         """
