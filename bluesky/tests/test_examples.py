@@ -6,7 +6,8 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               conditional_break, SynGauss
                               )
 from bluesky.callbacks import LivePlot
-from bluesky import RunEngine, Msg, PanicError, IllegalMessageSequence
+from bluesky import (RunEngine, Msg, PanicError, IllegalMessageSequence,
+                     RunEngineInterrupted)
 from bluesky.tests.utils import setup_test_run_engine
 import os
 import signal
@@ -562,3 +563,9 @@ def test_clear_checkpoint():
 
     RE(silly_plan)
     assert RE.state == 'idle'
+
+
+def test_interruption_exception():
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg('checkpoint'), Msg('pause')], raise_if_interrupted=True)
+    RE.stop()
