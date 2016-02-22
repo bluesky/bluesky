@@ -142,6 +142,7 @@ class LivePlot(CallbackBase):
         self.lines = []
         self.legend = None
         self.legend_title = " :: ".join([name for name in self.legend_keys])
+        self.got_event_with_target_y = False
 
     def start(self, doc):
         # The doc is not used; we just use the singal that a new run began.
@@ -151,6 +152,7 @@ class LivePlot(CallbackBase):
         self.current_line, = self.ax.plot([], [], label=label, **self.kwargs)
         self.lines.append(self.current_line)
         self.legend = self.ax.legend(loc=0, title=self.legend_title).draggable()
+        self.got_event_with_target_y = False
 
     def event(self, doc):
         "Update line with data from this Event."
@@ -165,6 +167,7 @@ class LivePlot(CallbackBase):
             else:
                 new_x = doc['seq_num']
             new_y = doc['data'][self.y]
+            self.got_event_with_target_y = True
         except KeyError:
             # wrong event stream, skip it
             return
@@ -176,6 +179,9 @@ class LivePlot(CallbackBase):
         ax.autoscale_view(tight=True)
         ax.figure.canvas.draw()
 
+    def stop(self, doc):
+        if not self.got_event_with_target_y:
+            print('LivePlot did not get an event with the target key: %s' % self.y)
 
 def format_num(x, max_len=11, pre=5, post=5):
     if (abs(x) > 10**pre or abs(x) < 10**-post) and x != 0:
