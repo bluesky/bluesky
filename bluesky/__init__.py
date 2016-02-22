@@ -6,6 +6,7 @@ from .run_engine import RunEngine
 from .run_engine import PanicError
 from .run_engine import RunEngineInterrupted
 from .run_engine import IllegalMessageSequence
+from .run_engine import FailedStatus
 
 from .plans import PlanBase
 from .plans import Count

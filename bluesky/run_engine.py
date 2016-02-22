@@ -1006,6 +1006,9 @@ class RunEngine:
             p_event = asyncio.Event()
 
             def done_callback():
+                if not ret.success:
+                    return loop.call_soon_threadsafe(self._failed_ophyd_status,
+                                                     ret)
                 loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
@@ -1077,9 +1080,15 @@ class RunEngine:
             p_event = asyncio.Event()
 
             def done_callback():
+
+                self.log.debug("The object %r reports set is done "
+                               "with status %r",
+                               msg.obj, ret.success)
+
+                if not ret.success:
+                    return loop.call_soon_threadsafe(self._failed_ophyd_status,
+                                                     ret)
                 loop.call_soon_threadsafe(p_event.set)
-                self.log.debug("The object %r reports set is done."
-                                  % msg.obj)
 
             ret.finished_cb = done_callback
             self._block_groups[block_group].add(p_event.wait())
@@ -1095,9 +1104,15 @@ class RunEngine:
             p_event = asyncio.Event()
 
             def done_callback():
+                self.log.debug("The object %r reports trigger is "
+                               "done with status %r.",
+                               msg.obj, ret.success)
+
+                if not ret.success:
+                    return loop.call_soon_threadsafe(self._failed_ophyd_status,
+                                                     ret)
+
                 loop.call_soon_threadsafe(p_event.set)
-                self.log.debug("The object %r reports trigger is done."
-                                  % msg.obj)
 
             ret.finished_cb = done_callback
             self._block_groups[block_group].add(p_event.wait())
@@ -1112,6 +1127,12 @@ class RunEngine:
         objs = list(self._block_groups.pop(group, []))
         if objs:
             yield from self._wait_for(Msg('wait_for', objs))
+
+    def _failed_ophyd_status(self, ret):
+        '''
+        '''
+        self._exception = FailedStatus(ret)
+        # self._task.cancel()
 
     @asyncio.coroutine
     def _sleep(self, msg):
@@ -1359,6 +1380,10 @@ class IllegalMessageSequence(Exception):
 
 class FailedPause(Exception):
     pass
+
+
+class FailedStatus(Exception):
+    'Exception to be raised if a SatusBase object reports done but failed'
 
 
 PAUSE_MSG = """

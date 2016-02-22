@@ -7,7 +7,7 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               )
 from bluesky.callbacks import LivePlot
 from bluesky import (RunEngine, Msg, PanicError, IllegalMessageSequence,
-                     RunEngineInterrupted)
+                     RunEngineInterrupted, FailedStatus)
 from bluesky.tests.utils import setup_test_run_engine
 import os
 import signal
@@ -59,7 +59,8 @@ def test_conditional_break():
 def test_sleepy():
     run(sleepy, det, motor)
 
-def test_wati_one():
+
+def test_wait_one():
     run(wait_one, det, motor)
 
 
@@ -544,7 +545,10 @@ def test_bad_checkpoint():
 
 
 def test_clear_checkpoint():
-    bad_plan = [Msg('checkpoint'), Msg('clear_checkpoint'), Msg('pause'), 'lies']
+    bad_plan = [Msg('checkpoint'),
+                Msg('clear_checkpoint'),
+                Msg('pause'),
+                'lies']
     silly_plan = [Msg('pause'), 'lies']
     good_plan = [Msg('checkpoint'), Msg('pause')]
     fine_plan = [Msg('clear_checkpoint')]
@@ -569,3 +573,24 @@ def test_interruption_exception():
     with pytest.raises(RunEngineInterrupted):
         RE([Msg('checkpoint'), Msg('pause')], raise_if_interrupted=True)
     RE.stop()
+
+
+def test_failed_status_object():
+    try:
+        from ophyd import StatusBase
+    except ImportError:
+        pytest.xfail('No ophyd')
+
+    class failer:
+        def set(self, inp):
+            st = StatusBase()
+            st._finished(success=False)
+            return st
+
+        def stop(self):
+            pass
+
+    ff = failer()
+    with pytest.raises(FailedStatus):
+        RE([Msg('set', ff, None, block_group='a'),
+            Msg('wait', None, 'a')])

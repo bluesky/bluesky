@@ -31,6 +31,7 @@ class Base:
                 # Flyers pass objects in as fields, not names.
                 # hotfix 2016 -- revisit this!
                 setattr(self, field, MockSignal(field))
+        self.success = True
 
     def describe(self):
         return {k: {'source': self.name, 'dtype': 'number', 'shape': None}
@@ -261,6 +262,7 @@ class MockFlyer:
         self._data = deque()
         self._cb = None
         self.ready = False
+        self.success = True
 
     @property
     def done(self):
@@ -273,6 +275,7 @@ class MockFlyer:
         return [dd, ]
 
     def kickoff(self, start, stop, steps):
+        self.success = True
         self.ready = False
         self._data = deque()
         self._steps = np.linspace(start, stop, steps)
