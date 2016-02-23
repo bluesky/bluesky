@@ -118,7 +118,6 @@ class LivePlot(CallbackBase):
             # overplot (or, if no fig exists, one is made)
             fig = plt.gcf()
 
-        ax = fig.gca()
 
         if legend_keys is None:
             legend_keys = []
@@ -129,7 +128,7 @@ class LivePlot(CallbackBase):
             self.x = None
         self.y, *others = _get_obj_fields([y])
         self.fig = fig
-        self.ax = ax
+        self.ax = fig.gca()
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
         if xlim is not None:
@@ -153,8 +152,6 @@ class LivePlot(CallbackBase):
 
     def event(self, doc):
         "Update line with data from this Event."
-        # Do repeated 'self' lookups once, for perf.
-        ax = self.ax
         try:
             if self.x is not None:
                 # this try/except block is needed because multiple event streams
@@ -171,9 +168,20 @@ class LivePlot(CallbackBase):
         self.x_data.append(new_x)
         self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
-        ax.relim(visible_only=True)
-        ax.autoscale_view(tight=True)
-        ax.figure.canvas.draw()
+        self.ax.relim(visible_only=True)
+        self.ax.autoscale_view(tight=True)
+        self.ax.figure.canvas.draw_idle()
+
+    def stop(self, doc):
+        if not self.x_data:
+            print('LivePlot did not get any data that corresponds to the '
+                  'x axis. {}'.format(self.x))
+        if not self.y_data:
+            print('LivePlot did not get any data that corresponds to the '
+                    'y axis. {}'.format(self.y))
+        if len(self.y_data) != len(self.x_data):
+            print('LivePlot has a different number of elements for x ({}) and'
+                  'y ({})'.format(len(self.x_data), len(self.y_data)))
 
 
 def format_num(x, max_len=11, pre=5, post=5):
