@@ -1129,10 +1129,20 @@ class RunEngine:
             yield from self._wait_for(Msg('wait_for', objs))
 
     def _failed_status(self, ret):
-        '''
-        '''
+        """
+        This is called a status object finishes but has failed.
+
+        This will interrupt the run the next time the _run coroutine
+        gets control of the event loop. The argument `ret` is included
+        in the error message.
+
+        Parameters
+        ----------
+        ret : StatusBase
+            a status object that has failed
+        """
         self._exception = FailedStatus(ret)
-        # self._task.cancel()
+        # self._task.cancel()  # TODO -- should we kill ASAP?
 
     @asyncio.coroutine
     def _sleep(self, msg):
