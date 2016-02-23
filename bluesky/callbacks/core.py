@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from datetime import datetime
 import numpy as np
-import ast
 import os
 import logging
 logger = logging.getLogger(__name__)
