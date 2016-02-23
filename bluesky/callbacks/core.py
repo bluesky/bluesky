@@ -119,7 +119,6 @@ class LivePlot(CallbackBase):
             # overplot (or, if no fig exists, one is made)
             fig = plt.gcf()
 
-        ax = fig.gca()
 
         if legend_keys is None:
             legend_keys = []
@@ -130,7 +129,7 @@ class LivePlot(CallbackBase):
             self.x = None
         self.y, *others = _get_obj_fields([y])
         self.fig = fig
-        self.ax = ax
+        self.ax = fig.gca()
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
         if xlim is not None:
