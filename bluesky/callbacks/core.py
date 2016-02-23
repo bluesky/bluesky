@@ -174,15 +174,15 @@ class LivePlot(CallbackBase):
         self.ax.figure.canvas.draw_idle()
 
     def stop(self, doc):
-        if not self.new_x:
+        if not self.x_data:
             print('LivePlot did not get any data that corresponds to the '
                   'x axis. {}'.format(self.x))
-        if not self.new_y:
+        if not self.y_data:
             print('LivePlot did not get any data that corresponds to the '
                     'y axis. {}'.format(self.y))
-        if len(self.new_y) != len(self.new_x):
+        if len(self.y_data) != len(self.x_data):
             print('LivePlot has a different number of elements for x ({}) and'
-                  'y ({})'.format(len(self.new_x), len(self.new_y)))
+                  'y ({})'.format(len(self.x_data), len(self.y_data)))
 
 
 def format_num(x, max_len=11, pre=5, post=5):

@@ -168,6 +168,7 @@ def test_stateful_subscription():
 
 
 def test_live_plotter():
+    RE.ignore_callback_exceptions = False
     try:
         import matplotlib.pyplot as plt
         del plt
@@ -183,6 +184,7 @@ def test_live_plotter():
     assert xlen > 0
     ylen = len(my_plotter.y_data)
     assert xlen == ylen
+    RE.ignore_callback_exceptions = True
 
 
 def test_sample_md_dict_requirement():
