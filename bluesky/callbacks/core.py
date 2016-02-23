@@ -180,7 +180,7 @@ class LivePlot(CallbackBase):
         if not self.new_x:
             print('LivePlot did not get any data that corresponds to the '
                   'x axis. {}'.format(self.x))
-        if not self.new_x:
+        if not self.new_y:
             print('LivePlot did not get any data that corresponds to the '
                     'y axis. {}'.format(self.y))
         if len(self.new_y) != len(self.new_x):
