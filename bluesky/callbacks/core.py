@@ -574,6 +574,7 @@ _SPEC_START_TEMPLATE = env.from_string("""
 #T {{ acq_time }} (Seconds)
 #P0 {{ positioner_positions | join(' ')}}""")
 
+# It is critical that the spacing on the #L line remain exactly like this!
 _SPEC_DESCRIPTOR_TEMPLATE = env.from_string("""
 #N {{ length }}
 #L {{ motor_name }}    Epoch  Seconds  {{ data_keys | join('  ') }}\n""")
@@ -585,7 +586,6 @@ class LiveSpecFile(CallbackBase):
     """Callback to export scalar values to a spec file for viewing
 
     Expect:
-        `
     1. a descriptor named 'baseline'
     2. an event for that descriptor
     3. a descriptor named 'main'
@@ -691,13 +691,11 @@ class LiveSpecFile(CallbackBase):
         """Write the header for the actual scan data"""
         # List all scalar fields, excluding the motor (x variable).
         self._read_fields = sorted([k for k, v in doc['data_keys'].items()
-                                    if (v['object_name'] != self._motor
-                                        and not v['shape'])])
+                                    if k != self._motor and not v['shape']])
+        # Remove the motor key. It should only be in the list once!
         content = dict(motor_name=self._motor,
-                       acq_time=self._acq_time,
-                       unix_time=self._unix_time,
                        length=3 + len(self._read_fields),
-                       data_keys=doc['data_keys'].keys())
+                       data_keys=self._read_fields)
         with open(self.specpath, 'a') as f:
             f.write(_SPEC_START_TEMPLATE.render(self._start_content))
             f.write(_SPEC_DESCRIPTOR_TEMPLATE.render(content))
