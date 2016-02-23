@@ -1007,7 +1007,7 @@ class RunEngine:
 
             def done_callback():
                 if not ret.success:
-                    return loop.call_soon_threadsafe(self._failed_ophyd_status,
+                    return loop.call_soon_threadsafe(self._failed_status,
                                                      ret)
                 loop.call_soon_threadsafe(p_event.set)
 
@@ -1086,7 +1086,7 @@ class RunEngine:
                                msg.obj, ret.success)
 
                 if not ret.success:
-                    return loop.call_soon_threadsafe(self._failed_ophyd_status,
+                    return loop.call_soon_threadsafe(self._failed_status,
                                                      ret)
                 loop.call_soon_threadsafe(p_event.set)
 
@@ -1109,7 +1109,7 @@ class RunEngine:
                                msg.obj, ret.success)
 
                 if not ret.success:
-                    return loop.call_soon_threadsafe(self._failed_ophyd_status,
+                    return loop.call_soon_threadsafe(self._failed_status,
                                                      ret)
 
                 loop.call_soon_threadsafe(p_event.set)
@@ -1128,7 +1128,7 @@ class RunEngine:
         if objs:
             yield from self._wait_for(Msg('wait_for', objs))
 
-    def _failed_ophyd_status(self, ret):
+    def _failed_status(self, ret):
         '''
         '''
         self._exception = FailedStatus(ret)
