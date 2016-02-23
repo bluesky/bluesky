@@ -179,6 +179,10 @@ def test_live_plotter():
     assert RE.state == 'idle'
     RE(stepscan(det, motor), subs={'all': my_plotter})
     assert RE.state == 'idle'
+    xlen = len(my_plotter.x_data)
+    assert xlen > 0
+    ylen = len(my_plotter.y_data)
+    assert xlen == ylen
 
 
 def test_sample_md_dict_requirement():
