@@ -153,8 +153,6 @@ class LivePlot(CallbackBase):
 
     def event(self, doc):
         "Update line with data from this Event."
-        # Do repeated 'self' lookups once, for perf.
-        ax = self.ax
         try:
             if self.x is not None:
                 # this try/except block is needed because multiple event streams
@@ -171,9 +169,9 @@ class LivePlot(CallbackBase):
         self.x_data.append(new_x)
         self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
-        ax.relim(visible_only=True)
-        ax.autoscale_view(tight=True)
-        ax.figure.canvas.draw()
+        self.ax.relim(visible_only=True)
+        self.ax.autoscale_view(tight=True)
+        self.ax.figure.canvas.draw_idle()
 
     def stop(self, doc):
         if not self.new_x:
