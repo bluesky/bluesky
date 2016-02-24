@@ -688,15 +688,10 @@ class LiveSpecFile(CallbackBase):
 
     def descriptor(self, doc):
         """Write the header for the actual scan data"""
-        try:
-            # see if we have a valid motor name
-            doc['data_keys'][self._motor]
-        except KeyError:
+        if self._motor not in list(doc['data_keys'].keys()) + ['Count']:
             # see if we can just append _user_readback to the motor
             self._motor += '_user_readback'
-            try:
-                doc['data_keys'][self._motor]
-            except KeyError:
+            if self._motor not in doc['data_keys']:
                 # give up and use the event sequence number as the motor.
                 # We are still throwing all the motor information into the
                 # spec file, but the user will have to manually choose the
