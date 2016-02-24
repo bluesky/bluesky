@@ -534,13 +534,17 @@ class LiveRaster(CallbackBase):
         self.im = im
         self.ax.set_title('scan {uid} [{sid}]'.format(sid=doc['scan_id'],
                                                       uid=doc['uid'][:6]))
+        self.snaking = doc.get('snaking', (False, False))
+
         cb = self.fig.colorbar(im)
         cb.set_label(self.I)
 
     def event(self, doc):
         seq_num = doc['seq_num'] - 1
-        pos = np.unravel_index(seq_num, self.raster_shape)
-
+        pos = list(np.unravel_index(seq_num, self.raster_shape))
+        if self.snaking[1] and (pos[0] % 2):
+            pos[1] = self.raster_shape[1] - pos[1] - 1
+        pos = tuple(pos)
         self._Idata[pos] = doc['data'][self.I]
         if self.clim is None:
             self.im.set_clim(np.nanmin(self._Idata), np.nanmax(self._Idata))
