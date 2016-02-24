@@ -688,6 +688,25 @@ class LiveSpecFile(CallbackBase):
 
     def descriptor(self, doc):
         """Write the header for the actual scan data"""
+        try:
+            # see if we have a valid motor name
+            doc['data_keys'][self._motor]
+        except KeyError:
+            # see if we can just append _user_readback to the motor
+            self._motor += '_user_readback'
+            try:
+                doc['data_keys'][self._motor]
+            except KeyError:
+                # give up and use the event sequence number as the motor.
+                # We are still throwing all the motor information into the
+                # spec file, but the user will have to manually choose the
+                print("We are unable to guess the motor name. Please set the"
+                      "user_readback value to be the same as the motor name "
+                      "so that we are able to correctly guess your scanning "
+                      "motor. Your 'motor' is actually the sequence number of"
+                      "the event")
+                self._motor = 'seq_num'
+
         # List all scalar fields, excluding the motor (x variable).
         self._read_fields = sorted([k for k, v in doc['data_keys'].items()
                                     if k != self._motor and not v['shape']])
