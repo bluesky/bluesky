@@ -646,7 +646,7 @@ class RunEngine:
         else:
             print("Suspending....To get prompt hit Ctrl-C to pause the scan")
             wait_msg = Msg('wait_for', [fut, ])
-            self._msg_cache.insert(0, wait_msg)
+            self._msg_cache.appendleft(wait_msg)
             self._rewind()
 
     def abort(self, reason=''):
