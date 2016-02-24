@@ -720,10 +720,10 @@ class LiveSpecFile(CallbackBase):
         values = [str(data[k]) for k in self._read_fields]
         if self._motor == "Count":
             motor_position = -1
-        elif self._motor = "seq_num":
-            motor_position = data['seq_num']
+        elif self._motor == "seq_num":
+            motor_position = doc['seq_num']
         else:
-            motor_position = doc[self._motor]
+            motor_position = data[self._motor]
         content = dict(acq_time=self._acq_time,
                        unix_time=doc['time'],
                        motor_position=motor_position,
