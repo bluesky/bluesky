@@ -560,7 +560,7 @@ _SPEC_HEADER_TEMPLATE = env.from_string("""#F {{ filepath }}
 #C {{ owner }}  User = {{ owner }}
 #O0 {{ positioners | join(' ') }}""")
 
-_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ scan_motor }} {{ start }} {{ stop }} {{ stides }} {{ time }}")
+_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ scan_motor }} {{ start }} {{ stop }} {{ strides }} {{ time }}")
 
 _PLAN_TO_SPEC_MAPPING = {'AbsScanPlan': 'ascan',
                          'DeltaScanPlan': 'dscan',
@@ -676,6 +676,7 @@ class LiveSpecFile(CallbackBase):
                     " cannot handle multiple scanning motors. Please request "
                     "this feature at https://github.com/NSLS-II/bluesky/issues" %
                     (len(self._motor), self._motor))
+        content['scan_motor'] = self._motor
         command = _SPEC_1D_COMMAND_TEMPLATE.render(content)
         # Can't write the entry until we see the descriptor, so stash it until
         # we get the descriptor
