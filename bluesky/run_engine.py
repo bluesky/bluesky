@@ -1007,8 +1007,7 @@ class RunEngine:
 
             def done_callback():
                 if not ret.success:
-                    return loop.call_soon_threadsafe(self._failed_status,
-                                                     ret)
+                    loop.call_soon_threadsafe(self._failed_status, ret)
                 loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
@@ -1086,8 +1085,7 @@ class RunEngine:
                                msg.obj, ret.success)
 
                 if not ret.success:
-                    return loop.call_soon_threadsafe(self._failed_status,
-                                                     ret)
+                    loop.call_soon_threadsafe(self._failed_status, ret)
                 loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
@@ -1109,8 +1107,7 @@ class RunEngine:
                                msg.obj, ret.success)
 
                 if not ret.success:
-                    return loop.call_soon_threadsafe(self._failed_status,
-                                                     ret)
+                    loop.call_soon_threadsafe(self._failed_status, ret)
 
                 loop.call_soon_threadsafe(p_event.set)
 
