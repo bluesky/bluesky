@@ -590,7 +590,7 @@ def test_failed_status_object():
     class failer:
         def set(self, inp):
             st = StatusBase()
-            st._finished(success=False)
+            loop.call_later(1, lambda: st._finished(success=False))
             return st
 
         def stop(self):
