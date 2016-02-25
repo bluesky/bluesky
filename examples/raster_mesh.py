@@ -1,9 +1,10 @@
 from bluesky.examples import Mover, SynGauss, Syn2DGauss
-import bluesky.simple_scans as bss
+import bluesky.plans as bp
 import bluesky.spec_api as bsa
 import bluesky.callbacks
 from bluesky.standard_config import gs
 import bluesky.qt_kicker
+bluesky.qt_kicker.install_qt_kicker()
 
 # motors
 theta = Mover('theta', ['theta'])
@@ -24,9 +25,11 @@ ysteps = 25
 xsteps = 20
 
 # hook up the live raster callback
-#cb = bluesky.callbacks.LiveRaster((ysteps + 1, xsteps + 1),
-#                                  'theta_gamma_det', clim=[0, 1])
-mesha = bss.OuterProductAbsScanPlan()
-# run a mesh scan
+cb = bluesky.callbacks.LiveRaster((ysteps, xsteps),
+                                  'theta_gamma_det', clim=[0, 1])
+lt = bluesky.callbacks.LiveTable([theta, gamma, tgd])
 gs.MASTER_DET_FIELD = 'theta_gamma_det'
-bsa.mesh(theta, -2.5, 2.5, ysteps, gamma, -2, 2, xsteps, False)
+mesha = bp.OuterProductAbsScanPlan(gs.DETS,
+                                   theta, -2.5, 2.5, ysteps,
+                                   gamma, -2, 2, xsteps, True)
+gs.RE(mesha, [cb, lt])
