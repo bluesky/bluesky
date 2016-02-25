@@ -177,7 +177,7 @@ class Count(PlanBase):
         # over it in different ways in _gen, above.
         dets = self.detectors
         yield Msg('checkpoint')
-        yield Msg('create')
+        yield Msg('create', None, name='primary')
         for det in dets:
             yield Msg('trigger', det, block_group='A')
         yield Msg('wait', None, 'A')
@@ -201,7 +201,7 @@ class Plan1D(PlanBase):
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
             yield Msg('wait', None, 'A')
-            yield Msg('create')
+            yield Msg('create', None, name='primary')
             yield Msg('read', self.motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
@@ -448,7 +448,7 @@ class _AdaptivePlanBase(PlanBase):
             yield Msg('checkpoint')
             yield Msg('set', motor, next_pos)
             yield Msg('wait', None, 'A')
-            yield Msg('create')
+            yield Msg('create', None, name='primary')
             yield Msg('read', motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
@@ -657,7 +657,7 @@ class Center(PlanBase):
                              initial_center + self.RANGE * initial_width,
                              self.NUM_SAMPLES, endpoint=True):
             yield Msg('set', motor, x)
-            yield Msg('create')
+            yield Msg('create', None, name='primary')
             ret_mot = yield Msg('read', motor)
             key, = ret_mot.keys()
             seen_x.append(ret_mot[key]['value'])
@@ -687,7 +687,7 @@ class Center(PlanBase):
                             np.random.randn(1) * guesses['sigma'],
                             min_cen, max_cen)
             yield Msg('set', motor, next_cen)
-            yield Msg('create')
+            yield Msg('create', None, name='primary')
             ret_mot = yield Msg('read', motor)
             key, = ret_mot.keys()
             seen_x.append(ret_mot[key]['value'])
@@ -733,7 +733,7 @@ class PlanND(PlanBase):
                 self._last_set_point[motor] = pos
 
             yield Msg('wait', None, 'A')
-            yield Msg('create')
+            yield Msg('create', None, name='primary')
 
             for motor in self.motors:
                 yield Msg('read', motor)
@@ -1020,7 +1020,7 @@ class Tweak(PlanBase):
         motor = self.motor
         step = self.step
         while True:
-            yield Msg('create')
+            yield Msg('create', None, name='primary')
             ret_mot = yield Msg('read', motor)
             key, = ret_mot.keys()
             pos = ret_mot[key]['value']
