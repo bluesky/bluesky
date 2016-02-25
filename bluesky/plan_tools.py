@@ -173,7 +173,7 @@ def trigger_and_read(det_list):
     """
     grp = str(uuid.uuid4())
     for det in det_list:
-        yield Msg('trigger', det, wait_group=grp)
+        yield Msg('trigger', det, block_group=grp)
     yield Msg('wait', None, grp)
 
     for det in det_list:
