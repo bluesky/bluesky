@@ -945,9 +945,12 @@ class RunEngine:
             # We don't not have an Event Descriptor for this set.
             data_keys = {}
             config = {}
+            object_keys = {}
             for obj in objs_read:
                 dks = self._describe_cache[obj]
                 name = obj.name
+                # dks is an OrderedDict. Record that order as a list.
+                object_keys[obj.name] = list(dks)
                 for field, dk in dks.items():
                     dk['object_name'] = name
                 data_keys.update(dks)
@@ -958,7 +961,8 @@ class RunEngine:
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid,
-                       configuration=config, name=self._bundle_name)
+                       configuration=config, name=self._bundle_name,
+                       object_keys=object_keys)
             yield from self.emit(DocumentNames.descriptor, doc)
             self.log.debug("Emitted Event Descriptor")
             self._descriptors[(self._bundle_name, objs_read)] = descriptor_uid
