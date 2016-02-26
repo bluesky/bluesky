@@ -96,7 +96,7 @@ class PeakStats(CollectThenCompute):
         # Compute x value at min and max of y
         self.max = x[np.argmax(y)], self.y_data[np.argmax(y)],
         self.min = x[np.argmin(y)], self.y_data[np.argmin(y)],
-        self.com = np.interp(center_of_mass(y), np.arange(len(x)), x)
+        self.com, = np.interp(center_of_mass(y), np.arange(len(x)), x)
         mid = (np.max(y) + np.min(y)) / 2
         crossings = np.where(np.diff(y > mid))[0]
         _cen_list = []
