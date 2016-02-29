@@ -594,6 +594,12 @@ class LiveSpecFile(CallbackBase):
     Other documents can be issues before, between, and after, but
     these must be issued and in this order.
 
+    Notes
+    -----
+    `Reference <https://github.com/certified-spec/specPy/blob/master/doc/specformat.rst>`_
+    for the spec file format.
+    Nice find @danielballan!
+
     Example
     -------
     It is suggested to put this in the ipython profile:
