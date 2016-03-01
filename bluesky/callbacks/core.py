@@ -560,7 +560,7 @@ _SPEC_HEADER_TEMPLATE = env.from_string("""#F {{ filepath }}
 #C {{ owner }}  User = {{ owner }}
 #O0 {{ positioners | join(' ') }}""")
 
-_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ start }} {{ stop }} {{ stides }} {{ time }}")
+_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ scan_motor }} {{ start }} {{ stop }} {{ stides }} {{ time }}")
 
 _PLAN_TO_SPEC_MAPPING = {'AbsScanPlan': 'ascan',
                          'DeltaScanPlan': 'dscan',
@@ -576,7 +576,7 @@ _SPEC_START_TEMPLATE = env.from_string("""
 
 _SPEC_DESCRIPTOR_TEMPLATE = env.from_string("""
 #N {{ length }}
-#L {{ motor_name }} Epoch Seconds {{ data_keys | join(' ') }}\n""")
+#L {{ motor_name }}    Epoch  Seconds  {{ data_keys | join('  ') }}\n""")
 
 _SPEC_EVENT_TEMPLATE = env.from_string(
     """{{ motor_position }}  {{ unix_time }} {{ acq_time }} {{ values | join(' ') }}\n""")
@@ -670,6 +670,7 @@ class LiveSpecFile(CallbackBase):
                     "this feature at https://github.com/NSLS-II/bluesky/issues" %
                     (len(self._motor), self._motor))
             self._motor, = self._motor
+            content['scan_motor'] = self._motor
             command = _SPEC_1D_COMMAND_TEMPLATE.render(content)
         else:
             err_msg = ("Do not know how to represent %s in SPEC. If "
