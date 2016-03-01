@@ -598,7 +598,6 @@ class LiveSpecFile(CallbackBase):
     -----
     `Reference <https://github.com/certified-spec/specPy/blob/master/doc/specformat.rst>`_
     for the spec file format.
-    Nice find @danielballan!
 
     Example
     -------
