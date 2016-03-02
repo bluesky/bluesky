@@ -95,9 +95,10 @@ class PlanBase(Struct):
         staged = []  # to track duplicates
         for objs in self._objects.values():
             for obj in objs:
-                if obj not in staged:
-                    yield Msg('stage', obj)
-                    staged.append(obj)
+                root = obj.root
+                if root not in staged:
+                    yield Msg('stage', root)
+                    staged.append(root)
 
     def _post(self):
         """
