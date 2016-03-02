@@ -188,6 +188,8 @@ def stage_wrapper(plan):
 
     The first time an object is read, set, triggered (or, for flyers,
     the first time is it told to "kickoff") a 'stage' Msg is inserted first.
+    It stages the the object's ultimate parent, pointed to be its `root`
+    property.
 
     At the end, an 'unstage' Message issued for every 'stage' Message.
     """
@@ -198,11 +200,12 @@ def stage_wrapper(plan):
         while True:
             msg = plan.send(ret)
             if msg.command in COMMANDS and msg.obj not in devices_staged:
-                ret = yield Msg('stage', msg.obj)
+                root = msg.obj.root
+                ret = yield Msg('stage', root)
                 if ret is None:
                     # The generator may be being list-ified.
                     # This is a hack to make that possible. Is it a good idea?
-                    ret = [msg.obj]
+                    ret = [root]
                 devices_staged.extend(ret)
             ret = yield msg
     finally:
