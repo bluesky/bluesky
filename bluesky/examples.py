@@ -32,6 +32,7 @@ class Base:
                 # hotfix 2016 -- revisit this!
                 setattr(self, field, MockSignal(field))
         self.success = True
+        self.root = self
 
     def describe(self):
         return {k: {'source': self.name, 'dtype': 'number', 'shape': None}
