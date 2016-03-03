@@ -386,7 +386,7 @@ class LiveTable(CallbackBase):
     min_width : int, optional
          The minimum width is spaces of the data columns.  Defaults to 12
 
-    dflt_prec : int, optional
+    default_prec : int, optional
          Precision to use if it can not be found in descriptor, defaults to 3
 
     extra_pad : int, optional
@@ -411,7 +411,7 @@ class LiveTable(CallbackBase):
     water_mark = "{st[plan_type]} ['{st[uid]:.6s}'] (scan num: {st[scan_id]})"
 
     def __init__(self, fields, *, print_header_interval=50,
-                 min_width=12, dflt_prec=3, extra_pad=1,
+                 min_width=12, default_prec=3, extra_pad=1,
                  logbook=None):
         super().__init__()
         self._header_interval = print_header_interval
@@ -423,7 +423,7 @@ class LiveTable(CallbackBase):
         self._pad_len = extra_pad
         self._extra_pad = ' ' * extra_pad
         self._min_width = min_width
-        self._dflt_prec = dflt_prec
+        self._default_prec = default_prec
         self._format_info = OrderedDict([
             ('seq_num', self._fm_sty(10 + self._pad_len, '', 'd')),
             ('time', self._fm_sty(10 + 2 * extra_pad, 10, 's'))
@@ -436,16 +436,16 @@ class LiveTable(CallbackBase):
             try:
                 return int(p)
             except (TypeError, ValueError):
-                return self._dflt_prec
+                return self._default_prec
 
         dk = doc['data_keys']
         for k in self._fields:
             width = max(self._min_width,
                         len(k) + 2,
-                        self._dflt_prec + 1 + 2 * self._pad_len)
+                        self._default_prec + 1 + 2 * self._pad_len)
             dk_entry = dk[k]
             prec = patch_up_precision(dk_entry.get('precision',
-                                                   self._dflt_prec))
+                                                   self._default_prec))
             fmt = self._fm_sty(width=width,
                                prec=prec,
                                dtype=self._FMT_MAP[dk_entry['dtype']])
