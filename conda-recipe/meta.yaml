@@ -23,7 +23,6 @@ requirements:
     - metadatastore
     - filestore
     - matplotlib
-    - prettytable
     - cycler
     - traitlets
     - historydict

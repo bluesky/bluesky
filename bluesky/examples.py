@@ -33,9 +33,11 @@ class Base:
                 setattr(self, field, MockSignal(field))
         self.success = True
         self.root = self
+        self.precision = 3
 
     def describe(self):
-        return {k: {'source': self.name, 'dtype': 'number', 'shape': None}
+        return {k: {'source': self.name, 'dtype': 'number', 'shape': None,
+                    'precision': self.precision}
                 for k in self._fields}
 
     def __repr__(self):
