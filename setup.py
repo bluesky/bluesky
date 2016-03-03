@@ -13,7 +13,7 @@ setuptools.setup(
     url="https://github.com/NSLS-II/bluesky",
     packages=setuptools.find_packages(),
     package_data={'bluesky': ['schema/*.json']},
-    install_requires=['jsonschema', 'traitlets', 'prettytable', 'cycler',
+    install_requires=['jsonschema', 'traitlets', 'cycler',
                       'numpy', 'matplotlib', 'super_state_machine',
                       'historydict'],
     classifiers=[

@@ -3,9 +3,8 @@ Useful callbacks for the Run Engine
 """
 import sys
 from itertools import count
-from collections import deque
+from collections import deque, namedtuple, OrderedDict
 import warnings
-from prettytable import PrettyTable
 import jinja2
 
 import matplotlib.pyplot as plt
@@ -118,7 +117,6 @@ class LivePlot(CallbackBase):
             # overplot (or, if no fig exists, one is made)
             fig = plt.gcf()
 
-
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
@@ -192,184 +190,6 @@ def format_num(x, max_len=11, pre=5, post=5):
 
     return x
 
-
-class LiveTable(CallbackBase):
-    """
-    Build a function that prints data from each Event as a row in a table.
-
-    Parameters
-    ----------
-    fields : list, optional
-        names of data fields to include in addition to 'seq_num'
-    rowwise : bool
-        If True, append each row to stdout. If False, reprint the full updated
-        table each time. This is useful if other messsages are interspersed.
-    print_header_interval : int
-        The number of events to process and print their rows before printing
-        the header again
-
-    Examples
-    --------
-    Show a table with motor and detector readings..
-
-    >>> RE(stepscan(motor, det), LiveTable(['motor', 'det']))
-    +------------+-------------------+----------------+----------------+
-    |   seq_num  |             time  |         motor  |   sum(det_2d)  |
-    +------------+-------------------+----------------+----------------+
-    |         1  |  12:46:47.503068  |         -5.00  |        449.77  |
-    |         3  |  12:46:47.682788  |         -3.00  |        460.60  |
-    |         4  |  12:46:47.792307  |         -2.00  |        584.77  |
-    |         5  |  12:46:47.915401  |         -1.00  |       1056.37  |
-    |         7  |  12:46:48.120626  |          1.00  |       1056.50  |
-    |         8  |  12:46:48.193028  |          2.00  |        583.33  |
-    |         9  |  12:46:48.318454  |          3.00  |        460.99  |
-    |        10  |  12:46:48.419579  |          4.00  |        451.53  |
-    +------------+-------------------+----------------+----------------+
-
-
-    """
-    base_fields = ['seq_num', 'time']
-    base_field_widths = [8, 10]
-    data_field_width = 12
-    max_pre_decimal = 5
-    max_post_decimal = 2
-
-    def __init__(self, fields=None, rowwise=True, print_header_interval=50,
-                 max_post_decimal=2, max_pre_decimal=5, data_field_width=12,
-                 logbook=None):
-        self.data_field_width = data_field_width
-        self.max_pre_decimal = max_pre_decimal
-        self.max_post_decimal = max_post_decimal
-        super(LiveTable, self).__init__()
-        self.rowwise = rowwise
-        if fields is None:
-            fields = []
-        # prettytable does not allow nonunique names
-        self.fields = sorted(set(_get_obj_fields(fields)))
-        self.field_column_names = [field for field in self.fields]
-        self.num_events_since_last_header = 0
-        self.print_header_interval = print_header_interval
-        self.logbook = logbook
-        self._filestore_keys = set()
-        # self.create_table()
-
-    def create_table(self):
-        self.table = PrettyTable(field_names=(self.base_fields +
-                                              self.field_column_names))
-        self.table.padding_width = 2
-        self.table.align = 'r'
-        # format the placeholder fields for the base fields so that the
-        # heading prints at the correct width
-        base_fields = [' '*width for width in self.base_field_widths]
-        # format placeholder fields for the data fields so that the heading
-        # prints at the correct width
-        data_fields = [' '*self.data_field_width for _ in self.fields]
-        self.table.add_row(base_fields + data_fields)
-        if self.rowwise:
-            self._print_table_header()
-        sys.stdout.flush()
-
-    def _print_table_header(self):
-        print('\n'.join(str(self.table).split('\n')[:3]))
-
-    ### RunEngine document callbacks
-
-    def start(self, start_document):
-        self.run_start_uid = start_document['uid']
-        self.scan_id = start_document['scan_id']
-        self.create_table()
-
-    def descriptor(self, descriptor):
-        # find all keys that are filestore keys
-        for key, datakeydict in descriptor['data_keys'].items():
-            data_loc = datakeydict.get('external', '')
-            if data_loc == 'FILESTORE:':
-                self._filestore_keys.add(key)
-
-        # see if any are being shown in the table
-        reprint_header = False
-        new_names = []
-        for key in self.field_column_names:
-            if key in self._filestore_keys:
-                reprint_header = True
-                print('%s is a non-scalar field. '
-                           'Computing the sum instead' % key)
-                key = 'sum(%s)' % key
-                key = key[:self.data_field_width]
-            new_names.append(key)
-        self.field_column_names = new_names
-        if reprint_header:
-            print('\n\n')
-            self.create_table()
-            # self._print_table_header()
-
-    def event(self, event_document):
-        event_time = datetime.fromtimestamp(event_document['time']).time()
-        rounded_time = str(event_time)[:10]
-        row = [event_document['seq_num'], rounded_time]
-        for field in self.fields:
-            val = event_document['data'].get(field, '')
-            if field in self._filestore_keys:
-                try:
-                    import filestore.api as fsapi
-                    val = fsapi.retrieve(val)
-                except Exception as exc:
-                    warnings.warn(UserWarning, "Attempt to read {0} raised {1}"
-                                  "".format(field, exc))
-                    val = 'Not Available'
-            if isinstance(val, np.ndarray) or isinstance(val, list):
-                val = np.sum(np.asarray(val))
-            try:
-                val = format_num(val,
-                                 max_len=self.data_field_width,
-                                 pre=self.max_pre_decimal,
-                                 post=self.max_post_decimal)
-            except Exception:
-                val = str(val)[:self.data_field_width]
-            row.append(val)
-        self.table.add_row(row)
-
-        if self.rowwise:
-            # Print the last row of data only.
-            # [-1] is the bottom border
-            print(str(self.table).split('\n')[-2])
-            # only print header intermittently for rowwise table printing
-            if self.num_events_since_last_header >= self.print_header_interval:
-                self._print_table_header()
-                self.num_events_since_last_header = 0
-            self.num_events_since_last_header += 1
-        else:
-            # print the whole table
-            print(self.table)
-
-        sys.stdout.flush()
-
-    def stop(self, stop_document):
-        """Print the last row of the table
-
-        Parameters
-        ----------
-        stop_document : dict
-            Not explicitly used in this function, other than to signal that
-            the run has been completed
-        """
-
-        if self.logbook and self.run_start_uid == stop_document['run_start']:
-            header = ["Scan {scan_id} (uid='{run_start_uid}')", '']
-            # drop the padding row
-            self.table.start = 1
-            my_table = '\n'.join(header + [str(self.table), ])
-            self.logbook(my_table, {
-                'run_start_uid': stop_document['run_start'],
-                'scan_id': self.scan_id})
-
-        self.table.start = 0
-        print(str(self.table).split('\n')[-1])
-        sys.stdout.flush()
-        # remove all data from the table
-        self.table.clear_rows()
-        # reset the filestore keys
-        self._filestore_keys = set()
 
 
 def _get_obj_fields(fields):
@@ -551,6 +371,147 @@ class LiveRaster(CallbackBase):
 
         self.im.set_array(self._Idata)
 
+
+class LiveTable(CallbackBase):
+    '''Live updating table
+
+    Parameters
+    ----------
+    fields : list
+         List of fields to add to the table.
+
+    print_header_interval : int, optional
+         Reprint the header every this many lines, defaults to 50
+
+    min_width : int, optional
+         The minimum width is spaces of the data columns.  Defaults to 12
+
+    default_prec : int, optional
+         Precision to use if it can not be found in descriptor, defaults to 3
+
+    extra_pad : int, optional
+         Number of extra spaces to put around the printed data, defaults to 1
+
+    logbook : callable, optional
+        Must take a sting as the first positional argument
+
+           def logbook(input_str):
+                pass
+
+    '''
+    _FMTLOOKUP = {'s': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
+                  'f': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
+                  'g': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
+                  'd': '{pad}{{{k}: >{width}{dtype}}}{pad}'}
+    _FMT_MAP = {'number': 'f',
+                'integer': 'd',
+                'string': 's',
+                }
+    _fm_sty = namedtuple('fm_sty', ['width', 'prec', 'dtype'])
+    water_mark = "{st[plan_type]} ['{st[uid]:.6s}'] (scan num: {st[scan_id]})"
+
+    def __init__(self, fields, *, print_header_interval=50,
+                 min_width=12, default_prec=3, extra_pad=1,
+                 logbook=None):
+        super().__init__()
+        self._header_interval = print_header_interval
+        # expand objects
+        self._fields = _get_obj_fields(fields)
+        self._start = None
+        self._stop = None
+        self._descriptors = set()
+        self._pad_len = extra_pad
+        self._extra_pad = ' ' * extra_pad
+        self._min_width = min_width
+        self._default_prec = default_prec
+        self._format_info = OrderedDict([
+            ('seq_num', self._fm_sty(10 + self._pad_len, '', 'd')),
+            ('time', self._fm_sty(10 + 2 * extra_pad, 10, 's'))
+        ])
+        self._rows = []
+        self.logbook = logbook
+
+    def descriptor(self, doc):
+        def patch_up_precision(p):
+            try:
+                return int(p)
+            except (TypeError, ValueError):
+                return self._default_prec
+
+        dk = doc['data_keys']
+        for k in self._fields:
+            width = max(self._min_width,
+                        len(k) + 2,
+                        self._default_prec + 1 + 2 * self._pad_len)
+            dk_entry = dk[k]
+            prec = patch_up_precision(dk_entry.get('precision',
+                                                   self._default_prec))
+            fmt = self._fm_sty(width=width,
+                               prec=prec,
+                               dtype=self._FMT_MAP[dk_entry['dtype']])
+
+            self._format_info[k] = fmt
+
+        self._sep_format = ('+' +
+                            '+'.join('-'*f.width
+                                     for f in self._format_info.values()) +
+                            '+')
+        self._main_fmnt = '|'.join(
+            '{{: >{w}}}{pad}'.format(w=f.width-self._pad_len,
+                                     pad=' '*self._pad_len)
+            for f in self._format_info.values())
+        self._header = ('|' +
+                        self._main_fmnt.format(*list(self._format_info)) +
+                        '|'
+                        )
+        self._data_formats = OrderedDict(
+            (k, self._FMTLOOKUP[f.dtype].format(k=k,
+                                                width=f.width-2*self._pad_len,
+                                                prec=f.prec, dtype=f.dtype,
+                                                pad=self._extra_pad))
+            for k, f in self._format_info.items())
+
+        self._count = 0
+
+        self._print(self._sep_format)
+        self._print(self._header)
+        self._print(self._sep_format)
+
+    def event(self, doc):
+        # shallow copy so we can mutate
+        data = dict(doc['data'])
+        self._count += 1
+        if not self._count % self._header_interval:
+            self._print(self._sep_format)
+            self._print(self._header)
+            self._print(self._sep_format)
+        fmt_time = str(datetime.fromtimestamp(doc['time']).time())
+        data['time'] = fmt_time
+        data['seq_num'] = doc['seq_num']
+        cols = [f.format(**{k: data[k]})
+                if k in data else ' '*self._format_info[k].width
+                for k, f in self._data_formats.items()]
+        self._print('|' + '|'.join(cols) + '|')
+
+    def stop(self, doc):
+        if doc['run_start'] != self._start['uid']:
+            return
+        self._print(self._sep_format)
+        self._stop = doc
+
+        wm = self.water_mark.format(st=self._start)
+        print(wm)
+        if self.logbook:
+            self.logbook('\n'.join([wm] + self._rows))
+
+    def start(self, doc):
+        self._rows = []
+        self._start = doc
+        self._stop = None
+
+    def _print(self, out_str):
+        self._rows.append(out_str)
+        print(out_str)
 
 env = jinja2.Environment()
 
