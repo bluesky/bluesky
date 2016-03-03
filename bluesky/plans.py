@@ -111,9 +111,10 @@ class PlanBase(Struct):
         unstaged = []  # to track duplicates
         for objs in self._objects.values():
             for obj in reversed(list(objs)):
-                if obj not in unstaged:
-                    yield Msg('unstage', obj)
-                    unstaged.append(obj)
+                root = obj.root
+                if root not in unstaged:
+                    yield Msg('unstage', root)
+                    unstaged.append(root)
         if self.post_run is not None:
             yield from self.post_run(self)
 
