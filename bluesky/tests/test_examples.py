@@ -193,6 +193,7 @@ def test_sample_md_dict_requirement():
     with pytest.raises(ValueError):
         RE(simple_scan(motor), sample=1)
     RE(simple_scan(motor), sample={'number': 1})  # should not raise
+    RE(simple_scan(motor), sample='label')  # should not raise
 
 
 def test_md_dict():

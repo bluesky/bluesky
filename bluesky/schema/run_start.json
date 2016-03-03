@@ -5,7 +5,7 @@
             "description": "Name of project that this run is part of"
         },
         "sample": {
-            "type": ["object"],
+            "type": ["object", "string"],
             "description": "Information about the sample, may be a UID to another collection"
         },
         "beamline_id": {
