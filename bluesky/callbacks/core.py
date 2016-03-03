@@ -439,13 +439,18 @@ class LiveTable(CallbackBase):
                 return self._dflt_prec
 
         dk = doc['data_keys']
-        self._format_info.update(
-            ((k, self._fm_sty(
-                max(self._min_width, len(k) + 2,
-                    self._dflt_prec + 1 + 2 * self._pad_len),
-                patch_up_precision(dk[k].get('precision', self._dflt_prec)),
-                self._FMT_MAP[dk[k]['dtype']]))
-             for k in self._fields))
+        for k in self._fields:
+            width = max(self._min_width,
+                        len(k) + 2,
+                        self._dflt_prec + 1 + 2 * self._pad_len)
+            dk_entry = dk[k]
+            prec = patch_up_precision(dk_entry.get('precision',
+                                                   self._dflt_prec))
+            fmt = self._fm_sty(width=width,
+                               prec=prec,
+                               dtype=self._FMT_MAP[dk_entry['dtype']])
+
+            self._format_info[k] = fmt
 
         self._sep_format = ('+' +
                             '+'.join('-'*f.width
