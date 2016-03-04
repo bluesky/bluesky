@@ -516,6 +516,10 @@ class LiveTable(CallbackBase):
         self._rows = []
         self._start = doc
         self._stop = None
+        self._format_info = OrderedDict([
+            ('seq_num', self._fm_sty(10 + self._pad_len, '', 'd')),
+            ('time', self._fm_sty(10 + 2 * self._pad_len, 10, 's'))
+        ])
 
     def _print(self, out_str):
         self._rows.append(out_str)
