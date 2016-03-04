@@ -443,7 +443,15 @@ class LiveTable(CallbackBase):
             width = max(self._min_width,
                         len(k) + 2,
                         self._default_prec + 1 + 2 * self._pad_len)
-            dk_entry = dk[k]
+            try:
+                dk_entry = dk[k]
+            except KeyError:
+                # this descriptor does not know about this key
+                continue
+
+            if dk_entry['dtype'] not in self._FMT_MAP:
+                continue
+
             prec = patch_up_precision(dk_entry.get('precision',
                                                    self._default_prec))
             fmt = self._fm_sty(width=width,
@@ -508,6 +516,10 @@ class LiveTable(CallbackBase):
         self._rows = []
         self._start = doc
         self._stop = None
+        self._format_info = OrderedDict([
+            ('seq_num', self._fm_sty(10 + self._pad_len, '', 'd')),
+            ('time', self._fm_sty(10 + 2 * self._pad_len, 10, 's'))
+        ])
 
     def _print(self, out_str):
         self._rows.append(out_str)
