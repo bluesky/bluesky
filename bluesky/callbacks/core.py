@@ -448,6 +448,10 @@ class LiveTable(CallbackBase):
             except KeyError:
                 # this descriptor does not know about this key
                 continue
+
+            if dk_entry['dtype'] not in self._FMT_MAP:
+                continue
+
             prec = patch_up_precision(dk_entry.get('precision',
                                                    self._default_prec))
             fmt = self._fm_sty(width=width,
