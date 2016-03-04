@@ -443,7 +443,11 @@ class LiveTable(CallbackBase):
             width = max(self._min_width,
                         len(k) + 2,
                         self._default_prec + 1 + 2 * self._pad_len)
-            dk_entry = dk[k]
+            try:
+                dk_entry = dk[k]
+            except KeyError:
+                # this descriptor does not know about this key
+                continue
             prec = patch_up_precision(dk_entry.get('precision',
                                                    self._default_prec))
             fmt = self._fm_sty(width=width,
