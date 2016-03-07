@@ -24,7 +24,6 @@ class SignalHandler:
         self.original_handler = signal.getsignal(self.sig)
 
         def handler(signum, frame):
-            self.release()
             self.interrupted = True
 
         signal.signal(self.sig, handler)
