@@ -773,7 +773,9 @@ class RunEngine:
                     for task in asyncio.Task.all_tasks(loop):
                         task.cancel()
                     loop.stop()
+                    self.state = 'idle'
                     raise
+
             for task in asyncio.Task.all_tasks(loop):
                 task.cancel()
             loop.stop()
