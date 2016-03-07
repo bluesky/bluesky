@@ -741,7 +741,6 @@ class RunEngine:
             logger.error("%s", err)
             raise err
         finally:
-            self.state = 'idle'
             # call stop() on every movable object we ever set() or kickoff()
             for obj in self._movable_objs_touched:
                 try:
@@ -778,6 +777,7 @@ class RunEngine:
             for task in asyncio.Task.all_tasks(loop):
                 task.cancel()
             loop.stop()
+            self.state = 'idle'
 
     def _check_for_trouble(self):
         if self.state.is_running:
