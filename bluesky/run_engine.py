@@ -798,7 +798,6 @@ class RunEngine:
         # Check for pause requests from keyboard.
         if self.state.is_running:
             if self._sigint_handler.interrupted:
-                self._sigint_handler.interrupted = False
                 with SignalHandler(signal.SIGINT) as second_sigint_handler:
                     self.log.debug("RunEngine detected a SIGINT (Ctrl+C)")
                     # We know we will either pause or abort, so we can
