@@ -741,7 +741,6 @@ class RunEngine:
             logger.error("%s", err)
             raise err
         finally:
-            self.state = 'idle'
             # call stop() on every movable object we ever set() or kickoff()
             for obj in self._movable_objs_touched:
                 try:
@@ -774,10 +773,13 @@ class RunEngine:
                     for task in asyncio.Task.all_tasks(loop):
                         task.cancel()
                     loop.stop()
+                    self.state = 'idle'
                     raise
+
             for task in asyncio.Task.all_tasks(loop):
                 task.cancel()
             loop.stop()
+            self.state = 'idle'
 
     def _check_for_trouble(self):
         if self.state.is_running:
@@ -798,7 +800,6 @@ class RunEngine:
         # Check for pause requests from keyboard.
         if self.state.is_running:
             if self._sigint_handler.interrupted:
-                self._sigint_handler.interrupted = False
                 with SignalHandler(signal.SIGINT) as second_sigint_handler:
                     self.log.debug("RunEngine detected a SIGINT (Ctrl+C)")
                     # We know we will either pause or abort, so we can

@@ -17,15 +17,19 @@ logger = logging.getLogger(__name__)
 class SignalHandler:
     def __init__(self, sig):
         self.sig = sig
+        self.interrupted = False
+        self.count = 0
 
     def __enter__(self):
         self.interrupted = False
         self.released = False
+        self.count = 0
+
         self.original_handler = signal.getsignal(self.sig)
 
         def handler(signum, frame):
-            self.release()
             self.interrupted = True
+            self.count += 1
 
         signal.signal(self.sig, handler)
         return self
