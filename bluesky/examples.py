@@ -405,7 +405,7 @@ motor = Mover('motor', ['motor'])
 motor1 = Mover('motor1', ['motor1'], sleep_time=.1)
 motor2 = Mover('motor2', ['motor2'], sleep_time=.2)
 motor3 = Mover('motor3', ['motor3'], sleep_time=.5)
-noisy_det = SynGauss('det', motor, 'motor', center=0, Imax=1,
+noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
                      noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
