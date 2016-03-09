@@ -204,11 +204,32 @@ class Syn2DGauss(Reader):
 
     Parameters
     ----------
+    name : str
+        The name of the detector
+    motor0 : `Mover`
+        The 'x' coordinate of the 2-D gaussian blob
+    motor_field0 : str
+        The name field of the motor. Should be the key in motor0.describe()
+    motor1 : `Mover`
+        The 'y' coordinate of the 2-D gaussian blob
+    motor_field1 : str
+        The name field of the motor. Should be the key in motor1.describe()
+    center : iterable, optional
+        The center of the gaussian blob
+        Defaults to (0,0)
+    Imax : float, optional
+        The intensity at `center`
+        Defaults to 1
+    sigma : float, optional
+        Standard deviation for gaussian blob
+        Defaults to 1
     noise : {'poisson', 'uniform', None}
-        Add noise to the gaussian peak.
-    noise_multiplier : float
+        Add noise to the gaussian peak..
+        Defaults to None
+    noise_multiplier : float, optional
         Only relevant for 'uniform' noise. Multiply the random amount of
         noise by 'noise_multiplier'
+        Defaults to 1
 
     Example
     -------
@@ -218,7 +239,7 @@ class Syn2DGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor0, motor_field0, motor1, motor_field1,
-                 center, Imax, sigma=1,
+                 center=(0,0), Imax=1, sigma=1,
                  noise=None, noise_multiplier=1):
         super().__init__(name, [name, ])
         self.ready = True
