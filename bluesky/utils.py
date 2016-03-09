@@ -418,7 +418,17 @@ def scalar_heuristic(device):
 
 def ancestry(obj):
     """
-    List parent, grandparent, ... back to ultimate ancestor.
+    List self, parent, grandparent, ... back to ultimate ancestor.
+
+    Parameters
+    ----------
+    obj : object
+        must have a `parent` attribute
+
+    Returns
+    -------
+    ancestry : list
+        list of objects, starting with obj and tracing parents recursively
     """
     ancestry = []
     ancestor = obj
@@ -432,6 +442,19 @@ def ancestry(obj):
 def is_ancestor(obj1, obj2):
     """
     Check whether obj1 is an ancestor (parent, grandparent, etc.) of obj2.
+
+    If obj1 is obj2, the result is False. An object is not its own ancestor.
+
+    Parameters
+    ----------
+    obj1 : object
+        must have a `parent` attribute
+    obj2 : object
+        must have a `parent` attribute
+
+    Returns
+    -------
+    result : boolean
     """
     if obj1 is obj2:
         return False
@@ -443,11 +466,37 @@ def is_ancestor(obj1, obj2):
 def have_common_ancestor(obj1, obj2):
     """
     Check whether obj1 and obj2 have a common ancestor.
+
+    Parameters
+    ----------
+    obj1 : object
+        must have a `parent` attribute
+    obj2 : object
+        must have a `parent` attribute
+
+    Returns
+    -------
+    result : boolean
     """
     return ancestry(obj1)[-1] is ancestry(obj2)[-1]
 
 
 def separate_devices(devices)
+    """
+    Filter out elements that have other elements as their ancestors.
+
+    If A is an ancestor of B, [A, B, C] -> [A, C].
+
+    Paremeters
+    ----------
+    devices : list
+        All elements must have a `parent` attribute.
+
+    Returns
+    -------
+    result : list
+        subset of input, with order retained
+    """
     result = []
     for det in devices:
         for existing_det in result:
