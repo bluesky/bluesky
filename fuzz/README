@@ -1,0 +1,2 @@
+`fuzz.py` is attempting to break the RunEngine by throwing it a random
+sequence of messages. Execute the fuzz testing with `python fuzz.py`.
