@@ -1249,6 +1249,15 @@ class RunEngine:
 
     @asyncio.coroutine
     def _pause(self, msg):
+        """Request the run engine to pause
+
+        Expected message signature is:
+
+            Msg('pause', defer=False, name=None, callback=None)
+
+        See RunEngine.request_pause() docstring for explanation of the three
+        keyword arugments in the `Msg` signature
+        """
         self.request_pause(*msg.args, **msg.kwargs)
 
     @asyncio.coroutine
