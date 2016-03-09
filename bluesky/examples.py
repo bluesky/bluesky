@@ -177,6 +177,7 @@ class SynGauss(Reader):
         self.sigma = sigma
         self.noise = noise
         self.noise_multiplier = noise_multiplier
+        self._data = {self.name: {'value': 0, 'timestamp': ttime.time()}}
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
 
