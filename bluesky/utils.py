@@ -434,16 +434,16 @@ def ancestry(obj):
     ancestor = obj
     while True:
         ancestry.append(ancestor)
-        ancestor = ancestor.parent
         if ancestor.parent is None:
             return ancestry
+        ancestor = ancestor.parent
 
 
 def is_ancestor(obj1, obj2):
     """
     Check whether obj1 is an ancestor (parent, grandparent, etc.) of obj2.
 
-    If obj1 is obj2, the result is False. An object is not its own ancestor.
+    If obj1 is obj2, the result is True. An object is its own ancestor.
 
     Parameters
     ----------
@@ -456,11 +456,7 @@ def is_ancestor(obj1, obj2):
     -------
     result : boolean
     """
-    if obj1 is obj2:
-        return False
-    if obj2 in ancestry(obj1):
-        return True
-    return False
+    return obj2 in ancestry(obj1)
 
 
 def have_common_ancestor(obj1, obj2):
@@ -481,7 +477,7 @@ def have_common_ancestor(obj1, obj2):
     return ancestry(obj1)[-1] is ancestry(obj2)[-1]
 
 
-def separate_devices(devices)
+def separate_devices(devices):
     """
     Filter out elements that have other elements as their ancestors.
 
@@ -499,15 +495,15 @@ def separate_devices(devices)
     """
     result = []
     for det in devices:
+        skip = False
         for existing_det in result:
-            if existing_det is det:
-                continue
-            elif is_ancestor(existing_det, det):
-                continue  # det will be read as part of existing_det
+            if is_ancestor(existing_det, det):
+                skip = True
+                break
             elif is_ancestor(det, existing_det):
                 # existing_det is redundant; use det in its place
                 result.remove(existing_det)
-                result.append(det)
-            else:
-                result.append(det)
+                break  # we won't find any ancestors of existing_det in result
+        if not skip:
+            result.append(det)
     return result
