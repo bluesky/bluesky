@@ -9,6 +9,7 @@ from bluesky.examples import *
 from bluesky.tests.utils import setup_test_run_engine
 import uuid
 import itertools
+import gc
 random.seed(2016)
 
 def unique_name():
@@ -31,7 +32,7 @@ def get_magic_flyer():
     flyname = 'flymagic_' + unique_name()
     flymagic = FlyMagic(flyname, motor, det1, det2, scan_points=scan_points)
     all_objects.add(flymagic)
-    return
+    return flymagic
 
 
 def get_flyer():
@@ -45,6 +46,7 @@ def get_flyer():
     det = get_1d_det()
     flyer = MockFlyer(det, det._motor)
     all_objects.add(flyer)
+    return flyer
 
 
 def get_1d_det():
@@ -90,7 +92,7 @@ def get_motor():
     Mover object
     """
     mtr_name = 'mtr_' + unique_name()
-    mtr = Mover(mtr_name, [mtr_name], sleep_time=random.random())
+    mtr = Mover(mtr_name, [mtr_name], sleep_time=random.random() / 20)
     all_objects.add(mtr)
     return mtr
 
@@ -162,23 +164,33 @@ def run_fuzz():
 
     # create 10 different flyers with corresponding kickoff and collect
     # messages
-    flyer_messages = [msg for _ in range(10)
-                      for msg in kickoff_and_collect(block=random.random()>0.5,
-                                                     magic=random.random()>0.5)]
-    set_messages = [Msg('set', motor, i) for i, motor in
+    # flyer_messages = [msg for _ in range(10)
+    #                   for msg in kickoff_and_collect(block=random.random()>0.5,
+    #                                                  magic=random.random()>0.5)]
+    set_messages = [Msg('set', mtr, i) for i, mtr in
                     itertools.product(range(-5, 6),
                                       [get_motor() for _ in range(5)])]
-    read_messages = [Msg('read', obj) for obj in all_objects]
+    read_messages = [Msg('read', obj) for obj in all_objects
+                     if hasattr(obj, 'read')]
     trigger_messages = [Msg('trigger', obj) for obj in all_objects
                         if hasattr(obj, 'trigger')]
     stage_messages = [Msg('stage', obj) for obj in all_objects]
     unstage_messages = [Msg('unstage', obj) for obj in all_objects]
+    # throw random garbage at the open run metadata
+    openrun_garbage = [random.sample(gc.get_objects(), random.randint(1, 10))
+                       for _ in range(10)]
+    openrun_messages = [Msg('open_run', None, {str(v): v for v in garbage})
+                        for garbage in openrun_garbage]
+    closerun_messages = [Msg('close_run')] * 10
+    checkpoint_messages = [Msg('checkpoint')] * 10
+    clear_checkpoint_messages = [Msg('clear_checkpoint')] * 10
     # add some messages to set a motor to random positions
-    message_objects = (flyer_messages + set_messages + read_messages +
-                       trigger_messages + stage_messages + unstage_messages)
+    message_objects = (set_messages + read_messages +
+                       trigger_messages + stage_messages + unstage_messages +
+                       openrun_messages + closerun_messages +
+                       checkpoint_messages + clear_checkpoint_messages)
     print("Using the following messages")
-    for obj in message_objects:
-        print(obj)
+    pprint(message_objects)
 
     print("I am missing the following types of messages from my list")
     print(set(RE._command_registry.keys()) -
@@ -209,14 +221,19 @@ def run_fuzz():
                 RE([msg])
             except IllegalMessageSequence as err:
                 print(err)
-            # except Exception as e:
+            # except AttributeError:
             #     pdb.set_trace()
+            except Exception as e:
+                print(e)
+                RE.abort()
+                continue
         else:
             msg_seq.append(name)
         try:
             assert RE.state in expected_state
-        except AssertionError:
-            pdb.set_trace()
+        except Exception:
+            RE.abort()
+            # pdb.set_trace()
         count += 1
         if count % 100 == 0:
             print('processed %s messages' % count)
