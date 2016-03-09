@@ -39,19 +39,19 @@ from itertools import filterfalse, chain, count
 def table_from_motors(scan):
     "Setup a LiveTable by inspecting a scan and gs."
     # > 1 motor
-    return LiveTable(list(scan.motors) + gs.TABLE_COLS)
+    return LiveTable(list(scan.motors) + gs.TABLE_COLS + [gs.PLOT_Y])
 
 
 def table_from_motor(scan):
     "Setup a LiveTable by inspecting a scan and gs."
     # 1 motor
-    return LiveTable([scan.motor] + gs.TABLE_COLS)
+    return LiveTable([scan.motor] + gs.TABLE_COLS + [gs.PLOT_Y])
 
 
 def table_gs_only(scan):
     "Setup a LiveTable by inspecting a scan and gs."
     # no motors
-    return LiveTable(gs.TABLE_COLS)
+    return LiveTable(gs.TABLE_COLS + [gs.PLOT_Y])
 
 
 def _figure_name(base_name):
