@@ -844,6 +844,15 @@ class RunEngine:
 
     @asyncio.coroutine
     def _open_run(self, msg):
+        """Instruct the RunEngine to start a new "run"
+
+        Expected message signature is:
+
+            Msg('open_run', None, **kwargs)
+
+        where **kwargs are any additional metadata that should go into
+        the RunStart document
+        """
         if self._run_is_open:
             raise IllegalMessageSequence("A 'close_run' message was not "
                                          "received before the 'open_run' "
@@ -879,6 +888,12 @@ class RunEngine:
 
     @asyncio.coroutine
     def _close_run(self, msg):
+        """Instruct the RunEngine to write the RunStop document
+
+        Expected message signature is
+
+            Msg('close_run')
+        """
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'close_run' message was received "
                                          "but there is no run open. If this "
@@ -1262,6 +1277,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _checkpoint(self, msg):
+        """Instruct the RunEngine to create a checkpoint so that we can rewind
+        to this point if necessary
+
+        Expected signature is:
+
+            Msg('checkpoint')
+        """
         if self._bundling:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
@@ -1281,6 +1303,12 @@ class RunEngine:
 
     @asyncio.coroutine
     def _clear_checkpoint(self, msg):
+        """Clear a set checkpoint
+
+        Expected message signature is:
+
+            Msg('clear_checkpoint')
+        """
         # clear message cache
         self._msg_cache = None
         # clear stashed
