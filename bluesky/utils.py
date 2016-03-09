@@ -414,3 +414,51 @@ def scalar_heuristic(device):
     reading = device.read()
     key = first_key_heuristic(device)
     return reading[key]['value']
+
+
+def ancestry(obj):
+    """
+    List parent, grandparent, ... back to ultimate ancestor.
+    """
+    ancestry = []
+    ancestor = obj
+    while True:
+        ancestry.append(ancestor)
+        ancestor = ancestor.parent
+        if ancestor.parent is None:
+            return ancestry
+
+
+def is_ancestor(obj1, obj2):
+    """
+    Check whether obj1 is an ancestor (parent, grandparent, etc.) of obj2.
+    """
+    if obj1 is obj2:
+        return False
+    if obj2 in ancestry(obj1):
+        return True
+    return False
+
+
+def have_common_ancestor(obj1, obj2):
+    """
+    Check whether obj1 and obj2 have a common ancestor.
+    """
+    return ancestry(obj1)[-1] is ancestry(obj2)[-1]
+
+
+def separate_devices(devices)
+    result = []
+    for det in devices:
+        for existing_det in result:
+            if existing_det is det:
+                continue
+            elif is_ancestor(existing_det, det):
+                continue  # det will be read as part of existing_det
+            elif is_ancestor(det, existing_det):
+                # existing_det is redundant; use det in its place
+                result.remove(existing_det)
+                result.append(det)
+            else:
+                result.append(det)
+    return result
