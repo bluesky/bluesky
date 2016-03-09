@@ -846,7 +846,7 @@ class RunEngine:
     def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
 
-        Expected message signature is:
+        Expected message object is:
 
             Msg('open_run', None, **kwargs)
 
@@ -890,7 +890,7 @@ class RunEngine:
     def _close_run(self, msg):
         """Instruct the RunEngine to write the RunStop document
 
-        Expected message signature is
+        Expected message object is:
 
             Msg('close_run')
         """
@@ -913,9 +913,10 @@ class RunEngine:
     def _create(self, msg):
         """Trigger the run engine to start collecting data for an event
 
-        Expected object signatures are:
-        - Msg('create', None, name='primary)
-        - Msg('create')
+        Expected message object is:
+
+            Msg('create', None, name='primary')
+            Msg('create')
         """
         if self._bundling:
             raise IllegalMessageSequence("A second 'create' message is not "
@@ -1014,6 +1015,12 @@ class RunEngine:
 
     @asyncio.coroutine
     def _save(self, msg):
+        """Save the event that is currently being bundled
+
+        Expected message object is:
+
+            Msg('save')
+        """
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'save' message was sent but no "
                                          "run is open.")
@@ -1090,7 +1097,7 @@ class RunEngine:
         block_group : str
             The blocking group to this flyer to
 
-        Valid Msg objects to this function will look like this:
+        Expected message object is:
 
         If `flyer_object` has a `kickoff` function that takes no arguments:
 
@@ -1235,7 +1242,7 @@ class RunEngine:
 
     @asyncio.coroutine
     def _wait(self, msg):
-        # Block progress until every object that was trigged
+        # Block progress until every object that was triggered
         # triggered with the keyword argument `block=group` is done.
         group = msg.kwargs.get('group', msg.args[0])
         objs = list(self._block_groups.pop(group, []))
@@ -1260,13 +1267,21 @@ class RunEngine:
 
     @asyncio.coroutine
     def _sleep(self, msg):
+        """Sleep the event loop
+
+        Expected message object is:
+
+            Msg('sleep', None, sleep_time)
+
+        where `sleep_time` is in seconds
+        """
         yield from asyncio.sleep(*msg.args)
 
     @asyncio.coroutine
     def _pause(self, msg):
         """Request the run engine to pause
 
-        Expected message signature is:
+        Expected message object is:
 
             Msg('pause', defer=False, name=None, callback=None)
 
@@ -1280,7 +1295,7 @@ class RunEngine:
         """Instruct the RunEngine to create a checkpoint so that we can rewind
         to this point if necessary
 
-        Expected signature is:
+        Expected message object is:
 
             Msg('checkpoint')
         """
@@ -1305,7 +1320,7 @@ class RunEngine:
     def _clear_checkpoint(self, msg):
         """Clear a set checkpoint
 
-        Expected message signature is:
+        Expected message object is:
 
             Msg('clear_checkpoint')
         """
@@ -1316,6 +1331,16 @@ class RunEngine:
 
     @asyncio.coroutine
     def _configure(self, msg):
+        """Configure an object
+
+        Expected message object is:
+
+            Msg('configure', object, *args, **kwargs)
+
+        which results in this call:
+
+            object.configure(*args, **kwargs
+        """
         if self._bundling:
             raise IllegalMessageSequence(
                 "Cannot configure after 'create' but before 'save'"
@@ -1336,6 +1361,12 @@ class RunEngine:
 
     @asyncio.coroutine
     def _stage(self, msg):
+        """Instruct the RunEngine to stage the object
+
+        Expected message object is:
+
+            Msg('stage', object)
+        """
         _, obj, args, kwargs = msg
         # If an object has no 'stage' method, assume there is nothing to do.
         if not hasattr(obj, 'stage'):
@@ -1346,12 +1377,21 @@ class RunEngine:
 
     @asyncio.coroutine
     def _unstage(self, msg):
+        """Instruct the RunEngine to unstage the object
+
+        Expected message object is:
+
+            Msg('unstage', object)
+        """
         _, obj, args, kwargs = msg
         # If an object has no 'unstage' method, assume there is nothing to do.
         if not hasattr(obj, 'unstage'):
             return
         result = obj.unstage()
-        self._staged.remove(obj)
+        try:
+            self._staged.remove(obj)
+        except KeyError as ke:
+            self.log.exception(ke)
         return result
 
     @asyncio.coroutine
@@ -1361,6 +1401,24 @@ class RunEngine:
 
         This, like subscriptions passed to __call__, will be removed at the
         end by the RunEngine.
+
+        Expected message object is:
+
+            Msg('subscribe', None, document_name, callback_function)
+
+        where `document_name` is one of:
+
+            {'start', 'descriptor', 'event', 'stop', 'all'}
+
+        and `callback_function` is expected to have a signature of:
+
+            ``f(name, document)``
+
+            where name is one of the ``document_name`` options and ``document``
+            is one of the document dictionaries in the event model.
+
+        See the docstring of bluesky.run_engine.Dispatcher.subscribe() for more
+        information.
         """
         self.log.debug("Adding subsription %r", msg)
         _, obj, args, kwargs = msg
@@ -1373,6 +1431,13 @@ class RunEngine:
         """
         Remove a subscription during a call -- useful for a multi-run call
         where subscriptions are wanted for some runs but not others.
+
+        Expected message object is:
+
+            Msg('unsubscribe', None, TOKEN)
+            Msg('unsubscribe', token=TOKEN)
+
+        where ``TOKEN`` is the return value from ``RunEngine._subscribe()``
         """
         self.log.debug("Removing subscription %r", msg)
         _, obj, args, kwargs = msg
