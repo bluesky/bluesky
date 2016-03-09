@@ -896,6 +896,12 @@ class RunEngine:
 
     @asyncio.coroutine
     def _create(self, msg):
+        """Trigger the run engine to start collecting data for an event
+
+        Expected object signatures are:
+        - Msg('create', None, name='primary)
+        - Msg('create')
+        """
         if self._bundling:
             raise IllegalMessageSequence("A second 'create' message is not "
                                          "allowed until the current event "
@@ -1059,6 +1065,29 @@ class RunEngine:
 
     @asyncio.coroutine
     def _kickoff(self, msg):
+        """Start a flyscan object
+
+        Parameters
+        ----------
+        msg : Msg
+
+        Special kwargs for the 'Msg' object in this function:
+        block_group : str
+            The blocking group to this flyer to
+
+        Valid Msg objects to this function will look like this:
+
+        If `flyer_object` has a `kickoff` function that takes no arguments:
+
+            Msg('kickoff', flyer_object)
+            Msg('kickoff', flyer_object, block_group=<name>)
+
+        If `flyer_object` has a `kickoff` function that takes
+        `(start, stop, steps)` as its function arguments:
+
+            Msg('kickoff', flyer_object, start, stop, step)
+            Msg('kickoff', flyer_object, start, stop, step, block_group=<name>)
+        """
         _, obj, args, kwargs = msg
         self._uncollected.add(obj)
         block_group = msg.kwargs.pop('block_group', None)
