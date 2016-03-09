@@ -137,7 +137,9 @@ def spam_sigint():
     pid = os.getpid()
     for _ in range(100):
         os.kill(pid, signal.SIGINT)
-        ttime.sleep(0.005)
+        ttime.sleep(0.01)
+        print("siginting")
+
 
 # define the random message generation functions
 def kickoff_and_collect(block=False, magic=False):
@@ -157,11 +159,6 @@ def kickoff_and_collect(block=False, magic=False):
 
 
 def run_fuzz():
-    from bluesky import examples
-    RE = setup_test_run_engine()
-    source_file = examples.__file__
-    print("Using the following message objects")
-
     # create 10 different flyers with corresponding kickoff and collect
     # messages
     # flyer_messages = [msg for _ in range(10)
@@ -176,7 +173,7 @@ def run_fuzz():
                         if hasattr(obj, 'trigger')]
     stage_messages = [Msg('stage', obj) for obj in all_objects]
     unstage_messages = [Msg('unstage', obj) for obj in all_objects]
-    # throw random garbage at the open run metadata
+    # throw random garbage at the open run metadata to see if we can break it
     openrun_garbage = [random.sample(gc.get_objects(), random.randint(1, 10))
                        for _ in range(10)]
     openrun_messages = [Msg('open_run', None, {str(v): v for v in garbage})
@@ -184,14 +181,20 @@ def run_fuzz():
     closerun_messages = [Msg('close_run')] * 10
     checkpoint_messages = [Msg('checkpoint')] * 10
     clear_checkpoint_messages = [Msg('clear_checkpoint')] * 10
-    # add some messages to set a motor to random positions
+    create_messages = ([Msg('create')] * 5 +
+                       [Msg('create', name=unique_name()) for _ in range(5)])
+    save_messages = [Msg('save')] * 10
+
+    # compile the list of all messages that we can send at the run engine
     message_objects = (set_messages + read_messages +
                        trigger_messages + stage_messages + unstage_messages +
                        openrun_messages + closerun_messages +
-                       checkpoint_messages + clear_checkpoint_messages)
+                       checkpoint_messages + clear_checkpoint_messages +
+                       create_messages + save_messages)
     print("Using the following messages")
     pprint(message_objects)
 
+    RE = setup_test_run_engine()
     print("I am missing the following types of messages from my list")
     print(set(RE._command_registry.keys()) -
           set([msg.command for msg in message_objects]))
@@ -199,48 +202,46 @@ def run_fuzz():
     num_message = 100
     num_interrupt = 2
     num_kill = 2
-    num_hammer_ctrl_c = 2
-    message = ('message', lambda: random.choice(message_objects), ['idle'])
-    interrupt = ('interrupt', interrupt_func, ['paused', 'idle'])
-    kill = ('kill', kill_func, ['idle'])
-    hammer_ctrl_c = ('spam ctrl+c', spam_sigint, ['idle'])
+    num_spam_SIGINT = 2
+    random.shuffle(message_objects)
+    choices = (['message'] * num_message +
+               ['sigint'] * (num_interrupt + num_kill + num_spam_SIGINT))
+    sigints = [
+        ('interrupt', ['paused', 'idle'], interrupt_func),
+        ('kill', ['idle'], kill_func),
+        # ('spam SIGINT', ['idle'], spam_sigint)
+    ]
 
-    actions = ([message] * num_message +
-               [interrupt] * num_interrupt +
-               [kill] * num_kill +
-               [hammer_ctrl_c] * num_hammer_ctrl_c)
 
     msg_seq = []
     count = 0
-    while count < 250:
-        name, action, expected_state = random.choice(actions)
+    while count < 500:
+        name = random.choice(choices)
         if name == 'message':
             try:
-                msg = action()
-                msg_seq.append(msg)
+                # grab a random sequence of messages
+                msg = random.choice(message_objects)
+                print(msg.command)
+                msg_seq.append(msg.command)
                 RE([msg])
+                assert RE.state == 'idle'
             except IllegalMessageSequence as err:
                 print(err)
-            # except AttributeError:
-            #     pdb.set_trace()
-            except Exception as e:
-                print(e)
-                RE.abort()
-                continue
-        else:
-            msg_seq.append(name)
-        try:
-            assert RE.state in expected_state
-        except Exception:
-            RE.abort()
-            # pdb.set_trace()
+        elif name == 'sigint':
+            sigint_type, allowed_states, func = random.choice(sigints)
+            print(sigint_type)
+            msg_seq.append(sigint_type)
+            #TODO Figure out how to verify that the RunEngine is in the desired state after this call_later executes
+            loop.call_later(1, func)
         count += 1
         if count % 100 == 0:
             print('processed %s messages' % count)
-
+    print('%s actions were thrown at the RunEngine' % count)
     print("Fuzz testing completed successfully")
     print("Actions taken in the following order")
     pprint(msg_seq)
+    print("Fuzz testing did not use the following messages")
+    pprint(set(RE._command_registry.keys()) - set(msg_seq))
 
 
 if __name__ == "__main__":
