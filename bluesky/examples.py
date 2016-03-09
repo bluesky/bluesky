@@ -1,6 +1,6 @@
 import asyncio
 import time as ttime
-from collections import deque
+from collections import deque, OrderedDict
 import numpy as np
 from .run_engine import Msg
 
@@ -294,11 +294,17 @@ class MockFlyer:
     def done(self):
         return self.ready
 
+    def read_configuration(self):
+        return OrderedDict()
+
+    def describe_configuration(self):
+        return OrderedDict()
+
     def describe(self):
         dd = dict()
-        dd.update(self._mot.describe())
-        dd.update(self._detector.describe())
-        return [dd, ]
+        for k in [self._mot, self._detector]:
+            dd.update(k.describe())
+        return dd
 
     def kickoff(self, start, stop, steps):
         self.success = True
@@ -378,6 +384,12 @@ class FlyMagic(Base):
         self._time = None
         self._fly_count = 0
 
+    def read_configuration(self):
+        return OrderedDict()
+
+    def describe_configuration(self):
+        return OrderedDict()
+
     def reset(self):
         self._fly_count = 0
 
@@ -387,9 +399,10 @@ class FlyMagic(Base):
         return self
 
     def describe(self):
-        return [{k: {'source': self.name, 'dtype': 'number'}
-                 for k in [self._motor, self._det]},
-                {self._det2: {'source': self.name, 'dtype': 'number'}}]
+        dd = dict()
+        for k in [self._motor, self._det, self._det2]:
+            dd.update(k.describe())
+        return dd
 
     def collect(self):
         if self._time is None:
