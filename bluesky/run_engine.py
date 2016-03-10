@@ -915,12 +915,19 @@ class RunEngine:
 
     @asyncio.coroutine
     def _create(self, msg):
-        """Trigger the run engine to start collecting data for an event
+        """Trigger the run engine to start bundling future obj.read() calls for
+         an Event document
 
         Expected message object is:
 
             Msg('create', None, name='primary')
             Msg('create')
+
+        Note that the `name` kwarg will be the 'name' field of the resulting
+        descriptor. So descriptor['name'] = msg.kwargs['name'].
+
+        Also note that changing the 'name' of the Event will create a new
+        Descriptor document.
         """
         if self._bundling:
             raise IllegalMessageSequence("A second 'create' message is not "
@@ -1343,7 +1350,7 @@ class RunEngine:
 
         which results in this call:
 
-            object.configure(*args, **kwargs
+            object.configure(*args, **kwargs)
         """
         if self._bundling:
             raise IllegalMessageSequence(
