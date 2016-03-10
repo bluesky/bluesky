@@ -31,6 +31,7 @@ requirements:
 test:
   requires:
     - nslsii_dev_configuration
+    - ophyd
   imports:
     - 'bluesky'
     - 'bluesky.examples'
