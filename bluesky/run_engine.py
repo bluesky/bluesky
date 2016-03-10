@@ -425,19 +425,15 @@ class RunEngine:
                 raise ValueError("Pause requests with a callback must include "
                                  "a name.")
             self._pause_requests[name] = callback
-        # Now to the right pause state if we can.
-        if defer:
-            if not self.state.is_running:
-                print("RunEngine is currently in the {0} state and therefore "
-                      "cannot pause. Ignoring request.".format(self.state))
-                return
-            self._deferred_pause_requested = True
-            print("Deferred pause acknowledged. Continuing to checkpoint.")
-            return
         if not self.state.can_pause:
             # can't pause, print and return
             print("Cannot pause from {0} state. "
                   "Ignoring request.".format(self.state))
+            return
+        # Now to the right pause state if we can.
+        if defer:
+            self._deferred_pause_requested = True
+            print("Deferred pause acknowledged. Continuing to checkpoint.")
             return
 
         self._interrupted = True
