@@ -840,8 +840,22 @@ class RunEngine:
 
     @asyncio.coroutine
     def _wait_for(self, msg):
+        """Instruct the RunEngine to wait until msg.obj has completed. Better
+        yet, see the docstring for ``asyncio.wait`` for what msg.obj should
+        be...
+
+        TODO: Get someone who knows how this works to check this note, since
+        it is almost assuredly total bs
+
+        Expected message object is:
+
+            Msg('wait_for', obj, **kwargs)
+
+        Where ``obj`` and **kwargs are the position and keyword-only arguments
+        for ``asyncio.await``
+        """
         futs = msg.obj
-        yield from asyncio.wait(futs)
+        yield from asyncio.wait(futs, **msg.kwargs)
 
     @asyncio.coroutine
     def _open_run(self, msg):
@@ -1250,8 +1264,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _wait(self, msg):
-        # Block progress until every object that was triggered
-        # triggered with the keyword argument `block=group` is done.
+        """ Block progress until every object that was triggered triggered
+        with the keyword argument `block=group` is done.
+
+        Expected message object is:
+
+            Msg('wait', group=GROUP)
+        """
         group = msg.kwargs.get('group', msg.args[0])
         objs = list(self._block_groups.pop(group, []))
         if objs:
