@@ -426,35 +426,39 @@ class RunEngine:
                                  "a name.")
             self._pause_requests[name] = callback
         # Now to the right pause state if we can.
-        if not defer:
-            self._interrupted = True
-            if self.state.can_pause:
-                print("Pausing...")
-                self.state = 'paused'
-                if self.resumable:
-                    loop.stop()
-                    for obj, cb in list(self._monitor_cbs.items()):
-                        obj.clear_sub(cb)
-                    # During pause, all motors should be stopped.
-                    for obj in self._movable_objs_touched:
-                        try:
-                            obj.stop()
-                        except Exception:
-                            logger.error("Failed to stop %r", obj)
-                else:
-                    print("No checkpoint; cannot pause. Aborting...")
-                    self._exception = FailedPause()
-                    self._task.cancel()
-            else:
-                print("Cannot pause from {0} state. "
-                      "Ignoring request.".format(self.state))
-        else:
-            if self.state.is_running:
-                self._deferred_pause_requested = True
-                print("Deferred pause acknowledged. Continuing to checkpoint.")
-            else:
-                print("Cannot pause from {0} state. "
-                      "Ignoring request.".format(self.state))
+        if defer:
+            if not self.state.is_running:
+                print("RunEngine is currently in the {0} state and therefore "
+                      "cannot pause. Ignoring request.".format(self.state))
+                return
+            self._deferred_pause_requested = True
+            print("Deferred pause acknowledged. Continuing to checkpoint.")
+            return
+        if not self.state.can_pause:
+            # can't pause, print and return
+            print("Cannot pause from {0} state. "
+                  "Ignoring request.".format(self.state))
+            return
+
+        self._interrupted = True
+        print("Pausing...")
+        self.state = 'paused'
+        if not self.resumable:
+            # cannot resume, so we cannot pause.  Abort the scan
+            print("No checkpoint; cannot pause. Aborting...")
+            self._exception = FailedPause()
+            self._task.cancel()
+            return
+        # stop processing the event loop
+        loop.stop()
+        for obj, cb in list(self._monitor_cbs.items()):
+            obj.clear_sub(cb)
+        # During pause, all motors should be stopped.
+        for obj in self._movable_objs_touched:
+            try:
+                obj.stop()
+            except Exception:
+                logger.error("Failed to stop %r", obj)
 
     def subscribe_lossless(self, name, func):
         """Register a callback function to consume documents.
