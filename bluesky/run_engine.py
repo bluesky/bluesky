@@ -1396,10 +1396,8 @@ class RunEngine:
         if not hasattr(obj, 'unstage'):
             return
         result = obj.unstage()
-        try:
-            self._staged.remove(obj)
-        except KeyError as ke:
-            self.log.exception(ke)
+        # use `discard()` to ignore objects that are not in the staged set.
+        self._staged.discard(obj)
         return result
 
     @asyncio.coroutine
