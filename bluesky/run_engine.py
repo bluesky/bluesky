@@ -449,7 +449,8 @@ class RunEngine:
             self._exception = FailedPause()
             self._task.cancel()
             return
-        # stop processing the event loop
+        # stop accepting new tasks in the event loop (existing tasks will
+        # still be processed)
         loop.stop()
         for obj, cb in list(self._monitor_cbs.items()):
             obj.clear_sub(cb)
