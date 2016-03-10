@@ -161,9 +161,9 @@ def kickoff_and_collect(block=False, magic=False):
 def run_fuzz():
     # create 10 different flyers with corresponding kickoff and collect
     # messages
-    # flyer_messages = [msg for _ in range(10)
-    #                   for msg in kickoff_and_collect(block=random.random()>0.5,
-    #                                                  magic=random.random()>0.5)]
+    flyer_messages = [msg for _ in range(10)
+                      for msg in kickoff_and_collect(block=random.random()>0.5,
+                                                     magic=random.random()>0.5)]
     set_messages = [Msg('set', mtr, i) for i, mtr in
                     itertools.product(range(-5, 6),
                                       [get_motor() for _ in range(5)])]
@@ -186,7 +186,7 @@ def run_fuzz():
     save_messages = [Msg('save')] * 10
 
     # compile the list of all messages that we can send at the run engine
-    message_objects = (set_messages + read_messages +
+    message_objects = (flyer_messages + set_messages + read_messages +
                        trigger_messages + stage_messages + unstage_messages +
                        openrun_messages + closerun_messages +
                        checkpoint_messages + clear_checkpoint_messages +
