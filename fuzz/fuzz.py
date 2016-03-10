@@ -129,20 +129,38 @@ def interrupt_func():
 def kill_func():
     pid = os.getpid()
     os.kill(pid, signal.SIGINT)
-    ttime.sleep(0.05)
+    ttime.sleep(0.1)
     os.kill(pid, signal.SIGINT)
 
 
-def spam_sigint():
-    pid = os.getpid()
-    for _ in range(100):
-        os.kill(pid, signal.SIGINT)
-        ttime.sleep(0.01)
-        print("siginting")
+def spam_SIGINT():
+     pid = os.getpid()
+     for _ in range(100):
+         os.kill(pid, signal.SIGINT)
+         ttime.sleep(0.01)
+         print("siginting")
 
 
-# define the random message generation functions
+def randomly_SIGINT_in_the_future():
+    for _ in range(10):
+        func = interrupt_func
+        if random.random() > 0.5:
+            func = kill_func
+        # randomly kill or interrupt at some point in the future. Oh, and
+        # do it 10 times
+        loop.call_later(random.random() * 30, func)
+
+
 def kickoff_and_collect(block=False, magic=False):
+    """Make a flyer or magic_flyer object and maybe block
+
+    Returns
+    -------
+    msg1 : Msg
+        kickoff message for flyer or magic_flyer created in this function
+    msg2 : Msg
+        collect message for flyer or magic_flyer created in this function
+    """
     args = []
     kwargs = {}
     if magic:
@@ -184,6 +202,9 @@ def run_fuzz():
     create_messages = ([Msg('create')] * 5 +
                        [Msg('create', name=unique_name()) for _ in range(5)])
     save_messages = [Msg('save')] * 10
+    sleep_messagse = [Msg('sleep', random.random() * 0.25) for _ in range(10)]
+    pause_messages = [Msg('pause')]
+
 
     # compile the list of all messages that we can send at the run engine
     message_objects = (flyer_messages + set_messages + read_messages +
@@ -200,16 +221,15 @@ def run_fuzz():
           set([msg.command for msg in message_objects]))
 
     num_message = 100
-    num_interrupt = 2
-    num_kill = 2
-    num_spam_SIGINT = 2
+    num_SIGINT = 8
     random.shuffle(message_objects)
     choices = (['message'] * num_message +
-               ['sigint'] * (num_interrupt + num_kill + num_spam_SIGINT))
+               ['sigint'] * num_SIGINT)
     sigints = [
         ('interrupt', ['paused', 'idle'], interrupt_func),
         ('kill', ['idle'], kill_func),
-        # ('spam SIGINT', ['idle'], spam_sigint)
+        ('spam SIGINT', ['idle'], spam_SIGINT),
+        ('random SIGINTs', ['idle', 'paused'], randomly_SIGINT_in_the_future)
     ]
 
 
