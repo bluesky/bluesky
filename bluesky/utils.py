@@ -439,27 +439,7 @@ def ancestry(obj):
         ancestor = ancestor.parent
 
 
-def is_ancestor(obj1, obj2):
-    """
-    Check whether obj1 is an ancestor (parent, grandparent, etc.) of obj2.
-
-    If obj1 is obj2, the result is True. An object is its own ancestor.
-
-    Parameters
-    ----------
-    obj1 : object
-        must have a `parent` attribute
-    obj2 : object
-        must have a `parent` attribute
-
-    Returns
-    -------
-    result : boolean
-    """
-    return obj2 in ancestry(obj1)
-
-
-def have_common_ancestor(obj1, obj2):
+def share_ancestor(obj1, obj2):
     """
     Check whether obj1 and obj2 have a common ancestor.
 
