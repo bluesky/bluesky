@@ -302,9 +302,9 @@ class MockFlyer:
 
     def describe(self):
         dd = dict()
-        for k in [self._mot, self._detector]:
-            dd.update(k.describe())
-        return dd
+        dd.update(self._mot.describe())
+        dd.update(self._detector.describe())
+        return [dd, ]
 
     def kickoff(self, start, stop, steps):
         self.success = True
@@ -399,10 +399,9 @@ class FlyMagic(Base):
         return self
 
     def describe(self):
-        dd = dict()
-        for k in [self._motor, self._det, self._det2]:
-            dd.update(k.describe())
-        return dd
+        return [{k: {'source': self.name, 'dtype': 'number'}
+                 for k in [self._motor, self._det]},
+                {self._det2: {'source': self.name, 'dtype': 'number'}}]
 
     def collect(self):
         if self._time is None:
