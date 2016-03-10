@@ -202,8 +202,9 @@ def run_fuzz():
     create_messages = ([Msg('create')] * 5 +
                        [Msg('create', name=unique_name()) for _ in range(5)])
     save_messages = [Msg('save')] * 10
-    sleep_messagse = [Msg('sleep', random.random() * 0.25) for _ in range(10)]
-    pause_messages = [Msg('pause')]
+    sleep_messages = [Msg('sleep', None, random.random() * 0.25) for _ in range(10)]
+    pause_messages = [Msg('pause')] * 10
+    null_messages = [Msg('null')] * 10
 
 
     # compile the list of all messages that we can send at the run engine
@@ -211,7 +212,8 @@ def run_fuzz():
                        trigger_messages + stage_messages + unstage_messages +
                        openrun_messages + closerun_messages +
                        checkpoint_messages + clear_checkpoint_messages +
-                       create_messages + save_messages)
+                       create_messages + save_messages +
+                       sleep_messages + pause_messages + null_messages)
     print("Using the following messages")
     pprint(message_objects)
 
