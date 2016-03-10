@@ -33,21 +33,25 @@ Or specified when the scan is run.
 
 .. note::
 
-    Structured data, such as
+    To improve searchability, the key "sample" has specicial significance.
+    It must be either a string
+
+    .. code-block:: python
+
+        'red 10 20 5'
+
+    or a dictionary
 
     .. code-block:: python
 
         {'color': 'red', 'dimensions': [10, 20, 5]}
 
-    is much better than a long string like
+    A dictionary is preferred because it is self-describing and more richly
+    searchable, but either is allowed.
 
-    .. code-block:: python
-
-        'red_10_20_5'
-
-    because it is searchable and self-describing. To encourage good practices,
-    the RunEngine inists that 'sample' be a dictionary. Any other fields
-    you invent can be anything you want.
+    Only "sample" has this restriciton. Invent custom-named keys (as in the
+    tongue-in-cheek "mood" example above) as needed. These can contain
+    strings, dictionaries, lists, and numbers.
 
 Required Fields
 ---------------
