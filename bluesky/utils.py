@@ -475,15 +475,14 @@ def separate_devices(devices):
     """
     result = []
     for det in devices:
-        skip = False
         for existing_det in result:
-            if is_ancestor(existing_det, det):
-                skip = True
+            if existing_det in ancestry(det):
+                # known issue: here we assume that det is in the read_attrs
+                # of existing_det -- to be addressed after plans.py refactor
                 break
-            elif is_ancestor(det, existing_det):
+            elif det in ancestry(existing_det):
                 # existing_det is redundant; use det in its place
                 result.remove(existing_det)
-                break  # we won't find any ancestors of existing_det in result
-        if not skip:
+        else:
             result.append(det)
     return result
