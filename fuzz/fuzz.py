@@ -205,7 +205,8 @@ def run_fuzz():
     sleep_messages = [Msg('sleep', None, random.random() * 0.25) for _ in range(10)]
     pause_messages = [Msg('pause')] * 10
     null_messages = [Msg('null')] * 10
-
+    configure_messages = [Msg('configure', obj, d={}) for obj in all_objects
+                          if hasattr(obj, 'configure')]
 
     # compile the list of all messages that we can send at the run engine
     message_objects = (flyer_messages + set_messages + read_messages +
@@ -213,7 +214,8 @@ def run_fuzz():
                        openrun_messages + closerun_messages +
                        checkpoint_messages + clear_checkpoint_messages +
                        create_messages + save_messages +
-                       sleep_messages + pause_messages + null_messages)
+                       sleep_messages + pause_messages + null_messages +
+                       configure_messages)
     print("Using the following messages")
     pprint(message_objects)
 
