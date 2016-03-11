@@ -430,6 +430,7 @@ class LiveTable(CallbackBase):
         ])
         self._rows = []
         self.logbook = logbook
+        self._sep_format = None
 
     def descriptor(self, doc):
         def patch_up_precision(p):
@@ -504,7 +505,8 @@ class LiveTable(CallbackBase):
     def stop(self, doc):
         if doc['run_start'] != self._start['uid']:
             return
-        self._print(self._sep_format)
+        if self._sep_format is not None:
+            self._print(self._sep_format)
         self._stop = doc
 
         wm = self.water_mark.format(st=self._start)
@@ -516,10 +518,7 @@ class LiveTable(CallbackBase):
         self._rows = []
         self._start = doc
         self._stop = None
-        self._format_info = OrderedDict([
-            ('seq_num', self._fm_sty(10 + self._pad_len, '', 'd')),
-            ('time', self._fm_sty(10 + 2 * self._pad_len, 10, 's'))
-        ])
+        self._sep_format = None
 
     def _print(self, out_str):
         self._rows.append(out_str)
