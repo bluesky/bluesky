@@ -418,3 +418,75 @@ def scalar_heuristic(device):
     reading = device.read()
     key = first_key_heuristic(device)
     return reading[key]['value']
+
+
+def ancestry(obj):
+    """
+    List self, parent, grandparent, ... back to ultimate ancestor.
+
+    Parameters
+    ----------
+    obj : object
+        must have a `parent` attribute
+
+    Returns
+    -------
+    ancestry : list
+        list of objects, starting with obj and tracing parents recursively
+    """
+    ancestry = []
+    ancestor = obj
+    while True:
+        ancestry.append(ancestor)
+        if ancestor.parent is None:
+            return ancestry
+        ancestor = ancestor.parent
+
+
+def share_ancestor(obj1, obj2):
+    """
+    Check whether obj1 and obj2 have a common ancestor.
+
+    Parameters
+    ----------
+    obj1 : object
+        must have a `parent` attribute
+    obj2 : object
+        must have a `parent` attribute
+
+    Returns
+    -------
+    result : boolean
+    """
+    return ancestry(obj1)[-1] is ancestry(obj2)[-1]
+
+
+def separate_devices(devices):
+    """
+    Filter out elements that have other elements as their ancestors.
+
+    If A is an ancestor of B, [A, B, C] -> [A, C].
+
+    Paremeters
+    ----------
+    devices : list
+        All elements must have a `parent` attribute.
+
+    Returns
+    -------
+    result : list
+        subset of input, with order retained
+    """
+    result = []
+    for det in devices:
+        for existing_det in result:
+            if existing_det in ancestry(det):
+                # known issue: here we assume that det is in the read_attrs
+                # of existing_det -- to be addressed after plans.py refactor
+                break
+            elif det in ancestry(existing_det):
+                # existing_det is redundant; use det in its place
+                result.remove(existing_det)
+        else:
+            result.append(det)
+    return result

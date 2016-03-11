@@ -7,7 +7,7 @@ from cycler import cycler
 import numpy as np
 from .run_engine import Msg
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
-                    scalar_heuristic)
+                    scalar_heuristic, separate_devices)
 
 
 class PlanBase(Struct):
@@ -177,7 +177,7 @@ class Count(PlanBase):
     def _one_count(self):
         # This is broken out in a separate method so we can loop
         # over it in different ways in _gen, above.
-        dets = self.detectors
+        dets = separate_devices(self.detectors)
         yield Msg('checkpoint')
         yield Msg('create', None, name='primary')
         for det in dets:
@@ -198,17 +198,16 @@ class Plan1D(PlanBase):
         return {'detectors': self.detectors, 'motors': [self.motor]}
 
     def _gen(self):
-        dets = self.detectors
+        dets = separate_devices(self.detectors)
         for step in self._abs_steps:
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
             yield Msg('wait', None, 'A')
             yield Msg('create', None, name='primary')
-            yield Msg('read', self.motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
             yield Msg('wait', None, 'B')
-            for det in dets:
+            for det in separate_devices(dets + [self.motor]):
                 yield Msg('read', det)
             yield Msg('save')
 
@@ -444,18 +443,17 @@ class _AdaptivePlanBase(PlanBase):
         cur_I = None
         cur_det = {}
         motor = self.motor
-        dets = self.detectors
+        dets = separate_devices(self.detectors)
         target_field = self.target_field
         while next_pos < stop:
             yield Msg('checkpoint')
             yield Msg('set', motor, next_pos)
             yield Msg('wait', None, 'A')
             yield Msg('create', None, name='primary')
-            yield Msg('read', motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
             yield Msg('wait', None, 'B')
-            for det in dets:
+            for det in separate_devices(dets + [self.motor]):
                 cur_det = yield Msg('read', det)
                 if target_field in cur_det:
                     cur_I = cur_det[target_field]['value']
@@ -616,7 +614,7 @@ class Center(PlanBase):
             from lmfit.models import GaussianModel, LinearModel
         except ImportError:
             raise ImportError("This scan requires the package lmfit.")
-        self.detectors = detectors
+        self.detectors = separate_devices(detectors)
         self.target_field = target_field
         self.motor = motor
         self.initial_center = initial_center
@@ -645,7 +643,7 @@ class Center(PlanBase):
         # We checked in the __init__ that this import works.
         from lmfit.models import GaussianModel, LinearModel
         # For thread safety (paranoia) make copies of stuff
-        dets = self.detectors
+        dets = separate_devices(self.detectors)
         target_field = self.target_field
         motor = self.motor
         initial_center = self.initial_center
@@ -659,14 +657,14 @@ class Center(PlanBase):
                              initial_center + self.RANGE * initial_width,
                              self.NUM_SAMPLES, endpoint=True):
             yield Msg('set', motor, x)
-            yield Msg('create', None, name='primary')
             ret_mot = yield Msg('read', motor)
+            yield Msg('create', None, name='primary')
             key, = ret_mot.keys()
             seen_x.append(ret_mot[key]['value'])
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
             yield Msg('wait', None, 'B')
-            for det in dets:
+            for det in separate_devices(dets + [motor]):
                 ret_det = yield Msg('read', det)
                 if target_field in ret_det:
                     seen_y.append(ret_det[target_field]['value'])
@@ -689,14 +687,14 @@ class Center(PlanBase):
                             np.random.randn(1) * guesses['sigma'],
                             min_cen, max_cen)
             yield Msg('set', motor, next_cen)
-            yield Msg('create', None, name='primary')
             ret_mot = yield Msg('read', motor)
+            yield Msg('create', None, name='primary')
             key, = ret_mot.keys()
             seen_x.append(ret_mot[key]['value'])
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
             yield Msg('wait', None, 'B')
-            for det in dets:
+            for det in separate_devices(dets + [motor]):
                 ret_det = yield Msg('read', det)
                 if target_field in ret_det:
                     seen_y.append(ret_det[target_field]['value'])
@@ -724,7 +722,7 @@ class PlanND(PlanBase):
 
     def _gen(self):
         self._last_set_point = {m: None for m in self.motors}
-        dets = self.detectors
+        dets = separate_devices(self.detectors)
         for step in list(self.cycler):
             yield Msg('checkpoint')
             for motor, pos in step.items():
@@ -737,12 +735,10 @@ class PlanND(PlanBase):
             yield Msg('wait', None, 'A')
             yield Msg('create', None, name='primary')
 
-            for motor in self.motors:
-                yield Msg('read', motor)
             for det in dets:
                 yield Msg('trigger', det, block_group='B')
             yield Msg('wait', None, 'B')
-            for det in dets:
+            for det in separate_devices(dets + list(self.motors)):
                 yield Msg('read', det)
             yield Msg('save')
 
