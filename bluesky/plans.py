@@ -132,7 +132,7 @@ class Count(PlanBase):
         # This is broken out in a separate method so we can loop
         # over it in different ways in _gen, above.
         dets = separate_devices(self.detectors)
-        yield from trigger_and_read(dets)
+        yield from event_wrapper(trigger_and_read(dets), name='primary')
         yield Msg('sleep', None, self.delay)
 
 

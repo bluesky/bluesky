@@ -168,14 +168,14 @@ def run_wrapper(plan, md=None, **kwargs):
     return ret
 
 
-def event_wrapper(plan):
+def event_wrapper(plan, name=None):
     """Wrap an iterator with a create and save messages
 
     Yields
     ------
     Msg
     """
-    yield Msg('create')
+    yield Msg('create', name=name)
     ret = yield from plan
     yield Msg('save')
 
