@@ -1,11 +1,12 @@
 from ophyd import Component as Cpt, Device, Signal as UnusableSignal
 from bluesky.utils import ancestry, share_ancestor, separate_devices
+from bluesky.tests.utils import setup_test_run_engine
+from bluesky import Msg
 
 
 class Signal(UnusableSignal):
     def __init__(self, _, *, name=None, parent=None):
         super().__init__(name=name, parent=parent)
-
 
 
 class A(Device):
@@ -44,3 +45,19 @@ def test_separate_devices():
     assert separate_devices([b1, b2.a1]) == [b1, b2.a1]
     assert separate_devices([b1.a1, b2.a2]) == [b1.a1, b2.a2]
     assert separate_devices([b1, a]) == [b1, a]
+
+
+def test_monitor():
+    docs = []
+    def collect(name, doc):
+        docs.append(doc)
+
+    RE = setup_test_run_engine()
+    a = A('')
+    def plan():
+        yield Msg('open_run')
+        yield Msg('monitor', a.s1)
+        a.s1._run_subs(sub_type='value')
+        yield Msg('close_run')
+    RE(plan(), collect)
+    assert len(docs) == 4
