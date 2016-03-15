@@ -260,6 +260,21 @@ def run_fuzz():
         count += 1
         if count % 100 == 0:
             print('processed %s messages' % count)
+        # Make sure the Run Engine is in a reasonable state
+        if RE.state == 'idle':
+            # all is well
+            pass
+        elif RE.state == 'running':
+            # uh oh
+            RE.abort()
+        elif RE.state == 'paused':
+            RE.abort()
+        else:
+            # no way we can get here
+            raise RuntimeError("How is the run engine even in this state? {}"
+                               "".format(RE.state))
+        # make sure we are idle before the next iteration
+        assert RE.state == 'idle'
     print('%s actions were thrown at the RunEngine' % count)
     print("Fuzz testing completed successfully")
     print("Actions taken in the following order")
