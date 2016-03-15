@@ -12,6 +12,7 @@ import itertools
 import gc
 random.seed(2016)
 
+
 def unique_name():
     return str(uuid.uuid4())[:7]
 
@@ -151,6 +152,43 @@ def randomly_SIGINT_in_the_future():
         loop.call_later(random.random() * 30, func)
 
 
+def get_scan():
+    scan_generators = [
+        simple_scan,
+        conditional_break,
+        sleepy,
+        do_nothing,
+        checkpoint_forever,
+        wait_one,
+        wait_multiple,
+        wait_complex,
+        conditional_pause,
+        panic_timer,
+        simple_scan_saving,
+        stepscan,
+        cautious_stepscan,
+        fly_gen,
+        multi_sample_temperature_ramp]
+    kwarg_map = {
+       'threshold': lambda: random.random() * 0.25,
+        'start': lambda: random.randrange(-10, 0),
+        'stop': lambda: random.randrange(0, 10),
+        'step': lambda: random.randrange(5, 15),
+        'motor': lambda: get_motor(),
+        'det': lambda: get_1d_det() if random.random() < 0.5 else get_2d_det(),
+        'timeout': lambda: random.random() * 3,
+        'motors': lambda: [get_motor() for _ in range(random.randrange(1, 5))],
+        'flyer': lambda: get_flyer(),
+    }
+    while True:
+        scan = random.choice(scan_generators)
+        varnames = scan.__code__.co_varnames[:scan.__code__.co_argcount]
+        if not set(varnames).issubset(set(kwarg_map)):
+            continue
+        kwargs = {k: kwarg_map[k] for k in varnames}
+        return scan.__code__.co_name, scan(**kwargs)
+
+
 def kickoff_and_collect(block=False, magic=False):
     """Make a flyer or magic_flyer object and maybe block
 
@@ -226,9 +264,11 @@ def run_fuzz():
 
     num_message = 100
     num_SIGINT = 8
+    num_scans = 50
     random.shuffle(message_objects)
     choices = (['message'] * num_message +
-               ['sigint'] * num_SIGINT)
+               ['sigint'] * num_SIGINT +
+               ['scan'] * num_scans)
     sigints = [
         ('interrupt', ['paused', 'idle'], interrupt_func),
         ('kill', ['idle'], kill_func),
@@ -251,6 +291,10 @@ def run_fuzz():
                 assert RE.state == 'idle'
             except IllegalMessageSequence as err:
                 print(err)
+        elif name == 'scan':
+            scan_name, scan = get_scan()
+            print("Running scan {}".format(scan_name))
+            RE(scan)
         elif name == 'sigint':
             sigint_type, allowed_states, func = random.choice(sigints)
             print(sigint_type)
