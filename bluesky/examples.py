@@ -384,6 +384,7 @@ class FlyMagic(Base):
         self._scan_points = scan_points
         self._time = None
         self._fly_count = 0
+        self.ready = False
 
     def read_configuration(self):
         return OrderedDict()
@@ -395,8 +396,10 @@ class FlyMagic(Base):
         self._fly_count = 0
 
     def kickoff(self):
+        self.ready = False
         self._time = ttime.time()
         self._fly_count += 1
+        self.ready = True
         return self
 
     def describe(self):
@@ -405,7 +408,7 @@ class FlyMagic(Base):
                 {self._det2: {'source': self.name, 'dtype': 'number'}}]
 
     def collect(self):
-        if self._time is None:
+        if self._time is None or not self.ready:
             raise RuntimeError("Must kick off flyscan before you collect")
 
         dtheta = (np.pi / 10) * self._fly_count
@@ -434,6 +437,7 @@ class FlyMagic(Base):
 
     def stop(self):
         pass
+
 
 motor = Mover('motor', ['motor'])
 motor1 = Mover('motor1', ['motor1'], sleep_time=.1)
