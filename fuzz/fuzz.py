@@ -59,8 +59,8 @@ def get_1d_det():
     """
     motor = get_motor()
     detname = 'det1d_' + unique_name()
-    det = SynGauss(detname, motor, motor.name, center=random.randrange(-1, 1),
-                   Imax=random.randrange(1, 10), sigma=random.randrange(0, 5))
+    det = SynGauss(detname, motor, motor.name, center=random.random() - 0.5,
+                   Imax=random.random() * 10, sigma=random.random() * 5)
     all_objects.add(det)
     return det
 
@@ -75,12 +75,12 @@ def get_2d_det():
     x = get_motor()
     y = get_motor()
     detname = 'det2d_' + unique_name()
-    det = Syn2DGauss(detname, x, x.name, y, x.name,
+    det = Syn2DGauss(detname, x, x.name, y, y.name,
                      center=(random.sample(range(-10, 10), 2)),
                      Imax=random.randrange(1, 10),
                      sigma=random.randrange(0, 5),
-                     noise=random.choice(['poission', 'uniform', None]),
-                     noise_multiplier=random.random(0, 5))
+                     noise=random.choice(['poisson', 'uniform', None]),
+                     noise_multiplier=random.random()*5)
     all_objects.add(det)
     return det
 
