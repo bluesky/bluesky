@@ -10,7 +10,7 @@ from bluesky.tests.utils import setup_test_run_engine
 import uuid
 import itertools
 import gc
-random.seed(2016)
+# random.seed(2016)
 
 
 def unique_name():
@@ -135,11 +135,11 @@ def kill_func():
 
 
 def spam_SIGINT():
-     pid = os.getpid()
-     for _ in range(100):
-         os.kill(pid, signal.SIGINT)
-         print("siginting")
-         ttime.sleep(0.01)
+    pid = os.getpid()
+    for _ in range(100):
+        os.kill(pid, signal.SIGINT)
+        print("siginting")
+        ttime.sleep(0.01)
 
 
 def randomly_SIGINT_in_the_future():
@@ -190,7 +190,7 @@ def make_scan_from_gen_func(scan):
 
     Parameters
     ----------
-    scan : str
+    scan : func
         The scan generator function to use to create a scan function.  The
         function signature will be inspected to determine the object types
         which need to be sent in with the function call.
@@ -229,7 +229,7 @@ def get_scan_generators():
         varnames = scan.__code__.co_varnames[:scan.__code__.co_argcount]
         if not set(varnames).issubset(set(scan_kwarg_map)):
             bad_scans.append(scan)
-    return [scan for scan in all_scan_generator_funcs if not scan in bad_scans]
+    return [scan for scan in all_scan_generator_funcs if scan not in bad_scans]
 
 
 def get_shuffleable_scan_generators():
@@ -250,12 +250,13 @@ def get_shuffleable_scan_generators():
         # then shuffle it
         random.shuffle(scan_list)
         try:
+            if RE.state != 'idle':
+                RE.abort()
             RE(scan_list)
         except IllegalMessageSequence:
             # this is acceptable
             pass
-    return [scan for scan in scans if not scan in unshuffleable]
-
+    return [scan for scan in scans if scan not in unshuffleable]
 
 
 def kickoff_and_collect(block=False, magic=False):
@@ -393,15 +394,23 @@ def run_fuzz():
             pass
         elif RE.state == 'running':
             # uh oh
-            RE.abort()
+            raise RuntimeError("Somehow the RunEngine thinks it is running")
+            # RE.abort()
         elif RE.state == 'paused':
             RE.abort()
         else:
             # no way we can get here
             raise RuntimeError("How is the run engine even in this state? {}"
                                "".format(RE.state))
-        # make sure we are idle before the next iteration
-        assert RE.state == 'idle'
+        try:
+            # make sure we are idle before the next iteration
+            assert RE.state == 'idle'
+            # there is a chance that a sigint will get thrown between the end
+            # of the above if/else block and this assert...
+        except AssertionError:
+            if RE.state == 'paused':
+                RE.abort()
+                assert RE.state == 'idle'
     print('%s actions were thrown at the RunEngine' % count)
     print("Fuzz testing completed successfully")
     print("Actions taken in the following order")
