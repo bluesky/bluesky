@@ -243,7 +243,7 @@ class Syn2DGauss(Reader):
                  noise=None, noise_multiplier=1):
         super().__init__(name, [name, ])
         self.ready = True
-        self._motor0 = motor0
+        self._motor = motor0
         self._motor_field0 = motor_field0
         self._motor1 = motor1
         self._motor_field1 = motor_field1
@@ -257,7 +257,7 @@ class Syn2DGauss(Reader):
 
     def trigger(self, *, block_group=True):
         self.ready = False
-        x = self._motor0.read()[self._motor_field0]['value']
+        x = self._motor.read()[self._motor_field0]['value']
         y = self._motor1.read()[self._motor_field1]['value']
         m = np.array([x, y])
         v = self.Imax * np.exp(
