@@ -467,7 +467,7 @@ def conditional_break(det, motor, threshold):
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         reading = yield Msg('read', det)
-        if reading['det']['value'] < threshold:
+        if reading[det.name]['value'] < threshold:
             print('DONE')
             yield Msg('close_run')
             break
