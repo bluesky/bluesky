@@ -138,8 +138,8 @@ def spam_SIGINT():
      pid = os.getpid()
      for _ in range(100):
          os.kill(pid, signal.SIGINT)
-         ttime.sleep(0.01)
          print("siginting")
+         ttime.sleep(0.01)
 
 
 def randomly_SIGINT_in_the_future():
