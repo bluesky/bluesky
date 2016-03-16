@@ -1167,7 +1167,12 @@ class RunEngine:
             raise IllegalMessageSequence("A 'collect' message was sent but no "
                                          "run is open.")
         obj = msg.obj
-        self._uncollected.remove(obj)
+        try:
+            self._uncollected.remove(obj)
+        except KeyError as ke:
+            raise IllegalMessageSequence("A 'collect' message was sent before "
+                                         "a 'kickoff' message for object: {}"
+                                         "".format(obj))
         stream_name = self._flyer_stream_names.pop(obj)
 
         # TODO Since Flyer.describe() return a *list* of data_keys it should
