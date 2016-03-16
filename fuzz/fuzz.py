@@ -152,41 +152,110 @@ def randomly_SIGINT_in_the_future():
         loop.call_later(random.random() * 30, func)
 
 
-def get_scan():
-    scan_generators = [
-        simple_scan,
-        conditional_break,
-        sleepy,
-        do_nothing,
-        checkpoint_forever,
-        wait_one,
-        wait_multiple,
-        wait_complex,
-        conditional_pause,
-        panic_timer,
-        simple_scan_saving,
-        stepscan,
-        cautious_stepscan,
-        fly_gen,
-        multi_sample_temperature_ramp]
-    kwarg_map = {
-       'threshold': lambda: random.random() * 0.25,
-        'start': lambda: random.randrange(-10, 0),
-        'stop': lambda: random.randrange(0, 10),
-        'step': lambda: random.randrange(5, 15),
-        'motor': lambda: get_motor(),
-        'det': lambda: get_1d_det() if random.random() < 0.5 else get_2d_det(),
-        'timeout': lambda: random.random() * 3,
-        'motors': lambda: [get_motor() for _ in range(random.randrange(1, 5))],
-        'flyer': lambda: get_flyer(),
-    }
-    while True:
-        scan = random.choice(scan_generators)
+all_scan_generator_funcs = [
+    simple_scan,
+    conditional_break,
+    sleepy,
+    do_nothing,
+    # checkpoint_forever should be part of these scans, as it will indefinitely
+    # hang the fuzzing effort
+    # checkpoint_forever,
+    wait_one,
+    wait_multiple,
+    wait_complex,
+    conditional_pause,
+    panic_timer,
+    simple_scan_saving,
+    stepscan,
+    cautious_stepscan,
+    fly_gen,
+    multi_sample_temperature_ramp]
+
+
+scan_kwarg_map = {
+    'threshold': lambda: random.random() * 0.25 + 0.5,
+    'start': lambda: random.randrange(-10, 0),
+    'stop': lambda: random.randrange(0, 10),
+    'step': lambda: random.randrange(5, 15),
+    'motor': lambda: get_motor(),
+    'det': lambda: get_1d_det() if random.random() < 0.5 else get_2d_det(),
+    'timeout': lambda: random.random() * 3,
+    'motors': lambda: [get_motor() for _ in range(random.randrange(1, 5))],
+    'flyer': lambda: get_flyer(),
+}
+
+
+def make_scan_from_gen_func(scan):
+    """Get a scan generator
+
+    Parameters
+    ----------
+    scan : str
+        The scan generator function to use to create a scan function.  The
+        function signature will be inspected to determine the object types
+        which need to be sent in with the function call.
+        e.g., if the generator function is `def sleepy(det, motor):` then
+        this function will see that there is a `det` field and a `motor` field
+        and create a detector object and a motor object and then return
+        `scan_gen(created_detector, created_motor)`
+
+    Returns
+    -------
+    scan : generator
+        A scan that should be passed to RunEngine.__call__
+    """
+    varnames = list(scan.__code__.co_varnames[:scan.__code__.co_argcount])
+    kwargs = {k: scan_kwarg_map[k]() for k in varnames}
+    if 'det' in varnames and 'motor' in varnames:
+        det = scan_kwarg_map['det']()
+        motor = det._motor
+        kwargs['det'] = det
+        kwargs['motor'] = motor
+    return scan(**kwargs)
+
+
+def get_scan_generators():
+    """Get the list of scan generators that I can programmatically create
+
+    Returns
+    -------
+    list
+        The list of scan generators that I can inspect and create with my
+        scan_kwarg_map
+
+    """
+    bad_scans = []
+    for scan in all_scan_generator_funcs:
         varnames = scan.__code__.co_varnames[:scan.__code__.co_argcount]
-        if not set(varnames).issubset(set(kwarg_map)):
-            continue
-        kwargs = {k: kwarg_map[k] for k in varnames}
-        return scan.__code__.co_name, scan(**kwargs)
+        if not set(varnames).issubset(set(scan_kwarg_map)):
+            bad_scans.append(scan)
+    return [scan for scan in all_scan_generator_funcs if not scan in bad_scans]
+
+
+def get_shuffleable_scan_generators():
+    scans = get_scan_generators()
+    RE = setup_test_run_engine()
+    unshuffleable = []
+    for scan in scans:
+        print("Testing to see if {} is shufflable".format(
+                scan.__code__.co_name))
+        scan_gen = make_scan_from_gen_func(scan)
+        # turn it into a list
+        try:
+            scan_list = list(scan_gen)
+        except TypeError as te:
+            print("{} is not shuffleable. Error: {}".format(
+                    scan.__code__.co_name, te))
+            unshuffleable.append(scan)
+        # then shuffle it
+        random.shuffle(scan_list)
+        try:
+            RE(scan_list)
+        except IllegalMessageSequence:
+            # this is acceptable
+            pass
+    return [scan for scan in scans if not scan in unshuffleable]
+
 
 
 def kickoff_and_collect(block=False, magic=False):
@@ -265,10 +334,12 @@ def run_fuzz():
     num_message = 100
     num_SIGINT = 8
     num_scans = 50
+    num_shuffled_scans = 50
     random.shuffle(message_objects)
     choices = (['message'] * num_message +
                ['sigint'] * num_SIGINT +
-               ['scan'] * num_scans)
+               ['scan'] * num_scans +
+               ['shuffled_scan'] * num_shuffled_scans)
     sigints = [
         ('interrupt', ['paused', 'idle'], interrupt_func),
         ('kill', ['idle'], kill_func),
@@ -276,6 +347,8 @@ def run_fuzz():
         ('random SIGINTs', ['idle', 'paused'], randomly_SIGINT_in_the_future)
     ]
 
+    scan_generator_funcs = get_scan_generators()
+    shufflable_scans = get_shuffleable_scan_generators()
 
     msg_seq = []
     count = 0
@@ -292,15 +365,25 @@ def run_fuzz():
             except IllegalMessageSequence as err:
                 print(err)
         elif name == 'scan':
-            scan_name, scan = get_scan()
-            print("Running scan {}".format(scan_name))
-            RE(scan)
+            scan_gen_func = random.choice(scan_generator_funcs)
+            print("Running scan: {}"
+                  "".format(scan_gen_func.__code__.co_name))
+            scan_generator = make_scan_from_gen_func(scan_gen_func)
+            RE(scan_generator)
+        elif name == 'shuffled_scan':
+            scan_gen_func = random.choice(shufflable_scans)
+            print("Running shuffled scan: {}"
+                  "".format(scan_gen_func.__code__.co_name))
+            shuffled_scan = make_scan_from_gen_func(scan_gen_func)
+            RE(shuffled_scan)
         elif name == 'sigint':
             sigint_type, allowed_states, func = random.choice(sigints)
             print(sigint_type)
             msg_seq.append(sigint_type)
             #TODO Figure out how to verify that the RunEngine is in the desired state after this call_later executes
             loop.call_later(1, func)
+        else:
+            raise NotImplementedError("{} is not implemented".format(name))
         count += 1
         if count % 100 == 0:
             print('processed %s messages' % count)
