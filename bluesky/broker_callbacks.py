@@ -37,8 +37,7 @@ class LiveImage(CallbackBase):
         uid = doc['data'][self.field]
         data = fsapi.retrieve(uid)
         self.cs.update_image(data)
-        self.cs._fig.canvas.draw()
-        self.cs._fig.canvas.flush_events()
+        self.cs._fig.canvas.draw_idle()
 
 
 def post_run(callback):
