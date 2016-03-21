@@ -3,7 +3,7 @@ from bluesky.examples import stepscan, det, motor
 import pytest
 
 
-def setup_module():
+def setup_module(module):
     try:
         from metadatastore.utils.testing import mds_setup
     except ImportError:
@@ -11,7 +11,7 @@ def setup_module():
     else:
         mds_setup()
 
-def teardown_module():
+def teardown_module(module):
     try:
         from metadatastore.utils.testing import mds_teardown
     except ImportError:
@@ -23,14 +23,11 @@ def teardown_module():
 def test_scan_and_get_data():
     try:
         import metadatastore
-        del metadatastore
-    except ImportError as ie:
-        raise pytest.skip('skipping because metadatastore is not available\nMessage is: {}'.format(ie))
-    try:
         from databroker import DataBroker as db
+        from bluesky.standard_config import gs
     except ImportError as ie:
-        raise pytest.skip('skipping because databroker is not available\nMessage is:{}'.format(ie))
-    from bluesky.standard_config import gs
+        raise pytest.skip('skipping because some libary is unavailable\n'
+                          'ImportError:  is:{}'.format(ie))
     uid = gs.RE(stepscan(det, motor), group='foo', beamline_id='testing',
              config={})
 
@@ -41,11 +38,11 @@ def test_scan_and_get_data():
 def test_post_run():
     try:
         import databroker
-        del databroker
+        from bluesky.standard_config import gs
+        from bluesky.broker_callbacks import post_run
     except ImportError as ie:
-        raise pytest.skip('skipping because databroker is not available\nMessage is:{}'.format(ie))
-    from bluesky.standard_config import gs
-    from bluesky.broker_callbacks import post_run
+        raise pytest.skip('skipping because some libary is unavailable\n'
+                          'ImportError:  is:{}'.format(ie))
     output = defaultdict(list)
     def do_nothing(doctype, doc):
         output[doctype].append(doc)
@@ -63,9 +60,9 @@ def test_post_run():
 def test_verify_files_saved():
     try:
         import databroker
-        del databroker
+        from bluesky.standard_config import gs
+        from bluesky.broker_callbacks import verify_files_saved
     except ImportError as ie:
-        raise pytest.skip('skipping because databroker is not available\nMessage is:{}'.format(ie))
-    from bluesky.standard_config import gs
-    from bluesky.broker_callbacks import verify_files_saved
+        raise pytest.skip('skipping because some libary is unavailable\n'
+                          'ImportError:  is:{}'.format(ie))
     gs.RE(stepscan(det, motor), subs={'stop': verify_files_saved})
