@@ -1,6 +1,6 @@
 import asyncio
 import time as ttime
-from collections import deque
+from collections import deque, OrderedDict
 import numpy as np
 from .run_engine import Msg
 
@@ -177,6 +177,7 @@ class SynGauss(Reader):
         self.sigma = sigma
         self.noise = noise
         self.noise_multiplier = noise_multiplier
+        self._data = {self.name: {'value': 0, 'timestamp': ttime.time()}}
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
 
@@ -203,11 +204,32 @@ class Syn2DGauss(Reader):
 
     Parameters
     ----------
+    name : str
+        The name of the detector
+    motor0 : `Mover`
+        The 'x' coordinate of the 2-D gaussian blob
+    motor_field0 : str
+        The name field of the motor. Should be the key in motor0.describe()
+    motor1 : `Mover`
+        The 'y' coordinate of the 2-D gaussian blob
+    motor_field1 : str
+        The name field of the motor. Should be the key in motor1.describe()
+    center : iterable, optional
+        The center of the gaussian blob
+        Defaults to (0,0)
+    Imax : float, optional
+        The intensity at `center`
+        Defaults to 1
+    sigma : float, optional
+        Standard deviation for gaussian blob
+        Defaults to 1
     noise : {'poisson', 'uniform', None}
-        Add noise to the gaussian peak.
-    noise_multiplier : float
+        Add noise to the gaussian peak..
+        Defaults to None
+    noise_multiplier : float, optional
         Only relevant for 'uniform' noise. Multiply the random amount of
         noise by 'noise_multiplier'
+        Defaults to 1
 
     Example
     -------
@@ -217,11 +239,11 @@ class Syn2DGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor0, motor_field0, motor1, motor_field1,
-                 center, Imax, sigma=1,
+                 center=(0,0), Imax=1, sigma=1,
                  noise=None, noise_multiplier=1):
         super().__init__(name, [name, ])
         self.ready = True
-        self._motor0 = motor0
+        self._motor = motor0
         self._motor_field0 = motor_field0
         self._motor1 = motor1
         self._motor_field1 = motor_field1
@@ -230,12 +252,13 @@ class Syn2DGauss(Reader):
         self.sigma = sigma
         self.noise = noise
         self.noise_multiplier = noise_multiplier
+        self._data = {self.name: {'value': None, 'timestamp': None}}
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
 
     def trigger(self, *, block_group=True):
         self.ready = False
-        x = self._motor0.read()[self._motor_field0]['value']
+        x = self._motor.read()[self._motor_field0]['value']
         y = self._motor1.read()[self._motor_field1]['value']
         m = np.array([x, y])
         v = self.Imax * np.exp(
@@ -271,6 +294,12 @@ class MockFlyer:
     @property
     def done(self):
         return self.ready
+
+    def read_configuration(self):
+        return OrderedDict()
+
+    def describe_configuration(self):
+        return OrderedDict()
 
     def describe(self):
         dd = dict()
@@ -355,13 +384,22 @@ class FlyMagic(Base):
         self._scan_points = scan_points
         self._time = None
         self._fly_count = 0
+        self.ready = False
+
+    def read_configuration(self):
+        return OrderedDict()
+
+    def describe_configuration(self):
+        return OrderedDict()
 
     def reset(self):
         self._fly_count = 0
 
     def kickoff(self):
+        self.ready = False
         self._time = ttime.time()
         self._fly_count += 1
+        self.ready = True
         return self
 
     def describe(self):
@@ -370,7 +408,7 @@ class FlyMagic(Base):
                 {self._det2: {'source': self.name, 'dtype': 'number'}}]
 
     def collect(self):
-        if self._time is None:
+        if self._time is None or not self.ready:
             raise RuntimeError("Must kick off flyscan before you collect")
 
         dtheta = (np.pi / 10) * self._fly_count
@@ -400,11 +438,12 @@ class FlyMagic(Base):
     def stop(self):
         pass
 
+
 motor = Mover('motor', ['motor'])
 motor1 = Mover('motor1', ['motor1'], sleep_time=.1)
 motor2 = Mover('motor2', ['motor2'], sleep_time=.2)
 motor3 = Mover('motor3', ['motor3'], sleep_time=.5)
-noisy_det = SynGauss('det', motor, 'motor', center=0, Imax=1,
+noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
                      noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
@@ -428,7 +467,7 @@ def conditional_break(det, motor, threshold):
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         reading = yield Msg('read', det)
-        if reading['det']['value'] < threshold:
+        if reading[det.name]['value'] < threshold:
             print('DONE')
             yield Msg('close_run')
             break

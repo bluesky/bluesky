@@ -46,7 +46,7 @@ install:
   - git clean -xfd
 
 script:
-  - coverage run run_tests.py --cov bluesky -vrxs
+  - coverage run run_tests.py
   - coverage report -m
 
 after_success:

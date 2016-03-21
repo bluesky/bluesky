@@ -389,7 +389,7 @@ def test_abort():
               "pytest process it kills pytest.")
     pytest.xfail(errmsg)
     import subprocess
-    subprocess.check_call(['python', 'abort.py'], cwd = '.')
+    subprocess.check_call(['python', 'abort.py'], cwd='.')
 
 
 def test_rogue_sigint():
