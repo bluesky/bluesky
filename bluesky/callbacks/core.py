@@ -532,7 +532,7 @@ _SPEC_HEADER_TEMPLATE = env.from_string("""#F {{ filepath }}
 #C {{ owner }}  User = {{ owner }}
 #O0 {{ positioners | join(' ') }}""")
 
-_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ scan_motor }} {{ start }} {{ stop }} {{ stides }} {{ time }}")
+_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ scan_motor }} {{ start }} {{ stop }} {{ strides }} {{ time }}")
 
 _PLAN_TO_SPEC_MAPPING = {'AbsScanPlan': 'ascan',
                          'DeltaScanPlan': 'dscan',
@@ -546,6 +546,7 @@ _SPEC_START_TEMPLATE = env.from_string("""
 #T {{ acq_time }} (Seconds)
 #P0 {{ positioner_positions | join(' ')}}""")
 
+# It is critical that the spacing on the #L line remain exactly like this!
 _SPEC_DESCRIPTOR_TEMPLATE = env.from_string("""
 #N {{ length }}
 #L {{ motor_name }}    Epoch  Seconds  {{ data_keys | join('  ') }}\n""")
@@ -574,6 +575,11 @@ class LiveSpecFile(CallbackBase):
     >>> gs.RE.subscribe('all', live_specfile_callback)
     >>> # Modify the spec file location like this:
     >>> # live_specfile_callback.filepath = '/some/new/filepath.spec'
+
+    Notes
+    -----
+    `Reference <https://github.com/certified-spec/specPy/blob/master/doc/specformat.rst>`_
+    for the spec file format.
     """
     def __init__(self, specpath):
         """
