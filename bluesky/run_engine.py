@@ -224,6 +224,7 @@ class RunEngine:
         self._config_values_cache = dict()  # " obj.read_configuration() values
         self._config_ts_cache = dict()  # " obj.read_configuration() timestamps
         self._descriptors = dict()  # cache of {(name, objs_frozen_set): uid}
+        self._monitor_cbs = dict()  # cache of {obj: cb}
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo datapoints
         self._pause_requests = dict()  # holding {<name>: callable}
@@ -240,6 +241,8 @@ class RunEngine:
             'create': self._create,
             'save': self._save,
             'read': self._read,
+            'monitor': self._monitor,
+            'unmonitor': self._unmonitor,
             'null': self._null,
             'set': self._set,
             'trigger': self._trigger,
@@ -430,6 +433,8 @@ class RunEngine:
                 self.state = 'paused'
                 if self.resumable:
                     loop.stop()
+                    for obj, cb in list(self._monitor_cbs.items()):
+                        obj.clear_sub(cb)
                     # During pause, all motors should be stopped.
                     for obj in self._movable_objs_touched:
                         try:
@@ -605,6 +610,8 @@ class RunEngine:
 
         self._interrupted = False
         self._rewind()
+        for obj, cb in self._monitor_cbs.items():
+            obj.subscribe(cb)
         self._resume_event_loop()
         return self._run_start_uids
 
@@ -645,7 +652,14 @@ class RunEngine:
             self._exception = FailedPause()
         else:
             print("Suspending....To get prompt hit Ctrl-C to pause the scan")
+            objs_monitored = list(self._monitor_cbs)
+            for obj, cb in list(self._monitor_cbs.items()):
+                obj.clear_sub(cb)
+                del self._monitor_cbs[obj]
             wait_msg = Msg('wait_for', [fut, ])
+            for obj in objs_monitored:
+                msg = Msg('monitor', obj)
+                self._msg_cache.appendleft(msg)
             self._msg_cache.appendleft(wait_msg)
             self._rewind()
 
@@ -773,12 +787,18 @@ class RunEngine:
                     for task in asyncio.Task.all_tasks(loop):
                         task.cancel()
                     loop.stop()
+                    for obj, cb in list(self._monitor_cbs.items()):
+                        obj.clear_sub(cb)
+                        del self._monitor_cbs[obj]
                     self.state = 'idle'
                     raise
 
             for task in asyncio.Task.all_tasks(loop):
                 task.cancel()
             loop.stop()
+            for obj, cb in list(self._monitor_cbs.items()):
+                obj.clear_sub(cb)
+                del self._monitor_cbs[obj]
             self.state = 'idle'
 
     def _check_for_trouble(self):
@@ -922,6 +942,54 @@ class RunEngine:
             config_ts[key] = val['timestamp']
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
+
+    @asyncio.coroutine
+    def _monitor(self, msg):
+        obj = msg.obj
+        if not self._run_is_open:
+            raise IllegalMessageSequence("A 'monitor' message was sent but no "
+                                         "run is open.")
+        if obj in self._monitor_cbs:
+            raise IllegalMessageSequence("A 'monitor' message was sent for {}"
+                                         "which is already monitored".format(
+                                             obj))
+        descriptor_uid = new_uid()
+        data_keys = obj.describe()
+        config = obj.read_configuration()
+        object_keys = {obj.name: list(data_keys)}
+        desc_doc = dict(run_start=self._run_start_uid, time=ttime.time(),
+                        data_keys=data_keys, uid=descriptor_uid,
+                        configuration=config, name=None,
+                        object_keys=object_keys)
+        self.log.debug("Emitted Event Descriptor")
+        seq_num_counter = count()
+
+        def emit_event(*args, **kwargs):
+            # Ignore the inputs. Use this call as a signal to call read on the
+            # object, a crude way to be sure we get all the info we need.
+            data, timestamps = _rearrange_into_parallel_dicts(obj.read())
+            doc = dict(descriptor=descriptor_uid,
+                       time=ttime.time(), data=data, timestamps=timestamps,
+                       seq_num=next(seq_num_counter), uid=new_uid())
+            jsonschema.validate(doc, schemas[DocumentNames.event])
+            self._lossless_dispatcher.process(DocumentNames.event, doc)
+            # Unlike the RunEngine.emit coroutine, here both dispatchers
+            # get a lossless stream of all documents. Monitors are already
+            # "lossy"; we will not mix in our own lossiness here. If
+            # monitors are generating too much data, they should be
+            # implemented as flyers.
+            self.dispatcher.process(DocumentNames.event, doc)
+
+        self._monitor_cbs[obj] = emit_event
+        obj.subscribe(emit_event, *msg.args, **msg.kwargs)
+        yield from self.emit(DocumentNames.descriptor, desc_doc)
+
+    @asyncio.coroutine
+    def _unmonitor(self, msg):
+        obj = msg.obj
+        cb = self._monitor_cbs[obj]
+        obj.clear_sub(cb)
+        del self._monitor_cbs[obj]
 
     @asyncio.coroutine
     def _save(self, msg):
