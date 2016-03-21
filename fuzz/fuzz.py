@@ -138,7 +138,7 @@ def spam_SIGINT():
     pid = os.getpid()
     for _ in range(100):
         os.kill(pid, signal.SIGINT)
-        print("siginting")
+        print("sending SIGINT right now.")
         ttime.sleep(0.01)
 
 
@@ -149,7 +149,9 @@ def randomly_SIGINT_in_the_future():
             func = kill_func
         # randomly kill or interrupt at some point in the future. Oh, and
         # do it 10 times
-        loop.call_later(random.random() * 30, func)
+        sigint_in_future = random.random() * 30
+        print("SIGINT in {}".format(sigint_in_future))
+        loop.call_later(sigint_in_future, func)
 
 
 all_scan_generator_funcs = [
