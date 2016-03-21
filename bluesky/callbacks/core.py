@@ -532,7 +532,7 @@ _SPEC_HEADER_TEMPLATE = env.from_string("""#F {{ filepath }}
 #C {{ owner }}  User = {{ owner }}
 #O0 {{ positioners | join(' ') }}""")
 
-_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ scan_motor }} {{ start }} {{ stop }} {{ stides }} {{ time }}")
+_SPEC_1D_COMMAND_TEMPLATE = env.from_string("{{ scan_type }} {{ scan_motor }} {{ start }} {{ stop }} {{ strides }} {{ time }}")
 
 _PLAN_TO_SPEC_MAPPING = {'AbsScanPlan': 'ascan',
                          'DeltaScanPlan': 'dscan',
@@ -546,6 +546,7 @@ _SPEC_START_TEMPLATE = env.from_string("""
 #T {{ acq_time }} (Seconds)
 #P0 {{ positioner_positions | join(' ')}}""")
 
+# It is critical that the spacing on the #L line remain exactly like this!
 _SPEC_DESCRIPTOR_TEMPLATE = env.from_string("""
 #N {{ length }}
 #L {{ motor_name }}    Epoch  Seconds  {{ data_keys | join('  ') }}\n""")
@@ -557,7 +558,6 @@ class LiveSpecFile(CallbackBase):
     """Callback to export scalar values to a spec file for viewing
 
     Expect:
-        `
     1. a descriptor named 'baseline'
     2. an event for that descriptor
     3. a descriptor named 'main'
@@ -565,6 +565,11 @@ class LiveSpecFile(CallbackBase):
 
     Other documents can be issues before, between, and after, but
     these must be issued and in this order.
+
+    Notes
+    -----
+    `Reference <https://github.com/certified-spec/specPy/blob/master/doc/specformat.rst>`_
+    for the spec file format.
 
     Example
     -------
@@ -620,56 +625,68 @@ class LiveSpecFile(CallbackBase):
         # and parsing any existing contents.
         plan_type = doc['plan_type']
         plan_args = doc['plan_args']
-        if plan_type in _PLAN_TO_SPEC_MAPPING.keys():
-            # Some of these are used in other methods too -- stash them.
-            self._unix_time = doc['time']
-            self._acq_time = plan_args.get('time', -1)
-            content = dict(scan_type=_PLAN_TO_SPEC_MAPPING[doc['plan_type']],
-                           acq_time=self._acq_time)
-            if plan_type == 'Count':
-                # count has no motor. Have to fake one.
-                self._motor = ['Count']
-            else:
-                self._motor = doc['motors']
-                content['start'] = plan_args['start']
-                content['stop'] = plan_args['stop']
-                content['strides'] = int(plan_args['num']) - 1,
-            # We only support a single scanning motor right now.
-            if len(self._motor) > 1:
-                raise NotImplementedError(
-                    "Your scan has %s scanning motors. They are %s. SpecCallback"
-                    " cannot handle multiple scanning motors. Please request "
-                    "this feature at https://github.com/NSLS-II/bluesky/issues" %
-                    (len(self._motor), self._motor))
-            self._motor, = self._motor
-            content['scan_motor'] = self._motor
-            command = _SPEC_1D_COMMAND_TEMPLATE.render(content)
-        else:
+        if plan_type not in _PLAN_TO_SPEC_MAPPING.keys():
             err_msg = ("Do not know how to represent %s in SPEC. If "
                        "you would like this feature, request it at "
                        "https://github.com/NSLS-II/bluesky/issues"
                        % plan_type)
             raise NotImplementedError(err_msg)
-        # write the new scan entry
-        content = dict(command=command,
-                       scan_id=doc['scan_id'],
-                       readable_time=datetime.fromtimestamp(doc['time']),
-                       acq_time=self._acq_time,
-                       positioner_positions=self.positions)
-        self._start_content = content  # can't write until after we see desc
-        self._start_doc = doc
+
+        # Some of these are used in other methods too -- stash them.
+        self._unix_time = doc['time']
+        self._acq_time = plan_args.get('time', -1)
+        content = dict(scan_type=_PLAN_TO_SPEC_MAPPING[doc['plan_type']],
+                       acq_time=self._acq_time)
+        if plan_type == 'Count':
+            # count has no motor. Have to fake one.
+            self._motor = 'Count'
+        else:
+            content['start'] = plan_args['start']
+            content['stop'] = plan_args['stop']
+            content['strides'] = int(plan_args['num']) - 1,
+            try:
+                # We only support a single scanning motor right now.
+                self._motor, = doc['motors']
+            except ValueError:
+                raise NotImplementedError(
+                    "Your scan has %s scanning motors. They are %s. SpecCallback"
+                    " cannot handle multiple scanning motors. Please request "
+                    "this feature at https://github.com/NSLS-II/bluesky/issues" %
+                    (len(self._motor), self._motor))
+        content['scan_motor'] = self._motor
+        command = _SPEC_1D_COMMAND_TEMPLATE.render(content)
+        # Can't write the entry until we see the descriptor, so stash it until
+        # we get the descriptor
+        self._start_content = dict(
+            command=command,
+            scan_id=doc['scan_id'],
+            readable_time=datetime.fromtimestamp(doc['time']),
+            acq_time=self._acq_time,
+            positioner_positions=self.positions)
 
     def descriptor(self, doc):
         """Write the header for the actual scan data"""
+        if self._motor not in list(doc['data_keys'].keys()) + ['Count']:
+            # see if we can just append _user_readback to the motor
+            self._motor += '_user_readback'
+            if self._motor not in doc['data_keys']:
+                # give up and use the event sequence number as the motor.
+                # We are still throwing all the motor information into the
+                # spec file, but the user will have to manually choose the
+                print("We are unable to guess the motor name. Please set the"
+                      "user_readback value to be the same as the motor name "
+                      "so that we are able to correctly guess your scanning "
+                      "motor. Your 'motor' is actually the sequence number of"
+                      "the event")
+                self._motor = 'seq_num'
+
         # List all scalar fields, excluding the motor (x variable).
         self._read_fields = sorted([k for k, v in doc['data_keys'].items()
-                                    if (v['object_name'] != self._motor
-                                        and not v['shape'])])
+                                    if k != self._motor and not v['shape']])
+        # Remove the motor key. It should only be in the list once!
         content = dict(motor_name=self._motor,
-                       acq_time=self._acq_time,
-                       unix_time=self._unix_time,
                        length=3 + len(self._read_fields),
-                       data_keys=doc['data_keys'].keys())
+                       data_keys=self._read_fields)
         with open(self.specpath, 'a') as f:
             f.write(_SPEC_START_TEMPLATE.render(self._start_content))
             f.write(_SPEC_DESCRIPTOR_TEMPLATE.render(content))
@@ -680,10 +697,14 @@ class LiveSpecFile(CallbackBase):
         data = doc['data']
         values = [str(data[k]) for k in self._read_fields]
         if self._motor == "Count":
-            doc['data']['Count'] = -1
+            motor_position = -1
+        elif self._motor == "seq_num":
+            motor_position = doc['seq_num']
+        else:
+            motor_position = data[self._motor]
         content = dict(acq_time=self._acq_time,
                        unix_time=doc['time'],
-                       motor_position=data[self._motor],
+                       motor_position=motor_position,
                        values=values)
         with open(self.specpath, 'a') as f:
             f.write(_SPEC_EVENT_TEMPLATE.render(content))
