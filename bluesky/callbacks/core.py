@@ -675,7 +675,7 @@ class LiveSpecFile(CallbackBase):
                        acq_time=self._acq_time,
                        unix_time=self._unix_time,
                        length=3 + len(self._read_fields),
-                       data_keys=doc['data_keys'].keys())
+                       data_keys=self._read_fields)
         with open(self.specpath, 'a') as f:
             f.write(_SPEC_START_TEMPLATE.render(self._start_content))
             f.write(_SPEC_DESCRIPTOR_TEMPLATE.render(content))
