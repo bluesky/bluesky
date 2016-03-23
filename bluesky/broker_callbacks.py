@@ -1,6 +1,6 @@
 import os
 import time as ttime
-from databroker import DataBroker as db, get_events
+from databroker import DataBroker as db, get_events, restream
 from databroker.databroker import fill_event
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
@@ -66,7 +66,7 @@ def post_run(callback):
     --------
     Print a table with full (lossless) result set at the end of a run.
 
-    >>> s = Ascan(motor, [det1], [1,2,3])
+    >>> s = AbsScanPlan(motor, [det1], [1,2,3])
     >>> table = LiveTable(['det1', 'motor'])
     >>> RE(s, {'stop': post_run(table)})
     +------------+-------------------+----------------+----------------+
@@ -81,17 +81,7 @@ def post_run(callback):
         if name != 'stop':
             return
         uid = stop_doc['run_start']
-        start = run_start_given_uid(uid)
-        descriptors = descriptors_by_start(uid)
-        # For convenience, I'll rely on the broker to get Events.
-        header = db[uid]
-        events = get_events(header)
-        callback('start', start)
-        for d in descriptors:
-            callback('descriptor', d)
-        for e in events:
-            callback('event', e)
-        callback('stop', stop_doc)
+        return restream(db[uid], callback)
     return f
 
 
