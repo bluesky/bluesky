@@ -1,4 +1,3 @@
-import epics
 import asyncio
 from abc import ABCMeta, abstractmethod, abstractproperty
 import operator
@@ -11,10 +10,6 @@ class PVSuspenderBase(metaclass=ABCMeta):
 
     Parameters
     ----------
-
-    RE : RunEngine
-        The run engine instance this should work on
-
     pv_name : str
         The PV to watch for changes to determine if the
         scan should be suspended
@@ -27,37 +22,42 @@ class PVSuspenderBase(metaclass=ABCMeta):
         The event loop to work on
 
     """
-    def __init__(self, RE, pv_name, *, sleep=0, loop=None):
+    def __init__(self, signal, *, sleep=0, loop=None):
         """
         """
         if loop is None:
             loop = asyncio.get_event_loop()
-        self._loop = loop
-        self.RE = RE
+        self.RE = None
         self._ev = None
+        self._tripped = False
         self._sleep = sleep
         self._lock = Lock()
-        self._pv = epics.PV(pv_name, auto_monitor=True)
-        self._indx = None
-        self.install()
+        self._sig = signal
 
-    def install(self):
+    def install(self, RE, *, event_type=None):
         '''Install callback on PV
 
         This (re)installs the required callbacks at the pyepics level
+
+        Parameters
+        ----------
+
+        RE : RunEngine
+            The run engine instance this should work on
+
+        event_type : str, optional
+            The event type (subscription type) to watch
         '''
-        if self._indx is not None:
-            self.remove()
-        self._indx = self._pv.add_callback(self)
+        self.RE = RE
+        self._sig.subscribe(self, event_type=event_type, run=True)
 
     def remove(self):
         '''Disable the suspender
 
         Removes the callback at the pyepics level
         '''
-        if self._indx is not None:
-            self._pv.remove_callback(self._indx)
-            self._indx = None
+        self.sig.clear_sub(self)
+        self.RE = None
 
     @abstractmethod
     def _should_suspend(self, value):
@@ -97,35 +97,41 @@ class PVSuspenderBase(metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-    def __call__(self, **kwargs):
+    def __call__(self, value, **kwargs):
         """
         Make the class callable so that we can
         pass it off to the pyepics callback stack.
 
         This expects the massive blob that comes from pyepics
         """
-        value = kwargs['value']
 
         with self._lock:
-            if self._ev is None:
-                # in the case where either have never been
-                # called or have already fully cycled once
-                if self._should_suspend(value):
-                    self._ev = asyncio.Event(loop=self._loop)
+            if self._should_suspend(value):
+                self._tripped = True
+                if self._ev is None and self.RE is not None:
+                    loop = self.RE.loop
+                    self._ev = asyncio.Event(loop=loop)
 
-                    self._loop.call_soon_threadsafe(
+                    loop.call_soon_threadsafe(
                         self.RE.request_suspend,
                         self._ev.wait())
-            else:
-                if self._should_resume(value):
-                    ev = self._ev.set
-                    sleep = self._sleep
+            elif self._should_resume(value):
+                self._tripped = False
+                if self._ev:
 
-                    def local():
-                        self._loop.call_later(sleep, ev)
-                    self._loop.call_soon_threadsafe(local)
-                    # clear that we have an event
-                    self._ev = None
+                    sleep = self._sleep
+                    if self.RE is not None:
+                        loop = self.RE.loop
+
+                        def local():
+                            loop.call_later(sleep, self._ev.set)
+                        loop.call_soon_threadsafe(local)
+                # clear that we have an event
+                self._ev = None
+
+    @property
+    def tripped(self):
+        return self._tripped
 
 
 class PVSuspendBoolHigh(PVSuspenderBase):
@@ -194,9 +200,9 @@ class _PVThreshold(PVSuspenderBase):
     PV fall above or below a threshold.  Allow for a possibly different
     threshold to resume.
     """
-    def __init__(self, RE, pv, suspend_thresh, *,
+    def __init__(self, signal, suspend_thresh, *,
                  resume_thresh=None, **kwargs):
-        super().__init__(RE, pv, **kwargs)
+        super().__init__(signal, **kwargs)
         self._suspend_thresh = suspend_thresh
         if resume_thresh is None:
             resume_thresh = suspend_thresh
@@ -313,8 +319,8 @@ class _PVSuspendBandBase(PVSuspenderBase):
     Private base-class for suspenders based on keeping a scalar inside
     or outside of a band
     """
-    def __init__(self, RE, pv, band_bottom, band_top, **kwargs):
-        super().__init__(RE, pv, **kwargs)
+    def __init__(self, signal, band_bottom, band_top, **kwargs):
+        super().__init__(signal, **kwargs)
         if not band_bottom < band_top:
             raise ValueError("The bottom of the band must be strictly "
                              "less than the top of the band.\n"
