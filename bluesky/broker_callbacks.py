@@ -1,6 +1,6 @@
 import os
 import time as ttime
-from databroker import DataBroker as db, get_events, restream
+from databroker import DataBroker as db, get_events, process
 from databroker.databroker import fill_event
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
@@ -81,8 +81,35 @@ def post_run(callback):
         if name != 'stop':
             return
         uid = stop_doc['run_start']
-        return restream(db[uid], callback)
+        return process(db[uid], callback)
     return f
+
+
+def make_restreamer(callback):
+    """
+    Run a callback whenever a uid is updated.
+
+    Parameters
+    ----------
+    callback : callable
+        expected signature is `f(name, doc)`
+
+    Example
+    -------
+    Run a callback whenever a uid is updated.
+
+    >>> def f(name, doc):
+    ...     # do stuff
+    ...
+    >>> g = make_restreamer(f)
+
+    To use this `ophyd.callbacks.LastUidSignal`:
+
+    >>> last_uid_signal.subscribe(g)
+    """
+    def cb(value, **kwargs):
+        return process(db[value], callback)
+    return cb
 
 
 def verify_files_saved(name, doc):
