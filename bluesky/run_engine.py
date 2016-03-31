@@ -1196,7 +1196,7 @@ class RunEngine:
         for ev in obj.collect():
             objs_read = frozenset(ev['data'])
             seq_num = next(self._sequence_counters[objs_read])
-            descriptor_uid = self._descriptors[(None, objs_read)]
+            descriptor_uid = self._descriptors[(stream_name, objs_read)]
             event_uid = new_uid()
 
             reading = ev['data']
