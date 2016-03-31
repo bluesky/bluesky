@@ -409,6 +409,7 @@ class LiveTable(CallbackBase):
                 }
     _fm_sty = namedtuple('fm_sty', ['width', 'prec', 'dtype'])
     water_mark = "{st[plan_type]} ['{st[uid]:.6s}'] (scan num: {st[scan_id]})"
+    ev_time_key = 'SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES'
 
     def __init__(self, fields, *, print_header_interval=50,
                  min_width=12, default_prec=3, extra_pad=1,
@@ -426,7 +427,7 @@ class LiveTable(CallbackBase):
         self._default_prec = default_prec
         self._format_info = OrderedDict([
             ('seq_num', self._fm_sty(10 + self._pad_len, '', 'd')),
-            ('time', self._fm_sty(10 + 2 * extra_pad, 10, 's'))
+            (self.ev_time_key, self._fm_sty(10 + 2 * extra_pad, 10, 's'))
         ])
         self._rows = []
         self.logbook = logbook
@@ -462,15 +463,17 @@ class LiveTable(CallbackBase):
             self._format_info[k] = fmt
 
         self._sep_format = ('+' +
-                            '+'.join('-'*f.width
+                            '+'.join('-' * f.width
                                      for f in self._format_info.values()) +
                             '+')
         self._main_fmnt = '|'.join(
-            '{{: >{w}}}{pad}'.format(w=f.width-self._pad_len,
-                                     pad=' '*self._pad_len)
+            '{{: >{w}}}{pad}'.format(w=f.width - self._pad_len,
+                                     pad=' ' * self._pad_len)
             for f in self._format_info.values())
+        headings = [k if k != self.ev_time_key else 'time'
+                    for k in self._format_info]
         self._header = ('|' +
-                        self._main_fmnt.format(*list(self._format_info)) +
+                        self._main_fmnt.format(*headings) +
                         '|'
                         )
         self._data_formats = OrderedDict(
@@ -495,10 +498,10 @@ class LiveTable(CallbackBase):
             self._print(self._header)
             self._print(self._sep_format)
         fmt_time = str(datetime.fromtimestamp(doc['time']).time())
-        data['time'] = fmt_time
+        data[self.ev_time_key] = fmt_time
         data['seq_num'] = doc['seq_num']
         cols = [f.format(**{k: data[k]})
-                if k in data else ' '*self._format_info[k].width
+                if k in data else ' ' * self._format_info[k].width
                 for k, f in self._data_formats.items()]
         self._print('|' + '|'.join(cols) + '|')
 
