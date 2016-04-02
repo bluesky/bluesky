@@ -178,7 +178,7 @@ class LiveTiffExporter(CallbackBase):
         if self.field not in doc['data']:
             return
         fill_event(doc)  # modifies in place
-        image = np.asarray(doc['data']['field'])
+        image = np.asarray(doc['data'][self.field])
         if image.ndim == 2:
             filename = self.template.format(start=self._start, event=doc)
             self._save_image(image, filename)
