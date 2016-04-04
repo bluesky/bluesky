@@ -1,4 +1,5 @@
-from collections import deque, defaultdict, Iterable
+import sys
+from collections import deque
 
 import functools
 import operator
@@ -10,7 +11,7 @@ from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
                     scalar_heuristic, separate_devices)
 from .plan_tools import (run_wrapper, subscription_wrapper, fly_during,
                          stage_wrapper, relative_set, put_back, repeater,
-                         trigger_and_read)
+                         trigger_and_read, event_wrapper)
 
 
 class PlanBase(Struct):
@@ -43,9 +44,9 @@ class PlanBase(Struct):
         md = self.get_metadata()
         md['plan_args'] = {field: repr(getattr(self, field))
                            for field in self._fields}
-        flyers = self.flyers
 
-        main_with_flyers = fly_during(self._main_gen(), self.flyers)
+        flyers = self.flyers
+        main_with_flyers = fly_during(self._main_gen(), flyers)
         run = run_wrapper(self._inner_gen(main_with_flyers), md=md)
         plan = self._outer_gen(subscription_wrapper(stage_wrapper(run),
                                                     self.subs))
@@ -59,7 +60,7 @@ class PlanBase(Struct):
     def _inner_gen(self, plan):
         """
         Subclasses may use this method to add messages inside the run.
-        
+
         Subclasses should yield from super()._inner_gen().
         Messages before and after this will be processed immedately after the
         run is opened and immediate before it is closed.
@@ -75,10 +76,6 @@ class PlanBase(Struct):
         run is opened and immediate after it is closed.
         """
         yield from plan
-
-    def _main_gen(self):
-        "Subclasses should override this method to add the main plan content."
-        yield from []
 
 
 class Count(PlanBase):
@@ -137,7 +134,7 @@ class Count(PlanBase):
 
 
 class Plan1D(PlanBase):
-    "Use AbsListScanPlan or DeltaListScanPlan. Subclasses must define _abs_steps."
+    "Use AbsListScanPlan/DeltaListScanPlan. Subclasses must define _abs_steps."
     _fields = ['detectors', 'motor', 'steps']
 
     def get_metadata(self):
@@ -490,10 +487,11 @@ class Center(PlanBase):
         initial_width : number
             Initial guess at the width
         tolerance : number, optional
-            Tolerance to declare good enough on finding the center. Default 0.01.
+            Tolerance to declare good enough on finding the center.
+            Default 0.01.
         output_mutable : dict-like, optional
-            Must have 'update' method.  Mutable object to provide a side-band to
-            return fitting parameters + data points
+            Must have 'update' method.  Mutable object to provide a side-band
+            to return fitting parameters + data points
         """
         try:
             from lmfit.models import GaussianModel, LinearModel
@@ -555,9 +553,11 @@ class Center(PlanBase):
 
         model = GaussianModel() + LinearModel()
         guesses = {'amplitude': np.max(seen_y),
-                'center': initial_center,
-                'sigma': initial_width,
-                'slope': 0, 'intercept': 0}
+                   'center': initial_center,
+                   'sigma': initial_width,
+                   'slope': 0,
+                   'intercept': 0
+                   }
         while True:
             x = np.asarray(seen_x)
             y = np.asarray(seen_y)
@@ -567,8 +567,8 @@ class Center(PlanBase):
             if np.abs(old_guess['center'] - guesses['center']) < tol:
                 break
             next_cen = np.clip(guesses['center'] +
-                            np.random.randn(1) * guesses['sigma'],
-                            min_cen, max_cen)
+                               np.random.randn(1) * guesses['sigma'],
+                               min_cen, max_cen)
             yield Msg('set', motor, next_cen)
             ret_mot = yield Msg('read', motor)
             yield Msg('create', None, name='primary')
@@ -743,7 +743,8 @@ class InnerProductAbsScanPlan(_InnerProductPlanBase):
     num : integer
         number of steps
     *args
-        patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
+        patterned like (``motor1, start1, stop1,`` ...,
+                        ``motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
     """
     pass
@@ -760,7 +761,8 @@ class InnerProductDeltaScanPlan(_InnerProductPlanBase):
     num : integer
         number of steps
     *args
-        patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
+        patterned like (``motor1, start1, stop1,`` ...,
+                        ``motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
     """
 
@@ -847,7 +849,7 @@ class Tweak(PlanBase):
             yield Msg('wait', None, 'A')
             reading = Msg('read', d)[target_field]['value']
             yield Msg('save')
-            prompt = prompt_str.format(motor.name, pos, reading, step)
+            prompt = self.prompt_str.format(motor.name, pos, reading, step)
             new_step = input(prompt)
             if new_step:
                 try:
