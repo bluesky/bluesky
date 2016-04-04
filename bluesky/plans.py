@@ -3,6 +3,7 @@ from collections import deque
 
 import functools
 import operator
+
 from boltons.iterutils import chunked
 from cycler import cycler
 import numpy as np
@@ -840,6 +841,12 @@ class Tweak(PlanBase):
         target_field = self.target_field
         motor = self.motor
         step = self.step
+        try:
+            from IPython.display import clear_output
+        except ImportError:
+            def clear_output(wait=False):
+                pass
+
         while True:
             yield Msg('create', None, name='primary')
             ret_mot = yield Msg('read', motor)
