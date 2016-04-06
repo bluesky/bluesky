@@ -16,7 +16,7 @@ from bluesky.utils import get_history
 class RunEngineTraitType(TraitType):
 
     info_text = 'a RunEngine instance'
-    default_value = RunEngine(get_history)
+    default_value = RunEngine(get_history())
 
     def validate(self, obj, value):
         if not isinstance(value, RunEngine):

@@ -1,4 +1,6 @@
 from collections import defaultdict
+from bluesky.register_mds import register_mds
+from bluesky.global_state import gs
 from bluesky.examples import stepscan, det, motor
 import pytest
 
@@ -10,6 +12,7 @@ def setup_module(module):
         pass  # test will be skipped
     else:
         mds_setup()
+        register_mds(gs.RE)
 
 def teardown_module(module):
     try:
@@ -24,7 +27,7 @@ def test_scan_and_get_data():
     try:
         import metadatastore
         from databroker import DataBroker as db
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'
                           'ImportError:  is:{}'.format(ie))
@@ -38,7 +41,7 @@ def test_scan_and_get_data():
 def test_post_run():
     try:
         import databroker
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         from bluesky.broker_callbacks import post_run
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'
@@ -60,7 +63,7 @@ def test_post_run():
 def test_verify_files_saved():
     try:
         import databroker
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         from bluesky.broker_callbacks import verify_files_saved
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'

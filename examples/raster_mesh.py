@@ -1,8 +1,7 @@
 from bluesky.examples import Mover, SynGauss, Syn2DGauss
 import bluesky.plans as bp
-import bluesky.spec_api as bsa
 import bluesky.callbacks
-from bluesky.standard_config import gs
+from bluesky.global_state import gs
 import bluesky.qt_kicker
 bluesky.qt_kicker.install_qt_kicker()
 

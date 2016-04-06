@@ -38,7 +38,6 @@ test:
     - 'bluesky.examples'
     - 'bluesky.callbacks'
     - 'bluesky.register_mds'
-    - 'bluesky.standard_config'
 
 about:
   home: https://github.com/NSLS-II/bluesky

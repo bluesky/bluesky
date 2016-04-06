@@ -52,8 +52,8 @@ provides a global "stash" of settings, ``gs``, including a customizable list of
    :suppress:
 
    from bluesky.examples import det1, det2, det3, det
-   from bluesky.standard_config import gs
-   from bluesky.standard_config import *  # the simple scan instances
+   from bluesky.global_state import gs
+   from bluesky.spec_api import *  # the simple scan instances
    from bluesky.tests.utils import setup_test_run_engine
    gs.DETS = [det]
    gs.RE = setup_test_run_engine()
