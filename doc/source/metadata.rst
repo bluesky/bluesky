@@ -71,8 +71,8 @@ Scan ID
 +++++++
 
 The ``scan_id`` field is expected to be an integer, and it is automatically
-incremented between runs. If a ``scan_id`` is not provided by the user,
-it defaults to 1.
+incremented between runs. If a ``scan_id`` is not provided by the user or
+stashed in the persistent metadata from the previous run, it defaults to 1.
 
 Required Fields
 ---------------
