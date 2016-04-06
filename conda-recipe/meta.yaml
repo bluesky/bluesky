@@ -8,7 +8,7 @@ source:
 build:
   # Note that this will override the default build string with the Python
   # and NumPy versions
-  string: {{ environ.get('GIT_BUILD_STR', '') }}_np{{ np }}py{{ py }}
+  string: {{ environ.get('GIT_BUILD_STR', '') }}py{{ py }}
 
 requirements:
   build:
