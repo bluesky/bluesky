@@ -61,36 +61,6 @@ gs.RE.md['owner'] = getuser()
 register_mds(gs.RE)  # subscribes to MDS-related callbacks
 
 
-def olog_wrapper(logbook, logbooks):
-    """Wrap an olog logbook for use with RunEngine
-
-    The admittedly confusing parameter names reflect our understanding of Olog
-    conventions.
-
-    Parameters
-    ----------
-    logbook : pyolog.logbook
-        logbook object
-    logbooks : list of strings
-        names of logbooks to write entries to
-
-    Returns
-    -------
-    callable
-       callable with the right signature for use with RunEngine.logbook
-    """
-    def _logbook_log(msg, d):
-        msg = msg.format(**d)
-        d = {k: repr(v) for k, v in d.items()}
-        logbook.log(msg,
-                    # TODO Figure out why this returns 500 from olog.
-                    # properties={'Bluesky': d},
-                    ensure=True,
-                    logbooks=logbooks)
-
-    return _logbook_log
-
-
 def show_debug_logs():
     logging.basicConfig()
     logging.getLogger('bluesky').setLevel(logging.DEBUG)
