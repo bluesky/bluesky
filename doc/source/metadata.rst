@@ -41,7 +41,7 @@ are given special significance by bluesky's document model.
 String Fields
 =============
 
-To facilitate serachability, the keywords 'owner', 'group', and 'project' are
+To facilitate searchability, the keywords 'owner', 'group', and 'project' are
 given special significance. They are all optional, but if provided they must be
 strings like ``owner='Dan'``. A non-string, like ``owner=5`` will produce an
 error that will interrupt scan execution immediately after it starts.
@@ -51,7 +51,7 @@ Again, these fields are optional.
 Sample
 ======
 
-Similarly, the keyword "sample" has specicial significance. It must be either a
+Similarly, the keyword "sample" has special significance. It must be either a
 string:
 
 .. code-block:: python
@@ -114,7 +114,7 @@ Persistence Between Sessions
 ----------------------------
 
 The ``RE.md`` attribute shown above may be a Python dictionary or anything
-that support the dictionary interface. To persist metadata between
+that supports the dictionary interface. To persist metadata between
 sessions, we suggest ``historydict`` --- a Python dictionary backed by a
 sqlite database.
 
