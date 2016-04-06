@@ -28,6 +28,7 @@ requirements:
     - traitlets
     - historydict
     - jinja2
+    - boltons
 
 test:
   requires:
