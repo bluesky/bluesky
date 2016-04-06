@@ -11,7 +11,7 @@ identify and analyze the data later.
 .. ipython:: python
     :suppress:
 
-    from bluesky.standard_config import gs, ct
+    from bluesky.global_state import gs
     from bluesky.examples import det
     from bluesky.plans import Count
     RE = gs.RE

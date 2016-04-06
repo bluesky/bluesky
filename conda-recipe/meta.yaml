@@ -8,7 +8,7 @@ source:
 build:
   # Note that this will override the default build string with the Python
   # and NumPy versions
-  string: {{ environ.get('GIT_BUILD_STR', '') }}_np{{ np }}py{{ py }}
+  string: {{ environ.get('GIT_BUILD_STR', '') }}py{{ py }}
 
 requirements:
   build:
@@ -28,6 +28,7 @@ requirements:
     - traitlets
     - historydict
     - jinja2
+    - boltons
 
 test:
   requires:
@@ -38,7 +39,6 @@ test:
     - 'bluesky.examples'
     - 'bluesky.callbacks'
     - 'bluesky.register_mds'
-    - 'bluesky.standard_config'
 
 about:
   home: https://github.com/NSLS-II/bluesky

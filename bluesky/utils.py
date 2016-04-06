@@ -1,3 +1,4 @@
+import os
 import signal
 import operator
 from functools import reduce
@@ -490,3 +491,52 @@ def separate_devices(devices):
         else:
             result.append(det)
     return result
+
+
+SEARCH_PATH = []
+ENV_VAR = 'BLUESKY_HISTORY_PATH'
+if ENV_VAR in os.environ:
+    SEARCH_PATH.append(os.environ[ENV_VAR])
+SEARCH_PATH.extend([os.path.expanduser('~/.config/bluesky/bluesky_history.db'),
+                    '/etc/bluesky/bluesky_history.db'])
+
+
+def get_history():
+    """
+    Return a dict-like object for stashing metadata.
+
+    If historydict is not installed, return a dict.
+
+    If historydict is installed, look for a sqlite file in:
+      - $BLUESKY_HISTORY_PATH, if defined
+      - ~/.config/bluesky/bluesky_history.db
+      - /etc/bluesky/bluesky_history.db
+
+    If no existing file is found, create a new sqlite file in:
+      - $BLUESKY_HISTORY_PATH, if defined
+      - ~/.config/bluesky/bluesky_history.db, otherwise
+    """
+    try:
+        import historydict
+    except ImportError:
+        print("You do not have historydict installed, your metadata "
+              "will not be persistent or have any history of the "
+              "values.")
+        return dict()
+    else:
+        for path in SEARCH_PATH:
+            if os.path.isfile(path):
+                print("Loading metadata history from %s" % path)
+                return historydict.HistoryDict(path)
+        # No existing file was found. Try creating one.
+        path = SEARCH_PATH[0]
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            print("Storing metadata history in a new file at %s." % path)
+            return historydict.HistoryDict(path)
+        except IOError as exc:
+            print(exc)
+            print("Failed to create metadata history file at %s" % path)
+            print("Storing HistoryDict in memory; it will not persist "
+                  "when session is ended.")
+            return historydict.HistoryDict(':memory:')

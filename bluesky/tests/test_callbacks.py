@@ -2,7 +2,7 @@ from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
-from bluesky.standard_config import mesh
+from bluesky.spec_api import mesh
 from bluesky.tests.utils import setup_test_run_engine
 import contextlib
 import sys

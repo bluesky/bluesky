@@ -1,34 +1,38 @@
 from collections import defaultdict
+from bluesky.register_mds import register_mds
+from bluesky.global_state import gs
 from bluesky.examples import stepscan, det, motor
 import pytest
 
 
 def setup_module(module):
     try:
-        from metadatastore.utils.testing import mds_setup
+        import metadatastore
     except ImportError:
         pass  # test will be skipped
     else:
+        from metadatastore.test.utils import mds_setup
         mds_setup()
+        register_mds(gs.RE)
 
 def teardown_module(module):
     try:
-        from metadatastore.utils.testing import mds_teardown
+        import metadatastore
     except ImportError:
         pass  # test will be skipped
     else:
+        from metadatastore.test.utils import mds_teardown
         mds_teardown()
 
 
 def test_scan_and_get_data():
     try:
-        import metadatastore
         from databroker import DataBroker as db
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'
                           'ImportError:  is:{}'.format(ie))
-    uid = gs.RE(stepscan(det, motor), group='foo', beamline_id='testing',
+    uid, = gs.RE(stepscan(det, motor), group='foo', beamline_id='testing',
              config={})
 
     hdr = db[uid]
@@ -38,7 +42,7 @@ def test_scan_and_get_data():
 def test_post_run():
     try:
         import databroker
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         from bluesky.broker_callbacks import post_run
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'
@@ -60,7 +64,7 @@ def test_post_run():
 def test_verify_files_saved():
     try:
         import databroker
-        from bluesky.standard_config import gs
+        from bluesky.global_state import gs
         from bluesky.broker_callbacks import verify_files_saved
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'
