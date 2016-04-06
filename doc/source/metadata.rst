@@ -15,7 +15,6 @@ identify and analyze the data later.
     from bluesky.examples import det
     from bluesky.plans import Count
     RE = gs.RE
-    RE.md['beamline_id'] = 'demo'
     RE.md['owner'] = 'demo'
     RE.md['group'] = 'demo'
 
@@ -31,59 +30,62 @@ Or specified when the scan is run.
     plan = Count([det])
     RE(plan, experimenter='Emily', mood='excited')
 
-.. note::
+Special Fields
+--------------
 
-    To improve searchability, the key "sample" has specicial significance.
-    It must be either a string
+Custom metadata keywords can be mapped to strings (``task='calibration'``),
+numbers (``attempt=5``), lists (``dimensions=[1, 3]``), or
+dictionaries (``dimensions={'width': 1, 'height': 3}``). But certain keywords
+are given special significance by bluesky's document model.
 
-    .. code-block:: python
+String Fields
+=============
 
-        'red 10 20 5'
+To facilitate searchability, the keywords 'owner', 'group', and 'project' are
+given special significance. They are all optional, but if provided they must be
+strings like ``owner='Dan'``. A non-string, like ``owner=5`` will produce an
+error that will interrupt scan execution immediately after it starts.
 
-    or a dictionary
+Again, these fields are optional.
 
-    .. code-block:: python
+Sample
+======
 
-        {'color': 'red', 'dimensions': [10, 20, 5]}
+Similarly, the keyword "sample" has special significance. It must be either a
+string:
 
-    A dictionary is preferred because it is self-describing and more richly
-    searchable, but either is allowed.
+.. code-block:: python
 
-    Only "sample" has this restriciton. Invent custom-named keys (as in the
-    tongue-in-cheek "mood" example above) as needed. These can contain
-    strings, dictionaries, lists, and numbers.
+    'red 10 20 5'
+
+or a dictionary:
+
+.. code-block:: python
+
+    {'color': 'red', 'dimensions': [10, 20, 5]}
+
+A dictionary is preferred because it is self-describing and more richly
+searchable, but either is allowed.
+
+Scan ID
+=======
+
+The ``scan_id`` field is expected to be an integer, and it is automatically
+incremented between runs. If a ``scan_id`` is not provided by the user,
+it defaults to 1.
 
 Required Fields
 ---------------
 
-Some fields and required by our Document specification, and the RunEngine will
-raise a ``KeyError`` if they are not set. These fields are:
+In current versions of bluesky, **no fields are required**.
 
-* owner
-* group
-* beamline_id (e.g., 'csx')
-
-``standard_config.py`` fills some of these in automatically (e.g., 'owner'
-defaults to the username of the UNIX user currently logged in).
+In versions v0.4.3 and below, the keys ``owner``, ``group``, and
+``beamline_id`` were required.
 
 Persistence Between Runs
 ------------------------
 
-These fields are automatically reused between runs unless overridden.
-
-* owner
-* group
-* beamline_id
-* scan_id (which is automatically incremented)
-
-Custom fields, like 'experimenter' and 'mood' in the example above, are not
-reused by default, as we can see below.
-
-.. ipython:: python
-
-    RE(plan, sample={'color': 'blue', 'dimensions': [3, 1, 4]})
-
-To make a custom field persist between sessions, add it to ``RE.md``.
+To set a field of metadata to persist for future runs, add it to ``RE.md``.
 
 .. ipython:: python
 
@@ -107,6 +109,26 @@ To start fresh:
 .. ipython:: python
 
     RE.md.clear()
+
+Persistence Between Sessions
+----------------------------
+
+The ``RE.md`` attribute shown above may be a Python dictionary or anything
+that supports the dictionary interface. To persist metadata between
+sessions, we suggest ``historydict`` --- a Python dictionary backed by a
+sqlite database.
+
+Example:
+
+.. ipython:: python
+
+    from historydict import HistoryDict
+    hist = HistoryDict('metadata-cache.sqlite')
+    RE = RunEngine(hist)
+    type(RE.md)
+
+Any metadata added to ``RE.md``, including the ``scan_id``, will be saved
+and can be re-loaded.
 
 Metadata Validator
 ------------------

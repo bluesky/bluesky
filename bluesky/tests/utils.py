@@ -90,6 +90,8 @@ def define_state_machine_transitions_from_class(state_machine):
 
 
 def setup_test_run_engine():
+    # The metadata configured here used to be required for the RE to be
+    # usable. Now it is all optional, but maintained for legacy reasons.
     RE = RunEngine()
     RE.md['owner'] = 'test_owner'
     RE.md['group'] = 'Grant No. 12345'

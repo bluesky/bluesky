@@ -212,35 +212,6 @@ def test_md_historydict():
 def _md(md):
     RE = RunEngine(md)
     RE.ignore_callback_exceptions = False
-    scan = simple_scan(motor)
-    with pytest.raises(KeyError):
-        RE(scan)  # missing owner, beamline_id
-    scan = simple_scan(motor)
-    with pytest.raises(KeyError):
-        RE(scan, owner='dan')
-    scan = simple_scan(motor)
-    RE(scan, owner='dan', beamline_id='his desk',
-       group='some group', config={})  # this should work
-    scan = simple_scan(motor)
-    with pytest.raises(KeyError):
-        RE(scan)  # this should fail; none was persisted
-    RE.md['owner'] = 'dan'
-    RE.md['group'] = 'some group'
-    RE.md['config'] = {}
-    RE.md['beamline_id'] = 'his desk'
-    scan = simple_scan(motor)
-    RE(scan)  # this should work
-    RE.md.clear()
-    scan = simple_scan(motor)
-    with pytest.raises(KeyError):
-        RE(scan)
-    # We can prime the md directly.
-    RE.md['owner'] = 'dan'
-    RE.md['group'] = 'some group'
-    RE.md['config'] = {}
-    RE.md['beamline_id'] = 'his desk'
-    scan = simple_scan(motor)
-    RE(scan)
 
     # Check persistence.
     scan = simple_scan(motor)
