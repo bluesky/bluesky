@@ -39,7 +39,7 @@ dictionaries (``dimensions={'width': 1, 'height': 3}``). But certain keywords
 are given special significance by bluesky's document model.
 
 String Fields
-=============
++++++++++++++
 
 To facilitate searchability, the keywords 'owner', 'group', and 'project' are
 given special significance. They are all optional, but if provided they must be
@@ -49,7 +49,7 @@ error that will interrupt scan execution immediately after it starts.
 Again, these fields are optional.
 
 Sample
-======
+++++++
 
 Similarly, the keyword "sample" has special significance. It must be either a
 string:
@@ -68,7 +68,7 @@ A dictionary is preferred because it is self-describing and more richly
 searchable, but either is allowed.
 
 Scan ID
-=======
++++++++
 
 The ``scan_id`` field is expected to be an integer, and it is automatically
 incremented between runs. If a ``scan_id`` is not provided by the user,
