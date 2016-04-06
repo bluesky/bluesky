@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 ### Set up a History object to handle peristence (scan ID, etc.)
-gs.RE.md = get_history()
 gs.RE.md['owner'] = getuser()
 register_mds(gs.RE)  # subscribes to MDS-related callbacks
 

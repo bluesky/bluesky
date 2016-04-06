@@ -5,7 +5,8 @@ RunEngine and detectors the simple scan interface should invoke.
 from traitlets import HasTraits, TraitType, Unicode, List, Float, Bool, link
 import itertools
 from collections import Iterable
-from bluesky.run_engine import RunEngine
+from bluesky import RunEngine
+from bluesky.utils import get_history
 
 
 # Define custom traitlets.
@@ -15,7 +16,7 @@ from bluesky.run_engine import RunEngine
 class RunEngineTraitType(TraitType):
 
     info_text = 'a RunEngine instance'
-    default_value = RunEngine(dict())
+    default_value = RunEngine(get_history)
 
     def validate(self, obj, value):
         if not isinstance(value, RunEngine):
