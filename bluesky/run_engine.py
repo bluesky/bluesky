@@ -1617,17 +1617,13 @@ Pro Tip: Next time, if you want to abort, tap Ctrl+C twice quickly.
 
 
 def _default_md_validator(md):
-    for field in ['beamline_id', 'owner', 'group']:
-        if field not in md:
-            raise KeyError("The field '{0}' was not specified as is "
-                           "required.".format(field))
-        if 'sample' in md and not (hasattr(md['sample'], 'keys')
-                                   or isinstance(md['sample'], str)):
-            raise ValueError(
-                "You specified 'sample' metadata. We give this field special "
-                "significance in order to make your data easily searchable. "
-                "Therefore, you must make 'sample' a string or a  "
-                "dictionary, like so: "
-                "GOOD: sample='dirt' "
-                "GOOD: sample={'color': 'red', 'number': 5} "
-                "BAD: sample=[1, 2] ")
+    if 'sample' in md and not (hasattr(md['sample'], 'keys')
+                                or isinstance(md['sample'], str)):
+        raise ValueError(
+            "You specified 'sample' metadata. We give this field special "
+            "significance in order to make your data easily searchable. "
+            "Therefore, you must make 'sample' a string or a  "
+            "dictionary, like so: "
+            "GOOD: sample='dirt' "
+            "GOOD: sample={'color': 'red', 'number': 5} "
+            "BAD: sample=[1, 2] ")

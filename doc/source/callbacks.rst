@@ -12,7 +12,6 @@ Live Feedback and Processing
    RE.verbose = False
    RE.md['owner'] = 'Jane'
    RE.md['group'] = 'Grant No. 12345'
-   RE.md['beamline_id'] = 'demo'
    from bluesky.plans import Count, AbsScanPlan
    plan = AbsScanPlan([det, det1, det2, det3], motor, 1, 4, 4)
 
