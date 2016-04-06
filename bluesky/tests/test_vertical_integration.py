@@ -8,21 +8,16 @@ import pytest
 def setup_module(module):
     try:
         import metadatastore
-    except ImportError:
-        pass  # test will be skipped
+    except ImportError as ie:
+        raise pytest.skip('ImportError: {0}'.format(ie))
     else:
         from metadatastore.test.utils import mds_setup
         mds_setup()
         register_mds(gs.RE)
 
 def teardown_module(module):
-    try:
-        import metadatastore
-    except ImportError:
-        pass  # test will be skipped
-    else:
-        from metadatastore.test.utils import mds_teardown
-        mds_teardown()
+    from metadatastore.test.utils import mds_teardown
+    mds_teardown()
 
 
 def test_scan_and_get_data():
