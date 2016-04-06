@@ -7,31 +7,32 @@ import pytest
 
 def setup_module(module):
     try:
-        from metadatastore.utils.testing import mds_setup
+        import metadatastore
     except ImportError:
         pass  # test will be skipped
     else:
+        from metadatastore.test.utils import mds_setup
         mds_setup()
         register_mds(gs.RE)
 
 def teardown_module(module):
     try:
-        from metadatastore.utils.testing import mds_teardown
+        import metadatastore
     except ImportError:
         pass  # test will be skipped
     else:
+        from metadatastore.test.utils import mds_teardown
         mds_teardown()
 
 
 def test_scan_and_get_data():
     try:
-        import metadatastore
         from databroker import DataBroker as db
         from bluesky.global_state import gs
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'
                           'ImportError:  is:{}'.format(ie))
-    uid = gs.RE(stepscan(det, motor), group='foo', beamline_id='testing',
+    uid, = gs.RE(stepscan(det, motor), group='foo', beamline_id='testing',
              config={})
 
     hdr = db[uid]
