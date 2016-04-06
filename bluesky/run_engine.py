@@ -42,7 +42,6 @@ def expiring_function(func, *args, **kwargs):
 
 
 loop = asyncio.get_event_loop()
-loop.set_debug(True)
 
 
 class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):

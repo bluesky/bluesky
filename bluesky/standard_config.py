@@ -45,11 +45,6 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-loop = asyncio.get_event_loop()
-loop.set_debug(False)
-
-
-
 ### Set up a History object to handle peristence (scan ID, etc.)
 
 SEARCH_PATH = []
