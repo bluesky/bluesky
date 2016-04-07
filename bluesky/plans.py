@@ -40,19 +40,35 @@ class PlanBase(Struct):
 
     def __iter__(self):
         """
-        yields messages
+        Return an iterable of messages.
         """
-        md = self.get_metadata()
-        md['plan_args'] = {field: repr(getattr(self, field))
-                           for field in self._fields}
+        return self()
 
-        flyers = self.flyers
-        main_with_flyers = fly_during(self._main_gen(), flyers)
-        run = run_wrapper(self._inner_gen(main_with_flyers), md=md)
-        plan = self._outer_gen(subscription_wrapper(stage_wrapper(run),
-                                                    self.subs))
-        yield from plan
-        yield Msg('checkpoint')
+    def __call__(self, **kwargs):
+        """
+        Return an iterable of messages.
+
+        Any keyword arguments override present settings.
+        """
+        current_settings = {}
+        for key, val in kwargs.items():
+            current_settings[key] = getattr(self, key)
+            setattr(self, key, val)
+        try:
+            md = self.get_metadata()
+            md['plan_args'] = {field: repr(getattr(self, field))
+                            for field in self._fields}
+
+            flyers = self.flyers
+            main_with_flyers = fly_during(self._main_gen(), flyers)
+            run = run_wrapper(self._inner_gen(main_with_flyers), md=md)
+            plan = self._outer_gen(subscription_wrapper(stage_wrapper(run),
+                                                        self.subs))
+            yield from plan
+            yield Msg('checkpoint')
+        finally:
+            for key, val in current_settings.items():
+                setattr(self, key, val)
 
     def _main_gen(self):
         "Subclasses override this to provide the main plan content."
