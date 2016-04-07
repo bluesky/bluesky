@@ -29,7 +29,9 @@ from bluesky.scientific_callbacks import PeakStats
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
 from bluesky.utils import (normalize_subs_input, Subs, DefaultSubs,
-                           first_key_heuristic)
+                           first_key_heuristic, apply_sub_factories,
+                           update_sub_lists)
+from bluesky.plan_tools import subscription_wrapper
 from collections import defaultdict
 from itertools import filterfalse, chain, count
 
@@ -146,42 +148,20 @@ class _BundledScan:
         # subs and sub_factories can be set individually per instance
         self.subs = dict(self.default_subs)
         self.sub_factories = dict(self.default_sub_factories)
-        self.params = list(signature(self.plan_class).parameters.keys())
-        self.configuration = {}
         self.flyers = []
 
-    def __call__(self, *args, subs=None, sub_factories=None, **kwargs):
-        scan_kwargs = dict()
-        # Any kwargs valid for the scan go to the scan, not the RE.
-        for k, v in kwargs.copy().items():
-            if k in self.params:
-                scan_kwargs[k] = kwargs.pop(k)
-        from bluesky.global_state import gs
-
-        RE_params = list(signature(gs.RE.__call__).parameters.keys())
-        if set(RE_params) & set(self.params):
-            raise AssertionError("The names of the scan's arguments clash "
-                                 "the RunEngine arguments. Use different "
-                                 "names. Avoid: {0}".format(RE_params))
-
+    def __call__(self, *args, **kwargs):
         global_dets = gs.DETS if gs.DETS is not None else []
-        self.scan = self.plan_class(global_dets, *args, **scan_kwargs)
-        # Combine subs passed as args and subs set up in subs attribute.
-        _subs = defaultdict(list)
-        _update_lists(_subs, normalize_subs_input(subs))
-        _update_lists(_subs, normalize_subs_input(self.subs))
-        # Create a sub from each sub_factory.
-        _update_lists(_subs, _run_factories(sub_factories, self.scan))
-        _update_lists(_subs, _run_factories(self.sub_factories, self.scan))
+        plan = self.plan_class(global_dets, *args, **kwargs)
+        subs = default_dict(list)
+        update_sub_lists(subs, self.subs, plan)
+        update_sub_lists(subs, apply_sub_factories(self.sub_factories, plan))
 
         # Set up scan attributes.
-        self.scan.configuration = self.configuration
         global_flyers = gs.FLYERS if gs.FLYERS is not None else []
-        self.scan.flyers = list(set(list(self.flyers) + list(global_flyers)))
+        plan.flyers = list(self.flyers) + list(global_flyers)
 
-        # Any remainging kwargs go the RE. To be safe, no args are passed
-        # to RE; RE args effectively become keyword-only arguments.
-        return gs.RE(self.scan, _subs, **kwargs)
+        yield from subscription_wrapper(self.scan, subs)
 
 
 # ## Mid-level base classes ###
