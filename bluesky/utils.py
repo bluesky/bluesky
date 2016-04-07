@@ -596,8 +596,8 @@ def apply_sub_factories(factories, plan):
     If the factory function returns None, the list will not be modified.
     '''
     factories = normalize_subs_input(factories)
-    out = {k: list(filterfalse(lambda x: x is None,
-                               (sf(scan) for sf in v)))
+    out = {k: list(itertools.filterfalse(lambda x: x is None,
+                                         (sf(scan) for sf in v)))
            for k, v in factories.items()}
     return out
 

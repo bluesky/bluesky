@@ -22,11 +22,12 @@ def test_basic_usage_for_smoke():
     gs.RE.md['beamline_id'] = 'test'
     gs.RE.md['config'] = {}
     # without count time specified
-    ct()
-    ct(num=3)  # passing kwargs through to scan
-    ascan(motor, 1, 2, 2)
-    a2scan(motor, 1, 2, 2)
-    a3scan(motor, 1, 2, 2)
+    RE = gs.RE
+    RE(ct())
+    RE(ct(num=3))  # passing kwargs through to scan
+    RE(ascan(motor, 1, 2, 2))
+    RE(a2scan(motor, 1, 2, 2))
+    RE(a3scan(motor, 1, 2, 2))
     dscan(motor, 1, 2, 2)
     d2scan(motor, 1, 2, 2)
     d3scan(motor, 1, 2, 2)

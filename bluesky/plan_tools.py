@@ -1,14 +1,20 @@
+import numpy as np
+from cycler import cycler
 import uuid
 from functools import wraps
-from itertools import count
-from collections import OrderedDict
+import itertools
+import functools
+import operator
+from boltons.iterutils import chunked
+from collections import OrderedDict, Iterable
 
 import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
 
 from bluesky import Msg
-from bluesky.utils import normalize_subs_input, scalar_heuristic
+from bluesky.utils import (normalize_subs_input, scalar_heuristic,
+                           snake_cyclers, separate_devices)
 from bluesky.callbacks import LiveTable, LivePlot
 
 
@@ -136,13 +142,15 @@ def subscription_wrapper(plan, subs):
 
 
 def fly_during(plan, flyers):
-    for flyer in flyers:
-        yield Msg('kickoff', flyer, block_group='_flyers')
-    yield Msg('wait', None, '_flyers')
+    if flyers:
+        for flyer in flyers:
+            yield Msg('kickoff', flyer, block_group='_flyers')
+        yield Msg('wait', None, '_flyers')
     ret = yield from plan
-    for flyer in flyers:
-        yield Msg('collect', flyer, block_group='_flyers')
-    yield Msg('wait', None, '_flyers')
+    if flyers:
+        for flyer in flyers:
+            yield Msg('collect', flyer, block_group='_flyers')
+        yield Msg('wait', None, '_flyers')
     return ret
 
 
@@ -267,15 +275,20 @@ def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
 
 
 @wrap_with_decorator(event_wrapper)
-def trigger_and_read(det_list, name=None):
-    """Trigger and read a list of detectors bundled into a single event
+def trigger_and_read(triggerable, not_triggerable, *, name=None):
+    """Trigger and read a list of detectors bundled into a single event.
+
+    triggerable : iterable
+        devices to trigger and then read (e.g., detectors)
+    not_triggerable : iterable
+        dervices to just read (e.g., motors)
     """
     grp = str(uuid.uuid4())
-    for det in det_list:
+    for det in separate_devices(triggerable):
         yield Msg('trigger', det, block_group=grp)
     yield Msg('wait', None, grp)
 
-    for det in det_list:
+    for det in separate_devices(list(triggerable) + list(not_triggerable)):
         yield Msg('read', det)
 
 
@@ -292,7 +305,7 @@ def repeater(n, gen_func, *args, **kwargs):
     it = range
     if n is None:
         n = 0
-        it = count
+        it = itertools.count
 
     for j in it(n):
         yield from gen_func(*args, **kwargs)
@@ -304,21 +317,111 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-@wrap_with_decorator(subscription_wrapper)
-@wrap_with_decorator(run_wrapper)
-def ct(dets, n, subs=None):
+def table_and_plot(plan):
+    subs = {'all': [LiveTable(detectors)]}
+    if num != 1:
+        subs['all'].append(LivePlot(scalar_heuristic(detectors[0])))
+
+
+def count(detectors, num=1, delay=None, **md):
     """Count
 
-    Simple replacement for ct.
     """
-    dets = list(dets)
-    if subs is None:
-        subs = {'all': [LiveTable(dets)]}
-    if n != 1:
-        subs['all'].append(LivePlot(scalar_heuristic(dets[0])))
+    md.update({'detectors': [det.name for det in detectors]})
+    md['plan_args'] = {'detectors': repr(detectors), 'num': num}
 
-    plan = stage_wrapper(repeater(n, trigger_and_read, dets),
-                         dets)
+    # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
+    if not isinstance(delay, Iterable):
+        delay = itertools.repeat(delay)
+    else:
+        delay = iter(delay)
+
+    def single_point():
+        yield Msg('checkpoint')
+        ret = yield from trigger_and_read(detectors, [], name='primary')
+        yield Msg('sleep', None, next(delay))
+        return ret
+
+    plan = repeater(num, single_point)
+    plan = stage_wrapper(plan)
+    plan = run_wrapper(plan, md=md)
+    ret = yield from plan
+    return ret
+
+def _step_scan_core(detectors, motor, steps):
+    "Just the steps. This should be wrapped in stage_wrapper, run_wrapper."
+    def one_step(step):
+        grp = str(uuid.uuid4())
+        yield Msg('checkpoint')
+        yield Msg('set', motor, step, block_group=grp)
+        yield Msg('wait', None, grp)
+        ret = yield from trigger_and_read(detectors, [motor])
+        return ret
+
+    for step in steps:
+        ret = yield from one_step(step)
+    return ret
+
+
+def abs_list_scan(detectors, motor, steps, **md):
+    md.update({'detectors': [det.name for det in detectors],
+               'motors': [motor.name]})
+    md['plan_args'] = {'detectors': repr(detectors), 'steps': steps}
+
+    plan = stage_wrapper(_step_scan_core(detectors, motor, steps))
+    plan = run_wrapper(plan, md)
+    ret = yield from plan
+    return ret
+
+
+def delta_list_scan(detectors, motor, steps, **md):
+    # TODO read initial positions (redundantly) so they can be put in md here
+    plan = abs_list_scan(detectors, motor, steps, **md)
+    plan = relative_set(plan, [motor])  # re-write trajectory as relative
+    plan = put_back(plan, [motor])  # return motors to starting pos
+    ret = yield from plan
+    return ret
+
+
+def abs_scan(detectors, motor, start, stop, num, **md):
+    md.update({'detectors': [det.name for det in detectors],
+               'motors': [motor.name]})
+    md['plan_args'] = {'detectors': repr(detectors), 'num': num,
+                       'start': start, 'stop': stop}
+
+    steps = np.linspace(start, stop, num)
+    plan = stage_wrapper(_step_scan_core(detectors, motor, steps))
+    plan = run_wrapper(plan, md=md)
+    ret = yield from plan
+    return ret
+
+
+def delta_scan(detectors, motor, start, stop, num, **md):
+    # TODO read initial positions (redundantly) so they can be put in md here
+    plan = abs_scan(detectors, motor, start, stop, num, **md)
+    plan = relative_set(plan, [motor])  # re-write trajectory as relative
+    plan = put_back(plan, [motor])  # return motors to starting pos
+    ret = yield from plan
+
+
+def log_abs_scan(detectors, motor, start, stop, num, **md):
+    md.update({'detectors': [det.name for det in detectors],
+               'motors': [motor.name]})
+    md['plan_args'] = {'detectors': repr(detectors), 'num': num,
+                       'start': start, 'stop': stop}
+
+    steps = np.logspace(start, stop, num)
+    plan = stage_wrapper(_step_scan_core(detectors, motor, steps))
+    plan = run_wrapper(plan, md=md)
+    ret = yield from plan
+    return ret
+
+
+def log_delta_scan(detectors, motor, start, stop, num, **md):
+    # TODO read initial positions (redundantly) so they can be put in md here
+    plan = log_abs_scan(detectors, motor, start, stop, num, **md)
+    plan = relative_set(plan, [motor])  # re-write trajectory as relative
+    plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
     return ret
 
@@ -332,3 +435,218 @@ def bind_to_run_engine(RE, gen_func, name):
         return RE(plan, **md)
 
     return inner
+
+
+def adaptive_abs_scan(detectors, target_field, motor, start, stop,
+                      min_step, max_step, target_delta, backstep,
+                      threshold=0.8):
+    def core():
+        next_pos = start
+        step = (max_step - min_step) / 2
+        past_I = None
+        cur_I = None
+        cur_det = {}
+        while next_pos < stop:
+            yield Msg('checkpoint')
+            yield Msg('set', motor, next_pos)
+            yield Msg('wait', None, 'A')
+            yield Msg('create', None, name='primary')
+            for det in detectors:
+                yield Msg('trigger', det, block_group='B')
+            yield Msg('wait', None, 'B')
+            for det in separate_devices(detectors + [motor]):
+                cur_det = yield Msg('read', det)
+                if target_field in cur_det:
+                    cur_I = cur_det[target_field]['value']
+            yield Msg('save')
+
+            # special case first first loop
+            if past_I is None:
+                past_I = cur_I
+                next_pos += step
+                continue
+
+            dI = np.abs(cur_I - past_I)
+
+            slope = dI / step
+            if slope:
+                new_step = np.clip(target_delta / slope, min_step, max_step)
+            else:
+                new_step = np.min([step * 1.1, max_step])
+
+            # if we over stepped, go back and try again
+            if backstep and (new_step < step * threshold):
+                next_pos -= step
+                step = new_step
+            else:
+                past_I = cur_I
+                step = 0.2 * new_step + 0.8 * step
+            next_pos += step
+    plan = core()
+    plan = stage_wrapper(plan)
+    plan = run_wrapper(plan)
+    ret = yield from plan
+    return ret
+
+
+def adaptive_delta_scan(detectors, target_field, motor, start, stop,
+                   min_step, max_step, target_delta, backstep,
+                   threshold=0.8):
+    plan = adaptive_abs_scan(detectors, target_field, motor, start, stop,
+                             min_step, max_step, target_delta, backstep,
+                             threshold)
+    plan = relative_set(plan, [motor])  # re-write trajectory as relative
+    plan = put_back(plan, [motor])  # return motors to starting pos
+    ret = yield from plan
+    return ret
+
+def _nd_step_scan_core(detectors, cycler):
+    motors = cycler.keys
+    last_set_point = {m: None for m in motors}
+    for step in list(cycler):
+        yield Msg('checkpoint')
+        for motor, pos in step.items():
+            grp = str(uuid.uuid4())
+            if pos == last_set_point[motor]:
+                # This step does not move this motor.
+                continue
+            yield Msg('set', motor, pos, block_group=grp)
+            last_set_point[motor] = pos
+            yield Msg('wait', None, grp)
+        ret = yield from trigger_and_read(detectors, motors)
+    return ret
+
+
+def plan_nd(detectors, cycler, **md):
+    md.update({'detectors': [det.name for det in detectors],
+               'motors': [motor.name for motor in cycler.keys]})
+    md['plan_args'] = {'detectors': repr(detectors), 'cycler': repr(cycler)}
+
+
+    plan = _nd_step_scan_core(detectors, cycler)
+    plan = stage_wrapper(plan)
+    plan = run_wrapper(plan, md)
+    ret = yield from plan
+    return ret
+
+
+def inner_product_scan(detectors, num, *args, **md):
+    if len(args) % 3 != 0:
+        raise ValueError("wrong number of positional arguments")
+    cyclers = []
+    for motor, start, stop, in chunked(args, 3):
+        steps = np.linspace(start, stop, num=num, endpoint=True)
+        c = cycler(motor, steps)
+        cyclers.append(c)
+    full_cycler = functools.reduce(operator.add, cyclers)
+
+    ret = yield from plan_nd(detectors, full_cycler, **md)
+    return ret
+
+
+def outer_product_scan(detectors, *args, **md):
+    args = list(args)
+    # The first (slowest) axis is never "snaked." Insert False to
+    # make it easy to iterate over the chunks or args..
+    args.insert(4, False)
+    if len(args) % 5 != 0:
+        raise ValueError("wrong number of positional arguments")
+    shape = []
+    extents = []
+    snaking = []
+    cyclers = []
+    for motor, start, stop, num, snake in chunked(args, 5):
+        shape.append(num)
+        extents.append([start, stop])
+        snaking.append(snake)
+        steps = np.linspace(start, stop, num=num, endpoint=True)
+        c = cycler(motor, steps)
+        cyclers.append(c)
+    full_cycler = snake_cyclers(cyclers, snaking)
+
+    md.update({'shape': tuple(shape), 'extents': tuple(extents),
+               'snaking': tuple(snaking), 'num': len(full_cycler)})
+
+    ret = yield from plan_nd(detectors, full_cycler, **md)
+    return ret
+
+
+def delta_outer_product_scan(detectors, *args, **md):
+    # There is so duplicate effort here to obtain the list of motors.
+    _args = list(args)
+    # The first (slowest) axis is never "snaked." Insert False to
+    # make it easy to iterate over the chunks or args..
+    _args.insert(4, False)
+    if len(_args) % 5 != 0:
+        raise ValueError("wrong number of positional arguments")
+    motors = []
+    for motor, start, stop, num, snake in chunked(_args, 5):
+        motors.append(motor)
+
+    plan = outer_product_scan(detectors, *args, **md)
+    plan = relative_set(plan, motors)  # re-write trajectory as relative
+    plan = put_back(plan, motors)  # return motors to starting pos
+    ret = yield from plan
+    return ret
+
+
+def delta_inner_product_scan(detectors, num, *args, **md):
+    # There is so duplicate effort here to obtain the list of motors.
+    _args = list(args)
+    if len(_args) % 3 != 0:
+        raise ValueError("wrong number of positional arguments")
+    motors = []
+    for motor, start, stop, in chunked(_args, 3):
+        motors.append(motor)
+
+    plan = inner_product_scan(detectors, num, *args, **md)
+    plan = relative_set(plan, motors)  # re-write trajectory as relative
+    plan = put_back(plan, motors)  # return motors to starting pos
+    ret = yield from plan
+    return ret
+
+
+def tweak(detector, target_field, motor, step, **md):
+    prompt_str = '{0}, {1:.3}, {2}, ({3}) '
+
+    md.update({'detectors': [detector.name],
+               'motors': [motor.name]})
+
+    d = detector
+    try:
+        from IPython.display import clear_output
+    except ImportError:
+        # Define a no-op for clear_output.
+        def clear_output(wait=False):
+            pass
+
+    def core():
+        while True:
+            yield Msg('create', None, name='primary')
+            ret_mot = yield Msg('read', motor)
+            key, = ret_mot.keys()
+            pos = ret_mot[key]['value']
+            yield Msg('trigger', d, block_group='A')
+            yield Msg('wait', None, 'A')
+            reading = Msg('read', d)[target_field]['value']
+            yield Msg('save')
+            prompt = prompt_str.format(motor.name, pos, reading, step)
+            new_step = input(prompt)
+            if new_step:
+                try:
+                    step = float(new_step)
+                except ValueError:
+                    break
+            yield Msg('set', motor, pos + step, block_group='A')
+            print('Motor moving...')
+            sys.stdout.flush()
+            yield Msg('wait', None, 'A')
+            clear_output(wait=True)
+            # stackoverflow.com/a/12586667/380231
+            print('\x1b[1A\x1b[2K\x1b[1A')
+
+    plan = core()
+    plan = stage_wrapper(plan)
+    plan = run_wrapper(plan)
+    ret = yield from plan
+    return ret
