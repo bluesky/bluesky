@@ -267,7 +267,7 @@ def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
 
 
 @wrap_with_decorator(event_wrapper)
-def trigger_and_read(det_list):
+def trigger_and_read(det_list, name=None):
     """Trigger and read a list of detectors bundled into a single event
     """
     grp = str(uuid.uuid4())
