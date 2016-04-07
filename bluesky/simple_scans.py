@@ -36,16 +36,16 @@ from itertools import filterfalse, chain, count
 # ## Factory functions acting a shim between plans and callbacks ###
 
 
-def table_from_motors(scan):
-    "Setup a LiveTable by inspecting a scan and gs."
+def table_from_motors(plan):
+    "Setup a LiveTable by inspecting a plan and gs."
     # > 1 motor
-    return LiveTable(list(scan.motors) + gs.TABLE_COLS + [gs.PLOT_Y])
+    return LiveTable(list(plan.motors) + gs.TABLE_COLS + [gs.PLOT_Y])
 
 
-def table_from_motor(scan):
-    "Setup a LiveTable by inspecting a scan and gs."
+def table_from_motor(plan):
+    "Setup a LiveTable by inspecting a plan and gs."
     # 1 motor
-    return LiveTable([scan.motor] + gs.TABLE_COLS + [gs.PLOT_Y])
+    return LiveTable([plan.motor] + gs.TABLE_COLS + [gs.PLOT_Y])
 
 
 def table_gs_only(scan):
@@ -75,26 +75,26 @@ def _figure_name(base_name):
     return base_name
 
 
-def plot_first_motor(scan):
-    "Setup a LivePlot by inspecting a scan and gs."
-    key = first_key_heuristic(list(scan.motors)[0])
+def plot_first_motor(plan):
+    "Setup a LivePlot by inspecting a plan and gs."
+    key = first_key_heuristic(list(plan.motors)[0])
     fig_name = _figure_name('BlueSky {} v {}'.format(key, gs.PLOT_Y))
     fig = plt.figure(fig_name)
     return LivePlot(gs.PLOT_Y, key, fig=fig)
 
 
-def plot_motor(scan):
-    "Setup a LivePlot by inspecting a scan and gs."
-    key = first_key_heuristic(scan.motor)
+def plot_motor(plan):
+    "Setup a LivePlot by inspecting a plan and gs."
+    key = first_key_heuristic(plan.motor)
     fig_name = _figure_name('BlueSky {} v {}'.format(key, gs.PLOT_Y))
     fig = plt.figure(fig_name)
     return LivePlot(gs.PLOT_Y, key, fig=fig)
 
 
-def plot_seq_num(scan):
-    "Setup a LivePlot by inspecting a scan and gs."
+def plot_seq_num(plan):
+    "Setup a LivePlot by inspecting a plan and gs."
     try:
-        num = scan.num
+        num = plan.num
     except AttributeError:
         pass
     else:
@@ -107,29 +107,29 @@ def plot_seq_num(scan):
     return LivePlot(gs.PLOT_Y, fig=fig)
 
 
-def raster(scan):
-    "Set up a LiveRaster by inspect a scan and gs."
-    if len(scan.shape) != 2:
+def raster(plan):
+    "Set up a LiveRaster by inspect a plan and gs."
+    if len(plan.shape) != 2:
         return None
     # first motor is 'slow' -> Y axis
-    ylab, xlab = [first_key_heuristic(m) for m in scan.motors]
+    ylab, xlab = [first_key_heuristic(m) for m in plan.motors]
     # shape goes in (rr, cc)
     # extents go in (x, y)
-    return LiveRaster(scan.shape, gs.MASTER_DET_FIELD, xlabel=xlab,
-                      ylabel=ylab, extent=list(chain(*scan.extents[::-1])))
+    return LiveRaster(plan.shape, gs.MASTER_DET_FIELD, xlabel=xlab,
+                      ylabel=ylab, extent=list(chain(*plan.extents[::-1])))
 
 
-def peakstats_first_motor(scan):
+def peakstats_first_motor(plan):
     "Set up peakstats"
-    key = first_key_heuristic(list(scan.motors)[0])
+    key = first_key_heuristic(list(plan.motors)[0])
     ps = PeakStats(key, gs.MASTER_DET_FIELD, edge_count=3)
     gs.PS = ps
     return ps
 
 
-def peakstats(scan):
+def peakstats(plan):
     "Set up peakstats"
-    key = first_key_heuristic(scan.motor)
+    key = first_key_heuristic(plan.motor)
     ps = PeakStats(key, gs.MASTER_DET_FIELD, edge_count=3)
     gs.PS = ps
     return ps
