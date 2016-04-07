@@ -48,8 +48,8 @@ def table_from_motor(plan):
     return LiveTable([plan.motor] + gs.TABLE_COLS + [gs.PLOT_Y])
 
 
-def table_gs_only(scan):
-    "Setup a LiveTable by inspecting a scan and gs."
+def table_gs_only():
+    "Setup a LiveTable by inspecting a plan and gs."
     # no motors
     return LiveTable(gs.TABLE_COLS + [gs.PLOT_Y])
 
@@ -310,7 +310,8 @@ class _HardcodedMotorStepScan(_BundledScan):
 class Count(_BundledScan):
     "ct"
     plan_class = plans.Count
-    default_sub_factories = DefaultSubs({'all': [table_gs_only, plot_seq_num]})
+    default_sub_factories = DefaultSubs({'all': [plot_seq_num]})
+    default_subs = DefaultSubs({'all': [table_gs_only]})
 
     def __call__(self, time=None, subs=None, **kwargs):
         original_times = _set_acquire_time(time)
