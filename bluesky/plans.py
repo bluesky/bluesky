@@ -135,7 +135,7 @@ class Count(PlanBase):
 
 
 class Plan1D(PlanBase):
-    "Use AbsListScanPlan/DeltaListScanPlan. Subclasses must define _abs_steps."
+    "Use AbsListScanPlan/DeltaListScanPlan."
     _fields = ['detectors', 'motor', 'steps']
 
     def get_metadata(self):
@@ -146,7 +146,7 @@ class Plan1D(PlanBase):
 
     def _main_gen(self):
         dets = separate_devices(self.detectors)
-        for step in self._abs_steps:
+        for step in self.steps:
             yield Msg('checkpoint')
             yield Msg('set', self.motor, step, block_group='A')
             yield Msg('wait', None, 'A')
