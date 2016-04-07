@@ -597,3 +597,24 @@ def update_sub_lists(out, inp):
             out[k].extend(v)
         except KeyError:
             out[k] = list(v)
+
+
+def register_transform():
+    '''Register < transform
+
+    This maps `< stuff(*args, **kwargs)` -> `RE(stuff(*args, **kwargs))`
+
+    RE is assumed to be available in the global namespace
+    '''
+    import IPython
+    from IPython.core.inputtransformer import StatelessInputTransformer
+
+    @StatelessInputTransformer.wrap
+    def tr_re(line):
+        if line.startswith('<'):
+            line = line[1:].strip()
+            return 'RE({})'.format(line)
+        return line
+    ip = IPython.get_ipython()
+    ip.input_splitter.logical_line_transforms.append(tr_re())
+    ip.input_transformer_manager.logical_line_transforms.append(tr_re())
