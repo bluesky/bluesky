@@ -184,34 +184,6 @@ class _BundledScan:
         return gs.RE(self.scan, _subs, **kwargs)
 
 
-def _update_lists(out, inp):
-    """Extends dictionary `out` lists with those in `inp`
-
-    Assumes dictionaries where all values are lists
-    """
-    for k, v in inp.items():
-        try:
-            out[k].extend(v)
-        except KeyError:
-            out[k] = list(v)
-
-
-def _run_factories(factories, scan):
-    '''Run sub factory functions for a scan
-
-    Factory functions should return lists, which will be added onto the
-    subscription key (e.g., 'all' or 'start') specified in the factory
-    definition.
-
-    If the factory function returns None, the list will not be modified.
-    '''
-    factories = normalize_subs_input(factories)
-    out = {k: list(filterfalse(lambda x: x is None,
-                               (sf(scan) for sf in v)))
-           for k, v in factories.items()}
-    gs._SECRET_STASH = out
-    return out
-
 # ## Mid-level base classes ###
 
 # These are responsible for popping off the time arg and adjusting the

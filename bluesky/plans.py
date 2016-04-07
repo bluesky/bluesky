@@ -9,7 +9,8 @@ from cycler import cycler
 import numpy as np
 from .run_engine import Msg
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
-                    scalar_heuristic, separate_devices)
+                    scalar_heuristic, separate_devices, apply_sub_factories,
+                    update_sub_lists)
 from .plan_tools import (run_wrapper, subscription_wrapper, fly_during,
                          stage_wrapper, relative_set, put_back, repeater,
                          trigger_and_read, event_wrapper)
@@ -34,6 +35,7 @@ class PlanBase(Struct):
     inspection will work.
     """
     subs = Subs({})
+    sub_factories = Subs({})
 
     def get_metadata(self):
         return {}
@@ -50,6 +52,10 @@ class PlanBase(Struct):
 
         Any keyword arguments override present settings.
         """
+        subs = defaultdict(list)
+        update_sub_lists(subs, self.subs)
+        update_sub_lists(subs, apply_sub_factories(self.sub_factories, self))
+
         current_settings = {}
         for key, val in kwargs.items():
             current_settings[key] = getattr(self, key)
@@ -63,7 +69,7 @@ class PlanBase(Struct):
             main_with_flyers = fly_during(self._main_gen(), flyers)
             run = run_wrapper(self._inner_gen(main_with_flyers), md=md)
             plan = self._outer_gen(subscription_wrapper(stage_wrapper(run),
-                                                        self.subs))
+                                                        subs))
             yield from plan
             yield Msg('checkpoint')
         finally:

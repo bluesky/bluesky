@@ -585,3 +585,31 @@ def install_qt_kicker():
 
     loop = asyncio.get_event_loop()
     _QT_KICKER_INSTALLED = loop.call_soon(_qt_kicker)
+
+
+def apply_sub_factories(factories, plan):
+    '''Run sub factory functions for a plan
+
+    Factory functions should return lists, which will be added onto the
+    subscription key (e.g., 'all' or 'start') specified in the factory
+    definition.
+
+    If the factory function returns None, the list will not be modified.
+    '''
+    factories = normalize_subs_input(factories)
+    out = {k: list(filterfalse(lambda x: x is None,
+                               (sf(scan) for sf in v)))
+           for k, v in factories.items()}
+    return out
+
+
+def update_sub_lists(out, inp):
+    """Extends dictionary `out` lists with those in `inp`
+
+    Assumes dictionaries where all values are lists
+    """
+    for k, v in inp.items():
+        try:
+            out[k].extend(v)
+        except KeyError:
+            out[k] = list(v)
