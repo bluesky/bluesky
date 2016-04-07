@@ -228,12 +228,25 @@ def test_count():
     RE(scan, subs={'event': col})
     assert actual_intensity[0] == 1.
 
-    # multiple counts
+    # multiple counts, via updating attribute
     actual_intensity = []
     col = collector('det', actual_intensity)
     scan = Count([det], num=3, delay=0.05)
     RE(scan, subs={'event': col})
     assert scan.num == 3
+    assert actual_intensity == [1., 1., 1.]
+
+    # multiple counts, via passing arts to __call__
+    actual_intensity = []
+    col = collector('det', actual_intensity)
+    scan = Count([det], num=3, delay=0.05)
+    RE(scan(num=2), subs={'event': col})
+    assert actual_intensity == [1., 1.]
+    # attribute should still be 3
+    assert scan.num == 3
+    actual_intensity = []
+    col = collector('det', actual_intensity)
+    RE(scan, subs={'event': col})
     assert actual_intensity == [1., 1., 1.]
 
 
