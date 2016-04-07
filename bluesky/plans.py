@@ -736,7 +736,6 @@ class _InnerProductPlanBase(PlanND):
             self._motors.append(motor)
             extents.append([start, stop])
         self.extents = tuple(extents)
-        self.configuration = {}
         self.flyers = []
 
     @property

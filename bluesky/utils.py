@@ -291,7 +291,6 @@ class Struct(metaclass=StructMeta):
         for name, val in bound.arguments.items():
             setattr(self, name, val)
         self._md = {}
-        self.configuration = {}
         self.flyers = []
 
     def set(self, **kwargs):
