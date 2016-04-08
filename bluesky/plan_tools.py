@@ -324,8 +324,17 @@ def table_and_plot(plan):
 
 
 def count(detectors, num=1, delay=None, **md):
-    """Count
+    """
+    Take one or more readings from detectors.
 
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    num : integer, optional
+        number of readings to take; default is 1
+    delay : iterable or scalar
+        time delay between successive readings; default is 0
     """
     md.update({'detectors': [det.name for det in detectors]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num}
@@ -363,7 +372,19 @@ def _step_scan_core(detectors, motor, steps):
     return ret
 
 
-def abs_list_scan(detectors, motor, steps, **md):
+def list_scan(detectors, motor, steps, **md):
+    """
+    Scan over one variable in steps.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    steps : list
+        list of positions
+    """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': repr(detectors), 'steps': steps}
@@ -374,16 +395,44 @@ def abs_list_scan(detectors, motor, steps, **md):
     return ret
 
 
-def delta_list_scan(detectors, motor, steps, **md):
+def relative_list_scan(detectors, motor, steps, **md):
+    """
+    Scan over one variable in steps relative to current position.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    steps : list
+        list of positions relative to current position
+    """
     # TODO read initial positions (redundantly) so they can be put in md here
-    plan = abs_list_scan(detectors, motor, steps, **md)
+    plan = list_scan(detectors, motor, steps, **md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
     return ret
 
 
-def abs_scan(detectors, motor, start, stop, num, **md):
+def scan(detectors, motor, start, stop, num, **md):
+    """
+    Scan over one variable in equally spaced steps.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    start : float
+        starting position of motor
+    stop : float
+        ending position of motor
+    num : int
+        number of steps
+    """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num,
@@ -396,15 +445,47 @@ def abs_scan(detectors, motor, start, stop, num, **md):
     return ret
 
 
-def delta_scan(detectors, motor, start, stop, num, **md):
+def relative_scan(detectors, motor, start, stop, num, **md):
+    """
+    Scan over one variable in equally spaced steps relative to current positon.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    start : float
+        starting position of motor
+    stop : float
+        ending position of motor
+    num : int
+        number of steps
+    """
     # TODO read initial positions (redundantly) so they can be put in md here
-    plan = abs_scan(detectors, motor, start, stop, num, **md)
+    plan = scan(detectors, motor, start, stop, num, **md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
 
 
-def log_abs_scan(detectors, motor, start, stop, num, **md):
+def log_scan(detectors, motor, start, stop, num, **md):
+    """
+    Scan over one variable in log-spaced steps.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    start : float
+        starting position of motor
+    stop : float
+        ending position of motor
+    num : int
+        number of steps
+    """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num,
@@ -417,9 +498,25 @@ def log_abs_scan(detectors, motor, start, stop, num, **md):
     return ret
 
 
-def log_delta_scan(detectors, motor, start, stop, num, **md):
+def relative_log_scan(detectors, motor, start, stop, num, **md):
+    """
+    Scan over one variable in log-spaced steps relative to current position.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    start : float
+        starting position of motor
+    stop : float
+        ending position of motor
+    num : int
+        number of steps
+    """
     # TODO read initial positions (redundantly) so they can be put in md here
-    plan = log_abs_scan(detectors, motor, start, stop, num, **md)
+    plan = log_scan(detectors, motor, start, stop, num, **md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
@@ -437,9 +534,35 @@ def bind_to_run_engine(RE, gen_func, name):
     return inner
 
 
-def adaptive_abs_scan(detectors, target_field, motor, start, stop,
-                      min_step, max_step, target_delta, backstep,
-                      threshold=0.8):
+def adaptive_scan(detectors, target_field, motor, start, stop,
+                  min_step, max_step, target_delta, backstep,
+                  threshold=0.8):
+    """
+    Scan over one variable with adaptively tuned step size.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    target_field : string
+        data field whose output is the focus of the adaptive tuning
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    start : float
+        starting position of motor
+    stop : float
+        ending position of motor
+    min_step : float
+        smallest step for fast-changing regions
+    max_step : float
+        largest step for slow-chaning regions
+    target_delta : float
+        desired fractional change in detector signal between steps
+    backstep : bool
+        whether backward steps are allowed -- this is concern with some motors
+    threshold : float, optional
+        threshold for going backward and rescanning a region, default is 0.8
+    """
     def core():
         next_pos = start
         step = (max_step - min_step) / 2
@@ -489,12 +612,38 @@ def adaptive_abs_scan(detectors, target_field, motor, start, stop,
     return ret
 
 
-def adaptive_delta_scan(detectors, target_field, motor, start, stop,
-                   min_step, max_step, target_delta, backstep,
-                   threshold=0.8):
-    plan = adaptive_abs_scan(detectors, target_field, motor, start, stop,
-                             min_step, max_step, target_delta, backstep,
-                             threshold)
+def relative_adaptive_scan(detectors, target_field, motor, start, stop,
+                           min_step, max_step, target_delta, backstep,
+                           threshold=0.8):
+    """
+    Relative scan over one variable with adaptively tuned step size.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    target_field : string
+        data field whose output is the focus of the adaptive tuning
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    start : float
+        starting position of motor
+    stop : float
+        ending position of motor
+    min_step : float
+        smallest step for fast-changing regions
+    max_step : float
+        largest step for slow-chaning regions
+    target_delta : float
+        desired fractional change in detector signal between steps
+    backstep : bool
+        whether backward steps are allowed -- this is concern with some motors
+    threshold : float, optional
+        threshold for going backward and rescanning a region, default is 0.8
+    """
+    plan = adaptive_scan(detectors, target_field, motor, start, stop,
+                         min_step, max_step, target_delta, backstep,
+                         threshold)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
@@ -518,10 +667,18 @@ def _nd_step_scan_core(detectors, cycler):
 
 
 def plan_nd(detectors, cycler, **md):
+    """
+    Scan over an arbitrary N-dimensional trajectory.
+
+    Parameters
+    ----------
+    detectors : list
+    cycler : Cycler
+        list of dictionaries mapping motors to positions
+    """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name for motor in cycler.keys]})
     md['plan_args'] = {'detectors': repr(detectors), 'cycler': repr(cycler)}
-
 
     plan = _nd_step_scan_core(detectors, cycler)
     plan = stage_wrapper(plan)
@@ -531,6 +688,20 @@ def plan_nd(detectors, cycler, **md):
 
 
 def inner_product_scan(detectors, num, *args, **md):
+    """
+    Scan over one multi-motor trajectory.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    num : integer
+        number of steps
+    *args
+        patterned like (``motor1, start1, stop1,`` ...,
+                        ``motorN, startN, stopN``)
+        Motors can be any 'setable' object (motor, temp controller, etc.)
+    """
     if len(args) % 3 != 0:
         raise ValueError("wrong number of positional arguments")
     cyclers = []
@@ -545,6 +716,22 @@ def inner_product_scan(detectors, num, *args, **md):
 
 
 def outer_product_scan(detectors, *args, **md):
+    """
+    Scan over a mesh; each motor is on an independent trajectory.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    *args
+        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
+        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
+        Motors can be any 'setable' object (motor, temp controller, etc.)
+        Notice that the first motor is followed by start, stop, num.
+        All other motors are followed by start, stop, num, snake where snake
+        is a boolean indicating whether to following snake-like, winding
+        trajectory or a simple left-to-right trajectory.
+    """
     args = list(args)
     # The first (slowest) axis is never "snaked." Insert False to
     # make it easy to iterate over the chunks or args..
@@ -571,8 +758,24 @@ def outer_product_scan(detectors, *args, **md):
     return ret
 
 
-def delta_outer_product_scan(detectors, *args, **md):
-    # There is so duplicate effort here to obtain the list of motors.
+def relative_outer_product_scan(detectors, *args, **md):
+    """
+    Scan over a mesh relative to current position.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    *args
+        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
+        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
+        Motors can be any 'setable' object (motor, temp controller, etc.)
+        Notice that the first motor is followed by start, stop, num.
+        All other motors are followed by start, stop, num, snake where snake
+        is a boolean indicating whether to following snake-like, winding
+        trajectory or a simple left-to-right trajectory.
+    """
+    # There is some duplicate effort here to obtain the list of motors.
     _args = list(args)
     # The first (slowest) axis is never "snaked." Insert False to
     # make it easy to iterate over the chunks or args..
@@ -590,8 +793,22 @@ def delta_outer_product_scan(detectors, *args, **md):
     return ret
 
 
-def delta_inner_product_scan(detectors, num, *args, **md):
-    # There is so duplicate effort here to obtain the list of motors.
+def relative_inner_product_scan(detectors, num, *args, **md):
+    """
+    Scan over one multi-motor trajectory relative to current position.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    num : integer
+        number of steps
+    *args
+        patterned like (``motor1, start1, stop1,`` ...,
+                        ``motorN, startN, stopN``)
+        Motors can be any 'setable' object (motor, temp controller, etc.)
+    """
+    # There is some duplicate effort here to obtain the list of motors.
     _args = list(args)
     if len(_args) % 3 != 0:
         raise ValueError("wrong number of positional arguments")
@@ -607,6 +824,18 @@ def delta_inner_product_scan(detectors, num, *args, **md):
 
 
 def tweak(detector, target_field, motor, step, **md):
+    """
+    Move and motor and read a detector with an interactive prompt.
+
+    Parameters
+    ----------
+    detetector : Device
+    target_field : string
+        data field whose output is the focus of the adaptive tuning
+    motor : Device
+    step : float
+        initial suggestion for step size
+    """
     prompt_str = '{0}, {1:.3}, {2}, ({3}) '
 
     md.update({'detectors': [detector.name],

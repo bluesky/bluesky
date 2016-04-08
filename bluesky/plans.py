@@ -10,31 +10,31 @@ from .run_engine import Msg
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
                     scalar_heuristic, separate_devices, apply_sub_factories,
                     update_sub_lists)
-from .plan_tools import (fly_during, count, abs_scan, delta_scan,
-                         abs_list_scan, delta_list_scan, log_abs_scan,
-                         log_delta_scan, subscription_wrapper,
-                         adaptive_abs_scan, adaptive_delta_scan, plan_nd,
+from .plan_tools import (fly_during, count, scan, relative_scan,
+                         list_scan, relative_list_scan, log_scan,
+                         relative_log_scan, subscription_wrapper,
+                         adaptive_scan, relative_adaptive_scan, plan_nd,
                          outer_product_scan, inner_product_scan,
-                         delta_outer_product_scan, delta_inner_product_scan,
-                         tweak)
+                         relative_outer_product_scan,
+                         relative_inner_product_scan, tweak)
 
 
 class Plan(Struct):
     """
-    This is a base class for writing reusable plans.
-
-    It provides a default entry in the logbook at the start of the scan and a
-    __iter__ method.
+    This is a base class for wrapping plan generators in a stateful class.
 
     To create a new sub-class you need to over-ride two things:
 
-    - a class level ``_fields`` attribute which is used to construct the init
-      signature via meta-class magic
+    - an ``__init__`` method *or* a class level ``_fields`` attribute which is
+      used to construct the init signature via meta-class magic
+    - a ``_gen`` method, which should return a generator of Msg objects
 
-    If you do not use the class-level ``_fields`` and write a custom
-    ``__init__`` (which you need to do if you want to have optional kwargs)
-    you should provide an instance level ``_fields`` so that the metadata
-    inspection will work.
+    The class provides:
+
+    - state stored in attributes that are used to re-generate a plan generator
+      with the same parameters
+    - a hook for adding "flyable" objects to a plan
+    - attributes for adding subscriptions and subscription factory functions
     """
     subs = Subs({})
     sub_factories = Subs({})
@@ -79,31 +79,8 @@ PlanBase = Plan  # back-compat
 
 
 class Count(Plan):
-    """
-    Take one or more readings from the detectors. Do not move anything.
-
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    num : integer, optional
-        number of readings to take; default is 1
-    delay : iterable or scalar
-        time delay between successive readings; default is 0
-
-    Examples
-    --------
-    Count three detectors.
-
-    >>> c = Count([det1, det2, det3])
-    >>> RE(c)
-
-    Count them five times with a one-second delay between readings.
-
-    >>> c = Count([det1, det2, det3], 5, 1)
-    >>> RE(c)
-    """
     _fields = ['detectors', 'num', 'delay']
+    __doc__ = count.__doc__
 
     def __init__(self, detectors, num=1, delay=0):
         self.detectors = detectors
@@ -115,208 +92,76 @@ class Count(Plan):
         return count(self.detectors, self.num, self.delay)
 
 
-class AbsListScanPlan(Plan):
-    """
-    Absolute scan over one variable in user-specified steps
-
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    steps : list
-        list of positions
-    """
+class ListScan(Plan):
     _fields = ['detectors', 'motor', 'steps']
+    __doc__ = list_scan.__doc__
 
     def _gen(self):
-        return abs_list_scan(self.detectors, self.motor, self.steps)
+        return list_scan(self.detectors, self.motor, self.steps)
+
+AbsListScanPlan = ListScan  # back-compat
 
 
-class DeltaListScanPlan(Plan):
-    """
-    Delta (relative) scan over one variable in user-specified steps
-
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    steps : list
-        list of positions relative to current position
-    """
+class RelativeListScan(Plan):
     _fields = ['detectors', 'motor', 'steps']
+    __doc__ = relative_list_scan.__doc__
 
     def _gen(self):
-        return delta_list_scan(self.detectors, self.motor, self.steps)
+        return relative_list_scan(self.detectors, self.motor, self.steps)
+
+DeltaListScanPlan = RelativeListScan  # back-compat
 
 
-
-class AbsScanPlan(Plan):
-    """
-    Absolute scan over one variable in equally spaced steps
-
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
-    num : int
-        number of steps
-
-    Examples
-    --------
-    Scan motor1 from 0 to 1 in ten steps.
-
-    >>> my_plan = AbsScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_plan)
-    # Adjust a Parameter and run again.
-    >>> my_plan.num = 100
-    >>> RE(my_plan)
-    """
+class Scan(Plan):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    __doc__ = scan.__doc__
 
     def _gen(self):
-        return abs_scan(self.detectors, self.motor, self.start, self.stop,
+        return scan(self.detectors, self.motor, self.start, self.stop,
                         self.num)
 
+AbsScanPlan = Scan  # back-compat
 
-class LogAbsScanPlan(Plan):
-    """
-    Absolute scan over one variable in log-spaced steps
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
-    num : int
-        number of steps
-
-    Examples
-    --------
-    Scan motor1 from 0 to 10 in ten log-spaced steps.
-
-    >>> my_plan = LogAbsScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_plan)
-    # Adjust a Parameter and run again.
-    >>> my_plan.num = 100
-    >>> RE(my_plan)
-    """
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
+class LogScan(Plan):
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    __doc__ = log_scan.__doc__
 
     def _gen(self):
-        return log_abs_scan(self.detectors, self.motor, self.start, self.stop,
+        return log_scan(self.detectors, self.motor, self.start, self.stop,
                             self.num)
 
+LogAbsScanPlan = LogScan  # back-compat
 
-class DeltaScanPlan(Plan):
-    """
-    Delta (relative) scan over one variable in equally spaced steps
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
-    num : int
-        number of steps
-
-    Examples
-    --------
-    Scan motor1 from 0 to 1 in ten steps.
-
-    >>> my_plan = DeltaScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_plan)
-    # Adjust a Parameter and run again.
-    >>> my_plan.num = 100
-    >>> RE(my_plan)
-    """
+class RelativeScan(Plan):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    __doc__ = relative_scan.__doc__
 
     def _gen(self):
-        return delta_scan(self.detectors, self.motor, self.start, self.stop,
-                          self.num)
+        return relative_scan(self.detectors, self.motor, self.start, self.stop,
+                             self.num)
 
-class LogDeltaScanPlan(Plan):
-    """
-    Delta (relative) scan over one variable in log-spaced steps
+DeltaScanPlan = RelativeScan  # back-compat
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
-    num : int
-        number of steps
 
-    Examples
-    --------
-    Scan motor1 from 0 to 10 in ten log-spaced steps.
-
-    >>> my_plan = LogDeltaScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_plan)
-    # Adjust a Parameter and run again.
-    >>> my_plan.num = 100
-    >>> RE(my_plan)
-    """
+class RelativeLogScan(Plan):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    __doc__ = relative_log_scan.__doc__
 
     def _gen(self):
-        return log_delta_scan(self.detectors, self.motor, self.start,
+        return relative_log_scan(self.detectors, self.motor, self.start,
                               self.stop, self.num)
 
+LogDeltaScanPlan = RelativeLogScan  # back-compat
 
-class AdaptiveAbsScanPlan(Plan):
-    """
-    Absolute scan over one variable with adaptively tuned step size
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    target_field : string
-        data field whose output is the focus of the adaptive tuning
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
-    min_step : float
-        smallest step for fast-changing regions
-    max_step : float
-        largest step for slow-chaning regions
-    target_delta : float
-        desired fractional change in detector signal between steps
-    backstep : bool
-        whether backward steps are allowed -- this is concern with some motors
-    """
+class AdaptiveScan(Plan):
     _fields = ['detectors', 'target_field', 'motor', 'start', 'stop',
                'min_step', 'max_step', 'target_delta', 'backstep',
                'threshold']
+    __doc__ = adaptive_scan.__doc__
+
 
     def __init__(self, detectors, target_field, motor, start, stop,
                  min_step, max_step, target_delta, backstep,
@@ -334,67 +179,40 @@ class AdaptiveAbsScanPlan(Plan):
         self.flyers = []
 
     def _gen(self):
-        return adaptive_abs_scan(self.detectors, self.target_field, self.motor,
-                                 self.start, self.stop, self.min_step,
-                                 self.max_step, self.target_delta,
-                                 self.backstep, self.threshold)
+        return adaptive_scan(self.detectors, self.target_field, self.motor,
+                             self.start, self.stop, self.min_step,
+                             self.max_step, self.target_delta,
+                             self.backstep, self.threshold)
+
+AdaptiveAbsScanPlan = AdaptiveScan  # back-compat
 
 
-class AdaptiveDeltaScanPlan(AdaptiveAbsScanPlan):
-    """
-    Delta (relative) scan over one variable with adaptively tuned step size
+class RelativeAdaptiveScan(AdaptiveAbsScanPlan):
+    __doc__ = relative_adaptive_scan.__doc__
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    target_field : string
-        data field whose output is the focus of the adaptive tuning
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
-    min_step : float
-        smallest step for fast-changing regions
-    max_step : float
-        largest step for slow-chaning regions
-    target_delta : float
-        desired fractional change in detector signal between steps
-    backstep : bool
-        whether backward steps are allowed -- this is concern with some motors
-    """
     def _gen(self):
-        return adaptive_delta_scan(self.detectors, self.target_field,
-                                   self.motor, self.start, self.stop,
-                                   self.min_step, self.max_step,
-                                   self.target_delta, self.backstep,
-                                   self.threshold)
+        return relative_adaptive_scan(self.detectors, self.target_field,
+                                      self.motor, self.start, self.stop,
+                                      self.min_step, self.max_step,
+                                      self.target_delta, self.backstep,
+                                      self.threshold)
+
+AdaptiveDeltaScanPlan = RelativeAdaptiveScan  # back-compat
 
 
-class PlanND(PlanBase):
+class ScanND(PlanBase):
     _fields = ['detectors', 'cycler']
+    __doc__ = plan_nd.__doc__
 
     def _gen(self):
         return plan_nd(self.detectors, self.cycler)
 
+PlanND = ScanND  # back-compat
 
-class InnerProductAbsScanPlan(Plan):
-    """
-    Absolute scan over one multi-motor trajectory
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    num : integer
-        number of steps
-    *args
-        patterned like (``motor1, start1, stop1,`` ...,
-                        ``motorN, startN, stopN``)
-        Motors can be any 'setable' object (motor, temp controller, etc.)
-    """
+class InnerProductScan(Plan):
+    __doc__ = inner_product_scan.__doc__
+
     def __init__(self, detectors, num, *args):
         self.detectors = detectors
         self.num = num
@@ -404,43 +222,21 @@ class InnerProductAbsScanPlan(Plan):
     def _gen(self):
         return inner_product_scan(self.detectors, self.num, *self.args)
 
+InnerProductAbsScanPlan = InnerProductScan  # back-compat
 
-class InnerProductDeltaScanPlan(InnerProductAbsScanPlan):
-    """
-    Delta (relative) scan over one multi-motor trajectory
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    num : integer
-        number of steps
-    *args
-        patterned like (``motor1, start1, stop1,`` ...,
-                        ``motorN, startN, stopN``)
-        Motors can be any 'setable' object (motor, temp controller, etc.)
-    """
+class RelativeInnerProductScan(InnerProductScan):
+    __doc__ = relative_inner_product_scan.__doc__
     def _gen(self):
-        return delta_inner_product_scan(self.detectors, self.num, *self.args)
+        return relative_inner_product_scan(self.detectors, self.num,
+                                           *self.args)
+
+InnerProductDeltaScanPlan = RelativeInnerProductScan  # back-compat
 
 
-class OuterProductAbsScanPlan(Plan):
-    """
-    Absolute scan over a mesh; each motor is on an independent trajectory
+class OuterProductScan(Plan):
+    __doc__ = outer_product_scan.__doc__
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    *args
-        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
-        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
-        Motors can be any 'setable' object (motor, temp controller, etc.)
-        Notice that the first motor is followed by start, stop, num.
-        All other motors are followed by start, stop, num, snake where snake
-        is a boolean indicating whether to following snake-like, winding
-        trajectory or a simple left-to-right trajectory.
-    """
     def __init__(self, detectors, *args):
         self.detectors = detectors
         self.args = args
@@ -449,40 +245,21 @@ class OuterProductAbsScanPlan(Plan):
     def _gen(self):
         return outer_product_scan(self.detectors, *self.args)
 
+OuterProductAbsScanPlan = OuterProductScan  # back-compat
 
-class OuterProductDeltaScanPlan(OuterProductAbsScanPlan):
-    """
-    Delta scan over a mesh; each motor is on an independent trajectory
 
-    Parameters
-    ----------
-    detectors : list
-        list of 'readable' objects
-    *args
-        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
-        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
-        Motors can be any 'setable' object (motor, temp controller, etc.)
-        Notice that the first motor is followed by start, stop, num.
-        All other motors are followed by start, stop, num, snake where snake
-        is a boolean indicating whether to following snake-like, winding
-        trajectory or a simple left-to-right trajectory.
-    """
+class RelativeOuterProductScan(OuterProductScan):
+    __doc__ = relative_outer_product_scan.__doc__
+
     def _gen(self):
-        return delta_outer_product_scan(self.detectors, *self.args)
+        return relative_outer_product_scan(self.detectors, *self.args)
+
+OuterProductDeltaScanPlan = RelativeOuterProductScan  # back-compat
 
 
 class Tweak(Plan):
-    """
-    Move and motor and read a detector with an interactive prompt.
-
-    Parameters
-    ----------
-    detetector : Reader
-    target_field : string
-        data field whose output is the focus of the adaptive tuning
-    motor : Mover
-    """
     _fields = ['detector', 'target_field', 'motor', 'step']
+    __doc__ = tweak.__doc__
     
     def _gen(self):
         return tweak(self.detector, self.target_field, self.motor, self.step)
