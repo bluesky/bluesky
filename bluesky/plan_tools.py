@@ -333,8 +333,10 @@ def count(detectors, num=1, delay=None, **md):
         list of 'readable' objects
     num : integer, optional
         number of readings to take; default is 1
-    delay : iterable or scalar
+    delay : iterable or scalar, optional
         time delay between successive readings; default is 0
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     md.update({'detectors': [det.name for det in detectors]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num}
@@ -348,7 +350,9 @@ def count(detectors, num=1, delay=None, **md):
     def single_point():
         yield Msg('checkpoint')
         ret = yield from trigger_and_read(detectors, [], name='primary')
-        yield Msg('sleep', None, next(delay))
+        d = next(delay)
+        if d is not None:
+            yield Msg('sleep', None, d)
         return ret
 
     plan = repeater(num, single_point)
@@ -384,6 +388,8 @@ def list_scan(detectors, motor, steps, **md):
         any 'setable' object (motor, temp controller, etc.)
     steps : list
         list of positions
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
@@ -407,6 +413,8 @@ def relative_list_scan(detectors, motor, steps, **md):
         any 'setable' object (motor, temp controller, etc.)
     steps : list
         list of positions relative to current position
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = list_scan(detectors, motor, steps, **md)
@@ -432,6 +440,8 @@ def scan(detectors, motor, start, stop, num, **md):
         ending position of motor
     num : int
         number of steps
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
@@ -461,6 +471,8 @@ def relative_scan(detectors, motor, start, stop, num, **md):
         ending position of motor
     num : int
         number of steps
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = scan(detectors, motor, start, stop, num, **md)
@@ -485,6 +497,8 @@ def log_scan(detectors, motor, start, stop, num, **md):
         ending position of motor
     num : int
         number of steps
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
@@ -514,6 +528,8 @@ def relative_log_scan(detectors, motor, start, stop, num, **md):
         ending position of motor
     num : int
         number of steps
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = log_scan(detectors, motor, start, stop, num, **md)
@@ -536,7 +552,7 @@ def bind_to_run_engine(RE, gen_func, name):
 
 def adaptive_scan(detectors, target_field, motor, start, stop,
                   min_step, max_step, target_delta, backstep,
-                  threshold=0.8):
+                  threshold=0.8, **md):
     """
     Scan over one variable with adaptively tuned step size.
 
@@ -562,6 +578,8 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         whether backward steps are allowed -- this is concern with some motors
     threshold : float, optional
         threshold for going backward and rescanning a region, default is 0.8
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     def core():
         next_pos = start
@@ -607,14 +625,14 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             next_pos += step
     plan = core()
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan)
+    plan = run_wrapper(plan, **md)
     ret = yield from plan
     return ret
 
 
 def relative_adaptive_scan(detectors, target_field, motor, start, stop,
                            min_step, max_step, target_delta, backstep,
-                           threshold=0.8):
+                           threshold=0.8, **md):
     """
     Relative scan over one variable with adaptively tuned step size.
 
@@ -640,10 +658,12 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
         whether backward steps are allowed -- this is concern with some motors
     threshold : float, optional
         threshold for going backward and rescanning a region, default is 0.8
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     plan = adaptive_scan(detectors, target_field, motor, start, stop,
                          min_step, max_step, target_delta, backstep,
-                         threshold)
+                         threshold, **md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
@@ -675,6 +695,8 @@ def plan_nd(detectors, cycler, **md):
     detectors : list
     cycler : Cycler
         list of dictionaries mapping motors to positions
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name for motor in cycler.keys]})
@@ -701,6 +723,8 @@ def inner_product_scan(detectors, num, *args, **md):
         patterned like (``motor1, start1, stop1,`` ...,
                         ``motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     if len(args) % 3 != 0:
         raise ValueError("wrong number of positional arguments")
@@ -724,13 +748,17 @@ def outer_product_scan(detectors, *args, **md):
     detectors : list
         list of 'readable' objects
     *args
-        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
-        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
-        Motors can be any 'setable' object (motor, temp controller, etc.)
-        Notice that the first motor is followed by start, stop, num.
-        All other motors are followed by start, stop, num, snake where snake
-        is a boolean indicating whether to following snake-like, winding
-        trajectory or a simple left-to-right trajectory.
+        patterned like (``motor1, start1, stop1, num1,```
+                        ``motor2, start2, stop2, num2, snake2,``
+                        ``motor3, start3, stop3, num3, snake3,`` ...
+                        ``motorN, startN, stopN, numN, snakeN``)
+
+        The first motor is the "slowest", the outer loop. For all motors
+        except the first motor, there is a "snake" argument: a boolean
+        indicating whether to following snake-like, winding trajectory or a
+        simple left-to-right trajectory.
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     args = list(args)
     # The first (slowest) axis is never "snaked." Insert False to
@@ -774,6 +802,8 @@ def relative_outer_product_scan(detectors, *args, **md):
         All other motors are followed by start, stop, num, snake where snake
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     # There is some duplicate effort here to obtain the list of motors.
     _args = list(args)
@@ -807,6 +837,8 @@ def relative_inner_product_scan(detectors, num, *args, **md):
         patterned like (``motor1, start1, stop1,`` ...,
                         ``motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     # There is some duplicate effort here to obtain the list of motors.
     _args = list(args)
@@ -835,6 +867,8 @@ def tweak(detector, target_field, motor, step, **md):
     motor : Device
     step : float
         initial suggestion for step size
+    **md
+        Additional keyword arguments are interpreted as metadata.
     """
     prompt_str = '{0}, {1:.3}, {2}, ({3}) '
 
@@ -876,6 +910,6 @@ def tweak(detector, target_field, motor, step, **md):
 
     plan = core()
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan)
+    plan = run_wrapper(plan, **md)
     ret = yield from plan
     return ret

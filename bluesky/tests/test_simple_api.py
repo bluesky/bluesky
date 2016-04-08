@@ -10,11 +10,10 @@ def test_basic_usage_for_smoke():
                     'test. ImportError: {}'.format(ie))
     from bluesky.global_state import gs
     from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
-                                  d3scan, mesh, tscan, dtscan, th2th)
+                                  d3scan, mesh, th2th)
     gs.DETS = [det]
     with pytest.raises(TraitError):
         gs.DETS = [det, det]  # no duplicate data keys
-    gs.TEMP_CONTROLLER = motor
     gs.TH_MOTOR = motor1
     gs.TTH_MOTOR = motor2
     gs.RE.md['owner'] = 'test'
@@ -28,37 +27,21 @@ def test_basic_usage_for_smoke():
     RE(ascan(motor, 1, 2, 2))
     RE(a2scan(motor, 1, 2, 2))
     RE(a3scan(motor, 1, 2, 2))
-    dscan(motor, 1, 2, 2)
-    d2scan(motor, 1, 2, 2)
-    d3scan(motor, 1, 2, 2)
-    mesh(motor1, 1, 2, 2, motor2, 1, 2, 3)
-    tscan(1, 2, 2)
-    dtscan(1, 2, 2)
-    th2th(1, 2, 2)
-    # with count time specified as positional arg
-    ct()
-    ascan(motor, 1, 2, 2, 0.1)
-    a2scan(motor, 1, 2, 2, 0.1)
-    a3scan(motor, 1, 2, 2, 0.1)
-    dscan(motor, 1, 2, 2, 0.1)
-    d2scan(motor, 1, 2, 2, 0.1)
-    d3scan(motor, 1, 2, 2, 0.1)
-    mesh(motor1, 1, 2, 2, motor2, 1, 2, 3, 0.1)
-    tscan(1, 2, 2, 0.1)
-    dtscan(1, 2, 2, 0.1)
-    th2th(1, 2, 2, 0.1)
+    RE(dscan(motor, 1, 2, 2))
+    RE(d2scan(motor, 1, 2, 2))
+    RE(d3scan(motor, 1, 2, 2))
+    RE(mesh(motor1, 1, 2, 2, motor2, 1, 2, 3))
+    RE(th2th(1, 2, 2))
     # with count time specified as keyword arg
-    ct()
-    ascan(motor, 1, 2, 2, time=0.1)
-    a2scan(motor, 1, 2, 2, time=0.1)
-    a3scan(motor, 1, 2, 2, time=0.1)
-    dscan(motor, 1, 2, 2, time=0.1)
-    d2scan(motor, 1, 2, 2, time=0.1)
-    d3scan(motor, 1, 2, 2, time=0.1)
-    mesh(motor1, 1, 2, 2, motor2, 1, 2, 3, time=0.1)
-    tscan(1, 2, 2, time=0.1)
-    dtscan(1, 2, 2, time=0.1)
-    th2th(1, 2, 2, time=0.1)
+    RE(ct())
+    RE(ascan(motor, 1, 2, 2, time=0.1))
+    RE(a2scan(motor, 1, 2, 2, time=0.1))
+    RE(a3scan(motor, 1, 2, 2, time=0.1))
+    RE(dscan(motor, 1, 2, 2, time=0.1))
+    RE(d2scan(motor, 1, 2, 2, time=0.1))
+    RE(d3scan(motor, 1, 2, 2, time=0.1))
+    RE(mesh(motor1, 1, 2, 2, motor2, 1, 2, 3, time=0.1))
+    RE(th2th(1, 2, 2, time=0.1))
     flyer = FlyMagic('wheee', motor, det1, det2)
     gs.FLYERS = [flyer]
-    ct()
+    RE(ct())

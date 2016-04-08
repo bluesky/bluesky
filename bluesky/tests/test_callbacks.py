@@ -84,18 +84,6 @@ def test_subs_input():
     obj_ascan.subs = [cb2, cb3]
     assert obj_ascan.subs == {'all': [cb2, cb3], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
 
-    # Test input normalization on simple scans
-    assert mesh.subs == mesh.default_subs
-    mesh.subs.update({'start': [cb2]})
-    expected = dict(mesh.default_subs)
-    expected.update({'start': [cb2]})
-    assert mesh.subs == expected
-    mesh.subs = cb2
-    assert mesh.subs == {'all': [cb2], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
-    mesh.subs = [cb2, cb3]
-    assert mesh.subs == {'all': [cb2, cb3], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
-    mesh.subs.update({'start': [cb1]})
-    assert mesh.subs == {'all': [cb2, cb3], 'start': [cb1], 'stop': [], 'descriptor': [], 'event': []}
 
 def test_subscribe_msg():
     assert RE.state == 'idle'
