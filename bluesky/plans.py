@@ -78,7 +78,6 @@ PlanBase = Plan  # back-compat
 
 
 class Count(Plan):
-    _fields = ['detectors', 'num', 'delay']
     __doc__ = count.__doc__
 
     def __init__(self, detectors, num=1, delay=0):
@@ -117,7 +116,7 @@ class Scan(Plan):
 
     def _gen(self):
         return scan(self.detectors, self.motor, self.start, self.stop,
-                        self.num)
+                    self.num)
 
 AbsScanPlan = Scan  # back-compat
 
@@ -128,7 +127,7 @@ class LogScan(Plan):
 
     def _gen(self):
         return log_scan(self.detectors, self.motor, self.start, self.stop,
-                            self.num)
+                        self.num)
 
 LogAbsScanPlan = LogScan  # back-compat
 
@@ -150,7 +149,7 @@ class RelativeLogScan(Plan):
 
     def _gen(self):
         return relative_log_scan(self.detectors, self.motor, self.start,
-                              self.stop, self.num)
+                                 self.stop, self.num)
 
 LogDeltaScanPlan = RelativeLogScan  # back-compat
 

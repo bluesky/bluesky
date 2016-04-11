@@ -82,7 +82,7 @@ def setup_peakstats(motors):
 ### Counts (p. 140) ###
 
 
-def ct(num=1, delay=None, time=None, **md):
+def ct(num=1, delay=None, time=None, *, md=None):
     """
     Take one or more readings from the global detectors.
 
@@ -94,13 +94,13 @@ def ct(num=1, delay=None, time=None, **md):
         time delay between successive readings; default is 0
     time : float, optional
         applied to any detectors that have a `count_time` setting
-    **md :
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     subs = {'all': [LiveTable(gs.TABLE_COLS + [gs.PLOT_Y])]}
     if num is not None and num > 1:
         subs['all'].append(setup_plot([]))
-    plan = count(gs.DETS, num, delay, **md)
+    plan = count(gs.DETS, num, delay, md=md)
     if time is not None:
         plan = configure_count_time(plan, time)
     plan = subscription_wrapper(plan, subs)
@@ -110,7 +110,7 @@ def ct(num=1, delay=None, time=None, **md):
 
 ### Motor Scans (p. 146) ###
 
-def ascan(motor, start, finish, intervals, time=None, **md):
+def ascan(motor, start, finish, intervals, time=None, *, md=None):
     """
     Scan over one variable in equally spaced steps.
 
@@ -126,13 +126,13 @@ def ascan(motor, start, finish, intervals, time=None, **md):
         number of strides (number of points - 1)
     time : float, optional
         applied to any detectors that have a `count_time` setting
-    **md :
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
                     setup_plot([motor]),
                     setup_peakstats([motor])]}
-    plan = scan(gs.DETS, motor, start, finish, 1 + intervals, **md)
+    plan = scan(gs.DETS, motor, start, finish, 1 + intervals, md=md)
     if time is not None:
         plan = configure_count_time(plan, time)
     plan = subscription_wrapper(plan, subs)
@@ -140,7 +140,7 @@ def ascan(motor, start, finish, intervals, time=None, **md):
     return ret
 
 
-def dscan(motor, start, finish, intervals, time=None, **md):
+def dscan(motor, start, finish, intervals, time=None, *, md=None):
     """
     Scan over one variable in equally spaced steps relative to current pos.
 
@@ -156,13 +156,13 @@ def dscan(motor, start, finish, intervals, time=None, **md):
         number of strides (number of points - 1)
     time : float, optional
         applied to any detectors that have a `count_time` setting
-    **md :
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
                     setup_plot([motor]),
                     setup_peakstats([motor])]}
-    plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals, **md)
+    plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals, md=md)
     if time is not None:
         plan = configure_count_time(plan, time)
     plan = subscription_wrapper(plan, subs)
@@ -170,7 +170,7 @@ def dscan(motor, start, finish, intervals, time=None, **md):
     return ret
 
 
-def mesh(*args, time=None, **md):
+def mesh(*args, time=None, *, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -183,8 +183,8 @@ def mesh(*args, time=None, **md):
                         ``motorN, startN, stopN, numN,``)
 
         The first motor is the "slowest", the outer loop.
-    **md :
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     if len(args) % 4 != 0:
         raise ValueError("wrong number of positional arguments")
@@ -211,7 +211,7 @@ def mesh(*args, time=None, **md):
     for chunk in chunked_args:
         new_args.extend(list(chunk) + [False])
 
-    plan = outer_product_scan(gs.DETS, *new_args, **md)
+    plan = outer_product_scan(gs.DETS, *new_args, md=md)
     if time is not None:
         plan = configure_count_time(plan, time)
     plan = subscription_wrapper(plan, subs)
@@ -219,7 +219,7 @@ def mesh(*args, time=None, **md):
     return ret
 
 
-def a2scan(*args, time=None, **md):
+def a2scan(*args, time=None, *, md=None):
     """
     Scan over one multi-motor trajectory.
 
@@ -232,8 +232,8 @@ def a2scan(*args, time=None, **md):
         Motors can be any 'setable' object (motor, temp controller, etc.)
     time : float, optional
         applied to any detectors that have a `count_time` setting
-    **md :
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
@@ -248,7 +248,7 @@ def a2scan(*args, time=None, **md):
     plan = inner_product_scan(gs.DETS, num, *args[:-1])
     if time is not None:
         plan = configure_count_time(plan, time)
-    plan = subscription_wrapper(plan, subs, **md)
+    plan = subscription_wrapper(plan, subs, md=md)
     ret = yield from plan
     return ret
 
@@ -256,7 +256,7 @@ def a2scan(*args, time=None, **md):
 a3scan = a2scan
 
 
-def d2scan(*args, time=None, **md):
+def d2scan(*args, time=None, *, md=None):
     """
     Scan over one multi-motor trajectory relative to current positions.
 
@@ -269,8 +269,8 @@ def d2scan(*args, time=None, **md):
         Motors can be any 'setable' object (motor, temp controller, etc.)
     time : float, optional
         applied to any detectors that have a `count_time` setting
-    **md :
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
@@ -282,7 +282,7 @@ def d2scan(*args, time=None, **md):
                         setup_peakstats(motors)]}
     intervals = list(args)[-1]
     num = 1 + intervals
-    plan = relative_inner_product_scan(gs.DETS, num, *args[:-1], **md)
+    plan = relative_inner_product_scan(gs.DETS, num, *args[:-1], md=md)
     if time is not None:
         plan = configure_count_time(plan, time)
     plan = subscription_wrapper(plan, subs)
@@ -293,7 +293,7 @@ def d2scan(*args, time=None, **md):
 d3scan = d2scan
 
 
-def th2th(start, finish, intervals, *, time=None, **md):
+def th2th(start, finish, intervals, *, time=None, *, md=None):
     """
     Scan the theta and two-theta motors together.
 
@@ -312,16 +312,16 @@ def th2th(start, finish, intervals, *, time=None, **md):
         number of strides (number of points - 1)
     time : float, optional
         applied to any detectors that have a `count_time` setting
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     ret = yield from d2scan(gs.TTH_MOTOR, start, finish,
                             gs.TH_MOTOR, start/2, finish/2,
-                            intervals, time=time)
+                            intervals, time=time, md=md)
     return ret
 
 
-def tw(motor, step, *, time=None, **md):
+def tw(motor, step, time=None, *, md=None):
     """
     Move and motor and read a detector with an interactive prompt.
 
@@ -335,10 +335,10 @@ def tw(motor, step, *, time=None, **md):
     motor : Device
     step : float
         initial suggestion for step size
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
-    plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD)
+    plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, md=md)
     ret = yield from plan
     if time is not None:
         plan = configure_count_time(plan, time)

@@ -18,6 +18,12 @@ from bluesky.utils import (normalize_subs_input,
 from bluesky.callbacks import LiveTable, LivePlot
 
 
+def _short_uid(label=None, truncate=6):
+    if label is None:
+        label = ''
+    return '-'.join([label, str(uuid.uuid4())[:truncate]])
+
+
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None):
     """Plot the raster path for this plan
 
@@ -142,20 +148,21 @@ def subscription_wrapper(plan, subs):
 
 
 def fly_during(plan, flyers):
-    if flyers:
-        for flyer in flyers:
-            yield Msg('kickoff', flyer, block_group='_flyers')
-        yield Msg('wait', None, '_flyers')
+    grp = _short_uid('flyers')
+    for flyer in flyers:
+        yield Msg('kickoff', flyer, block_group=grp)
     ret = yield from plan
     if flyers:
-        for flyer in flyers:
-            yield Msg('collect', flyer, block_group='_flyers')
         yield Msg('wait', None, '_flyers')
-    return ret
+    for flyer in flyers:
+        yield Msg('collect', flyer, block_group=grp)
 
 
 def run_wrapper(plan, md=None, **kwargs):
     """Automatically adds RunStart and RunStop Msgs around a plan
+
+    Keyword arguments override the contents of the `md` dictionary
+    to produce the final metadata dictionary.
 
     Yields
     ------
@@ -168,7 +175,10 @@ def run_wrapper(plan, md=None, **kwargs):
     yield Msg('open_run', None, **md)
     try:
         ret = yield from plan
-    except:
+    # This block is an example of how custom exception handling can be
+    # inserted. Without any handling in the plan itself, the RunEngine will
+    # close the run and mark it as errored.
+    except Exception:
         yield Msg('close_run', None, exit_status='error')
         raise
     else:
@@ -250,6 +260,9 @@ def relative_set(plan, objects):
 
 
 def put_back(plan, objects):
+    """
+    Return movable devices to the original positions at the end.
+    """
     initial_positions = OrderedDict()
     ret = None
     try:
@@ -285,12 +298,14 @@ def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
 def trigger_and_read(triggerable, not_triggerable):
     """Trigger and read a list of detectors bundled into a single event.
 
+    Parameters
+    ----------
     triggerable : iterable
         devices to trigger and then read (e.g., detectors)
     not_triggerable : iterable
         dervices to just read (e.g., motors)
     """
-    grp = str(uuid.uuid4())
+    grp = stort_uid('trigger')
     for det in separate_devices(triggerable):
         yield Msg('trigger', det, block_group=grp)
     yield Msg('wait', None, grp)
@@ -324,7 +339,7 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def count(detectors, num=1, delay=None, **md):
+def count(detectors, num=1, delay=None, *, md=None):
     """
     Take one or more readings from detectors.
 
@@ -336,8 +351,8 @@ def count(detectors, num=1, delay=None, **md):
         number of readings to take; default is 1
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     md.update({'detectors': [det.name for det in detectors]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num}
@@ -362,22 +377,26 @@ def count(detectors, num=1, delay=None, **md):
     ret = yield from plan
     return ret
 
-def _step_scan_core(detectors, motor, steps):
-    "Just the steps. This should be wrapped in stage_wrapper, run_wrapper."
-    def one_step(step):
-        grp = str(uuid.uuid4())
-        yield Msg('checkpoint')
-        yield Msg('set', motor, step, block_group=grp)
-        yield Msg('wait', None, grp)
-        ret = yield from event(trigger_and_read(detectors, [motor]))
-        return ret
 
-    for step in steps:
-        ret = yield from one_step(step)
+def _one_step(detectors, motor, step):
+    grp = _short_uid('set')
+    yield Msg('checkpoint')
+    yield Msg('set', motor, step, block_group=grp)
+    yield Msg('wait', None, grp)
+    ret = yield from event(trigger_and_read(detectors, [motor]))
     return ret
 
 
-def list_scan(detectors, motor, steps, **md):
+def _step_scan_core(detectors, motor, steps, *, per_step=None):
+    "Just the steps. This should be wrapped in stage_wrapper, run_wrapper."
+    if per_step is None:
+        per_step = _one_step
+    for step in steps:
+        ret = yield from per_step(step)
+    return ret
+
+
+def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     Scan over one variable in steps.
 
@@ -389,20 +408,24 @@ def list_scan(detectors, motor, steps, **md):
         any 'setable' object (motor, temp controller, etc.)
     steps : list
         list of positions
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)`` 
+    md : dict, optional
+        metadata
     """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': repr(detectors), 'steps': steps}
 
-    plan = stage_wrapper(_step_scan_core(detectors, motor, steps))
+    plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
+    plan = stage_wrapper(plan)
     plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
 
-def relative_list_scan(detectors, motor, steps, **md):
+def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     Scan over one variable in steps relative to current position.
 
@@ -414,18 +437,21 @@ def relative_list_scan(detectors, motor, steps, **md):
         any 'setable' object (motor, temp controller, etc.)
     steps : list
         list of positions relative to current position
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)`` 
+    md : dict, optional
+        metadata
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    plan = list_scan(detectors, motor, steps, **md)
+    plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
     return ret
 
 
-def scan(detectors, motor, start, stop, num, **md):
+def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     Scan over one variable in equally spaced steps.
 
@@ -441,8 +467,11 @@ def scan(detectors, motor, start, stop, num, **md):
         ending position of motor
     num : int
         number of steps
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)`` 
+    md : dict, optional
+        metadata
     """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
@@ -450,13 +479,15 @@ def scan(detectors, motor, start, stop, num, **md):
                        'start': start, 'stop': stop}
 
     steps = np.linspace(start, stop, num)
-    plan = stage_wrapper(_step_scan_core(detectors, motor, steps))
-    plan = run_wrapper(plan, md=md)
+    plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
+    plan = stage_wrapper(plan)
+    plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
 
-def relative_scan(detectors, motor, start, stop, num, **md):
+def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
+                  md=None):
     """
     Scan over one variable in equally spaced steps relative to current positon.
 
@@ -472,17 +503,20 @@ def relative_scan(detectors, motor, start, stop, num, **md):
         ending position of motor
     num : int
         number of steps
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)`` 
+    md : dict, optional
+        metadata
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    plan = scan(detectors, motor, start, stop, num, **md)
+    plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
 
 
-def log_scan(detectors, motor, start, stop, num, **md):
+def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     Scan over one variable in log-spaced steps.
 
@@ -498,8 +532,11 @@ def log_scan(detectors, motor, start, stop, num, **md):
         ending position of motor
     num : int
         number of steps
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)`` 
+    md : dict, optional
+        metadata
     """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
@@ -507,13 +544,15 @@ def log_scan(detectors, motor, start, stop, num, **md):
                        'start': start, 'stop': stop}
 
     steps = np.logspace(start, stop, num)
-    plan = stage_wrapper(_step_scan_core(detectors, motor, steps))
-    plan = run_wrapper(plan, md=md)
+    plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
+    plan = stage_wrapper(plan)
+    plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
 
-def relative_log_scan(detectors, motor, start, stop, num, **md):
+def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
+                      md=None):
     """
     Scan over one variable in log-spaced steps relative to current position.
 
@@ -529,31 +568,24 @@ def relative_log_scan(detectors, motor, start, stop, num, **md):
         ending position of motor
     num : int
         number of steps
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)`` 
+    md : dict, optional
+        metadata
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    plan = log_scan(detectors, motor, start, stop, num, **md)
+    plan = log_scan(detectors, motor, start, stop, num, per_step=per_step,
+                    md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
     return ret
 
 
-def bind_to_run_engine(RE, gen_func, name):
-
-    def inner(*args, md=None, **kwargs):
-        if md is None:
-            md = {}
-        plan = gen_func(*args, **kwargs)
-        return RE(plan, **md)
-
-    return inner
-
-
 def adaptive_scan(detectors, target_field, motor, start, stop,
                   min_step, max_step, target_delta, backstep,
-                  threshold=0.8, **md):
+                  threshold=0.8, *, md=None):
     """
     Scan over one variable with adaptively tuned step size.
 
@@ -579,8 +611,8 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         whether backward steps are allowed -- this is concern with some motors
     threshold : float, optional
         threshold for going backward and rescanning a region, default is 0.8
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     def core():
         next_pos = start
@@ -626,14 +658,14 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             next_pos += step
     plan = core()
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, **md)
+    plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
 
 def relative_adaptive_scan(detectors, target_field, motor, start, stop,
                            min_step, max_step, target_delta, backstep,
-                           threshold=0.8, **md):
+                           threshold=0.8, *, md=None):
     """
     Relative scan over one variable with adaptively tuned step size.
 
@@ -659,35 +691,41 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
         whether backward steps are allowed -- this is concern with some motors
     threshold : float, optional
         threshold for going backward and rescanning a region, default is 0.8
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     plan = adaptive_scan(detectors, target_field, motor, start, stop,
                          min_step, max_step, target_delta, backstep,
-                         threshold, **md)
+                         threshold, md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
     return ret
 
-def _nd_step_scan_core(detectors, cycler):
+
+def _one_nd_step(detectors, motor, step, last_pos):
+    yield Msg('checkpoint')
+    for motor, pos in step.items():
+        grp = _short_uid('set')
+        if pos == last_set_point[motor]:
+            # This step does not move this motor.
+            continue
+        yield Msg('set', motor, pos, block_group=grp)
+        last_set_point[motor] = pos
+        yield Msg('wait', None, grp)
+    ret = yield from event(trigger_and_read(detectors, motors))
+
+def _nd_step_scan_core(detectors, cycler, per_step=None):
+    if per_step is None:
+        per_step = _one_nd_step
     motors = cycler.keys
-    last_set_point = {m: None for m in motors}
+    last_pos = defaultdict(lambda: None)
     for step in list(cycler):
-        yield Msg('checkpoint')
-        for motor, pos in step.items():
-            grp = str(uuid.uuid4())
-            if pos == last_set_point[motor]:
-                # This step does not move this motor.
-                continue
-            yield Msg('set', motor, pos, block_group=grp)
-            last_set_point[motor] = pos
-            yield Msg('wait', None, grp)
-        ret = yield from event(trigger_and_read(detectors, motors))
+        ret = yield from per_step(detectors, motors, step, last_pos)
     return ret
 
 
-def plan_nd(detectors, cycler, **md):
+def plan_nd(detectors, cycler, *, per_step=None, md=None):
     """
     Scan over an arbitrary N-dimensional trajectory.
 
@@ -696,21 +734,25 @@ def plan_nd(detectors, cycler, **md):
     detectors : list
     cycler : Cycler
         list of dictionaries mapping motors to positions
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans._one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name for motor in cycler.keys]})
     md['plan_args'] = {'detectors': repr(detectors), 'cycler': repr(cycler)}
 
-    plan = _nd_step_scan_core(detectors, cycler)
+    plan = _nd_step_scan_core(detectors, cycler, per_step)
     plan = stage_wrapper(plan)
     plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
 
-def inner_product_scan(detectors, num, *args, **md):
+def inner_product_scan(detectors, num, *args, per_step=per_step, md=None):
     """
     Scan over one multi-motor trajectory.
 
@@ -724,8 +766,12 @@ def inner_product_scan(detectors, num, *args, **md):
         patterned like (``motor1, start1, stop1,`` ...,
                         ``motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans._one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
     if len(args) % 3 != 0:
         raise ValueError("wrong number of positional arguments")
@@ -736,11 +782,11 @@ def inner_product_scan(detectors, num, *args, **md):
         cyclers.append(c)
     full_cycler = functools.reduce(operator.add, cyclers)
 
-    ret = yield from plan_nd(detectors, full_cycler, **md)
+    ret = yield from plan_nd(detectors, full_cycler, per_step=per_step, md=md)
     return ret
 
 
-def outer_product_scan(detectors, *args, **md):
+def outer_product_scan(detectors, *args, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -758,8 +804,12 @@ def outer_product_scan(detectors, *args, **md):
         except the first motor, there is a "snake" argument: a boolean
         indicating whether to following snake-like, winding trajectory or a
         simple left-to-right trajectory.
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans._one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
     args = list(args)
     # The first (slowest) axis is never "snaked." Insert False to
@@ -783,11 +833,11 @@ def outer_product_scan(detectors, *args, **md):
     md.update({'shape': tuple(shape), 'extents': tuple(extents),
                'snaking': tuple(snaking), 'num': len(full_cycler)})
 
-    ret = yield from plan_nd(detectors, full_cycler, **md)
+    ret = yield from plan_nd(detectors, full_cycler, per_step=per_step, md=md)
     return ret
 
 
-def relative_outer_product_scan(detectors, *args, **md):
+def relative_outer_product_scan(detectors, *args, md=md):
     """
     Scan over a mesh relative to current position.
 
@@ -803,8 +853,12 @@ def relative_outer_product_scan(detectors, *args, **md):
         All other motors are followed by start, stop, num, snake where snake
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans._one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
     # There is some duplicate effort here to obtain the list of motors.
     _args = list(args)
@@ -817,14 +871,14 @@ def relative_outer_product_scan(detectors, *args, **md):
     for motor, start, stop, num, snake in chunked(_args, 5):
         motors.append(motor)
 
-    plan = outer_product_scan(detectors, *args, **md)
+    plan = outer_product_scan(detectors, *args, per_step=per_step, md=md)
     plan = relative_set(plan, motors)  # re-write trajectory as relative
     plan = put_back(plan, motors)  # return motors to starting pos
     ret = yield from plan
     return ret
 
 
-def relative_inner_product_scan(detectors, num, *args, **md):
+def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current position.
 
@@ -838,8 +892,12 @@ def relative_inner_product_scan(detectors, num, *args, **md):
         patterned like (``motor1, start1, stop1,`` ...,
                         ``motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans._one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
     # There is some duplicate effort here to obtain the list of motors.
     _args = list(args)
@@ -849,14 +907,14 @@ def relative_inner_product_scan(detectors, num, *args, **md):
     for motor, start, stop, in chunked(_args, 3):
         motors.append(motor)
 
-    plan = inner_product_scan(detectors, num, *args, **md)
+    plan = inner_product_scan(detectors, num, *args, per_step=per_step, md=md)
     plan = relative_set(plan, motors)  # re-write trajectory as relative
     plan = put_back(plan, motors)  # return motors to starting pos
     ret = yield from plan
     return ret
 
 
-def tweak(detector, target_field, motor, step, **md):
+def tweak(detector, target_field, motor, step, *, md=None):
     """
     Move and motor and read a detector with an interactive prompt.
 
@@ -868,8 +926,8 @@ def tweak(detector, target_field, motor, step, **md):
     motor : Device
     step : float
         initial suggestion for step size
-    **md
-        Additional keyword arguments are interpreted as metadata.
+    md : dict, optional
+        metadata
     """
     prompt_str = '{0}, {1:.3}, {2}, ({3}) '
 
@@ -911,6 +969,6 @@ def tweak(detector, target_field, motor, step, **md):
 
     plan = core()
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, **md)
+    plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
