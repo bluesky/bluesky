@@ -186,28 +186,6 @@ def run_wrapper(plan, md=None, **kwargs):
     return ret
 
 
-def event(plan, name=None):
-    """Wrap an iterator with a create and save messages
-
-    Parameters
-    ----------
-    plan : iterable of Msg objects
-    name : string, optional
-        If None, use default name 'primary'
-
-    Yields
-    ------
-    Msg
-    """
-    if name is None:
-        name = 'primary'
-    yield Msg('create', name=name)
-    ret = yield from plan
-    yield Msg('save')
-
-    return ret
-
-
 def stage_wrapper(plan):
     """
     This is a preprocessor that inserts 'stage' Messages.
@@ -295,23 +273,28 @@ def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
     return outer
 
 
-def trigger_and_read(triggerable, not_triggerable):
+def trigger_and_read(devices, name=None):
     """Trigger and read a list of detectors bundled into a single event.
 
     Parameters
     ----------
-    triggerable : iterable
-        devices to trigger and then read (e.g., detectors)
-    not_triggerable : iterable
-        dervices to just read (e.g., motors)
+    devices : iterable
+        devices to trigger (if they have a trigger method) and then read
+    name : string, optional
+        If None, use default name 'primary'
     """
+    if name is None:
+        name = 'primary'
+    devices = separate_devices(devices)  # remove redundant entries
+    yield Msg('create', name=name)
     grp = stort_uid('trigger')
-    for det in separate_devices(triggerable):
-        yield Msg('trigger', det, block_group=grp)
+    for obj in separate_devices(devices):
+        if hasattr(det, 'trigger'):
+            yield Msg('trigger', obj, block_group=grp)
     yield Msg('wait', None, grp)
-
-    for det in separate_devices(list(triggerable) + list(not_triggerable)):
-        yield Msg('read', det)
+    for det devices:
+        yield Msg('read', obj)
+    yield Msg('save')
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
@@ -365,7 +348,7 @@ def count(detectors, num=1, delay=None, *, md=None):
 
     def single_point():
         yield Msg('checkpoint')
-        ret = yield from event(trigger_and_read(detectors, []))
+        ret = yield from trigger_and_read(detectors)
         d = next(delay)
         if d is not None:
             yield Msg('sleep', None, d)
@@ -383,7 +366,7 @@ def _one_step(detectors, motor, step):
     yield Msg('checkpoint')
     yield Msg('set', motor, step, block_group=grp)
     yield Msg('wait', None, grp)
-    ret = yield from event(trigger_and_read(detectors, [motor]))
+    ret = yield from trigger_and_read(list(detectors) + [motor])
     return ret
 
 
@@ -713,7 +696,7 @@ def _one_nd_step(detectors, motor, step, last_pos):
         yield Msg('set', motor, pos, block_group=grp)
         last_set_point[motor] = pos
         yield Msg('wait', None, grp)
-    ret = yield from event(trigger_and_read(detectors, motors))
+    ret = yield from trigger_and_read(list(detectors) + list(motors))
 
 def _nd_step_scan_core(detectors, cycler, per_step=None):
     if per_step is None:
