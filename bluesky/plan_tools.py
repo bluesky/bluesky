@@ -317,12 +317,6 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def table_and_plot(plan):
-    subs = {'all': [LiveTable(detectors)]}
-    if num != 1:
-        subs['all'].append(LivePlot(scalar_heuristic(detectors[0])))
-
-
 def count(detectors, num=1, delay=None, **md):
     """
     Take one or more readings from detectors.
