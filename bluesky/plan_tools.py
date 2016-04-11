@@ -176,13 +176,21 @@ def run_wrapper(plan, md=None, **kwargs):
     return ret
 
 
-def event_wrapper(plan, name=None):
+def event(plan, name=None):
     """Wrap an iterator with a create and save messages
+
+    Parameters
+    ----------
+    plan : iterable of Msg objects
+    name : string, optional
+        If None, use default name 'primary'
 
     Yields
     ------
     Msg
     """
+    if name is None:
+        name = 'primary'
     yield Msg('create', name=name)
     ret = yield from plan
     yield Msg('save')
@@ -274,8 +282,7 @@ def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
     return outer
 
 
-@wrap_with_decorator(event_wrapper)
-def trigger_and_read(triggerable, not_triggerable, *, name=None):
+def trigger_and_read(triggerable, not_triggerable):
     """Trigger and read a list of detectors bundled into a single event.
 
     triggerable : iterable
@@ -343,7 +350,7 @@ def count(detectors, num=1, delay=None, **md):
 
     def single_point():
         yield Msg('checkpoint')
-        ret = yield from trigger_and_read(detectors, [], name='primary')
+        ret = yield from event(trigger_and_read(detectors, []))
         d = next(delay)
         if d is not None:
             yield Msg('sleep', None, d)
@@ -362,7 +369,7 @@ def _step_scan_core(detectors, motor, steps):
         yield Msg('checkpoint')
         yield Msg('set', motor, step, block_group=grp)
         yield Msg('wait', None, grp)
-        ret = yield from trigger_and_read(detectors, [motor])
+        ret = yield from event(trigger_and_read(detectors, [motor]))
         return ret
 
     for step in steps:
@@ -676,7 +683,7 @@ def _nd_step_scan_core(detectors, cycler):
             yield Msg('set', motor, pos, block_group=grp)
             last_set_point[motor] = pos
             yield Msg('wait', None, grp)
-        ret = yield from trigger_and_read(detectors, motors)
+        ret = yield from event(trigger_and_read(detectors, motors))
     return ret
 
 
