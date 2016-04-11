@@ -6,7 +6,7 @@ import itertools
 import functools
 import operator
 from boltons.iterutils import chunked
-from collections import OrderedDict, Iterable
+from collections import OrderedDict, Iterable, defaultdict
 
 import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
@@ -179,7 +179,7 @@ def run_wrapper(plan, md=None):
     return ret
 
 
-def simple_preprocessor(func, cleanup_msgs):
+def simple_preprocessor(func, cleanup_msgs=None):
     """
     Create generator wrapper than mutates or inserts messages.
 
@@ -194,18 +194,25 @@ def simple_preprocessor(func, cleanup_msgs):
     Parameters
     ----------
     func : callable
-        expected_signature: ``f(msg) -> list_of_new_msgs``
-    cleanup_msgs : list
+        expected_signature: ``f(msg) -> msgs_before, original_msg, msgs_after``
+    cleanup_msgs : list, optional
         list of cleanup-related messages to yield in finally block
     """
+    if cleanup_msgs is None:
+        cleanup_msgs = []
     def f(plan):
-        ret = None
-        while True:
-            msg = plan.send(ret)
-            new_msgs = func(msg)
-            yield from new_msgs
+        try:
+            ret = None
+            while True:
+                msg = plan.send(ret)
+                before, main, after = func(msg)
+                yield from before
+                ret = yield main
+                yield from after
         finally:
-            yield from cleanup_msgs
+            for msg in cleanup_msgs:
+                yield msg
+        return ret
     return f
 
 
@@ -227,15 +234,15 @@ def fly_during(plan, flyers):
 
     def insert_after_open(msg):
         if msg.command == 'open_run':
-            return [msg] + kickoff_msgs
+            return [], msg, kickoff_msgs
         else:
-            return [msg]
+            return [], msg, []
 
-    def insert_before_close(msg)
+    def insert_before_close(msg):
         if msg.command == 'close_run':
-            return collect_msgs + [msg]
+            return collect_msgs, msg, []
         else:
-            return [msg]
+            return [], msg, []
 
     plan = simple_preprocessor(insert_after_open)(plan)
     plan = simple_preprocessor(insert_before_close)(plan)
@@ -293,12 +300,12 @@ def relative_set(plan, devices=None):
             rel_pos, = msg.args
             abs_pos = initial_positions[msg.obj] + rel_pos
             new_msg = msg._replace(args=(abs_pos,))
-            return [new_msg]
+            return [], new_msg, []
         else:
-            return [msg]
-    plan = simple_proprocessor(f)(plan)
+            return [], msg, []
+    plan = simple_preprocessor(f)(plan)
     ret = yield from plan
-    yield from ret
+    return ret
 
 
 def put_back(plan, devices=None):
@@ -313,17 +320,18 @@ def put_back(plan, devices=None):
     """
     initial_positions = OrderedDict()  # local var for debugging purposes
     grp = _short_uid('put_back')
-    cleanup_msgs = [Msg('wait', None, grp]
+    cleanup_msgs = [Msg('wait', None, grp)]
     def f(msg):
-        if msg.command == 'set' and (devices is None or msg.obj in devices):
-            if msg.obj not in initial_positions:
-                pos = msg.obj.position
-                initial_positions[msg.obj] = pos
+        obj = msg.obj
+        if msg.command == 'set' and (devices is None or obj in devices):
+            if obj not in initial_positions:
+                pos = obj.position
+                initial_positions[obj] = pos
                 cleanup_msgs.insert(0, Msg('set', obj, pos, block_group=grp))
-        return [msg]
-    plan = simple_proprocessor(f, cleanup_msgs)(plan)
+        return [], msg, []
+    plan = simple_preprocessor(f, cleanup_msgs)(plan)
     ret = yield from plan
-    yield from ret
+    return ret
 
 
 def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
@@ -356,9 +364,9 @@ def trigger_and_read(devices, name=None):
         name = 'primary'
     devices = separate_devices(devices)  # remove redundant entries
     yield Msg('create', name=name)
-    grp = stort_uid('trigger')
+    grp = _short_uid('trigger')
     for obj in separate_devices(devices):
-        if hasattr(det, 'trigger'):
+        if hasattr(obj, 'trigger'):
             yield Msg('trigger', obj, block_group=grp)
     yield Msg('wait', None, grp)
     for obj in devices:
@@ -430,6 +438,8 @@ def count(detectors, num=1, delay=None, *, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
     md.update({'detectors': [det.name for det in detectors]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num}
 
@@ -468,7 +478,7 @@ def _step_scan_core(detectors, motor, steps, *, per_step=None):
     if per_step is None:
         per_step = _one_step
     for step in steps:
-        ret = yield from per_step(step)
+        ret = yield from per_step(detectors, motor, step)
     return ret
 
 
@@ -490,6 +500,8 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': repr(detectors), 'steps': steps}
@@ -549,6 +561,8 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num,
@@ -614,6 +628,8 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num,
@@ -772,23 +788,34 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
     """
     plan = adaptive_scan(detectors, target_field, motor, start, stop,
                          min_step, max_step, target_delta, backstep,
-                         threshold, md)
+                         threshold, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
     return ret
 
 
-def _one_nd_step(detectors, motor, step, last_pos):
+def _one_nd_step(detectors, step, pos_cache):
+    """
+    Parameters
+    ----------
+    detectors : iterable
+        devices to read
+    step : dict
+        mapping motors to positions in this step
+    pos_cache : dict
+        mapping motors to their last-set positions
+    """
     yield Msg('checkpoint')
     for motor, pos in step.items():
         grp = _short_uid('set')
-        if pos == last_set_point[motor]:
+        if pos == pos_cache[motor]:
             # This step does not move this motor.
             continue
         yield Msg('set', motor, pos, block_group=grp)
-        last_set_point[motor] = pos
+        pos_cache[motor] = pos
         yield Msg('wait', None, grp)
+    motors = step.keys()
     ret = yield from trigger_and_read(list(detectors) + list(motors))
 
 def _nd_step_scan_core(detectors, cycler, per_step=None):
@@ -797,7 +824,7 @@ def _nd_step_scan_core(detectors, cycler, per_step=None):
     motors = cycler.keys
     last_pos = defaultdict(lambda: None)
     for step in list(cycler):
-        ret = yield from per_step(detectors, motors, step, last_pos)
+        ret = yield from per_step(detectors, step, last_pos)
     return ret
 
 
@@ -817,6 +844,8 @@ def plan_nd(detectors, cycler, *, per_step=None, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name for motor in cycler.keys]})
     md['plan_args'] = {'detectors': repr(detectors), 'cycler': repr(cycler)}
@@ -828,7 +857,7 @@ def plan_nd(detectors, cycler, *, per_step=None, md=None):
     return ret
 
 
-def inner_product_scan(detectors, num, *args, per_step=per_step, md=None):
+def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory.
 
@@ -862,7 +891,7 @@ def inner_product_scan(detectors, num, *args, per_step=per_step, md=None):
     return ret
 
 
-def outer_product_scan(detectors, *args, md=None):
+def outer_product_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -906,6 +935,8 @@ def outer_product_scan(detectors, *args, md=None):
         cyclers.append(c)
     full_cycler = snake_cyclers(cyclers, snaking)
 
+    if md is None:
+        md = {}
     md.update({'shape': tuple(shape), 'extents': tuple(extents),
                'snaking': tuple(snaking), 'num': len(full_cycler)})
 
@@ -913,7 +944,7 @@ def outer_product_scan(detectors, *args, md=None):
     return ret
 
 
-def relative_outer_product_scan(detectors, *args, md=md):
+def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh relative to current position.
 
@@ -1007,6 +1038,8 @@ def tweak(detector, target_field, motor, step, *, md=None):
     """
     prompt_str = '{0}, {1:.3}, {2}, ({3}) '
 
+    if md is None:
+        md = {}
     md.update({'detectors': [detector.name],
                'motors': [motor.name]})
 

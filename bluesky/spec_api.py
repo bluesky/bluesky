@@ -170,7 +170,7 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     return ret
 
 
-def mesh(*args, time=None, *, md=None):
+def mesh(*args, time=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -219,7 +219,7 @@ def mesh(*args, time=None, *, md=None):
     return ret
 
 
-def a2scan(*args, time=None, *, md=None):
+def a2scan(*args, time=None, md=None):
     """
     Scan over one multi-motor trajectory.
 
@@ -256,7 +256,7 @@ def a2scan(*args, time=None, *, md=None):
 a3scan = a2scan
 
 
-def d2scan(*args, time=None, *, md=None):
+def d2scan(*args, time=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current positions.
 
@@ -293,7 +293,7 @@ def d2scan(*args, time=None, *, md=None):
 d3scan = d2scan
 
 
-def th2th(start, finish, intervals, *, time=None, *, md=None):
+def th2th(start, finish, intervals, time=None, *, md=None):
     """
     Scan the theta and two-theta motors together.
 

@@ -137,6 +137,10 @@ class Mover(Base):
         self.ready = True
         return self
 
+    @property
+    def position(self):
+        return self._data[self._fields[0]]['value']
+
     def settle(self):
         pass
 
@@ -144,7 +148,7 @@ class Mover(Base):
         pass
 
     def trigger(self):
-        return None
+        return self
 
 
 class SynGauss(Reader):
