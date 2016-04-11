@@ -179,6 +179,70 @@ def run_wrapper(plan, md=None):
     return ret
 
 
+def simple_preprocessor(func, cleanup_msgs):
+    """
+    Create generator wrapper than mutates or inserts messages.
+
+    This utility makes simple cases easier to write, but it does not provide
+    access to the *result* of processing the messages -- for, say, an
+    adaptive plan. This utility only re-writes messsages on the way in.
+
+    For examples, see ``relative_set``, ``put_back``, and ``fly_during``. For
+    an example where this utility is *not* sufficiently general, see
+    ``stage_wrapper``.
+
+    Parameters
+    ----------
+    func : callable
+        expected_signature: ``f(msg) -> list_of_new_msgs``
+    cleanup_msgs : list
+        list of cleanup-related messages to yield in finally block
+    """
+    def f(plan):
+        ret = None
+        while True:
+            msg = plan.send(ret)
+            new_msgs = func(msg)
+            yield from new_msgs
+        finally:
+            yield from cleanup_msgs
+    return f
+
+
+def fly_during(plan, flyers):
+    """
+    Kickoff and collect "flyer" (asynchronously collect) objects during runs.
+
+    Parameters
+    ----------
+    plan : iterable
+    flyers : iterable
+        objects that support the flyer interface
+    """
+    grp = _short_uid('flyers')
+    kickoff_msgs = [Msg('kickoff', flyer, block_group=grp) for flyer in flyers]
+    collect_msgs = [Msg('collect', flyer) for flyer in flyers]
+    if flyers:
+        collect_msgs = [Msg('wait', None, grp)] + collect_msgs
+
+    def insert_after_open(msg):
+        if msg.command == 'open_run':
+            return [msg] + kickoff_msgs
+        else:
+            return [msg]
+
+    def insert_before_close(msg)
+        if msg.command == 'close_run':
+            return collect_msgs + [msg]
+        else:
+            return [msg]
+
+    plan = simple_preprocessor(insert_after_open)(plan)
+    plan = simple_preprocessor(insert_before_close)(plan)
+    ret = yield from plan
+    return ret
+
+
 def stage_wrapper(plan):
     """
     This is a preprocessor that inserts 'stage' Messages.
@@ -210,44 +274,56 @@ def stage_wrapper(plan):
     return ret
 
 
-def relative_set(plan, objects):
+def relative_set(plan, devices=None):
     """
-    Interpret set messages on objects as relative to current position.
+    Interpret 'set' messages on devices as relative to initial position.
+
+    Parameters
+    ----------
+    plan : iterable
+    devices : iterable or None, optional
+        if default (None), apply to all devices that are moved by the plan
     """
     initial_positions = {}
-    ret = None
-    while True:
-        msg = plan.send(ret)
-        if msg.command == 'set' and msg.obj in objects:
+    def f(msg):
+        if msg.command == 'set' and (devices is None or msg.obj in devices):
             if msg.obj not in initial_positions:
                 pos = msg.obj.position
                 initial_positions[msg.obj] = pos
             rel_pos, = msg.args
             abs_pos = initial_positions[msg.obj] + rel_pos
             new_msg = msg._replace(args=(abs_pos,))
-            ret = yield new_msg
+            return [new_msg]
         else:
-            ret = yield msg
+            return [msg]
+    plan = simple_proprocessor(f)(plan)
+    ret = yield from plan
+    yield from ret
 
 
-def put_back(plan, objects):
+def put_back(plan, devices=None):
     """
     Return movable devices to the original positions at the end.
+
+    Parameters
+    ----------
+    plan : iterable
+    devices : iterable or None, optional
+        if default (None), apply to all devices that are moved by the plan
     """
-    initial_positions = OrderedDict()
-    ret = None
-    try:
-        while True:
-            msg = plan.send(ret)
-            if msg.command == 'set' and msg.obj in objects:
-                if msg.obj not in initial_positions:
-                    pos = msg.obj.position
-                    initial_positions[msg.obj] = pos
-            ret = yield msg
-    finally:
-        for obj, pos in reversed(list(initial_positions.items())):
-            yield Msg('set', obj, pos, block_group='_restore')
-            yield Msg('wait', None, '_restore')
+    initial_positions = OrderedDict()  # local var for debugging purposes
+    grp = _short_uid('put_back')
+    cleanup_msgs = [Msg('wait', None, grp]
+    def f(msg):
+        if msg.command == 'set' and (devices is None or msg.obj in devices):
+            if msg.obj not in initial_positions:
+                pos = msg.obj.position
+                initial_positions[msg.obj] = pos
+                cleanup_msgs.insert(0, Msg('set', obj, pos, block_group=grp))
+        return [msg]
+    plan = simple_proprocessor(f, cleanup_msgs)(plan)
+    ret = yield from plan
+    yield from ret
 
 
 def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
