@@ -147,22 +147,16 @@ def subscription_wrapper(plan, subs):
     return ret
 
 
-def fly_during(plan, flyers):
-    grp = _short_uid('flyers')
-    for flyer in flyers:
-        yield Msg('kickoff', flyer, block_group=grp)
-    ret = yield from plan
-    if flyers:
-        yield Msg('wait', None, '_flyers')
-    for flyer in flyers:
-        yield Msg('collect', flyer, block_group=grp)
 
 
-def run_wrapper(plan, md=None, **kwargs):
-    """Automatically adds RunStart and RunStop Msgs around a plan
+def run_wrapper(plan, md=None):
+    """Enclose a plan in 'open_run' and 'close_run' messages.
 
-    Keyword arguments override the contents of the `md` dictionary
-    to produce the final metadata dictionary.
+    Parameters
+    ----------
+    plan : iterable
+    md : dict, optional
+        metadata to be passed into the 'open_run' message
 
     Yields
     ------
@@ -171,7 +165,6 @@ def run_wrapper(plan, md=None, **kwargs):
     if md is None:
         md = dict()
     md = dict(md)
-    md.update(kwargs)
     yield Msg('open_run', None, **md)
     try:
         ret = yield from plan
@@ -292,12 +285,24 @@ def trigger_and_read(devices, name=None):
         if hasattr(det, 'trigger'):
             yield Msg('trigger', obj, block_group=grp)
     yield Msg('wait', None, grp)
-    for det devices:
+    for obj in devices:
         yield Msg('read', obj)
     yield Msg('save')
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
+    """
+    Generate many copies of a mesasge, applying it to a list of devices.
+
+    Parameters
+    ----------
+    command : string
+    devices : iterable
+    *args
+        args for message
+    **kwargs
+        kwargs for message
+    """
     return_vals = []
     for o in objs:
         ret = yield Msg(command, o, *args, **kwargs)
@@ -307,6 +312,18 @@ def broadcast_msg(command, objs, *args, **kwargs):
 
 
 def repeater(n, gen_func, *args, **kwargs):
+    """
+    Generate n chained copies of the messages from gen_func
+    
+    Parameters
+    ----------
+    gen_func : callable
+        returns generator instance
+    *args
+        args for gen_func
+    **kwargs
+        kwargs for gen_func
+    """
     it = range
     if n is None:
         n = 0
