@@ -13,7 +13,7 @@ from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
 
 from bluesky import Msg
-from bluesky.utils import (normalize_subs_input, scalar_heuristic,
+from bluesky.utils import (normalize_subs_input, 
                            snake_cyclers, separate_devices)
 from bluesky.callbacks import LiveTable, LivePlot
 
@@ -231,7 +231,7 @@ def relative_set(plan, objects):
         msg = plan.send(ret)
         if msg.command == 'set' and msg.obj in objects:
             if msg.obj not in initial_positions:
-                pos = scalar_heuristic(msg.obj)
+                pos = msg.obj.position
                 initial_positions[msg.obj] = pos
             rel_pos, = msg.args
             abs_pos = initial_positions[msg.obj] + rel_pos
@@ -249,7 +249,7 @@ def put_back(plan, objects):
             msg = plan.send(ret)
             if msg.command == 'set' and msg.obj in objects:
                 if msg.obj not in initial_positions:
-                    pos = scalar_heuristic(msg.obj)
+                    pos = msg.obj.position
                     initial_positions[msg.obj] = pos
             ret = yield msg
     finally:

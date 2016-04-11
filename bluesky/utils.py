@@ -405,21 +405,6 @@ def first_key_heuristic(device):
     return next(iter(device.describe()))
 
 
-def scalar_heuristic(device):
-    """
-    If a device like a motor has multiple read_fields, we need some way of
-    knowing which one is the 'primary' or 'scalar' position, the one to
-    use as the "initial position" when computing a relative trajecotry
-    or the one to plot against when automatically choosing at x variable.
-
-    This is a hot-fix in advance of the Winter 2016 cycle -- should be
-    rethought when there is time.
-    """
-    reading = device.read()
-    key = first_key_heuristic(device)
-    return reading[key]['value']
-
-
 def ancestry(obj):
     """
     List self, parent, grandparent, ... back to ultimate ancestor.

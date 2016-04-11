@@ -8,8 +8,7 @@ from cycler import cycler
 import numpy as np
 from .run_engine import Msg
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
-                    scalar_heuristic, separate_devices, apply_sub_factories,
-                    update_sub_lists)
+                    separate_devices, apply_sub_factories, update_sub_lists)
 from .plan_tools import (fly_during, count, scan, relative_scan,
                          list_scan, relative_list_scan, log_scan,
                          relative_log_scan, subscription_wrapper,
