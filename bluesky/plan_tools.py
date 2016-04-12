@@ -261,7 +261,7 @@ def stage_wrapper(plan):
 
     At the end, an 'unstage' Message issued for every 'stage' Message.
     """
-    COMMANDS = ['read', 'set', 'trigger', 'kickoff']
+    COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
     devices_staged = []
     ret = None
     try:
