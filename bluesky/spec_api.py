@@ -245,10 +245,10 @@ def a2scan(*args, time=None, md=None):
                         setup_peakstats(motors)]}
     intervals = list(args)[-1]
     num = 1 + intervals
-    plan = inner_product_scan(gs.DETS, num, *args[:-1])
+    plan = inner_product_scan(gs.DETS, num, *args[:-1], md=md)
     if time is not None:
         plan = configure_count_time(plan, time)
-    plan = subscription_wrapper(plan, subs, md=md)
+    plan = subscription_wrapper(plan, subs)
     ret = yield from plan
     return ret
 
