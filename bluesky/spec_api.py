@@ -22,10 +22,10 @@ from bluesky.global_state import gs
 from bluesky.utils import (normalize_subs_input, Subs, DefaultSubs,
                            first_key_heuristic, apply_sub_factories,
                            update_sub_lists)
-from bluesky.plan_tools import (subscription_wrapper, count, scan,
-                                relative_scan, relative_inner_product_scan,
-                                outer_product_scan, inner_product_scan,
-                                tweak)
+from bluesky.plans import (subscription_wrapper, count, scan,
+                           relative_scan, relative_inner_product_scan,
+                           outer_product_scan, inner_product_scan,
+                           tweak)
 from collections import defaultdict
 import itertools
 from itertools import filterfalse, chain
