@@ -44,6 +44,86 @@ def planify(func):
     return wrapped
 
 
+def plan_mutator(plan, msg_proc):
+    # internal stacks
+    genstack = deque()
+    result_stack = deque()
+    tail_stack = deque()
+    tail_result_cache = dict()
+
+    # seed initial conditions
+    genstack.append(plan)
+    result_stack.append(None)
+
+    while True:
+        assert len(genstack) == len(tail_stack) + 1
+        try:
+            # get last result
+            ret = result_stack.pop()
+            # send last result to the top most generator in the
+            # stack this may raise StopIteration
+            msg = genstack[-1].send(ret)
+
+            # allow the processing function a chance to mutate /
+            # insert messages before or after
+            # msg -> None, None (no op)
+            # msg -> gen, None (mutate and/or insert before current message
+            #                   last message in gen must be compatible
+            #                   with msg)
+            # msg -> gen, tail (same as above, but insert some messages
+            #                   _after_)
+            # msg -> None, tail (Raises)
+            new_gen, tail_gen = msg_proc(msg)
+            # mild correctness check
+            if tail_gen is not None and new_gen is None:
+                raise RuntimeError("This makes no sense")
+
+            # if inserting / mutating, put new generator on the stack
+            # and replace the current msg with the first element from the
+            # new generator
+            if new_gen is not None:
+                # stash the new generator
+                genstack.append(new_gen)
+                # put in a result value to prime it
+                result_stack.append(None)
+                # stash the tail generator
+                tail_stack.append(tail_gen)
+                # go to the top of the loop
+                continue
+
+            # yield out the 'current message' and collect the return
+            inner_ret = yield msg
+            result_stack.append(inner_ret)
+
+        except StopIteration:
+            # discard the exhausted generator
+            # TODO capture gen.close()?
+            exhausted_gen = genstack.pop()
+            # if we just came out of a 'tail' generator, discard its
+            # return value and replace it with the cached one (from the last
+            # message in its paired 'new_gen')
+            if id(exhausted_gen) in tail_result_cache:
+                ret = tail_result_cache.pop(id(exhausted_gen))
+
+            result_stack.append(ret)
+
+            if tail_stack:
+                gen = tail_stack.pop()
+                if gen is not None:
+                    genstack.append(gen)
+                    saved_result = result_stack.pop()
+                    tail_result_cache[id(gen)] = saved_result
+                    # must use None to prime generator
+                    result_stack.append(None)
+
+            if genstack:
+                continue
+            else:
+                return plan.close()
+        except Exception as ex:
+            plan.throw(ex)
+
+
 @context_manager
 def subs_context(genstack, subs):
     """
