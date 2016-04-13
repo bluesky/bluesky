@@ -294,7 +294,6 @@ def lazily_stage(plan):
     """
     This is a preprocessor that inserts 'stage' Messages.
 
-    the first time is it told to "kickoff") a 'stage' Msg is inserted first.
     It stages the the object's ultimate parent, pointed to be its `root`
     property.
 
@@ -341,21 +340,22 @@ def stage_context(plan_stack, devices):
     devices : lis
         list of devices to stage immediately on entrance and unstage on exit
     """
-    devices = list(devices)  # ensure we choose a determined order
+    # Resolve unique devices, avoiding redundant staging.
+    devices = [device.root for devices in devices]
 
-    def explicit_stage():
+    def stage():
         # stage devices explicitly passed to 'devices' argument
         yield from broadcast_msg('stage', devices)
 
-    def explicit_unstage():
+    def unstage():
         # unstage devices explicitly passed to 'devices' argument
         yield from broadcast_msg('unstage', reversed(devices))
 
-    plan_stack.append(explicit_stage())
+    plan_stack.append(stage())
     try:
         yield plan_stack
     finally:
-        plan_stack.append(explicit_unstage())
+        plan_stack.append(unstage())
 
 
 def relative_set(plan, devices=None):
@@ -385,20 +385,22 @@ def relative_set(plan, devices=None):
     return ret
 
 
-def put_back(plan, devices=None):
+@contextmanager
+def put_back(plan_stack, devices=None):
     """
     Return movable devices to the original positions at the end.
 
     Parameters
     ----------
-    plan : iterable
+    plan_stack : collection
+        collection of generators that yield messages
     devices : iterable or None, optional
-        if default (None), apply to all devices that are moved by the plan
+        If default (None), apply to all devices that are moved by the plan.
     """
-    initial_positions = OrderedDict()  # local var for debugging purposes
-    grp = _short_uid('put_back')
-    cleanup_msgs = [Msg('wait', None, grp)]
-    def f(msg):
+    initial_positions = OrderedDict()
+
+    ## THIS IS STILL A WORK IN PROGRESS ##
+    def record_initial_positions(msg):
         obj = msg.obj
         if msg.command == 'set' and (devices is None or obj in devices):
             if obj not in initial_positions:
@@ -406,13 +408,19 @@ def put_back(plan, devices=None):
                 initial_positions[obj] = pos
                 cleanup_msgs.insert(0, Msg('set', obj, pos, block_group=grp))
         return [], msg, []
-    plan = simple_preprocessor(f, cleanup_msgs)(plan)
-    ret = yield from plan
-    return ret
 
+    def put_back():
+        grp = _short_uid('put_back')
+        for obj, pos in initial_positions.items():
+            yield Msg('set', obj, pos, block_group=grp)
+        yield Msg('wait', None, grp)
+
+    yield plan_stack
+    plan_stack.append(put_back())
 
 def trigger_and_read(devices):
-    """Trigger and read a list of detectors.
+    """
+    Trigger and read a list of detectors.
 
     Parameters
     ----------
