@@ -46,23 +46,23 @@ def planify(func):
 
 def plan_mutator(plan, msg_proc):
     # internal stacks
-    genstack = deque()
+    plan_stack = deque()
     result_stack = deque()
     tail_stack = deque()
     tail_result_cache = dict()
 
     # seed initial conditions
-    genstack.append(plan)
+    plan_stack.append(plan)
     result_stack.append(None)
 
     while True:
-        assert len(genstack) == len(tail_stack) + 1
+        assert len(plan_stack) == len(tail_stack) + 1
         try:
             # get last result
             ret = result_stack.pop()
             # send last result to the top most generator in the
             # stack this may raise StopIteration
-            msg = genstack[-1].send(ret)
+            msg = plan_stack[-1].send(ret)
 
             # allow the processing function a chance to mutate /
             # insert messages before or after
@@ -83,7 +83,7 @@ def plan_mutator(plan, msg_proc):
             # new generator
             if new_gen is not None:
                 # stash the new generator
-                genstack.append(new_gen)
+                plan_stack.append(new_gen)
                 # put in a result value to prime it
                 result_stack.append(None)
                 # stash the tail generator
@@ -98,7 +98,7 @@ def plan_mutator(plan, msg_proc):
         except StopIteration:
             # discard the exhausted generator
             # TODO capture gen.close()?
-            exhausted_gen = genstack.pop()
+            exhausted_gen = plan_stack.pop()
             # if we just came out of a 'tail' generator, discard its
             # return value and replace it with the cached one (from the last
             # message in its paired 'new_gen')
@@ -110,13 +110,13 @@ def plan_mutator(plan, msg_proc):
             if tail_stack:
                 gen = tail_stack.pop()
                 if gen is not None:
-                    genstack.append(gen)
+                    plan_stack.append(gen)
                     saved_result = result_stack.pop()
                     tail_result_cache[id(gen)] = saved_result
                     # must use None to prime generator
                     result_stack.append(None)
 
-            if genstack:
+            if plan_stack:
                 continue
             else:
                 return plan.close()
@@ -124,14 +124,14 @@ def plan_mutator(plan, msg_proc):
             plan.throw(ex)
 
 
-@context_manager
-def subs_context(genstack, subs):
+@contextmanager
+def subs_context(plan_stack, subs):
     """
     Subscribe to callbacks to the document stream; then unsubscribe on exit.
 
     Parameters
     ----------
-    genstack : collection
+    plan_stack : collection
         collection of generators that yield messages
     subs : callable, list of callables, or dict of lists of callables
          Documents of each type are routed to a list of functions.
@@ -166,14 +166,14 @@ def subs_context(genstack, subs):
         for token in tokens:
             yield Msg('unsubscribe', None, token)
 
-    genstack.append(subscribe())
+    plan_stack.append(subscribe())
     try:
-        yield genstack
+        yield plan_stack
     finally:
         # The RunEngine might never process these if the execution fails,
         # but it keeps its own cache of tokens and will try to remove them
         # itself if this plan fails to do so.
-        genstack.append(unsubscribe())
+        plan_stack.append(unsubscribe())
 
 
 def single_gen(x):
@@ -185,12 +185,12 @@ def single_gen(x):
 
 
 @contextmanager
-def run_context(genstack, md=None):
+def run_context(plan_stack, md=None):
     """Enclose in 'open_run' and 'close_run' messages.
 
     Parameters
     ----------
-    genstack : collection
+    plan_stack : collection
         collection of generators that yield messages
     md : dict, optional
         metadata to be passed into the 'open_run' message
@@ -202,38 +202,38 @@ def run_context(genstack, md=None):
     if md is None:
         md = dict()
     md = dict(md)
-    genstack.append(single_gen(Msg('open_run', None, **md)))
+    plan_stack.append(single_gen(Msg('open_run', None, **md)))
     try:
-        yield genstack
+        yield plan_stack
 
     # This block is an example of how custom exception handling can be
     # inserted. Without any handling in the plan itself, the RunEngine will
     # close the run and mark it as errored.
     except Exception:
-        genstack.append(single_gen(Msg('close_run', None,
+        plan_stack.append(single_gen(Msg('close_run', None,
                                        exit_status='error')))
         raise
 
     else:
-        genstack.append(single_gen(Msg('close_run')))
+        plan_stack.append(single_gen(Msg('close_run')))
 
 
-@context_manager
-def event_context(genstack, name='primary'):
+@contextmanager
+def event_context(plan_stack, name='primary'):
     """Bundle readings into an 'event' (a datapoint).
 
     This encloses the contents in 'create' and 'save' messages.
 
     Parameters
     ----------
-    genstack : collection
+    plan_stack : collection
         collection of generators that yield messages
     name : string, optional
         name of event stream; default is 'primary'
     """
-    genstack.append(single_gen(Msg('create', None, name=name)))
-    yield genstack
-    genstack.append(single_gen(Msg('save')))
+    plan_stack.append(single_gen(Msg('create', None, name=name)))
+    yield plan_stack
+    plan_stack.append(single_gen(Msg('save')))
 
 
 def simple_preprocessor(func, cleanup_msgs=None):
@@ -307,7 +307,7 @@ def fly_during(plan, flyers):
     return ret
 
 
-def stage_context(genstack, detectors):
+def stage_context(plan_stack, detectors):
     """
     This is a preprocessor that inserts 'stage' Messages.
 
@@ -321,7 +321,7 @@ def stage_context(genstack, detectors):
     COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
     # Cache devices in the order they are staged; then unstage in reverse.
     devices_staged = []
-    genstack.append(stage())
+    plan_stack.append(stage())
 
     def unstage():
         yield from broadcast_msg('unstage', reversed(devices_staged))
@@ -345,9 +345,9 @@ def stage_context(genstack, detectors):
                 devices_staged.extend(ret)
             ret = yield msg
     ###
-        yield genstack
+        yield plan_stack
     finally:
-        genstack.append(unstage())
+        plan_stack.append(unstage())
 
 
 def relative_set(plan, devices=None):
@@ -537,17 +537,17 @@ def count(detectors, num=1, delay=None, *, md=None):
     else:
         delay = iter(delay)
 
-    genstack = deque()
-    with stage_context(genstack, detectors):
-        with run_context(genstack, md):
+    plan_stack = deque()
+    with stage_context(plan_stack, detectors):
+        with run_context(plan_stack, md):
             for _ in counter:
-                genstack.append(single_gen(Msg('checkpoint')))
-                with event_context(genstack):
-                    genstack.append(trigger_and_read(detectors))
+                plan_stack.append(single_gen(Msg('checkpoint')))
+                with event_context(plan_stack):
+                    plan_stack.append(trigger_and_read(detectors))
                 d = next(delay)
                 if d is not None:
-                    genstack.append(single_gen(Msg('sleep', None, d)))
-    return genstack
+                    plan_stack.append(single_gen(Msg('sleep', None, d)))
+    return plan_stack
 
 
 def _one_step(detectors, motor, step):
