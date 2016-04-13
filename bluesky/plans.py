@@ -45,10 +45,30 @@ def planify(func):
 
 
 def plan_mutator(plan, msg_proc):
+    """
+    Alter the contents of a plan on the fly by changing or inserting messages.
+
+    Parameters
+    ----------
+    plan : iterator
+    msg_proc : callable
+        functions that takes in a message and returns replacement messages
+
+        fucntion signatures:
+
+        msg -> None, None (no op)
+        msg -> gen, None (mutate and/or insert before current message;
+                        last message in gen must invoke a response compatible
+                        with original msg)
+        msg -> gen, tail (same as above, but insert some messages *after*)
+        msg -> None, tail (illegal -- raises RuntimeError)
+
+    """
     # internal stacks
+    msgs_seen = set()
     plan_stack = deque()
     result_stack = deque()
-    tail_stack = deque()
+    tail_cache = dict()
     tail_result_cache = dict()
 
     # seed initial conditions
@@ -56,7 +76,6 @@ def plan_mutator(plan, msg_proc):
     result_stack.append(None)
 
     while True:
-        assert len(plan_stack) == len(tail_stack) + 1
         try:
             # get last result
             ret = result_stack.pop()
@@ -64,15 +83,6 @@ def plan_mutator(plan, msg_proc):
             # stack this may raise StopIteration
             msg = plan_stack[-1].send(ret)
 
-            # allow the processing function a chance to mutate /
-            # insert messages before or after
-            # msg -> None, None (no op)
-            # msg -> gen, None (mutate and/or insert before current message
-            #                   last message in gen must be compatible
-            #                   with msg)
-            # msg -> gen, tail (same as above, but insert some messages
-            #                   _after_)
-            # msg -> None, tail (Raises)
             new_gen, tail_gen = msg_proc(msg)
             # mild correctness check
             if tail_gen is not None and new_gen is None:
@@ -81,13 +91,14 @@ def plan_mutator(plan, msg_proc):
             # if inserting / mutating, put new generator on the stack
             # and replace the current msg with the first element from the
             # new generator
-            if new_gen is not None:
+            if (new_gen is not None) and (id(msg) not in msgs_seen):
+                msgs_seen.add(id(msg))
                 # stash the new generator
                 plan_stack.append(new_gen)
                 # put in a result value to prime it
                 result_stack.append(None)
                 # stash the tail generator
-                tail_stack.append(tail_gen)
+                tail_cache[id(new_gen)] = tail_gen
                 # go to the top of the loop
                 continue
 
@@ -107,8 +118,8 @@ def plan_mutator(plan, msg_proc):
 
             result_stack.append(ret)
 
-            if tail_stack:
-                gen = tail_stack.pop()
+            if id(exhausted_gen) in tail_cache:
+                gen = tail_cache.pop(id(exhausted_gen))
                 if gen is not None:
                     plan_stack.append(gen)
                     saved_result = result_stack.pop()
@@ -236,46 +247,12 @@ def event_context(plan_stack, name='primary'):
     plan_stack.append(single_gen(Msg('save')))
 
 
-def simple_preprocessor(func, cleanup_msgs=None):
-    """
-    Create generator wrapper than mutates or inserts messages.
-
-    This utility makes simple cases easier to write, but it does not provide
-    access to the *result* of processing the messages -- for, say, an
-    adaptive plan. This utility only re-writes messsages on the way in.
-
-    For examples, see ``relative_set``, ``put_back``, and ``fly_during``. For
-    an example where this utility is *not* sufficiently general, see
-    ``stage_wrapper``.
-
-    Parameters
-    ----------
-    func : callable
-        expected_signature: ``f(msg) -> msgs_before, original_msg, msgs_after``
-    cleanup_msgs : list, optional
-        list of cleanup-related messages to yield in finally block
-    """
-    if cleanup_msgs is None:
-        cleanup_msgs = []
-    def f(plan):
-        try:
-            ret = None
-            while True:
-                msg = plan.send(ret)
-                before, main, after = func(msg)
-                yield from before
-                ret = yield main
-                yield from after
-        finally:
-            for msg in cleanup_msgs:
-                yield msg
-        return ret
-    return f
-
-
 def fly_during(plan, flyers):
     """
     Kickoff and collect "flyer" (asynchronously collect) objects during runs.
+
+    This is a preprocessor that insert messages immediately after a run is
+    opened and before it is closed.
 
     Parameters
     ----------
@@ -287,67 +264,98 @@ def fly_during(plan, flyers):
     kickoff_msgs = [Msg('kickoff', flyer, block_group=grp) for flyer in flyers]
     collect_msgs = [Msg('collect', flyer) for flyer in flyers]
     if flyers:
+        # If there are any flyers, insert a Msg that waits for them to finish.
         collect_msgs = [Msg('wait', None, grp)] + collect_msgs
 
     def insert_after_open(msg):
         if msg.command == 'open_run':
-            return [], msg, kickoff_msgs
+            def new_gen():
+                yield from kickoff_msgs
+            return single_gen(msg), new_gen()
         else:
-            return [], msg, []
+            return None, None
 
     def insert_before_close(msg):
         if msg.command == 'close_run':
-            return collect_msgs, msg, []
+            def new_gen():
+                yield from collect_msgs
+                yield msg
+            return new_gen(), None
         else:
-            return [], msg, []
+            return None, None
 
-    plan = simple_preprocessor(insert_after_open)(plan)
-    plan = simple_preprocessor(insert_before_close)(plan)
-    ret = yield from plan
-    return ret
+    # Apply nested mutations.
+    plan1 = plan_mutator(plan, insert_after_open)
+    plan2 = plan_mutator(plan1, insert_before_close)
+    return (yield from plan2)
 
 
-def stage_context(plan_stack, detectors):
+def lazily_stage(plan):
     """
     This is a preprocessor that inserts 'stage' Messages.
 
-    The first time an object is read, set, triggered (or, for flyers,
     the first time is it told to "kickoff") a 'stage' Msg is inserted first.
     It stages the the object's ultimate parent, pointed to be its `root`
     property.
 
     At the end, an 'unstage' Message issued for every 'stage' Message.
+
+    Parameters
+    ----------
+    plan : iterable
     """
     COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
     # Cache devices in the order they are staged; then unstage in reverse.
     devices_staged = []
-    plan_stack.append(stage())
 
-    def unstage():
-        yield from broadcast_msg('unstage', reversed(devices_staged))
-
-    def stage():
-        # ???
-        pass
-
-    ####
-    ret = None
-    try:
-        while True:
-            msg = plan.send(ret)
-            if msg.command in COMMANDS and msg.obj not in devices_staged:
-                root = msg.obj.root
+    def inner(msg):
+        if msg.command in COMMANDS and msg.obj not in devices_staged:
+            root = msg.obj.root
+            def new_gen():
+                # Here we insert a 'stage' message
                 ret = yield Msg('stage', root)
+                # and cache the result
                 if ret is None:
                     # The generator may be being list-ified.
-                    # This is a hack to make that possible. Is it a good idea?
+                    # This is a hack to make that possible.
                     ret = [root]
                 devices_staged.extend(ret)
-            ret = yield msg
-    ###
+                # and then proceed with our regularly scheduled programming
+                yield msg
+            return new_gen(), None
+        else:
+            return None, None
+
+    return (yield from plan_mutator(plan, inner))
+
+
+@contextmanager
+def stage_context(plan_stack, devices):
+    """
+    This is a preprocessor that inserts 'stage' Messages.
+
+    Parameters
+    ----------
+    plan_stack : collection
+        collections of generators that yield Msg objects
+    devices : lis
+        list of devices to stage immediately on entrance and unstage on exit
+    """
+    devices = list(devices)  # ensure we choose a determined order
+
+    def explicit_stage():
+        # stage devices explicitly passed to 'devices' argument
+        yield from broadcast_msg('stage', devices)
+
+    def explicit_unstage():
+        # unstage devices explicitly passed to 'devices' argument
+        yield from broadcast_msg('unstage', reversed(devices))
+
+    plan_stack.append(explicit_stage())
+    try:
         yield plan_stack
     finally:
-        plan_stack.append(unstage())
+        plan_stack.append(explicit_unstage())
 
 
 def relative_set(plan, devices=None):
@@ -401,22 +409,6 @@ def put_back(plan, devices=None):
     plan = simple_preprocessor(f, cleanup_msgs)(plan)
     ret = yield from plan
     return ret
-
-
-def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
-    """Paramaterized decorator for wrapping generators with wrappers
-
-    The wrapped function must be a generator and wrapper wrap an
-    iterable.
-    """
-    def outer(func):
-        @wraps(func)
-        def inner(*args, **kwargs):
-            ret = yield from wrapper(func(*args, **kwargs),
-                                     *outer_args, **outer_kwargs)
-            return ret
-        return inner
-    return outer
 
 
 def trigger_and_read(devices):
@@ -524,7 +516,7 @@ def count(detectors, num=1, delay=None, *, md=None):
     if md is None:
         md = {}
     md.update({'detectors': [det.name for det in detectors]})
-    md['plan_args'] = {'detectors': repr(detectors), 'num': num}
+    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num}
 
     if num is None:
         counter = itertools.count()  # run forever, until interrupted
@@ -595,7 +587,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
         md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
-    md['plan_args'] = {'detectors': repr(detectors), 'steps': steps}
+    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'steps': steps}
 
     plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
     plan = stage_wrapper(plan)
@@ -656,7 +648,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
-    md['plan_args'] = {'detectors': repr(detectors), 'num': num,
+    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num,
                        'start': start, 'stop': stop}
 
     steps = np.linspace(start, stop, num)
@@ -723,7 +715,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
-    md['plan_args'] = {'detectors': repr(detectors), 'num': num,
+    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num,
                        'start': start, 'stop': stop}
 
     steps = np.logspace(start, stop, num)
@@ -949,7 +941,8 @@ def plan_nd(detectors, cycler, *, per_step=None, md=None):
         md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name for motor in cycler.keys]})
-    md['plan_args'] = {'detectors': repr(detectors), 'cycler': repr(cycler)}
+    md['plan_args'] = {'detectors': list(map(repr, detectors)),
+                       'cycler': repr(cycler)}
 
     plan = _nd_step_scan_core(detectors, cycler, per_step)
     plan = stage_wrapper(plan)
