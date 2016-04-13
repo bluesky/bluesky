@@ -1,14 +1,15 @@
-import numpy as np
-from cycler import cycler
 import uuid
 import sys
 from functools import wraps
 import itertools
 import functools
 import operator
-from boltons.iterutils import chunked
+from contextlib import contextmanager
 from collections import OrderedDict, Iterable, defaultdict, deque
 
+import numpy as np
+from cycler import cycler
+from boltons.iterutils import chunked
 import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
@@ -24,13 +25,34 @@ def _short_uid(label, truncate=6):
     return '-'.join([label, str(uuid.uuid4())[:truncate]])
 
 
-def subscription_wrapper(plan, subs):
+def planify(func):
     """
-    Subscribe to callbacks, yield from plan, then unsubscribe.
+    Turn a function that returns a list of generators into a coroutine.
 
     Parameters
     ----------
-    plan : iterable
+    func : callable
+        expected to return a list of generators that yield Msg objects;
+        the function may have an arbitrary signature
+    """
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        gen_stack = func(*args, **kwargs)
+        for g in gen_stack:
+            yield from g
+
+    return wrapped
+
+
+@context_manager
+def subs_context(genstack, subs):
+    """
+    Subscribe to callbacks to the document stream; then unsubscribe on exit.
+
+    Parameters
+    ----------
+    genstack : collection
+        collection of generators that yield messages
     subs : callable, list of callables, or dict of lists of callables
          Documents of each type are routed to a list of functions.
          Input is normalized to a dict of lists of functions, like so:
@@ -51,29 +73,45 @@ def subscription_wrapper(plan, subs):
          name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
          doc is a dictionary.
     """
-    tokens = set()
     subs = normalize_subs_input(subs)
-    for name, funcs in subs.items():
-        for func in funcs:
-            token = yield Msg('subscribe', None, name, func)
-            tokens.add(token)
+    tokens = set()
+
+    def subscribe():
+        for name, funcs in subs.items():
+            for func in funcs:
+                token = yield Msg('subscribe', None, name, func)
+                tokens.add(token)
+
+    def unsubscribe():
+        for token in tokens:
+            yield Msg('unsubscribe', None, token)
+
+    genstack.append(subscribe())
     try:
-        ret = yield from plan
+        yield genstack
     finally:
         # The RunEngine might never process these if the execution fails,
         # but it keeps its own cache of tokens and will try to remove them
         # itself if this plan fails to do so.
-        for token in tokens:
-            yield Msg('unsubscribe', None, token)
-    return ret
+        genstack.append(unsubscribe())
 
 
-def run_wrapper(plan, md=None):
-    """Enclose a plan in 'open_run' and 'close_run' messages.
+def single_gen(x):
+    """Utility to wrapping a single object in a generator
+
+    If ``lambda x: yield x`` were valid Python, this would be equivalent.
+    """
+    yield x
+
+
+@contextmanager
+def run_context(genstack, md=None):
+    """Enclose in 'open_run' and 'close_run' messages.
 
     Parameters
     ----------
-    plan : iterable
+    genstack : collection
+        collection of generators that yield messages
     md : dict, optional
         metadata to be passed into the 'open_run' message
 
@@ -84,18 +122,38 @@ def run_wrapper(plan, md=None):
     if md is None:
         md = dict()
     md = dict(md)
-    yield Msg('open_run', None, **md)
+    genstack.append(single_gen(Msg('open_run', None, **md)))
     try:
-        ret = yield from plan
+        yield genstack
+
     # This block is an example of how custom exception handling can be
     # inserted. Without any handling in the plan itself, the RunEngine will
     # close the run and mark it as errored.
     except Exception:
-        yield Msg('close_run', None, exit_status='error')
+        genstack.append(single_gen(Msg('close_run', None,
+                                       exit_status='error')))
         raise
+
     else:
-        yield Msg('close_run', None, exit_status='success')
-    return ret
+        genstack.append(single_gen(Msg('close_run')))
+
+
+@context_manager
+def event_context(genstack, name='primary'):
+    """Bundle readings into an 'event' (a datapoint).
+
+    This encloses the contents in 'create' and 'save' messages.
+
+    Parameters
+    ----------
+    genstack : collection
+        collection of generators that yield messages
+    name : string, optional
+        name of event stream; default is 'primary'
+    """
+    genstack.append(single_gen(Msg('create', None, name=name)))
+    yield genstack
+    genstack.append(single_gen(Msg('save')))
 
 
 def simple_preprocessor(func, cleanup_msgs=None):
@@ -169,7 +227,7 @@ def fly_during(plan, flyers):
     return ret
 
 
-def stage_wrapper(plan):
+def stage_context(genstack, detectors):
     """
     This is a preprocessor that inserts 'stage' Messages.
 
@@ -181,7 +239,18 @@ def stage_wrapper(plan):
     At the end, an 'unstage' Message issued for every 'stage' Message.
     """
     COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
+    # Cache devices in the order they are staged; then unstage in reverse.
     devices_staged = []
+    genstack.append(stage())
+
+    def unstage():
+        yield from broadcast_msg('unstage', reversed(devices_staged))
+
+    def stage():
+        # ???
+        pass
+
+    ####
     ret = None
     try:
         while True:
@@ -195,9 +264,10 @@ def stage_wrapper(plan):
                     ret = [root]
                 devices_staged.extend(ret)
             ret = yield msg
+    ###
+        yield genstack
     finally:
-        yield from broadcast_msg('unstage', reversed(devices_staged))
-    return ret
+        genstack.append(unstage())
 
 
 def relative_set(plan, devices=None):
@@ -269,20 +339,15 @@ def wrap_with_decorator(wrapper, *outer_args, **outer_kwargs):
     return outer
 
 
-def trigger_and_read(devices, name=None):
-    """Trigger and read a list of detectors bundled into a single event.
+def trigger_and_read(devices):
+    """Trigger and read a list of detectors.
 
     Parameters
     ----------
     devices : iterable
         devices to trigger (if they have a trigger method) and then read
-    name : string, optional
-        If None, use default name 'primary'
     """
-    if name is None:
-        name = 'primary'
     devices = separate_devices(devices)  # remove redundant entries
-    yield Msg('create', name=name)
     grp = _short_uid('trigger')
     for obj in separate_devices(devices):
         if hasattr(obj, 'trigger'):
@@ -290,7 +355,6 @@ def trigger_and_read(devices, name=None):
     yield Msg('wait', None, grp)
     for obj in devices:
         yield Msg('read', obj)
-    yield Msg('save')
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
@@ -356,6 +420,7 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
+@planify
 def count(detectors, num=1, delay=None, *, md=None):
     """
     Take one or more readings from detectors.
@@ -370,11 +435,21 @@ def count(detectors, num=1, delay=None, *, md=None):
         time delay between successive readings; default is 0
     md : dict, optional
         metadata
+
+    Note
+    ----
+    If ``delay`` is an iterable, it must have at least ``num`` entries or the
+    plan will raise a ``StopIteration`` error.
     """
     if md is None:
         md = {}
     md.update({'detectors': [det.name for det in detectors]})
     md['plan_args'] = {'detectors': repr(detectors), 'num': num}
+
+    if num is None:
+        counter = itertools.count()  # run forever, until interrupted
+    else:
+        counter = range(num)
 
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
     if not isinstance(delay, Iterable):
@@ -382,19 +457,17 @@ def count(detectors, num=1, delay=None, *, md=None):
     else:
         delay = iter(delay)
 
-    def single_point():
-        yield Msg('checkpoint')
-        ret = yield from trigger_and_read(detectors)
-        d = next(delay)
-        if d is not None:
-            yield Msg('sleep', None, d)
-        return ret
-
-    plan = repeater(num, single_point)
-    plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md=md)
-    ret = yield from plan
-    return ret
+    genstack = deque()
+    with stage_context(genstack, detectors):
+        with run_context(genstack, md):
+            for _ in counter:
+                genstack.append(single_gen(Msg('checkpoint')))
+                with event_context(genstack):
+                    genstack.append(trigger_and_read(detectors))
+                d = next(delay)
+                if d is not None:
+                    genstack.append(single_gen(Msg('sleep', None, d)))
+    return genstack
 
 
 def _one_step(detectors, motor, step):
@@ -412,7 +485,7 @@ def _one_step(detectors, motor, step):
 
 
 def _step_scan_core(detectors, motor, steps, *, per_step=None):
-    "Just the steps. This should be wrapped in stage_wrapper, run_wrapper."
+    "Just the steps. This should be wrapped in stage_wrapper, run_context."
     if per_step is None:
         per_step = _one_step
     for step in steps:
@@ -446,7 +519,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
 
     plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
+    plan = run_context(plan, md)
     ret = yield from plan
     return ret
 
@@ -509,7 +582,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     steps = np.linspace(start, stop, num)
     plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
+    plan = run_context(plan, md)
     ret = yield from plan
     return ret
 
@@ -576,7 +649,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     steps = np.logspace(start, stop, num)
     plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
+    plan = run_context(plan, md)
     ret = yield from plan
     return ret
 
@@ -688,7 +761,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             next_pos += step
     plan = core()
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
+    plan = run_context(plan, md)
     ret = yield from plan
     return ret
 
@@ -763,7 +836,7 @@ def _one_nd_step(detectors, step, pos_cache):
 
 def _nd_step_scan_core(detectors, cycler, per_step=None):
     """
-    Just the steps. This should be wrapped in stage_wrapper, run_wrapper.
+    Just the steps. This should be wrapped in stage_wrapper, run_context.
 
     See ``plan_nd`` below.
     """
@@ -800,7 +873,7 @@ def plan_nd(detectors, cycler, *, per_step=None, md=None):
 
     plan = _nd_step_scan_core(detectors, cycler, per_step)
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
+    plan = run_context(plan, md)
     ret = yield from plan
     return ret
 
@@ -1026,7 +1099,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
     plan = core()
     plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
+    plan = run_context(plan, md)
     ret = yield from plan
     return ret
 
