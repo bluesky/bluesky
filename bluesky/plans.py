@@ -1216,21 +1216,24 @@ class Plan(Struct):
         subs = defaultdict(list)
         update_sub_lists(subs, self.subs)
         update_sub_lists(subs, apply_sub_factories(self.sub_factories, self))
+        flyers = getattr(self, 'flyers', [])
 
         current_settings = {}
         for key, val in kwargs.items():
             current_settings[key] = getattr(self, key)
             setattr(self, key, val)
         try:
-            plan = self._gen()
-            plan = fly_during(plan, getattr(self, 'flyers', []))
-            plan = subscription_wrapper(plan, subs)
-            ret = yield from plan
-            yield Msg('checkpoint')
+            plan_stack = deque()
+            with subs_context(plan_stack, subs):
+                plan = self._gen()
+                plan_stack.append(fly_during(plan, flyers))
+                plan_stack.append(single_gen(Msg('checkpoint')))
         finally:
             for key, val in current_settings.items():
                 setattr(self, key, val)
-        return ret
+
+        for gen in plan_stack:
+            yield from gen
 
     def _gen(self):
         "Subclasses override this to provide the main plan content."
