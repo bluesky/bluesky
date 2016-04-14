@@ -41,7 +41,28 @@ def planify(func):
     return wrapped
 
 
-def plan_mutator(plan, msg_proc):
+def append_cleanup(plan, cleanup_plan):
+    """
+    The cleanup_plan will be performed after the plan completes or fails.
+
+    Parameters
+    ----------
+    plan : iterable
+    cleanup_plan : iterable
+
+    Returns
+    -------
+    plan : iterable
+        a new plan
+    """
+    try:
+        ret = yield from plan
+    finally:
+        yield from cleanup_plan
+    return ret
+
+
+ plan_mutator(plan, msg_proc):
     """
     Alter the contents of a plan on the fly by changing or inserting messages.
 
@@ -534,6 +555,10 @@ def trigger_and_read(devices):
     ----------
     devices : iterable
         devices to trigger (if they have a trigger method) and then read
+
+    Yields
+    ------
+    Msg
     """
     devices = separate_devices(devices)  # remove redundant entries
     grp = _short_uid('trigger')
@@ -658,27 +683,23 @@ def count(detectors, num=1, delay=None, *, md=None):
     return plan_stack
 
 
-def _one_step(detectors, motor, step):
+@planify
+def one_1d_step(detectors, motor, step):
     """
     Inner loop of a 1D step scan
-
-    This is the default function for ``per_step`` param`` in 1D plans.
+    
+    This is the default function for ``per_step`` param in 1D plans.
     """
-    grp = _short_uid('set')
-    yield Msg('checkpoint')
-    yield Msg('set', motor, step, block_group=grp)
-    yield Msg('wait', None, grp)
-    ret = yield from trigger_and_read(list(detectors) + [motor])
-    return ret
+    def move():
+        grp = _short_uid('set')
+        yield Msg('checkpoint')
+        yield Msg('set', motor, step, block_group=grp)
+        yield Msg('wait', None, grp)
 
-
-def _step_scan_core(detectors, motor, steps, *, per_step=None):
-    "Just the steps. This should be wrapped in stage_wrapper, run_context."
-    if per_step is None:
-        per_step = _one_step
-    for step in steps:
-        ret = yield from per_step(detectors, motor, step)
-    return ret
+    plan_stack = deque()
+    plan_stack.append(move())
+    with event_context(plan_stack):
+        plan_stack.append(trigger_and_read(list(detectors) + [motor]))
 
 
 @planify
@@ -696,7 +717,8 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
         list of positions
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        Expected signature: ``f(detectors, motor, step)``
+        Expected signature:
+        ``f(detectors, motor, step) -> plan (a generator) 
     md : dict, optional
         metadata
     """
@@ -704,17 +726,21 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
         md = {}
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
-    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'steps': steps}
-    planstack = deque()
-    with run_context(planstack, md=md):
-        with stage_context(planstack, list(detectors) + [motor]):
-            planstack.append(
-                _step_scan_core(detectors, motor, steps,
-                                per_step=per_step))
+    md['plan_args'] = {'detectors': list(map(repr, detectors)),
+                       'motor': repr(motor), 'steps': steps,
+                       'per_step': repr(per_step)}
+    if per_step is None:
+        per_step = one_1d_step
 
-    return planstack
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + [motor]):
+        with run_context(plan_stack, md):
+            for step in steps:
+                plan_stack.append(per_step(detectors, motor, step))
+    return plan_stack
 
 
+@planify
 def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     Scan over one variable in steps relative to current position.
@@ -737,8 +763,7 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
-    ret = yield from plan
-    return ret
+    return [plan]
 
 
 @planify
@@ -769,17 +794,23 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num,
-                       'start': start, 'stop': stop}
+                       'start': start, 'stop': stop,
+                       'per_step': repr(per_step)}
+
+    if per_step is None:
+        per_step = one_1d_step
 
     steps = np.linspace(start, stop, num)
-    planstack = deque()
-    with run_context(planstack, md=md):
-        with stage_context(planstack, list(detectors) + [motor]):
-            planstack.append(
-                _step_scan_core(detectors, motor, steps, per_step=per_step))
-    return planstack
+
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + [motor]):
+        with run_context(plan_stack, md):
+            for step in steps:
+                plan_stack.append(per_step(detectors, motor, step))
+    return plan_stack
 
 
+@planify
 def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
                   md=None):
     """
@@ -807,10 +838,10 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
-    ret = yield from plan
-    return ret
+    return [plan]
 
 
+@planify
 def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     Scan over one variable in log-spaced steps.
@@ -838,16 +869,23 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num,
-                       'start': start, 'stop': stop}
+                       'start': start, 'stop': stop,
+                       'per_step': repr(per_step)}
+
+    if per_step is None:
+        per_step = one_1d_step
 
     steps = np.logspace(start, stop, num)
-    plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
-    plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
-    ret = yield from plan
-    return ret
+
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + [motor]):
+        with run_context(plan_stack, md):
+            for step in steps:
+                plan_stack.append(per_step(detectors, motor, step))
+    return plan_stack
 
 
+@planify
 def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
                       md=None):
     """
@@ -876,10 +914,10 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
                     md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
-    ret = yield from plan
-    return ret
+    return [plan]
 
 
+@planify
 def adaptive_scan(detectors, target_field, motor, start, stop,
                   min_step, max_step, target_delta, backstep,
                   threshold=0.8, *, md=None):
@@ -953,13 +991,15 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
                 past_I = cur_I
                 step = 0.2 * new_step + 0.8 * step
             next_pos += step
-    plan = core()
-    plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
-    ret = yield from plan
-    return ret
+
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + [motor]):
+        with run_context(plan_stack, md):
+            plan_stack.append(core())
+    return plan_stack
 
 
+@planify
 def relative_adaptive_scan(detectors, target_field, motor, start, stop,
                            min_step, max_step, target_delta, backstep,
                            threshold=0.8, *, md=None):
@@ -996,11 +1036,10 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
                          threshold, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
-    ret = yield from plan
-    return ret
+    return [plan]
 
 
-def _one_nd_step(detectors, step, pos_cache):
+def one_nd_step(detectors, step, pos_cache):
     """
     Inner loop of an N-dimensional step scan
 
@@ -1036,8 +1075,8 @@ def _nd_step_scan_core(detectors, cycler, per_step=None):
     See ``plan_nd`` below.
     """
     if per_step is None:
-        per_step = _one_nd_step
-
+        per_step = one_nd_step
+    motors = cycler.keys
     last_pos = defaultdict(lambda: None)
     for step in list(cycler):
         ret = yield from per_step(detectors, step, last_pos)
@@ -1055,7 +1094,7 @@ def plan_nd(detectors, cycler, *, per_step=None, md=None):
         list of dictionaries mapping motors to positions
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plans._one_nd_step (the default) for
+        See docstring of bluesky.plans.one_nd_step (the default) for
         details.
     md : dict, optional
         metadata
@@ -1090,7 +1129,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
         Motors can be any 'setable' object (motor, temp controller, etc.)
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plans._one_nd_step (the default) for
+        See docstring of bluesky.plans.one_nd_step (the default) for
         details.
     md : dict, optional
         metadata
@@ -1128,7 +1167,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
         simple left-to-right trajectory.
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plans._one_nd_step (the default) for
+        See docstring of bluesky.plans.one_nd_step (the default) for
         details.
     md : dict, optional
         metadata
@@ -1179,7 +1218,7 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
         trajectory or a simple left-to-right trajectory.
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plans._one_nd_step (the default) for
+        See docstring of bluesky.plans.one_nd_step (the default) for
         details.
     md : dict, optional
         metadata
@@ -1218,7 +1257,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
         Motors can be any 'setable' object (motor, temp controller, etc.)
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plans._one_nd_step (the default) for
+        See docstring of bluesky.plans.one_nd_step (the default) for
         details.
     md : dict, optional
         metadata
