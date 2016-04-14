@@ -1,6 +1,6 @@
 import os
 import time as ttime
-from databroker import DataBroker as db, get_events
+from databroker import DataBroker as db, get_events, process
 from databroker.databroker import fill_event
 import filestore.api as fsapi
 from metadatastore.commands import run_start_given_uid, descriptors_by_start
@@ -65,7 +65,7 @@ def post_run(callback):
     --------
     Print a table with full (lossless) result set at the end of a run.
 
-    >>> s = Ascan(motor, [det1], [1,2,3])
+    >>> s = AbsScanPlan(motor, [det1], [1,2,3])
     >>> table = LiveTable(['det1', 'motor'])
     >>> RE(s, {'stop': post_run(table)})
     +------------+-------------------+----------------+----------------+
@@ -80,18 +80,35 @@ def post_run(callback):
         if name != 'stop':
             return
         uid = stop_doc['run_start']
-        start = run_start_given_uid(uid)
-        descriptors = descriptors_by_start(uid)
-        # For convenience, I'll rely on the broker to get Events.
-        header = db[uid]
-        events = get_events(header)
-        callback('start', start)
-        for d in descriptors:
-            callback('descriptor', d)
-        for e in events:
-            callback('event', e)
-        callback('stop', stop_doc)
+        return process(db[uid], callback)
     return f
+
+
+def make_restreamer(callback):
+    """
+    Run a callback whenever a uid is updated.
+
+    Parameters
+    ----------
+    callback : callable
+        expected signature is `f(name, doc)`
+
+    Example
+    -------
+    Run a callback whenever a uid is updated.
+
+    >>> def f(name, doc):
+    ...     # do stuff
+    ...
+    >>> g = make_restreamer(f)
+
+    To use this `ophyd.callbacks.LastUidSignal`:
+
+    >>> last_uid_signal.subscribe(g)
+    """
+    def cb(value, **kwargs):
+        return process(db[value], callback)
+    return cb
 
 
 def verify_files_saved(name, doc):
