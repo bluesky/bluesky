@@ -83,24 +83,25 @@ def plan_mutator(plan, msg_proc):
             # stack this may raise StopIteration
             msg = plan_stack[-1].send(ret)
 
-            new_gen, tail_gen = msg_proc(msg)
-            # mild correctness check
-            if tail_gen is not None and new_gen is None:
-                raise RuntimeError("This makes no sense")
-
             # if inserting / mutating, put new generator on the stack
             # and replace the current msg with the first element from the
             # new generator
-            if (new_gen is not None) and (id(msg) not in msgs_seen):
+            if id(msg) not in msgs_seen:
                 msgs_seen.add(id(msg))
-                # stash the new generator
-                plan_stack.append(new_gen)
-                # put in a result value to prime it
-                result_stack.append(None)
-                # stash the tail generator
-                tail_cache[id(new_gen)] = tail_gen
-                # go to the top of the loop
-                continue
+
+                new_gen, tail_gen = msg_proc(msg)
+                # mild correctness check
+                if tail_gen is not None and new_gen is None:
+                    raise RuntimeError("This makes no sense")
+                if new_gen is not None:
+                    # stash the new generator
+                    plan_stack.append(new_gen)
+                    # put in a result value to prime it
+                    result_stack.append(None)
+                    # stash the tail generator
+                    tail_cache[id(new_gen)] = tail_gen
+                    # go to the top of the loop
+                    continue
 
             # yield out the 'current message' and collect the return
             inner_ret = yield msg
@@ -461,7 +462,7 @@ def broadcast_msg(command, objs, *args, **kwargs):
 def repeater(n, gen_func, *args, **kwargs):
     """
     Generate n chained copies of the messages from gen_func
-    
+
     Parameters
     ----------
     n : int
@@ -553,7 +554,7 @@ def count(detectors, num=1, delay=None, *, md=None):
 def _one_step(detectors, motor, step):
     """
     Inner loop of a 1D step scan
-    
+
     This is the default function for ``per_step`` param`` in 1D plans.
     """
     grp = _short_uid('set')
@@ -587,7 +588,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
         list of positions
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        Expected signature: ``f(detectors, motor, step)`` 
+        Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
     """
@@ -618,7 +619,7 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
         list of positions relative to current position
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        Expected signature: ``f(detectors, motor, step)`` 
+        Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
     """
@@ -648,7 +649,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         number of steps
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        Expected signature: ``f(detectors, motor, step)`` 
+        Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
     """
@@ -686,7 +687,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
         number of steps
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        Expected signature: ``f(detectors, motor, step)`` 
+        Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
     """
@@ -715,7 +716,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         number of steps
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        Expected signature: ``f(detectors, motor, step)`` 
+        Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
     """
@@ -753,7 +754,7 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
         number of steps
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
-        Expected signature: ``f(detectors, motor, step)`` 
+        Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
     """
@@ -889,7 +890,7 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
 def _one_nd_step(detectors, step, pos_cache):
     """
     Inner loop of an N-dimensional step scan
-    
+
     This is the default function for ``per_step`` param`` in ND plans.
 
     Parameters
@@ -1432,6 +1433,6 @@ OuterProductDeltaScanPlan = RelativeOuterProductScan  # back-compat
 class Tweak(Plan):
     _fields = ['detector', 'target_field', 'motor', 'step']
     __doc__ = tweak.__doc__
-    
+
     def _gen(self):
         return tweak(self.detector, self.target_field, self.motor, self.step)
