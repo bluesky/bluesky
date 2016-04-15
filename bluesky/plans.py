@@ -136,6 +136,86 @@ def plan_mutator(plan, msg_proc):
             plan.throw(ex)
 
 
+def msg_mutator(plan, msg_proc):
+    ret = None
+    while True:
+        try:
+            msg = plan.send(ret)
+            msg = msg_proc(msg)
+            # if None, just skip message
+            # feed 'None' back down into the base plan,
+            # this may break some plans
+            if msg is None:
+                ret = None
+                continue
+            ret = yield msg
+        except StopIteration:
+            break
+    return plan.close()
+
+
+def bschain(*args):
+    '''Like `itertools.chain` but using `yield from`
+
+    This ensures than `.send` works as expected and the underlying
+    plans get the return values
+
+    Yields
+    ------
+    msg : Msg
+        The messages from each plan in turn
+    '''
+    rets = deque()
+    for p in args:
+        rets.append((yield from p))
+    return tuple(rets)
+
+
+def single_gen(msg):
+    '''Turn a single Msg into a plan
+
+    In 3.6 or 3.7 we might get lambda generators.
+
+    Parameters
+    ----------
+    msg : Msg
+        A single message
+
+    Yields
+    ------
+    msg : Msg
+        The messages from each plan in turn
+    '''
+    yield msg
+
+
+def finalize(plan, final_plan):
+    '''try...finally helper
+
+    Run the first plan and then the second.  If any of the messages
+    raise an error in the RenEngine (or otherwise), the second plan
+    will attempted to be run anyway.
+
+    Parameters
+    ----------
+    plan : iterable
+        The 'main' plan
+    final_plan : iterable
+        The 'finally' plan.  Attempted to be run no matter what happens
+        in the first plan
+
+    Yields
+    ------
+    msg : Msg
+        The messages from each plan in turn
+    '''
+    try:
+        ret = yield from plan
+    finally:
+        yield from final_plan
+    return ret
+
+
 @contextmanager
 def subs_context(plan_stack, subs):
     """
@@ -188,14 +268,6 @@ def subs_context(plan_stack, subs):
         plan_stack.append(unsubscribe())
 
 
-def single_gen(x):
-    """Utility to wrapping a single object in a generator
-
-    If ``lambda x: yield x`` were valid Python, this would be equivalent.
-    """
-    yield x
-
-
 @contextmanager
 def run_context(plan_stack, md=None):
     """Enclose in 'open_run' and 'close_run' messages.
@@ -223,7 +295,7 @@ def run_context(plan_stack, md=None):
     # close the run and mark it as errored.
     except Exception:
         plan_stack.append(single_gen(Msg('close_run', None,
-                                       exit_status='error')))
+                                         exit_status='error')))
         raise
 
     else:
