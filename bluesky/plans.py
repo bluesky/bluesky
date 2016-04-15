@@ -10,12 +10,9 @@ from collections import OrderedDict, Iterable, defaultdict, deque
 import numpy as np
 from cycler import cycler
 from boltons.iterutils import chunked
-import matplotlib.pyplot as plt
-from matplotlib import collections as mcollections
-from matplotlib import patches as mpatches
 
 from .run_engine import Msg
-from .callbacks import LiveTable, LivePlot
+
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists)
 
@@ -383,6 +380,7 @@ def lazily_stage(plan):
     def inner(msg):
         if msg.command in COMMANDS and msg.obj not in devices_staged:
             root = msg.obj.root
+
             def new_gen():
                 # Here we insert a 'stage' message
                 ret = yield Msg('stage', root)
@@ -414,7 +412,7 @@ def stage_context(plan_stack, devices):
         list of devices to stage immediately on entrance and unstage on exit
     """
     # Resolve unique devices, avoiding redundant staging.
-    devices = [device.root for devices in devices]
+    devices = [device.root for device in devices]
 
     def stage():
         # stage devices explicitly passed to 'devices' argument
@@ -442,6 +440,7 @@ def relative_set(plan, devices=None):
         if default (None), apply to all devices that are moved by the plan
     """
     initial_positions = {}
+
     def f(msg):
         if msg.command == 'set' and (devices is None or msg.obj in devices):
             if msg.obj not in initial_positions:
@@ -453,6 +452,7 @@ def relative_set(plan, devices=None):
             return [], new_msg, []
         else:
             return [], msg, []
+
     plan = simple_preprocessor(f)(plan)
     ret = yield from plan
     return ret
@@ -490,6 +490,7 @@ def put_back(plan_stack, devices=None):
 
     yield plan_stack
     plan_stack.append(put_back())
+
 
 def trigger_and_read(devices):
     """
@@ -768,6 +769,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
     plan = put_back(plan, [motor])  # return motors to starting pos
     ret = yield from plan
+    return ret
 
 
 def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
@@ -985,6 +987,7 @@ def _one_nd_step(detectors, step, pos_cache):
         yield Msg('wait', None, grp)
     motors = step.keys()
     ret = yield from trigger_and_read(list(detectors) + list(motors))
+    return ret
 
 
 def _nd_step_scan_core(detectors, cycler, per_step=None):
@@ -995,7 +998,7 @@ def _nd_step_scan_core(detectors, cycler, per_step=None):
     """
     if per_step is None:
         per_step = _one_nd_step
-    motors = cycler.keys
+
     last_pos = defaultdict(lambda: None)
     for step in list(cycler):
         ret = yield from per_step(detectors, step, last_pos)
@@ -1227,6 +1230,8 @@ def tweak(detector, target_field, motor, step, *, md=None):
             pass
 
     def core():
+        nonlocal step
+
         while True:
             yield Msg('create', None, name='primary')
             ret_mot = yield Msg('read', motor)
@@ -1407,7 +1412,6 @@ class AdaptiveScan(Plan):
                'threshold']
     __doc__ = adaptive_scan.__doc__
 
-
     def __init__(self, detectors, target_field, motor, start, stop,
                  min_step, max_step, target_delta, backstep,
                  threshold=0.8):
@@ -1472,6 +1476,7 @@ InnerProductAbsScanPlan = InnerProductScan  # back-compat
 
 class RelativeInnerProductScan(InnerProductScan):
     __doc__ = relative_inner_product_scan.__doc__
+
     def _gen(self):
         return relative_inner_product_scan(self.detectors, self.num,
                                            *self.args)
