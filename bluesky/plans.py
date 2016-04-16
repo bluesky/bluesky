@@ -284,19 +284,8 @@ def run_context(plan_stack, md=None):
         md = dict()
     md = dict(md)
     plan_stack.append(single_gen(Msg('open_run', None, **md)))
-    try:
-        yield plan_stack
-
-    # This block is an example of how custom exception handling can be
-    # inserted. Without any handling in the plan itself, the RunEngine will
-    # close the run and mark it as errored.
-    except Exception:
-        plan_stack.append(single_gen(Msg('close_run', None,
-                                         exit_status='error')))
-        raise
-
-    else:
-        plan_stack.append(single_gen(Msg('close_run')))
+    yield plan_stack
+    plan_stack.append(single_gen(Msg('close_run')))
 
 
 @contextmanager
@@ -423,10 +412,26 @@ def stage_context(plan_stack, devices):
         yield from broadcast_msg('unstage', reversed(devices))
 
     plan_stack.append(stage())
-    try:
-        yield plan_stack
-    finally:
-        plan_stack.append(unstage())
+    yield plan_stack
+    plan_stack.append(unstage())
+
+
+def stage_wrapper(plan):
+
+    seen_objs = set()
+
+    def inner(msg):
+        if msg.obj is not None:
+            obj = msg.obj.root
+            if obj not in seen_objs:
+                seen_objs.add(obj)
+                return bschain(single_gen(Msg('stage', obj)),
+                               single_gen(msg)), None
+
+        else:
+            return None, None
+
+    return (yield from plan_mutator(plan, inner))
 
 
 def relative_set(plan, devices=None):
