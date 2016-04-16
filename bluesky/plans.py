@@ -265,6 +265,23 @@ def subs_context(plan_stack, subs):
         plan_stack.append(unsubscribe())
 
 
+def subscription_wrapper(plan, subs):
+    subs = normalize_subs_input(subs)
+    tokens = set()
+
+    def subscribe():
+        for name, funcs in subs.items():
+            for func in funcs:
+                token = yield Msg('subscribe', None, name, func)
+                tokens.add(token)
+
+    def unsubscribe():
+        for token in tokens:
+            yield Msg('unsubscribe', None, token)
+
+    return (yield from bschain(subscribe(), finalize(plan, unsubscribe())))
+
+
 @contextmanager
 def run_context(plan_stack, md=None):
     """Enclose in 'open_run' and 'close_run' messages.
