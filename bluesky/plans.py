@@ -305,6 +305,14 @@ def run_context(plan_stack, md=None):
     plan_stack.append(single_gen(Msg('close_run')))
 
 
+def run_wrapper(plan, md):
+    if md is None:
+        md = {}
+    return (yield from bschain(single_gen(Msg('open_run', None, **md)),
+                               plan,
+                               single_gen(Msg('close_run'))))
+
+
 @contextmanager
 def event_context(plan_stack, name='primary'):
     """Bundle readings into an 'event' (a datapoint).
