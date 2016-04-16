@@ -450,11 +450,11 @@ def stage_wrapper(plan):
             obj = msg.obj.root
             if obj not in seen_objs:
                 seen_objs.add(obj)
-                return bschain(single_gen(Msg('stage', obj)),
-                               single_gen(msg)), None
+                return (bschain(single_gen(Msg('stage', obj)),
+                                single_gen(msg)),
+                        None)
 
-        else:
-            return None, None
+        return None, None
 
     def unstage():
         for obj in seen_objs:
