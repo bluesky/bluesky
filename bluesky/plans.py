@@ -448,7 +448,11 @@ def stage_wrapper(plan):
         else:
             return None, None
 
-    return (yield from plan_mutator(plan, inner))
+    def unstage():
+        for obj in seen_objs:
+            yield Msg('unstage', obj)
+
+    return (yield from finalize(plan_mutator(plan, inner), unstage()))
 
 
 def relative_set(plan, devices=None):
