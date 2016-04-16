@@ -681,6 +681,7 @@ def _step_scan_core(detectors, motor, steps, *, per_step=None):
     return ret
 
 
+@planify
 def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     Scan over one variable in steps.
@@ -704,12 +705,14 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     md.update({'detectors': [det.name for det in detectors],
                'motors': [motor.name]})
     md['plan_args'] = {'detectors': list(map(repr, detectors)), 'steps': steps}
+    planstack = deque()
+    with run_context(planstack, md=md):
+        with stage_context(planstack, list(detectors) + [motor]):
+            planstack.append(
+                _step_scan_core(detectors, motor, steps,
+                                per_step=per_step))
 
-    plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
-    plan = stage_wrapper(plan)
-    plan = run_context(plan, md)
-    ret = yield from plan
-    return ret
+    return planstack
 
 
 def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
@@ -738,6 +741,7 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     return ret
 
 
+@planify
 def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     Scan over one variable in equally spaced steps.
@@ -768,11 +772,12 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
                        'start': start, 'stop': stop}
 
     steps = np.linspace(start, stop, num)
-    plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
-    plan = stage_wrapper(plan)
-    plan = run_context(plan, md)
-    ret = yield from plan
-    return ret
+    planstack = deque()
+    with run_context(planstack, md=md):
+        with stage_context(planstack, list(detectors) + [motor]):
+            planstack.append(
+                _step_scan_core(detectors, motor, steps, per_step=per_step))
+    return planstack
 
 
 def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
@@ -838,7 +843,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     steps = np.logspace(start, stop, num)
     plan = _step_scan_core(detectors, motor, steps, per_step=per_step)
     plan = stage_wrapper(plan)
-    plan = run_context(plan, md)
+    plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
@@ -950,7 +955,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             next_pos += step
     plan = core()
     plan = stage_wrapper(plan)
-    plan = run_context(plan, md)
+    plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
@@ -1064,7 +1069,7 @@ def plan_nd(detectors, cycler, *, per_step=None, md=None):
 
     plan = _nd_step_scan_core(detectors, cycler, per_step)
     plan = stage_wrapper(plan)
-    plan = run_context(plan, md)
+    plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
@@ -1292,7 +1297,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
     plan = core()
     plan = stage_wrapper(plan)
-    plan = run_context(plan, md)
+    plan = run_wrapper(plan, md)
     ret = yield from plan
     return ret
 
