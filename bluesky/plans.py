@@ -516,34 +516,38 @@ def relative_set(plan, devices=None):
 
     def read_and_stash_a_motor(obj):
         reading = yield Msg('read', obj)
-        k, = reading.keys()
-        cur_pos = reading[k]['value']
+        if reading is None:
+            # this plan may be being list-ified
+            cur_pos = 0
+        else:
+            k, = reading.keys()
+            cur_pos = reading[k]['value']
         print('INITIAL POS IS %r' % cur_pos)
         initial_positions[obj] = cur_pos
 
     def rewrite_pos(msg):
-        rel_pos, = msg.args
-        abs_pos = initial_positions[msg.obj] + rel_pos
-        print('rewrote %r to %r' % (rel_pos, abs_pos))
-        new_msg = msg._replace(args=(abs_pos,))
-        yield new_msg
-
-    def insert_reads_and_rewrite(msg):
-        eligible = devices is None or msg.obj in devices
-        seen = msg.obj in initial_positions
-        if (msg.command == 'set') and eligible:
-            if not seen:
-                # read the initial postion and then rewrite the as relative
-                return bschain(read_and_stash_a_motor(msg.obj),
-                               rewrite_pos(msg)), None
-            else:
-                # we already know the initial pos; just rewrite
-                return rewrite_pos(msg), None
+        if (msg.command == 'set') and (msg.obj in initial_positions):
+            rel_pos, = msg.args
+            abs_pos = initial_positions[msg.obj] + rel_pos
+            print('rewrote %r to %r' % (rel_pos, abs_pos))
+            new_msg = msg._replace(args=(abs_pos,))
+            return new_msg
         else:
-            # do nothing
+            return msg
+
+    def insert_reads(msg):
+        eligible = (devices is None) or (msg.obj in devices)
+        seen = msg.obj in initial_positions
+        if (msg.command == 'set') and eligible and not seen:
+                return bschain(read_and_stash_a_motor(msg.obj),
+                               single_gen(msg)), None
+        else:
             return None, None
 
-    return (yield from plan_mutator(plan, insert_reads_and_rewrite))
+    plan = plan_mutator(plan, insert_reads)
+    plan = msg_mutator(plan, rewrite_pos)
+    return (yield from plan)
+
 
 def reset_positions(plan, devices=None):
     """
@@ -567,7 +571,7 @@ def reset_positions(plan, devices=None):
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
             return bschain(read_and_stash_a_motor(msg.obj),
-                           single_message_gen(msg)), None
+                           single_gen(msg)), None
         else:
             return None, None
 
@@ -795,8 +799,8 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
-    plan = relative_set(plan, [motor])  # re-write trajectory as relative
-    plan = reset_positions(plan, [motor])  # return motors to starting pos
+    plan = relative_set(plan)  # re-write trajectory as relative
+    plan = reset_positions(plan)  # return motors to starting pos
     return [plan]
 
 

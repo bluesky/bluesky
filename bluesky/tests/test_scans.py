@@ -137,6 +137,7 @@ def test_ascan():
 def test_dscan():
     traj = np.array([1, 2, 3])
     motor.set(-4)
+    print(motor.read())
     scan = DeltaListScanPlan([det], motor, traj)
     traj_checker(scan, traj - 4)
 
