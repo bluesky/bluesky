@@ -134,6 +134,17 @@ def plan_mutator(plan, msg_proc):
 
 
 def msg_mutator(plan, msg_proc):
+    """
+    A simple preprocessor that mutates or deltes single messages in a plan
+
+    To *insert* messages, use ``plan_mutator`` instead.
+
+    Parameters
+    ----------
+    plan : iterable
+    msg_proc : callable
+        Expected signature `f(msg) -> new_msg or None`
+    """
     ret = None
     while True:
         try:
@@ -503,55 +514,70 @@ def relative_set(plan, devices=None):
     """
     initial_positions = {}
 
-    def f(msg):
-        if msg.command == 'set' and (devices is None or msg.obj in devices):
-            if msg.obj not in initial_positions:
-                pos = msg.obj.position
-                initial_positions[msg.obj] = pos
-            rel_pos, = msg.args
-            abs_pos = initial_positions[msg.obj] + rel_pos
-            new_msg = msg._replace(args=(abs_pos,))
-            return [], new_msg, []
+    def read_and_stash_a_motor(obj):
+        reading = yield Msg('read', obj)
+        k, = reading.keys()
+        cur_pos = reading[k]['value']
+        print('INITIAL POS IS %r' % cur_pos)
+        initial_positions[obj] = cur_pos
+
+    def rewrite_pos(msg):
+        rel_pos, = msg.args
+        abs_pos = initial_positions[msg.obj] + rel_pos
+        print('rewrote %r to %r' % (rel_pos, abs_pos))
+        new_msg = msg._replace(args=(abs_pos,))
+        yield new_msg
+
+    def insert_reads_and_rewrite(msg):
+        eligible = devices is None or msg.obj in devices
+        seen = msg.obj in initial_positions
+        if (msg.command == 'set') and eligible:
+            if not seen:
+                # read the initial postion and then rewrite the as relative
+                return bschain(read_and_stash_a_motor(msg.obj),
+                               rewrite_pos(msg)), None
+            else:
+                # we already know the initial pos; just rewrite
+                return rewrite_pos(msg), None
         else:
-            return [], msg, []
+            # do nothing
+            return None, None
 
-    plan = simple_preprocessor(f)(plan)
-    ret = yield from plan
-    return ret
+    return (yield from plan_mutator(plan, insert_reads_and_rewrite))
 
-
-@contextmanager
-def put_back(plan_stack, devices=None):
+def reset_positions(plan, devices=None):
     """
-    Return movable devices to the original positions at the end.
+    Return movable devices to their initial positions at the end.
 
     Parameters
     ----------
-    plan_stack : collection
-        collection of generators that yield messages
+    plan : iterable
+        iterable of generators that yield messages
     devices : iterable or None, optional
         If default (None), apply to all devices that are moved by the plan.
     """
     initial_positions = OrderedDict()
 
-    ## THIS IS STILL A WORK IN PROGRESS ##
-    def record_initial_positions(msg):
-        obj = msg.obj
-        if msg.command == 'set' and (devices is None or obj in devices):
-            if obj not in initial_positions:
-                pos = obj.position
-                initial_positions[obj] = pos
-                cleanup_msgs.insert(0, Msg('set', obj, pos, block_group=grp))
-        return [], msg, []
+    def read_and_stash_a_motor(obj):
+        cur_pos = yield Msg('read', obj)
+        initial_positions[obj] = cur_pos
 
-    def put_back():
-        grp = _short_uid('put_back')
-        for obj, pos in initial_positions.items():
-            yield Msg('set', obj, pos, block_group=grp)
-        yield Msg('wait', None, grp)
+    def insert_reads(msg):
+        eligible = devices is None or msg.obj in devices
+        seen = msg.obj in initial_positions
+        if (msg.command == 'set') and eligible and not seen:
+            return bschain(read_and_stash_a_motor(msg.obj),
+                           single_message_gen(msg)), None
+        else:
+            return None, None
 
-    yield plan_stack
-    plan_stack.append(put_back())
+    def reset():
+        blk_grp = 'reset-{}'.format(str(uuid.uuid4())[:6])
+        for k, v in initial_positions.items():
+            yield Msg('set', k, v, block_group=blk_grp)
+        yield Msg('wait', None, blk_grp)
+
+    return (yield from finalize(plan_mutator(plan, insert_reads), reset()))
 
 
 def trigger_and_read(devices):
@@ -707,6 +733,7 @@ def one_1d_step(detectors, motor, step):
     plan_stack.append(move())
     with event_context(plan_stack):
         plan_stack.append(trigger_and_read(list(detectors) + [motor]))
+    return plan_stack
 
 
 @planify
@@ -769,7 +796,7 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
-    plan = put_back(plan, [motor])  # return motors to starting pos
+    plan = reset_positions(plan, [motor])  # return motors to starting pos
     return [plan]
 
 
@@ -844,7 +871,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
-    plan = put_back(plan, [motor])  # return motors to starting pos
+    plan = reset_positions(plan, [motor])  # return motors to starting pos
     return [plan]
 
 
@@ -920,7 +947,7 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     plan = log_scan(detectors, motor, start, stop, num, per_step=per_step,
                     md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
-    plan = put_back(plan, [motor])  # return motors to starting pos
+    plan = reset_positions(plan, [motor])  # return motors to starting pos
     return [plan]
 
 
@@ -1042,10 +1069,11 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
                          min_step, max_step, target_delta, backstep,
                          threshold, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
-    plan = put_back(plan, [motor])  # return motors to starting pos
+    plan = reset_positions(plan, [motor])  # return motors to starting pos
     return [plan]
 
 
+@planify
 def one_nd_step(detectors, step, pos_cache):
     """
     Inner loop of an N-dimensional step scan
@@ -1061,35 +1089,25 @@ def one_nd_step(detectors, step, pos_cache):
     pos_cache : dict
         mapping motors to their last-set positions
     """
-    yield Msg('checkpoint')
-    for motor, pos in step.items():
-        grp = _short_uid('set')
-        if pos == pos_cache[motor]:
-            # This step does not move this motor.
-            continue
-        yield Msg('set', motor, pos, block_group=grp)
-        pos_cache[motor] = pos
-        yield Msg('wait', None, grp)
+    def move():
+        yield Msg('checkpoint')
+        for motor, pos in step.items():
+            grp = _short_uid('set')
+            if pos == pos_cache[motor]:
+                # This step does not move this motor.
+                continue
+            yield Msg('set', motor, pos, block_group=grp)
+            pos_cache[motor] = pos
+            yield Msg('wait', None, grp)
+
     motors = step.keys()
-    ret = yield from trigger_and_read(list(detectors) + list(motors))
-    return ret
+    plan_stack = deque()
+    with event_context(plan_stack):
+        plan_stack.append(trigger_and_read(list(detectors) + list(motors)))
+    return plan_stack
 
 
-def _nd_step_scan_core(detectors, cycler, per_step=None):
-    """
-    Just the steps. This should be wrapped in stage_wrapper, run_context.
-
-    See ``plan_nd`` below.
-    """
-    if per_step is None:
-        per_step = one_nd_step
-    motors = cycler.keys
-    last_pos = defaultdict(lambda: None)
-    for step in list(cycler):
-        ret = yield from per_step(detectors, step, last_pos)
-    return ret
-
-
+@planify
 def plan_nd(detectors, cycler, *, per_step=None, md=None):
     """
     Scan over an arbitrary N-dimensional trajectory.
@@ -1113,13 +1131,20 @@ def plan_nd(detectors, cycler, *, per_step=None, md=None):
     md['plan_args'] = {'detectors': list(map(repr, detectors)),
                        'cycler': repr(cycler)}
 
-    plan = _nd_step_scan_core(detectors, cycler, per_step)
-    plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
-    ret = yield from plan
-    return ret
+    if per_step is None:
+        per_step = one_nd_step
+    pos_cache = defaultdict(lambda: None)  # where last position is stashed
+    motors = list(cycler.keys)
+
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + motors):
+        with run_context(plan_stack, md):
+            for step in list(cycler):
+                plan_stack.append(per_step(detectors, step, pos_cache))
+    return plan_stack
 
 
+@planify
 def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory.
@@ -1150,10 +1175,11 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
         cyclers.append(c)
     full_cycler = functools.reduce(operator.add, cyclers)
 
-    ret = yield from plan_nd(detectors, full_cycler, per_step=per_step, md=md)
-    return ret
+    plan = plan_nd(detectors, full_cycler, per_step=per_step, md=md)
+    return [plan]
 
 
+@planify
 def outer_product_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -1203,10 +1229,11 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     md.update({'shape': tuple(shape), 'extents': tuple(extents),
                'snaking': tuple(snaking), 'num': len(full_cycler)})
 
-    ret = yield from plan_nd(detectors, full_cycler, per_step=per_step, md=md)
-    return ret
+    plan = plan_nd(detectors, full_cycler, per_step=per_step, md=md)
+    return [plan]
 
 
+@planify
 def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh relative to current position.
@@ -1230,24 +1257,13 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     md : dict, optional
         metadata
     """
-    # There is some duplicate effort here to obtain the list of motors.
-    _args = list(args)
-    # The first (slowest) axis is never "snaked." Insert False to
-    # make it easy to iterate over the chunks or args..
-    _args.insert(4, False)
-    if len(_args) % 5 != 0:
-        raise ValueError("wrong number of positional arguments")
-    motors = []
-    for motor, start, stop, num, snake in chunked(_args, 5):
-        motors.append(motor)
-
     plan = outer_product_scan(detectors, *args, per_step=per_step, md=md)
-    plan = relative_set(plan, motors)  # re-write trajectory as relative
-    plan = put_back(plan, motors)  # return motors to starting pos
-    ret = yield from plan
-    return ret
+    plan = relative_set(plan)  # re-write trajectory as relative
+    plan = reset_positions(plan)  # return motors to starting pos
+    return [plan]
 
 
+@planify
 def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current position.
@@ -1269,19 +1285,10 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     md : dict, optional
         metadata
     """
-    # There is some duplicate effort here to obtain the list of motors.
-    _args = list(args)
-    if len(_args) % 3 != 0:
-        raise ValueError("wrong number of positional arguments")
-    motors = []
-    for motor, start, stop, in chunked(_args, 3):
-        motors.append(motor)
-
     plan = inner_product_scan(detectors, num, *args, per_step=per_step, md=md)
-    plan = relative_set(plan, motors)  # re-write trajectory as relative
-    plan = put_back(plan, motors)  # return motors to starting pos
-    ret = yield from plan
-    return ret
+    plan = relative_set(plan)  # re-write trajectory as relative
+    plan = reset_positions(plan)  # return motors to starting pos
+    return [plan]
 
 
 def tweak(detector, target_field, motor, step, *, md=None):
@@ -1341,11 +1348,11 @@ def tweak(detector, target_field, motor, step, *, md=None):
             # stackoverflow.com/a/12586667/380231
             print('\x1b[1A\x1b[2K\x1b[1A')
 
-    plan = core()
-    plan = stage_wrapper(plan)
-    plan = run_wrapper(plan, md)
-    ret = yield from plan
-    return ret
+    plan_stack = deque()
+    with stage_context(plan_stack, [detector, motor]):
+        with run_context(plan_stack, md):
+            plan_stack.append(core())
+    return plan_stack
 
 
 # The code below adds no new logic, but it wraps the generators above in
