@@ -41,28 +41,7 @@ def planify(func):
     return wrapped
 
 
-def append_cleanup(plan, cleanup_plan):
-    """
-    The cleanup_plan will be performed after the plan completes or fails.
-
-    Parameters
-    ----------
-    plan : iterable
-    cleanup_plan : iterable
-
-    Returns
-    -------
-    plan : iterable
-        a new plan
-    """
-    try:
-        ret = yield from plan
-    finally:
-        yield from cleanup_plan
-    return ret
-
-
- plan_mutator(plan, msg_proc):
+def plan_mutator(plan, msg_proc):
     """
     Alter the contents of a plan on the fly by changing or inserting messages.
 
@@ -192,7 +171,8 @@ def bschain(*args):
 def single_gen(msg):
     '''Turn a single Msg into a plan
 
-    In 3.6 or 3.7 we might get lambda generators.
+    If ``lambda x: yield x`` were valid Python, this would be equivalent.
+    In Python 3.6 or 3.7 we might get lambda generators.
 
     Parameters
     ----------
@@ -286,7 +266,34 @@ def subs_context(plan_stack, subs):
         plan_stack.append(unsubscribe())
 
 
-def subscription_wrapper(plan, subs):
+def subs_wrapper(plan, subs):
+    """
+    Subscribe to callbacks to the document stream; then unsubscribe on exit.
+
+    Parameters
+    ----------
+    plan : iterable
+        collection of generators that yield messages
+    subs : callable, list of callables, or dict of lists of callables
+         Documents of each type are routed to a list of functions.
+         Input is normalized to a dict of lists of functions, like so:
+
+         None -> {'all': [], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         func -> {'all': [func], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         [f1, f2] -> {'all': [f1, f2], 'start': [], 'stop': [], 'event': [],
+                      'descriptor': []}
+
+         {'event': [func]} ->  {'all': [], 'start': [], 'stop': [],
+                                'event': [func], 'descriptor': []}
+
+         Signature of functions must confirm to `f(name, doc)` where
+         name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
+         doc is a dictionary.
+    """
     subs = normalize_subs_input(subs)
     tokens = set()
 
@@ -443,7 +450,7 @@ def stage_context(plan_stack, devices):
     ----------
     plan_stack : collection
         collections of generators that yield Msg objects
-    devices : lis
+    devices : collection
         list of devices to stage immediately on entrance and unstage on exit
     """
     # Resolve unique devices, avoiding redundant staging.
