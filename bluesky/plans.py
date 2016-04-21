@@ -1167,7 +1167,7 @@ def one_nd_step(detectors, step, pos_cache):
 
 
 @planify
-def plan_nd(detectors, cycler, *, per_step=None, md=None):
+def scan_nd(detectors, cycler, *, per_step=None, md=None):
     """
     Scan over an arbitrary N-dimensional trajectory.
 
@@ -1234,7 +1234,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
         cyclers.append(c)
     full_cycler = functools.reduce(operator.add, cyclers)
 
-    plan = plan_nd(detectors, full_cycler, per_step=per_step, md=md)
+    plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
     return [plan]
 
 
@@ -1288,7 +1288,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     md.update({'shape': tuple(shape), 'extents': tuple(extents),
                'snaking': tuple(snaking), 'num': len(full_cycler)})
 
-    plan = plan_nd(detectors, full_cycler, per_step=per_step, md=md)
+    plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
     return [plan]
 
 
@@ -1602,10 +1602,10 @@ AdaptiveDeltaScanPlan = RelativeAdaptiveScan  # back-compat
 
 class ScanND(PlanBase):
     _fields = ['detectors', 'cycler']
-    __doc__ = plan_nd.__doc__
+    __doc__ = scan_nd.__doc__
 
     def _gen(self):
-        return plan_nd(self.detectors, self.cycler)
+        return scan_nd(self.detectors, self.cycler)
 
 PlanND = ScanND  # back-compat
 
