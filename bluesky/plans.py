@@ -595,7 +595,8 @@ def configure_count_time(plan, time):
     Parameters
     ----------
     plan : iterable
-    time : float
+    time : float or None
+        If None, the plan passes through unchanged.
     """
     devices_seen = set()
     original_times = {}
@@ -617,7 +618,11 @@ def configure_count_time(plan, time):
         for obj, time in original_times.items():
             yield Msg('set', obj.count_time, time)
 
-    return (yield from finalize(plan_mutator(plan, insert_set), reset()))
+    if time is None:
+        # no-op
+        return (yield from plan)
+    else:
+        return (yield from finalize(plan_mutator(plan, insert_set), reset()))
 
 
 @contextmanager

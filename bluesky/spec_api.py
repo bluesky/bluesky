@@ -106,8 +106,7 @@ def ct(num=1, delay=None, time=None, *, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = count(gs.DETS, num, delay, md=md)
-        if time is not None:
-            plan = configure_count_time(plan, time)
+        plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
 
@@ -141,8 +140,7 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = scan(gs.DETS, motor, start, finish, 1 + intervals, md=md)
-        if time is not None:
-            plan = configure_count_time(plan, time)
+        plan = configure_count_time(plan, time)
         plan_stack.append(plan)
         return plan_stack
 
@@ -175,8 +173,7 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     with subs_context(plan_stack, subs):
         plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals,
                              md=md)
-        if time is not None:
-            plan = configure_count_time(plan, time)
+        plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
 
@@ -226,8 +223,7 @@ def mesh(*args, time=None, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = outer_product_scan(gs.DETS, *new_args, md=md)
-        if time is not None:
-            plan = configure_count_time(plan, time)
+        plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
 
@@ -263,8 +259,7 @@ def a2scan(*args, time=None, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = inner_product_scan(gs.DETS, num, *args[:-1], md=md)
-        if time is not None:
-            plan = configure_count_time(plan, time)
+        plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
 
@@ -303,8 +298,7 @@ def d2scan(*args, time=None, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = relative_inner_product_scan(gs.DETS, num, *args[:-1], md=md)
-        if time is not None:
-            plan = configure_count_time(plan, time)
+        plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
 
@@ -360,6 +354,5 @@ def tw(motor, step, time=None, *, md=None):
         metadata
     """
     plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, md=md)
-    if time is not None:
-        plan = configure_count_time(plan, time)
+    plan = configure_count_time(plan, time)
     return [plan]
