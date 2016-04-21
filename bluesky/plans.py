@@ -1149,14 +1149,14 @@ def one_nd_step(detectors, step, pos_cache):
     """
     def move():
         yield Msg('checkpoint')
+        grp = _short_uid('set')
         for motor, pos in step.items():
-            grp = _short_uid('set')
             if pos == pos_cache[motor]:
                 # This step does not move this motor.
                 continue
             yield Msg('set', motor, pos, block_group=grp)
             pos_cache[motor] = pos
-            yield Msg('wait', None, grp)
+        yield Msg('wait', None, grp)
 
     motors = step.keys()
     plan_stack = deque()
