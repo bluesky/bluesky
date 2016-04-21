@@ -62,7 +62,7 @@ def plan_mutator(plan, msg_proc):
 
     """
     # internal stacks
-    msgs_seen = set()
+    msgs_seen = dict()
     plan_stack = deque()
     result_stack = deque()
     tail_cache = dict()
@@ -84,7 +84,9 @@ def plan_mutator(plan, msg_proc):
             # and replace the current msg with the first element from the
             # new generator
             if id(msg) not in msgs_seen:
-                msgs_seen.add(id(msg))
+                # Use the id as a hash, and hold a reference to the msg so that
+                # it cannot be garbage collected until the plan is complete.
+                msgs_seen[id(msg)] = msg
 
                 new_gen, tail_gen = msg_proc(msg)
                 # mild correctness check
