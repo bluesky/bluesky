@@ -29,8 +29,13 @@ def planify(func):
     Parameters
     ----------
     func : callable
-        expected to return a list of generators that yield Msg objects;
-        the function may have an arbitrary signature
+        expected to return a list of generators that yield messages (`Msg`
+        objects) the function may have an arbitrary signature
+
+    Returns
+    -------
+    gen : generator
+        a single generator that yields messages
     """
     @wraps(func)
     def wrapped(*args, **kwargs):
@@ -47,7 +52,8 @@ def plan_mutator(plan, msg_proc):
 
     Parameters
     ----------
-    plan : iterator
+    plan : generator
+        a generator that yields messages (`Msg` objects)
     msg_proc : callable
         functions that takes in a message and returns replacement messages
 
@@ -60,6 +66,10 @@ def plan_mutator(plan, msg_proc):
         msg -> gen, tail (same as above, but insert some messages *after*)
         msg -> None, tail (illegal -- raises RuntimeError)
 
+    Yields
+    ------
+    msg : Msg
+        messages from `plan`, altered by `msg_proc`
     """
     # internal stacks
     msgs_seen = dict()
@@ -143,9 +153,15 @@ def msg_mutator(plan, msg_proc):
 
     Parameters
     ----------
-    plan : iterable
+    plan : generator
+        a generator that yields messages (`Msg` objects)
     msg_proc : callable
         Expected signature `f(msg) -> new_msg or None`
+
+    Yields
+    ------
+    msg : Msg
+        messages from `plan`, altered by `msg_proc`
     """
     ret = None
     while True:
@@ -170,6 +186,11 @@ def bschain(*args):
     This ensures than `.send` works as expected and the underlying
     plans get the return values
 
+    Parameters
+    ----------
+    args :
+        generators (plans)
+
     Yields
     ------
     msg : Msg
@@ -182,7 +203,7 @@ def bschain(*args):
 
 
 def single_gen(msg):
-    '''Turn a single Msg into a plan
+    '''Turn a single message into a plan
 
     If ``lambda x: yield x`` were valid Python, this would be equivalent.
     In Python 3.6 or 3.7 we might get lambda generators.
@@ -190,12 +211,12 @@ def single_gen(msg):
     Parameters
     ----------
     msg : Msg
-        A single message
+        a single message
 
     Yields
     ------
     msg : Msg
-        The messages from each plan in turn
+        the input message
     '''
     yield msg
 
@@ -204,21 +225,22 @@ def finalize(plan, final_plan):
     '''try...finally helper
 
     Run the first plan and then the second.  If any of the messages
-    raise an error in the RenEngine (or otherwise), the second plan
+    raise an error in the RunEngine (or otherwise), the second plan
     will attempted to be run anyway.
 
     Parameters
     ----------
-    plan : iterable
-        The 'main' plan
-    final_plan : iterable
-        The 'finally' plan.  Attempted to be run no matter what happens
-        in the first plan
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    final_plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects; attempted to be
+        run no matter what happens in the first plan
 
     Yields
     ------
     msg : Msg
-        The messages from each plan in turn
+        messages from `plan` until it terminates or an error is raised, then
+        messages from `final_plan`
     '''
     try:
         ret = yield from plan
@@ -234,8 +256,8 @@ def subs_context(plan_stack, subs):
 
     Parameters
     ----------
-    plan_stack : collection
-        collection of generators that yield messages
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
     subs : callable, list of callables, or dict of lists of callables
          Documents of each type are routed to a list of functions.
          Input is normalized to a dict of lists of functions, like so:
@@ -279,64 +301,16 @@ def subs_context(plan_stack, subs):
         plan_stack.append(unsubscribe())
 
 
-def subs_wrapper(plan, subs):
-    """
-    Subscribe to callbacks to the document stream; then unsubscribe on exit.
-
-    Parameters
-    ----------
-    plan : iterable
-        collection of generators that yield messages
-    subs : callable, list of callables, or dict of lists of callables
-         Documents of each type are routed to a list of functions.
-         Input is normalized to a dict of lists of functions, like so:
-
-         None -> {'all': [], 'start': [], 'stop': [], 'event': [],
-                  'descriptor': []}
-
-         func -> {'all': [func], 'start': [], 'stop': [], 'event': [],
-                  'descriptor': []}
-
-         [f1, f2] -> {'all': [f1, f2], 'start': [], 'stop': [], 'event': [],
-                      'descriptor': []}
-
-         {'event': [func]} ->  {'all': [], 'start': [], 'stop': [],
-                                'event': [func], 'descriptor': []}
-
-         Signature of functions must confirm to `f(name, doc)` where
-         name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
-         doc is a dictionary.
-    """
-    subs = normalize_subs_input(subs)
-    tokens = set()
-
-    def subscribe():
-        for name, funcs in subs.items():
-            for func in funcs:
-                token = yield Msg('subscribe', None, name, func)
-                tokens.add(token)
-
-    def unsubscribe():
-        for token in tokens:
-            yield Msg('unsubscribe', None, token)
-
-    return (yield from bschain(subscribe(), finalize(plan, unsubscribe())))
-
-
 @contextmanager
 def run_context(plan_stack, md=None):
     """Enclose in 'open_run' and 'close_run' messages.
 
     Parameters
     ----------
-    plan_stack : collection
-        collection of generators that yield messages
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
     md : dict, optional
         metadata to be passed into the 'open_run' message
-
-    Yields
-    ------
-    Msg
     """
     if md is None:
         md = dict()
@@ -344,14 +318,6 @@ def run_context(plan_stack, md=None):
     plan_stack.append(single_gen(Msg('open_run', None, **md)))
     yield plan_stack
     plan_stack.append(single_gen(Msg('close_run')))
-
-
-def run_wrapper(plan, md):
-    if md is None:
-        md = {}
-    return (yield from bschain(single_gen(Msg('open_run', None, **md)),
-                               plan,
-                               single_gen(Msg('close_run'))))
 
 
 @contextmanager
@@ -362,8 +328,8 @@ def event_context(plan_stack, name='primary'):
 
     Parameters
     ----------
-    plan_stack : collection
-        collection of generators that yield messages
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
     name : string, optional
         name of event stream; default is 'primary'
     """
@@ -381,9 +347,16 @@ def fly_during(plan, flyers):
 
     Parameters
     ----------
-    plan : iterable
-    flyers : iterable
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    flyers : collection
         objects that support the flyer interface
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'kickoff', 'wait' and 'collect' messages
+        inserted
     """
     grp = _short_uid('flyers')
     kickoff_msgs = [Msg('kickoff', flyer, block_group=grp) for flyer in flyers]
@@ -419,14 +392,23 @@ def lazily_stage(plan):
     """
     This is a preprocessor that inserts 'stage' Messages.
 
-    It stages the the object's ultimate parent, pointed to be its `root`
-    property.
+    The first time an object is seen in `plan`, it is staged. To avoid
+    redundant staging we actually stage the object's ultimate parent, pointed
+    to be its `root` property.
 
-    At the end, an 'unstage' Message issued for every 'stage' Message.
+    At the end, in a `finally` block, an 'unstage' Message issued for every
+    'stage' Message.
 
     Parameters
     ----------
-    plan : iterable
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'stage' messages inserted and 'unstage'
+        messages appended
     """
     COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
     # Cache devices in the order they are staged; then unstage in reverse.
@@ -457,12 +439,12 @@ def lazily_stage(plan):
 @contextmanager
 def stage_context(plan_stack, devices):
     """
-    This is a preprocessor that inserts 'stage' Messages.
+    Stage devices upon entering context and unstage upon exiting.
 
     Parameters
     ----------
-    plan_stack : collection
-        collections of generators that yield Msg objects
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
     devices : collection
         list of devices to stage immediately on entrance and unstage on exit
     """
@@ -482,37 +464,22 @@ def stage_context(plan_stack, devices):
     plan_stack.append(unstage())
 
 
-def stage_wrapper(plan):
-
-    seen_objs = set()
-
-    def inner(msg):
-        if msg.obj is not None:
-            obj = msg.obj.root
-            if obj not in seen_objs:
-                seen_objs.add(obj)
-                return (bschain(single_gen(Msg('stage', obj)),
-                                single_gen(msg)),
-                        None)
-
-        return None, None
-
-    def unstage():
-        for obj in seen_objs:
-            yield Msg('unstage', obj)
-
-    return (yield from finalize(plan_mutator(plan, inner), unstage()))
-
-
 def relative_set(plan, devices=None):
     """
     Interpret 'set' messages on devices as relative to initial position.
 
     Parameters
     ----------
-    plan : iterable
-    devices : iterable or None, optional
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    devices : collection or None, optional
         if default (None), apply to all devices that are moved by the plan
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'read' messages inserted and 'set' messages
+        mutated
     """
     initial_positions = {}
 
@@ -524,14 +491,12 @@ def relative_set(plan, devices=None):
         else:
             k, = reading.keys()
             cur_pos = reading[k]['value']
-        print('INITIAL POS IS %r' % cur_pos)
         initial_positions[obj] = cur_pos
 
     def rewrite_pos(msg):
         if (msg.command == 'set') and (msg.obj in initial_positions):
             rel_pos, = msg.args
             abs_pos = initial_positions[msg.obj] + rel_pos
-            print('rewrote %r to %r' % (rel_pos, abs_pos))
             new_msg = msg._replace(args=(abs_pos,))
             return new_msg
         else:
@@ -557,10 +522,15 @@ def reset_positions(plan, devices=None):
 
     Parameters
     ----------
-    plan : iterable
-        iterable of generators that yield messages
-    devices : iterable or None, optional
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    devices : collection or None, optional
         If default (None), apply to all devices that are moved by the plan.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'read' and finally 'set' messages inserted
     """
     initial_positions = OrderedDict()
 
@@ -594,9 +564,15 @@ def configure_count_time(plan, time):
 
     Parameters
     ----------
-    plan : iterable
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
     time : float or None
         If None, the plan passes through unchanged.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'set' messages inserted
     """
     devices_seen = set()
     original_times = {}
@@ -635,8 +611,8 @@ def baseline_context(plan_stack, devices, name='baseline'):
 
     Parameters
     ----------
-    plan_stack : iterable
-        collection of generators
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
     devices : collection
         collection of Devices to read
     name : string, optional
@@ -660,7 +636,8 @@ def trigger_and_read(devices):
 
     Yields
     ------
-    Msg
+    msg : Msg
+        messages to 'trigger', 'wait' and 'read'
     """
     devices = separate_devices(devices)  # remove redundant entries
     grp = _short_uid('trigger')
@@ -684,6 +661,10 @@ def broadcast_msg(command, objs, *args, **kwargs):
         args for message
     **kwargs
         kwargs for message
+
+    Yields
+    ------
+    msg : Msg
     """
     return_vals = []
     for o in objs:
@@ -707,6 +688,10 @@ def repeater(n, gen_func, *args, **kwargs):
         args for gen_func
     **kwargs
         kwargs for gen_func
+
+    Yields
+    ------
+    msg : Msg
     """
     it = range
     if n is None:
@@ -729,6 +714,10 @@ def caching_repeater(n, plan):
     n : int
         total number of repetitions
     plan : iterable
+
+    Yields
+    ------
+    msg : Msg
     """
     lst_plan = list(plan)
     for j in range(n):
