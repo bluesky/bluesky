@@ -1108,6 +1108,7 @@ def one_nd_step(detectors, step, pos_cache):
 
     motors = step.keys()
     plan_stack = deque()
+    plan_stack.append(move())
     with event_context(plan_stack):
         plan_stack.append(trigger_and_read(list(detectors) + list(motors)))
     return plan_stack
