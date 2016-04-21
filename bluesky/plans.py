@@ -586,6 +586,40 @@ def reset_positions(plan, devices=None):
     return (yield from finalize(plan_mutator(plan, insert_reads), reset()))
 
 
+def configure_count_time(plan, time):
+    """
+    Preprocessor that sets all devices with a `count_time` to the same time.
+
+    The original setting is stashed and restored at the end.
+
+    Parameters
+    ----------
+    plan : iterable
+    time : float
+    """
+    devices_seen = set()
+    original_times = {}
+
+    def insert_set(msg):
+        obj = msg.obj
+        if obj is not None and obj not in devices_seen:
+            devices_seen.add(obj)
+            if hasattr(obj, 'count_time'):
+                # TODO Do this with a 'read' Msg once reads can be
+                # marked as belonging to a different event stream (or no
+                # event stream.
+                original_times[obj] = obj.count_time.get()
+                return bschain(single_gen(Msg('set', obj.count_time, time)),
+                               single_gen(msg)), None
+        return None, None
+
+    def reset():
+        for obj, time in original_times.items():
+            yield Msg('set', obj.count_time, time)
+
+    return (yield from finalize(plan_mutator(plan, insert_set), reset()))
+
+
 def trigger_and_read(devices):
     """
     Trigger and read a list of detectors.

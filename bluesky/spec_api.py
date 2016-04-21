@@ -13,6 +13,7 @@ Page numbers in the code comments refer to the SPEC manual at
 http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
 from inspect import signature
+from collections import deque
 import matplotlib.pyplot as plt
 from bluesky import plans, Msg
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
@@ -22,10 +23,10 @@ from bluesky.global_state import gs
 from bluesky.utils import (normalize_subs_input, Subs, DefaultSubs,
                            first_key_heuristic, apply_sub_factories,
                            update_sub_lists)
-from bluesky.plans import (subscription_wrapper, count, scan,
+from bluesky.plans import (subs_context, count, scan,
                            relative_scan, relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
-                           tweak)
+                           tweak, configure_count_time, planify)
 from collections import defaultdict
 import itertools
 from itertools import filterfalse, chain
@@ -82,6 +83,7 @@ def setup_peakstats(motors):
 ### Counts (p. 140) ###
 
 
+@planify
 def ct(num=1, delay=None, time=None, *, md=None):
     """
     Take one or more readings from the global detectors.
@@ -100,16 +102,19 @@ def ct(num=1, delay=None, time=None, *, md=None):
     subs = {'all': [LiveTable(gs.TABLE_COLS + [gs.PLOT_Y])]}
     if num is not None and num > 1:
         subs['all'].append(setup_plot([]))
-    plan = count(gs.DETS, num, delay, md=md)
-    if time is not None:
-        plan = configure_count_time(plan, time)
-    plan = subscription_wrapper(plan, subs)
-    ret = yield from plan
-    return ret
+
+    plan_stack = deque()
+    with subs_context(plan_stack, subs):
+        plan = count(gs.DETS, num, delay, md=md)
+        if time is not None:
+            plan = configure_count_time(plan, time)
+        plan_stack.append(plan)
+    return plan_stack
 
 
 ### Motor Scans (p. 146) ###
 
+@planify
 def ascan(motor, start, finish, intervals, time=None, *, md=None):
     """
     Scan over one variable in equally spaced steps.
@@ -132,14 +137,17 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
     subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
                     setup_plot([motor]),
                     setup_peakstats([motor])]}
-    plan = scan(gs.DETS, motor, start, finish, 1 + intervals, md=md)
-    if time is not None:
-        plan = configure_count_time(plan, time)
-    plan = subscription_wrapper(plan, subs)
-    ret = yield from plan
-    return ret
+
+    plan_stack = deque()
+    with subs_context(plan_stack, subs):
+        plan = scan(gs.DETS, motor, start, finish, 1 + intervals, md=md)
+        if time is not None:
+            plan = configure_count_time(plan, time)
+        plan_stack.append(plan)
+        return plan_stack
 
 
+@planify
 def dscan(motor, start, finish, intervals, time=None, *, md=None):
     """
     Scan over one variable in equally spaced steps relative to current pos.
@@ -162,14 +170,18 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
                     setup_plot([motor]),
                     setup_peakstats([motor])]}
-    plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals, md=md)
-    if time is not None:
-        plan = configure_count_time(plan, time)
-    plan = subscription_wrapper(plan, subs)
-    ret = yield from plan
-    return ret
+
+    plan_stack = deque()
+    with subs_context(plan_stack, subs):
+        plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals,
+                             md=md)
+        if time is not None:
+            plan = configure_count_time(plan, time)
+        plan_stack.append(plan)
+    return plan_stack
 
 
+@planify
 def mesh(*args, time=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -211,14 +223,16 @@ def mesh(*args, time=None, md=None):
     for chunk in chunked_args:
         new_args.extend(list(chunk) + [False])
 
-    plan = outer_product_scan(gs.DETS, *new_args, md=md)
-    if time is not None:
-        plan = configure_count_time(plan, time)
-    plan = subscription_wrapper(plan, subs)
-    ret = yield from plan
-    return ret
+    plan_stack = deque()
+    with subs_context(plan_stack, subs):
+        plan = outer_product_scan(gs.DETS, *new_args, md=md)
+        if time is not None:
+            plan = configure_count_time(plan, time)
+        plan_stack.append(plan)
+    return plan_stack
 
 
+@planify
 def a2scan(*args, time=None, md=None):
     """
     Scan over one multi-motor trajectory.
@@ -245,17 +259,20 @@ def a2scan(*args, time=None, md=None):
                         setup_peakstats(motors)]}
     intervals = list(args)[-1]
     num = 1 + intervals
-    plan = inner_product_scan(gs.DETS, num, *args[:-1], md=md)
-    if time is not None:
-        plan = configure_count_time(plan, time)
-    plan = subscription_wrapper(plan, subs)
-    ret = yield from plan
-    return ret
+
+    plan_stack = deque()
+    with subs_context(plan_stack, subs):
+        plan = inner_product_scan(gs.DETS, num, *args[:-1], md=md)
+        if time is not None:
+            plan = configure_count_time(plan, time)
+        plan_stack.append(plan)
+    return plan_stack
 
 # This implementation works for *all* dimensions, but we follow SPEC naming.
 a3scan = a2scan
 
 
+@planify
 def d2scan(*args, time=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current positions.
@@ -282,17 +299,20 @@ def d2scan(*args, time=None, md=None):
                         setup_peakstats(motors)]}
     intervals = list(args)[-1]
     num = 1 + intervals
-    plan = relative_inner_product_scan(gs.DETS, num, *args[:-1], md=md)
-    if time is not None:
-        plan = configure_count_time(plan, time)
-    plan = subscription_wrapper(plan, subs)
-    ret = yield from plan
-    return ret
+
+    plan_stack = deque()
+    with subs_context(plan_stack, subs):
+        plan = relative_inner_product_scan(gs.DETS, num, *args[:-1], md=md)
+        if time is not None:
+            plan = configure_count_time(plan, time)
+        plan_stack.append(plan)
+    return plan_stack
 
 # This implementation works for *all* dimensions, but we follow SPEC naming.
 d3scan = d2scan
 
 
+@planify
 def th2th(start, finish, intervals, time=None, *, md=None):
     """
     Scan the theta and two-theta motors together.
@@ -315,12 +335,13 @@ def th2th(start, finish, intervals, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    ret = yield from d2scan(gs.TTH_MOTOR, start, finish,
-                            gs.TH_MOTOR, start/2, finish/2,
-                            intervals, time=time, md=md)
-    return ret
+    plan = d2scan(gs.TTH_MOTOR, start, finish,
+                  gs.TH_MOTOR, start/2, finish/2,
+                  intervals, time=time, md=md)
+    return [plan]
 
 
+@planify
 def tw(motor, step, time=None, *, md=None):
     """
     Move and motor and read a detector with an interactive prompt.
@@ -339,35 +360,6 @@ def tw(motor, step, time=None, *, md=None):
         metadata
     """
     plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, md=md)
-    ret = yield from plan
     if time is not None:
         plan = configure_count_time(plan, time)
-    return ret
-
-
-def configure_count_time(plan, time):
-    """
-    Preprocessor that sets all devices with a `count_time` to the same time.
-
-    The original setting is stashed and restored at the end.
-    """
-    devices_seen = set()
-    original_times = {}
-    ret = None
-    try:
-        while True:
-            msg = plan.send(ret)
-            obj = msg.obj
-            if obj is not None and obj not in devices_seen:
-                devices_seen.add(obj)
-                if hasattr(obj, 'count_time'):
-                    # TODO Do this with a 'read' Msg once reads can be
-                    # marked as belonging to a different event stream (or no
-                    # event stream.
-                    original_times[obj] = obj.count_time.get()
-                    yield Msg('set', obj.count_time, time)
-            ret = yield msg
-    finally:
-        for obj, time in original_times.items():
-            yield Msg('set', obj.count_time, time)
-    return ret
+    return [plan]
