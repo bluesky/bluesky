@@ -620,6 +620,30 @@ def configure_count_time(plan, time):
     return (yield from finalize(plan_mutator(plan, insert_set), reset()))
 
 
+@contextmanager
+def baseline_context(plan_stack, devices, name='baseline'):
+    """
+    Read every device once upon entering and exiting the context.
+
+    The readings are designated for a separate event stream named 'baseline'
+    by default.
+
+    Parameters
+    ----------
+    plan_stack : iterable
+        collection of generators
+    devices : collection
+        collection of Devices to read
+    name : string, optional
+        name for event stream; by default, 'baseline'
+    """
+    with event_context(plan_stack, name=name):
+        plan_stack.append(trigger_and_read(devices))
+    yield
+    with event_context(plan_stack, name=name):
+        plan_stack.append(trigger_and_read(devices))
+
+
 def trigger_and_read(devices):
     """
     Trigger and read a list of detectors.
