@@ -625,6 +625,49 @@ def baseline_context(plan_stack, devices, name='baseline'):
         plan_stack.append(trigger_and_read(devices))
 
 
+@contextmanager
+def monitor_context(plan_stack, signals):
+    """
+    Asynchronously monitor signals, generating separate event streams.
+
+    Upon exiting the context, stop monitoring.
+
+    Parameters
+    ----------
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
+    signals : dict or list
+        either a dict mapping Signals to event stream names or simply a list
+        of Signals, in which case the event stream names default to None
+    name : string, optional
+        name for event stream; by default, None
+
+    Examples
+    --------
+    >>> plan_stack = deque()
+
+    With custom event stream names
+    >>> with monitor_context(plan_stack, {sig1: 'sig1', sig2: 'sig2'}):
+            ...
+
+    With no event stream names
+    >>> with monitor_context(plan_stack, [sig1, sig2]):
+            ...
+    """
+    if hasattr(signals, 'items'):
+        # interpret input as dict of signals mapped to event stream names
+        pass
+    else:
+        # interpet input as list of signals
+        signals = {sig: None for sig in signals}
+
+    for sig, name in signals.items():
+        plan_stack.append(single_gen(Msg('monitor', sig, name=name)))
+    yield
+    for sig, name in signals.items():
+        plan_stack.append(single_gen(Msg('unmonitor', sig)))
+
+
 def trigger_and_read(devices):
     """
     Trigger and read a list of detectors.
