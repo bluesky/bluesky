@@ -209,7 +209,7 @@ class RunEngine:
         self._pause_requests = dict()  # holding {<name>: callable}
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
-        self._msg_cache = None  # may be used to hold recently processed msgs
+        self._msg_cache = deque() # history of processed msgs for rewinding
         self._genstack = deque()  # stack of generators to work off of
         self._new_gen = True  # flag if we need to prime the generator
         self._exit_status = 'success'  # optimistic default
@@ -296,7 +296,7 @@ class RunEngine:
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
         self._genstack = deque()
-        self._msg_cache = None
+        self._msg_cache = deque()
         self._new_gen = True
         self._exception = None
         self._run_start_uids.clear()

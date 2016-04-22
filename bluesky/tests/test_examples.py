@@ -572,3 +572,24 @@ def test_failed_status_object():
     with pytest.raises(FailedStatus):
         RE([Msg('set', ff, None, block_group='a'),
             Msg('wait', None, 'a')])
+
+
+def test_rewindable_by_default():
+    class Sentinel(Exception):
+        pass
+
+    def plan():
+        yield Msg('pause')
+        raise Sentinel
+
+    RE(plan())
+    assert RE.state == 'paused'
+    with pytest.raises(Sentinel):
+        RE.resume()
+
+    def plan():
+        yield Msg('clear_checkpoint')
+        yield Msg('pause')
+
+    RE(plan())  # cannot pause
+    assert RE.state == 'idle'
