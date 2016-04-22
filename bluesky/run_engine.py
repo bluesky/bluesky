@@ -207,7 +207,7 @@ class RunEngine:
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo datapoints
         self._pause_requests = dict()  # holding {<name>: callable}
-        self._block_groups = defaultdict(set)  # sets of objs to wait for
+        self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = None  # may be used to hold recently processed msgs
         self._genstack = deque()  # stack of generators to work off of
@@ -289,7 +289,7 @@ class RunEngine:
         self._descriptors.clear()
         self._sequence_counters.clear()
         self._teed_sequence_counters.clear()
-        self._block_groups.clear()
+        self._groups.clear()
 
     def _clear_call_cache(self):
         "Clean up for a new __call__ (which may encompass multiple runs)."
@@ -1147,7 +1147,7 @@ class RunEngine:
         msg : Msg
 
         Special kwargs for the 'Msg' object in this function:
-        block_group : str
+        group : str
             The blocking group to this flyer to
 
         Expected message object is:
@@ -1155,17 +1155,17 @@ class RunEngine:
         If `flyer_object` has a `kickoff` function that takes no arguments:
 
             Msg('kickoff', flyer_object)
-            Msg('kickoff', flyer_object, block_group=<name>)
+            Msg('kickoff', flyer_object, group=<name>)
 
         If `flyer_object` has a `kickoff` function that takes
         `(start, stop, steps)` as its function arguments:
 
             Msg('kickoff', flyer_object, start, stop, step)
-            Msg('kickoff', flyer_object, start, stop, step, block_group=<name>)
+            Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
         _, obj, args, kwargs = msg
         self._uncollected.add(obj)
-        block_group = msg.kwargs.pop('block_group', None)
+        group = msg.kwargs.pop('group', None)
 
         # Stash a name that will be put in the ev. desc. when collected.
         stream_name = None  # default
@@ -1179,7 +1179,7 @@ class RunEngine:
         self._movable_objs_touched.add(obj)
         ret = obj.kickoff(*msg.args, **msg.kwargs)
 
-        if block_group:
+        if group:
             p_event = asyncio.Event()
 
             def done_callback():
@@ -1188,7 +1188,7 @@ class RunEngine:
                 loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
-            self._block_groups[block_group].add(p_event.wait())
+            self._groups[group].add(p_event.wait())
 
         return ret
 
@@ -1271,10 +1271,10 @@ class RunEngine:
 
         where arguments are passed through to `obj.set(*args, **kwargs)`.
         """
-        block_group = msg.kwargs.pop('block_group', None)
+        group = msg.kwargs.pop('group', None)
         self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
-        if block_group:
+        if group:
             p_event = asyncio.Event()
 
             def done_callback():
@@ -1288,7 +1288,7 @@ class RunEngine:
                 loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
-            self._block_groups[block_group].add(p_event.wait())
+            self._groups[group].add(p_event.wait())
 
         return ret
 
@@ -1301,10 +1301,10 @@ class RunEngine:
 
             Msg('trigger', obj)
         """
-        block_group = msg.kwargs.pop('block_group', None)
+        group = msg.kwargs.pop('group', None)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
 
-        if block_group:
+        if group:
             p_event = asyncio.Event()
 
             def done_callback():
@@ -1318,7 +1318,7 @@ class RunEngine:
                 loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
-            self._block_groups[block_group].add(p_event.wait())
+            self._groups[group].add(p_event.wait())
 
         return ret
 
@@ -1332,7 +1332,7 @@ class RunEngine:
             Msg('wait', group=GROUP)
         """
         group = msg.kwargs.get('group', msg.args[0])
-        objs = list(self._block_groups.pop(group, []))
+        objs = list(self._groups.pop(group, []))
         if objs:
             yield from self._wait_for(Msg('wait_for', objs))
 

@@ -570,5 +570,5 @@ def test_failed_status_object():
 
     ff = failer()
     with pytest.raises(FailedStatus):
-        RE([Msg('set', ff, None, block_group='a'),
+        RE([Msg('set', ff, None, group='a'),
             Msg('wait', None, 'a')])

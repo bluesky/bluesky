@@ -359,7 +359,7 @@ def fly_during(plan, flyers):
         inserted
     """
     grp = _short_uid('flyers')
-    kickoff_msgs = [Msg('kickoff', flyer, block_group=grp) for flyer in flyers]
+    kickoff_msgs = [Msg('kickoff', flyer, group=grp) for flyer in flyers]
     collect_msgs = [Msg('collect', flyer) for flyer in flyers]
     if flyers:
         # If there are any flyers, insert a Msg that waits for them to finish.
@@ -550,7 +550,7 @@ def reset_positions(plan, devices=None):
     def reset():
         blk_grp = 'reset-{}'.format(str(uuid.uuid4())[:6])
         for k, v in initial_positions.items():
-            yield Msg('set', k, v, block_group=blk_grp)
+            yield Msg('set', k, v, group=blk_grp)
         yield Msg('wait', None, blk_grp)
 
     return (yield from finalize(plan_mutator(plan, insert_reads), reset()))
@@ -686,7 +686,7 @@ def trigger_and_read(devices):
     grp = _short_uid('trigger')
     for obj in separate_devices(devices):
         if hasattr(obj, 'trigger'):
-            yield Msg('trigger', obj, block_group=grp)
+            yield Msg('trigger', obj, group=grp)
     yield Msg('wait', None, grp)
     for obj in devices:
         yield Msg('read', obj)
@@ -827,7 +827,7 @@ def one_1d_step(detectors, motor, step):
     def move():
         grp = _short_uid('set')
         yield Msg('checkpoint')
-        yield Msg('set', motor, step, block_group=grp)
+        yield Msg('set', motor, step, group=grp)
         yield Msg('wait', None, grp)
 
     plan_stack = deque()
@@ -1096,7 +1096,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             yield Msg('wait', None, 'A')
             yield Msg('create', None, name='primary')
             for det in detectors:
-                yield Msg('trigger', det, block_group='B')
+                yield Msg('trigger', det, group='B')
             yield Msg('wait', None, 'B')
             for det in separate_devices(detectors + [motor]):
                 cur_det = yield Msg('read', det)
@@ -1197,7 +1197,7 @@ def one_nd_step(detectors, step, pos_cache):
             if pos == pos_cache[motor]:
                 # This step does not move this motor.
                 continue
-            yield Msg('set', motor, pos, block_group=grp)
+            yield Msg('set', motor, pos, group=grp)
             pos_cache[motor] = pos
         yield Msg('wait', None, grp)
 
@@ -1431,7 +1431,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
             ret_mot = yield Msg('read', motor)
             key, = ret_mot.keys()
             pos = ret_mot[key]['value']
-            yield Msg('trigger', d, block_group='A')
+            yield Msg('trigger', d, group='A')
             yield Msg('wait', None, 'A')
             reading = Msg('read', d)[target_field]['value']
             yield Msg('save')
@@ -1442,7 +1442,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
                     step = float(new_step)
                 except ValueError:
                     break
-            yield Msg('set', motor, pos + step, block_group='A')
+            yield Msg('set', motor, pos + step, group='A')
             print('Motor moving...')
             sys.stdout.flush()
             yield Msg('wait', None, 'A')

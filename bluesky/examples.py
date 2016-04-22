@@ -120,11 +120,11 @@ class Mover(Base):
     def read(self):
         return self._data
 
-    def set(self, val, *, trigger=True, block_group=None):
+    def set(self, val, *, trigger=True, group=None):
         # If trigger is False, wait for a separate 'trigger' command to move.
         if not trigger:
             raise NotImplementedError
-        # block_group is handled by the RunEngine
+        # group is handled by the RunEngine
         self.ready = False
         if self._fake_sleep:
             ttime.sleep(self._fake_sleep)  # simulate moving time
@@ -185,7 +185,7 @@ class SynGauss(Reader):
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
 
-    def trigger(self, *, block_group=True):
+    def trigger(self, *, group=True):
         self.ready = False
         m = self._motor.read()[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
@@ -260,7 +260,7 @@ class Syn2DGauss(Reader):
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
 
-    def trigger(self, *, block_group=True):
+    def trigger(self, *, group=True):
         self.ready = False
         x = self._motor.read()[self._motor_field0]['value']
         y = self._motor1.read()[self._motor_field1]['value']
@@ -512,7 +512,7 @@ def checkpoint_forever():
 def wait_one(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')
-    yield Msg('set', motor, 5, block_group='A')  # Add to group 'A'.
+    yield Msg('set', motor, 5, group='A')  # Add to group 'A'.
     yield Msg('wait', None, 'A')  # Wait for everything in group 'A' to finish.
     yield Msg('trigger', det)
     yield Msg('read', det)
@@ -523,7 +523,7 @@ def wait_multiple(det, motors):
     "Set motors, trigger all motors, wait for all motors to move."
     yield Msg('open_run')
     for motor in motors:
-        yield Msg('set', motor, 5, block_group='A')
+        yield Msg('set', motor, 5, group='A')
     # Wait for everything in group 'A' to report done.
     yield Msg('wait', None, 'A')
     yield Msg('trigger', det)
@@ -536,10 +536,10 @@ def wait_complex(det, motors):
     # Same as above...
     yield Msg('open_run')
     for motor in motors[:-1]:
-        yield Msg('set', motor, 5, block_group='A')
+        yield Msg('set', motor, 5, group='A')
 
     # ...but put the last motor is separate group.
-    yield Msg('set', motors[-1], 5, block_group='B')
+    yield Msg('set', motors[-1], 5, group='B')
     # Wait for everything in group 'A' to report done.
     yield Msg('wait', None, 'A')
     yield Msg('trigger', det)
@@ -613,10 +613,10 @@ def cautious_stepscan(det, motor):
 
 def fly_gen(flyer, start, stop, step):
     yield Msg('open_run')
-    yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
+    yield Msg('kickoff', flyer, start, stop, step, group='fly')
     yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)
-    yield Msg('kickoff', flyer, start, stop, step, block_group='fly')
+    yield Msg('kickoff', flyer, start, stop, step, group='fly')
     yield Msg('wait', None, 'fly')
     yield Msg('collect', flyer)
     yield Msg('close_run')

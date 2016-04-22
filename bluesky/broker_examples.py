@@ -32,7 +32,7 @@ class SynGauss2D(Reader):
         # exception to be raised if/when the file system cleans its temp files
         self.output_dir = tempfile.gettempdir()
 
-    def trigger(self, *, block_group=True):
+    def trigger(self, *, group=True):
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
