@@ -969,6 +969,7 @@ class RunEngine:
     @asyncio.coroutine
     def _monitor(self, msg):
         obj = msg.obj
+        name = msg.kwargs.get('name')
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'monitor' message was sent but no "
                                          "run is open.")
@@ -982,7 +983,7 @@ class RunEngine:
         object_keys = {obj.name: list(data_keys)}
         desc_doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                         data_keys=data_keys, uid=descriptor_uid,
-                        configuration=config, name=None,
+                        configuration=config, name=name,
                         object_keys=object_keys)
         self.log.debug("Emitted Event Descriptor")
         seq_num_counter = count()
