@@ -258,7 +258,7 @@ class RunEngine:
         # to provide special docstrings.
         self._lossless_dispatcher = Dispatcher()
 
-        loop.call_soon(self._check_for_trouble)
+        loop.call_soon(self._check_for_panic)
         loop.call_soon(self._check_for_signals)
 
     @property
@@ -370,9 +370,9 @@ class RunEngine:
         If the panic occurred during a pause, the run can be resumed.
         """
         self._panic = False
-        # The cycle where _check_for_trouble schedules a future call to itself
+        # The cycle where _check_for_panic schedules a future call to itself
         # is broken when it raises a PanicError.
-        loop.call_later(0.1, self._check_for_trouble)
+        loop.call_later(0.1, self._check_for_panic)
 
     def request_pause(self, defer=False, name=None, callback=None):
         """
@@ -781,7 +781,7 @@ class RunEngine:
                 del self._monitor_cbs[obj]
             self.state = 'idle'
 
-    def _check_for_trouble(self):
+    def _check_for_panic(self):
         if self.state.is_running:
             # Check for panic.
             if self._panic:
@@ -794,7 +794,7 @@ class RunEngine:
                                  "exit_status='fail'.")
                 self._exception = exc  # will stop _run coroutine
 
-        loop.call_later(0.1, self._check_for_trouble)
+        loop.call_later(0.1, self._check_for_panic)
 
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
