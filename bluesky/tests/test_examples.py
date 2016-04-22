@@ -90,13 +90,13 @@ def test_deferred_pause():
 
 def test_hard_pause_no_checkpoint():
     assert RE.state == 'idle'
-    RE(conditional_pause(det, motor, False, False))
+    RE([Msg('clear_checkpoint'), Msg('pause', False)]),
     assert RE.state == 'idle'
 
 
 def test_deferred_pause_no_checkpoint():
     assert RE.state == 'idle'
-    RE(conditional_pause(det, motor, True, False))
+    RE([Msg('clear_checkpoint'), Msg('pause', True)])
     assert RE.state == 'idle'
 
 
@@ -527,8 +527,7 @@ def test_clear_checkpoint():
                 Msg('clear_checkpoint'),
                 Msg('pause'),
                 'lies']
-    silly_plan = [Msg('pause'), 'lies']
-    good_plan = [Msg('checkpoint'), Msg('pause')]
+    good_plan = [Msg('pause')]
     fine_plan = [Msg('clear_checkpoint')]
 
     RE(good_plan)
@@ -541,9 +540,6 @@ def test_clear_checkpoint():
     # this should raise an attribute error if the last entry in the plan
     # is passed to the run engine
     RE(bad_plan)
-    assert RE.state == 'idle'
-
-    RE(silly_plan)
     assert RE.state == 'idle'
 
 
