@@ -268,7 +268,7 @@ def test_wait_for():
 
     def done():
         ev.set()
-    scan = [Msg('wait_for', [ev.wait(), ]), ]
+    scan = [Msg('wait_for', None, [ev.wait(), ]), ]
     loop.call_later(2, done)
     start = ttime.time()
     RE(scan)

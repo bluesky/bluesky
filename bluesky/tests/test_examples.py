@@ -308,7 +308,7 @@ def test_pause_resume():
     def sim_kill():
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
     loop.call_later(1, sim_kill)
@@ -337,7 +337,7 @@ def test_pause_abort():
     def sim_kill():
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
     loop.call_later(1, sim_kill)

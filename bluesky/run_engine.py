@@ -645,7 +645,7 @@ class RunEngine:
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
                 obj.clear_sub(cb)
                 del self._monitor_params[obj]
-            wait_msg = Msg('wait_for', [fut, ])
+            wait_msg = Msg('wait_for', None, [fut, ])
             for obj, (cb, kwargs) in monitor_params.items():
                 msg = Msg('monitor', obj, **kwargs)
                 self._msg_cache.appendleft(msg)
@@ -852,7 +852,7 @@ class RunEngine:
         Where ``obj`` and **kwargs are the position and keyword-only arguments
         for ``asyncio.await``
         """
-        futs = msg.obj
+        futs, = msg.args
         yield from asyncio.wait(futs, **msg.kwargs)
 
     @asyncio.coroutine
@@ -1332,9 +1332,9 @@ class RunEngine:
             Msg('wait', group=GROUP)
         """
         group = msg.kwargs.get('group', msg.args[0])
-        objs = list(self._groups.pop(group, []))
-        if objs:
-            yield from self._wait_for(Msg('wait_for', objs))
+        futs = list(self._groups.pop(group, []))
+        if futs :
+            yield from self._wait_for(Msg('wait_for', None, futs))
 
     def _failed_status(self, ret):
         """
