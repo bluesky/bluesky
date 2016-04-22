@@ -937,6 +937,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _read(self, msg):
+        """
+        Add a reading to the open event bundle.
+
+        Expected Msg object is:
+
+            Msg('read', obj)
+        """
         obj = msg.obj
         self._objs_read.append(obj)
         if obj not in self._describe_cache:
@@ -968,6 +975,19 @@ class RunEngine:
 
     @asyncio.coroutine
     def _monitor(self, msg):
+        """
+        Monitor a signal. Emit event documents asynchronously.
+
+        A descriptor document is emitted immediately. Then, a closure is
+        defined that emits Event documents associated with that descriptor
+        from a separate thread. This process is not related to the main
+        bundling process (create/read/save).
+
+        Expected Msg object is:
+
+            Msg('monitor', obj)
+            Msg('monitor', obj, name='event-stream-name')
+        """
         obj = msg.obj
         name = msg.kwargs.get('name')
         if not self._run_is_open:
@@ -1010,6 +1030,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _unmonitor(self, msg):
+        """
+        Stop monitoring; i.e., remove the callback emitting event documents.
+
+        Expected Msg object is:
+
+            Msg('unmonitor', obj)
+        """
         obj = msg.obj
         cb = self._monitor_cbs[obj]
         obj.clear_sub(cb)
@@ -1143,6 +1170,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _collect(self, msg):
+        """
+        Collect data cached by a flyer and emit descriptor and event documents.
+
+        Expect message object is
+
+            Msg('collect', obj)
+        """
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'collect' message was sent but no "
                                          "run is open.")
@@ -1194,10 +1228,25 @@ class RunEngine:
 
     @asyncio.coroutine
     def _null(self, msg):
+        """
+        A no-op message, mainly for debugging and testing.
+        """
         pass
 
     @asyncio.coroutine
     def _set(self, msg):
+        """
+        Set a device and cache the returned status object.
+
+        Also, note that the device has been touched so it can be stopped upon
+        exit.
+
+        Expected messgage object is
+
+            Msg('set', obj, *args, **kwargs)
+
+        where arguments are passed through to `obj.set(*args, **kwargs)`.
+        """
         block_group = msg.kwargs.pop('block_group', None)
         self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
@@ -1221,6 +1270,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _trigger(self, msg):
+        """
+        Trigger a device and cache the returned status object.
+
+        Expected Msg object is:
+
+            Msg('trigger', obj)
+        """
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
 
