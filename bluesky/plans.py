@@ -221,6 +221,428 @@ def single_gen(msg):
     yield msg
 
 
+def create(name='primary'):
+    """
+    Bundle future readings into a new Event document.
+
+    Parameters
+    ----------
+    name : string, optional
+        name given to event stream, used to convenient identification
+        default is 'primary'
+
+    Yields
+    ------
+    msg : Msg
+        Msg('create', name=name)
+    """
+    yield Msg('create', name=name)
+
+
+def save():
+    """
+    Close a bundle of readings and emit a completed Event document.
+
+    Yields
+    -------
+    msg : Msg
+        Msg('save')
+    """
+    yield Msg('save')
+
+
+def read(obj):
+    """
+    Take a reading and add it to the current bundle of readings.
+
+    Parameters
+    ----------
+    obj : Device or Signal
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('read', obj)
+    """
+    yield Msg('read', obj)
+
+
+def monitor(obj, *args, name=None, **kwargs):
+    """
+    Asynchornously monitor for new values and emit Event documents.
+
+    Parameters
+    ----------
+    obj : Signal
+    name : string, optional
+        name of event stream; default is None
+    args :
+        passed through to ``obj.subscribe()``
+    kwargs :
+        passed through to ``obj.subscribe()``
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('monitor', obj, *args, **kwargs)
+    """
+    yield Msg('monitor', obj, *args, **kwargs)
+
+
+def unmonitor(obj):
+    """
+    Stop mointoring.
+
+    Parameters
+    ----------
+    obj : Signal
+
+    Yields
+    ------
+    msg : Msg
+        Msg('unmonitor', obj)
+    """
+    yield Msg('unmonitor', obj)
+
+
+def null():
+    """
+    Yield a no-op Message. (Primarily for debugging and testing.)
+
+    Yields
+    ------
+    msg : Msg
+        Msg('null')
+    """
+    yield Msg('null', obj)
+
+
+def abs_set(obj, *args, group=None, wait=False, **kwargs):
+    """
+    Set a value. Optionally, wait for it to complete before continuing.
+
+    Parameters
+    ----------
+    obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    args :
+        passed to obj.set()
+    kwargs :
+        passed to obj.set()
+
+    Yields
+    ------
+    msg : Msg
+    """
+    yield Msg('set', obj, *args, group=group, **kwargs)
+    if wait:
+        yield Msg('wait', None, group=group)
+
+
+def rel_set(obj, *args, group=None, wait=False, **kwargs):
+    """
+    Set a value relative to current value. Optionally, wait before continuing.
+
+    Parameters
+    ----------
+    obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    args :
+        passed to obj.set()
+    kwargs :
+        passed to obj.set()
+
+    Yields
+    ------
+    msg : Msg
+    """
+    yield from relative_set(abs_set(obj, *args, group=group, **kwargs))
+    if wait:
+        yield Msg('wait', None, group=group)
+
+
+def trigger(obj, *, group=None, wait=False):
+    """
+    Trigger and acquisition. Optionally, wait for it to complete.
+
+    Parameters
+    ----------
+    obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+
+    Yields
+    ------
+    msg : Msg
+    """
+    yield Msg('trigger', obj, group=group)
+    if wait:
+        yield Msg('wait', None, group=group)
+
+
+def sleep(time):
+    """
+    A plan that yields a single 'sleep' message.
+
+    Parameters
+    ----------
+    time : float
+        seconds
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('sleep', time)
+    """
+    yield Msg('sleep', time)
+
+
+def wait(group=None):
+    """
+    A plan that waits for a group of statuses to report being finished.
+
+    Parameters
+    ----------
+    group : string (or any hashable object), optional
+        idenified given to `abs_set`, `rel_set`, `trigger`; None by default
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('wait', None, group=group)
+    """
+    yield Msg('wait', None, group=group)
+
+
+def checkpoint():
+    """
+    If interrupted, rewind to this point.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('checkpoint')
+    """
+    yield Msg('checkpoint')
+
+
+def clear_checkpoint():
+    """
+    Designate that it is not safe to resume. If interrupted or paused, abort.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('clear_checkpoint')
+    """
+    yield Msg('clear_checkpoint')
+
+
+def pause():
+    """
+    Pause and wait for the user to resume.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('pause')
+    """
+    yield Msg('pause')
+
+
+def deferred_pause():
+    """
+    Pause at the next checkpoint.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('pause', defer=True)
+    """
+    yield Msg('pause', defer=True)
+
+
+def kickoff(obj):
+    """
+    Kickoff a fly-scanning device.
+
+    Parameters
+    ----------
+    obj : fly-able
+        Device with 'kickoff' and 'collect' methods
+
+    Yields
+    ------
+    msg : Msg
+        Msg('kickoff', obj)
+    """
+    yield Msg('kickoff', obj)
+
+
+def collect(obj):
+    """
+    Collect data cached by a fly-scanning device and emit documents.
+
+    Parameters
+    ----------
+    obj : fly-able
+        Device with 'kickoff' and 'collect' methods
+
+    Yields
+    ------
+    msg : Msg
+        Msg('collect', obj)
+    """
+    yield Msg('collect', obj)
+
+
+def configure(obj, *args, **kwargs):
+    """
+    Change Device configuration and emit an updated Event Descriptor document.
+
+    Parameters
+    ----------
+    obj : Device
+    args
+        passed through to ``obj.configure()``
+    kwargs
+        passed through to ``obj.configure()``
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('configure', obj, *args, **kwargs)
+    """
+    yield Msg('configure', obj, *args, **kwargs)
+
+
+def stage(obj):
+    """
+    'Stage' a device (i.e., prepare it for use, 'arm' it).
+
+    Parameters
+    ----------
+    obj : Device
+
+    Yields
+    ------
+    msg : Msg
+        Msg('stage', obj)
+    """
+    yield Msg('stage', obj)
+
+
+def unstage(obj):
+    """
+    'Unstage' a device (i.e., put it in standby, 'disarm' it).
+
+    Parameters
+    ----------
+    obj : Device
+
+    Yields
+    ------
+    msg : Msg
+        Msg('unstage', obj)
+    """
+    yield Msg('unstage', obj)
+
+
+def subscribe(name, func):
+    """
+    Subscribe the stream of emitted documents.
+
+    Parameters
+    ----------
+    name : {'all', 'start', 'descriptor', 'event', 'stop'}
+    func : callable
+        Expected signature: ``f(name, doc)`` where ``name`` is one of the
+        strings above ('all, 'start', ...) and ``doc`` is a dict
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('subscribe', None, name, func)
+    """
+    yield Msg('subscribe', None, name, func)
+
+
+def unsubscribe(token):
+    """
+    Remove a subscription.
+
+    Parameters
+    ----------
+    token : int
+        token returned by processing a 'subscribe' message
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('unsubscribe', token=token)
+    """
+    yield Msg('unsubscribe', token=token)
+
+
+def open_run(md):
+    """
+    Mark the beginning of a new 'run'. Emit a RunStart document.
+
+    Parameters
+    ----------
+    md : dict
+        metadata
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('open_run', **md)
+    """
+    yield Msg('open_run', md)
+
+
+def close_run():
+    """
+    Mark the end of the current 'run'. Emit a RunStop document.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('close_run')
+    """
+    yield Msg('close_run')
+
+
+def wait_for(futures, **kwargs):
+    """"
+    Low-level: wait for a list of asyncio.Future objects to set (complete).
+
+    Parameters
+    ----------
+    futures : collection
+        collection of asyncio.Future objects
+    kwargs
+        passed through to ``asyncio.wait()``
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('wait_for', None, futures, **kwargs)
+    """
+    yield Msg('wait_for', None, futures, **kwargs)
+
+
 def finalize(plan, final_plan):
     '''try...finally helper
 
