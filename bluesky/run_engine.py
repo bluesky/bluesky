@@ -274,6 +274,7 @@ class RunEngine:
         return self._run_start_uid is not None
 
     def _clear_run_cache(self):
+        "Clean up for a new run."
         self._run_start_uid = None
         self._metadata_per_run.clear()
         self._bundling = False
@@ -291,6 +292,7 @@ class RunEngine:
         self._block_groups.clear()
 
     def _clear_call_cache(self):
+        "Clean up for a new __call__ (which may encompass multiple runs)."
         self._metadata_per_call.clear()
         self._staged.clear()
         self._movable_objs_touched.clear()
@@ -312,12 +314,18 @@ class RunEngine:
         self._temp_callback_ids.clear()
 
     def reset(self):
+        """
+        Clean up caches and unsubscribe lossy subscriptions.
+
+        Lossless subscriptions are not unsubscribed.
+        """
         self._clear_run_cache()
         self._clear_call_cache()
         self.dispatcher.unsubscribe_all()
 
     @property
     def resumable(self):
+        "i.e., can the plan in progress by rewound"
         return self._msg_cache is not None
 
     @property
@@ -559,7 +567,7 @@ class RunEngine:
         return self._run_start_uids
 
     def resume(self):
-        """Resume a run from the last checkpoint.
+        """Resume a paused plan from the last checkpoint.
 
         Returns
         -------
@@ -645,7 +653,7 @@ class RunEngine:
 
     def abort(self, reason=''):
         """
-        Stop a running or paused scan and mark it as aborted.
+        Stop a running or paused plan and mark it as aborted.
         """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
@@ -658,6 +666,9 @@ class RunEngine:
             self._resume_event_loop()
 
     def stop(self):
+        """
+        Stop a running or paused plan, but mark it as successful (not aborted).
+        """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Stopping...")
@@ -668,6 +679,10 @@ class RunEngine:
 
     @asyncio.coroutine
     def _run(self):
+        """Pull messages from the plan, process them, send results back.
+
+        Upon exit, clean up.
+        """
         response = None
         self._reason = ''
         try:
@@ -940,7 +955,7 @@ class RunEngine:
         """
         Add a reading to the open event bundle.
 
-        Expected Msg object is:
+        Expected message object is:
 
             Msg('read', obj)
         """
@@ -983,7 +998,7 @@ class RunEngine:
         from a separate thread. This process is not related to the main
         bundling process (create/read/save).
 
-        Expected Msg object is:
+        Expected message object is:
 
             Msg('monitor', obj)
             Msg('monitor', obj, name='event-stream-name')
@@ -1033,7 +1048,7 @@ class RunEngine:
         """
         Stop monitoring; i.e., remove the callback emitting event documents.
 
-        Expected Msg object is:
+        Expected message object is:
 
             Msg('unmonitor', obj)
         """
@@ -1273,7 +1288,7 @@ class RunEngine:
         """
         Trigger a device and cache the returned status object.
 
-        Expected Msg object is:
+        Expected message object is:
 
             Msg('trigger', obj)
         """
