@@ -1068,7 +1068,10 @@ class RunEngine:
             descriptor_uid = self._descriptors[(self._bundle_name, objs_read)]
         # This is a separate check because it can be reset on resume.
         if objs_read not in self._sequence_counters:
-            self._sequence_counters[objs_read] = count(1)
+            counter = count(1)
+            counter_copy1, counter_copy2 = tee(counter)
+            self._sequence_counters[objs_read] = counter_copy1
+            self._teed_sequence_counters[objs_read] = counter_copy2
         self._bundling = False
         self._bundle_name = None
 
