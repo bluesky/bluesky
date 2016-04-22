@@ -682,6 +682,11 @@ class RunEngine:
         """Pull messages from the plan, process them, send results back.
 
         Upon exit, clean up.
+        - Call stop() on all objects that were 'set' or 'kickoff'.
+        - Try to collect any uncollected flyers.
+        - Try to unstage any devices left staged by the plan.
+        - Try to remove any monitoring subscriptions left on by the plan.
+        - If interrupting the middle of a run, try to emit a RunStop document.
         """
         response = None
         self._reason = ''
@@ -770,6 +775,10 @@ class RunEngine:
                 except Exception:
                     logger.error("Failed to unstage %r", obj)
                 self._staged.remove(obj)
+            # Clear any uncleared monitoring callbacks.
+            for obj, cb in list(self._monitor_cbs.items()):
+                obj.clear_sub(cb)
+                del self._monitor_cbs[obj]
             sys.stdout.flush()
             # Emit RunStop if necessary.
             if self._run_is_open:
@@ -782,18 +791,12 @@ class RunEngine:
                     for task in asyncio.Task.all_tasks(loop):
                         task.cancel()
                     loop.stop()
-                    for obj, cb in list(self._monitor_cbs.items()):
-                        obj.clear_sub(cb)
-                        del self._monitor_cbs[obj]
                     self.state = 'idle'
                     raise
 
             for task in asyncio.Task.all_tasks(loop):
                 task.cancel()
             loop.stop()
-            for obj, cb in list(self._monitor_cbs.items()):
-                obj.clear_sub(cb)
-                del self._monitor_cbs[obj]
             self.state = 'idle'
 
     def _check_for_panic(self):
