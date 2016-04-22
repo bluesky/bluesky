@@ -291,7 +291,6 @@ class Struct(metaclass=StructMeta):
         for name, val in bound.arguments.items():
             setattr(self, name, val)
         self._md = {}
-        self.configuration = {}
         self.flyers = []
 
     def set(self, **kwargs):
@@ -404,21 +403,6 @@ def first_key_heuristic(device):
     dictionary with exactly one key.
     """
     return next(iter(device.describe()))
-
-
-def scalar_heuristic(device):
-    """
-    If a device like a motor has multiple read_fields, we need some way of
-    knowing which one is the 'primary' or 'scalar' position, the one to
-    use as the "initial position" when computing a relative trajecotry
-    or the one to plot against when automatically choosing at x variable.
-
-    This is a hot-fix in advance of the Winter 2016 cycle -- should be
-    rethought when there is time.
-    """
-    reading = device.read()
-    key = first_key_heuristic(device)
-    return reading[key]['value']
 
 
 def ancestry(obj):
@@ -585,3 +569,31 @@ def install_qt_kicker():
 
     loop = asyncio.get_event_loop()
     _QT_KICKER_INSTALLED = loop.call_soon(_qt_kicker)
+
+
+def apply_sub_factories(factories, plan):
+    '''Run sub factory functions for a plan
+
+    Factory functions should return lists, which will be added onto the
+    subscription key (e.g., 'all' or 'start') specified in the factory
+    definition.
+
+    If the factory function returns None, the list will not be modified.
+    '''
+    factories = normalize_subs_input(factories)
+    out = {k: list(itertools.filterfalse(lambda x: x is None,
+                                         (sf(scan) for sf in v)))
+           for k, v in factories.items()}
+    return out
+
+
+def update_sub_lists(out, inp):
+    """Extends dictionary `out` lists with those in `inp`
+
+    Assumes dictionaries where all values are lists
+    """
+    for k, v in inp.items():
+        try:
+            out[k].extend(v)
+        except KeyError:
+            out[k] = list(v)

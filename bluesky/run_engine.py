@@ -111,7 +111,7 @@ class RunEngine:
 
     _loop = loop  # just a convenient way to inspect the global event loop
     state = LoggingPropertyMachine(RunEngineStateMachine)
-    _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe']
+    _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage']
 
     def __init__(self, md=None, *, md_validator=None):
         """

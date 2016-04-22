@@ -3,7 +3,7 @@ import pytest
 from bluesky.callbacks import collector, CallbackCounter
 from bluesky.plans import (AbsListScanPlan, AbsScanPlan, LogAbsScanPlan,
                            DeltaListScanPlan, DeltaScanPlan, LogDeltaScanPlan,
-                           AdaptiveAbsScanPlan, AdaptiveDeltaScanPlan, Count, Center,
+                           AdaptiveAbsScanPlan, AdaptiveDeltaScanPlan, Count,
                            OuterProductAbsScanPlan, InnerProductAbsScanPlan,
                            OuterProductDeltaScanPlan, InnerProductDeltaScanPlan)
 
@@ -137,6 +137,7 @@ def test_ascan():
 def test_dscan():
     traj = np.array([1, 2, 3])
     motor.set(-4)
+    print(motor.read())
     scan = DeltaListScanPlan([det], motor, traj)
     traj_checker(scan, traj - 4)
 
@@ -228,7 +229,7 @@ def test_count():
     RE(scan, subs={'event': col})
     assert actual_intensity[0] == 1.
 
-    # multiple counts
+    # multiple counts, via updating attribute
     actual_intensity = []
     col = collector('det', actual_intensity)
     scan = Count([det], num=3, delay=0.05)
@@ -236,18 +237,18 @@ def test_count():
     assert scan.num == 3
     assert actual_intensity == [1., 1., 1.]
 
-
-def test_center():
-    try:
-        import lmfit
-    except ImportError as ie:
-        pytest.skip("requires lmfit. ImportError: {}".format(ie))
-    assert not RE._run_is_open
-    det = SynGauss('det', motor, 'motor', 0, 1000, 1, 'poisson', True)
-    d = {}
-    cen = Center([det], 'det', motor, 0.1, 1.1, 0.01, d)
-    RE(cen)
-    assert abs(d['center'])  < 0.1
+    # multiple counts, via passing arts to __call__
+    actual_intensity = []
+    col = collector('det', actual_intensity)
+    scan = Count([det], num=3, delay=0.05)
+    RE(scan(num=2), subs={'event': col})
+    assert actual_intensity == [1., 1.]
+    # attribute should still be 3
+    assert scan.num == 3
+    actual_intensity = []
+    col = collector('det', actual_intensity)
+    RE(scan, subs={'event': col})
+    assert actual_intensity == [1., 1., 1.]
 
 
 def test_set():

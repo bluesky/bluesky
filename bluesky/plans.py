@@ -1,131 +1,733 @@
-from collections import deque, defaultdict, Iterable
-
+import uuid
+import sys
+from functools import wraps
+import itertools
 import functools
 import operator
-from boltons.iterutils import chunked
-from cycler import cycler
+from contextlib import contextmanager
+from collections import OrderedDict, Iterable, defaultdict, deque
+
 import numpy as np
+from cycler import cycler
+from boltons.iterutils import chunked
+
 from .run_engine import Msg
+
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
-                    scalar_heuristic, separate_devices)
+                    separate_devices, apply_sub_factories, update_sub_lists)
 
 
-class PlanBase(Struct):
+def _short_uid(label, truncate=6):
+    "Return a readable but unique id like 'label-fjfi5a'"
+    return '-'.join([label, str(uuid.uuid4())[:truncate]])
+
+
+def planify(func):
     """
-    This is a base class for writing reusable plans.
+    Turn a function that returns a list of generators into a coroutine.
 
-    It provides a default entry in the logbook at the start of the scan and a
-    __iter__ method.
+    Parameters
+    ----------
+    func : callable
+        expected to return a list of generators that yield messages (`Msg`
+        objects) the function may have an arbitrary signature
 
-    To create a new sub-class you need to over-ride two things:
-
-    - a ``_gen`` method which yields the instructions of the scan.
-    - an ``_objects`` attribute, a list of arbitrary category names (such
-      'detectors' or 'motors') to lists of objects -- used for metadata and for
-      staging/unstagin all objects touched by a plan
-    - a class level ``_fields`` attribute which is used to construct the init
-      signature via meta-class magic
-
-    If you do not use the class-level ``_fields`` and write a custom
-    ``__init__`` (which you need to do if you want to have optional kwargs)
-    you should provide an instance level ``_fields`` so that the metadata
-    inspection will work.
+    Returns
+    -------
+    gen : generator
+        a single generator that yields messages
     """
-    subs = Subs({})
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        gen_stack = func(*args, **kwargs)
+        for g in gen_stack:
+            yield from g
 
-    @property
-    def md(self):
-        """
-        a metadata dictionary, passed to the 'open_run' Message
-        """
-        self._md['plan_type'] = type(self).__name__
-        self._md['plan_args'] = {field: repr(getattr(self, field))
-                                 for field in self._fields}
-        for category, objs in self._objects.items():
-            # e.g., self.md['motors'] = ['motor1', 'motor2']
-            if isinstance(objs, Iterable):
-                self._md[category] = [obj.name for obj in objs]
+    return wrapped
+
+
+def plan_mutator(plan, msg_proc):
+    """
+    Alter the contents of a plan on the fly by changing or inserting messages.
+
+    Parameters
+    ----------
+    plan : generator
+        a generator that yields messages (`Msg` objects)
+    msg_proc : callable
+        functions that takes in a message and returns replacement messages
+
+        fucntion signatures:
+
+        msg -> None, None (no op)
+        msg -> gen, None (mutate and/or insert before current message;
+                        last message in gen must invoke a response compatible
+                        with original msg)
+        msg -> gen, tail (same as above, but insert some messages *after*)
+        msg -> None, tail (illegal -- raises RuntimeError)
+
+    Yields
+    ------
+    msg : Msg
+        messages from `plan`, altered by `msg_proc`
+    """
+    # internal stacks
+    msgs_seen = dict()
+    plan_stack = deque()
+    result_stack = deque()
+    tail_cache = dict()
+    tail_result_cache = dict()
+
+    # seed initial conditions
+    plan_stack.append(plan)
+    result_stack.append(None)
+
+    while True:
+        try:
+            # get last result
+            ret = result_stack.pop()
+            # send last result to the top most generator in the
+            # stack this may raise StopIteration
+            msg = plan_stack[-1].send(ret)
+
+            # if inserting / mutating, put new generator on the stack
+            # and replace the current msg with the first element from the
+            # new generator
+            if id(msg) not in msgs_seen:
+                # Use the id as a hash, and hold a reference to the msg so that
+                # it cannot be garbage collected until the plan is complete.
+                msgs_seen[id(msg)] = msg
+
+                new_gen, tail_gen = msg_proc(msg)
+                # mild correctness check
+                if tail_gen is not None and new_gen is None:
+                    raise RuntimeError("This makes no sense")
+                if new_gen is not None:
+                    # stash the new generator
+                    plan_stack.append(new_gen)
+                    # put in a result value to prime it
+                    result_stack.append(None)
+                    # stash the tail generator
+                    tail_cache[id(new_gen)] = tail_gen
+                    # go to the top of the loop
+                    continue
+
+            # yield out the 'current message' and collect the return
+            inner_ret = yield msg
+            result_stack.append(inner_ret)
+
+        except StopIteration:
+            # discard the exhausted generator
+            # TODO capture gen.close()?
+            exhausted_gen = plan_stack.pop()
+            # if we just came out of a 'tail' generator, discard its
+            # return value and replace it with the cached one (from the last
+            # message in its paired 'new_gen')
+            if id(exhausted_gen) in tail_result_cache:
+                ret = tail_result_cache.pop(id(exhausted_gen))
+
+            result_stack.append(ret)
+
+            if id(exhausted_gen) in tail_cache:
+                gen = tail_cache.pop(id(exhausted_gen))
+                if gen is not None:
+                    plan_stack.append(gen)
+                    saved_result = result_stack.pop()
+                    tail_result_cache[id(gen)] = saved_result
+                    # must use None to prime generator
+                    result_stack.append(None)
+
+            if plan_stack:
+                continue
             else:
-                obj = objs
-                self._md[category] = obj.name
-        return self._md
+                return plan.close()
+        except Exception as ex:
+            plan.throw(ex)
 
-    def __iter__(self):
-        """
-        yields messages
-        """
-        # Some metadata is compute in _pre, so it must be done before
-        # the RunStart is generated by open_run, below.
-        yield from self._pre()
 
-        # If the plan has a 'subs' attribute, yield a 'subscribe' Msg for
-        # each one. The RunEngine will remove these at the end in the
-        # event of termination.
-        tokens = set()
-        subs = normalize_subs_input(getattr(self, 'subs', {}))
+def msg_mutator(plan, msg_proc):
+    """
+    A simple preprocessor that mutates or deltes single messages in a plan
+
+    To *insert* messages, use ``plan_mutator`` instead.
+
+    Parameters
+    ----------
+    plan : generator
+        a generator that yields messages (`Msg` objects)
+    msg_proc : callable
+        Expected signature `f(msg) -> new_msg or None`
+
+    Yields
+    ------
+    msg : Msg
+        messages from `plan`, altered by `msg_proc`
+    """
+    ret = None
+    while True:
+        try:
+            msg = plan.send(ret)
+            msg = msg_proc(msg)
+            # if None, just skip message
+            # feed 'None' back down into the base plan,
+            # this may break some plans
+            if msg is None:
+                ret = None
+                continue
+            ret = yield msg
+        except StopIteration:
+            break
+    return plan.close()
+
+
+def bschain(*args):
+    '''Like `itertools.chain` but using `yield from`
+
+    This ensures than `.send` works as expected and the underlying
+    plans get the return values
+
+    Parameters
+    ----------
+    args :
+        generators (plans)
+
+    Yields
+    ------
+    msg : Msg
+        The messages from each plan in turn
+    '''
+    rets = deque()
+    for p in args:
+        rets.append((yield from p))
+    return tuple(rets)
+
+
+def single_gen(msg):
+    '''Turn a single message into a plan
+
+    If ``lambda x: yield x`` were valid Python, this would be equivalent.
+    In Python 3.6 or 3.7 we might get lambda generators.
+
+    Parameters
+    ----------
+    msg : Msg
+        a single message
+
+    Yields
+    ------
+    msg : Msg
+        the input message
+    '''
+    yield msg
+
+
+def finalize(plan, final_plan):
+    '''try...finally helper
+
+    Run the first plan and then the second.  If any of the messages
+    raise an error in the RunEngine (or otherwise), the second plan
+    will attempted to be run anyway.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    final_plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects; attempted to be
+        run no matter what happens in the first plan
+
+    Yields
+    ------
+    msg : Msg
+        messages from `plan` until it terminates or an error is raised, then
+        messages from `final_plan`
+    '''
+    try:
+        ret = yield from plan
+    finally:
+        yield from final_plan
+    return ret
+
+
+@contextmanager
+def subs_context(plan_stack, subs):
+    """
+    Subscribe to callbacks to the document stream; then unsubscribe on exit.
+
+    Parameters
+    ----------
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
+    subs : callable, list of callables, or dict of lists of callables
+         Documents of each type are routed to a list of functions.
+         Input is normalized to a dict of lists of functions, like so:
+
+         None -> {'all': [], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         func -> {'all': [func], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         [f1, f2] -> {'all': [f1, f2], 'start': [], 'stop': [], 'event': [],
+                      'descriptor': []}
+
+         {'event': [func]} ->  {'all': [], 'start': [], 'stop': [],
+                                'event': [func], 'descriptor': []}
+
+         Signature of functions must confirm to `f(name, doc)` where
+         name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
+         doc is a dictionary.
+    """
+    subs = normalize_subs_input(subs)
+    tokens = set()
+
+    def subscribe():
         for name, funcs in subs.items():
             for func in funcs:
                 token = yield Msg('subscribe', None, name, func)
                 tokens.add(token)
 
-        yield Msg('open_run', **self.md)
-        for flyer in self.flyers:
-            yield Msg('kickoff', flyer, block_group='_flyers')
-        yield Msg('wait', None, '_flyers')
-        yield from self._gen()
-        for flyer in self.flyers:
-            yield Msg('collect', flyer, block_group='_flyers')
-        yield Msg('wait', None, '_flyers')
-        yield Msg('close_run')
+    def unsubscribe():
         for token in tokens:
             yield Msg('unsubscribe', None, token)
-        yield from self._post()
-        yield Msg('checkpoint')
 
-    def _pre(self):
-        """
-        Subclasses use this to inject some messages to be processed
-        before the run is opened -- for example, configuration or
-        taking some preliminary readings needed for metadata.
-        """
-        # prerun is expected to be a callable that takes the Scan object
-        # itself as its argument and returns a generator of messages
-        if self.pre_run is not None:
-            yield from self.pre_run(self)
-        staged = []  # to track duplicates
-        for objs in self._objects.values():
-            for obj in objs:
-                root = obj.root
-                if root not in staged:
-                    yield Msg('stage', root)
-                    staged.append(root)
-
-    def _post(self):
-        """
-        Subclasses use this to inject some messages to be processed
-        after the run is closed -- for example, returning motors to
-        their original positions.
-        """
-        # postrun is expected to be a callable that takes the Scan object
-        # itself as its argument and returns a generator of messages
-        unstaged = []  # to track duplicates
-        for objs in self._objects.values():
-            for obj in reversed(list(objs)):
-                root = obj.root
-                if root not in unstaged:
-                    yield Msg('unstage', root)
-                    unstaged.append(root)
-        if self.post_run is not None:
-            yield from self.post_run(self)
-
-    def _gen(self):
-        "Subclasses should override this method to add the main plan content."
-        yield from []
+    plan_stack.append(subscribe())
+    try:
+        yield plan_stack
+    finally:
+        # The RunEngine might never process these if the execution fails,
+        # but it keeps its own cache of tokens and will try to remove them
+        # itself if this plan fails to do so.
+        plan_stack.append(unsubscribe())
 
 
-class Count(PlanBase):
+@contextmanager
+def run_context(plan_stack, md=None):
+    """Enclose in 'open_run' and 'close_run' messages.
+
+    Parameters
+    ----------
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
+    md : dict, optional
+        metadata to be passed into the 'open_run' message
     """
-    Take one or more readings from the detectors. Do not move anything.
+    if md is None:
+        md = dict()
+    md = dict(md)
+    plan_stack.append(single_gen(Msg('open_run', None, **md)))
+    yield plan_stack
+    plan_stack.append(single_gen(Msg('close_run')))
+
+
+@contextmanager
+def event_context(plan_stack, name='primary'):
+    """Bundle readings into an 'event' (a datapoint).
+
+    This encloses the contents in 'create' and 'save' messages.
+
+    Parameters
+    ----------
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
+    name : string, optional
+        name of event stream; default is 'primary'
+    """
+    plan_stack.append(single_gen(Msg('create', None, name=name)))
+    yield plan_stack
+    plan_stack.append(single_gen(Msg('save')))
+
+
+def fly_during(plan, flyers):
+    """
+    Kickoff and collect "flyer" (asynchronously collect) objects during runs.
+
+    This is a preprocessor that insert messages immediately after a run is
+    opened and before it is closed.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    flyers : collection
+        objects that support the flyer interface
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'kickoff', 'wait' and 'collect' messages
+        inserted
+    """
+    grp = _short_uid('flyers')
+    kickoff_msgs = [Msg('kickoff', flyer, block_group=grp) for flyer in flyers]
+    collect_msgs = [Msg('collect', flyer) for flyer in flyers]
+    if flyers:
+        # If there are any flyers, insert a Msg that waits for them to finish.
+        collect_msgs = [Msg('wait', None, grp)] + collect_msgs
+
+    def insert_after_open(msg):
+        if msg.command == 'open_run':
+            def new_gen():
+                yield from kickoff_msgs
+            return single_gen(msg), new_gen()
+        else:
+            return None, None
+
+    def insert_before_close(msg):
+        if msg.command == 'close_run':
+            def new_gen():
+                yield from collect_msgs
+                yield msg
+            return new_gen(), None
+        else:
+            return None, None
+
+    # Apply nested mutations.
+    plan1 = plan_mutator(plan, insert_after_open)
+    plan2 = plan_mutator(plan1, insert_before_close)
+    return (yield from plan2)
+
+
+def lazily_stage(plan):
+    """
+    This is a preprocessor that inserts 'stage' Messages.
+
+    The first time an object is seen in `plan`, it is staged. To avoid
+    redundant staging we actually stage the object's ultimate parent, pointed
+    to be its `root` property.
+
+    At the end, in a `finally` block, an 'unstage' Message issued for every
+    'stage' Message.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'stage' messages inserted and 'unstage'
+        messages appended
+    """
+    COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
+    # Cache devices in the order they are staged; then unstage in reverse.
+    devices_staged = []
+
+    def inner(msg):
+        if msg.command in COMMANDS and msg.obj not in devices_staged:
+            root = msg.obj.root
+
+            def new_gen():
+                # Here we insert a 'stage' message
+                ret = yield Msg('stage', root)
+                # and cache the result
+                if ret is None:
+                    # The generator may be being list-ified.
+                    # This is a hack to make that possible.
+                    ret = [root]
+                devices_staged.extend(ret)
+                # and then proceed with our regularly scheduled programming
+                yield msg
+            return new_gen(), None
+        else:
+            return None, None
+
+    return (yield from plan_mutator(plan, inner))
+
+
+@contextmanager
+def stage_context(plan_stack, devices):
+    """
+    Stage devices upon entering context and unstage upon exiting.
+
+    Parameters
+    ----------
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
+    devices : collection
+        list of devices to stage immediately on entrance and unstage on exit
+    """
+    # Resolve unique devices, avoiding redundant staging.
+    devices = [device.root for device in devices]
+
+    def stage():
+        # stage devices explicitly passed to 'devices' argument
+        yield from broadcast_msg('stage', devices)
+
+    def unstage():
+        # unstage devices explicitly passed to 'devices' argument
+        yield from broadcast_msg('unstage', reversed(devices))
+
+    plan_stack.append(stage())
+    yield plan_stack
+    plan_stack.append(unstage())
+
+
+def relative_set(plan, devices=None):
+    """
+    Interpret 'set' messages on devices as relative to initial position.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    devices : collection or None, optional
+        if default (None), apply to all devices that are moved by the plan
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'read' messages inserted and 'set' messages
+        mutated
+    """
+    initial_positions = {}
+
+    def read_and_stash_a_motor(obj):
+        reading = yield Msg('read', obj)
+        if reading is None:
+            # this plan may be being list-ified
+            cur_pos = 0
+        else:
+            k, = reading.keys()
+            cur_pos = reading[k]['value']
+        initial_positions[obj] = cur_pos
+
+    def rewrite_pos(msg):
+        if (msg.command == 'set') and (msg.obj in initial_positions):
+            rel_pos, = msg.args
+            abs_pos = initial_positions[msg.obj] + rel_pos
+            new_msg = msg._replace(args=(abs_pos,))
+            return new_msg
+        else:
+            return msg
+
+    def insert_reads(msg):
+        eligible = (devices is None) or (msg.obj in devices)
+        seen = msg.obj in initial_positions
+        if (msg.command == 'set') and eligible and not seen:
+                return bschain(read_and_stash_a_motor(msg.obj),
+                               single_gen(msg)), None
+        else:
+            return None, None
+
+    plan = plan_mutator(plan, insert_reads)
+    plan = msg_mutator(plan, rewrite_pos)
+    return (yield from plan)
+
+
+def reset_positions(plan, devices=None):
+    """
+    Return movable devices to their initial positions at the end.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    devices : collection or None, optional
+        If default (None), apply to all devices that are moved by the plan.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'read' and finally 'set' messages inserted
+    """
+    initial_positions = OrderedDict()
+
+    def read_and_stash_a_motor(obj):
+        cur_pos = yield Msg('read', obj)
+        initial_positions[obj] = cur_pos
+
+    def insert_reads(msg):
+        eligible = devices is None or msg.obj in devices
+        seen = msg.obj in initial_positions
+        if (msg.command == 'set') and eligible and not seen:
+            return bschain(read_and_stash_a_motor(msg.obj),
+                           single_gen(msg)), None
+        else:
+            return None, None
+
+    def reset():
+        blk_grp = 'reset-{}'.format(str(uuid.uuid4())[:6])
+        for k, v in initial_positions.items():
+            yield Msg('set', k, v, block_group=blk_grp)
+        yield Msg('wait', None, blk_grp)
+
+    return (yield from finalize(plan_mutator(plan, insert_reads), reset()))
+
+
+def configure_count_time(plan, time):
+    """
+    Preprocessor that sets all devices with a `count_time` to the same time.
+
+    The original setting is stashed and restored at the end.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    time : float or None
+        If None, the plan passes through unchanged.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'set' messages inserted
+    """
+    devices_seen = set()
+    original_times = {}
+
+    def insert_set(msg):
+        obj = msg.obj
+        if obj is not None and obj not in devices_seen:
+            devices_seen.add(obj)
+            if hasattr(obj, 'count_time'):
+                # TODO Do this with a 'read' Msg once reads can be
+                # marked as belonging to a different event stream (or no
+                # event stream.
+                original_times[obj] = obj.count_time.get()
+                return bschain(single_gen(Msg('set', obj.count_time, time)),
+                               single_gen(msg)), None
+        return None, None
+
+    def reset():
+        for obj, time in original_times.items():
+            yield Msg('set', obj.count_time, time)
+
+    if time is None:
+        # no-op
+        return (yield from plan)
+    else:
+        return (yield from finalize(plan_mutator(plan, insert_set), reset()))
+
+
+@contextmanager
+def baseline_context(plan_stack, devices, name='baseline'):
+    """
+    Read every device once upon entering and exiting the context.
+
+    The readings are designated for a separate event stream named 'baseline'
+    by default.
+
+    Parameters
+    ----------
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
+    devices : collection
+        collection of Devices to read
+    name : string, optional
+        name for event stream; by default, 'baseline'
+    """
+    with event_context(plan_stack, name=name):
+        plan_stack.append(trigger_and_read(devices))
+    yield
+    with event_context(plan_stack, name=name):
+        plan_stack.append(trigger_and_read(devices))
+
+
+def trigger_and_read(devices):
+    """
+    Trigger and read a list of detectors.
+
+    Parameters
+    ----------
+    devices : iterable
+        devices to trigger (if they have a trigger method) and then read
+
+    Yields
+    ------
+    msg : Msg
+        messages to 'trigger', 'wait' and 'read'
+    """
+    devices = separate_devices(devices)  # remove redundant entries
+    grp = _short_uid('trigger')
+    for obj in separate_devices(devices):
+        if hasattr(obj, 'trigger'):
+            yield Msg('trigger', obj, block_group=grp)
+    yield Msg('wait', None, grp)
+    for obj in devices:
+        yield Msg('read', obj)
+
+
+def broadcast_msg(command, objs, *args, **kwargs):
+    """
+    Generate many copies of a mesasge, applying it to a list of devices.
+
+    Parameters
+    ----------
+    command : string
+    devices : iterable
+    *args
+        args for message
+    **kwargs
+        kwargs for message
+
+    Yields
+    ------
+    msg : Msg
+    """
+    return_vals = []
+    for o in objs:
+        ret = yield Msg(command, o, *args, **kwargs)
+        return_vals.append(ret)
+
+    return return_vals
+
+
+def repeater(n, gen_func, *args, **kwargs):
+    """
+    Generate n chained copies of the messages from gen_func
+
+    Parameters
+    ----------
+    n : int
+        total number of repetitions
+    gen_func : callable
+        returns generator instance
+    *args
+        args for gen_func
+    **kwargs
+        kwargs for gen_func
+
+    Yields
+    ------
+    msg : Msg
+    """
+    it = range
+    if n is None:
+        n = 0
+        it = itertools.count
+
+    for j in it(n):
+        yield from gen_func(*args, **kwargs)
+
+
+def caching_repeater(n, plan):
+    """
+    Generate n chained copies of the messages in a plan.
+
+    This is different from ``repeater`` above because it takes in a
+    generator or iterator, not a function that returns one.
+
+    Parameters
+    ----------
+    n : int
+        total number of repetitions
+    plan : iterable
+
+    Yields
+    ------
+    msg : Msg
+    """
+    lst_plan = list(plan)
+    for j in range(n):
+        yield from (m for m in lst_plan)
+
+
+@planify
+def count(detectors, num=1, delay=None, *, md=None):
+    """
+    Take one or more readings from detectors.
 
     Parameters
     ----------
@@ -133,88 +735,69 @@ class Count(PlanBase):
         list of 'readable' objects
     num : integer, optional
         number of readings to take; default is 1
-    delay : float
+    delay : iterable or scalar, optional
         time delay between successive readings; default is 0
+    md : dict, optional
+        metadata
 
-    Examples
-    --------
-    Count three detectors.
-
-    >>> c = Count([det1, det2, det3])
-    >>> RE(c)
-
-    Count them five times with a one-second delay between readings.
-
-    >>> c = Count([det1, det2, det3], 5, 1)
-    >>> RE(c)
+    Note
+    ----
+    If ``delay`` is an iterable, it must have at least ``num`` entries or the
+    plan will raise a ``StopIteration`` error.
     """
-    _fields = ['detectors', 'num', 'delay']
+    if md is None:
+        md = {}
+    md.update({'detectors': [det.name for det in detectors]})
+    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num}
 
-    def __init__(self, detectors, num=1, delay=0,
-                 pre_run=None, post_run=None):
-        self.detectors = detectors
-        self.num = num
-        self.delay = delay
-        self.pre_run = pre_run
-        self.post_run = post_run
-        self._md = {}
-        self.configuration = {}
-        self.flyers = []
+    if num is None:
+        counter = itertools.count()  # run forever, until interrupted
+    else:
+        counter = range(num)
 
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors}
+    # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
+    if not isinstance(delay, Iterable):
+        delay = itertools.repeat(delay)
+    else:
+        delay = iter(delay)
 
-    def _gen(self):
-        if self.num is None:
-            # Count(num=None) runs forever, awaiting user interruption.
-            while True:
-                yield from self._one_count()
-        else:
-            for _ in range(self.num):
-                yield from self._one_count()
+    plan_stack = deque()
+    with stage_context(plan_stack, detectors):
+        with run_context(plan_stack, md):
+            for _ in counter:
+                plan_stack.append(single_gen(Msg('checkpoint')))
+                with event_context(plan_stack):
+                    plan_stack.append(trigger_and_read(detectors))
+                d = next(delay)
+                if d is not None:
+                    plan_stack.append(single_gen(Msg('sleep', None, d)))
+    return plan_stack
 
-    def _one_count(self):
-        # This is broken out in a separate method so we can loop
-        # over it in different ways in _gen, above.
-        dets = separate_devices(self.detectors)
+
+@planify
+def one_1d_step(detectors, motor, step):
+    """
+    Inner loop of a 1D step scan
+    
+    This is the default function for ``per_step`` param in 1D plans.
+    """
+    def move():
+        grp = _short_uid('set')
         yield Msg('checkpoint')
-        yield Msg('create', None, name='primary')
-        for det in dets:
-            yield Msg('trigger', det, block_group='A')
-        yield Msg('wait', None, 'A')
-        for det in dets:
-            yield Msg('read', det)
-        yield Msg('save')
-        yield Msg('sleep', None, self.delay)
+        yield Msg('set', motor, step, block_group=grp)
+        yield Msg('wait', None, grp)
+
+    plan_stack = deque()
+    plan_stack.append(move())
+    with event_context(plan_stack):
+        plan_stack.append(trigger_and_read(list(detectors) + [motor]))
+    return plan_stack
 
 
-class Plan1D(PlanBase):
-    "Use AbsListScanPlan or DeltaListScanPlan. Subclasses must define _abs_steps."
-    _fields = ['detectors', 'motor', 'steps']
-
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors, 'motors': [self.motor]}
-
-    def _gen(self):
-        dets = separate_devices(self.detectors)
-        for step in self._abs_steps:
-            yield Msg('checkpoint')
-            yield Msg('set', self.motor, step, block_group='A')
-            yield Msg('wait', None, 'A')
-            yield Msg('create', None, name='primary')
-            for det in dets:
-                yield Msg('trigger', det, block_group='B')
-            yield Msg('wait', None, 'B')
-            for det in separate_devices(dets + [self.motor]):
-                yield Msg('read', det)
-            yield Msg('save')
-
-
-class AbsListScanPlan(Plan1D):
+@planify
+def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
-    Absolute scan over one variable in user-specified steps
+    Scan over one variable in steps.
 
     Parameters
     ----------
@@ -224,15 +807,35 @@ class AbsListScanPlan(Plan1D):
         any 'setable' object (motor, temp controller, etc.)
     steps : list
         list of positions
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature:
+        ``f(detectors, motor, step) -> plan (a generator) 
+    md : dict, optional
+        metadata
     """
-    @property
-    def _abs_steps(self):
-        return self.steps
+    if md is None:
+        md = {}
+    md.update({'detectors': [det.name for det in detectors],
+               'motors': [motor.name]})
+    md['plan_args'] = {'detectors': list(map(repr, detectors)),
+                       'motor': repr(motor), 'steps': steps,
+                       'per_step': repr(per_step)}
+    if per_step is None:
+        per_step = one_1d_step
+
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + [motor]):
+        with run_context(plan_stack, md):
+            for step in steps:
+                plan_stack.append(per_step(detectors, motor, step))
+    return plan_stack
 
 
-class DeltaListScanPlan(Plan1D):
+@planify
+def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
-    Delta (relative) scan over one variable in user-specified steps
+    Scan over one variable in steps relative to current position.
 
     Parameters
     ----------
@@ -242,55 +845,23 @@ class DeltaListScanPlan(Plan1D):
         any 'setable' object (motor, temp controller, etc.)
     steps : list
         list of positions relative to current position
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)``
+    md : dict, optional
+        metadata
     """
-
-    @property
-    def init_pos(self):
-        "None unless a scan is running"
-        return getattr(self, '_init_pos', None)
-
-    def _pre(self):
-        "Get current position for the motor."
-        self._init_pos = scalar_heuristic(self.motor)
-        self._md['init_pos'] = self.init_pos
-        self._abs_steps = np.asarray(self.steps) + self._init_pos
-        yield from super()._pre()
-
-    def logdict(self):
-        logdict = super().logdict()
-        try:
-            init_pos = self.init_pos
-        except AttributeError:
-            raise RuntimeError("Trying to create an olog entry for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        logdict['init_pos'] = init_pos
-        return logdict
-
-    def _call_str(self):
-
-        call_str = ["{motor!r}.set({init_pos})", ]
-        call_str.extend(super()._call_str())
-        return call_str
-
-    def _post(self):
-        yield from super()._post()
-        try:
-            init_pos = self.init_pos
-            delattr(self, '_init_pos')
-            del self._md['init_pos']
-        except AttributeError:
-            raise RuntimeError("Trying to run _post code for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        # Return the motor to its original position.
-        yield Msg('set', self.motor, init_pos, block_group='A')
-        yield Msg('wait', None, 'A')
+    # TODO read initial positions (redundantly) so they can be put in md here
+    plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
+    plan = relative_set(plan)  # re-write trajectory as relative
+    plan = reset_positions(plan)  # return motors to starting pos
+    return [plan]
 
 
-class AbsScanPlan(AbsListScanPlan):
+@planify
+def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
-    Absolute scan over one variable in equally spaced steps
+    Scan over one variable in equally spaced steps.
 
     Parameters
     ----------
@@ -304,27 +875,38 @@ class AbsScanPlan(AbsListScanPlan):
         ending position of motor
     num : int
         number of steps
-
-    Examples
-    --------
-    Scan motor1 from 0 to 1 in ten steps.
-
-    >>> my_plan = AbsScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_plan)
-    # Adjust a Parameter and run again.
-    >>> my_plan.num = 100
-    >>> RE(my_plan)
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)``
+    md : dict, optional
+        metadata
     """
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    if md is None:
+        md = {}
+    md.update({'detectors': [det.name for det in detectors],
+               'motors': [motor.name]})
+    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num,
+                       'start': start, 'stop': stop,
+                       'per_step': repr(per_step)}
 
-    @property
-    def steps(self):
-        return np.linspace(self.start, self.stop, self.num)
+    if per_step is None:
+        per_step = one_1d_step
+
+    steps = np.linspace(start, stop, num)
+
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + [motor]):
+        with run_context(plan_stack, md):
+            for step in steps:
+                plan_stack.append(per_step(detectors, motor, step))
+    return plan_stack
 
 
-class LogAbsScanPlan(AbsListScanPlan):
+@planify
+def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
+                  md=None):
     """
-    Absolute scan over one variable in log-spaced steps
+    Scan over one variable in equally spaced steps relative to current positon.
 
     Parameters
     ----------
@@ -338,27 +920,23 @@ class LogAbsScanPlan(AbsListScanPlan):
         ending position of motor
     num : int
         number of steps
-
-    Examples
-    --------
-    Scan motor1 from 0 to 10 in ten log-spaced steps.
-
-    >>> my_plan = LogAbsScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_plan)
-    # Adjust a Parameter and run again.
-    >>> my_plan.num = 100
-    >>> RE(my_plan)
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)``
+    md : dict, optional
+        metadata
     """
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
+    # TODO read initial positions (redundantly) so they can be put in md here
+    plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
+    plan = relative_set(plan, [motor])  # re-write trajectory as relative
+    plan = reset_positions(plan, [motor])  # return motors to starting pos
+    return [plan]
 
-    @property
-    def steps(self):
-        return np.logspace(self.start, self.stop, self.num)
 
-
-class DeltaScanPlan(DeltaListScanPlan):
+@planify
+def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
-    Delta (relative) scan over one variable in equally spaced steps
+    Scan over one variable in log-spaced steps.
 
     Parameters
     ----------
@@ -372,27 +950,38 @@ class DeltaScanPlan(DeltaListScanPlan):
         ending position of motor
     num : int
         number of steps
-
-    Examples
-    --------
-    Scan motor1 from 0 to 1 in ten steps.
-
-    >>> my_plan = DeltaScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_plan)
-    # Adjust a Parameter and run again.
-    >>> my_plan.num = 100
-    >>> RE(my_plan)
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)``
+    md : dict, optional
+        metadata
     """
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
+    if md is None:
+        md = {}
+    md.update({'detectors': [det.name for det in detectors],
+               'motors': [motor.name]})
+    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num,
+                       'start': start, 'stop': stop,
+                       'per_step': repr(per_step)}
 
-    @property
-    def steps(self):
-        return np.linspace(self.start, self.stop, self.num)
+    if per_step is None:
+        per_step = one_1d_step
+
+    steps = np.logspace(start, stop, num)
+
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + [motor]):
+        with run_context(plan_stack, md):
+            for step in steps:
+                plan_stack.append(per_step(detectors, motor, step))
+    return plan_stack
 
 
-class LogDeltaScanPlan(DeltaListScanPlan):
+@planify
+def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
+                      md=None):
     """
-    Delta (relative) scan over one variable in log-spaced steps
+    Scan over one variable in log-spaced steps relative to current position.
 
     Parameters
     ----------
@@ -406,54 +995,67 @@ class LogDeltaScanPlan(DeltaListScanPlan):
         ending position of motor
     num : int
         number of steps
-
-    Examples
-    --------
-    Scan motor1 from 0 to 10 in ten log-spaced steps.
-
-    >>> my_plan = LogDeltaScanPlan([det1, det2], motor, 0, 1, 10)
-    >>> RE(my_plan)
-    # Adjust a Parameter and run again.
-    >>> my_plan.num = 100
-    >>> RE(my_plan)
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)``
+    md : dict, optional
+        metadata
     """
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']  # override super
+    # TODO read initial positions (redundantly) so they can be put in md here
+    plan = log_scan(detectors, motor, start, stop, num, per_step=per_step,
+                    md=md)
+    plan = relative_set(plan, [motor])  # re-write trajectory as relative
+    plan = reset_positions(plan, [motor])  # return motors to starting pos
+    return [plan]
 
-    @property
-    def steps(self):
-        return np.logspace(self.start, self.stop, self.num)
 
+@planify
+def adaptive_scan(detectors, target_field, motor, start, stop,
+                  min_step, max_step, target_delta, backstep,
+                  threshold=0.8, *, md=None):
+    """
+    Scan over one variable with adaptively tuned step size.
 
-class _AdaptivePlanBase(PlanBase):
-    _fields = ['detectors', 'target_field', 'motor', 'start', 'stop',
-               'min_step', 'max_step', 'target_delta', 'backstep']
-    THRESHOLD = 0.8  # threshold for going backward and rescanning a region.
-
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors, 'motors': [self.motor]}
-
-    def _gen(self):
-        start = self.start + self._init_pos
-        stop = self.stop + self._init_pos
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    target_field : string
+        data field whose output is the focus of the adaptive tuning
+    motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    start : float
+        starting position of motor
+    stop : float
+        ending position of motor
+    min_step : float
+        smallest step for fast-changing regions
+    max_step : float
+        largest step for slow-chaning regions
+    target_delta : float
+        desired fractional change in detector signal between steps
+    backstep : bool
+        whether backward steps are allowed -- this is concern with some motors
+    threshold : float, optional
+        threshold for going backward and rescanning a region, default is 0.8
+    md : dict, optional
+        metadata
+    """
+    def core():
         next_pos = start
-        step = (self.max_step - self.min_step) / 2
-
+        step = (max_step - min_step) / 2
         past_I = None
         cur_I = None
         cur_det = {}
-        motor = self.motor
-        dets = separate_devices(self.detectors)
-        target_field = self.target_field
         while next_pos < stop:
             yield Msg('checkpoint')
             yield Msg('set', motor, next_pos)
             yield Msg('wait', None, 'A')
             yield Msg('create', None, name='primary')
-            for det in dets:
+            for det in detectors:
                 yield Msg('trigger', det, block_group='B')
             yield Msg('wait', None, 'B')
-            for det in separate_devices(dets + [self.motor]):
+            for det in separate_devices(detectors + [motor]):
                 cur_det = yield Msg('read', det)
                 if target_field in cur_det:
                     cur_I = cur_det[target_field]['value']
@@ -469,13 +1071,12 @@ class _AdaptivePlanBase(PlanBase):
 
             slope = dI / step
             if slope:
-                new_step = np.clip(self.target_delta / slope, self.min_step,
-                                   self.max_step)
+                new_step = np.clip(target_delta / slope, min_step, max_step)
             else:
-                new_step = np.min([step * 1.1, self.max_step])
+                new_step = np.min([step * 1.1, max_step])
 
             # if we over stepped, go back and try again
-            if self.backstep and (new_step < step * self.THRESHOLD):
+            if backstep and (new_step < step * threshold):
                 next_pos -= step
                 step = new_step
             else:
@@ -483,10 +1084,19 @@ class _AdaptivePlanBase(PlanBase):
                 step = 0.2 * new_step + 0.8 * step
             next_pos += step
 
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + [motor]):
+        with run_context(plan_stack, md):
+            plan_stack.append(core())
+    return plan_stack
 
-class AdaptiveAbsScanPlan(_AdaptivePlanBase):
+
+@planify
+def relative_adaptive_scan(detectors, target_field, motor, start, stop,
+                           min_step, max_step, target_delta, backstep,
+                           threshold=0.8, *, md=None):
     """
-    Absolute scan over one variable with adaptively tuned step size
+    Relative scan over one variable with adaptively tuned step size.
 
     Parameters
     ----------
@@ -508,357 +1118,95 @@ class AdaptiveAbsScanPlan(_AdaptivePlanBase):
         desired fractional change in detector signal between steps
     backstep : bool
         whether backward steps are allowed -- this is concern with some motors
+    threshold : float, optional
+        threshold for going backward and rescanning a region, default is 0.8
+    md : dict, optional
+        metadata
     """
-    @property
-    def _init_pos(self):
-        # facilitate code-sharing with AdaptiveDeltaScanPlan
-        return 0
+    plan = adaptive_scan(detectors, target_field, motor, start, stop,
+                         min_step, max_step, target_delta, backstep,
+                         threshold, md=md)
+    plan = relative_set(plan, [motor])  # re-write trajectory as relative
+    plan = reset_positions(plan, [motor])  # return motors to starting pos
+    return [plan]
 
 
-class AdaptiveDeltaScanPlan(_AdaptivePlanBase):
+@planify
+def one_nd_step(detectors, step, pos_cache):
     """
-    Delta (relative) scan over one variable with adaptively tuned step size
+    Inner loop of an N-dimensional step scan
+
+    This is the default function for ``per_step`` param`` in ND plans.
+
+    Parameters
+    ----------
+    detectors : iterable
+        devices to read
+    step : dict
+        mapping motors to positions in this step
+    pos_cache : dict
+        mapping motors to their last-set positions
+    """
+    def move():
+        yield Msg('checkpoint')
+        grp = _short_uid('set')
+        for motor, pos in step.items():
+            if pos == pos_cache[motor]:
+                # This step does not move this motor.
+                continue
+            yield Msg('set', motor, pos, block_group=grp)
+            pos_cache[motor] = pos
+        yield Msg('wait', None, grp)
+
+    motors = step.keys()
+    plan_stack = deque()
+    plan_stack.append(move())
+    with event_context(plan_stack):
+        plan_stack.append(trigger_and_read(list(detectors) + list(motors)))
+    return plan_stack
+
+
+@planify
+def scan_nd(detectors, cycler, *, per_step=None, md=None):
+    """
+    Scan over an arbitrary N-dimensional trajectory.
 
     Parameters
     ----------
     detectors : list
-        list of 'readable' objects
-    target_field : string
-        data field whose output is the focus of the adaptive tuning
-    motor : object
-        any 'setable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
-    min_step : float
-        smallest step for fast-changing regions
-    max_step : float
-        largest step for slow-chaning regions
-    target_delta : float
-        desired fractional change in detector signal between steps
-    backstep : bool
-        whether backward steps are allowed -- this is concern with some motors
+    cycler : Cycler
+        list of dictionaries mapping motors to positions
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
-    @property
-    def init_pos(self):
-        "None unless a scan is running"
-        return getattr(self, '_init_pos', None)
+    if md is None:
+        md = {}
+    md.update({'detectors': [det.name for det in detectors],
+               'motors': [motor.name for motor in cycler.keys]})
+    md['plan_args'] = {'detectors': list(map(repr, detectors)),
+                       'cycler': repr(cycler)}
 
-    def _pre(self):
-        self._init_pos = scalar_heuristic(self.motor)
-        self._md['init_pos'] = self.init_pos
-        yield from super()._pre()
+    if per_step is None:
+        per_step = one_nd_step
+    pos_cache = defaultdict(lambda: None)  # where last position is stashed
+    motors = list(cycler.keys)
 
-    def _post(self):
-        yield from super()._post()
-        try:
-            init_pos = self.init_pos
-            delattr(self, '_init_pos')
-            del self._md['init_pos']
-        except AttributeError:
-            raise RuntimeError("Trying to run _post code for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        # Return the motor to its original position.
-        yield Msg('set', self.motor, init_pos, block_group='A')
-        yield Msg('wait', None, 'A')
+    plan_stack = deque()
+    with stage_context(plan_stack, list(detectors) + motors):
+        with run_context(plan_stack, md):
+            for step in list(cycler):
+                plan_stack.append(per_step(detectors, step, pos_cache))
+    return plan_stack
 
 
-class Center(PlanBase):
-    RANGE = 2  # in sigma, first sample this range around the guess
-    RANGE_LIMIT = 6  # in sigma, never sample more than this far from the guess
-    NUM_SAMPLES = 10
-    NUM_SAMPLES = 10
-    # We define _fields not for Struct, but for metadata in PlanBase.md.
-    _fields = ['detectors', 'target_field', 'motor', 'initial_center',
-               'initial_width', 'tolerance', 'output_mutable']
-
-    def __init__(self, detectors, target_field, motor, initial_center,
-                 initial_width, tolerance=0.1, output_mutable=None,
-                 pre_run=None, post_run=None):
-        """
-        Attempts to find the center of a peak by moving a motor.
-
-        This will leave the motor at what it thinks is the center.
-
-        The motion is clipped to initial center +/- 6 initial width
-
-        Works by :
-
-        - sampling 10 points around the initial center
-        - fitting to Gaussian + line
-        - moving to the center of the Gaussian
-        - while |old center - new center| > tolerance
-        - taking a measurement
-        - re-run fit
-        - move to new center
-
-        Parameters
-        ----------
-        detetectors : Reader
-        target_field : string
-            data field whose output is the focus of the adaptive tuning
-        motor : Mover
-        initial_center : number
-            Initial guess at where the center is
-        initial_width : number
-            Initial guess at the width
-        tolerance : number, optional
-            Tolerance to declare good enough on finding the center. Default 0.01.
-        output_mutable : dict-like, optional
-            Must have 'update' method.  Mutable object to provide a side-band to
-            return fitting parameters + data points
-        """
-        try:
-            from lmfit.models import GaussianModel, LinearModel
-        except ImportError:
-            raise ImportError("This scan requires the package lmfit.")
-        self.detectors = separate_devices(detectors)
-        self.target_field = target_field
-        self.motor = motor
-        self.initial_center = initial_center
-        self.initial_width = initial_width
-        self.output_mutable = output_mutable
-        self.tolerance = tolerance
-        self.pre_run = pre_run
-        self.post_run = post_run
-        self._md = {}
-        self.configuration = {}
-        self.flyers = []
-
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors, 'motors': [self.motor]}
-
-    @property
-    def min_cen(self):
-        return self.initial_center - self.RANGE_LIMIT * self.initial_width
-
-    @property
-    def max_cen(self):
-        return self.initial_center + self.RANGE_LIMIT * self.initial_width
-
-    def _gen(self):
-        # We checked in the __init__ that this import works.
-        from lmfit.models import GaussianModel, LinearModel
-        # For thread safety (paranoia) make copies of stuff
-        dets = separate_devices(self.detectors)
-        target_field = self.target_field
-        motor = self.motor
-        initial_center = self.initial_center
-        initial_width = self.initial_width
-        tol = self.tolerance
-        min_cen = self.min_cen
-        max_cen = self.max_cen
-        seen_x = deque()
-        seen_y = deque()
-        for x in np.linspace(initial_center - self.RANGE * initial_width,
-                             initial_center + self.RANGE * initial_width,
-                             self.NUM_SAMPLES, endpoint=True):
-            yield Msg('set', motor, x)
-            ret_mot = yield Msg('read', motor)
-            yield Msg('create', None, name='primary')
-            key, = ret_mot.keys()
-            seen_x.append(ret_mot[key]['value'])
-            for det in dets:
-                yield Msg('trigger', det, block_group='B')
-            yield Msg('wait', None, 'B')
-            for det in separate_devices(dets + [motor]):
-                ret_det = yield Msg('read', det)
-                if target_field in ret_det:
-                    seen_y.append(ret_det[target_field]['value'])
-            yield Msg('save')
-
-        model = GaussianModel() + LinearModel()
-        guesses = {'amplitude': np.max(seen_y),
-                'center': initial_center,
-                'sigma': initial_width,
-                'slope': 0, 'intercept': 0}
-        while True:
-            x = np.asarray(seen_x)
-            y = np.asarray(seen_y)
-            res = model.fit(y, x=x, **guesses)
-            old_guess = guesses
-            guesses = res.values
-            if np.abs(old_guess['center'] - guesses['center']) < tol:
-                break
-            next_cen = np.clip(guesses['center'] +
-                            np.random.randn(1) * guesses['sigma'],
-                            min_cen, max_cen)
-            yield Msg('set', motor, next_cen)
-            ret_mot = yield Msg('read', motor)
-            yield Msg('create', None, name='primary')
-            key, = ret_mot.keys()
-            seen_x.append(ret_mot[key]['value'])
-            for det in dets:
-                yield Msg('trigger', det, block_group='B')
-            yield Msg('wait', None, 'B')
-            for det in separate_devices(dets + [motor]):
-                ret_det = yield Msg('read', det)
-                if target_field in ret_det:
-                    seen_y.append(ret_det[target_field]['value'])
-            yield Msg('save')
-
-        yield Msg('set', motor, np.clip(guesses['center'], min_cen, max_cen))
-
-        if self.output_mutable is not None:
-            self.output_mutable.update(guesses)
-            self.output_mutable['x'] = np.array(seen_x)
-            self.output_mutable['y'] = np.array(seen_y)
-            self.output_mutable['model'] = res
-
-
-class PlanND(PlanBase):
-    _fields = ['detectors', 'cycler']
-
-    @property
-    def motors(self):
-        return self.cycler.keys
-
-    @property
-    def _objects(self):
-        return {'detectors': self.detectors, 'motors': self.motors}
-
-    def _gen(self):
-        self._last_set_point = {m: None for m in self.motors}
-        dets = separate_devices(self.detectors)
-        for step in list(self.cycler):
-            yield Msg('checkpoint')
-            for motor, pos in step.items():
-                if pos == self._last_set_point[motor]:
-                    # This step does not move this motor.
-                    continue
-                yield Msg('set', motor, pos, block_group='A')
-                self._last_set_point[motor] = pos
-
-            yield Msg('wait', None, 'A')
-            yield Msg('create', None, name='primary')
-
-            for det in dets:
-                yield Msg('trigger', det, block_group='B')
-            yield Msg('wait', None, 'B')
-            for det in separate_devices(dets + list(self.motors)):
-                yield Msg('read', det)
-            yield Msg('save')
-
-
-class _OuterProductPlanBase(PlanND):
-    # We define _fields not for Struct, but for metadata in PlanBase.md.
-    _fields = ['detectors', 'args']
-    _derived_fields = ['motors', 'shape', 'num', 'extents', 'snaking']
-
-    # Overriding PlanND is the only way to do this; we cannot build the cycler
-    # until we measure the initial positions at the beginning of the run.
-    @property
-    def motors(self):
-        return self._motors
-
-    def __init__(self, detectors, *args, pre_run=None, post_run=None):
-        args = list(args)
-        # The first (slowest) axis is never "snaked." Insert False to
-        # make it easy to iterate over the chunks or args..
-        args.insert(4, False)
-        if len(args) % 5 != 0:
-            raise ValueError("wrong number of positional arguments")
-        self.detectors = detectors
-        self._motors = []
-        self._args = args
-        shape = []
-        extent = []
-        snaking = []
-        for motor, start, stop, num, snake in chunked(self.args, 5):
-            self._motors.append(motor)
-            shape.append(num)
-            extent.append([start, stop])
-            snaking.append(snake)
-        self.shape = tuple(shape)
-        self.extents = tuple(extent)
-        self.snaking = tuple(snaking)
-        self.pre_run = pre_run
-        self.post_run = post_run
-        self._md = {'shape': self.shape, 'extents': self.extents,
-                    'snaking': self.snaking, 'num': self.num}
-        self.configuration = {}
-        self.flyers = []
-
-    @property
-    def cycler(self):
-        # Build a Cycler for PlanND.
-        cyclers = []
-        snake_booleans = []
-        for motor, start, stop, num, snake in chunked(self.args, 5):
-            init_pos = self._init_pos[motor]
-            steps = init_pos + np.linspace(start, stop, num=num, endpoint=True)
-            c = cycler(motor, steps)
-            cyclers.append(c)
-            snake_booleans.append(snake)
-        return snake_cyclers(cyclers, snake_booleans)
-
-    @property
-    def num(self):
-        # We could do len(cycler) but we dont know init_pos yet,
-        # so the cycler cannot be computed.
-        nums = [num for motor, start, stop, num, snake
-                in chunked(self.args, 5)]
-        total_steps = functools.reduce(operator.mul, nums)
-        return total_steps
-
-    @property
-    def args(self):
-        # Do this so that args is not settable. Too complex to allow updates.
-        return self._args
-
-
-class _InnerProductPlanBase(PlanND):
-    # We define _fields not for Struct, but for metadata in PlanBase.md.
-    _fields = ['detectors', 'num', 'args']
-
-    # Overriding PlanND is the only way to do this; we cannot build the cycler
-    # until we measure the initial positions at the beginning of the run.
-    @property
-    def motors(self):
-        return self._motors
-
-    def __init__(self, detectors, num, *args, pre_run=None, post_run=None):
-        if len(args) % 3 != 0:
-            raise ValueError("wrong number of positional arguments")
-        self.detectors = detectors
-        self.num = num
-        self._args = args
-        self._motors = []
-        extents = []
-        for motor, start, stop, in chunked(self.args, 3):
-            self._motors.append(motor)
-            extents.append([start, stop])
-        self.extents = tuple(extents)
-        self.pre_run = pre_run
-        self.post_run = post_run
-        self._md = {'extents': self.extents}
-        self.configuration = {}
-        self.flyers = []
-
-    @property
-    def args(self):
-        # Do this so that args is not settable. Too complex to allow updates.
-        return self._args
-
-    @property
-    def cycler(self):
-        # Build a Cycler for PlanND.
-        cyclers = []
-        for motor, start, stop, in chunked(self.args, 3):
-            init_pos = self._init_pos[motor]
-            steps = init_pos + np.linspace(start, stop, num=self.num,
-                                           endpoint=True)
-            c = cycler(motor, steps)
-            cyclers.append(c)
-        return functools.reduce(operator.add, cyclers)
-
-
-class InnerProductAbsScanPlan(_InnerProductPlanBase):
+@planify
+def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
-    Absolute scan over one multi-motor trajectory
+    Scan over one multi-motor trajectory.
 
     Parameters
     ----------
@@ -867,64 +1215,87 @@ class InnerProductAbsScanPlan(_InnerProductPlanBase):
     num : integer
         number of steps
     *args
-        patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
+        patterned like (``motor1, start1, stop1,`` ...,
+                        ``motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
+    if len(args) % 3 != 0:
+        raise ValueError("wrong number of positional arguments")
+    cyclers = []
+    for motor, start, stop, in chunked(args, 3):
+        steps = np.linspace(start, stop, num=num, endpoint=True)
+        c = cycler(motor, steps)
+        cyclers.append(c)
+    full_cycler = functools.reduce(operator.add, cyclers)
 
-    @property
-    def _init_pos(self):
-        "Makes code re-use between Delta and Abs varieties easier"
-        return defaultdict(lambda: 0)
+    plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
+    return [plan]
 
 
-class InnerProductDeltaScanPlan(_InnerProductPlanBase):
+@planify
+def outer_product_scan(detectors, *args, per_step=None, md=None):
     """
-    Delta (relative) scan over one multi-motor trajectory
+    Scan over a mesh; each motor is on an independent trajectory.
 
     Parameters
     ----------
     detectors : list
         list of 'readable' objects
-    num : integer
-        number of steps
     *args
-        patterned like ``motor1, start1, stop1,`` ..., ``motorN, startN, stopN``
-        Motors can be any 'setable' object (motor, temp controller, etc.)
+        patterned like (``motor1, start1, stop1, num1,```
+                        ``motor2, start2, stop2, num2, snake2,``
+                        ``motor3, start3, stop3, num3, snake3,`` ...
+                        ``motorN, startN, stopN, numN, snakeN``)
+
+        The first motor is the "slowest", the outer loop. For all motors
+        except the first motor, there is a "snake" argument: a boolean
+        indicating whether to following snake-like, winding trajectory or a
+        simple left-to-right trajectory.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
+    args = list(args)
+    # The first (slowest) axis is never "snaked." Insert False to
+    # make it easy to iterate over the chunks or args..
+    args.insert(4, False)
+    if len(args) % 5 != 0:
+        raise ValueError("wrong number of positional arguments")
+    shape = []
+    extents = []
+    snaking = []
+    cyclers = []
+    for motor, start, stop, num, snake in chunked(args, 5):
+        shape.append(num)
+        extents.append([start, stop])
+        snaking.append(snake)
+        steps = np.linspace(start, stop, num=num, endpoint=True)
+        c = cycler(motor, steps)
+        cyclers.append(c)
+    full_cycler = snake_cyclers(cyclers, snaking)
 
-    @property
-    def init_pos(self):
-        "None unless a scan is running"
-        return getattr(self, '_init_pos', None)
+    if md is None:
+        md = {}
+    md.update({'shape': tuple(shape), 'extents': tuple(extents),
+               'snaking': tuple(snaking), 'num': len(full_cycler)})
 
-    def _pre(self):
-        "Get current position for each motor."
-        self._init_pos = {}
-        self._md['init_pos'] = {}
-        for motor, start, stop, in chunked(self.args, 3):
-            self._init_pos[motor] = scalar_heuristic(motor)
-            self._md['init_pos'][motor.name] = self.init_pos[motor]
-        yield from super()._pre()
-
-    def _post(self):
-        yield from super()._post()
-        try:
-            init_pos = self.init_pos
-            delattr(self, '_init_pos')
-            del self._md['init_pos']
-        except AttributeError:
-            raise RuntimeError("Trying to run _post code for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        # Return the motors to their original positions.
-        for motor, start, stop, in chunked(self.args, 3):
-            yield Msg('set', motor, init_pos[motor], block_group='A')
-        yield Msg('wait', None, 'A')
+    plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
+    return [plan]
 
 
-class OuterProductAbsScanPlan(_OuterProductPlanBase):
+@planify
+def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     """
-    Absolute scan over a mesh; each motor is on an independent trajectory
+    Scan over a mesh relative to current position.
 
     Parameters
     ----------
@@ -938,85 +1309,80 @@ class OuterProductAbsScanPlan(_OuterProductPlanBase):
         All other motors are followed by start, stop, num, snake where snake
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
+    plan = outer_product_scan(detectors, *args, per_step=per_step, md=md)
+    plan = relative_set(plan)  # re-write trajectory as relative
+    plan = reset_positions(plan)  # return motors to starting pos
+    return [plan]
 
-    @property
-    def _init_pos(self):
-        "Makes code re-use between Delta and Abs varieties easier"
-        return defaultdict(lambda: 0)
 
-
-class OuterProductDeltaScanPlan(_OuterProductPlanBase):
+@planify
+def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
-    Delta scan over a mesh; each motor is on an independent trajectory
+    Scan over one multi-motor trajectory relative to current position.
 
     Parameters
     ----------
     detectors : list
         list of 'readable' objects
+    num : integer
+        number of steps
     *args
-        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
-        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
+        patterned like (``motor1, start1, stop1,`` ...,
+                        ``motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
-        Notice that the first motor is followed by start, stop, num.
-        All other motors are followed by start, stop, num, snake where snake
-        is a boolean indicating whether to following snake-like, winding
-        trajectory or a simple left-to-right trajectory.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
     """
-
-    @property
-    def init_pos(self):
-        "None unless a scan is running"
-        return getattr(self, '_init_pos', None)
-
-    def _pre(self):
-        "Get current position for each motor."
-        self._init_pos = {}
-        self._md['init_pos'] = {}
-        for motor, start, stop, num, snake in chunked(self.args, 5):
-            self._init_pos[motor] = scalar_heuristic(motor)
-            self._md['init_pos'][motor.name] = self.init_pos[motor]
-        yield from super()._pre()
-
-    def _post(self):
-        # Return the motor to its original position.
-        yield from super()._post()
-        try:
-            init_pos = self.init_pos
-            delattr(self, '_init_pos')
-            del self._md['init_pos']
-        except AttributeError:
-            raise RuntimeError("Trying to run _post code for a DScan "
-                               "without running the _pre code to get "
-                               "the baseline position.")
-        for motor, start, stop, num, snake in chunked(self.args, 5):
-            yield Msg('set', motor, init_pos[motor], block_group='A')
-        yield Msg('wait', None, 'A')
+    plan = inner_product_scan(detectors, num, *args, per_step=per_step, md=md)
+    plan = relative_set(plan)  # re-write trajectory as relative
+    plan = reset_positions(plan)  # return motors to starting pos
+    return [plan]
 
 
-class Tweak(PlanBase):
+def tweak(detector, target_field, motor, step, *, md=None):
     """
     Move and motor and read a detector with an interactive prompt.
 
     Parameters
     ----------
-    detetector : Reader
+    detetector : Device
     target_field : string
         data field whose output is the focus of the adaptive tuning
-    motor : Mover
+    motor : Device
+    step : float
+        initial suggestion for step size
+    md : dict, optional
+        metadata
     """
-    _fields = ['detector', 'target_field', 'motor', 'step']
     prompt_str = '{0}, {1:.3}, {2}, ({3}) '
 
-    @property
-    def _objects(self):
-        return {'detectors': [self.detector], 'motors': [self.motor]}
+    if md is None:
+        md = {}
+    md.update({'detectors': [detector.name],
+               'motors': [motor.name]})
 
-    def _gen(self):
-        d = self.detector
-        target_field = self.target_field
-        motor = self.motor
-        step = self.step
+    d = detector
+    try:
+        from IPython.display import clear_output
+    except ImportError:
+        # Define a no-op for clear_output.
+        def clear_output(wait=False):
+            pass
+
+    def core():
+        nonlocal step
+
         while True:
             yield Msg('create', None, name='primary')
             ret_mot = yield Msg('read', motor)
@@ -1040,3 +1406,261 @@ class Tweak(PlanBase):
             clear_output(wait=True)
             # stackoverflow.com/a/12586667/380231
             print('\x1b[1A\x1b[2K\x1b[1A')
+
+    plan_stack = deque()
+    with stage_context(plan_stack, [detector, motor]):
+        with run_context(plan_stack, md):
+            plan_stack.append(core())
+    return plan_stack
+
+
+# The code below adds no new logic, but it wraps the generators above in
+# classes for an alternative interface that is more stateful.
+
+
+class Plan(Struct):
+    """
+    This is a base class for wrapping plan generators in a stateful class.
+
+    To create a new sub-class you need to over-ride two things:
+
+    - an ``__init__`` method *or* a class level ``_fields`` attribute which is
+      used to construct the init signature via meta-class magic
+    - a ``_gen`` method, which should return a generator of Msg objects
+
+    The class provides:
+
+    - state stored in attributes that are used to re-generate a plan generator
+      with the same parameters
+    - a hook for adding "flyable" objects to a plan
+    - attributes for adding subscriptions and subscription factory functions
+    """
+    subs = Subs({})
+    sub_factories = Subs({})
+
+    def __iter__(self):
+        """
+        Return an iterable of messages.
+        """
+        return self()
+
+    def __call__(self, **kwargs):
+        """
+        Return an iterable of messages.
+
+        Any keyword arguments override present settings.
+        """
+        subs = defaultdict(list)
+        update_sub_lists(subs, self.subs)
+        update_sub_lists(subs, apply_sub_factories(self.sub_factories, self))
+        flyers = getattr(self, 'flyers', [])
+
+        current_settings = {}
+        for key, val in kwargs.items():
+            current_settings[key] = getattr(self, key)
+            setattr(self, key, val)
+        try:
+            plan_stack = deque()
+            with subs_context(plan_stack, subs):
+                plan = self._gen()
+                plan_stack.append(fly_during(plan, flyers))
+                plan_stack.append(single_gen(Msg('checkpoint')))
+        finally:
+            for key, val in current_settings.items():
+                setattr(self, key, val)
+
+        for gen in plan_stack:
+            yield from gen
+
+    def _gen(self):
+        "Subclasses override this to provide the main plan content."
+        yield from []
+
+
+PlanBase = Plan  # back-compat
+
+
+class Count(Plan):
+    __doc__ = count.__doc__
+
+    def __init__(self, detectors, num=1, delay=0):
+        self.detectors = detectors
+        self.num = num
+        self.delay = delay
+        self.flyers = []
+
+    def _gen(self):
+        return count(self.detectors, self.num, self.delay)
+
+
+class ListScan(Plan):
+    _fields = ['detectors', 'motor', 'steps']
+    __doc__ = list_scan.__doc__
+
+    def _gen(self):
+        return list_scan(self.detectors, self.motor, self.steps)
+
+AbsListScanPlan = ListScan  # back-compat
+
+
+class RelativeListScan(Plan):
+    _fields = ['detectors', 'motor', 'steps']
+    __doc__ = relative_list_scan.__doc__
+
+    def _gen(self):
+        return relative_list_scan(self.detectors, self.motor, self.steps)
+
+DeltaListScanPlan = RelativeListScan  # back-compat
+
+
+class Scan(Plan):
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    __doc__ = scan.__doc__
+
+    def _gen(self):
+        return scan(self.detectors, self.motor, self.start, self.stop,
+                    self.num)
+
+AbsScanPlan = Scan  # back-compat
+
+
+class LogScan(Plan):
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    __doc__ = log_scan.__doc__
+
+    def _gen(self):
+        return log_scan(self.detectors, self.motor, self.start, self.stop,
+                        self.num)
+
+LogAbsScanPlan = LogScan  # back-compat
+
+
+class RelativeScan(Plan):
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    __doc__ = relative_scan.__doc__
+
+    def _gen(self):
+        return relative_scan(self.detectors, self.motor, self.start, self.stop,
+                             self.num)
+
+DeltaScanPlan = RelativeScan  # back-compat
+
+
+class RelativeLogScan(Plan):
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    __doc__ = relative_log_scan.__doc__
+
+    def _gen(self):
+        return relative_log_scan(self.detectors, self.motor, self.start,
+                                 self.stop, self.num)
+
+LogDeltaScanPlan = RelativeLogScan  # back-compat
+
+
+class AdaptiveScan(Plan):
+    _fields = ['detectors', 'target_field', 'motor', 'start', 'stop',
+               'min_step', 'max_step', 'target_delta', 'backstep',
+               'threshold']
+    __doc__ = adaptive_scan.__doc__
+
+    def __init__(self, detectors, target_field, motor, start, stop,
+                 min_step, max_step, target_delta, backstep,
+                 threshold=0.8):
+        self.detectors = detectors
+        self.target_field = target_field
+        self.motor = motor
+        self.start = start
+        self.stop = stop
+        self.min_step = min_step
+        self.max_step = max_step
+        self.target_delta = target_delta
+        self.backstep = backstep
+        self.threshold = threshold
+        self.flyers = []
+
+    def _gen(self):
+        return adaptive_scan(self.detectors, self.target_field, self.motor,
+                             self.start, self.stop, self.min_step,
+                             self.max_step, self.target_delta,
+                             self.backstep, self.threshold)
+
+AdaptiveAbsScanPlan = AdaptiveScan  # back-compat
+
+
+class RelativeAdaptiveScan(AdaptiveAbsScanPlan):
+    __doc__ = relative_adaptive_scan.__doc__
+
+    def _gen(self):
+        return relative_adaptive_scan(self.detectors, self.target_field,
+                                      self.motor, self.start, self.stop,
+                                      self.min_step, self.max_step,
+                                      self.target_delta, self.backstep,
+                                      self.threshold)
+
+AdaptiveDeltaScanPlan = RelativeAdaptiveScan  # back-compat
+
+
+class ScanND(PlanBase):
+    _fields = ['detectors', 'cycler']
+    __doc__ = scan_nd.__doc__
+
+    def _gen(self):
+        return scan_nd(self.detectors, self.cycler)
+
+PlanND = ScanND  # back-compat
+
+
+class InnerProductScan(Plan):
+    __doc__ = inner_product_scan.__doc__
+
+    def __init__(self, detectors, num, *args):
+        self.detectors = detectors
+        self.num = num
+        self.args = args
+        self.flyers = []
+
+    def _gen(self):
+        return inner_product_scan(self.detectors, self.num, *self.args)
+
+InnerProductAbsScanPlan = InnerProductScan  # back-compat
+
+
+class RelativeInnerProductScan(InnerProductScan):
+    __doc__ = relative_inner_product_scan.__doc__
+
+    def _gen(self):
+        return relative_inner_product_scan(self.detectors, self.num,
+                                           *self.args)
+
+InnerProductDeltaScanPlan = RelativeInnerProductScan  # back-compat
+
+
+class OuterProductScan(Plan):
+    __doc__ = outer_product_scan.__doc__
+
+    def __init__(self, detectors, *args):
+        self.detectors = detectors
+        self.args = args
+        self.flyers = []
+
+    def _gen(self):
+        return outer_product_scan(self.detectors, *self.args)
+
+OuterProductAbsScanPlan = OuterProductScan  # back-compat
+
+
+class RelativeOuterProductScan(OuterProductScan):
+    __doc__ = relative_outer_product_scan.__doc__
+
+    def _gen(self):
+        return relative_outer_product_scan(self.detectors, *self.args)
+
+OuterProductDeltaScanPlan = RelativeOuterProductScan  # back-compat
+
+
+class Tweak(Plan):
+    _fields = ['detector', 'target_field', 'motor', 'step']
+    __doc__ = tweak.__doc__
+
+    def _gen(self):
+        return tweak(self.detector, self.target_field, self.motor, self.step)
