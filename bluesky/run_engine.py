@@ -258,7 +258,7 @@ class RunEngine:
         # to provide special docstrings.
         self._lossless_dispatcher = Dispatcher()
 
-        loop.call_soon(self._check_for_trouble)
+        loop.call_soon(self._check_for_panic)
         loop.call_soon(self._check_for_signals)
 
     @property
@@ -274,6 +274,7 @@ class RunEngine:
         return self._run_start_uid is not None
 
     def _clear_run_cache(self):
+        "Clean up for a new run."
         self._run_start_uid = None
         self._metadata_per_run.clear()
         self._bundling = False
@@ -291,6 +292,7 @@ class RunEngine:
         self._block_groups.clear()
 
     def _clear_call_cache(self):
+        "Clean up for a new __call__ (which may encompass multiple runs)."
         self._metadata_per_call.clear()
         self._staged.clear()
         self._movable_objs_touched.clear()
@@ -312,12 +314,18 @@ class RunEngine:
         self._temp_callback_ids.clear()
 
     def reset(self):
+        """
+        Clean up caches and unsubscribe lossy subscriptions.
+
+        Lossless subscriptions are not unsubscribed.
+        """
         self._clear_run_cache()
         self._clear_call_cache()
         self.dispatcher.unsubscribe_all()
 
     @property
     def resumable(self):
+        "i.e., can the plan in progress by rewound"
         return self._msg_cache is not None
 
     @property
@@ -370,9 +378,9 @@ class RunEngine:
         If the panic occurred during a pause, the run can be resumed.
         """
         self._panic = False
-        # The cycle where _check_for_trouble schedules a future call to itself
+        # The cycle where _check_for_panic schedules a future call to itself
         # is broken when it raises a PanicError.
-        loop.call_later(0.1, self._check_for_trouble)
+        loop.call_later(0.1, self._check_for_panic)
 
     def request_pause(self, defer=False, name=None, callback=None):
         """
@@ -559,7 +567,7 @@ class RunEngine:
         return self._run_start_uids
 
     def resume(self):
-        """Resume a run from the last checkpoint.
+        """Resume a paused plan from the last checkpoint.
 
         Returns
         -------
@@ -645,7 +653,7 @@ class RunEngine:
 
     def abort(self, reason=''):
         """
-        Stop a running or paused scan and mark it as aborted.
+        Stop a running or paused plan and mark it as aborted.
         """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
@@ -658,6 +666,9 @@ class RunEngine:
             self._resume_event_loop()
 
     def stop(self):
+        """
+        Stop a running or paused plan, but mark it as successful (not aborted).
+        """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Stopping...")
@@ -668,6 +679,15 @@ class RunEngine:
 
     @asyncio.coroutine
     def _run(self):
+        """Pull messages from the plan, process them, send results back.
+
+        Upon exit, clean up.
+        - Call stop() on all objects that were 'set' or 'kickoff'.
+        - Try to collect any uncollected flyers.
+        - Try to unstage any devices left staged by the plan.
+        - Try to remove any monitoring subscriptions left on by the plan.
+        - If interrupting the middle of a run, try to emit a RunStop document.
+        """
         response = None
         self._reason = ''
         try:
@@ -755,6 +775,10 @@ class RunEngine:
                 except Exception:
                     logger.error("Failed to unstage %r", obj)
                 self._staged.remove(obj)
+            # Clear any uncleared monitoring callbacks.
+            for obj, cb in list(self._monitor_cbs.items()):
+                obj.clear_sub(cb)
+                del self._monitor_cbs[obj]
             sys.stdout.flush()
             # Emit RunStop if necessary.
             if self._run_is_open:
@@ -767,21 +791,15 @@ class RunEngine:
                     for task in asyncio.Task.all_tasks(loop):
                         task.cancel()
                     loop.stop()
-                    for obj, cb in list(self._monitor_cbs.items()):
-                        obj.clear_sub(cb)
-                        del self._monitor_cbs[obj]
                     self.state = 'idle'
                     raise
 
             for task in asyncio.Task.all_tasks(loop):
                 task.cancel()
             loop.stop()
-            for obj, cb in list(self._monitor_cbs.items()):
-                obj.clear_sub(cb)
-                del self._monitor_cbs[obj]
             self.state = 'idle'
 
-    def _check_for_trouble(self):
+    def _check_for_panic(self):
         if self.state.is_running:
             # Check for panic.
             if self._panic:
@@ -794,7 +812,7 @@ class RunEngine:
                                  "exit_status='fail'.")
                 self._exception = exc  # will stop _run coroutine
 
-        loop.call_later(0.1, self._check_for_trouble)
+        loop.call_later(0.1, self._check_for_panic)
 
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
@@ -937,6 +955,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _read(self, msg):
+        """
+        Add a reading to the open event bundle.
+
+        Expected message object is:
+
+            Msg('read', obj)
+        """
         obj = msg.obj
         self._objs_read.append(obj)
         if obj not in self._describe_cache:
@@ -968,7 +993,21 @@ class RunEngine:
 
     @asyncio.coroutine
     def _monitor(self, msg):
+        """
+        Monitor a signal. Emit event documents asynchronously.
+
+        A descriptor document is emitted immediately. Then, a closure is
+        defined that emits Event documents associated with that descriptor
+        from a separate thread. This process is not related to the main
+        bundling process (create/read/save).
+
+        Expected message object is:
+
+            Msg('monitor', obj)
+            Msg('monitor', obj, name='event-stream-name')
+        """
         obj = msg.obj
+        name = msg.kwargs.get('name')
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'monitor' message was sent but no "
                                          "run is open.")
@@ -982,7 +1021,7 @@ class RunEngine:
         object_keys = {obj.name: list(data_keys)}
         desc_doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                         data_keys=data_keys, uid=descriptor_uid,
-                        configuration=config, name=None,
+                        configuration=config, name=name,
                         object_keys=object_keys)
         self.log.debug("Emitted Event Descriptor")
         seq_num_counter = count()
@@ -1009,6 +1048,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _unmonitor(self, msg):
+        """
+        Stop monitoring; i.e., remove the callback emitting event documents.
+
+        Expected message object is:
+
+            Msg('unmonitor', obj)
+        """
         obj = msg.obj
         cb = self._monitor_cbs[obj]
         obj.clear_sub(cb)
@@ -1142,6 +1188,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _collect(self, msg):
+        """
+        Collect data cached by a flyer and emit descriptor and event documents.
+
+        Expect message object is
+
+            Msg('collect', obj)
+        """
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'collect' message was sent but no "
                                          "run is open.")
@@ -1193,10 +1246,25 @@ class RunEngine:
 
     @asyncio.coroutine
     def _null(self, msg):
+        """
+        A no-op message, mainly for debugging and testing.
+        """
         pass
 
     @asyncio.coroutine
     def _set(self, msg):
+        """
+        Set a device and cache the returned status object.
+
+        Also, note that the device has been touched so it can be stopped upon
+        exit.
+
+        Expected messgage object is
+
+            Msg('set', obj, *args, **kwargs)
+
+        where arguments are passed through to `obj.set(*args, **kwargs)`.
+        """
         block_group = msg.kwargs.pop('block_group', None)
         self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
@@ -1220,6 +1288,13 @@ class RunEngine:
 
     @asyncio.coroutine
     def _trigger(self, msg):
+        """
+        Trigger a device and cache the returned status object.
+
+        Expected message object is:
+
+            Msg('trigger', obj)
+        """
         block_group = msg.kwargs.pop('block_group', None)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
 
