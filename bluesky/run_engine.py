@@ -203,7 +203,7 @@ class RunEngine:
         self._config_values_cache = dict()  # " obj.read_configuration() values
         self._config_ts_cache = dict()  # " obj.read_configuration() timestamps
         self._descriptors = dict()  # cache of {(name, objs_frozen_set): uid}
-        self._monitor_cbs = dict()  # cache of {obj: cb}
+        self._monitor_params = dict()  # cache of {obj: (cb, args, kwargs)}
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo datapoints
         self._pause_requests = dict()  # holding {<name>: callable}
@@ -435,7 +435,7 @@ class RunEngine:
         # stop accepting new tasks in the event loop (existing tasks will
         # still be processed)
         loop.stop()
-        for obj, cb in list(self._monitor_cbs.items()):
+        for obj, (cb, args, kwargs) in list(self._monitor_params.items()):
             obj.clear_sub(cb)
         # During pause, all motors should be stopped.
         for obj in self._movable_objs_touched:
@@ -598,8 +598,8 @@ class RunEngine:
 
         self._interrupted = False
         self._rewind()
-        for obj, cb in self._monitor_cbs.items():
-            obj.subscribe(cb)
+        for obj, (cb, args, kwargs) in self._monitor_params.items():
+            obj.subscribe(cb, *args, **kwargs)
         self._resume_event_loop()
         return self._run_start_uids
 
@@ -640,10 +640,10 @@ class RunEngine:
             self._exception = FailedPause()
         else:
             print("Suspending....To get prompt hit Ctrl-C to pause the scan")
-            objs_monitored = list(self._monitor_cbs)
-            for obj, cb in list(self._monitor_cbs.items()):
+            objs_monitored = list(self._monitor_params)
+            for obj, (cb, args, kwargs) in list(self._monitor_params.items()):
                 obj.clear_sub(cb)
-                del self._monitor_cbs[obj]
+                del self._monitor_params[obj]
             wait_msg = Msg('wait_for', [fut, ])
             for obj in objs_monitored:
                 msg = Msg('monitor', obj)
@@ -776,9 +776,10 @@ class RunEngine:
                     logger.error("Failed to unstage %r", obj)
                 self._staged.remove(obj)
             # Clear any uncleared monitoring callbacks.
-            for obj, cb in list(self._monitor_cbs.items()):
+            monitor_params = list(self._monitor_params.items())
+            for obj, (cb, args, kwargs) in monitor_params:
                 obj.clear_sub(cb)
-                del self._monitor_cbs[obj]
+                del self._monitor_params[obj]
             sys.stdout.flush()
             # Emit RunStop if necessary.
             if self._run_is_open:
@@ -1011,7 +1012,7 @@ class RunEngine:
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'monitor' message was sent but no "
                                          "run is open.")
-        if obj in self._monitor_cbs:
+        if obj in self._monitor_params:
             raise IllegalMessageSequence("A 'monitor' message was sent for {}"
                                          "which is already monitored".format(
                                              obj))
@@ -1042,7 +1043,7 @@ class RunEngine:
             # implemented as flyers.
             self.dispatcher.process(DocumentNames.event, doc)
 
-        self._monitor_cbs[obj] = emit_event
+        self._monitor_params[obj] = emit_event, msg.args, msg.kwargs
         obj.subscribe(emit_event, *msg.args, **msg.kwargs)
         yield from self.emit(DocumentNames.descriptor, desc_doc)
 
@@ -1056,9 +1057,9 @@ class RunEngine:
             Msg('unmonitor', obj)
         """
         obj = msg.obj
-        cb = self._monitor_cbs[obj]
+        cb, args, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
-        del self._monitor_cbs[obj]
+        del self._monitor_params[obj]
 
     @asyncio.coroutine
     def _save(self, msg):
