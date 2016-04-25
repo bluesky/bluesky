@@ -612,7 +612,7 @@ def open_run(md):
     msg : Msg
         Msg('open_run', **md)
     """
-    yield Msg('open_run', md)
+    yield Msg('open_run', **md)
 
 
 def close_run():
