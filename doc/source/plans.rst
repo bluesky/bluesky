@@ -35,6 +35,8 @@ The names below are links. Click for details, and see below for examples.
     relative_log_scan
     inner_product_scan
     outer_product_scan
+    relative_inner_product_scan
+    relative_outer_product_scan
     scan_nd
     adaptive_scan
     relative_adaptive_scan
@@ -316,8 +318,8 @@ The ``set`` method is a convenient way to update multiple parameters at once.
     LogScan
     RelativeLogScan
     InnerProductScan
-    RelativeInnerProductScan
     OuterProductScan
+    RelativeInnerProductScan
     RelativeOuterProductScan
     ScanND
     AdaptiveScan
