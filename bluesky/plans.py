@@ -269,7 +269,7 @@ def read(obj):
 
 def monitor(obj, *args, name=None, **kwargs):
     """
-    Asynchornously monitor for new values and emit Event documents.
+    Asynchronously monitor for new values and emit Event documents.
 
     Parameters
     ----------
@@ -291,7 +291,7 @@ def monitor(obj, *args, name=None, **kwargs):
 
 def unmonitor(obj):
     """
-    Stop mointoring.
+    Stop monitoring.
 
     Parameters
     ----------

@@ -109,21 +109,22 @@ Stub Plans (ingredients for remixing)
     one_1d_step
     one_nd_step
 
-Concatenating Plans
--------------------
+Combining Plans
+---------------
 
 Plans are iterables (roughly speaking, lists) and the Python language has nice
 facilities for handling them. For example to join to plans together, use
 
 .. code-block:: python
 
-    from bluesky.plans import bschain
+    from bluesky.examples import motor, det
+    from bluesky.plans import scan, sleep
+    from itertools import chain
 
-    plan1 = scan([det1, det2], motor, 1, 5, 3)  # 1 to 5 in 3 steps
-    plan2 = scan([det1], motor, 5, 10, 2)  # 5 to 10 in 2 steps
+    master_plan = chain(scan([det], motor, 1, 5, 3),
+                        sleep(),
+                        scan([det], motor, 5, 10, 2)
 
-    # Do this.
-    master_plan = bschain(plan1, plan2)
     RE(master_plan)
 
 This has advantages over executing them in sequence like so:
