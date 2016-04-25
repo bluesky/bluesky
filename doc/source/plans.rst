@@ -118,12 +118,11 @@ facilities for handling them. For example to join to plans together, use
 .. code-block:: python
 
     from bluesky.examples import motor, det
-    from bluesky.plans import scan, sleep
-    from itertools import chain
+    from bluesky.plans import scan, sleep, pchain
 
-    master_plan = chain(scan([det], motor, 1, 5, 3),
-                        sleep(),
-                        scan([det], motor, 5, 10, 2)
+    master_plan = pchain(scan([det], motor, 1, 5, 3),
+                         sleep(),
+                         scan([det], motor, 5, 10, 2)
 
     RE(master_plan)
 
