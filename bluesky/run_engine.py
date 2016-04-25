@@ -927,6 +927,10 @@ class RunEngine:
                                          "a 'checkpoint' message after the "
                                          "'close_run' message.")
         self.log.debug("Stopping run %s", self._run_start_uid)
+        # Clear any uncleared monitoring callbacks.
+        for obj, (cb, kwargs) in list(self._monitor_params.items()):
+            obj.clear_sub(cb)
+            del self._monitor_params[obj]
         doc = dict(run_start=self._run_start_uid,
                    time=ttime.time(), uid=new_uid(),
                    exit_status=self._exit_status,
