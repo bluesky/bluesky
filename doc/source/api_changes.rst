@@ -1,6 +1,29 @@
 API Changes
 ===========
 
+v0.5.0
+------
+
+* In all occurrences, the argument ``block_group`` has been renamed ``group``
+  for consistency. This affects the 'trigger' and 'set' messages.
+* The (not widely used) ``Center`` plan has been removed. It may be
+  distributed separately in the future.
+* Calling a "SPEC-like" plan now returns a generator that must be passed
+  to the RunEngine; it does not execute the plan with the global RunEngine in
+  gs.RE. There is a convenience wrapper available to restore the old behavior
+  as desired. But since that usage renders the plans un-composable, it is
+  discouraged.
+* The 'time' argument of the SPEC-like plans is a keyword-only argument.
+* The following special-case SPEC-like scans have been removed:
+    * hscan
+    * kscan
+    * lscan
+    * tscan
+    * dtscan 
+    * hklscan 
+    * hklmesh
+  They can be defined in configuration files as desired, and in that location
+  they will be easier to customize.
 
 v0.3.0
 ------
@@ -29,26 +52,3 @@ v0.3.0
 
   If classes derived from `CallbackBase` are being used this will not
   not have any effect on user code.
-
-v0.5.0
-------
-
-
-* The (not widely used) ``Center`` plan has been removed. It may be
-  distributed separately in the future.
-* Calling a "SPEC-like" plan now returns a generator that must be passed
-  to the RunEngine; it does not execute the plan with the global RunEngine in
-  gs.RE. There is a convenience wrapper available to restore the old behavior
-  as desired. But since that usage renders the plans un-composable, it is
-  discouraged.
-* The 'time' argument of the SPEC-like plans is a keyword-only argument.
-* The following special-case SPEC-like scans have been removed:
-    * hscan
-    * kscan
-    * lscan
-    * tscan
-    * dtscan 
-    * hklscan 
-    * hklmesh
-  They can be defined in configuration files as desired, and in that location
-  they will be easier to customize.
