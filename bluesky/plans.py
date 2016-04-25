@@ -1043,11 +1043,9 @@ def baseline_context(plan_stack, devices, name='baseline'):
     name : string, optional
         name for event stream; by default, 'baseline'
     """
-    with event_context(plan_stack, name=name):
-        plan_stack.append(trigger_and_read(devices))
+    plan_stack.append(trigger_and_read(devices), name=name)
     yield
-    with event_context(plan_stack, name=name):
-        plan_stack.append(trigger_and_read(devices))
+    plan_stack.append(trigger_and_read(devices), name=name)
 
 
 @contextmanager
@@ -1093,14 +1091,18 @@ def monitor_context(plan_stack, signals):
         plan_stack.append(single_gen(Msg('unmonitor', sig)))
 
 
-def trigger_and_read(devices):
+@planify
+def trigger_and_read(devices, name='primary'):
     """
-    Trigger and read a list of detectors.
+    Trigger and read a list of detectors and bundle readings into one Event.
 
     Parameters
     ----------
     devices : iterable
         devices to trigger (if they have a trigger method) and then read
+    name : string, optional
+        event stream name, a convenient human-friendly identifier; default
+        name is 'primary'
 
     Yields
     ------
@@ -1109,12 +1111,15 @@ def trigger_and_read(devices):
     """
     devices = separate_devices(devices)  # remove redundant entries
     grp = _short_uid('trigger')
-    for obj in separate_devices(devices):
-        if hasattr(obj, 'trigger'):
-            yield Msg('trigger', obj, group=grp)
-    yield Msg('wait', None, grp)
     for obj in devices:
-        yield Msg('read', obj)
+        if hasattr(obj, 'trigger'):
+            plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
+    if plan_stack:
+        plan_stack.append(single_gen(Msg('wait', None, grp)))
+    with event_context(plan_stack, name=name):
+        for obj in devices:
+            plan_stack.append(single_gen(Msg('read', obj)))
+    return plan_stack
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
@@ -1234,8 +1239,7 @@ def count(detectors, num=1, delay=None, *, md=None):
         with run_context(plan_stack, md):
             for _ in counter:
                 plan_stack.append(single_gen(Msg('checkpoint')))
-                with event_context(plan_stack):
-                    plan_stack.append(trigger_and_read(detectors))
+                plan_stack.append(trigger_and_read(detectors))
                 d = next(delay)
                 if d is not None:
                     plan_stack.append(single_gen(Msg('sleep', None, d)))
@@ -1257,8 +1261,7 @@ def one_1d_step(detectors, motor, step):
 
     plan_stack = deque()
     plan_stack.append(move())
-    with event_context(plan_stack):
-        plan_stack.append(trigger_and_read(list(detectors) + [motor]))
+    plan_stack.append(trigger_and_read(list(detectors) + [motor]))
     return plan_stack
 
 
@@ -1629,8 +1632,7 @@ def one_nd_step(detectors, step, pos_cache):
     motors = step.keys()
     plan_stack = deque()
     plan_stack.append(move())
-    with event_context(plan_stack):
-        plan_stack.append(trigger_and_read(list(detectors) + list(motors)))
+    plan_stack.append(trigger_and_read(list(detectors) + list(motors)))
     return plan_stack
 
 
