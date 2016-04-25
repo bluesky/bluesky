@@ -180,7 +180,7 @@ def msg_mutator(plan, msg_proc):
     return plan.close()
 
 
-def bschain(*args):
+def pchain(*args):
     '''Like `itertools.chain` but using `yield from`
 
     This ensures than `.send` works as expected and the underlying
@@ -931,7 +931,7 @@ def relative_set(plan, devices=None):
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-                return bschain(read_and_stash_a_motor(msg.obj),
+                return pchain(read_and_stash_a_motor(msg.obj),
                                single_gen(msg)), None
         else:
             return None, None
@@ -967,7 +967,7 @@ def reset_positions(plan, devices=None):
         eligible = devices is None or msg.obj in devices
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-            return bschain(read_and_stash_a_motor(msg.obj),
+            return pchain(read_and_stash_a_motor(msg.obj),
                            single_gen(msg)), None
         else:
             return None, None
@@ -1011,7 +1011,7 @@ def configure_count_time(plan, time):
                 # marked as belonging to a different event stream (or no
                 # event stream.
                 original_times[obj] = obj.count_time.get()
-                return bschain(single_gen(Msg('set', obj.count_time, time)),
+                return pchain(single_gen(Msg('set', obj.count_time, time)),
                                single_gen(msg)), None
         return None, None
 
