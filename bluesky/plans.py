@@ -180,7 +180,7 @@ def msg_mutator(plan, msg_proc):
     return plan.close()
 
 
-def bschain(*args):
+def pchain(*args):
     '''Like `itertools.chain` but using `yield from`
 
     This ensures than `.send` works as expected and the underlying
@@ -219,6 +219,431 @@ def single_gen(msg):
         the input message
     '''
     yield msg
+
+
+def create(name='primary'):
+    """
+    Bundle future readings into a new Event document.
+
+    Parameters
+    ----------
+    name : string, optional
+        name given to event stream, used to convenient identification
+        default is 'primary'
+
+    Yields
+    ------
+    msg : Msg
+        Msg('create', name=name)
+    """
+    yield Msg('create', name=name)
+
+
+def save():
+    """
+    Close a bundle of readings and emit a completed Event document.
+
+    Yields
+    -------
+    msg : Msg
+        Msg('save')
+    """
+    yield Msg('save')
+
+
+def read(obj):
+    """
+    Take a reading and add it to the current bundle of readings.
+
+    Parameters
+    ----------
+    obj : Device or Signal
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('read', obj)
+    """
+    yield Msg('read', obj)
+
+
+def monitor(obj, *args, name=None, **kwargs):
+    """
+    Asynchronously monitor for new values and emit Event documents.
+
+    Parameters
+    ----------
+    obj : Signal
+    name : string, optional
+        name of event stream; default is None
+    args :
+        passed through to ``obj.subscribe()``
+    kwargs :
+        passed through to ``obj.subscribe()``
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('monitor', obj, *args, **kwargs)
+    """
+    yield Msg('monitor', obj, *args, **kwargs)
+
+
+def unmonitor(obj):
+    """
+    Stop monitoring.
+
+    Parameters
+    ----------
+    obj : Signal
+
+    Yields
+    ------
+    msg : Msg
+        Msg('unmonitor', obj)
+    """
+    yield Msg('unmonitor', obj)
+
+
+def null():
+    """
+    Yield a no-op Message. (Primarily for debugging and testing.)
+
+    Yields
+    ------
+    msg : Msg
+        Msg('null')
+    """
+    yield Msg('null', obj)
+
+
+def abs_set(obj, *args, group=None, wait=False, **kwargs):
+    """
+    Set a value. Optionally, wait for it to complete before continuing.
+
+    Parameters
+    ----------
+    obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    args :
+        passed to obj.set()
+    kwargs :
+        passed to obj.set()
+
+    Yields
+    ------
+    msg : Msg
+    """
+    yield Msg('set', obj, *args, group=group, **kwargs)
+    if wait:
+        yield Msg('wait', None, group=group)
+
+
+def rel_set(obj, *args, group=None, wait=False, **kwargs):
+    """
+    Set a value relative to current value. Optionally, wait before continuing.
+
+    Parameters
+    ----------
+    obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    args :
+        passed to obj.set()
+    kwargs :
+        passed to obj.set()
+
+    Yields
+    ------
+    msg : Msg
+    """
+    yield from relative_set(abs_set(obj, *args, group=group, **kwargs))
+    if wait:
+        yield Msg('wait', None, group=group)
+
+
+def trigger(obj, *, group=None, wait=False):
+    """
+    Trigger and acquisition. Optionally, wait for it to complete.
+
+    Parameters
+    ----------
+    obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+
+    Yields
+    ------
+    msg : Msg
+    """
+    yield Msg('trigger', obj, group=group)
+    if wait:
+        yield Msg('wait', None, group=group)
+
+
+def sleep(time):
+    """
+    Tell the RunEngine to sleep, while asynchronously doing other processing.
+
+    This is not the same as ``import time; time.sleep()`` because it allows
+    other actions, like interruptions, to be processed during the sleep.
+
+    Parameters
+    ----------
+    time : float
+        seconds
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('sleep', time)
+    """
+    yield Msg('sleep', time)
+
+
+def wait(group=None):
+    """
+    Wait for all statuses in a group to report being finished.
+
+    Parameters
+    ----------
+    group : string (or any hashable object), optional
+        idenified given to `abs_set`, `rel_set`, `trigger`; None by default
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('wait', None, group=group)
+    """
+    yield Msg('wait', None, group=group)
+
+
+def checkpoint():
+    """
+    If interrupted, rewind to this point.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('checkpoint')
+    """
+    yield Msg('checkpoint')
+
+
+def clear_checkpoint():
+    """
+    Designate that it is not safe to resume. If interrupted or paused, abort.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('clear_checkpoint')
+    """
+    yield Msg('clear_checkpoint')
+
+
+def pause():
+    """
+    Pause and wait for the user to resume.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('pause')
+    """
+    yield Msg('pause')
+
+
+def deferred_pause():
+    """
+    Pause at the next checkpoint.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('pause', defer=True)
+    """
+    yield Msg('pause', defer=True)
+
+
+def kickoff(obj):
+    """
+    Kickoff a fly-scanning device.
+
+    Parameters
+    ----------
+    obj : fly-able
+        Device with 'kickoff' and 'collect' methods
+
+    Yields
+    ------
+    msg : Msg
+        Msg('kickoff', obj)
+    """
+    yield Msg('kickoff', obj)
+
+
+def collect(obj):
+    """
+    Collect data cached by a fly-scanning device and emit documents.
+
+    Parameters
+    ----------
+    obj : fly-able
+        Device with 'kickoff' and 'collect' methods
+
+    Yields
+    ------
+    msg : Msg
+        Msg('collect', obj)
+    """
+    yield Msg('collect', obj)
+
+
+def configure(obj, *args, **kwargs):
+    """
+    Change Device configuration and emit an updated Event Descriptor document.
+
+    Parameters
+    ----------
+    obj : Device
+    args
+        passed through to ``obj.configure()``
+    kwargs
+        passed through to ``obj.configure()``
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('configure', obj, *args, **kwargs)
+    """
+    yield Msg('configure', obj, *args, **kwargs)
+
+
+def stage(obj):
+    """
+    'Stage' a device (i.e., prepare it for use, 'arm' it).
+
+    Parameters
+    ----------
+    obj : Device
+
+    Yields
+    ------
+    msg : Msg
+        Msg('stage', obj)
+    """
+    yield Msg('stage', obj)
+
+
+def unstage(obj):
+    """
+    'Unstage' a device (i.e., put it in standby, 'disarm' it).
+
+    Parameters
+    ----------
+    obj : Device
+
+    Yields
+    ------
+    msg : Msg
+        Msg('unstage', obj)
+    """
+    yield Msg('unstage', obj)
+
+
+def subscribe(name, func):
+    """
+    Subscribe the stream of emitted documents.
+
+    Parameters
+    ----------
+    name : {'all', 'start', 'descriptor', 'event', 'stop'}
+    func : callable
+        Expected signature: ``f(name, doc)`` where ``name`` is one of the
+        strings above ('all, 'start', ...) and ``doc`` is a dict
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('subscribe', None, name, func)
+    """
+    yield Msg('subscribe', None, name, func)
+
+
+def unsubscribe(token):
+    """
+    Remove a subscription.
+
+    Parameters
+    ----------
+    token : int
+        token returned by processing a 'subscribe' message
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('unsubscribe', token=token)
+    """
+    yield Msg('unsubscribe', token=token)
+
+
+def open_run(md):
+    """
+    Mark the beginning of a new 'run'. Emit a RunStart document.
+
+    Parameters
+    ----------
+    md : dict
+        metadata
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('open_run', **md)
+    """
+    yield Msg('open_run', **md)
+
+
+def close_run():
+    """
+    Mark the end of the current 'run'. Emit a RunStop document.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('close_run')
+    """
+    yield Msg('close_run')
+
+
+def wait_for(futures, **kwargs):
+    """
+    Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).
+
+    Parameters
+    ----------
+    futures : collection
+        collection of asyncio.Future objects
+    kwargs
+        passed through to ``asyncio.wait()``
+    
+    Yields
+    ------
+    msg : Msg
+        Msg('wait_for', None, futures, **kwargs)
+    """
+    yield Msg('wait_for', None, futures, **kwargs)
 
 
 def finalize(plan, final_plan):
@@ -506,7 +931,7 @@ def relative_set(plan, devices=None):
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-                return bschain(read_and_stash_a_motor(msg.obj),
+                return pchain(read_and_stash_a_motor(msg.obj),
                                single_gen(msg)), None
         else:
             return None, None
@@ -542,7 +967,7 @@ def reset_positions(plan, devices=None):
         eligible = devices is None or msg.obj in devices
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-            return bschain(read_and_stash_a_motor(msg.obj),
+            return pchain(read_and_stash_a_motor(msg.obj),
                            single_gen(msg)), None
         else:
             return None, None
@@ -586,7 +1011,7 @@ def configure_count_time(plan, time):
                 # marked as belonging to a different event stream (or no
                 # event stream.
                 original_times[obj] = obj.count_time.get()
-                return bschain(single_gen(Msg('set', obj.count_time, time)),
+                return pchain(single_gen(Msg('set', obj.count_time, time)),
                                single_gen(msg)), None
         return None, None
 
@@ -618,11 +1043,9 @@ def baseline_context(plan_stack, devices, name='baseline'):
     name : string, optional
         name for event stream; by default, 'baseline'
     """
-    with event_context(plan_stack, name=name):
-        plan_stack.append(trigger_and_read(devices))
+    plan_stack.append(trigger_and_read(devices), name=name)
     yield
-    with event_context(plan_stack, name=name):
-        plan_stack.append(trigger_and_read(devices))
+    plan_stack.append(trigger_and_read(devices), name=name)
 
 
 @contextmanager
@@ -668,14 +1091,18 @@ def monitor_context(plan_stack, signals):
         plan_stack.append(single_gen(Msg('unmonitor', sig)))
 
 
-def trigger_and_read(devices):
+@planify
+def trigger_and_read(devices, name='primary'):
     """
-    Trigger and read a list of detectors.
+    Trigger and read a list of detectors and bundle readings into one Event.
 
     Parameters
     ----------
     devices : iterable
         devices to trigger (if they have a trigger method) and then read
+    name : string, optional
+        event stream name, a convenient human-friendly identifier; default
+        name is 'primary'
 
     Yields
     ------
@@ -684,12 +1111,16 @@ def trigger_and_read(devices):
     """
     devices = separate_devices(devices)  # remove redundant entries
     grp = _short_uid('trigger')
-    for obj in separate_devices(devices):
-        if hasattr(obj, 'trigger'):
-            yield Msg('trigger', obj, group=grp)
-    yield Msg('wait', None, grp)
+    plan_stack = deque()
     for obj in devices:
-        yield Msg('read', obj)
+        if hasattr(obj, 'trigger'):
+            plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
+    if plan_stack:
+        plan_stack.append(single_gen(Msg('wait', None, grp)))
+    with event_context(plan_stack, name=name):
+        for obj in devices:
+            plan_stack.append(single_gen(Msg('read', obj)))
+    return plan_stack
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
@@ -809,8 +1240,7 @@ def count(detectors, num=1, delay=None, *, md=None):
         with run_context(plan_stack, md):
             for _ in counter:
                 plan_stack.append(single_gen(Msg('checkpoint')))
-                with event_context(plan_stack):
-                    plan_stack.append(trigger_and_read(detectors))
+                plan_stack.append(trigger_and_read(detectors))
                 d = next(delay)
                 if d is not None:
                     plan_stack.append(single_gen(Msg('sleep', None, d)))
@@ -832,8 +1262,7 @@ def one_1d_step(detectors, motor, step):
 
     plan_stack = deque()
     plan_stack.append(move())
-    with event_context(plan_stack):
-        plan_stack.append(trigger_and_read(list(detectors) + [motor]))
+    plan_stack.append(trigger_and_read(list(detectors) + [motor]))
     return plan_stack
 
 
@@ -1204,8 +1633,7 @@ def one_nd_step(detectors, step, pos_cache):
     motors = step.keys()
     plan_stack = deque()
     plan_stack.append(move())
-    with event_context(plan_stack):
-        plan_stack.append(trigger_and_read(list(detectors) + list(motors)))
+    plan_stack.append(trigger_and_read(list(detectors) + list(motors)))
     return plan_stack
 
 

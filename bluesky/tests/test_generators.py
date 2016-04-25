@@ -5,7 +5,7 @@ from itertools import zip_longest
 
 from bluesky import Msg
 
-from bluesky.plans import (msg_mutator, plan_mutator, bschain,
+from bluesky.plans import (msg_mutator, plan_mutator, pchain,
                            single_gen as single_message_gen, finalize)
 
 
@@ -132,7 +132,7 @@ def test_simple_mutator():
         if _mut_active:
             _mut_active = False
 
-            return (bschain(echo_plan(num=pre_count, command=pre_cmd),
+            return (pchain(echo_plan(num=pre_count, command=pre_cmd),
                             single_message_gen(msg)),
                     echo_plan(num=post_count, command=post_cmd))
         return None, None
@@ -221,7 +221,7 @@ def test_plan_mutator_exception_propogation():
         if _mut_active:
             _mut_active = False
 
-            return (bschain(echo_plan(num=2, command=cmd2),
+            return (pchain(echo_plan(num=2, command=cmd2),
                             single_message_gen(msg)),
                     bad_tail())
         return None, None
