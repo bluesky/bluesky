@@ -847,7 +847,7 @@ class RunEngine:
 
         Expected message object is:
 
-            Msg('wait_for', obj, **kwargs)
+            Msg('wait_for', obj, futs)
 
         Where ``obj`` and **kwargs are the position and keyword-only arguments
         for ``asyncio.await``
