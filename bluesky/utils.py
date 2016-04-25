@@ -582,7 +582,7 @@ def apply_sub_factories(factories, plan):
     '''
     factories = normalize_subs_input(factories)
     out = {k: list(itertools.filterfalse(lambda x: x is None,
-                                         (sf(scan) for sf in v)))
+                                         (sf(plan) for sf in v)))
            for k, v in factories.items()}
     return out
 
@@ -597,3 +597,35 @@ def update_sub_lists(out, inp):
             out[k].extend(v)
         except KeyError:
             out[k] = list(v)
+
+
+def register_transform(RE, *, prefix='<'):
+    '''Register RunEngine convenience transform
+
+    Assuming the default parameters
+
+    This maps `< stuff(*args, **kwargs)` -> `RE(stuff(*args, **kwargs))`
+
+    RE is assumed to be available in the global namespace
+
+    Parameters
+    ----------
+    RE : str
+        The name of a valid RunEngine instance in the global IPython namespace
+
+    prefix : str, optional
+        The prefix to trigger this transform on.  If this collides with
+        valid python syntax or an existing transform you are on your own.
+    '''
+    import IPython
+    from IPython.core.inputtransformer import StatelessInputTransformer
+
+    @StatelessInputTransformer.wrap
+    def tr_re(line):
+        if line.startswith('<'):
+            line = line[1:].strip()
+            return '{}({})'.format(RE, line)
+        return line
+    ip = IPython.get_ipython()
+    ip.input_splitter.logical_line_transforms.append(tr_re())
+    ip.input_transformer_manager.logical_line_transforms.append(tr_re())
