@@ -193,6 +193,7 @@ class RunEngine:
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
         self._staged = set()  # objects staged, not yet unstaged
+        self._objs_seen = set()  # all objects seen
         self._movable_objs_touched = set()  # objects we moved at any point
         self._uncollected = set()  # objects after kickoff(), before collect()
         self._flyer_stream_names = {}  # names given at kickoff() for collect()
@@ -295,6 +296,7 @@ class RunEngine:
         "Clean up for a new __call__ (which may encompass multiple runs)."
         self._metadata_per_call.clear()
         self._staged.clear()
+        self._objs_seen.clear()
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
         self._genstack = deque()
@@ -435,6 +437,8 @@ class RunEngine:
         # stop accepting new tasks in the event loop (existing tasks will
         # still be processed)
         loop.stop()
+        # Remove any monitoring callbacks, but keep refs in
+        # self._monitor_params to re-instate them later.
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
             obj.clear_sub(cb)
         # During pause, all motors should be stopped.
@@ -443,6 +447,10 @@ class RunEngine:
                 obj.stop()
             except Exception:
                 logger.error("Failed to stop %r", obj)
+        # Notify Devices of the pause in case they want to clean up.
+        for obj in self._objs_seen:
+            if hasattr(obj, 'pause'):
+                obj.pause()
 
     def subscribe_lossless(self, name, func):
         """Register a callback function to consume documents.
@@ -598,8 +606,13 @@ class RunEngine:
 
         self._interrupted = False
         self._rewind()
+        # Re-instate monitoring callbacks.
         for obj, (cb, kwargs) in self._monitor_params.items():
             obj.subscribe(cb, **kwargs)
+        # Notify Devices of the resume in case they want to clean up.
+        for obj in self._objs_seen:
+            if hasattr(obj, 'resume'):
+                obj.resume()
         self._resume_event_loop()
         return self._run_start_uids
 
@@ -641,16 +654,15 @@ class RunEngine:
         else:
             print("Suspending....To get prompt hit Ctrl-C to pause the scan")
             # Stash a copy in a local var to re-instating the monitors.
-            monitor_params = self._monitor_params.copy()
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
                 obj.clear_sub(cb)
-                del self._monitor_params[obj]
             wait_msg = Msg('wait_for', None, [fut, ])
-            for obj, (cb, kwargs) in monitor_params.items():
-                msg = Msg('monitor', obj, **kwargs)
-                self._msg_cache.appendleft(msg)
             self._msg_cache.appendleft(wait_msg)
             self._rewind()
+            # Notify Devices of the pause in case they want to clean up.
+            for obj in self._objs_seen:
+                if hasattr(obj, 'pause'):
+                    obj.pause()
 
     def abort(self, reason=''):
         """
@@ -716,6 +728,7 @@ class RunEngine:
                             continue
                         else:
                             raise
+                    self._objs_seen.add(msg.obj)
                     if (self._msg_cache is not None and
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
