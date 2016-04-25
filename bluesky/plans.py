@@ -393,7 +393,10 @@ def trigger(obj, *, group=None, wait=False):
 
 def sleep(time):
     """
-    A plan that yields a single 'sleep' message.
+    Tell the RunEngine to sleep, while asynchronously doing other processing.
+
+    This is not the same as ``import time; time.sleep()`` because it allows
+    other actions, like interruptions, to be processed during the sleep.
 
     Parameters
     ----------
@@ -410,7 +413,7 @@ def sleep(time):
 
 def wait(group=None):
     """
-    A plan that waits for a group of statuses to report being finished.
+    Wait for all statuses in a group to report being finished.
 
     Parameters
     ----------
@@ -625,8 +628,8 @@ def close_run():
 
 
 def wait_for(futures, **kwargs):
-    """"
-    Low-level: wait for a list of asyncio.Future objects to set (complete).
+    """
+    Low-level: wait for a list of ``asyncio.Future`` objects to set (complete).
 
     Parameters
     ----------
