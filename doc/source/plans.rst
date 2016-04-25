@@ -286,7 +286,7 @@ uses.
 .. ipython:: python
 
     from bluesky.plans import Scan
-    from bluesky.examples import motor, det3
+    from bluesky.examples import motor, det, det3
     plan = Scan([det], motor, 1, 5, 10)
     RE(plan)
     RE(plan)
