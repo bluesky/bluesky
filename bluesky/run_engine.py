@@ -209,7 +209,7 @@ class RunEngine:
         self._pause_requests = dict()  # holding {<name>: callable}
         self._block_groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
-        self._msg_cache = None  # may be used to hold recently processed msgs
+        self._msg_cache = deque() # history of processed msgs for rewinding
         self._genstack = deque()  # stack of generators to work off of
         self._new_gen = True  # flag if we need to prime the generator
         self._exit_status = 'success'  # optimistic default
@@ -298,7 +298,7 @@ class RunEngine:
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
         self._genstack = deque()
-        self._msg_cache = None
+        self._msg_cache = deque()
         self._new_gen = True
         self._exception = None
         self._run_start_uids.clear()
@@ -1120,7 +1120,10 @@ class RunEngine:
             descriptor_uid = self._descriptors[(self._bundle_name, objs_read)]
         # This is a separate check because it can be reset on resume.
         if objs_read not in self._sequence_counters:
-            self._sequence_counters[objs_read] = count(1)
+            counter = count(1)
+            counter_copy1, counter_copy2 = tee(counter)
+            self._sequence_counters[objs_read] = counter_copy1
+            self._teed_sequence_counters[objs_read] = counter_copy2
         self._bundling = False
         self._bundle_name = None
 
