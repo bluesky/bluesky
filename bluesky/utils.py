@@ -582,7 +582,7 @@ def apply_sub_factories(factories, plan):
     '''
     factories = normalize_subs_input(factories)
     out = {k: list(itertools.filterfalse(lambda x: x is None,
-                                         (sf(scan) for sf in v)))
+                                         (sf(plan) for sf in v)))
            for k, v in factories.items()}
     return out
 
