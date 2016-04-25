@@ -282,7 +282,7 @@ def kickoff_and_collect(block=False, magic=False):
                 random.randint(1, 10)]     # step
 
     if block:
-        kwargs = {'block_group': unique_name()}
+        kwargs = {'group': unique_name()}
     return [Msg('kickoff', flyer, *args, **kwargs), Msg('collect', flyer)]
 
 

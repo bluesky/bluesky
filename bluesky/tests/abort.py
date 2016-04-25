@@ -21,7 +21,7 @@ def run():
         ttime.sleep(0.1)
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     RE.verbose = True
     assert RE.state == 'idle'
     start = ttime.time()
