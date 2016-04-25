@@ -1111,6 +1111,7 @@ def trigger_and_read(devices, name='primary'):
     """
     devices = separate_devices(devices)  # remove redundant entries
     grp = _short_uid('trigger')
+    plan_stack = deque()
     for obj in devices:
         if hasattr(obj, 'trigger'):
             plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
