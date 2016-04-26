@@ -198,7 +198,7 @@ Plot scalars.
 Live Image Plot
 ---------------
 
-.. autoclass:: bluesky.broker_callbacks.LiveImage
+.. autoclass:: bluesky.callbacks.broker.LiveImage
 
 Live Raster Plot (Heat Map)
 ---------------------------
@@ -243,7 +243,7 @@ Next, create an exporter.
 
 .. code-block:: python
 
-    from bluesky.broker_callbacks import LiveTiffExporter
+    from bluesky.callbacks.broker import LiveTiffExporter
 
     exporter = LiveTiffExporter('image', template)
 
@@ -252,7 +252,7 @@ exporter in ``post_run`` and subscribe.
 
 .. code-block:: python
 
-    from bluesky.broker_callbacks import post_run
+    from bluesky.callbacks.broker import post_run
 
     RE.subscribe('all', post_run(exporter))
 
@@ -269,7 +269,7 @@ not be acceptable.
 
 There are more configuration options avaiable, as given in detail below.
 
-.. autoclass:: bluesky.broker_callbacks.LiveTiffExporter
+.. autoclass:: bluesky.callbacks.broker.LiveTiffExporter
 
 Export All Data and Metadata in an HDF5 File
 ++++++++++++++++++++++++++++++++++++++++++++
@@ -309,7 +309,7 @@ false alarm.
 
 .. code-block:: python
 
-    from bluesky.broker_callbacks import post_run, verify_files_saved
+    from bluesky.callbacks.broker import post_run, verify_files_saved
 
     RE.subscribe('all', post_run(verify_files_saved))
 

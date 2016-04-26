@@ -43,7 +43,7 @@ v0.3.0
   of dicts describing its old and new states:
   ``old, new = obj.configure(state)``
 * Removed method ``increment_scan_id``
-* `broker_callbacks.post_run` API and docstring brought into agreement.
+* `callbacks.broker.post_run` API and docstring brought into agreement.
   The API is change to expect a callable with signature
   ``foo(doc_name, doc)`` rather than:
     - a callable which takes a document (as documented)
