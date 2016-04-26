@@ -37,7 +37,7 @@ def test_post_run():
     try:
         import databroker
         from bluesky.global_state import gs
-        from bluesky.broker_callbacks import post_run
+        from bluesky.callbacks.broker import post_run
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'
                           'ImportError:  is:{}'.format(ie))
@@ -59,7 +59,7 @@ def test_verify_files_saved():
     try:
         import databroker
         from bluesky.global_state import gs
-        from bluesky.broker_callbacks import verify_files_saved
+        from bluesky.callbacks.broker import verify_files_saved
     except ImportError as ie:
         raise pytest.skip('skipping because some libary is unavailable\n'
                           'ImportError:  is:{}'.format(ie))

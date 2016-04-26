@@ -17,7 +17,7 @@ from collections import deque
 import matplotlib.pyplot as plt
 from bluesky import plans, Msg
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
-from bluesky.scientific_callbacks import PeakStats
+from bluesky.callbacks.scientific import PeakStats
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
 from bluesky.utils import (normalize_subs_input, Subs, DefaultSubs,

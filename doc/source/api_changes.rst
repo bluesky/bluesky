@@ -4,6 +4,10 @@ API Changes
 v0.5.0
 ------
 
+* Move ``bluesky.scientific_callbacks`` to ``bluesky.callbacks.scientific``
+  and ``bluesky.broker_callbacks`` to ``bluesky.callbacks.broker``.
+* Remove ``bluesky.register_mds`` whose usage can be replaced by:
+  ``import metadatastore.commands; RE.subscribe_lossless('all', metadatastore.commands.insert)``
 * In all occurrences, the argument ``block_group`` has been renamed ``group``
   for consistency. This affects the 'trigger' and 'set' messages.
 * The (not widely used) ``Center`` plan has been removed. It may be
@@ -43,7 +47,7 @@ v0.3.0
   of dicts describing its old and new states:
   ``old, new = obj.configure(state)``
 * Removed method ``increment_scan_id``
-* `broker_callbacks.post_run` API and docstring brought into agreement.
+* `callbacks.broker.post_run` API and docstring brought into agreement.
   The API is change to expect a callable with signature
   ``foo(doc_name, doc)`` rather than:
     - a callable which takes a document (as documented)
