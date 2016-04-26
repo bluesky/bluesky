@@ -4,6 +4,10 @@ API Changes
 v0.5.0
 ------
 
+* Move ``bluesky.scientific_callbacks`` to ``bluesky.callbacks.scientific``
+  and ``bluesky.broker_callbacks`` to ``bluesky.callbacks.broker``.
+* Remove ``bluesky.register_mds`` whose usage can be replaced by:
+  ``import metadatastore.commands; RE.subscribe_lossless('all', metadatastore.commands.insert)``
 * In all occurrences, the argument ``block_group`` has been renamed ``group``
   for consistency. This affects the 'trigger' and 'set' messages.
 * The (not widely used) ``Center`` plan has been removed. It may be
