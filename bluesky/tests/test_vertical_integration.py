@@ -1,5 +1,4 @@
 from collections import defaultdict
-from bluesky.register_mds import register_mds
 from bluesky.global_state import gs
 from bluesky.examples import stepscan, det, motor
 import pytest
@@ -13,7 +12,7 @@ def setup_module(module):
     else:
         from metadatastore.test.utils import mds_setup
         mds_setup()
-        register_mds(gs.RE)
+        gs.RE.subscribe_lossless('all', metadatastore.commands.insert)
 
 def teardown_module(module):
     from metadatastore.test.utils import mds_teardown
