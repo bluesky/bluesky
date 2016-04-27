@@ -679,11 +679,10 @@ class SynGauss2D(Reader):
     def __init__(self, name, motor, motor_field, center, Imax=1000, sigma=1,
                  nx=250, ny=250, img_sigma=50):
         try:
-            import filestore
+            from filestore.file_writers import save_ndarray
+            self.save_ndarray = save_ndarray
         except ImportError:
             raise ImportError("This example requires 'filestore'.")
-        else:
-            from filestore.file_writers import save_ndarray
 
         super(SynGauss2D, self).__init__(name, [name, ])
         self.ready = True
@@ -699,12 +698,13 @@ class SynGauss2D(Reader):
         self.output_dir = tempfile.gettempdir()
 
     def trigger(self, *, group=True):
+
         self.ready = False
         m = self._motor._data[self._motor_field]['value']
         v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
         arr = self.gauss(self.dims, self.img_sigma) * v + np.random.random(
             self.dims) * .01
-        fs_uid = save_ndarray(arr, self.output_dir)
+        fs_uid = self.save_ndarray(arr, self.output_dir)
         self._data = {self.name: {'value': fs_uid, 'timestamp': ttime.time()}}
         ttime.sleep(0.05)  # simulate exposure time
         self.ready = True
