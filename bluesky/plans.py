@@ -143,6 +143,7 @@ def plan_mutator(plan, msg_proc):
                 return plan.close()
         except Exception as ex:
             plan.throw(ex)
+            result_stack.append(None)
 
 
 def msg_mutator(plan, msg_proc):
@@ -258,7 +259,7 @@ def read(obj):
     Parameters
     ----------
     obj : Device or Signal
-    
+
     Yields
     ------
     msg : Msg
@@ -280,7 +281,7 @@ def monitor(obj, *args, name=None, **kwargs):
         passed through to ``obj.subscribe()``
     kwargs :
         passed through to ``obj.subscribe()``
-    
+
     Yields
     ------
     msg : Msg
@@ -402,7 +403,7 @@ def sleep(time):
     ----------
     time : float
         seconds
-    
+
     Yields
     ------
     msg : Msg
@@ -419,7 +420,7 @@ def wait(group=None):
     ----------
     group : string (or any hashable object), optional
         idenified given to `abs_set`, `rel_set`, `trigger`; None by default
-    
+
     Yields
     ------
     msg : Msg
@@ -521,7 +522,7 @@ def configure(obj, *args, **kwargs):
         passed through to ``obj.configure()``
     kwargs
         passed through to ``obj.configure()``
-    
+
     Yields
     ------
     msg : Msg
@@ -572,7 +573,7 @@ def subscribe(name, func):
     func : callable
         Expected signature: ``f(name, doc)`` where ``name`` is one of the
         strings above ('all, 'start', ...) and ``doc`` is a dict
-    
+
     Yields
     ------
     msg : Msg
@@ -589,7 +590,7 @@ def unsubscribe(token):
     ----------
     token : int
         token returned by processing a 'subscribe' message
-    
+
     Yields
     ------
     msg : Msg
@@ -606,7 +607,7 @@ def open_run(md):
     ----------
     md : dict
         metadata
-    
+
     Yields
     ------
     msg : Msg
@@ -637,7 +638,7 @@ def wait_for(futures, **kwargs):
         collection of asyncio.Future objects
     kwargs
         passed through to ``asyncio.wait()``
-    
+
     Yields
     ------
     msg : Msg
@@ -1251,7 +1252,7 @@ def count(detectors, num=1, delay=None, *, md=None):
 def one_1d_step(detectors, motor, step):
     """
     Inner loop of a 1D step scan
-    
+
     This is the default function for ``per_step`` param in 1D plans.
     """
     def move():
@@ -1282,7 +1283,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         Expected signature:
-        ``f(detectors, motor, step) -> plan (a generator) 
+        ``f(detectors, motor, step) -> plan (a generator)
     md : dict, optional
         metadata
     """
