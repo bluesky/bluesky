@@ -910,13 +910,16 @@ def relative_set(plan, devices=None):
     initial_positions = {}
 
     def read_and_stash_a_motor(obj):
-        reading = yield Msg('read', obj)
-        if reading is None:
-            # this plan may be being list-ified
-            cur_pos = 0
-        else:
-            k, = reading.keys()
-            cur_pos = reading[k]['value']
+        try:
+            cur_pos = obj.position
+        except AttributeError:
+            reading = yield Msg('read', obj)
+            if reading is None:
+                # this plan may be being list-ified
+                cur_pos = 0
+            else:
+                k = reading.keys()[0]
+                cur_pos = reading[k]['value']
         initial_positions[obj] = cur_pos
 
     def rewrite_pos(msg):
@@ -961,7 +964,16 @@ def reset_positions(plan, devices=None):
     initial_positions = OrderedDict()
 
     def read_and_stash_a_motor(obj):
-        cur_pos = yield Msg('read', obj)
+        try:
+            cur_pos = obj.position
+        except AttributeError:
+            reading = yield Msg('read', obj)
+            if reading is None:
+                # this plan may be being list-ified
+                cur_pos = 0
+            else:
+                k = reading.keys()[0]
+                cur_pos = reading[k]['value']
         initial_positions[obj] = cur_pos
 
     def insert_reads(msg):
@@ -969,7 +981,7 @@ def reset_positions(plan, devices=None):
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
             return pchain(read_and_stash_a_motor(msg.obj),
-                           single_gen(msg)), None
+                          single_gen(msg)), None
         else:
             return None, None
 
@@ -1857,9 +1869,12 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
         while True:
             yield Msg('create', None, name='primary')
-            ret_mot = yield Msg('read', motor)
-            key, = ret_mot.keys()
-            pos = ret_mot[key]['value']
+            try:
+                pos = motor.position
+            except AttributeError:
+                ret_mot = yield Msg('read', motor)
+                key = ret_mot.keys()[0]
+                pos = ret_mot[key]['value']
             yield Msg('trigger', d, group='A')
             yield Msg('wait', None, 'A')
             reading = Msg('read', d)[target_field]['value']
