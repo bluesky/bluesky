@@ -1274,7 +1274,7 @@ class RunEngine:
 
         if not stream:
             yield from self.emit(DocumentNames.bulk_events, bulk_data)
-        self.log.debug("Emitted bulk events")
+            self.log.debug("Emitted bulk events")
 
     @asyncio.coroutine
     def _null(self, msg):
