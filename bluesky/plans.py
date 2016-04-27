@@ -494,7 +494,7 @@ def kickoff(obj):
     yield Msg('kickoff', obj)
 
 
-def collect(obj):
+def collect(obj, *, stream=False):
     """
     Collect data cached by a fly-scanning device and emit documents.
 
@@ -502,13 +502,16 @@ def collect(obj):
     ----------
     obj : fly-able
         Device with 'kickoff' and 'collect' methods
+    stream : boolean
+        If False (default), emit events documents in one bulk dump. If True,
+        emit events one at time.
 
     Yields
     ------
     msg : Msg
         Msg('collect', obj)
     """
-    yield Msg('collect', obj)
+    yield Msg('collect', obj, stream=stream)
 
 
 def configure(obj, *args, **kwargs):
