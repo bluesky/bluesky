@@ -35,6 +35,7 @@ TEMPLATES['call'] = """RE({{ start.plan_type }}(
 {% endif %}{% endfor %}))
 """
 
+
 def logbook_cb_factory(logbook_func, desc_template=None, long_template=None):
     """Create a logbook run_start callback
 
@@ -100,10 +101,11 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None):
 
         atch = StringIO(long_msg.render(start=doc))
         # monkey-patch a 'name' attribute onto StringIO
-        atch.name = 'long_description'
+        atch.name = 'long_description.txt'
         desc = desc_msg.render(start=doc)
         logbook_func(text=desc, attachments=[atch], ensure=True)
     return lbcb
+
 
 def call_str(start, call_template=None):
     """Given a start document generate an evalable call scring
