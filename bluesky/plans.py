@@ -1948,10 +1948,11 @@ class Plan(Struct):
             setattr(self, key, val)
         try:
             plan_stack = deque()
-            with subs_context(plan_stack, subs):
-                plan = self._gen()
-                plan_stack.append(fly_during(plan, flyers))
-                plan_stack.append(single_gen(Msg('checkpoint')))
+            with stage_context(plan_stack, flyers):
+                with subs_context(plan_stack, subs):
+                    plan = self._gen()
+                    plan_stack.append(fly_during(plan, flyers))
+                    plan_stack.append(single_gen(Msg('checkpoint')))
         finally:
             for key, val in current_settings.items():
                 setattr(self, key, val)
