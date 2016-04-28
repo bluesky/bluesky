@@ -1220,11 +1220,13 @@ class RunEngine:
         Expect message object is
 
             Msg('collect', obj)
+            Msg('collect', obj, stream=True)
         """
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'collect' message was sent but no "
                                          "run is open.")
         obj = msg.obj
+        stream = msg.kwargs.get('stream', False)
         self._uncollected.discard(obj)
         stream_name = self._flyer_stream_names.pop(obj)
 
@@ -1265,10 +1267,14 @@ class RunEngine:
             ev['seq_num'] = seq_num
             ev['uid'] = event_uid
 
-            bulk_data[descriptor_uid].append(ev)
+            if stream:
+                yield from self.emit(DocumentNames.event, ev)
+            else:
+                bulk_data[descriptor_uid].append(ev)
 
-        yield from self.emit(DocumentNames.bulk_events, bulk_data)
-        self.log.debug("Emitted bulk events")
+        if not stream:
+            yield from self.emit(DocumentNames.bulk_events, bulk_data)
+            self.log.debug("Emitted bulk events")
 
     @asyncio.coroutine
     def _null(self, msg):

@@ -477,7 +477,7 @@ def deferred_pause():
     yield Msg('pause', defer=True)
 
 
-def kickoff(obj):
+def kickoff(obj, *, name=None, group=None, **kwargs):
     """
     Kickoff a fly-scanning device.
 
@@ -485,16 +485,22 @@ def kickoff(obj):
     ----------
     obj : fly-able
         Device with 'kickoff' and 'collect' methods
+    name : string, optional
+        event stream name, a convenient human-friendly identifier
+    group : string (or any hashable object), optional
+        identifier used by 'wait'
+    kwargs
+        passed through to ``obj.kickoff()``
 
     Yields
     ------
     msg : Msg
         Msg('kickoff', obj)
     """
-    yield Msg('kickoff', obj)
+    yield Msg('kickoff', obj, name=name, group=group, **kwargs)
 
 
-def collect(obj):
+def collect(obj, *, stream=False):
     """
     Collect data cached by a fly-scanning device and emit documents.
 
@@ -502,13 +508,16 @@ def collect(obj):
     ----------
     obj : fly-able
         Device with 'kickoff' and 'collect' methods
+    stream : boolean
+        If False (default), emit events documents in one bulk dump. If True,
+        emit events one at time.
 
     Yields
     ------
     msg : Msg
         Msg('collect', obj)
     """
-    yield Msg('collect', obj)
+    yield Msg('collect', obj, stream=stream)
 
 
 def configure(obj, *args, **kwargs):
