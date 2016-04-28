@@ -1477,7 +1477,7 @@ class RunEngine:
         _, obj, args, kwargs = msg
         # If an object has no 'stage' method, assume there is nothing to do.
         if not hasattr(obj, 'stage'):
-            return
+            return []
         result = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
         return result
@@ -1493,7 +1493,7 @@ class RunEngine:
         _, obj, args, kwargs = msg
         # If an object has no 'unstage' method, assume there is nothing to do.
         if not hasattr(obj, 'unstage'):
-            return
+            return []
         result = obj.unstage()
         # use `discard()` to ignore objects that are not in the staged set.
         self._staged.discard(obj)
