@@ -562,7 +562,9 @@ class RunEngine:
             return outstanding_requests
 
         self._interrupted = False
-        self._rewind()
+        new_plan = self._rewind()
+        self._genstack.append(new_plan)
+        self._response_stack.append(None)
         # Re-instate monitoring callbacks.
         for obj, (cb, kwargs) in self._monitor_params.items():
             obj.subscribe(cb, **kwargs)
@@ -574,9 +576,15 @@ class RunEngine:
         return self._run_start_uids
 
     def _rewind(self):
-        "Clean up in preparation for resuming from a pause or suspension."
-        self._genstack.append(ensure_generator(list(self._msg_cache)))
-        self._response_stack.append(None)
+        '''Clean up in preparation for resuming from a pause or suspension.
+
+        Returns
+        -------
+        new_plan : generator
+             A new plan made from the messages in the message cache
+
+        '''
+        new_plan = ensure_generator(list(self._msg_cache))
         self._msg_cache = deque()
         self._sequence_counters.clear()
         self._sequence_counters.update(self._teed_sequence_counters)
@@ -584,6 +592,7 @@ class RunEngine:
         # the pause happens after a 'checkpoint', after a 'create', but before
         # the paired 'save'.
         self._bundling = False
+        return new_plan
 
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
@@ -618,7 +627,9 @@ class RunEngine:
                 obj.clear_sub(cb)
             wait_msg = Msg('wait_for', None, [fut, ])
             self._msg_cache.appendleft(wait_msg)
-            self._rewind()
+            new_plan = self._rewind()
+            self._genstack.append(new_plan)
+            self._response_stack.append(None)
             # Notify Devices of the pause in case they want to clean up.
             for obj in self._objs_seen:
                 if hasattr(obj, 'pause'):
