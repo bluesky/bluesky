@@ -741,7 +741,8 @@ class RunEngine:
                     except KeyboardInterrupt:
                         raise
                     except Exception as e:
-                        self._genstack[-1].throw(e)
+                        msg = self._genstack[-1].throw(e)
+                        self._genstack.append((m for m in [msg]))
                     self.log.debug("Response: %r", response)
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
