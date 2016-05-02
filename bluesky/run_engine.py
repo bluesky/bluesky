@@ -1,5 +1,4 @@
 import asyncio
-import types
 import time as ttime
 import sys
 import logging
@@ -21,6 +20,8 @@ import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
 from . import Msg
+from .plans import ensure_generator
+
 
 loop = asyncio.get_event_loop()
 
@@ -516,10 +517,8 @@ class RunEngine:
         self._plan = plan
         self._metadata_per_call.update(metadata_kw)
 
-        gen = iter(plan)  # no-op on generators; needed for classes
-        if not isinstance(gen, types.GeneratorType):
-            # If plan does not support .send, we must wrap it in a generator.
-            gen = (msg for msg in gen)
+        gen = ensure_generator(plan)
+
         self._genstack.append(gen)
         self._new_gen = True
         # Intercept ^C.
@@ -576,7 +575,7 @@ class RunEngine:
 
     def _rewind(self):
         "Clean up in preparation for resuming from a pause or suspension."
-        self._genstack.append((msg for msg in list(self._msg_cache)))
+        self._genstack.append(ensure_generator(list(self._msg_cache)))
         self._new_gen = True
         self._msg_cache = deque()
         self._sequence_counters.clear()

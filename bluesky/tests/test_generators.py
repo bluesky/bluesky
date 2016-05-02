@@ -1,21 +1,12 @@
 import uuid
 from collections import deque
-import types
 from itertools import zip_longest
 
 from bluesky import Msg
 
 from bluesky.plans import (msg_mutator, plan_mutator, pchain,
-                           single_gen as single_message_gen, finalize)
-
-
-def ensure_generator(plan):
-    gen = iter(plan)  # no-op on generators; needed for classes
-    if not isinstance(gen, types.GeneratorType):
-        # If plan does not support .send, we must wrap it in a generator.
-        gen = (msg for msg in gen)
-
-    return gen
+                           single_gen as single_message_gen, finalize,
+                           ensure_generator)
 
 
 def EchoRE(plan, *, debug=False, msg_list=None):
