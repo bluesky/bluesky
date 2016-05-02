@@ -1,12 +1,11 @@
 import asyncio
-import itertools
 import types
 import time as ttime
 import sys
 import logging
 from warnings import warn
 from itertools import count, tee
-from collections import namedtuple, deque, defaultdict, Iterable
+from collections import namedtuple, deque, defaultdict
 import uuid
 import signal
 from enum import Enum
@@ -22,6 +21,7 @@ import numpy as np
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
 
 logger = logging.getLogger(__name__)
+loop = asyncio.get_event_loop()
 
 
 def expiring_function(func, *args, **kwargs):
@@ -38,10 +38,6 @@ def expiring_function(func, *args, **kwargs):
         return
 
     return dummy
-
-
-
-loop = asyncio.get_event_loop()
 
 
 class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):

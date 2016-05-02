@@ -120,10 +120,10 @@ def plan_mutator(plan, msg_proc):
             # this may be due to
             # a) the plan really raising or
             # b) an exception that came out of the run engine via ophyd
-            # If the plan is raising from it's side, then the next plan
-            # gets to see the exception on it's way out to the user.
+            # If the plan is raising from its side, then the next plan
+            # gets to see the exception on its way out to the user.
             # If this is a plan that came in through the RE, the top plan has
-            # had it's shot do deal with it and now the next plan gets it.
+            # had its shot do deal with it and now the next plan gets it.
             plan_stack.pop()
             if plan_stack:
                 msg = plan_stack[-1].throw(ex)
