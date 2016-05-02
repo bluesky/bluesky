@@ -201,9 +201,9 @@ class RunEngine:
         self._pause_requests = dict()  # holding {<name>: callable}
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
-        self._msg_cache = deque() # history of processed msgs for rewinding
+        self._msg_cache = deque()  # history of processed msgs for rewinding
         self._genstack = deque()  # stack of generators to work off of
-        self._new_gen = True  # flag if we need to prime the generator
+        self._response_stack = deque([None])  # responses to send into the plans
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
@@ -292,7 +292,7 @@ class RunEngine:
         self._deferred_pause_requested = False
         self._genstack = deque()
         self._msg_cache = deque()
-        self._new_gen = True
+        self._response_stack = deque([None])
         self._exception = None
         self._run_start_uids.clear()
         self._exit_status = 'success'
@@ -520,7 +520,7 @@ class RunEngine:
         gen = ensure_generator(plan)
 
         self._genstack.append(gen)
-        self._new_gen = True
+        self._response_stack.append(None)
         # Intercept ^C.
         with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
             self._task = loop.create_task(self._run())
@@ -576,7 +576,7 @@ class RunEngine:
     def _rewind(self):
         "Clean up in preparation for resuming from a pause or suspension."
         self._genstack.append(ensure_generator(list(self._msg_cache)))
-        self._new_gen = True
+        self._response_stack.append(None)
         self._msg_cache = deque()
         self._sequence_counters.clear()
         self._sequence_counters.update(self._teed_sequence_counters)
@@ -674,7 +674,6 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
-        response = None
         self._reason = ''
         try:
             while True:
@@ -692,8 +691,8 @@ class RunEngine:
                     # Send last response;
                     # get new message but don't process it yet.
                     try:
-                        msg = self._genstack[-1].send(
-                            response if not self._new_gen else None)
+                        resp = self._response_stack.pop()
+                        msg = self._genstack[-1].send(resp)
 
                     except StopIteration:
                         self._genstack.pop()
@@ -708,11 +707,11 @@ class RunEngine:
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
-                    self._new_gen = False
                     try:
                         coro = self._command_registry[msg.command]
                         self.log.debug("Processing %r", msg)
                         response = yield from coro(msg)
+                        self._response_stack.append(response)
                     except KeyboardInterrupt:
                         raise
                     except Exception as e:
@@ -1348,7 +1347,7 @@ class RunEngine:
         """
         group = msg.kwargs.get('group', msg.args[0])
         futs = list(self._groups.pop(group, []))
-        if futs :
+        if futs:
             yield from self._wait_for(Msg('wait_for', None, futs))
 
     def _failed_status(self, ret):
