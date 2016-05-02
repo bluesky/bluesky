@@ -20,7 +20,7 @@ import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
 from . import Msg
-from .plans import ensure_generator
+from .plans import ensure_generator, single_gen
 
 
 loop = asyncio.get_event_loop()
@@ -609,13 +609,22 @@ class RunEngine:
                 if exc is not None:
                     raise exc
 
-    def request_suspend(self, fut):
+    def request_suspend(self, fut, *, pre_plan=None, post_plan=None):
         """
         Request that the run suspend itself until the future is finished.
+
+        The two plans will be run before and after waiting for the future.
+        This enable doing things like opening and closing shutters and
+        resetting cameras around a suspend.
 
         Parameters
         ----------
         fut : asyncio.Future
+        pre_plan : iterable, optional
+            Plan to execute just before suspending
+
+        post_plan : iterable, optional
+            Plan to execute just before resuming
         """
         if not self.resumable:
             print("No checkpoint; cannot suspend. Aborting...")
@@ -625,11 +634,24 @@ class RunEngine:
             # Stash a copy in a local var to re-instating the monitors.
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
                 obj.clear_sub(cb)
-            wait_msg = Msg('wait_for', None, [fut, ])
-            self._msg_cache.appendleft(wait_msg)
+
+            # rewind to the last checkpoint
             new_plan = self._rewind()
+            # queue up the cached messages
             self._genstack.append(new_plan)
             self._response_stack.append(None)
+            # if there is a post plan add it between the wait
+            # and the cached messages
+            if post_plan is not None:
+                self._genstack.append(ensure_generator(post_plan))
+                self._response_stack.append(None)
+            # add the wait on the future to the stack
+            self._genstack.append(single_gen(Msg('wait_for', None, [fut, ])))
+            self._response_stack.append(None)
+            # if there is a pre plan add on top of the wait
+            if pre_plan is not None:
+                self._genstack.append(ensure_generator(pre_plan))
+                self._response_stack.append(None)
             # Notify Devices of the pause in case they want to clean up.
             for obj in self._objs_seen:
                 if hasattr(obj, 'pause'):

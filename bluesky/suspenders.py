@@ -22,7 +22,8 @@ class PVSuspenderBase(metaclass=ABCMeta):
         The event loop to work on
 
     """
-    def __init__(self, signal, *, sleep=0, loop=None):
+    def __init__(self, signal, *, sleep=0, loop=None,
+                 pre_plan=None, post_plan=None):
         """
         """
         if loop is None:
@@ -33,6 +34,8 @@ class PVSuspenderBase(metaclass=ABCMeta):
         self._sleep = sleep
         self._lock = Lock()
         self._sig = signal
+        self._pre_plan = pre_plan
+        self._post_plan = post_plan
 
     def install(self, RE, *, event_type=None):
         '''Install callback on PV
@@ -114,7 +117,9 @@ class PVSuspenderBase(metaclass=ABCMeta):
 
                     loop.call_soon_threadsafe(
                         self.RE.request_suspend,
-                        self._ev.wait())
+                        self._ev.wait(),
+                        pre_plan=self._pre_plan,
+                        post_plan=self._post_plan)
             elif self._should_resume(value):
                 self._tripped = False
                 if self._ev:
