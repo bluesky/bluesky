@@ -11,7 +11,7 @@ import numpy as np
 from cycler import cycler
 from boltons.iterutils import chunked
 
-from .run_engine import Msg
+from . import Msg
 
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists)

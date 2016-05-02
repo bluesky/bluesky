@@ -5,7 +5,7 @@ import sys
 import logging
 from warnings import warn
 from itertools import count, tee
-from collections import namedtuple, deque, defaultdict
+from collections import deque, defaultdict
 import uuid
 import signal
 from enum import Enum
@@ -20,6 +20,7 @@ from super_state_machine.errors import TransitionError
 import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
+from . import Msg
 
 loop = asyncio.get_event_loop()
 
@@ -38,17 +39,6 @@ def expiring_function(func, *args, **kwargs):
         return
 
     return dummy
-
-
-class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
-    __slots__ = ()
-
-    def __new__(cls, command, obj=None, *args, **kwargs):
-        return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
-
-    def __repr__(self):
-        return '{}: ({}), {}, {}'.format(
-            self.command, self.obj, self.args, self.kwargs)
 
 
 class RunEngineStateMachine(StateMachine):
