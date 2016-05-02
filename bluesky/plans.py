@@ -498,6 +498,23 @@ def deferred_pause():
     yield Msg('pause', defer=True)
 
 
+def input(prompt=''):
+    """
+    Prompt the user for text input.
+
+    Parameters
+    ----------
+    prompt : str
+        prompt string, e.g., 'enter user name' or 'enter next position'
+
+    Yields
+    ------
+    msg : Msg
+        Msg('input', prompt=prompt)
+    """
+    return (yield from (m in [Msg('input', prompt=prompt)]))
+
+
 def kickoff(obj, *, name=None, group=None, **kwargs):
     """
     Kickoff a fly-scanning device.

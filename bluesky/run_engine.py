@@ -9,6 +9,7 @@ from collections import namedtuple, deque, defaultdict
 import uuid
 import signal
 from enum import Enum
+import functools
 
 
 import jsonschema
@@ -237,6 +238,7 @@ class RunEngine:
             'open_run': self._open_run,
             'close_run': self._close_run,
             'wait_for': self._wait_for,
+            'input': _input,
         }
 
         # public dispatcher for callbacks
@@ -1646,6 +1648,37 @@ class Dispatcher:
     @ignore_exceptions.setter
     def ignore_exceptions(self, val):
         self.cb_registry.ignore_exceptions = val
+
+class AsyncInput:
+    """a input prompt that allows event loop to run in the background
+
+    adapted from http://stackoverflow.com/a/35514777/1221924
+    """
+    def __init__(self, loop=None):
+        self.loop = loop or asyncio.get_event_loop()
+        self.q = asyncio.Queue(loop=self.loop)
+        self.loop.add_reader(sys.stdin, self.got_input)
+
+    def got_input(self):
+        asyncio.ensure_future(self.q.put(sys.stdin.readline()), loop=self.loop)
+
+    @asyncio.coroutine
+    def __call__(self, prompt, end='\n', flush=False):
+        print(prompt, end=end, flush=flush)
+        return (yield from self.q.get()).rstrip('\n')
+
+
+@asyncio.coroutine
+def _input(msg):
+    """
+    Process a 'input' Msg. Excpected Msg:
+
+        Msg('input', None)
+        Msg('input', None, prompt='>')  # customize prompt
+    """
+    prompt = msg.kwargs.get('prompt', '')
+    async_input = functools.partial(AsyncInput(), end='', flush=True)
+    return (yield from async_input(prompt))
 
 
 def new_uid():
