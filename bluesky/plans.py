@@ -83,38 +83,12 @@ def plan_mutator(plan, msg_proc):
     result_stack.append(None)
 
     while True:
+        # get last result
+        ret = result_stack.pop()
         try:
-            # get last result
-            ret = result_stack.pop()
             # send last result to the top most generator in the
             # stack this may raise StopIteration
             msg = plan_stack[-1].send(ret)
-
-            # if inserting / mutating, put new generator on the stack
-            # and replace the current msg with the first element from the
-            # new generator
-            if id(msg) not in msgs_seen:
-                # Use the id as a hash, and hold a reference to the msg so that
-                # it cannot be garbage collected until the plan is complete.
-                msgs_seen[id(msg)] = msg
-
-                new_gen, tail_gen = msg_proc(msg)
-                # mild correctness check
-                if tail_gen is not None and new_gen is None:
-                    raise RuntimeError("This makes no sense")
-                if new_gen is not None:
-                    # stash the new generator
-                    plan_stack.append(new_gen)
-                    # put in a result value to prime it
-                    result_stack.append(None)
-                    # stash the tail generator
-                    tail_cache[id(new_gen)] = tail_gen
-                    # go to the top of the loop
-                    continue
-
-            # yield out the 'current message' and collect the return
-            inner_ret = yield msg
-            result_stack.append(inner_ret)
 
         except StopIteration:
             # discard the exhausted generator
@@ -142,8 +116,55 @@ def plan_mutator(plan, msg_proc):
             else:
                 return plan.close()
         except Exception as ex:
-            plan.throw(ex)
+            # we are here because an exception came out of the send
+            # this may be due to
+            # a) the plan really raising or
+            # b) an exception that came out of the run engine via ophyd
+            # If the plan is raising from its side, then the next plan
+            # gets to see the exception on its way out to the user.
+            # If this is a plan that came in through the RE, the top plan has
+            # had its shot do deal with it and now the next plan gets it.
+            plan_stack.pop()
+            if plan_stack:
+                msg = plan_stack[-1].throw(ex)
+                plan_stack.append(single_gen(msg))
+                result_stack.append(None)
+                continue
+            else:
+                raise ex
+
+        # if inserting / mutating, put new generator on the stack
+        # and replace the current msg with the first element from the
+        # new generator
+        if id(msg) not in msgs_seen:
+            # Use the id as a hash, and hold a reference to the msg so that
+            # it cannot be garbage collected until the plan is complete.
+            msgs_seen[id(msg)] = msg
+
+            new_gen, tail_gen = msg_proc(msg)
+            # mild correctness check
+            if tail_gen is not None and new_gen is None:
+                raise RuntimeError("This makes no sense")
+            if new_gen is not None:
+                # stash the new generator
+                plan_stack.append(new_gen)
+                # put in a result value to prime it
+                result_stack.append(None)
+                # stash the tail generator
+                tail_cache[id(new_gen)] = tail_gen
+                # go to the top of the loop
+                continue
+
+        try:
+            # yield out the 'current message' and collect the return
+            inner_ret = yield msg
+        except Exception as ex:
+            msg = plan.throw(ex)
+            plan_stack.append(single_gen(msg))
             result_stack.append(None)
+            continue
+
+        result_stack.append(inner_ret)
 
 
 def msg_mutator(plan, msg_proc):
