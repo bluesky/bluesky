@@ -199,11 +199,12 @@ class RunEngine:
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo datapoints
         self._pause_requests = dict()  # holding {<name>: callable}
+        self._suspenders = set()  # dict holding suspenders
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._plan_stack = deque()  # stack of generators to work off of
-        self._response_stack = deque([None])  # responses to send into the plans
+        self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
@@ -252,6 +253,10 @@ class RunEngine:
         self._lossless_dispatcher = Dispatcher()
 
         loop.call_soon(self._check_for_signals)
+
+    @property
+    def suspenders(self):
+        return tuple(self._suspenders)
 
     @property
     def verbose(self):
@@ -507,6 +512,7 @@ class RunEngine:
         if not self.state.is_idle:
             raise RuntimeError("The RunEngine is in a %s state" % self.state)
 
+        futs = [f for sup in self.suspenders for f in sup.get_futures()]
         self._clear_call_cache()
         self.state = 'running'
 
@@ -521,10 +527,15 @@ class RunEngine:
 
         self._plan_stack.append(gen)
         self._response_stack.append(None)
+        if futs:
+            self._plan_stack.append(single_gen(Msg('wait_for', None, futs)))
+            self._response_stack.append(None)
+
         # Intercept ^C.
         with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
             self._task = loop.create_task(self._run())
             loop.run_forever()
+
             if self._task.done() and not self._task.cancelled():
                 exc = self._task.exception()
                 if exc is not None:
@@ -608,6 +619,15 @@ class RunEngine:
                 exc = self._task.exception()
                 if exc is not None:
                     raise exc
+
+    def install_suspender(self, suspender):
+        self._suspenders.add(suspender)
+        suspender.install(self)
+
+    def remove_suspender(self, suspender):
+        rm = self._suspenders.pop(suspender, None)
+        if rm is not None:
+            rm.remove()
 
     def request_suspend(self, fut, *, pre_plan=None, post_plan=None):
         """
