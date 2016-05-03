@@ -16,10 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class SignalHandler:
-    def __init__(self, sig):
+    def __init__(self, sig, log=None):
         self.sig = sig
         self.interrupted = False
         self.count = 0
+        self.log = log
 
     def __enter__(self):
         self.interrupted = False
@@ -31,6 +32,9 @@ class SignalHandler:
         def handler(signum, frame):
             self.interrupted = True
             self.count += 1
+            if self.log is not None:
+                self.log.debug('SignalHandler caught SIGINT; count is %r',
+                               self.count)
 
         signal.signal(self.sig, handler)
         return self

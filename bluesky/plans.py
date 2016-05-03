@@ -428,9 +428,9 @@ def sleep(time):
     Yields
     ------
     msg : Msg
-        Msg('sleep', time)
+        Msg('sleep', None, time)
     """
-    yield Msg('sleep', time)
+    yield Msg('sleep', None, time)
 
 
 def wait(group=None):
