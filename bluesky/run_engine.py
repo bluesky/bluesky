@@ -20,7 +20,6 @@ import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
 
-logger = logging.getLogger(__name__)
 loop = asyncio.get_event_loop()
 
 
@@ -771,17 +770,17 @@ class RunEngine:
         except (FailedPause, RequestAbort, asyncio.CancelledError):
             self._exit_status = 'abort'
             yield from asyncio.sleep(0.001)  # TODO Do we need this?
-            logger.error("Run aborted")
-            logger.error("%s", self._exception)
+            self.log.error("Run aborted")
+            self.log.error("%s", self._exception)
             if isinstance(self._exception, PanicError):
-                logger.critical("RE panicked")
+                self.log.critical("RE panicked")
                 self._exit_status = 'fail'
                 raise self._exception
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
             self._reason = str(err)
-            logger.error("Run aborted")
-            logger.error("%s", err)
+            self.log.error("Run aborted")
+            self.log.error("%s", err)
             raise err
         finally:
             # call stop() on every movable object we ever set() or kickoff()
@@ -792,13 +791,13 @@ class RunEngine:
                 try:
                     yield from self._collect(Msg('collect', obj))
                 except Exception:
-                    logger.error("Failed to collect %r", obj)
+                    self.log.error("Failed to collect %r", obj)
             # in case we were interrupted between 'stage' and 'unstage'
             for obj in list(self._staged):
                 try:
                     obj.unstage()
                 except Exception:
-                    logger.error("Failed to unstage %r", obj)
+                    self.log.error("Failed to unstage %r", obj)
                 self._staged.remove(obj)
             # Clear any uncleared monitoring callbacks.
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
@@ -810,7 +809,7 @@ class RunEngine:
                 try:
                     yield from self._close_run(Msg('close_run'))
                 except Exception:
-                    logger.error("Failed to close run %r", self._run_start_uid)
+                    self.log.error("Failed to close run %r", self._run_start_uid)
                     # Exceptions from the callbacks should be re-raised.
                     # Close the loop first.
                     for task in asyncio.Task.all_tasks(loop):
