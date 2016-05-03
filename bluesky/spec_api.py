@@ -201,6 +201,7 @@ def mesh(*args, time=None, md=None):
     shape = []
     extents = []
     for motor, start, stop, num, in chunked(args, 4):
+        motors.append(motor)
         shape.append(num)
         extents.append([start, stop])
 
@@ -212,7 +213,7 @@ def mesh(*args, time=None, md=None):
         # extents go in (x, y)
         raster = LiveRaster(shape, gs.MASTER_DET_FIELD, xlabel=xlab,
                             ylabel=ylab, extent=list(chain(*extents[::-1])))
-        subs['all'].append(raster) 
+        subs['all'].append(raster)
 
     # outer_product_scan expects a 'snake' param for all but fist motor
     chunked_args = iter(chunked(args, 4))
