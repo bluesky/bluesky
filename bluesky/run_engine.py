@@ -202,7 +202,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
-        self._genstack = deque()  # stack of generators to work off of
+        self._plan_stack = deque()  # stack of generators to work off of
         self._response_stack = deque([None])  # responses to send into the plans
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
@@ -290,7 +290,7 @@ class RunEngine:
         self._objs_seen.clear()
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
-        self._genstack = deque()
+        self._plan_stack = deque()
         self._msg_cache = deque()
         self._response_stack = deque([None])
         self._exception = None
@@ -519,7 +519,7 @@ class RunEngine:
 
         gen = ensure_generator(plan)
 
-        self._genstack.append(gen)
+        self._plan_stack.append(gen)
         self._response_stack.append(None)
         # Intercept ^C.
         with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
@@ -563,7 +563,7 @@ class RunEngine:
 
         self._interrupted = False
         new_plan = self._rewind()
-        self._genstack.append(new_plan)
+        self._plan_stack.append(new_plan)
         self._response_stack.append(None)
         # Re-instate monitoring callbacks.
         for obj, (cb, kwargs) in self._monitor_params.items():
@@ -638,19 +638,19 @@ class RunEngine:
             # rewind to the last checkpoint
             new_plan = self._rewind()
             # queue up the cached messages
-            self._genstack.append(new_plan)
+            self._plan_stack.append(new_plan)
             self._response_stack.append(None)
             # if there is a post plan add it between the wait
             # and the cached messages
             if post_plan is not None:
-                self._genstack.append(ensure_generator(post_plan))
+                self._plan_stack.append(ensure_generator(post_plan))
                 self._response_stack.append(None)
             # add the wait on the future to the stack
-            self._genstack.append(single_gen(Msg('wait_for', None, [fut, ])))
+            self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
             self._response_stack.append(None)
             # if there is a pre plan add on top of the wait
             if pre_plan is not None:
-                self._genstack.append(ensure_generator(pre_plan))
+                self._plan_stack.append(ensure_generator(pre_plan))
                 self._response_stack.append(None)
             # Notify Devices of the pause in case they want to clean up.
             for obj in self._objs_seen:
@@ -725,11 +725,11 @@ class RunEngine:
                     # get new message but don't process it yet.
                     try:
                         resp = self._response_stack.pop()
-                        msg = self._genstack[-1].send(resp)
+                        msg = self._plan_stack[-1].send(resp)
 
                     except StopIteration:
-                        self._genstack.pop()
-                        if len(self._genstack):
+                        self._plan_stack.pop()
+                        if len(self._plan_stack):
                             continue
                         else:
                             raise
@@ -748,8 +748,8 @@ class RunEngine:
                     except KeyboardInterrupt:
                         raise
                     except Exception as e:
-                        msg = self._genstack[-1].throw(e)
-                        self._genstack.append((m for m in [msg]))
+                        msg = self._plan_stack[-1].throw(e)
+                        self._plan_stack.append((m for m in [msg]))
                     self.log.debug("Response: %r", response)
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
