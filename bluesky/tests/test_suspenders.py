@@ -1,24 +1,24 @@
 import pytest
 import ophyd
 import sys
-from bluesky.suspenders import (PVSuspendBoolHigh,
-                                PVSuspendBoolLow,
-                                PVSuspendFloor,
-                                PVSuspendCeil,
-                                PVSuspendInBand,
-                                PVSuspendOutBand)
+from bluesky.suspenders import (SuspendBoolHigh,
+                                SuspendBoolLow,
+                                SuspendFloor,
+                                SuspendCeil,
+                                SuspendInBand,
+                                SuspendOutBand)
 from bluesky import RunEngine, Msg
 import time as ttime
 
 
 @pytest.mark.parametrize(
     'klass,sc_args,start_val,fail_val,resume_val,wait_time',
-    [(PVSuspendBoolHigh, (), 0, 1, 0, .5),
-     (PVSuspendBoolLow, (), 1, 0, 1, .5),
-     (PVSuspendFloor, (.5,), 1, 0, 1, .5),
-     (PVSuspendCeil, (.5,), 0, 1, 0, .5),
-     (PVSuspendInBand, (.5, 1.5), 1, 0, 1, .5),
-     (PVSuspendOutBand, (.5, 1.5), 0, 1, 0, .5)])
+    [(SuspendBoolHigh, (), 0, 1, 0, .5),
+     (SuspendBoolLow, (), 1, 0, 1, .5),
+     (SuspendFloor, (.5,), 1, 0, 1, .5),
+     (SuspendCeil, (.5,), 0, 1, 0, .5),
+     (SuspendInBand, (.5, 1.5), 1, 0, 1, .5),
+     (SuspendOutBand, (.5, 1.5), 0, 1, 0, .5)])
 def test_suspender(klass, sc_args, start_val, fail_val,
                    resume_val, wait_time):
     RE = RunEngine({})

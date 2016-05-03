@@ -5,14 +5,14 @@ from threading import Lock
 from functools import partial
 
 
-class PVSuspenderBase(metaclass=ABCMeta):
+class SuspenderBase(metaclass=ABCMeta):
     """An ABC to manage the callbacks between asyincio and pyepics.
 
 
     Parameters
     ----------
-    pv_name : str
-        The PV to watch for changes to determine if the
+    sig : `ophyd.Signal`
+        The signal to watch for changes to determine if the
         scan should be suspended
 
     sleep : float, optional
@@ -21,6 +21,9 @@ class PVSuspenderBase(metaclass=ABCMeta):
 
     loop : BaseEventLoop, optional
         The event loop to work on
+
+    pre_plan,  : iterator, optional
+
 
     """
     def __init__(self, signal, *, sleep=0, loop=None,
@@ -39,7 +42,7 @@ class PVSuspenderBase(metaclass=ABCMeta):
         self._post_plan = post_plan
 
     def install(self, RE, *, event_type=None):
-        '''Install callback on PV
+        '''Install callback on signal
 
         This (re)installs the required callbacks at the pyepics level
 
@@ -66,7 +69,7 @@ class PVSuspenderBase(metaclass=ABCMeta):
     @abstractmethod
     def _should_suspend(self, value):
         """
-        Determine if the current value of the PV is such
+        Determine if the current value of the signal is such
         that we need to tell the scan to suspend
 
         Parameters
@@ -141,9 +144,9 @@ class PVSuspenderBase(metaclass=ABCMeta):
         return self._tripped
 
 
-class PVSuspendBoolHigh(PVSuspenderBase):
+class SuspendBoolHigh(SuspenderBase):
     """
-    Suspender which suspends the scan when a boolean PV
+    Suspender which suspends the scan when a boolean signal
     goes high and resumes when the value goes low.
 
     Parameters
@@ -153,7 +156,7 @@ class PVSuspendBoolHigh(PVSuspenderBase):
         The run engine instance this should work on
 
     pv_name : str
-        The PV to watch for changes to determine if the
+        The signal to watch for changes to determine if the
         scan should be suspended
 
     sleep : float, optional
@@ -171,9 +174,9 @@ class PVSuspendBoolHigh(PVSuspenderBase):
         return not bool(value)
 
 
-class PVSuspendBoolLow(PVSuspenderBase):
+class SuspendBoolLow(SuspenderBase):
     """
-    Suspender which suspends the scan when a boolean PV
+    Suspender which suspends the scan when a boolean signal
     goes low and resumes when the value goes high.
 
     Parameters
@@ -183,7 +186,7 @@ class PVSuspendBoolLow(PVSuspenderBase):
         The run engine instance this should work on
 
     pv_name : str
-        The PV to watch for changes to determine if the
+        The signal to watch for changes to determine if the
         scan should be suspended
 
     sleep : float, optional
@@ -201,10 +204,10 @@ class PVSuspendBoolLow(PVSuspenderBase):
         return bool(value)
 
 
-class _PVThreshold(PVSuspenderBase):
+class _Threshold(SuspenderBase):
     """
     Private base class for suspenders that watch when a scalar
-    PV fall above or below a threshold.  Allow for a possibly different
+    signal fall above or below a threshold.  Allow for a possibly different
     threshold to resume.
     """
     def __init__(self, signal, suspend_thresh, *,
@@ -231,9 +234,9 @@ class _PVThreshold(PVSuspenderBase):
         pass
 
 
-class PVSuspendFloor(_PVThreshold):
+class SuspendFloor(_Threshold):
     """
-    A suspender that watches a scalar PV and suspends when it
+    A suspender that watches a scalar signal and suspends when it
     falls below a given threshold.  Optionally, the threshold to
     resume can be set to be greater than the threshold to suspend.
 
@@ -244,14 +247,14 @@ class PVSuspendFloor(_PVThreshold):
         The run engine instance this should work on
 
     pv_name : str
-        The PV to watch for changes to determine if the
+        The signal to watch for changes to determine if the
         scan should be suspended
 
     suspend_thresh : float
-        Suspend if the PV value falls below this value
+        Suspend if the signal value falls below this value
 
     resume_thresh : float, optional
-        Resume when the PV value rises above this value.  If not
+        Resume when the signal value rises above this value.  If not
         given set to `suspend_thresh`.  Must be greater than `suspend_thresh`.
 
     sleep : float, optional
@@ -276,9 +279,9 @@ class PVSuspendFloor(_PVThreshold):
         return operator.lt
 
 
-class PVSuspendCeil(_PVThreshold):
+class SuspendCeil(_Threshold):
     """
-    A suspender that watches a scalar PV and suspends when it
+    A suspender that watches a scalar signal and suspends when it
     rises above a given threshold.  Optionally, the threshold to
     resume can be set to be less than the threshold to suspend.
 
@@ -289,14 +292,14 @@ class PVSuspendCeil(_PVThreshold):
         The run engine instance this should work on
 
     pv_name : str
-        The PV to watch for changes to determine if the
+        The signal to watch for changes to determine if the
         scan should be suspended
 
     suspend_thresh : float
-        Suspend if the PV value rises above this value
+        Suspend if the signal value rises above this value
 
     resume_thresh : float, optional
-        Resume when the PV value falls below this value.  If not
+        Resume when the signal value falls below this value.  If not
         given set to `suspend_thresh`.  Must be less than `suspend_thresh`.
 
     sleep : float, optional
@@ -321,7 +324,7 @@ class PVSuspendCeil(_PVThreshold):
         return operator.gt
 
 
-class _PVSuspendBandBase(PVSuspenderBase):
+class _SuspendBandBase(SuspenderBase):
     """
     Private base-class for suspenders based on keeping a scalar inside
     or outside of a band
@@ -338,9 +341,9 @@ class _PVSuspendBandBase(PVSuspenderBase):
         self._top = band_top
 
 
-class PVSuspendInBand(_PVSuspendBandBase):
+class SuspendInBand(_SuspendBandBase):
     """
-    A suspender class to keep a scalar PV with in a band.  Suspends if
+    A suspender class to keep a scalar signal with in a band.  Suspends if
     the value leaves the band, resume when it re-enters.
 
     Parameters
@@ -350,7 +353,7 @@ class PVSuspendInBand(_PVSuspendBandBase):
         The run engine instance this should work on
 
     pv_name : str
-        The PV to watch for changes to determine if the
+        The signal to watch for changes to determine if the
         scan should be suspended
 
     band_bottom, band_top : float
@@ -372,12 +375,12 @@ class PVSuspendInBand(_PVSuspendBandBase):
         return not (self._bot < value < self._top)
 
 
-class PVSuspendOutBand(_PVSuspendBandBase):
+class SuspendOutBand(_SuspendBandBase):
     """
-    A suspender class to keep a scalar PV out of a band.  Suspends if
+    A suspender class to keep a scalar signal out of a band.  Suspends if
     the value enters the band and resumes when it leaves.
 
-    This is mostly here because it is the opposite of `PVSuspenderInBand`.
+    This is mostly here because it is the opposite of `SuspenderInBand`.
 
     Parameters
     ----------
@@ -386,7 +389,7 @@ class PVSuspendOutBand(_PVSuspendBandBase):
         The run engine instance this should work on
 
     pv_name : str
-        The PV to watch for changes to determine if the
+        The signal to watch for changes to determine if the
         scan should be suspended
 
     band_bottom, band_top : float
