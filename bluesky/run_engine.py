@@ -438,11 +438,7 @@ class RunEngine:
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
             obj.clear_sub(cb)
         # During pause, all motors should be stopped.
-        for obj in self._movable_objs_touched:
-            try:
-                obj.stop()
-            except Exception:
-                logger.error("Failed to stop %r", obj)
+        self._stop_movable_objects()
         # Notify Devices of the pause in case they want to clean up.
         for obj in self._objs_seen:
             if hasattr(obj, 'pause'):
@@ -686,6 +682,19 @@ class RunEngine:
         if self.state == 'paused':
             self._resume_event_loop()
 
+    def _stop_movable_objects(self):
+        "Call obj.stop() for all objects we have moved. Log any exceptions."
+        for obj in self._movable_objs_touched:
+            try:
+                stop = obj.stop
+            except AttributeError:
+                self.log.debug("No 'stop' method available on %r", obj)
+            else:
+                try:
+                    stop()
+                except Exception as exc:
+                    self.log.error("Failed to stop %r. Error: %r", obj, exc)
+
     @asyncio.coroutine
     def _run(self):
         """Pull messages from the plan, process them, send results back.
@@ -767,11 +776,7 @@ class RunEngine:
             raise err
         finally:
             # call stop() on every movable object we ever set() or kickoff()
-            for obj in self._movable_objs_touched:
-                try:
-                    obj.stop()
-                except Exception:
-                    logger.error("Failed to stop %r", obj)
+            self._stop_movable_objects()
             # Try to collect any flyers that were kicked off but not finished.
             # Some might not support partial collection. We swallow errors.
             for obj in list(self._uncollected):
