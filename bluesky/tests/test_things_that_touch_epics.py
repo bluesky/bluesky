@@ -82,7 +82,8 @@ def _test_suspender(suspender_class, sc_args, start_val, fail_val,
                     "ImportError: {}".format(ie))
     if sys.platform == 'darwin':
         pytest.xfail('OSX event loop is different; resolve this later')
-    my_suspender = suspender_class(RE, 'BSTEST:VAL', *sc_args, sleep=wait_time)
+    my_suspender = suspender_class('BSTEST:VAL', *sc_args, sleep=wait_time)
+    my_suspender.install(RE)
     print(my_suspender._lock)
     pv = epics.PV('BSTEST:VAL')
     putter = partial(pv.put, wait=True)
