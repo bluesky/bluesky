@@ -20,7 +20,8 @@ import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
 from . import Msg
-from .plans import ensure_generator, single_gen
+from .plan_tools import ensure_generator
+from .plans import single_gen
 
 
 loop = asyncio.get_event_loop()
@@ -132,11 +133,17 @@ class RunEngine:
             skipped
         ignore_callback_exceptions
             boolean, True by default
+
         msg_hook
             callable that receives all messages before they are processed
             (useful for logging or other development purposes); expected
             signature is ``f(msg)`` where ``msg`` is a ``bluesky.Msg``, a
             kind of namedtuple; default is None
+
+        suspenders
+            read-only collection of `bluesky.suspenders.SuspenderBase` objects
+            which can suspend and resume execution; see related methods.
+
 
         Methods
         -------
@@ -621,10 +628,32 @@ class RunEngine:
                     raise exc
 
     def install_suspender(self, suspender):
+        """
+        Install a 'suspender', which can suspend and resume execution.
+
+        Parameters
+        ----------
+        suspender : `bluesky.suspenders.SuspenderBase`
+
+        See Also
+        --------
+        `RunEngine.remove_suspender`
+        """
         self._suspenders.add(suspender)
         suspender.install(self)
 
     def remove_suspender(self, suspender):
+        """
+        Uninstall a suspender.
+
+        Parameters
+        ----------
+        suspender : `bluesky.suspenders.SuspenderBase`
+
+        See Also
+        --------
+        `RunEngine.install_suspender`
+        """
         rm = self._suspenders.pop(suspender, None)
         if rm is not None:
             rm.remove()

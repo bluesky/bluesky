@@ -5,8 +5,9 @@ from itertools import zip_longest
 from bluesky import Msg
 
 from bluesky.plans import (msg_mutator, plan_mutator, pchain,
-                           single_gen as single_message_gen, finalize,
-                           ensure_generator)
+                           single_gen as single_message_gen, finalize)
+
+from bluesky.plan_tools import ensure_generator
 
 
 def EchoRE(plan, *, debug=False, msg_list=None):

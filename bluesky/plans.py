@@ -18,15 +18,6 @@ from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists)
 
 
-def ensure_generator(plan):
-    gen = iter(plan)  # no-op on generators; needed for classes
-    if not isinstance(gen, types.GeneratorType):
-        # If plan does not support .send, we must wrap it in a generator.
-        gen = (msg for msg in gen)
-
-    return gen
-
-
 def _short_uid(label, truncate=6):
     "Return a readable but unique id like 'label-fjfi5a'"
     return '-'.join([label, str(uuid.uuid4())[:truncate]])
