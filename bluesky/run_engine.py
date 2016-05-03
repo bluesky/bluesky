@@ -190,6 +190,8 @@ class RunEngine:
         self._bundle_name = None  # name given to event descriptor
         self._deferred_pause_requested = False  # pause at next 'checkpoint'
         self._sigint_handler = None  # intercepts Ctrl+C
+        self._last_sigint_time = None  # time most recent SIGINT was processed
+        self._num_sigints_processed = 0  # count SIGINTs processed
         self._exception = None  # stored and then raised in the _run loop
         self._interrupted = False  # True if paused, aborted, or failed
         self._objs_read = deque()  # objects read in one Event
@@ -311,6 +313,8 @@ class RunEngine:
         self._task = None
         self._plan = None
         self._interrupted = False
+        self._last_sigint_time = None
+        self._num_sigints_processed = 0
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -630,6 +634,8 @@ class RunEngine:
         # may be called by 'resume' or 'abort'
         self.state = 'running'
         with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
+        self._last_sigint_time = None
+        self._num_sigints_processed = 0
             if self._task.done():
                 return
             loop.run_forever()
@@ -844,21 +850,54 @@ class RunEngine:
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
         if self.state.is_running:
-            if self._sigint_handler.interrupted:
-                with SignalHandler(signal.SIGINT) as second_sigint_handler:
-                    self.log.debug("RunEngine detected a SIGINT (Ctrl+C)")
+            count = self._sigint_handler.count
+            if count > self._num_sigints_processed:
+                self._num_sigints_processed = count
+                self.log.debug("RunEngine caught a new SIGINT")
+                self._last_sigint_time = ttime.time()
+
+                if count == 1:
+                    # Ctrl-C once -> request a deferred pause
+                    if not self._deferred_pause_requested:
+                        loop.call_soon(self.request_pause, True, 'SIGINT')
+                        print("A 'deferred pause' has been requested. The "
+                              "RunEngine will pause at the next checkpoint. "
+                              "To pause immediately, hit Ctrl+C again in the "
+                              "next 10 seconds.")
+                elif count > 1:
+                    # - Ctrl-C twice within 10 seconds -> hard pause
+                    # - Ctrl-C twice with 10 seconds and then again within
+                    #       0.5 seconds -> abort
+                    #
                     # We know we will either pause or abort, so we can
                     # hold up the scan now. Wait until 0.5 seconds pass or
                     # we catch a second SIGINT, whichever happens first.
+                    self.log.debug("RunEngine detected a second SIGINT -- "
+                                   "waiting 0.5 seconds for a third.")
                     for i in range(10):
                         ttime.sleep(0.05)
-                        if second_sigint_handler.interrupted:
-                            self.log.debug("RunEngine detected as second SIGINT")
+                        if self._sigint_handler.count > 2:
+                            self.log.debug("RunEngine detected a third "
+                                            "SIGINT -- aborting.")
                             loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
                             break
                     else:
+                        self.log.debug("RunEngine detected two SIGINTs. "
+                                       "A hard pause will be requested.")
                         loop.call_soon(self.request_pause, False, 'SIGINT')
                         print(PAUSE_MSG)
+            else:
+                # No new SIGINTs to process.
+                if self._num_sigints_processed > 0:
+                    if ttime.time() - self._last_sigint_time > 10:
+                        self.log.debug("It has been 10 seconds since the "
+                                       "last SIGINT. Resetting SIGINT "
+                                       "handler.")
+                        # It's been 10 seconds since the last SIGINT. Reset.
+                        self._num_sigints_processed = 0
+                        self._sigint_handler.count = 0
+                        self._sigint_handler.interrupted = False
+                        self._last_sigint_time = None
 
         loop.call_later(0.1, self._check_for_signals)
 
@@ -1731,7 +1770,7 @@ resume()  --> will resume the scan
   stop()  --> will kill the scan with a 'finished' state to indicate
               the scan stopped normally
 
-Pro Tip: Next time, if you want to abort, tap Ctrl+C twice quickly.
+Pro Tip: Next time, if you want to abort, tap Ctrl+C three times quickly.
 """
 
 

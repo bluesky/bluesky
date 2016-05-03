@@ -312,6 +312,7 @@ def test_pause_resume():
     assert RE.state == 'idle'
     start = ttime.time()
     loop.call_later(1, sim_kill)
+    loop.call_later(1.1, sim_kill)
     loop.call_later(2, done)
 
     RE(scan)
@@ -341,6 +342,7 @@ def test_pause_abort():
     assert RE.state == 'idle'
     start = ttime.time()
     loop.call_later(1, sim_kill)
+    loop.call_later(1.1, sim_kill)
     loop.call_later(2, done)
 
     RE(scan)
