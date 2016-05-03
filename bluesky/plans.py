@@ -498,6 +498,23 @@ def deferred_pause():
     yield Msg('pause', defer=True)
 
 
+def input(prompt=''):
+    """
+    Prompt the user for text input.
+
+    Parameters
+    ----------
+    prompt : str
+        prompt string, e.g., 'enter user name' or 'enter next position'
+
+    Yields
+    ------
+    msg : Msg
+        Msg('input', prompt=prompt)
+    """
+    return (yield from (m in [Msg('input', prompt=prompt)]))
+
+
 def kickoff(obj, *, name=None, group=None, **kwargs):
     """
     Kickoff a fly-scanning device.
@@ -1864,6 +1881,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     return [plan]
 
 
+@planify
 def tweak(detector, target_field, motor, step, *, md=None):
     """
     Move and motor and read a detector with an interactive prompt.
@@ -1907,10 +1925,11 @@ def tweak(detector, target_field, motor, step, *, md=None):
                 pos = ret_mot[key]['value']
             yield Msg('trigger', d, group='A')
             yield Msg('wait', None, 'A')
-            reading = Msg('read', d)[target_field]['value']
+            reading = yield Msg('read', d)
+            val = reading[target_field]['value']
             yield Msg('save')
-            prompt = prompt_str.format(motor.name, pos, reading, step)
-            new_step = input(prompt)
+            prompt = prompt_str.format(motor.name, pos, val, step)
+            new_step = yield Msg('input', prompt=prompt)
             if new_step:
                 try:
                     step = float(new_step)
