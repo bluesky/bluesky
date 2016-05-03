@@ -762,6 +762,9 @@ class RunEngine:
                     # -- overriding the RunEngine -- and then raises instead
                     # of (properly) calling the RunEngine's handler.
                     # See https://github.com/NSLS-II/bluesky/pull/242
+                    print("An unknown external library has improperly raised "
+                          "KeyboardInterrupt. Intercepting and triggering "
+                          "a hard pause instead.")
                     loop.call_soon(self.request_pause, False, 'SIGINT')
                     print(PAUSE_MSG)
         except (StopIteration, RequestStop):
