@@ -564,7 +564,8 @@ class RunEngine:
             gen = (msg for msg in gen)
         self._genstack.append(gen)
         self._new_gen = True
-        with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
+        # Intercept ^C.
+        with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
             self._task = loop.create_task(self._run())
             loop.run_forever()
             if self._task.done() and not self._task.cancelled():
@@ -633,9 +634,10 @@ class RunEngine:
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
         self.state = 'running'
-        with SignalHandler(signal.SIGINT) as self._sigint_handler:  # ^C
         self._last_sigint_time = None
         self._num_sigints_processed = 0
+        # Intercept ^C
+        with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
             if self._task.done():
                 return
             loop.run_forever()
