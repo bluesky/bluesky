@@ -2,6 +2,7 @@ import asyncio
 from abc import ABCMeta, abstractmethod, abstractproperty
 import operator
 from threading import Lock
+from functools import partial
 
 
 class PVSuspenderBase(metaclass=ABCMeta):
@@ -107,29 +108,30 @@ class PVSuspenderBase(metaclass=ABCMeta):
 
         This expects the massive blob that comes from pyepics
         """
-
         with self._lock:
             if self._should_suspend(value):
                 self._tripped = True
                 if self._ev is None and self.RE is not None:
-                    loop = self.RE.loop
+                    loop = self.RE._loop
                     self._ev = asyncio.Event(loop=loop)
 
-                    loop.call_soon_threadsafe(
+                    cb = partial(
                         self.RE.request_suspend,
                         self._ev.wait(),
                         pre_plan=self._pre_plan,
                         post_plan=self._post_plan)
+
+                    loop.call_soon_threadsafe(cb)
             elif self._should_resume(value):
                 self._tripped = False
                 if self._ev:
-
+                    ev = self._ev
                     sleep = self._sleep
                     if self.RE is not None:
-                        loop = self.RE.loop
+                        loop = self.RE._loop
 
                         def local():
-                            loop.call_later(sleep, self._ev.set)
+                            loop.call_later(sleep, ev.set)
                         loop.call_soon_threadsafe(local)
                 # clear that we have an event
                 self._ev = None
