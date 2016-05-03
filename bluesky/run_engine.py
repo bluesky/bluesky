@@ -141,6 +141,11 @@ class RunEngine:
             skipped
         ignore_callback_exceptions
             boolean, True by default
+        msg_hook
+            callable that receives all messages before they are processed
+            (useful for logging or other development purposes); expected
+            signature is ``f(msg)`` where ``msg`` is a ``bluesky.Msg``, a
+            kind of namedtuple; default is None
 
         Methods
         -------
@@ -174,6 +179,8 @@ class RunEngine:
         if md_validator is None:
             md_validator = _default_md_validator
         self.md_validator = md_validator
+
+        self.msg_hook = None
 
         # The RunEngine keeps track of a *lot* of state.
         # All flags and caches are defined here with a comment. Good luck.
@@ -724,6 +731,8 @@ class RunEngine:
                             continue
                         else:
                             raise
+                    if self.msg_hook is not None:
+                        self.msg_hook(msg)
                     self._objs_seen.add(msg.obj)
                     if (self._msg_cache is not None and
                             msg.command not in self._UNCACHEABLE_COMMANDS):
