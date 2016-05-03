@@ -65,6 +65,8 @@ class SuspenderBase(metaclass=ABCMeta):
         '''
         self.sig.clear_sub(self)
         self.RE = None
+        self._tripped = False
+        self.__set_event()
 
     @abstractmethod
     def _should_suspend(self, value):
@@ -105,19 +107,18 @@ class SuspenderBase(metaclass=ABCMeta):
         raise NotImplementedError()
 
     def __call__(self, value, **kwargs):
-        """
-        Make the class callable so that we can
-        pass it off to the pyepics callback stack.
+        """Make the class callable so that we can
+        pass it off to the ophyd callback stack.
 
-        This expects the massive blob that comes from pyepics
+        This expects the massive blob that comes from ophyd
         """
         with self._lock:
             if self._should_suspend(value):
                 self._tripped = True
+                loop = self.RE._loop
+                # this does dirty things with internal state
                 if self._ev is None and self.RE is not None:
-                    loop = self.RE._loop
-                    self._ev = asyncio.Event(loop=loop)
-
+                    self.__make_future()
                     cb = partial(
                         self.RE.request_suspend,
                         self._ev.wait(),
@@ -127,17 +128,38 @@ class SuspenderBase(metaclass=ABCMeta):
                     loop.call_soon_threadsafe(cb)
             elif self._should_resume(value):
                 self._tripped = False
-                if self._ev:
-                    ev = self._ev
-                    sleep = self._sleep
-                    if self.RE is not None:
-                        loop = self.RE._loop
+                self.__set_event()
 
-                        def local():
-                            loop.call_later(sleep, ev.set)
-                        loop.call_soon_threadsafe(local)
-                # clear that we have an event
-                self._ev = None
+    def __make_future(self):
+        if self._ev is None and self.RE is not None:
+            loop = self.RE._loop
+            self._ev = asyncio.Event(loop=loop)
+        return self._ev
+
+    def __set_event(self):
+        '''Notify the event that it can resume
+        '''
+        if self._ev:
+            ev = self._ev
+            sleep = self._sleep
+            if self.RE is not None:
+                loop = self.RE._loop
+
+                def local():
+                    loop.call_later(sleep, ev.set)
+                loop.call_soon_threadsafe(local)
+        # clear that we have an event
+        self._ev = None
+
+    def get_futures(self):
+        '''Return a list of futures to wait on.
+
+        This will only work correctly if this suspender is 'installed'
+        and watching a signal
+        '''
+        if not self.tripped:
+            return []
+        return [self.__make_future()]
 
     @property
     def tripped(self):
