@@ -1,6 +1,38 @@
+import types
 import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
+
+
+PLAN_TYPES = (types.GeneratorType,)
+try:
+    from types import CoroutineType
+except ImportError:
+    # < py35
+    pass
+else:
+    PLAN_TYPES = PLAN_TYPES + (CoroutineType, )
+    del CoroutineType
+
+
+def ensure_generator(plan):
+    """
+    Ensure that the input is a generator.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+
+    Returns
+    -------
+    gen : coroutine
+    """
+    gen = iter(plan)  # no-op on generators; needed for classes
+    if not isinstance(gen, PLAN_TYPES):
+        # If plan does not support .send, we must wrap it in a generator.
+        gen = (msg for msg in gen)
+
+    return gen
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None):

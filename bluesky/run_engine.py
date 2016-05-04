@@ -1,11 +1,10 @@
 import asyncio
-import types
 import time as ttime
 import sys
 import logging
 from warnings import warn
 from itertools import count, tee
-from collections import namedtuple, deque, defaultdict
+from collections import deque, defaultdict
 import uuid
 import signal
 from enum import Enum
@@ -20,6 +19,10 @@ from super_state_machine.errors import TransitionError
 import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
+from . import Msg
+from .plan_tools import ensure_generator
+from .plans import single_gen
+
 
 loop = asyncio.get_event_loop()
 
@@ -38,17 +41,6 @@ def expiring_function(func, *args, **kwargs):
         return
 
     return dummy
-
-
-class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
-    __slots__ = ()
-
-    def __new__(cls, command, obj=None, *args, **kwargs):
-        return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
-
-    def __repr__(self):
-        return '{}: ({}), {}, {}'.format(
-            self.command, self.obj, self.args, self.kwargs)
 
 
 class RunEngineStateMachine(StateMachine):
@@ -141,11 +133,17 @@ class RunEngine:
             skipped
         ignore_callback_exceptions
             boolean, True by default
+
         msg_hook
             callable that receives all messages before they are processed
             (useful for logging or other development purposes); expected
             signature is ``f(msg)`` where ``msg`` is a ``bluesky.Msg``, a
             kind of namedtuple; default is None
+
+        suspenders
+            read-only collection of `bluesky.suspenders.SuspenderBase` objects
+            which can suspend and resume execution; see related methods.
+
 
         Methods
         -------
@@ -208,11 +206,12 @@ class RunEngine:
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo datapoints
         self._pause_requests = dict()  # holding {<name>: callable}
+        self._suspenders = set()  # dict holding suspenders
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
-        self._msg_cache = deque() # history of processed msgs for rewinding
-        self._genstack = deque()  # stack of generators to work off of
-        self._new_gen = True  # flag if we need to prime the generator
+        self._msg_cache = deque()  # history of processed msgs for rewinding
+        self._plan_stack = deque()  # stack of generators to work off of
+        self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
@@ -263,6 +262,10 @@ class RunEngine:
         loop.call_soon(self._check_for_signals)
 
     @property
+    def suspenders(self):
+        return tuple(self._suspenders)
+
+    @property
     def verbose(self):
         return not self.log.disabled
 
@@ -299,9 +302,9 @@ class RunEngine:
         self._objs_seen.clear()
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
-        self._genstack = deque()
+        self._plan_stack = deque()
         self._msg_cache = deque()
-        self._new_gen = True
+        self._response_stack = deque([None])
         self._exception = None
         self._run_start_uids.clear()
         self._exit_status = 'success'
@@ -516,6 +519,7 @@ class RunEngine:
         if not self.state.is_idle:
             raise RuntimeError("The RunEngine is in a %s state" % self.state)
 
+        futs = [f for sup in self.suspenders for f in sup.get_futures()]
         self._clear_call_cache()
         self.state = 'running'
 
@@ -526,16 +530,19 @@ class RunEngine:
         self._plan = plan
         self._metadata_per_call.update(metadata_kw)
 
-        gen = iter(plan)  # no-op on generators; needed for classes
-        if not isinstance(gen, types.GeneratorType):
-            # If plan does not support .send, we must wrap it in a generator.
-            gen = (msg for msg in gen)
-        self._genstack.append(gen)
-        self._new_gen = True
+        gen = ensure_generator(plan)
+
+        self._plan_stack.append(gen)
+        self._response_stack.append(None)
+        if futs:
+            self._plan_stack.append(single_gen(Msg('wait_for', None, futs)))
+            self._response_stack.append(None)
+
         # Intercept ^C.
         with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
             self._task = loop.create_task(self._run())
             loop.run_forever()
+
             if self._task.done() and not self._task.cancelled():
                 exc = self._task.exception()
                 if exc is not None:
@@ -573,7 +580,9 @@ class RunEngine:
             return outstanding_requests
 
         self._interrupted = False
-        self._rewind()
+        new_plan = self._rewind()
+        self._plan_stack.append(new_plan)
+        self._response_stack.append(None)
         # Re-instate monitoring callbacks.
         for obj, (cb, kwargs) in self._monitor_params.items():
             obj.subscribe(cb, **kwargs)
@@ -585,9 +594,15 @@ class RunEngine:
         return self._run_start_uids
 
     def _rewind(self):
-        "Clean up in preparation for resuming from a pause or suspension."
-        self._genstack.append((msg for msg in list(self._msg_cache)))
-        self._new_gen = True
+        '''Clean up in preparation for resuming from a pause or suspension.
+
+        Returns
+        -------
+        new_plan : generator
+             A new plan made from the messages in the message cache
+
+        '''
+        new_plan = ensure_generator(list(self._msg_cache))
         self._msg_cache = deque()
         self._sequence_counters.clear()
         self._sequence_counters.update(self._teed_sequence_counters)
@@ -595,6 +610,7 @@ class RunEngine:
         # the pause happens after a 'checkpoint', after a 'create', but before
         # the paired 'save'.
         self._bundling = False
+        return new_plan
 
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
@@ -611,13 +627,53 @@ class RunEngine:
                 if exc is not None:
                     raise exc
 
-    def request_suspend(self, fut):
+    def install_suspender(self, suspender):
+        """
+        Install a 'suspender', which can suspend and resume execution.
+
+        Parameters
+        ----------
+        suspender : `bluesky.suspenders.SuspenderBase`
+
+        See Also
+        --------
+        `RunEngine.remove_suspender`
+        """
+        self._suspenders.add(suspender)
+        suspender.install(self)
+
+    def remove_suspender(self, suspender):
+        """
+        Uninstall a suspender.
+
+        Parameters
+        ----------
+        suspender : `bluesky.suspenders.SuspenderBase`
+
+        See Also
+        --------
+        `RunEngine.install_suspender`
+        """
+        rm = self._suspenders.pop(suspender, None)
+        if rm is not None:
+            rm.remove()
+
+    def request_suspend(self, fut, *, pre_plan=None, post_plan=None):
         """
         Request that the run suspend itself until the future is finished.
+
+        The two plans will be run before and after waiting for the future.
+        This enable doing things like opening and closing shutters and
+        resetting cameras around a suspend.
 
         Parameters
         ----------
         fut : asyncio.Future
+        pre_plan : iterable, optional
+            Plan to execute just before suspending
+
+        post_plan : iterable, optional
+            Plan to execute just before resuming
         """
         if not self.resumable:
             print("No checkpoint; cannot suspend. Aborting...")
@@ -627,9 +683,24 @@ class RunEngine:
             # Stash a copy in a local var to re-instating the monitors.
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
                 obj.clear_sub(cb)
-            wait_msg = Msg('wait_for', None, [fut, ])
-            self._msg_cache.appendleft(wait_msg)
-            self._rewind()
+
+            # rewind to the last checkpoint
+            new_plan = self._rewind()
+            # queue up the cached messages
+            self._plan_stack.append(new_plan)
+            self._response_stack.append(None)
+            # if there is a post plan add it between the wait
+            # and the cached messages
+            if post_plan is not None:
+                self._plan_stack.append(ensure_generator(post_plan))
+                self._response_stack.append(None)
+            # add the wait on the future to the stack
+            self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
+            self._response_stack.append(None)
+            # if there is a pre plan add on top of the wait
+            if pre_plan is not None:
+                self._plan_stack.append(ensure_generator(pre_plan))
+                self._response_stack.append(None)
             # Notify Devices of the pause in case they want to clean up.
             for obj in self._objs_seen:
                 if hasattr(obj, 'pause'):
@@ -685,7 +756,6 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
-        response = None
         self._reason = ''
         try:
             while True:
@@ -703,12 +773,12 @@ class RunEngine:
                     # Send last response;
                     # get new message but don't process it yet.
                     try:
-                        msg = self._genstack[-1].send(
-                            response if not self._new_gen else None)
+                        resp = self._response_stack.pop()
+                        msg = self._plan_stack[-1].send(resp)
 
                     except StopIteration:
-                        self._genstack.pop()
-                        if len(self._genstack):
+                        self._plan_stack.pop()
+                        if len(self._plan_stack):
                             continue
                         else:
                             raise
@@ -719,16 +789,17 @@ class RunEngine:
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
-                    self._new_gen = False
                     try:
                         coro = self._command_registry[msg.command]
                         self.log.debug("Processing %r", msg)
                         response = yield from coro(msg)
+                        self._response_stack.append(response)
                     except KeyboardInterrupt:
                         raise
                     except Exception as e:
-                        msg = self._genstack[-1].throw(e)
-                        self._genstack.append((m for m in [msg]))
+                        msg = self._plan_stack[-1].throw(e)
+                        self._plan_stack.append(single_gen(msg))
+                        self._response_stack.append(None)
                     self.log.debug("Response: %r", response)
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
@@ -1359,7 +1430,7 @@ class RunEngine:
         """
         group = msg.kwargs.get('group', msg.args[0])
         futs = list(self._groups.pop(group, []))
-        if futs :
+        if futs:
             yield from self._wait_for(Msg('wait_for', None, futs))
 
     def _failed_status(self, ret):
