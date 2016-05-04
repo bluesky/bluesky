@@ -24,10 +24,6 @@ from .plans import InnerProductDeltaScanPlan
 from .plans import OuterProductAbsScanPlan
 from .plans import OuterProductDeltaScanPlan
 from .plans import Tweak
-from .plans import SpiralScan
-from .plans import SpiralFermatScan
-from .plans import RelativeSpiralScan
-from .plans import RelativeSpiralFermatScan
 
 from ._version import get_versions
 __version__ = get_versions()['version']
