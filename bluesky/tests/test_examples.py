@@ -2,11 +2,11 @@ import pytest
 from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               wait_multiple, motor1, motor2, conditional_pause,
                               loop, checkpoint_forever, simple_scan_saving,
-                              stepscan, MockFlyer, fly_gen, panic_timer,
+                              stepscan, MockFlyer, fly_gen,
                               conditional_break, SynGauss
                               )
 from bluesky.callbacks import LivePlot
-from bluesky import (RunEngine, Msg, PanicError, IllegalMessageSequence,
+from bluesky import (RunEngine, Msg, IllegalMessageSequence,
                      RunEngineInterrupted, FailedStatus)
 from bluesky.tests.utils import setup_test_run_engine
 import os
@@ -116,33 +116,6 @@ def test_pause_from_outside():
     assert RE.state == 'paused'
 
     RE.abort()
-    assert RE.state == 'idle'
-
-
-def test_panic_during_pause():
-    assert RE.state == 'idle'
-    RE(conditional_pause(det, motor, False, True))
-    RE.panic()
-    assert RE._panic
-    with pytest.raises(PanicError):
-        RE.resume()
-    # If we panic while paused, we can un-panic and resume.
-    RE.all_is_well()
-    assert RE.state == 'paused'
-    RE.abort()
-    assert RE.state == 'idle'
-
-
-def test_panic_timer():
-    assert RE.state == 'idle'
-    panic_timer(RE, 1)  # panic in 1 second
-    with pytest.raises(PanicError):
-        RE(checkpoint_forever())
-    # If we panic while runnning, we cannot resume. The run is aborted and we
-    # land in 'idle'
-    assert RE.state == 'idle'
-    assert RE._panic
-    RE.all_is_well()
     assert RE.state == 'idle'
 
 

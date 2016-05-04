@@ -3,11 +3,11 @@ logger = logging.getLogger(__name__)
 
 from .run_engine import Msg
 from .run_engine import RunEngine
-from .run_engine import PanicError
 from .run_engine import RunEngineInterrupted
 from .run_engine import IllegalMessageSequence
 from .run_engine import FailedStatus
 
+# for back-compat
 from .plans import PlanBase
 from .plans import Count
 from .plans import AbsListScanPlan
