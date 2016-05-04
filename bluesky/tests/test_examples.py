@@ -79,12 +79,33 @@ def test_hard_pause():
 
 
 def test_deferred_pause():
+    # deferred pause should be processed once and then clear
+    # (future checkpoints should not trigger another pause)
+    RE = RunEngine({})
     assert RE.state == 'idle'
-    RE(conditional_pause(det, motor, True, True))
+    RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('checkpoint'),
+        Msg('checkpoint')])
+    assert RE.state == 'paused'
+    RE.resume()
+    assert RE.state == 'idle'
+
+    # deferred pause should never be processed, being superceded by a hard
+    # pause
+    RE = RunEngine({})
+    RE([Msg('pause', defer=True), Msg('pause', defer=False),
+        Msg('checkpoint')])
+    assert RE.state == 'paused'
+    RE.resume()
+    assert RE.state == 'idle'
+
+
+    RE = RunEngine({})
+    RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('pause', defer=True),
+        Msg('checkpoint')])
     assert RE.state == 'paused'
     RE.resume()
     assert RE.state == 'paused'
-    RE.abort()
+    RE.resume()
     assert RE.state == 'idle'
 
 

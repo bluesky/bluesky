@@ -406,6 +406,8 @@ class RunEngine:
             print("Deferred pause acknowledged. Continuing to checkpoint.")
             return
 
+        # We are pausing. Cancel any deferred pause previously requested.
+        self._deferred_pause_requested = False
         self._interrupted = True
         print("Pausing...")
         self.state = 'paused'
@@ -1503,9 +1505,12 @@ class RunEngine:
             self._teed_sequence_counters[key] = counter_copy2
 
         if self._deferred_pause_requested:
-            self._interrupted = True
-            self.state = 'paused'
-            loop.stop()
+            # We are at a checkpoint; we are done deferring the pause.
+            # Give the _check_for_signals courtine time to look for
+            # additional SIGINTs that would trigger a non-deferred pause or
+            # an abort.
+            yield from asyncio.sleep(0.5)
+            self.request_pause(defer=False)
 
     @asyncio.coroutine
     def _clear_checkpoint(self, msg):
