@@ -482,7 +482,7 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
 
 
 @planify
-def spiral(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
+def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
            per_step=None, md=None):
     '''Relative spiral scan
 
@@ -510,7 +510,7 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
         metadata
     '''
     plan = aspiral(x_motor, y_motor, x_motor.position, y_motor.position,
-                   x_range, y_range, dr, factor, time=time, per_step=per_step,
+                   x_range, y_range, dr, nth, time=time, per_step=per_step,
                    md=md)
     plan = plans.reset_positions(plan)  # return motors to starting pos
     return [plan]
