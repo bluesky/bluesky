@@ -38,6 +38,10 @@ The names below are links. Click for details, and see below for examples.
     relative_inner_product_scan
     relative_outer_product_scan
     scan_nd
+    spiral
+    spiral_fermat
+    relative_spiral
+    relative_spiral_fermat
     adaptive_scan
     relative_adaptive_scan
     tweak
@@ -322,6 +326,10 @@ The ``set`` method is a convenient way to update multiple parameters at once.
     RelativeInnerProductScan
     RelativeOuterProductScan
     ScanND
+    SpiralScan
+    SpiralFermatScan
+    RelativeSpiralScan
+    RelativeSpiralFermatScan
     AdaptiveScan
     RelativeAdaptiveScan
     Tweak
