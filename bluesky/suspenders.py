@@ -117,8 +117,8 @@ class SuspenderBase(metaclass=ABCMeta):
                 self._tripped = True
                 loop = self.RE._loop
                 # this does dirty things with internal state
-                if self._ev is None and self.RE is not None:
-                    self.__make_future()
+                if (self._ev is None and self.RE is not None):
+                    self.__make_event()
                     cb = partial(
                         self.RE.request_suspend,
                         self._ev.wait(),
@@ -130,7 +130,7 @@ class SuspenderBase(metaclass=ABCMeta):
                 self._tripped = False
                 self.__set_event()
 
-    def __make_future(self):
+    def __make_event(self):
         if self._ev is None and self.RE is not None:
             loop = self.RE._loop
             self._ev = asyncio.Event(loop=loop)
@@ -159,7 +159,7 @@ class SuspenderBase(metaclass=ABCMeta):
         '''
         if not self.tripped:
             return []
-        return [self.__make_future()]
+        return [self.__make_event().wait()]
 
     @property
     def tripped(self):
