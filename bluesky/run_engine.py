@@ -791,7 +791,6 @@ class RunEngine:
                         self._msg_cache.append(msg)
                     try:
                         coro = self._command_registry[msg.command]
-                        self.log.debug("Processing %r", msg)
                         response = yield from coro(msg)
                         self._response_stack.append(response)
                     except KeyboardInterrupt:
@@ -800,7 +799,6 @@ class RunEngine:
                         msg = self._plan_stack[-1].throw(e)
                         self._plan_stack.append(single_gen(msg))
                         self._response_stack.append(None)
-                    self.log.debug("Response: %r", response)
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
                     # -- overriding the RunEngine -- and then raises instead
@@ -957,12 +955,11 @@ class RunEngine:
         self._clear_run_cache()
         self._run_start_uid = new_uid()
         self._run_start_uids.append(self._run_start_uid)
-        self.log.debug("Starting new run: %s", self._run_start_uid)
+        self.log.debug("Starting new with uid %r", self._run_start_uid)
 
         # Increment scan ID
         scan_id = self.md.get('scan_id', 0) + 1
         self.md['scan_id'] = scan_id
-        self.log.debug("New transient id %d", scan_id)
 
         # Metadata can come from historydict, __call__, or the open_run Msg.
         self._metadata_per_run.update(self.md)
@@ -981,7 +978,7 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid, time=ttime.time(),
                    **self._metadata_per_run)
         yield from self.emit(DocumentNames.start, doc)
-        self.log.debug("Emitted RunStart")
+        self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
 
     @asyncio.coroutine
     def _close_run(self, msg):
@@ -1008,7 +1005,7 @@ class RunEngine:
                    reason=self._reason)
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
-        self.log.debug("Emitted RunStop")
+        self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
 
     @asyncio.coroutine
     def _create(self, msg):
@@ -1117,7 +1114,9 @@ class RunEngine:
                         data_keys=data_keys, uid=descriptor_uid,
                         configuration=config, name=name,
                         object_keys=object_keys)
-        self.log.debug("Emitted Event Descriptor")
+        self.log.debug("Emitted Event Descriptor with name %r containing "
+                       "data keys %r (uid=%r)", name, data_keys.keys(),
+                       descriptor_uid)
         seq_num_counter = count()
 
         def emit_event(*args, **kwargs):
@@ -1202,7 +1201,9 @@ class RunEngine:
                        configuration=config, name=self._bundle_name,
                        object_keys=object_keys)
             yield from self.emit(DocumentNames.descriptor, doc)
-            self.log.debug("Emitted Event Descriptor")
+            self.log.debug("Emitted Event Descriptor with name %r containing "
+                           "data keys %r (uid=%r)", self._bundle_name,
+                           data_keys.keys(), descriptor_uid)
             self._descriptors[(self._bundle_name, objs_read)] = descriptor_uid
         else:
             descriptor_uid = self._descriptors[(self._bundle_name, objs_read)]
@@ -1227,7 +1228,8 @@ class RunEngine:
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid)
         yield from self.emit(DocumentNames.event, doc)
-        self.log.debug("Emitted Event")
+        self.log.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
+                       event_uid)
 
     @asyncio.coroutine
     def _kickoff(self, msg):
@@ -1316,7 +1318,9 @@ class RunEngine:
                            data_keys=data_keys, uid=descriptor_uid,
                            name=stream_name)
                 yield from self.emit(DocumentNames.descriptor, doc)
-                self.log.debug("Emitted Event Descriptor")
+                self.log.debug("Emitted Event Descriptor with name %r "
+                               "containing data keys %r (uid=%r)", stream_name,
+                               data_keys.keys(), descriptor_uid)
                 self._descriptors[(stream_name, objs_read)] = descriptor_uid
                 self._sequence_counters[objs_read] = count(1)
             else:
@@ -1339,13 +1343,16 @@ class RunEngine:
             ev['uid'] = event_uid
 
             if stream:
+                self.log.debug("Emitted Event with data keys %r (uid=%r)",
+                               ev['data'].keys(), ev['uid'])
                 yield from self.emit(DocumentNames.event, ev)
             else:
                 bulk_data[descriptor_uid].append(ev)
 
         if not stream:
             yield from self.emit(DocumentNames.bulk_events, bulk_data)
-            self.log.debug("Emitted bulk events")
+            self.log.debug("Emitted bulk events for descriptors with uids "
+                           "%r", bulk_data.keys())
 
     @asyncio.coroutine
     def _null(self, msg):
