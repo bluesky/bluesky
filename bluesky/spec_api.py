@@ -391,6 +391,9 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
 
     See Also
     --------
+    `bluesky.spec_api.fermat`
+    `bluesky.spec_api.aspiral`
+    `bluesky.spec_api.spiral`
     '''
     subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
                     ]}
@@ -432,6 +435,12 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
         details.
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.spec_api.afermat`
+    `bluesky.spec_api.aspiral`
+    `bluesky.spec_api.spiral`
     '''
     plan = afermat(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, factor, time=time, per_step=per_step,
@@ -467,6 +476,12 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
         details.
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.spec_api.fermat`
+    `bluesky.spec_api.afermat`
+    `bluesky.spec_api.spiral`
     '''
     subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
                     ]}
@@ -508,6 +523,12 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
         details.
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.spec_api.fermat`
+    `bluesky.spec_api.afermat`
+    `bluesky.spec_api.aspiral`
     '''
     plan = aspiral(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, nth, time=time, per_step=per_step,
