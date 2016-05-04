@@ -170,26 +170,6 @@ def stop():
     return gs.RE.stop()
 
 
-def panic():
-    """
-    A convenience function to 'panic' the RunEngine, forbidding it to run
-    until all_is_well is called.
-
-    This function closes over the global RunEngine instance, gs.RE.
-    """
-    return gs.RE.panic()
-
-
-def all_is_well():
-    """
-    A convenience function to 'un-panic' the RunEngine, allowing normal
-    operation.
-
-    This function closes over the global RunEngine instance, gs.RE.
-    """
-    return gs.RE.all_is_well()
-
-
 def state():
     """
     A convenience function to return the state of the RunEngine.

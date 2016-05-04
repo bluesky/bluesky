@@ -566,11 +566,6 @@ def conditional_pause(det, motor, defer, include_checkpoint):
     yield Msg('close_run')
 
 
-def panic_timer(RE, delay):
-    loop = asyncio.get_event_loop()
-    loop.call_later(delay, RE.panic)
-
-
 def simple_scan_saving(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')

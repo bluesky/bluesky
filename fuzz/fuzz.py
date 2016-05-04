@@ -166,7 +166,6 @@ all_scan_generator_funcs = [
     wait_multiple,
     wait_complex,
     conditional_pause,
-    panic_timer,
     simple_scan_saving,
     stepscan,
     cautious_stepscan,

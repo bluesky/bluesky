@@ -230,28 +230,3 @@ The states are:
 * ``'idle'``: RunEngine is waiting for instructions.
 * ``'running'``: RunEngine is executing instructions.
 * ``'paused'``: RunEngine is waiting for user input. It can be 
-
-
-"Panic": an Emergency Stop
---------------------------
-
-.. warning::
-
-   Bluesky can immediately stop data collection in the event of a emergency
-   stop, but it should not be relied on to protect hardware in the event
-   of a dangerous condition. It may not have the necessary repsonse time or
-   dependability.
-
-A panic is similar to a pause. It is different in the following ways:
-
-* A panic can happen from any state.
-* It is requested by calling ``RE.panic()``, a method which takes no
-  arguments.
-* Once the beamline is "panicked," it is not possible to resume or run a new
-  scan until ``RE.all_is_well()`` has been called.
-* If a panic happens while RunEngine is in the 'running' state, it always
-  aborts the ongoing run without the option of resuming it.
-* If a panic happens while the RunEngine is in the 'paused' state, it is
-  possible to resume after ``RE.all_is_well()`` has been called.
-
-.. automethod:: bluesky.run_engine.RunEngine.panic
