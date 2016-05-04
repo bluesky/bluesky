@@ -10,7 +10,8 @@ def test_basic_usage_for_smoke():
                     'test. ImportError: {}'.format(ie))
     from bluesky.global_state import gs
     from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
-                                  d3scan, mesh, th2th)
+                                  d3scan, mesh, th2th, afermat, fermat, spiral,
+                                  aspiral)
     gs.DETS = [det]
     with pytest.raises(TraitError):
         gs.DETS = [det, det]  # no duplicate data keys
@@ -32,6 +33,10 @@ def test_basic_usage_for_smoke():
     RE(d3scan(motor, 1, 2, 2))
     RE(mesh(motor1, 1, 2, 2, motor2, 1, 2, 3))
     RE(th2th(1, 2, 2))
+    RE(aspiral(motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0))
+    RE(spiral(motor1, motor2, 0.1, 0.1, 0.05, 1.0))
+    RE(afermat(motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0))
+    RE(fermat(motor1, motor2, 0.1, 0.1, 0.05, 1.0))
     # with count time specified as keyword arg
     RE(ct())
     RE(ascan(motor, 1, 2, 2, time=0.1))
@@ -42,6 +47,10 @@ def test_basic_usage_for_smoke():
     RE(d3scan(motor, 1, 2, 2, time=0.1))
     RE(mesh(motor1, 1, 2, 2, motor2, 1, 2, 3, time=0.1))
     RE(th2th(1, 2, 2, time=0.1))
+    RE(aspiral(motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0, time=0.1))
+    RE(spiral(motor1, motor2, 0.1, 0.1, 0.05, 1.0, time=0.1))
+    RE(afermat(motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0, time=0.1))
+    RE(fermat(motor1, motor2, 0.1, 0.1, 0.05, 1.0, time=0.1))
     flyer = FlyMagic('wheee', motor, det1, det2)
     gs.FLYERS = [flyer]
     RE(ct())

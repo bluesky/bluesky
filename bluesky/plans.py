@@ -983,7 +983,7 @@ def relative_set(plan, devices=None):
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
                 return pchain(read_and_stash_a_motor(msg.obj),
-                               single_gen(msg)), None
+                              single_gen(msg)), None
         else:
             return None, None
 
@@ -1072,7 +1072,7 @@ def configure_count_time(plan, time):
                 # event stream.
                 original_times[obj] = obj.count_time.get()
                 return pchain(single_gen(Msg('set', obj.count_time, time)),
-                               single_gen(msg)), None
+                              single_gen(msg)), None
         return None, None
 
     def reset():
@@ -1950,6 +1950,204 @@ def tweak(detector, target_field, motor, step, *, md=None):
     return plan_stack
 
 
+def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
+                  y_range, dr, factor, *, per_step=None, md=None):
+    '''Absolute fermat spiral scan, centered around (x_start, y_start)
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_start : float
+        x center
+    y_start : float
+        y center
+    x_range : float
+        x width of spiral
+    y_range : float
+        y width of spiral
+    dr : float
+        delta radius
+    factor : float
+        radius gets divided by this
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.plans.spiral`
+    `bluesky.plans.relative_spiral`
+    `bluesky.plans.relative_spiral_fermat`
+    '''
+    phi = 137.508 * np.pi / 180.
+
+    half_x = x_range / 2
+    half_y = y_range / 2
+
+    x_points, y_points = [], []
+
+    diag = np.sqrt(half_x ** 2 + half_y ** 2)
+    num_rings = int((1.5 * diag / (dr / factor)) ** 2)
+    for i_ring in range(1, num_rings):
+        radius = np.sqrt(i_ring) * dr / factor
+        angle = phi * i_ring
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+
+        if abs(x) <= half_x and abs(y) <= half_y:
+            x_points.append(x_start + x)
+            y_points.append(y_start + y)
+
+    cyc = cycler(x_motor, x_points)
+    cyc += cycler(y_motor, y_points)
+    yield from scan_nd(detectors, cyc, per_step=per_step, md=md)
+
+
+def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
+                           factor, *, per_step=None, md=None):
+    '''Relative fermat spiral scan
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_range : float
+        x width of spiral
+    y_range : float
+        y width of spiral
+    dr : float
+        delta radius
+    factor : float
+        radius gets divided by this
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.plans.spiral`
+    `bluesky.plans.relative_spiral`
+    `bluesky.plans.spiral_fermat`
+    '''
+    yield from spiral_fermat(detectors, x_motor, y_motor, x_motor.position,
+                             y_motor.position, x_range, y_range, dr, factor,
+                             per_step=per_step, md=md)
+
+
+def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
+           nth, *, per_step=None, md=None):
+    '''Spiral scan, centered around (x_start, y_start)
+
+    Parameters
+    ----------
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_start : float
+        x center
+    y_start : float
+        y center
+    x_range : float
+        x width of spiral
+    y_range : float
+        y width of spiral
+    dr : float
+        Delta radius
+    nth : float
+        Number of theta steps
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_spiral`
+    `bluesky.plans.spiral_fermat`
+    `bluesky.plans.relative_spiral_fermat`
+    '''
+    half_x = x_range / 2
+    half_y = y_range / 2
+
+    r_max = np.sqrt(half_x ** 2 + half_y ** 2)
+    num_ring = 1 + int(r_max / dr)
+
+    x_points = []
+    y_points = []
+    for i_ring in range(1, num_ring + 2):
+        radius = i_ring * dr
+        angle_step = 2. * np.pi / (i_ring * nth)
+
+        for i_angle in range(int(i_ring * nth)):
+            angle = i_angle * angle_step
+            x = radius * np.cos(angle)
+            y = radius * np.sin(angle)
+            if abs(x) <= half_x and abs(y) <= half_y:
+                x_points.append(x_start + x)
+                y_points.append(y_start + y)
+
+    cyc = cycler(x_motor, x_points)
+    cyc += cycler(y_motor, y_points)
+    yield from scan_nd(detectors, cyc, per_step=per_step, md=md)
+
+
+def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
+                    *, per_step=None, md=None):
+    '''Relative spiral scan
+
+    Parameters
+    ----------
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_start : float
+        x center
+    y_start : float
+        y center
+    x_range : float
+        x width of spiral
+    y_range : float
+        y width of spiral
+    dr : float
+        Delta radius
+    nth : float
+        Number of theta steps
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.plans.spiral`
+    `bluesky.plans.spiral_fermat`
+    '''
+    yield from spiral(detectors, x_motor, y_motor, x_motor.position,
+                      y_motor.position, x_range, y_range, dr, nth,
+                      per_step=per_step, md=md)
+
+
 # The code below adds no new logic, but it wraps the generators above in
 # classes for an alternative interface that is more stateful.
 
@@ -2201,3 +2399,46 @@ class Tweak(Plan):
 
     def _gen(self):
         return tweak(self.detector, self.target_field, self.motor, self.step)
+
+
+class SpiralScan(Plan):
+    _fields = ['detectors', 'x_motor', 'y_motor', 'x_start', 'y_start',
+               'x_range', 'y_range', 'dr', 'nth']
+    __doc__ = spiral.__doc__
+
+    def _gen(self):
+        return spiral(self.detectors, self.x_motor, self.y_motor, self.x_start,
+                      self.y_start, self.x_range, self.y_range, self.dr,
+                      self.nth)
+
+
+class SpiralFermatScan(Plan):
+    _fields = ['detectors', 'x_motor', 'y_motor', 'x_start', 'y_start',
+               'x_range', 'y_range', 'dr', 'factor']
+    __doc__ = spiral_fermat.__doc__
+
+    def _gen(self):
+        return spiral_fermat(self.detectors, self.x_motor, self.y_motor,
+                             self.x_start, self.y_start, self.x_range,
+                             self.y_range, self.dr, self.factor)
+
+
+class RelativeSpiralScan(Plan):
+    _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
+               'nth']
+    __doc__ = relative_spiral.__doc__
+
+    def _gen(self):
+        return relative_spiral(self.detectors, self.x_motor, self.y_motor,
+                               self.x_range, self.y_range, self.dr, self.nth)
+
+
+class RelativeSpiralFermatScan(Plan):
+    _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
+               'factor']
+    __doc__ = relative_spiral_fermat.__doc__
+
+    def _gen(self):
+        return relative_spiral_fermat(self.detectors, self.x_motor,
+                                      self.y_motor, self.x_range, self.y_range,
+                                      self.dr, self.factor)

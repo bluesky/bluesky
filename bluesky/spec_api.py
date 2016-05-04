@@ -12,7 +12,6 @@ changes the behavior of these plans.
 Page numbers in the code comments refer to the SPEC manual at
 http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
-from inspect import signature
 from collections import deque
 import matplotlib.pyplot as plt
 from bluesky import plans, Msg
@@ -27,9 +26,8 @@ from bluesky.plans import (subs_context, count, scan,
                            relative_scan, relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
                            tweak, configure_count_time, planify)
-from collections import defaultdict
 import itertools
-from itertools import filterfalse, chain
+from itertools import chain
 
 ### Factory functions for generating callbacks
 
@@ -356,4 +354,184 @@ def tw(motor, step, time=None, *, md=None):
     """
     plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, md=md)
     plan = configure_count_time(plan, time)
+    return [plan]
+
+
+@planify
+def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
+            time=None, *, per_step=None, md=None):
+    '''Absolute fermat spiral scan, centered around (0, 0)
+
+    Parameters
+    ----------
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_start : float
+        x center
+    y_start : float
+        y center
+    x_range : float
+        x range of spiral
+    y_range : float
+        y range of spiral
+    dr : float
+        delta radius
+    factor : float
+        radius gets divided by this
+    time : float, optional
+        applied to any detectors that have a `count_time` setting
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.spec_api.fermat`
+    `bluesky.spec_api.aspiral`
+    `bluesky.spec_api.spiral`
+    '''
+    subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
+                    ]}
+
+    plan_stack = deque()
+    with plans.subs_context(plan_stack, subs):
+        plan = plans.spiral_fermat(gs.DETS, x_motor, y_motor, x_start, y_start,
+                                   x_range, y_range, dr, factor,
+                                   per_step=per_step, md=md)
+        plan = configure_count_time(plan, time)
+        plan_stack.append(plan)
+    return plan_stack
+
+
+@planify
+def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
+           per_step=None, md=None):
+    '''Relative fermat spiral scan
+
+    Parameters
+    ----------
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_range : float
+        x range of spiral
+    y_range : float
+        y range of spiral
+    dr : float
+        delta radius
+    factor : float
+        radius gets divided by this
+    time : float, optional
+        applied to any detectors that have a `count_time` setting
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.spec_api.afermat`
+    `bluesky.spec_api.aspiral`
+    `bluesky.spec_api.spiral`
+    '''
+    plan = afermat(x_motor, y_motor, x_motor.position, y_motor.position,
+                   x_range, y_range, dr, factor, time=time, per_step=per_step,
+                   md=md)
+    plan = plans.reset_positions(plan)  # return motors to starting pos
+    return [plan]
+
+
+@planify
+def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
+            time=None, *, per_step=None, md=None):
+    '''Spiral scan, centered around (x_start, y_start)
+
+    Parameters
+    ----------
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_range : float
+        X range, in engineering units
+    y_range : float
+        Y range, in engineering units
+    dr : float
+        Delta radius, in engineering units
+    nth : float
+        Number of theta steps
+    time : float, optional
+        applied to any detectors that have a `count_time` setting
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.spec_api.fermat`
+    `bluesky.spec_api.afermat`
+    `bluesky.spec_api.spiral`
+    '''
+    subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
+                    ]}
+
+    plan_stack = deque()
+    with plans.subs_context(plan_stack, subs):
+        plan = plans.spiral(gs.DETS, x_motor, y_motor, x_start,
+                            y_start, x_range, y_range, dr,
+                            nth, per_step=per_step, md=md)
+        plan = configure_count_time(plan, time)
+        plan_stack.append(plan)
+    return plan_stack
+
+
+@planify
+def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
+           per_step=None, md=None):
+    '''Relative spiral scan
+
+    Parameters
+    ----------
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_range : float
+        X range, in engineering units
+    y_range : float
+        Y range, in engineering units
+    dr : float
+        Delta radius, in engineering units
+    nth : float
+        Number of theta steps
+    time : float, optional
+        applied to any detectors that have a `count_time` setting
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.spec_api.fermat`
+    `bluesky.spec_api.afermat`
+    `bluesky.spec_api.aspiral`
+    '''
+    plan = aspiral(x_motor, y_motor, x_motor.position, y_motor.position,
+                   x_range, y_range, dr, nth, time=time, per_step=per_step,
+                   md=md)
+    plan = plans.reset_positions(plan)  # return motors to starting pos
     return [plan]
