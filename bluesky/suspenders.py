@@ -124,8 +124,8 @@ class SuspenderBase(metaclass=ABCMeta):
                         self._ev.wait(),
                         pre_plan=self._pre_plan,
                         post_plan=self._post_plan)
-
-                    loop.call_soon_threadsafe(cb)
+                    if self.RE.state.is_running:
+                        loop.call_soon_threadsafe(cb)
             elif self._should_resume(value):
                 self._tripped = False
                 self.__set_event()
