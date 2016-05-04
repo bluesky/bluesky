@@ -5,7 +5,10 @@ from bluesky.plans import (AbsListScanPlan, AbsScanPlan, LogAbsScanPlan,
                            DeltaListScanPlan, DeltaScanPlan, LogDeltaScanPlan,
                            AdaptiveAbsScanPlan, AdaptiveDeltaScanPlan, Count,
                            OuterProductAbsScanPlan, InnerProductAbsScanPlan,
-                           OuterProductDeltaScanPlan, InnerProductDeltaScanPlan)
+                           OuterProductDeltaScanPlan,
+                           InnerProductDeltaScanPlan, SpiralScan,
+                           SpiralFermatScan, RelativeSpiralScan,
+                           RelativeSpiralFermatScan)
 
 from bluesky import Msg
 from bluesky.examples import motor, det, SynGauss, motor1, motor2
@@ -13,6 +16,8 @@ from bluesky.tests.utils import setup_test_run_engine
 import asyncio
 import time as ttime
 import numpy as np
+import numpy.testing
+
 loop = asyncio.get_event_loop()
 
 RE = setup_test_run_engine()
@@ -33,6 +38,24 @@ def multi_traj_checker(scan, expected_data):
 
     RE(scan, subs={'event': collect_data})
     assert actual_data == expected_data
+
+
+def approx_multi_traj_checker(scan, expected_data, *, decimal=2):
+    actual_data = []
+
+    def collect_data(name, event):
+        actual_data.append(event['data'])
+
+    RE(scan, subs={'event': collect_data})
+    keys = sorted(expected_data[0].keys())
+    actual_values = [[row[key] for key in keys]
+                     for row in actual_data]
+    expected_values = [[row[key] for key in keys]
+                       for row in expected_data]
+    err_msg = 'Trajectory differs. Data keys: {}'.format(', '.join(keys))
+    numpy.testing.assert_almost_equal(actual_values, expected_values,
+                                      decimal=decimal,
+                                      err_msg=err_msg)
 
 
 def test_outer_product_ascan():
@@ -288,3 +311,107 @@ def test_pre_run_post_run():
         yield Msg('HEY', None)
     c.pre_run = f
     list(c)[-1].command == 'HEY'
+
+
+def _get_spiral_data(start_x, start_y):
+    return [{'motor2': start_y + 0.000, 'det': 1.0, 'motor1': start_x + 0.100},
+            {'motor2': start_y + 0.000, 'det': 1.0, 'motor1': start_x + 0.200},
+            {'motor2': start_y + 0.000, 'det': 1.0, 'motor1': start_x - 0.200},
+            {'motor2': start_y + 0.000, 'det': 1.0, 'motor1': start_x + 0.300},
+            {'motor2': start_y + 0.260, 'det': 1.0, 'motor1': start_x - 0.150},
+            {'motor2': start_y - 0.260, 'det': 1.0, 'motor1': start_x - 0.150},
+            {'motor2': start_y + 0.000, 'det': 1.0, 'motor1': start_x + 0.400},
+            {'motor2': start_y + 0.400, 'det': 1.0, 'motor1': start_x + 0.000},
+            {'motor2': start_y + 0.000, 'det': 1.0, 'motor1': start_x - 0.400},
+            {'motor2': start_y - 0.400, 'det': 1.0, 'motor1': start_x - 0.000},
+            {'motor2': start_y + 0.000, 'det': 1.0, 'motor1': start_x + 0.500},
+            {'motor2': start_y + 0.476, 'det': 1.0, 'motor1': start_x + 0.155},
+            {'motor2': start_y + 0.294, 'det': 1.0, 'motor1': start_x - 0.405},
+            {'motor2': start_y - 0.294, 'det': 1.0, 'motor1': start_x - 0.405},
+            {'motor2': start_y - 0.476, 'det': 1.0, 'motor1': start_x + 0.155},
+            ]
+
+
+def test_absolute_spiral():
+    motor1.set(1.0)
+    motor2.set(1.0)
+    scan = SpiralScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0)
+    approx_multi_traj_checker(scan, _get_spiral_data(0.0, 0.0), decimal=2)
+
+    scan = SpiralScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0)
+    approx_multi_traj_checker(scan, _get_spiral_data(0.5, 0.5), decimal=2)
+
+
+def test_relative_spiral():
+    start_x = 1.0
+    start_y = 1.0
+
+    motor1.set(start_x)
+    motor2.set(start_y)
+    scan = RelativeSpiralScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0)
+
+    approx_multi_traj_checker(scan, _get_spiral_data(start_x, start_y),
+                              decimal=2)
+
+
+def _get_fermat_data(x_start, y_start):
+    return [
+        {'motor2': y_start + 0.068, 'det': 1.0, 'motor1': x_start - 0.074},
+        {'motor2': y_start - 0.141, 'det': 1.0, 'motor1': x_start + 0.012},
+        {'motor2': y_start + 0.137, 'det': 1.0, 'motor1': x_start + 0.105},
+        {'motor2': y_start - 0.035, 'det': 1.0, 'motor1': x_start - 0.197},
+        {'motor2': y_start - 0.120, 'det': 1.0, 'motor1': x_start + 0.189},
+        {'motor2': y_start + 0.237, 'det': 1.0, 'motor1': x_start - 0.064},
+        {'motor2': y_start - 0.235, 'det': 1.0, 'motor1': x_start - 0.122},
+        {'motor2': y_start + 0.097, 'det': 1.0, 'motor1': x_start + 0.266},
+        {'motor2': y_start + 0.114, 'det': 1.0, 'motor1': x_start - 0.277},
+        {'motor2': y_start - 0.286, 'det': 1.0, 'motor1': x_start + 0.134},
+        {'motor2': y_start + 0.316, 'det': 1.0, 'motor1': x_start + 0.099},
+        {'motor2': y_start - 0.174, 'det': 1.0, 'motor1': x_start - 0.300},
+        {'motor2': y_start - 0.077, 'det': 1.0, 'motor1': x_start + 0.352},
+        {'motor2': y_start + 0.306, 'det': 1.0, 'motor1': x_start - 0.215},
+        {'motor2': y_start - 0.384, 'det': 1.0, 'motor1': x_start - 0.050},
+        {'motor2': y_start + 0.258, 'det': 1.0, 'motor1': x_start + 0.306},
+        {'motor2': y_start + 0.017, 'det': 1.0, 'motor1': x_start - 0.412},
+        {'motor2': y_start - 0.299, 'det': 1.0, 'motor1': x_start + 0.301},
+        {'motor2': y_start + 0.435, 'det': 1.0, 'motor1': x_start - 0.020},
+        {'motor2': y_start - 0.343, 'det': 1.0, 'motor1': x_start - 0.287},
+        {'motor2': y_start + 0.061, 'det': 1.0, 'motor1': x_start + 0.454},
+        {'motor2': y_start + 0.268, 'det': 1.0, 'motor1': x_start - 0.385},
+        {'motor2': y_start - 0.468, 'det': 1.0, 'motor1': x_start + 0.105},
+        {'motor2': y_start + 0.425, 'det': 1.0, 'motor1': x_start + 0.244},
+        {'motor2': y_start - 0.152, 'det': 1.0, 'motor1': x_start - 0.476},
+        {'motor2': y_start - 0.214, 'det': 1.0, 'motor1': x_start + 0.463},
+        {'motor2': y_start + 0.479, 'det': 1.0, 'motor1': x_start - 0.201},
+        {'motor2': y_start - 0.498, 'det': 1.0, 'motor1': x_start - 0.179},
+        {'motor2': y_start + 0.251, 'det': 1.0, 'motor1': x_start + 0.477},
+        {'motor2': y_start - 0.468, 'det': 1.0, 'motor1': x_start + 0.301},
+        {'motor2': y_start - 0.352, 'det': 1.0, 'motor1': x_start - 0.454},
+        {'motor2': y_start + 0.434, 'det': 1.0, 'motor1': x_start - 0.402},
+        {'motor2': y_start + 0.451, 'det': 1.0, 'motor1': x_start + 0.409},
+        {'motor2': y_start - 0.377, 'det': 1.0, 'motor1': x_start + 0.498},
+    ]
+
+
+def test_absolute_fermat_spiral():
+    motor1.set(1.0)
+    motor2.set(1.0)
+    scan = SpiralFermatScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1,
+                            1.0)
+    approx_multi_traj_checker(scan, _get_fermat_data(0.0, 0.0), decimal=2)
+
+    scan = SpiralFermatScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1,
+                            1.0)
+    approx_multi_traj_checker(scan, _get_fermat_data(0.5, 0.5), decimal=2)
+
+
+def test_relative_fermat_spiral():
+    start_x = 1.0
+    start_y = 1.0
+
+    motor1.set(start_x)
+    motor2.set(start_y)
+    scan = RelativeSpiralFermatScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0)
+
+    approx_multi_traj_checker(scan, _get_fermat_data(start_x, start_y),
+                              decimal=2)
