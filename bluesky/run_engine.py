@@ -791,7 +791,6 @@ class RunEngine:
                         self._msg_cache.append(msg)
                     try:
                         coro = self._command_registry[msg.command]
-                        self.log.debug("Processing %r", msg)
                         response = yield from coro(msg)
                         self._response_stack.append(response)
                     except KeyboardInterrupt:
@@ -800,7 +799,6 @@ class RunEngine:
                         msg = self._plan_stack[-1].throw(e)
                         self._plan_stack.append(single_gen(msg))
                         self._response_stack.append(None)
-                    self.log.debug("Response: %r", response)
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
                     # -- overriding the RunEngine -- and then raises instead
