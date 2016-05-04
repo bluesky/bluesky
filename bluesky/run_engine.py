@@ -24,10 +24,7 @@ from .plan_tools import ensure_generator
 from .plans import single_gen
 
 
-loop = asyncio.get_event_loop()
-
-
-def expiring_function(func, *args, **kwargs):
+def expiring_function(func, loop, *args, **kwargs):
     """
     If timeout has not occurred, call func(*args, **kwargs).
 
@@ -97,11 +94,10 @@ class LoggingPropertyMachine(PropertyMachine):
 
 class RunEngine:
 
-    _loop = loop  # just a convenient way to inspect the global event loop
     state = LoggingPropertyMachine(RunEngineStateMachine)
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage']
 
-    def __init__(self, md=None, *, md_validator=None):
+    def __init__(self, md=None, *, loop=None, md_validator=None):
         """
         The Run Engine execute messages and emits Documents.
 
@@ -113,6 +109,9 @@ class RunEngine:
             sessions. The standard configuration instantiates a Run Engine with
             historydict.HistoryDict, a simple interface to a sqlite file. Any object
             supporting `__getitem__`, `__setitem__`, and `clear` will work.
+
+        loop : asyncio event loop
+            e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
 
         md_validator : callable, optional
             a function that raises and prevents starting a run if it deems
@@ -158,7 +157,9 @@ class RunEngine:
         unregister_command
             Undo register_command.
         """
-        super().__init__()
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        self._loop = loop
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -240,7 +241,7 @@ class RunEngine:
             'open_run': self._open_run,
             'close_run': self._close_run,
             'wait_for': self._wait_for,
-            'input': _input,
+            'input': self._input,
         }
 
         # public dispatcher for callbacks
@@ -259,7 +260,11 @@ class RunEngine:
         # to provide special docstrings.
         self._lossless_dispatcher = Dispatcher()
 
-        loop.call_soon(self._check_for_signals)
+        self.loop.call_soon(self._check_for_signals)
+
+    @property
+    def loop(self):
+        return self._loop
 
     @property
     def suspenders(self):
@@ -419,7 +424,7 @@ class RunEngine:
             return
         # stop accepting new tasks in the event loop (existing tasks will
         # still be processed)
-        loop.stop()
+        self.loop.stop()
         # Remove any monitoring callbacks, but keep refs in
         # self._monitor_params to re-instate them later.
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
@@ -542,8 +547,8 @@ class RunEngine:
 
         # Intercept ^C.
         with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
-            self._task = loop.create_task(self._run())
-            loop.run_forever()
+            self._task = self.loop.create_task(self._run())
+            self.loop.run_forever()
 
             if self._task.done() and not self._task.cancelled():
                 exc = self._task.exception()
@@ -623,7 +628,7 @@ class RunEngine:
         with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
             if self._task.done():
                 return
-            loop.run_forever()
+            self.loop.run_forever()
             if self._task.done() and not self._task.cancelled():
                 exc = self._task.exception()
                 if exc is not None:
@@ -769,7 +774,7 @@ class RunEngine:
                     # Without this the next message after the pause may be
                     # processed first on resume (instead of the first
                     # message in self._msg_cache).
-                    yield from asyncio.sleep(0.0001)
+                    yield from asyncio.sleep(0.0001, loop=self.loop)
                     if self._exception is not None:
                         raise self._exception
                     # Send last response;
@@ -809,14 +814,16 @@ class RunEngine:
                     print("An unknown external library has improperly raised "
                           "KeyboardInterrupt. Intercepting and triggering "
                           "a hard pause instead.")
-                    loop.call_soon(self.request_pause, False, 'SIGINT')
+                    self.loop.call_soon(self.request_pause, False, 'SIGINT')
                     print(PAUSE_MSG)
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
-            yield from asyncio.sleep(0.001)  # TODO Do we need this?
+            # TODO Is the sleep here necessasry?
+            yield from asyncio.sleep(0.001, loop=self.loop)
         except (FailedPause, RequestAbort, asyncio.CancelledError):
             self._exit_status = 'abort'
-            yield from asyncio.sleep(0.001)  # TODO Do we need this?
+            # TODO Is the sleep here necessasry?
+            yield from asyncio.sleep(0.001, loop=self.loop)
             self.log.error("Run aborted")
             self.log.error("%s", self._exception)
         except Exception as err:
@@ -855,15 +862,15 @@ class RunEngine:
                     self.log.error("Failed to close run %r", self._run_start_uid)
                     # Exceptions from the callbacks should be re-raised.
                     # Close the loop first.
-                    for task in asyncio.Task.all_tasks(loop):
+                    for task in asyncio.Task.all_tasks(self.loop):
                         task.cancel()
-                    loop.stop()
+                    self.loop.stop()
                     self.state = 'idle'
                     raise
 
-            for task in asyncio.Task.all_tasks(loop):
+            for task in asyncio.Task.all_tasks(self.loop):
                 task.cancel()
-            loop.stop()
+            self.loop.stop()
             self.state = 'idle'
 
     def _check_for_signals(self):
@@ -878,7 +885,7 @@ class RunEngine:
                 if count == 1:
                     # Ctrl-C once -> request a deferred pause
                     if not self._deferred_pause_requested:
-                        loop.call_soon(self.request_pause, True, 'SIGINT')
+                        self.loop.call_soon(self.request_pause, True, 'SIGINT')
                         print("A 'deferred pause' has been requested. The "
                               "RunEngine will pause at the next checkpoint. "
                               "To pause immediately, hit Ctrl+C again in the "
@@ -898,12 +905,13 @@ class RunEngine:
                         if self._sigint_handler.count > 2:
                             self.log.debug("RunEngine detected a third "
                                             "SIGINT -- aborting.")
-                            loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
+                            self.loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
                             break
                     else:
                         self.log.debug("RunEngine detected two SIGINTs. "
                                        "A hard pause will be requested.")
-                        loop.call_soon(self.request_pause, False, 'SIGINT')
+                        self.loop.call_soon(self.request_pause, False,
+                                            'SIGINT')
                         print(PAUSE_MSG)
             else:
                 # No new SIGINTs to process.
@@ -918,7 +926,7 @@ class RunEngine:
                         self._sigint_handler.interrupted = False
                         self._last_sigint_time = None
 
-        loop.call_later(0.1, self._check_for_signals)
+        self.loop.call_later(0.1, self._check_for_signals)
 
     @asyncio.coroutine
     def _wait_for(self, msg):
@@ -937,7 +945,7 @@ class RunEngine:
         for ``asyncio.await``
         """
         futs, = msg.args
-        yield from asyncio.wait(futs, **msg.kwargs)
+        yield from asyncio.wait(futs, **msg.kwargs, loop=self.loop)
 
     @asyncio.coroutine
     def _open_run(self, msg):
@@ -1275,12 +1283,12 @@ class RunEngine:
         ret = obj.kickoff(*msg.args, **msg.kwargs)
 
         if group:
-            p_event = asyncio.Event()
+            p_event = asyncio.Event(loop=self.loop)
 
             def done_callback():
                 if not ret.success:
-                    loop.call_soon_threadsafe(self._failed_status, ret)
-                loop.call_soon_threadsafe(p_event.set)
+                    self.loop.call_soon_threadsafe(self._failed_status, ret)
+                self.loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
             self._groups[group].add(p_event.wait())
@@ -1381,7 +1389,7 @@ class RunEngine:
         self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
         if group:
-            p_event = asyncio.Event()
+            p_event = asyncio.Event(loop=self.loop)
 
             def done_callback():
 
@@ -1390,8 +1398,8 @@ class RunEngine:
                                msg.obj, ret.success)
 
                 if not ret.success:
-                    loop.call_soon_threadsafe(self._failed_status, ret)
-                loop.call_soon_threadsafe(p_event.set)
+                    self.loop.call_soon_threadsafe(self._failed_status, ret)
+                self.loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
             self._groups[group].add(p_event.wait())
@@ -1411,7 +1419,7 @@ class RunEngine:
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
 
         if group:
-            p_event = asyncio.Event()
+            p_event = asyncio.Event(loop=self.loop)
 
             def done_callback():
                 self.log.debug("The object %r reports trigger is "
@@ -1419,9 +1427,9 @@ class RunEngine:
                                msg.obj, ret.success)
 
                 if not ret.success:
-                    loop.call_soon_threadsafe(self._failed_status, ret)
+                    self.loop.call_soon_threadsafe(self._failed_status, ret)
 
-                loop.call_soon_threadsafe(p_event.set)
+                self.loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
             self._groups[group].add(p_event.wait())
@@ -1468,7 +1476,7 @@ class RunEngine:
 
         where `sleep_time` is in seconds
         """
-        yield from asyncio.sleep(*msg.args)
+        yield from asyncio.sleep(*msg.args, loop=self.loop)
 
     @asyncio.coroutine
     def _pause(self, msg):
@@ -1643,6 +1651,19 @@ class RunEngine:
         self._temp_callback_ids.remove(token)
 
     @asyncio.coroutine
+    def _input(self, msg):
+        """
+        Process a 'input' Msg. Excpected Msg:
+
+            Msg('input', None)
+            Msg('input', None, prompt='>')  # customize prompt
+        """
+        prompt = msg.kwargs.get('prompt', '')
+        async_input = AsyncInput(self.loop)
+        async_input = functools.partial(async_input, end='', flush=True)
+        return (yield from async_input(prompt))
+
+    @asyncio.coroutine
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
@@ -1650,9 +1671,11 @@ class RunEngine:
         if name != DocumentNames.event:
             self.dispatcher.process(name, doc)
         else:
-            start_time = loop.time()
-            dummy = expiring_function(self.dispatcher.process, name, doc)
-            loop.run_in_executor(None, dummy, start_time, self.event_timeout)
+            start_time = self.loop.time()
+            dummy = expiring_function(self.dispatcher.process, self.loop, name,
+                                      doc)
+            self.loop.run_in_executor(None, dummy, start_time,
+                                      self.event_timeout)
 
 
 class Dispatcher:
@@ -1733,6 +1756,7 @@ class Dispatcher:
     def ignore_exceptions(self, val):
         self.cb_registry.ignore_exceptions = val
 
+
 class AsyncInput:
     """a input prompt that allows event loop to run in the background
 
@@ -1750,19 +1774,6 @@ class AsyncInput:
     def __call__(self, prompt, end='\n', flush=False):
         print(prompt, end=end, flush=flush)
         return (yield from self.q.get()).rstrip('\n')
-
-
-@asyncio.coroutine
-def _input(msg):
-    """
-    Process a 'input' Msg. Excpected Msg:
-
-        Msg('input', None)
-        Msg('input', None, prompt='>')  # customize prompt
-    """
-    prompt = msg.kwargs.get('prompt', '')
-    async_input = functools.partial(AsyncInput(), end='', flush=True)
-    return (yield from async_input(prompt))
 
 
 def new_uid():
