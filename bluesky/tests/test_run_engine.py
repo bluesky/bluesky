@@ -196,6 +196,38 @@ def test_checkpoint_inside_a_bundle_is_illegal(fresh_RE):
         fresh_RE([Msg('open_run'), Msg('create'), Msg('checkpoint')])
 
 
+def test_redundant_monitors_are_illegal(fresh_RE):
+    class Dummy:
+        def __init__(self, name):
+            self.name = name
+
+        def read_configuration(self):
+            return {}
+
+        def describe(self):
+            return {}
+
+        def subscribe(self, *args, **kwargs):
+            pass
+
+        def clear_sub(self, *args, **kwargs):
+            pass
+
+    dummy = Dummy('dummy')
+
+    with pytest.raises(IllegalMessageSequence):
+        fresh_RE([Msg('open_run'), Msg('monitor', dummy),
+                  Msg('monitor', dummy)])
+
+    # Monitoring, unmonitoring, and monitoring again is legal.
+    fresh_RE([Msg('open_run'), Msg('monitor', dummy), Msg('unmonitor', dummy),
+              Msg('monitor', dummy)])
+
+
+    # Monitoring outside a run is illegal.
+    with pytest.raises(IllegalMessageSequence):
+        fresh_RE([Msg('monitor', dummy)])
+
 def test_flying_outside_a_run_is_illegal(fresh_RE):
 
     flyer = DummyFlyer()
