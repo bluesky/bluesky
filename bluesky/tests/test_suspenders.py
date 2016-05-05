@@ -105,3 +105,7 @@ def test_pre_suspend_plan(fresh_RE, pre_plan, post_plan, expected_list):
 
     assert len(msg_lst) == len(expected_list)
     assert expected_list == [m[0] for m in msg_lst]
+
+    RE.remove_suspender(susp)
+    RE(scan)
+    assert susp.RE is None

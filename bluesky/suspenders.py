@@ -57,7 +57,7 @@ class SuspenderBase(metaclass=ABCMeta):
 
         Removes the callback at the pyepics level
         '''
-        self.sig.clear_sub(self)
+        self._sig.clear_sub(self)
         self.RE = None
         self._tripped = False
         self.__set_event()

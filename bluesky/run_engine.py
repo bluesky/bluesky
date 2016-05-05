@@ -206,7 +206,7 @@ class RunEngine:
         self._monitor_params = dict()  # cache of {obj: (cb, kwargs)}
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo datapoints
-        self._suspenders = set()  # dict holding suspenders
+        self._suspenders = set()  # set holding suspenders
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
@@ -630,9 +630,9 @@ class RunEngine:
         --------
         `RunEngine.install_suspender`
         """
-        rm = self._suspenders.pop(suspender, None)
-        if rm is not None:
-            rm.remove()
+        if suspender in self._suspenders:
+            suspender.remove()
+        self._suspenders.discard(suspender)
 
     def request_suspend(self, fut, *, pre_plan=None, post_plan=None):
         """
