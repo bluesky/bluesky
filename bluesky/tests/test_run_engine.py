@@ -281,3 +281,26 @@ def test_lossiness(fresh_RE):
     # Some events should be skipped.
     fresh_RE(plan())
     assert mutable['count'] < 10
+
+
+def test_pause_resume_devices(fresh_RE):
+    paused = {}
+    resumed = {}
+
+    class Dummy:
+        def __init__(self, name):
+            self.name = name
+
+        def pause(self):
+            paused[self.name] = True
+
+        def resume(self):
+            resumed[self.name] = True
+
+
+    dummy = Dummy('dummy')
+
+    fresh_RE([Msg('stage', dummy), Msg('pause')])
+    fresh_RE.resume()
+    assert 'dummy' in paused
+    assert 'dummy' in resumed
