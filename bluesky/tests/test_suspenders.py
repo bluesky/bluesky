@@ -23,8 +23,6 @@ def test_suspender(klass, sc_args, start_val, fail_val,
                    resume_val, wait_time, fresh_RE):
     RE = fresh_RE
     loop = RE._loop
-    if sys.platform == 'darwin':
-        pytest.xfail('OSX event loop is different; resolve this later')
     sig = ophyd.Signal()
     my_suspender = klass(sig,
                          *sc_args, sleep=wait_time)
