@@ -5,6 +5,14 @@ from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
 from bluesky import Msg
 from bluesky.examples import det, Mover
 
+class DummyFlyer:
+    def kickoff(self):
+        pass
+    def describe(self):
+        return []
+    def collect(self):
+        return {}
+
 def test_states():
     assert RunEngineStateMachine.States.states() == ['idle', 'running', 'paused']
 
@@ -81,13 +89,11 @@ def test_stop_motors_and_log_any_errors(fresh_RE):
 
     class MoverWithFlag(Mover):
         def stop(self):
-            print('HELLO')
-            stopped['non_broken'] = True
+            stopped[self.name] = True
 
     class BrokenMoverWithFlag(Mover):
         def stop(self):
-            print('HELLO')
-            stopped['broken'] = True
+            stopped[self.name] = True
             raise Exception
 
 
@@ -95,14 +101,72 @@ def test_stop_motors_and_log_any_errors(fresh_RE):
     broken_motor = BrokenMoverWithFlag('b', ['b'])
 
     fresh_RE([Msg('set', broken_motor, 1), Msg('set', motor, 1), Msg('pause')])
-    assert 'broken' in stopped
-    assert 'non_broken' in stopped
+    assert 'a' in stopped
+    assert 'b' in stopped
     fresh_RE.stop()
 
     fresh_RE([Msg('set', motor, 1), Msg('set', broken_motor, 1), Msg('pause')])
-    assert 'broken' in stopped
-    assert 'non_broken' in stopped
+    assert 'a' in stopped
+    assert 'b' in stopped
     fresh_RE.stop()
+
+
+def test_collect_uncollected_and_log_any_errors(fresh_RE):
+    # test that if stopping one motor raises an error, we can carry on
+    collected = {}
+
+    class DummyFlyerWithFlag(DummyFlyer):
+        def collect(self):
+            collected[self.name] = True
+            super().collect()
+
+    class BrokenDummyFlyerWithFlag(DummyFlyerWithFlag):
+        def collect(self):
+            super().collect()
+            raise Exception
+
+
+    flyer1 = DummyFlyerWithFlag()
+    flyer1.name = 'flyer1'
+    flyer2 = DummyFlyerWithFlag()
+    flyer2.name = 'flyer2'
+
+    collected.clear()
+    fresh_RE([Msg('open_run'), Msg('kickoff', flyer1), Msg('kickoff', flyer2)])
+    assert 'flyer1' in collected
+    assert 'flyer2' in collected
+
+    collected.clear()
+    fresh_RE([Msg('open_run'), Msg('kickoff', flyer2), Msg('kickoff', flyer1)])
+    assert 'flyer1' in collected
+    assert 'flyer2' in collected
+
+
+def test_unstage_and_log_errors(fresh_RE):
+    unstaged = {}
+
+    class MoverWithFlag(Mover):
+        def unstage(self):
+            unstaged[self.name] = True
+            return [self]
+
+    class BrokenMoverWithFlag(Mover):
+        def unstage(self):
+            unstaged[self.name] = True
+            return [self]
+
+    a = MoverWithFlag('a', ['a'])
+    b = BrokenMoverWithFlag('b', ['b'])
+
+    unstaged.clear()
+    fresh_RE([Msg('stage', a), Msg('stage', b)])
+    assert 'a' in unstaged
+    assert 'b' in unstaged
+
+    unstaged.clear()
+    fresh_RE([Msg('stage', b), Msg('stage', a)])
+    assert 'a' in unstaged
+    assert 'b' in unstaged
 
 
 def test_open_run_twice_is_illegal(fresh_RE):
@@ -126,13 +190,6 @@ def test_checkpoint_inside_a_bundle_is_illegal(fresh_RE):
 
 
 def test_flying_outside_a_run_is_illegal(fresh_RE):
-    class DummyFlyer:
-        def kickoff(self):
-            pass
-        def describe(self):
-            return []
-        def collect(self):
-            return {}
 
     flyer = DummyFlyer()
 
@@ -166,3 +223,26 @@ def test_empty_bundle(fresh_RE):
     mutable.clear()
     fresh_RE([Msg('open_run'), Msg('create'), Msg('save')], subs={'event': cb})
     assert 'flag' not in mutable
+
+
+def test_dispatcher_unsubscribe_all(fresh_RE):
+    def count_callbacks(RE):
+        return sum([len(cbs) for cbs in
+                    RE.dispatcher.cb_registry.callbacks.values()])
+
+    def cb(name, doc):
+        pass
+
+    fresh_RE.subscribe('all', cb)
+    assert count_callbacks(fresh_RE) == 5 
+    fresh_RE.dispatcher.unsubscribe_all()
+    assert count_callbacks(fresh_RE) == 0
+
+
+def test_stage_and_unstage_are_optional_methods(fresh_RE):
+    class Dummy:
+        pass
+
+    dummy = Dummy()
+
+    fresh_RE([Msg('stage', dummy), Msg('unstage', dummy)])
