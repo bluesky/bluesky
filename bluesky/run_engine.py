@@ -416,7 +416,8 @@ class RunEngine:
         # self._monitor_params to re-instate them later.
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
             obj.clear_sub(cb)
-        # During pause, all motors should be stopped.
+        # During pause, all motors should be stopped. Call stop() on every
+        # object we ever set().
         self._stop_movable_objects()
         # Notify Devices of the pause in case they want to clean up.
         for obj in self._objs_seen:
@@ -807,7 +808,7 @@ class RunEngine:
             self.log.error("%s", err)
             raise err
         finally:
-            # call stop() on every movable object we ever set() or kickoff()
+            # call stop() on every movable object we ever set()
             self._stop_movable_objects()
             # Try to collect any flyers that were kicked off but not finished.
             # Some might not support partial collection. We swallow errors.
@@ -1252,7 +1253,6 @@ class RunEngine:
                 stream_name, = args
         self._flyer_stream_names[obj] = stream_name
 
-        self._movable_objs_touched.add(obj)
         ret = obj.kickoff(*msg.args, **msg.kwargs)
 
         if group:
