@@ -1,9 +1,11 @@
 import asyncio
+import time as ttime
 import pytest
 from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence)
 from bluesky import Msg
 from bluesky.examples import det, Mover
+from bluesky.plans import trigger_and_read
 
 class DummyFlyer:
     def kickoff(self):
@@ -246,3 +248,31 @@ def test_stage_and_unstage_are_optional_methods(fresh_RE):
     dummy = Dummy()
 
     fresh_RE([Msg('stage', dummy), Msg('unstage', dummy)])
+
+
+def test_lossiness(fresh_RE):
+    mutable = {}
+
+    def plan():
+        yield Msg('open_run')
+        for i in range(10):
+            yield from trigger_and_read([det])
+
+        yield Msg('close_run')
+
+    def slow_callback(name, doc):
+        mutable['count'] += 1
+        ttime.sleep(0.5)
+
+    fresh_RE.subscribe_lossless('event', slow_callback)
+    mutable['count'] = 0
+    # All events should be recieved by the callback.
+    fresh_RE(plan())
+    assert mutable['count'] == 10
+
+    fresh_RE._lossless_dispatcher.unsubscribe_all()
+    mutable['count'] = 0
+    fresh_RE.subscribe('event', slow_callback)
+    # Some events should be skipped.
+    fresh_RE(plan())
+    assert mutable['count'] < 10
