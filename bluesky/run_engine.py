@@ -206,7 +206,6 @@ class RunEngine:
         self._monitor_params = dict()  # cache of {obj: (cb, kwargs)}
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo datapoints
-        self._pause_requests = dict()  # holding {<name>: callable}
         self._suspenders = set()  # dict holding suspenders
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
@@ -370,7 +369,7 @@ class RunEngine:
         """
         del self._command_registry[name]
 
-    def request_pause(self, defer=False, name=None, callback=None):
+    def request_pause(self, defer=False):
         """
         Command the Run Engine to pause.
 
@@ -378,8 +377,8 @@ class RunEngine:
         by other threads. It cannot be called on the main thread during a run,
         but it is called by SIGINT (i.e., Ctrl+C).
 
-        If there current run has no checkpoint commands, this will cause the
-        run to abort.
+        If there current run has no checkpoint (via the 'clear_checkpoint'
+        message), this will cause the run to abort.
 
         Parameters
         ----------
@@ -387,19 +386,7 @@ class RunEngine:
             If False, pause immediately before processing any new messages.
             If True, pause at the next checkpoint.
             False by default.
-        name : str, optional
-            Identify the source/reason for this pause. Required if there is a
-            callback, below.
-        callback : callable, optional
-            "Permission to resume." Until this callable returns True, the Run
-            Engine will not be allowed to resume. If None,
         """
-        # No matter what, this will be processed if we try to resume.
-        if callback is not None:
-            if name is None:
-                raise ValueError("Pause requests with a callback must include "
-                                 "a name.")
-            self._pause_requests[name] = callback
         if not self.state.can_pause:
             # can't pause, print and return
             print("Cannot pause from {0} state. "
@@ -564,27 +551,14 @@ class RunEngine:
 
         Returns
         -------
-        requests_or_uids : list
-            If any pause requests have not been released, a list of their names
-            is immediately returned. Otherwise, after the run completes, this
-            returns the list of uids this plan knows about.
+        uids : list
+            list of Header uids (a.k.a RunStart uids) of run(s)
         """
         # The state machine does not capture the whole picture.
         if not self.state.is_paused:
             raise RuntimeError("The RunEngine is the {0} state. You can only "
                                "resume for the paused state."
                                "".format(self.state))
-
-        # Check that all pause requests have been released.
-        outstanding_requests = []
-        for name, func in list(self._pause_requests.items()):
-            if func():
-                # We have permission to continue. Clear the request.
-                del self._pause_requests[name]
-            else:
-                outstanding_requests.append(name)
-        if outstanding_requests:
-            return outstanding_requests
 
         self._interrupted = False
         new_plan = self._rewind()
@@ -814,7 +788,7 @@ class RunEngine:
                     print("An unknown external library has improperly raised "
                           "KeyboardInterrupt. Intercepting and triggering "
                           "a hard pause instead.")
-                    self.loop.call_soon(self.request_pause, False, 'SIGINT')
+                    self.loop.call_soon(self.request_pause, False)
                     print(PAUSE_MSG)
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
@@ -885,7 +859,7 @@ class RunEngine:
                 if count == 1:
                     # Ctrl-C once -> request a deferred pause
                     if not self._deferred_pause_requested:
-                        self.loop.call_soon(self.request_pause, True, 'SIGINT')
+                        self.loop.call_soon(self.request_pause, True)
                         print("A 'deferred pause' has been requested. The "
                               "RunEngine will pause at the next checkpoint. "
                               "To pause immediately, hit Ctrl+C again in the "
@@ -910,8 +884,7 @@ class RunEngine:
                     else:
                         self.log.debug("RunEngine detected two SIGINTs. "
                                        "A hard pause will be requested.")
-                        self.loop.call_soon(self.request_pause, False,
-                                            'SIGINT')
+                        self.loop.call_soon(self.request_pause, False)
                         print(PAUSE_MSG)
             else:
                 # No new SIGINTs to process.
