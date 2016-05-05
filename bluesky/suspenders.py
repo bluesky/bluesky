@@ -19,19 +19,13 @@ class SuspenderBase(metaclass=ABCMeta):
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
 
-    loop : BaseEventLoop, optional
-        The event loop to work on
-
     pre_plan,  : iterator, optional
 
 
     """
-    def __init__(self, signal, *, sleep=0, loop=None,
-                 pre_plan=None, post_plan=None):
+    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None):
         """
         """
-        if loop is None:
-            loop = asyncio.get_event_loop()
         self.RE = None
         self._ev = None
         self._tripped = False
@@ -184,10 +178,6 @@ class SuspendBoolHigh(SuspenderBase):
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
-
-    loop : BaseEventLoop, optional
-        The event loop to work on
-
     """
     def _should_suspend(self, value):
         return bool(value)
@@ -214,10 +204,6 @@ class SuspendBoolLow(SuspenderBase):
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
-
-    loop : BaseEventLoop, optional
-        The event loop to work on
-
     """
     def _should_suspend(self, value):
         return not bool(value)
@@ -283,10 +269,6 @@ class SuspendFloor(_Threshold):
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
 
-    loop : BaseEventLoop, optional
-        The event loop to work on
-
-
     """
     def _validate(self):
         if self._resume_thresh < self._suspend_thresh:
@@ -327,11 +309,6 @@ class SuspendCeil(_Threshold):
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
-
-    loop : BaseEventLoop, optional
-        The event loop to work on
-
-
     """
     def _validate(self):
         if self._resume_thresh > self._suspend_thresh:
@@ -385,10 +362,6 @@ class SuspendInBand(_SuspendBandBase):
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
-
-    loop : BaseEventLoop, optional
-        The event loop to work on
-
     """
     def _should_resume(self, value):
         return self._bot < value < self._top
@@ -421,10 +394,6 @@ class SuspendOutBand(_SuspendBandBase):
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
-
-    loop : BaseEventLoop, optional
-        The event loop to work on
-
     """
     def _should_resume(self, value):
         return not (self._bot < value < self._top)
