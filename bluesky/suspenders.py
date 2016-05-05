@@ -11,7 +11,7 @@ class SuspenderBase(metaclass=ABCMeta):
 
     Parameters
     ----------
-    sig : `ophyd.Signal`
+    signal : `ophyd.Signal`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -19,9 +19,11 @@ class SuspenderBase(metaclass=ABCMeta):
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
 
-    pre_plan,  : iterator, optional
+    pre_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
 
-
+    post_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
     """
     def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None):
         """
@@ -167,17 +169,19 @@ class SuspendBoolHigh(SuspenderBase):
 
     Parameters
     ----------
-
-    RE : RunEngine
-        The run engine instance this should work on
-
-    pv_name : str
+    signal : `ophyd.Signal`
         The signal to watch for changes to determine if the
         scan should be suspended
 
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
+
+    pre_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
+
+    post_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
     """
     def _should_suspend(self, value):
         return bool(value)
@@ -193,17 +197,19 @@ class SuspendBoolLow(SuspenderBase):
 
     Parameters
     ----------
-
-    RE : RunEngine
-        The run engine instance this should work on
-
-    pv_name : str
+    signal : `ophyd.Signal`
         The signal to watch for changes to determine if the
         scan should be suspended
 
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
+
+    pre_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
+
+    post_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
     """
     def _should_suspend(self, value):
         return not bool(value)
@@ -250,11 +256,7 @@ class SuspendFloor(_Threshold):
 
     Parameters
     ----------
-
-    RE : RunEngine
-        The run engine instance this should work on
-
-    pv_name : str
+    signal : `ophyd.Signal`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -269,6 +271,11 @@ class SuspendFloor(_Threshold):
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
 
+    pre_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
+
+    post_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
     """
     def _validate(self):
         if self._resume_thresh < self._suspend_thresh:
@@ -291,24 +298,26 @@ class SuspendCeil(_Threshold):
 
     Parameters
     ----------
-
-    RE : RunEngine
-        The run engine instance this should work on
-
-    pv_name : str
+    signal : `ophyd.Signal`
         The signal to watch for changes to determine if the
         scan should be suspended
 
     suspend_thresh : float
-        Suspend if the signal value rises above this value
+        Suspend if the signal value falls below this value
 
     resume_thresh : float, optional
-        Resume when the signal value falls below this value.  If not
-        given set to `suspend_thresh`.  Must be less than `suspend_thresh`.
+        Resume when the signal value rises above this value.  If not
+        given set to `suspend_thresh`.  Must be greater than `suspend_thresh`.
 
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
+
+    pre_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
+
+    post_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
     """
     def _validate(self):
         if self._resume_thresh > self._suspend_thresh:
@@ -347,11 +356,7 @@ class SuspendInBand(_SuspendBandBase):
 
     Parameters
     ----------
-
-    RE : RunEngine
-        The run engine instance this should work on
-
-    pv_name : str
+    signal : `ophyd.Signal`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -362,6 +367,12 @@ class SuspendInBand(_SuspendBandBase):
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
+
+    pre_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
+
+    post_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
     """
     def _should_resume(self, value):
         return self._bot < value < self._top
@@ -380,10 +391,7 @@ class SuspendOutBand(_SuspendBandBase):
     Parameters
     ----------
 
-    RE : RunEngine
-        The run engine instance this should work on
-
-    pv_name : str
+    signal : `ophyd.Signal`
         The signal to watch for changes to determine if the
         scan should be suspended
 
@@ -394,6 +402,12 @@ class SuspendOutBand(_SuspendBandBase):
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
+
+    pre_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
+
+    post_plan : iterable or iterator, optional
+            a generator, list, or similar containing `Msg` objects
     """
     def _should_resume(self, value):
         return not (self._bot < value < self._top)
