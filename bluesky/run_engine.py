@@ -1247,6 +1247,9 @@ class RunEngine:
             Msg('kickoff', flyer_object, start, stop, step)
             Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
+        if not self._run_is_open:
+            raise IllegalMessageSequence("A 'kickoff' message was sent but no "
+                                         "run is open.")
         _, obj, args, kwargs = msg
         self._uncollected.add(obj)
         group = msg.kwargs.pop('group', None)
@@ -1289,8 +1292,11 @@ class RunEngine:
             raise IllegalMessageSequence("A 'collect' message was sent but no "
                                          "run is open.")
         obj = msg.obj
+        if obj not in self._uncollected:
+            raise IllegalMessageSequence("The flyer %r was never kicked off "
+                                         "(or already collected).")
         stream = msg.kwargs.get('stream', False)
-        self._uncollected.discard(obj)
+        self._uncollected.remove(obj)
         stream_name = self._flyer_stream_names.pop(obj)
 
         # TODO Since Flyer.describe() return a *list* of data_keys it should
