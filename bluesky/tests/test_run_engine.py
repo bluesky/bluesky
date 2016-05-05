@@ -1,6 +1,7 @@
 import asyncio
 import pytest
-from bluesky.run_engine import RunEngine, RunEngineStateMachine
+from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
+                                TransitionError)
 from bluesky import Msg
 from bluesky.examples import det
 
@@ -23,7 +24,7 @@ def test_reset(fresh_RE):
     assert fresh_RE._run_start_uid == None
 
 
-def test_not_idle(fresh_RE):
+def test_running_from_paused_state_raises(fresh_RE):
     fresh_RE([Msg('pause')])
     assert fresh_RE.state == 'paused'
     with pytest.raises(RuntimeError):
@@ -31,6 +32,27 @@ def test_not_idle(fresh_RE):
     fresh_RE.resume()
     assert fresh_RE.state == 'idle'
     fresh_RE([Msg('null')])
+
+
+def test_resuming_from_idle_state_raises(fresh_RE):
+    with pytest.raises(RuntimeError):
+        fresh_RE.resume()
+    fresh_RE([Msg('pause')])
+    assert fresh_RE.state == 'paused'
+    fresh_RE.resume()
+    assert fresh_RE.state == 'idle'
+    with pytest.raises(RuntimeError):
+        fresh_RE.resume()
+
+
+def test_stopping_from_idle_state_raises(fresh_RE):
+    with pytest.raises(TransitionError):
+        fresh_RE.stop()
+
+
+def test_aborting_from_idle_state_raises(fresh_RE):
+    with pytest.raises(TransitionError):
+        fresh_RE.abort()
 
 
 def test_register(fresh_RE):
