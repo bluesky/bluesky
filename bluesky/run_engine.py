@@ -1159,7 +1159,8 @@ class RunEngine:
                                          "open an event bundle, before that "
                                          "bundle can be saved with 'save'.")
         if not self._run_is_open:
-            # sanity check -- this should be caught by 'create'
+            # sanity check -- this should be caught by 'create' which makes
+            # this code path impossible
             raise IllegalMessageSequence("A 'save' message was sent but no "
                                          "run is open.")
         # Short-circuit if nothing has been read. (Do not create empty Events.)
@@ -1291,13 +1292,15 @@ class RunEngine:
             Msg('collect', obj)
             Msg('collect', obj, stream=True)
         """
-        if not self._run_is_open:
-            raise IllegalMessageSequence("A 'collect' message was sent but no "
-                                         "run is open.")
         obj = msg.obj
         if obj not in self._uncollected:
             raise IllegalMessageSequence("The flyer %r was never kicked off "
                                          "(or already collected)." % obj)
+        if not self._run_is_open:
+            # sanity check -- 'kickoff' should catch this and make this
+            # code path impossible
+            raise IllegalMessageSequence("A 'collect' message was sent but no "
+                                         "run is open.")
         stream = msg.kwargs.get('stream', False)
         self._uncollected.remove(obj)
         stream_name = self._flyer_stream_names.pop(obj)
