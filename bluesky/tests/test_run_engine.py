@@ -3,7 +3,7 @@ import pytest
 from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
                                 TransitionError)
 from bluesky import Msg
-from bluesky.examples import det
+from bluesky.examples import det, Mover
 
 def test_states():
     assert RunEngineStateMachine.States.states() == ['idle', 'running', 'paused']
@@ -73,3 +73,33 @@ def test_register(fresh_RE):
     fresh_RE.unregister_command('custom-command')
     with pytest.raises(KeyError):
         fresh_RE([Msg('custom-command')])
+
+
+def test_stop_motors_and_log_any_errors(fresh_RE):
+    # test that if stopping one motor raises an error, we can carry on
+    stopped = {}
+
+    class MoverWithFlag(Mover):
+        def stop(self):
+            print('HELLO')
+            stopped['non_broken'] = True
+
+    class BrokenMoverWithFlag(Mover):
+        def stop(self):
+            print('HELLO')
+            stopped['broken'] = True
+            raise Exception
+
+
+    motor = MoverWithFlag('a', ['a'])
+    broken_motor = BrokenMoverWithFlag('b', ['b'])
+
+    fresh_RE([Msg('set', broken_motor, 1), Msg('set', motor, 1), Msg('pause')])
+    assert 'broken' in stopped
+    assert 'non_broken' in stopped
+    fresh_RE.stop()
+
+    fresh_RE([Msg('set', motor, 1), Msg('set', broken_motor, 1), Msg('pause')])
+    assert 'broken' in stopped
+    assert 'non_broken' in stopped
+    fresh_RE.stop()
