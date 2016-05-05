@@ -31,3 +31,23 @@ def test_not_idle(fresh_RE):
     fresh_RE.resume()
     assert fresh_RE.state == 'idle'
     fresh_RE([Msg('null')])
+
+
+def test_register(fresh_RE):
+    mutable = {}
+    fresh_RE.verbose = True
+
+    @asyncio.coroutine
+    def func(msg):
+        mutable['flag'] = True
+
+    def plan():
+        yield Msg('custom-command')
+
+    fresh_RE.register_command('custom-command', func)
+    fresh_RE(plan())
+    assert 'flag' in mutable
+    # Unregister command; now the Msg should not be recognized.
+    fresh_RE.unregister_command('custom-command')
+    with pytest.raises(KeyError):
+        fresh_RE([Msg('custom-command')])
