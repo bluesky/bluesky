@@ -89,7 +89,6 @@ def test_monitor_with_pause_resume(fresh_RE):
         yield Msg('monitor', a.s1)
         yield Msg('checkpoint')
         a.s1._run_subs(sub_type='value')
-        yield Msg('sleep', None, 0.2)  # give time for monitor to process
         yield Msg('pause')
         a.s1._run_subs(sub_type='value')
         yield Msg('close_run')
