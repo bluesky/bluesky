@@ -800,12 +800,12 @@ class RunEngine:
             # TODO Is the sleep here necessasry?
             yield from asyncio.sleep(0.001, loop=self.loop)
             self.log.error("Run aborted")
-            self.log.error("%s", self._exception)
+            self.log.error("%r", self._exception)
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
             self._reason = str(err)
             self.log.error("Run aborted")
-            self.log.error("%s", err)
+            self.log.error("%r", err)
             raise err
         finally:
             # call stop() on every movable object we ever set()
@@ -815,26 +815,32 @@ class RunEngine:
             for obj in list(self._uncollected):
                 try:
                     yield from self._collect(Msg('collect', obj))
-                except Exception:
-                    self.log.error("Failed to collect %r", obj)
+                except Exception as exc:
+                    self.log.error("Failed to collect %r. Error: %r", obj, exc)
             # in case we were interrupted between 'stage' and 'unstage'
             for obj in list(self._staged):
                 try:
                     obj.unstage()
-                except Exception:
-                    self.log.error("Failed to unstage %r", obj)
+                except Exception as exc:
+                    self.log.error("Failed to unstage %r. Error: %r", obj, exc)
                 self._staged.remove(obj)
             # Clear any uncleared monitoring callbacks.
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
-                obj.clear_sub(cb)
-                del self._monitor_params[obj]
+                try:
+                    obj.clear_sub(cb)
+                except Exception as exc:
+                    self.log.error("Failed to stop monitoring %r. Error: %r",
+                                   obj, exc)
+                else:
+                    del self._monitor_params[obj]
             sys.stdout.flush()
             # Emit RunStop if necessary.
             if self._run_is_open:
                 try:
                     yield from self._close_run(Msg('close_run'))
-                except Exception:
-                    self.log.error("Failed to close run %r", self._run_start_uid)
+                except Exception as exc:
+                    self.log.error("Failed to close run %r. Error: %r",
+                                   self._run_start_uid, exc)
                     # Exceptions from the callbacks should be re-raised.
                     # Close the loop first.
                     for task in asyncio.Task.all_tasks(self.loop):
@@ -980,7 +986,7 @@ class RunEngine:
                                          "occurred after a pause/resume, add "
                                          "a 'checkpoint' message after the "
                                          "'close_run' message.")
-        self.log.debug("Stopping run %s", self._run_start_uid)
+        self.log.debug("Stopping run %r", self._run_start_uid)
         # Clear any uncleared monitoring callbacks.
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
             obj.clear_sub(cb)
