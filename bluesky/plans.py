@@ -844,7 +844,7 @@ def fly_during(plan, flyers):
     collect_msgs = [Msg('collect', flyer) for flyer in flyers]
     if flyers:
         # If there are any flyers, insert a Msg that waits for them to finish.
-        collect_msgs = [Msg('wait', None, grp)] + collect_msgs
+        collect_msgs = [Msg('wait', None, group=grp)] + collect_msgs
 
     def insert_after_open(msg):
         if msg.command == 'open_run':
@@ -1184,7 +1184,7 @@ def trigger_and_read(devices, name='primary'):
         if hasattr(obj, 'trigger'):
             plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
     if plan_stack:
-        plan_stack.append(single_gen(Msg('wait', None, grp)))
+        plan_stack.append(single_gen(Msg('wait', None, group=grp)))
     with event_context(plan_stack, name=name):
         for obj in devices:
             plan_stack.append(single_gen(Msg('read', obj)))
@@ -1326,7 +1326,7 @@ def one_1d_step(detectors, motor, step):
         grp = _short_uid('set')
         yield Msg('checkpoint')
         yield Msg('set', motor, step, group=grp)
-        yield Msg('wait', None, grp)
+        yield Msg('wait', None, group=grp)
 
     plan_stack = deque()
     plan_stack.append(move())
@@ -1696,7 +1696,7 @@ def one_nd_step(detectors, step, pos_cache):
                 continue
             yield Msg('set', motor, pos, group=grp)
             pos_cache[motor] = pos
-        yield Msg('wait', None, grp)
+        yield Msg('wait', None, group=grp)
 
     motors = step.keys()
     plan_stack = deque()
