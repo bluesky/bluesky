@@ -1784,13 +1784,6 @@ def _rearrange_into_parallel_dicts(readings):
     return data, timestamps
 
 
-def _run_engine_log_template(metadata):
-    template = []
-    for key in metadata:
-        template.append("{key}: {{{key}}}".format(key=key))
-    return '\n'.join(template)
-
-
 class RequestAbort(Exception):
     pass
 
