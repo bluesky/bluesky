@@ -407,7 +407,8 @@ class LiveTable(CallbackBase):
                 'string': 's',
                 }
     _fm_sty = namedtuple('fm_sty', ['width', 'prec', 'dtype'])
-    water_mark = "{st[plan_type]} ['{st[uid]:.6s}'] (scan num: {st[scan_id]})"
+    water_mark = ("{st[plan_type]} {st[plan_name]} ['{st[uid]:.6s}'] "
+                  "(scan num: {st[scan_id]})")
     ev_time_key = 'SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES'
 
     def __init__(self, fields, *, print_header_interval=50,

@@ -947,10 +947,12 @@ class RunEngine:
 
         # Metadata can come from historydict, __call__, or the open_run Msg.
         self._metadata_per_run.update(self.md)
-        # Set a plan_type here, but it could be overruled,
+        # Set a plan_type and plan_name here, but it could be overruled,
         # which is useful if multiple plans were chained together.
         plan_type = type(self._plan).__name__
-        self._metadata_per_run.update({'plan_type': plan_type})
+        plan_name = getattr(self._plan, '__name__', '')
+        self._metadata_per_run.update({'plan_type': plan_type,
+                                       'plan_name': plan_name})
         self._metadata_per_run.update(self._metadata_per_call)
         self._metadata_per_run.update(msg.kwargs)
 
