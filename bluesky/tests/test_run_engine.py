@@ -118,3 +118,22 @@ def test_saving_without_an_open_bundle_is_illegal(fresh_RE):
 def test_opening_a_bundle_without_a_run_is_illegal(fresh_RE):
     with pytest.raises(IllegalMessageSequence):
         fresh_RE([Msg('create')])
+
+
+def test_empty_bundle(fresh_RE):
+    mutable = {}
+
+    def cb(name, doc):
+        mutable['flag'] = True
+
+    # In this case, an Event should be emitted.
+    mutable.clear()
+    fresh_RE([Msg('open_run'), Msg('create'), Msg('read', det), Msg('save')],
+             subs={'event': cb})
+    assert 'flag' in mutable
+
+    # In this case, an Event should not be emitted because the bundle is
+    # emtpy (i.e., there are no readings.)
+    mutable.clear()
+    fresh_RE([Msg('open_run'), Msg('create'), Msg('save')], subs={'event': cb})
+    assert 'flag' not in mutable
