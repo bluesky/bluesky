@@ -338,7 +338,7 @@ def null():
     msg : Msg
         Msg('null')
     """
-    return (yield from single_gen(Msg('null', obj)))
+    return (yield from single_gen(Msg('null')))
 
 
 def abs_set(obj, *args, group=None, wait=False, **kwargs):
