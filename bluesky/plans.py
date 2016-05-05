@@ -770,7 +770,7 @@ def subs_context(plan_stack, subs):
 
     def unsubscribe():
         for token in tokens:
-            yield Msg('unsubscribe', None, token)
+            yield Msg('unsubscribe', None, token=token)
 
     plan_stack.append(subscribe())
     try:
