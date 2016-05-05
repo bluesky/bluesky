@@ -1111,9 +1111,9 @@ def baseline_context(plan_stack, devices, name='baseline'):
     name : string, optional
         name for event stream; by default, 'baseline'
     """
-    plan_stack.append(trigger_and_read(devices), name=name)
+    plan_stack.append(trigger_and_read(devices, name=name))
     yield
-    plan_stack.append(trigger_and_read(devices), name=name)
+    plan_stack.append(trigger_and_read(devices, name=name))
 
 
 @contextmanager
