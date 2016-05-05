@@ -1009,6 +1009,10 @@ class RunEngine:
         Also note that changing the 'name' of the Event will create a new
         Descriptor document.
         """
+        if not self._run_is_open:
+            raise IllegalMessageSequence("Cannot bundle readings without "
+                                         "an open run. That is, 'create' must "
+                                         "be preceded by 'open_run'.")
         if self._bundling:
             raise IllegalMessageSequence("A second 'create' message is not "
                                          "allowed until the current event "
@@ -1147,13 +1151,14 @@ class RunEngine:
 
             Msg('save')
         """
-        if not self._run_is_open:
-            raise IllegalMessageSequence("A 'save' message was sent but no "
-                                         "run is open.")
         if not self._bundling:
             raise IllegalMessageSequence("A 'create' message must be sent, to "
                                          "open an event bundle, before that "
                                          "bundle can be saved with 'save'.")
+        if not self._run_is_open:
+            # sanity check -- this should be caught by 'create'
+            raise IllegalMessageSequence("A 'save' message was sent but no "
+                                         "run is open.")
         # Short-circuit if nothing has been read. (Do not create empty Events.)
         if not self._objs_read:
             self._bundling = False

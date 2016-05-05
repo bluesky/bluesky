@@ -1,7 +1,7 @@
 import asyncio
 import pytest
 from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
-                                TransitionError)
+                                TransitionError, IllegalMessageSequence)
 from bluesky import Msg
 from bluesky.examples import det, Mover
 
@@ -103,3 +103,18 @@ def test_stop_motors_and_log_any_errors(fresh_RE):
     assert 'broken' in stopped
     assert 'non_broken' in stopped
     fresh_RE.stop()
+
+
+def test_open_run_twice_is_illegal(fresh_RE):
+    with pytest.raises(IllegalMessageSequence):
+        fresh_RE([Msg('open_run'), Msg('open_run')])
+
+
+def test_saving_without_an_open_bundle_is_illegal(fresh_RE):
+    with pytest.raises(IllegalMessageSequence):
+        fresh_RE([Msg('open_run'), Msg('save')])
+
+
+def test_opening_a_bundle_without_a_run_is_illegal(fresh_RE):
+    with pytest.raises(IllegalMessageSequence):
+        fresh_RE([Msg('create')])
