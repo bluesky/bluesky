@@ -919,7 +919,7 @@ class RunEngine:
         for ``asyncio.await``
         """
         futs, = msg.args
-        yield from asyncio.wait(futs, **msg.kwargs, loop=self.loop)
+        yield from asyncio.wait(futs, loop=self.loop, **msg.kwargs)
 
     @asyncio.coroutine
     def _open_run(self, msg):
