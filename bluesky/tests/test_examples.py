@@ -545,7 +545,7 @@ def test_interruption_exception():
     RE.stop()
 
 
-def test_failed_status_object():
+def test_failed_status_object(fresh_RE):
     try:
         from ophyd import StatusBase
     except ImportError:
@@ -554,7 +554,12 @@ def test_failed_status_object():
     class failer:
         def set(self, inp):
             st = StatusBase()
-            loop.call_later(1, lambda: st._finished(success=False))
+            fresh_RE.loop.call_later(1, lambda: st._finished(success=False))
+            return st
+
+        def trigger(self):
+            st = StatusBase()
+            fresh_RE.loop.call_later(1, lambda: st._finished(success=False))
             return st
 
         def stop(self):
@@ -562,8 +567,12 @@ def test_failed_status_object():
 
     ff = failer()
     with pytest.raises(FailedStatus):
-        RE([Msg('set', ff, None, group='a'),
-            Msg('wait', None, 'a')])
+        fresh_RE([Msg('set', ff, None, group='a'),
+                  Msg('wait', None, 'a')])
+
+    with pytest.raises(FailedStatus):
+        fresh_RE([Msg('trigger', ff, group='a'),
+                  Msg('wait', None, 'a')])
 
 
 def test_rewindable_by_default():
