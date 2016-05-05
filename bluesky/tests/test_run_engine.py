@@ -228,6 +228,11 @@ def test_redundant_monitors_are_illegal(fresh_RE):
     with pytest.raises(IllegalMessageSequence):
         fresh_RE([Msg('monitor', dummy)])
 
+    # Unmonitoring something that was never monitored is illegal.
+    with pytest.raises(IllegalMessageSequence):
+        fresh_RE([Msg('unmonitor', dummy)])
+
+
 def test_flying_outside_a_run_is_illegal(fresh_RE):
 
     flyer = DummyFlyer()

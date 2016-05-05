@@ -1139,6 +1139,9 @@ class RunEngine:
             Msg('unmonitor', obj)
         """
         obj = msg.obj
+        if obj not in self._monitor_params:
+            raise IllegalMessageSequence("Cannot 'unmonitor' %r; it is not "
+                                         "being monitored." % obj)
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
@@ -1294,7 +1297,7 @@ class RunEngine:
         obj = msg.obj
         if obj not in self._uncollected:
             raise IllegalMessageSequence("The flyer %r was never kicked off "
-                                         "(or already collected).")
+                                         "(or already collected)." % obj)
         stream = msg.kwargs.get('stream', False)
         self._uncollected.remove(obj)
         stream_name = self._flyer_stream_names.pop(obj)
