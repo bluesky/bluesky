@@ -45,7 +45,9 @@ class Base:
         return '{}: {}'.format(self._klass, self.name)
 
     def read_configuration(self):
-        return {}
+        return {'some_configuration':
+                   {'value': 'there is a sandwich in the vacuum chamber',
+                    'timestamp': 0}}
 
     def describe_configuration(self):
         return {}
