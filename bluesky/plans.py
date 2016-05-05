@@ -488,7 +488,7 @@ def pause():
     msg : Msg
         Msg('pause')
     """
-    return (yield from single_gen(Msg('pause')))
+    return (yield from single_gen(Msg('pause', None, defer=False)))
 
 
 def deferred_pause():
@@ -500,7 +500,7 @@ def deferred_pause():
     msg : Msg
         Msg('pause', defer=True)
     """
-    return (yield from Msg('pause', defer=True))
+    return (yield from single_gen(Msg('pause', None, defer=True)))
 
 
 def input(prompt=''):
@@ -652,13 +652,13 @@ def unsubscribe(token):
     return (yield from single_gen(Msg('unsubscribe', token=token)))
 
 
-def open_run(md):
+def open_run(md=None):
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
 
     Parameters
     ----------
-    md : dict
+    md : dict, optional
         metadata
 
     Yields
@@ -666,6 +666,8 @@ def open_run(md):
     msg : Msg
         Msg('open_run', **md)
     """
+    if md is None:
+        md = {}
     return (yield from single_gen(Msg('open_run', **md)))
 
 
