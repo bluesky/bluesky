@@ -1436,14 +1436,19 @@ class RunEngine:
 
     @asyncio.coroutine
     def _wait(self, msg):
-        """ Block progress until every object that was triggered triggered
-        with the keyword argument `block=group` is done.
+        """Block progress until every object that was triggered or set
+        with the keyword argument `group=<GROUP>` is done.
 
         Expected message object is:
 
-            Msg('wait', group=GROUP)
+            Msg('wait', group=<GROUP>)
+
+        where ``<GROUP>`` is any hashable key.
         """
-        group = msg.kwargs.get('group', msg.args[0])
+        if msg.args:
+            group, = msg.args
+        else:
+            group = msg.kwargs['group']
         futs = list(self._groups.pop(group, []))
         if futs:
             yield from self._wait_for(Msg('wait_for', None, futs))

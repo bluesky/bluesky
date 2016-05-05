@@ -568,11 +568,11 @@ def test_failed_status_object(fresh_RE):
     ff = failer()
     with pytest.raises(FailedStatus):
         fresh_RE([Msg('set', ff, None, group='a'),
-                  Msg('wait', None, 'a')])
+                  Msg('wait', None, group='a')])
 
     with pytest.raises(FailedStatus):
         fresh_RE([Msg('trigger', ff, group='a'),
-                  Msg('wait', None, 'a')])
+                  Msg('wait', None, group='a')])
 
 
 def test_rewindable_by_default():

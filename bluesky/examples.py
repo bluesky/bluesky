@@ -515,7 +515,7 @@ def wait_one(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')
     yield Msg('set', motor, 5, group='A')  # Add to group 'A'.
-    yield Msg('wait', None, 'A')  # Wait for everything in group 'A' to finish.
+    yield Msg('wait', None, group='A')  # Wait for everything in group 'A' to finish.
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('close_run')
@@ -527,7 +527,7 @@ def wait_multiple(det, motors):
     for motor in motors:
         yield Msg('set', motor, 5, group='A')
     # Wait for everything in group 'A' to report done.
-    yield Msg('wait', None, 'A')
+    yield Msg('wait', None, group='A')
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('close_run')
@@ -543,12 +543,12 @@ def wait_complex(det, motors):
     # ...but put the last motor is separate group.
     yield Msg('set', motors[-1], 5, group='B')
     # Wait for everything in group 'A' to report done.
-    yield Msg('wait', None, 'A')
+    yield Msg('wait', None, group='A')
     yield Msg('trigger', det)
     yield Msg('read', det)
 
     # Wait for everything in group 'B' to report done.
-    yield Msg('wait', None, 'B')
+    yield Msg('wait', None, group='B')
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('close_run')
@@ -611,10 +611,10 @@ def cautious_stepscan(det, motor):
 def fly_gen(flyer, start, stop, step):
     yield Msg('open_run')
     yield Msg('kickoff', flyer, start, stop, step, group='fly')
-    yield Msg('wait', None, 'fly')
+    yield Msg('wait', None, group='fly')
     yield Msg('collect', flyer)
     yield Msg('kickoff', flyer, start, stop, step, group='fly')
-    yield Msg('wait', None, 'fly')
+    yield Msg('wait', None, group='fly')
     yield Msg('collect', flyer)
     yield Msg('close_run')
 
