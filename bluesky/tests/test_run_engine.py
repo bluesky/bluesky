@@ -60,6 +60,11 @@ def test_stopping_from_idle_state_raises(fresh_RE):
         fresh_RE.stop()
 
 
+def test_pausing_from_idle_state_raises(fresh_RE):
+    with pytest.raises(TransitionError):
+        fresh_RE.request_pause(defer=False)
+
+
 def test_aborting_from_idle_state_raises(fresh_RE):
     with pytest.raises(TransitionError):
         fresh_RE.abort()

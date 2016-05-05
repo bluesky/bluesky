@@ -387,12 +387,6 @@ class RunEngine:
             If True, pause at the next checkpoint.
             False by default.
         """
-        if not self.state.can_pause:
-            # can't pause, print and return
-            print("Cannot pause from {0} state. "
-                  "Ignoring request.".format(self.state))
-            return
-        # Now to the right pause state if we can.
         if defer:
             self._deferred_pause_requested = True
             print("Deferred pause acknowledged. Continuing to checkpoint.")
