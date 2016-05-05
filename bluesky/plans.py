@@ -170,7 +170,7 @@ def plan_mutator(plan, msg_proc):
 
 def msg_mutator(plan, msg_proc):
     """
-    A simple preprocessor that mutates or deltes single messages in a plan
+    A simple preprocessor that mutates or deletes single messages in a plan
 
     To *insert* messages, use ``plan_mutator`` instead.
 
@@ -259,7 +259,7 @@ def create(name='primary'):
     msg : Msg
         Msg('create', name=name)
     """
-    yield Msg('create', name=name)
+    return (yield from single_gen(Msg('create', name=name)))
 
 
 def save():
@@ -271,7 +271,7 @@ def save():
     msg : Msg
         Msg('save')
     """
-    yield Msg('save')
+    return (yield from single_gen(Msg('save')))
 
 
 def read(obj):
@@ -287,7 +287,7 @@ def read(obj):
     msg : Msg
         Msg('read', obj)
     """
-    yield Msg('read', obj)
+    return (yield from single_gen(Msg('read', obj)))
 
 
 def monitor(obj, *args, name=None, **kwargs):
@@ -297,10 +297,10 @@ def monitor(obj, *args, name=None, **kwargs):
     Parameters
     ----------
     obj : Signal
-    name : string, optional
-        name of event stream; default is None
     args :
         passed through to ``obj.subscribe()``
+    name : string, optional
+        name of event stream; default is None
     kwargs :
         passed through to ``obj.subscribe()``
 
@@ -309,7 +309,8 @@ def monitor(obj, *args, name=None, **kwargs):
     msg : Msg
         Msg('monitor', obj, *args, **kwargs)
     """
-    yield Msg('monitor', obj, *args, **kwargs)
+    return (yield from single_gen(Msg('monitor', obj, *args, name=name,
+                                      **kwargs)))
 
 
 def unmonitor(obj):
@@ -325,7 +326,7 @@ def unmonitor(obj):
     msg : Msg
         Msg('unmonitor', obj)
     """
-    yield Msg('unmonitor', obj)
+    return (yield from single_gen(Msg('unmonitor', obj)))
 
 
 def null():
@@ -337,7 +338,7 @@ def null():
     msg : Msg
         Msg('null')
     """
-    yield Msg('null', obj)
+    return (yield from single_gen(Msg('null', obj)))
 
 
 def abs_set(obj, *args, group=None, wait=False, **kwargs):
@@ -361,9 +362,10 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     ------
     msg : Msg
     """
-    yield Msg('set', obj, *args, group=group, **kwargs)
+    ret = yield from single_gen(Msg('set', obj, *args, group=group, **kwargs))
     if wait:
-        yield Msg('wait', None, group=group)
+        yield from single_gen(Msg('wait', None, group=group))
+    return ret
 
 
 def rel_set(obj, *args, group=None, wait=False, **kwargs):
@@ -387,9 +389,10 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     ------
     msg : Msg
     """
-    yield from relative_set(abs_set(obj, *args, group=group, **kwargs))
+    ret = yield from relative_set(abs_set(obj, *args, group=group, **kwargs))
     if wait:
-        yield Msg('wait', None, group=group)
+        yield from single_gen(Msg('wait', None, group=group))
+    return ret
 
 
 def trigger(obj, *, group=None, wait=False):
@@ -409,9 +412,10 @@ def trigger(obj, *, group=None, wait=False):
     ------
     msg : Msg
     """
-    yield Msg('trigger', obj, group=group)
+    ret = yield from single_gen(Msg('trigger', obj, group=group))
     if wait:
-        yield Msg('wait', None, group=group)
+        yield from single_gen(Msg('wait', None, group=group))
+    return ret
 
 
 def sleep(time):
@@ -431,7 +435,7 @@ def sleep(time):
     msg : Msg
         Msg('sleep', None, time)
     """
-    yield Msg('sleep', None, time)
+    return (yield from single_gen(Msg('sleep', None, time)))
 
 
 def wait(group=None):
@@ -448,7 +452,7 @@ def wait(group=None):
     msg : Msg
         Msg('wait', None, group=group)
     """
-    yield Msg('wait', None, group=group)
+    return (yield from single_gen(Msg('wait', None, group=group)))
 
 
 def checkpoint():
@@ -460,7 +464,7 @@ def checkpoint():
     msg : Msg
         Msg('checkpoint')
     """
-    yield Msg('checkpoint')
+    return (yield from single_gen(Msg('checkpoint')))
 
 
 def clear_checkpoint():
@@ -472,7 +476,7 @@ def clear_checkpoint():
     msg : Msg
         Msg('clear_checkpoint')
     """
-    yield Msg('clear_checkpoint')
+    return (yield from single_gen(Msg('clear_checkpoint')))
 
 
 def pause():
@@ -484,7 +488,7 @@ def pause():
     msg : Msg
         Msg('pause')
     """
-    yield Msg('pause')
+    return (yield from single_gen(Msg('pause')))
 
 
 def deferred_pause():
@@ -496,7 +500,7 @@ def deferred_pause():
     msg : Msg
         Msg('pause', defer=True)
     """
-    yield Msg('pause', defer=True)
+    return (yield from Msg('pause', defer=True))
 
 
 def input(prompt=''):
@@ -513,7 +517,7 @@ def input(prompt=''):
     msg : Msg
         Msg('input', prompt=prompt)
     """
-    return (yield from (m in [Msg('input', prompt=prompt)]))
+    return (yield from single_gen(Msg('input', prompt=prompt)))
 
 
 def kickoff(obj, *, name=None, group=None, **kwargs):
@@ -536,7 +540,8 @@ def kickoff(obj, *, name=None, group=None, **kwargs):
     msg : Msg
         Msg('kickoff', obj)
     """
-    yield Msg('kickoff', obj, name=name, group=group, **kwargs)
+    return (yield from single_gen(
+        Msg('kickoff', obj, name=name, group=group, **kwargs)))
 
 
 def collect(obj, *, stream=False):
@@ -556,7 +561,7 @@ def collect(obj, *, stream=False):
     msg : Msg
         Msg('collect', obj)
     """
-    yield Msg('collect', obj, stream=stream)
+    return (yield from single_gen(Msg('collect', obj, stream=stream)))
 
 
 def configure(obj, *args, **kwargs):
@@ -576,7 +581,7 @@ def configure(obj, *args, **kwargs):
     msg : Msg
         Msg('configure', obj, *args, **kwargs)
     """
-    yield Msg('configure', obj, *args, **kwargs)
+    return (yield from single_gen(Msg('configure', obj, *args, **kwargs)))
 
 
 def stage(obj):
@@ -592,7 +597,7 @@ def stage(obj):
     msg : Msg
         Msg('stage', obj)
     """
-    yield Msg('stage', obj)
+    return (yield from single_gen(Msg('stage', obj)))
 
 
 def unstage(obj):
@@ -608,7 +613,7 @@ def unstage(obj):
     msg : Msg
         Msg('unstage', obj)
     """
-    yield Msg('unstage', obj)
+    return (yield from single_gen(Msg('unstage', obj)))
 
 
 def subscribe(name, func):
@@ -627,7 +632,7 @@ def subscribe(name, func):
     msg : Msg
         Msg('subscribe', None, name, func)
     """
-    yield Msg('subscribe', None, name, func)
+    return (yield from single_gen(Msg('subscribe', None, name, func)))
 
 
 def unsubscribe(token):
@@ -644,7 +649,7 @@ def unsubscribe(token):
     msg : Msg
         Msg('unsubscribe', token=token)
     """
-    yield Msg('unsubscribe', token=token)
+    return (yield from single_gen(Msg('unsubscribe', token=token)))
 
 
 def open_run(md):
@@ -661,7 +666,7 @@ def open_run(md):
     msg : Msg
         Msg('open_run', **md)
     """
-    yield Msg('open_run', **md)
+    return (yield from single_gen(Msg('open_run', **md)))
 
 
 def close_run():
@@ -673,7 +678,7 @@ def close_run():
     msg : Msg
         Msg('close_run')
     """
-    yield Msg('close_run')
+    return (yield from single_gen(Msg('close_run')))
 
 
 def wait_for(futures, **kwargs):
@@ -692,7 +697,7 @@ def wait_for(futures, **kwargs):
     msg : Msg
         Msg('wait_for', None, futures, **kwargs)
     """
-    yield Msg('wait_for', None, futures, **kwargs)
+    return (yield from single_gen(Msg('wait_for', None, futures, **kwargs)))
 
 
 def finalize(plan, final_plan):
