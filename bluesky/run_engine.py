@@ -659,6 +659,13 @@ class RunEngine:
             # Stash a copy in a local var to re-instating the monitors.
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
                 obj.clear_sub(cb)
+            # During suspend, all motors should be stopped. Call stop() on
+            # every object we ever set().
+            self._stop_movable_objects()
+            # Notify Devices of the pause in case they want to clean up.
+            for obj in self._objs_seen:
+                if hasattr(obj, 'pause'):
+                    obj.pause()
 
             # rewind to the last checkpoint
             new_plan = self._rewind()
@@ -677,10 +684,9 @@ class RunEngine:
             if pre_plan is not None:
                 self._plan_stack.append(ensure_generator(pre_plan))
                 self._response_stack.append(None)
-            # Notify Devices of the pause in case they want to clean up.
-            for obj in self._objs_seen:
-                if hasattr(obj, 'pause'):
-                    obj.pause()
+            # The event loop is still running. The pre_plan will be processed,
+            # and then the RunEngine will be hung up on processing the
+            # 'wait_for' message until `fut` is set.
 
     def abort(self, reason=''):
         """
