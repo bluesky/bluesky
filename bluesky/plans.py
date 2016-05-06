@@ -1231,8 +1231,8 @@ def repeater(n, gen_func, *args, **kwargs):
 
     Parameters
     ----------
-    n : int
-        total number of repetitions
+    n : int or None
+        total number of repetitions; if None, infinite
     gen_func : callable
         returns generator instance
     *args
