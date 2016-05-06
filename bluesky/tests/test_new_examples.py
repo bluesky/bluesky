@@ -2,7 +2,7 @@ import copy
 from collections import deque
 import pytest
 from bluesky import Msg
-from bluesky.examples import det, det1, det2, Mover
+from bluesky.examples import det, det1, det2, Mover, NullStatus
 from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
@@ -16,22 +16,6 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            repeater, caching_repeater)
 
 
-class Status:
-    "a simple Status object that is always immediately done"
-    def __init__(self):
-        self._cb = None
-        self.done = True
-        self.success = True
-
-    @property
-    def finished_cb(self):
-        return self._cb
-
-    @finished_cb.setter
-    def finished_cb(self, cb):
-        cb()
-        self._cb = cb
-
 class DummyMover:
     def __init__(self, name):
         self._value = 0
@@ -42,7 +26,7 @@ class DummyMover:
 
     def set(self, value):
         self._value = value
-        return Status()
+        return NullStatus()
 
     def read_configuration(self):
         return {}
@@ -332,7 +316,7 @@ def test_configure_count_time(fresh_RE):
             return 3
 
         def set(self, val):
-            return Status()
+            return NullStatus()
 
     det = DummyMover('det')
     det.count_time = DummySignal()

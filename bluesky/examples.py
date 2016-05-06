@@ -19,6 +19,23 @@ class MockSignal:
         return {self._field: (0, 0)}
 
 
+class NullStatus:
+    "a simple Status object that is always immediately done"
+    def __init__(self):
+        self._cb = None
+        self.done = True
+        self.success = True
+
+    @property
+    def finished_cb(self):
+        return self._cb
+
+    @finished_cb.setter
+    def finished_cb(self, cb):
+        cb()
+        self._cb = cb
+
+
 class Base:
     def __init__(self, name, fields):
         self.name = name
