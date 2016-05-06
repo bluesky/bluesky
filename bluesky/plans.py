@@ -966,15 +966,18 @@ def relative_set(plan, devices=None):
     initial_positions = {}
 
     def read_and_stash_a_motor(obj):
+        # obj should have a `position` attribution
         try:
             cur_pos = obj.position
         except AttributeError:
+            # ... but as a fallback we can read obj and grab the value of the
+            # first key
             reading = yield Msg('read', obj)
             if reading is None:
                 # this plan may be being list-ified
                 cur_pos = 0
             else:
-                k = reading.keys()[0]
+                k = list(reading.keys())[0]
                 cur_pos = reading[k]['value']
         initial_positions[obj] = cur_pos
 
@@ -1028,7 +1031,7 @@ def reset_positions(plan, devices=None):
                 # this plan may be being list-ified
                 cur_pos = 0
             else:
-                k = reading.keys()[0]
+                k = list(reading.keys())[0]
                 cur_pos = reading[k]['value']
         initial_positions[obj] = cur_pos
 
@@ -1930,7 +1933,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
                 pos = motor.position
             except AttributeError:
                 ret_mot = yield Msg('read', motor)
-                key = ret_mot.keys()[0]
+                key = list(ret_mot.keys())[0]
                 pos = ret_mot[key]['value']
             yield Msg('trigger', d, group='A')
             yield Msg('wait', None, 'A')
