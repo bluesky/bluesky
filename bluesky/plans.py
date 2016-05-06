@@ -14,6 +14,7 @@ from boltons.iterutils import chunked
 
 from . import Msg
 
+from .plan_tools import ensure_generator
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists)
 
@@ -726,7 +727,7 @@ def finalize(plan, final_plan):
     try:
         ret = yield from plan
     finally:
-        yield from final_plan
+        yield from ensure_generator(final_plan)
     return ret
 
 
