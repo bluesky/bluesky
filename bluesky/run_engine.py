@@ -1343,14 +1343,9 @@ class RunEngine:
         self._uncollected.remove(obj)
         stream_name = self._flyer_stream_names.pop(obj)
 
-        description = obj.describe_collect()  # a dict or a list
-        if hasattr(description, 'items'):
-            # e.g., {name_for_desc1: data_keys_for_desc1,
-            #        name for_desc2: data_keys_for_desc2, ...}
-            named_data_keys = description
-        else:
-            # e.g., [data_keys_for_desc1, data_keys_for_desc2, ...]
-            named_data_keys = {None: dk for dk in description}
+        named_data_keys = obj.describe_collect()
+        # e.g., {name_for_desc1: data_keys_for_desc1,
+        #        name for_desc2: data_keys_for_desc2, ...}
         bulk_data = {}
         for stream_name, data_keys in named_data_keys.items():
             objs_read = frozenset(data_keys)

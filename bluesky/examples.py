@@ -328,7 +328,7 @@ class MockFlyer:
         dd = dict()
         dd.update(self._mot.describe())
         dd.update(self._detector.describe())
-        return [dd, ]
+        return {'stream_name': dd}
 
     def complete(self):
         self.success = True
@@ -435,9 +435,10 @@ class FlyMagic(Base):
         return self
 
     def describe_collect(self):
-        return [{k: {'source': self.name, 'dtype': 'number'}
+        return {'stream1': {k: {'source': self.name, 'dtype': 'number'}
                  for k in [self._motor, self._det]},
-                {self._det2: {'source': self.name, 'dtype': 'number'}}]
+                'stream2':
+                {self._det2: {'source': self.name, 'dtype': 'number'}}}
 
     def collect(self):
         if self._time is None or not self.ready:
