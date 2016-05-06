@@ -232,6 +232,7 @@ class RunEngine:
             'pause': self._pause,
             'collect': self._collect,
             'kickoff': self._kickoff,
+            'complete': self._complete,
             'configure': self._configure,
             'stage': self._stage,
             'unstage': self._unstage,
@@ -1274,6 +1275,39 @@ class RunEngine:
         ret = obj.kickoff(*msg.args, **msg.kwargs)
 
         if group:
+            p_event = asyncio.Event(loop=self.loop)
+
+            def done_callback():
+                if not ret.success:
+                    self.loop.call_soon_threadsafe(self._failed_status, ret)
+                self.loop.call_soon_threadsafe(p_event.set)
+
+            ret.finished_cb = done_callback
+            self._groups[group].add(p_event.wait())
+
+        return ret
+
+    @asyncio.coroutine
+    def _complete(self, msg):
+        """
+        Tell a flyer, 'stop collecting, whenver you are ready'.
+
+        The flyer returns a status object. Some flyers respond to this
+        command by stopping collection and returning a finished status
+        object immedately. Other flyers finish their given course and
+        finish whenever they finish, irrespective of when this command is
+        issued.
+
+        Expected message object is:
+
+            Msg('complete', flyer, group=<GROUP>)
+
+        where <GROUP> is a hashable identifier.
+        """
+        group = msg.kwargs.pop('group', None)
+        ret = msg.obj.complete(*msg.args, **msg.kwargs)
+
+        if group is not None:
             p_event = asyncio.Event(loop=self.loop)
 
             def done_callback():

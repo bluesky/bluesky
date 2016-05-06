@@ -521,18 +521,21 @@ def input(prompt=''):
     return (yield from single_gen(Msg('input', prompt=prompt)))
 
 
-def kickoff(obj, *, name=None, group=None, **kwargs):
+def kickoff(obj, *, name=None, group=None, wait=False, **kwargs):
     """
     Kickoff a fly-scanning device.
 
     Parameters
     ----------
     obj : fly-able
-        Device with 'kickoff' and 'collect' methods
+        Device with 'kickoff', 'complete', and 'collect' methods
     name : string, optional
         event stream name, a convenient human-friendly identifier
     group : string (or any hashable object), optional
         identifier used by 'wait'
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
     kwargs
         passed through to ``obj.kickoff()``
 
@@ -541,8 +544,46 @@ def kickoff(obj, *, name=None, group=None, **kwargs):
     msg : Msg
         Msg('kickoff', obj)
     """
-    return (yield from single_gen(
-        Msg('kickoff', obj, name=name, group=group, **kwargs)))
+    ret = (yield from single_gen(
+         Msg('kickoff', obj, name=name, group=group, **kwargs)))
+    if wait:
+        yield from wait(group=group)
+    return ret
+
+
+def complete(obj, *, group=None, wait=True, **kwargs):
+    """
+    Tell a flyer, 'stop collecting, whenver you are ready'.
+
+    The flyer returns a status object. Some flyers respond to this
+    command by stopping collection and returning a finished status
+    object immedately. Other flyers finish their given course and
+    finish whenever they finish, irrespective of when this command is
+    issued.
+
+    Parameters
+    ----------
+    obj : fly-able
+        Device with 'kickoff', 'complete', and 'collect' methods
+    group : string (or any hashable object), optional
+        identifier used by 'wait'
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    kwargs
+        passed through to ``obj.complete()``
+
+    Yields
+    ------
+    msg : Msg
+        a 'complete' Msg and maybe a 'wait' message
+    """
+    ret = (yield from single_gen(
+         Msg('complete', obj, group=group, **kwargs)))
+    if wait:
+        yield from wait(group=group)
+    return ret
+
 
 
 def collect(obj, *, stream=False):
@@ -552,7 +593,7 @@ def collect(obj, *, stream=False):
     Parameters
     ----------
     obj : fly-able
-        Device with 'kickoff' and 'collect' methods
+        Device with 'kickoff', 'complete', and 'collect' methods
     stream : boolean
         If False (default), emit events documents in one bulk dump. If True,
         emit events one at time.
@@ -840,12 +881,15 @@ def fly_during(plan, flyers):
         messages from plan with 'kickoff', 'wait' and 'collect' messages
         inserted
     """
-    grp = _short_uid('flyers')
-    kickoff_msgs = [Msg('kickoff', flyer, group=grp) for flyer in flyers]
+    grp1 = _short_uid('flyers-kickoff')
+    grp2 = _short_uid('flyers-complete')
+    kickoff_msgs = [Msg('kickoff', flyer, group=grp1) for flyer in flyers]
+    complete_msgs = [Msg('complete', flyer, group=grp1) for flyer in flyers]
     collect_msgs = [Msg('collect', flyer) for flyer in flyers]
     if flyers:
-        # If there are any flyers, insert a Msg that waits for them to finish.
-        collect_msgs = [Msg('wait', None, group=grp)] + collect_msgs
+        # If there are any flyers, insert a 'wait' Msg after kickoff, complete
+        kickoff_msgs += [Msg('wait', None, group=grp1)]
+        complete_msgs += [Msg('wait', None, group=grp2)]
 
     def insert_after_open(msg):
         if msg.command == 'open_run':
@@ -858,6 +902,7 @@ def fly_during(plan, flyers):
     def insert_before_close(msg):
         if msg.command == 'close_run':
             def new_gen():
+                yield from complete_msgs
                 yield from collect_msgs
                 yield msg
             return new_gen(), None
