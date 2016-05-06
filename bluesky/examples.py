@@ -330,14 +330,23 @@ class MockFlyer:
         dd.update(self._detector.describe())
         return [dd, ]
 
-    def kickoff(self, start, stop, steps):
+    def complete(self):
         self.success = True
         self.ready = False
-        self._data = deque()
+        return self
+
+    def kickoff(self, start, stop, steps):
         self._steps = np.linspace(start, stop, steps)
+        self._data = deque()
+
+        # setup the status object (self) that will be returned by
+        # self.complete(). Separately, make dummy status object
+        # that is immediately done, and return that, indicated that
+        # the 'kickoff' step is done.
         self._future = loop.run_in_executor(None, self._scan)
         self._future.add_done_callback(lambda x: self._finish())
-        return self
+
+        return NullStatus()
 
     def collect(self):
         if not self.ready:
@@ -627,11 +636,15 @@ def cautious_stepscan(det, motor):
 
 def fly_gen(flyer, start, stop, step):
     yield Msg('open_run')
-    yield Msg('kickoff', flyer, start, stop, step, group='fly')
-    yield Msg('wait', None, group='fly')
+    yield Msg('kickoff', flyer, start, stop, step, group='fly-kickoff')
+    yield Msg('wait', None, group='fly-kickoff')
+    yield Msg('complete', flyer, group='fly-complete')
+    yield Msg('wait', None, group='fly-complete')
     yield Msg('collect', flyer)
-    yield Msg('kickoff', flyer, start, stop, step, group='fly')
-    yield Msg('wait', None, group='fly')
+    yield Msg('kickoff', flyer, start, stop, step, group='fly-kickoff2')
+    yield Msg('wait', None, group='fly-kickoff2')
+    yield Msg('complete', flyer, group='fly-complete2')
+    yield Msg('wait', None, group='fly-complete2')
     yield Msg('collect', flyer)
     yield Msg('close_run')
 

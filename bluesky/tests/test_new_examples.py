@@ -155,8 +155,12 @@ def test_fly_during():
                     Msg('open_run'), Msg('null'), Msg('close_run')]
 
     processed_plan = list(fly_during(plan(), ['foo']))
-    expected = 2 * [Msg('open_run'), Msg('kickoff', 'foo'), Msg('null'),
-                    Msg('wait'), Msg('collect', 'foo'), Msg('close_run')]
+    expected = 2 * [Msg('open_run'),
+                    Msg('kickoff', 'foo'), Msg('wait'),  # inserted
+                    Msg('null'),
+                    Msg('complete', 'foo'), Msg('wait'),  # inserted
+                    Msg('collect', 'foo'),  # inserted
+                    Msg('close_run')]
 
     for msg in processed_plan:
         msg.kwargs.pop('group', None)
