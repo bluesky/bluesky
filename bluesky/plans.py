@@ -1262,16 +1262,21 @@ def caching_repeater(n, plan):
 
     Parameters
     ----------
-    n : int
-        total number of repetitions
+    n : int or None
+        total number of repetitions; if None, infinite
     plan : iterable
 
     Yields
     ------
     msg : Msg
     """
+    it = range
+    if n is None:
+        n = 0
+        it = itertools.count
+
     lst_plan = list(plan)
-    for j in range(n):
+    for j in it(n):
         yield from (m for m in lst_plan)
 
 
