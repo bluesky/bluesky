@@ -18,7 +18,8 @@ from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
 import numpy as np
 
-from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input)
+from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
+                    AsyncInput)
 from . import Msg
 from .plan_tools import ensure_generator
 from .plans import single_gen
@@ -1755,25 +1756,6 @@ class Dispatcher:
     @ignore_exceptions.setter
     def ignore_exceptions(self, val):
         self.cb_registry.ignore_exceptions = val
-
-
-class AsyncInput:
-    """a input prompt that allows event loop to run in the background
-
-    adapted from http://stackoverflow.com/a/35514777/1221924
-    """
-    def __init__(self, loop=None):
-        self.loop = loop or asyncio.get_event_loop()
-        self.q = asyncio.Queue(loop=self.loop)
-        self.loop.add_reader(sys.stdin, self.got_input)
-
-    def got_input(self):
-        asyncio.ensure_future(self.q.put(sys.stdin.readline()), loop=self.loop)
-
-    @asyncio.coroutine
-    def __call__(self, prompt, end='\n', flush=False):
-        print(prompt, end=end, flush=flush)
-        return (yield from self.q.get()).rstrip('\n')
 
 
 def new_uid():
