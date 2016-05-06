@@ -180,14 +180,15 @@ def test_fly_during():
     assert processed_plan == expected
 
 
-def lazily_stage():
+def test_lazily_stage():
     def plan():
         yield from [Msg('read', det1), Msg('read', det1), Msg('read', det2)]
 
     processed_plan = list(lazily_stage(plan()))
 
     expected = [Msg('stage', det1), Msg('read', det1), Msg('read', det1),
-                Msg('stage', det2), Msg('read', det2)]
+                Msg('stage', det2), Msg('read', det2), Msg('unstage', det2),
+                Msg('unstage', det1)]
 
     assert processed_plan == expected
 

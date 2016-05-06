@@ -872,7 +872,7 @@ def fly_during(plan, flyers):
 
 def lazily_stage(plan):
     """
-    This is a preprocessor that inserts 'stage' Messages.
+    This is a preprocessor that inserts 'stage' messages and appends 'unstage'.
 
     The first time an object is seen in `plan`, it is staged. To avoid
     redundant staging we actually stage the object's ultimate parent, pointed
@@ -915,7 +915,11 @@ def lazily_stage(plan):
         else:
             return None, None
 
-    return (yield from plan_mutator(plan, inner))
+    def unstage_all():
+        for device in reversed(devices_staged):
+            yield Msg('unstage', device)
+
+    return (yield from finalize(plan_mutator(plan, inner), unstage_all()))
 
 
 @contextmanager
