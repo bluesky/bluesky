@@ -1083,13 +1083,18 @@ def configure_count_time(plan, time):
                 # marked as belonging to a different event stream (or no
                 # event stream.
                 original_times[obj] = obj.count_time.get()
-                return pchain(single_gen(Msg('set', obj.count_time, time)),
+                grp = _short_uid('set-count-time')
+                return pchain(single_gen(Msg('set', obj.count_time, time,
+                                             group=grp)),
+                              single_gen(Msg('wait', None, group=grp)),
                               single_gen(msg)), None
         return None, None
 
     def reset():
         for obj, time in original_times.items():
-            yield Msg('set', obj.count_time, time)
+            grp = _short_uid('reset-count-time')
+            yield Msg('set', obj.count_time, time, group=grp)
+            yield Msg('wait', None, group=grp)
 
     if time is None:
         # no-op
