@@ -1048,7 +1048,7 @@ def reset_positions(plan, devices=None):
         blk_grp = 'reset-{}'.format(str(uuid.uuid4())[:6])
         for k, v in initial_positions.items():
             yield Msg('set', k, v, group=blk_grp)
-        yield Msg('wait', None, blk_grp)
+        yield Msg('wait', None, group=blk_grp)
 
     return (yield from finalize(plan_mutator(plan, insert_reads), reset()))
 
