@@ -10,8 +10,8 @@ from bluesky.plans import trigger_and_read
 class DummyFlyer:
     def kickoff(self):
         pass
-    def describe(self):
-        return []
+    def describe_collect(self):
+        return {}
     def collect(self):
         return {}
 

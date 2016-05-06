@@ -1343,13 +1343,16 @@ class RunEngine:
         self._uncollected.remove(obj)
         stream_name = self._flyer_stream_names.pop(obj)
 
-        # TODO Since Flyer.describe() return a *list* of data_keys it should
-        # probably have a different method name (describe_all?) *and* have some
-        # way of injecting a 'name' like the create msg does. For now, the name
-        # is hard-coded to None.
-        data_keys_list = obj.describe()
+        description = obj.describe_collect()  # a dict or a list
+        if hasattr(description, 'items'):
+            # e.g., {name_for_desc1: data_keys_for_desc1,
+            #        name for_desc2: data_keys_for_desc2, ...}
+            named_data_keys = description
+        else:
+            # e.g., [data_keys_for_desc1, data_keys_for_desc2, ...]
+            named_data_keys = {None: dk for dk in description}
         bulk_data = {}
-        for data_keys in data_keys_list:
+        for stream_name, data_keys in named_data_keys.items():
             objs_read = frozenset(data_keys)
             if (stream_name, objs_read) not in self._descriptors:
                 # We don't not have an Event Descriptor for this set.

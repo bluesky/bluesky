@@ -324,7 +324,7 @@ class MockFlyer:
     def describe_configuration(self):
         return OrderedDict()
 
-    def describe(self):
+    def describe_collect(self):
         dd = dict()
         dd.update(self._mot.describe())
         dd.update(self._detector.describe())
@@ -434,7 +434,7 @@ class FlyMagic(Base):
         self.ready = True
         return self
 
-    def describe(self):
+    def describe_collect(self):
         return [{k: {'source': self.name, 'dtype': 'number'}
                  for k in [self._motor, self._det]},
                 {self._det2: {'source': self.name, 'dtype': 'number'}}]
