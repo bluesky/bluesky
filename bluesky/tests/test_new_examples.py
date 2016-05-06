@@ -1,7 +1,8 @@
+import copy
 from collections import deque
 import pytest
 from bluesky import Msg
-from bluesky.examples import det, det1, det2
+from bluesky.examples import det, det1, det2, Mover
 from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
@@ -12,7 +13,46 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            stage_context, planify, finalize, fly_during,
                            lazily_stage, relative_set, reset_positions,
                            configure_count_time, trigger_and_read,
-                           repeater, repeater, caching_repeater)
+                           repeater, caching_repeater)
+
+
+class Status:
+    "a simple Status object that is always immediately done"
+    def __init__(self):
+        self._cb = None
+        self.done = True
+        self.success = True
+
+    @property
+    def finished_cb(self):
+        return self._cb
+
+    @finished_cb.setter
+    def finished_cb(self, cb):
+        cb()
+        self._cb = cb
+
+class DummyMover:
+    def __init__(self, name):
+        self._value = 0
+        self.name = name
+
+    def describe(self):
+        return {self.name: {}}
+
+    def set(self, value):
+        self._value = value
+        return Status()
+
+    def read_configuration(self):
+        return {}
+
+    def describe_configuration(self):
+        return {}
+
+    def read(self):
+        return {self.name: {'value': self._value, 'timestamp': 0}}
+
 
 
 def cb(name, doc):
@@ -121,3 +161,244 @@ def test_plan_contexts(cm, args, kwargs, before, after):
         target.append(msg)
     assert actual_before == before
     assert actual_after == after
+
+
+def test_fly_during():
+    def plan():
+        # can't use 2 * [Msg('open_run'), Msg('null'), Msg('close_run')]
+        # because plan_mutator sees the same ids twice and skips them
+        yield from [Msg('open_run'), Msg('null'), Msg('close_run'),
+                    Msg('open_run'), Msg('null'), Msg('close_run')]
+
+    processed_plan = list(fly_during(plan(), ['foo']))
+    expected = 2 * [Msg('open_run'), Msg('kickoff', 'foo'), Msg('null'),
+                    Msg('wait'), Msg('collect', 'foo'), Msg('close_run')]
+
+    for msg in processed_plan:
+        msg.kwargs.pop('group', None)
+
+    assert processed_plan == expected
+
+
+def lazily_stage():
+    def plan():
+        yield from [Msg('read', det1), Msg('read', det1), Msg('read', det2)]
+
+    processed_plan = list(lazily_stage(plan()))
+
+    expected = [Msg('stage', det1), Msg('read', det1), Msg('read', det1),
+                Msg('stage', det2), Msg('read', det2)]
+
+    assert processed_plan == expected
+
+
+def test_finalize():
+    def plan():
+        yield from [Msg('null')]
+
+    processed_plan = list(finalize(plan(), [Msg('read', det)]))
+
+    expected = [Msg('null'), Msg('read', det)]
+
+    assert processed_plan == expected
+
+
+def test_finalize_runs_after_error(fresh_RE):
+    def plan():
+        yield from [Msg('null')]
+        raise Exception
+
+    msgs = []
+        
+    def accumulator(msg):
+        msgs.append(msg)
+
+    fresh_RE.msg_hook = accumulator
+    try:
+        fresh_RE(finalize(plan(), [Msg('read', det)]))
+    except Exception:
+        pass # swallow the Exception; we are interested in msgs below
+
+    expected = [Msg('null'), Msg('read', det)]
+
+    assert msgs == expected
+
+
+def test_reset_positions(fresh_RE):
+    motor = Mover('a', ['a'])
+    motor.set(5)
+
+    msgs = []
+        
+    def accumulator(msg):
+        msgs.append(msg)
+
+    fresh_RE.msg_hook = accumulator
+
+    def plan():
+        yield from (m for m in [Msg('set', motor, 8)])
+
+    fresh_RE(reset_positions(plan()))
+
+    expected = [Msg('set', motor, 8), Msg('set', motor, 5), Msg('wait')]
+
+    for msg in msgs:
+        msg.kwargs.pop('group', None)
+
+    assert msgs == expected
+
+
+def test_reset_positions_no_position_attr(fresh_RE):
+    motor = DummyMover('motor')
+    motor.set(5)
+
+    msgs = []
+        
+    def accumulator(msg):
+        msgs.append(msg)
+
+    fresh_RE.msg_hook = accumulator
+
+    def plan():
+        yield from (m for m in [Msg('set', motor, 8)])
+
+    fresh_RE(reset_positions(plan()))
+
+    expected = [Msg('read', motor),
+                Msg('set', motor, 8), Msg('set', motor, 5), Msg('wait')]
+
+    for msg in msgs:
+        msg.kwargs.pop('group', None)
+
+    assert msgs == expected
+
+
+def test_relative_set(fresh_RE):
+    motor = Mover('a', ['a'])
+    motor.set(5)
+
+    msgs = []
+        
+    def accumulator(msg):
+        msgs.append(msg)
+
+    fresh_RE.msg_hook = accumulator
+
+    def plan():
+        yield from (m for m in [Msg('set', motor, 8)])
+
+    fresh_RE(relative_set(plan()))
+
+    expected = [Msg('set', motor, 13)]
+
+    for msg in msgs:
+        msg.kwargs.pop('group', None)
+
+    assert msgs == expected
+
+
+def test_relative_set_no_position_attr(fresh_RE):
+    motor = DummyMover('motor')
+    motor.set(5)
+
+    msgs = []
+        
+    def accumulator(msg):
+        msgs.append(msg)
+
+    fresh_RE.msg_hook = accumulator
+
+    def plan():
+        yield from (m for m in [Msg('set', motor, 8)])
+
+    fresh_RE(relative_set(plan()))
+
+    expected = [Msg('read', motor),
+                Msg('set', motor, 13)]
+
+    for msg in msgs:
+        msg.kwargs.pop('group', None)
+
+    assert msgs == expected
+
+
+def test_configure_count_time(fresh_RE):
+    class DummySignal:
+        def put(self, val):
+            pass
+
+        def get(self):
+            return 3
+
+        def set(self, val):
+            return Status()
+
+    det = DummyMover('det')
+    det.count_time = DummySignal()
+
+    def plan():
+        yield from (m for m in [Msg('read', det)])
+
+    msgs = []
+        
+    def accumulator(msg):
+        msgs.append(msg)
+
+    fresh_RE.msg_hook = accumulator
+
+    fresh_RE(configure_count_time(plan(), 7))
+
+    expected = [Msg('set', det.count_time, 7), Msg('wait'),
+                Msg('read', det), Msg('set', det.count_time, 3),
+                Msg('wait')]
+
+    for msg in msgs:
+        msg.kwargs.pop('group', None)
+
+    assert msgs == expected
+
+
+def test_repeater():
+    def plan(*args):
+        yield from args
+
+    actual = list(repeater(3, plan, 1, 2, 3))
+    assert actual == 3 * [1, 2, 3]
+
+    p = repeater(None, plan, 1, 2, 3)
+    assert next(p) == 1
+    assert next(p) == 2
+    assert next(p) == 3
+    assert next(p) == 1
+
+
+def test_caching_repeater():
+    def plan(*args):
+        yield from args
+
+    plan_instance = plan(1, 2, 3)
+    actual = list(caching_repeater(3, plan_instance))
+    assert actual == 3 * [1, 2, 3]
+
+    plan_instance = plan(1, 2, 3)
+    p = caching_repeater(None, plan_instance)
+    assert next(p) == 1
+    assert next(p) == 2
+    assert next(p) == 3
+    assert next(p) == 1
+
+
+def test_trigger_and_read():
+    msgs = list(trigger_and_read([det]))
+    expected = [Msg('trigger', det), Msg('wait'),
+                Msg('create', name='primary'), Msg('read', det), Msg('save')]
+    for msg in msgs:
+        msg.kwargs.pop('group', None)
+    assert msgs == expected
+
+    msgs = list(trigger_and_read([det], 'custom'))
+    expected = [Msg('trigger', det), Msg('wait'), Msg('create', name='custom'),
+                Msg('read', det), Msg('save')]
+    for msg in msgs:
+        msg.kwargs.pop('group', None)
+    assert msgs == expected
