@@ -892,7 +892,7 @@ def fly_during(plan, flyers):
     def insert_after_open(msg):
         if msg.command == 'open_run':
             def new_gen():
-                yield from kickoff_msgs
+                yield from ensure_generator(kickoff_msgs)
             return single_gen(msg), new_gen()
         else:
             return None, None
@@ -900,8 +900,8 @@ def fly_during(plan, flyers):
     def insert_before_close(msg):
         if msg.command == 'close_run':
             def new_gen():
-                yield from complete_msgs
-                yield from collect_msgs
+                yield from ensure_generator(complete_msgs)
+                yield from ensure_generator(collect_msgs)
                 yield msg
             return new_gen(), None
         else:
