@@ -456,6 +456,9 @@ def wait(group=None):
     return (yield from single_gen(Msg('wait', None, group=group)))
 
 
+_wait = wait  # for internal references to avoid collision with 'wait' kwarg
+
+
 def checkpoint():
     """
     If interrupted, rewind to this point.
@@ -545,7 +548,7 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     ret = (yield from single_gen(
          Msg('kickoff', obj, group=group, **kwargs)))
     if wait:
-        yield from wait(group=group)
+        yield from _wait(group=group)
     return ret
 
 
@@ -579,7 +582,7 @@ def complete(obj, *, group=None, wait=True, **kwargs):
     ret = (yield from single_gen(
          Msg('complete', obj, group=group, **kwargs)))
     if wait:
-        yield from wait(group=group)
+        yield from _wait(group=group)
     return ret
 
 
