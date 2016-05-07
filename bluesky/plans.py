@@ -521,7 +521,7 @@ def input(prompt=''):
     return (yield from single_gen(Msg('input', prompt=prompt)))
 
 
-def kickoff(obj, *, name=None, group=None, wait=False, **kwargs):
+def kickoff(obj, *, group=None, wait=False, **kwargs):
     """
     Kickoff a fly-scanning device.
 
@@ -529,8 +529,6 @@ def kickoff(obj, *, name=None, group=None, wait=False, **kwargs):
     ----------
     obj : fly-able
         Device with 'kickoff', 'complete', and 'collect' methods
-    name : string, optional
-        event stream name, a convenient human-friendly identifier
     group : string (or any hashable object), optional
         identifier used by 'wait'
     wait : boolean, optional
@@ -545,7 +543,7 @@ def kickoff(obj, *, name=None, group=None, wait=False, **kwargs):
         Msg('kickoff', obj)
     """
     ret = (yield from single_gen(
-         Msg('kickoff', obj, name=name, group=group, **kwargs)))
+         Msg('kickoff', obj, group=group, **kwargs)))
     if wait:
         yield from wait(group=group)
     return ret
