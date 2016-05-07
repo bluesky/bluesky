@@ -4,16 +4,9 @@ import pytest
 from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence)
 from bluesky import Msg
-from bluesky.examples import det, Mover
+from bluesky.examples import det, Mover, Flyer
 from bluesky.plans import trigger_and_read
 
-class DummyFlyer:
-    def kickoff(self):
-        pass
-    def describe_collect(self):
-        return {}
-    def collect(self):
-        return {}
 
 def test_states():
     assert RunEngineStateMachine.States.states() == ['idle', 'running', 'paused']
@@ -122,7 +115,7 @@ def test_collect_uncollected_and_log_any_errors(fresh_RE):
     # test that if stopping one motor raises an error, we can carry on
     collected = {}
 
-    class DummyFlyerWithFlag(DummyFlyer):
+    class DummyFlyerWithFlag(Flyer):
         def collect(self):
             collected[self.name] = True
             super().collect()
@@ -235,7 +228,7 @@ def test_redundant_monitors_are_illegal(fresh_RE):
 
 def test_flying_outside_a_run_is_illegal(fresh_RE):
 
-    flyer = DummyFlyer()
+    flyer = Flyer()
 
     # This is normal, legal usage.
     fresh_RE([Msg('open_run'), Msg('kickoff', flyer), Msg('collect', flyer),

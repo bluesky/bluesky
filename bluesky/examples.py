@@ -36,6 +36,21 @@ class NullStatus:
         self._cb = cb
 
 
+class Flyer:
+    def kickoff(self):
+        return NullStatus()
+
+    def describe_collect(self):
+        return {'stream_name': {}}
+
+    def complete(self):
+        return NullStatus()
+
+    def collect(self):
+        for i in range(100):
+            yield {'data': {}, 'timestamps': {}, 'time': i, 'seq_num': i}
+
+
 class Base:
     def __init__(self, name, fields):
         self.name = name
