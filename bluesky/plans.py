@@ -859,6 +859,32 @@ def event_context(plan_stack, name='primary'):
     plan_stack.append(single_gen(Msg('save')))
 
 
+def fly(flyers, *, md=None):
+    """
+    Like a 'count' for flyers.
+
+    Parameters
+    ----------
+    flyers : collection
+        objects that support the flyer interface
+
+    Yields
+    ------
+    msg : Msg
+        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
+    md : dict, optional
+        metadata
+    """
+    yield from open_run(md)
+    for flyer in flyers:
+        yield from kickoff(flyer, wait=True)
+    for flyer in flyers:
+        yield from complete(flyer, wait=True)
+    for flyer in flyers:
+        yield from collect(flyer)
+    yield from close_run()
+
+
 def fly_during(plan, flyers):
     """
     Kickoff and collect "flyer" (asynchronously collect) objects during runs.
