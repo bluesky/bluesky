@@ -1378,8 +1378,8 @@ def count(detectors, num=1, delay=None, *, md=None):
 
     Note
     ----
-    If ``delay`` is an iterable, it must have at least ``num`` entries or the
-    plan will raise a ``StopIteration`` error.
+    If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
+    the plan will raise a ``ValueError`` during iteration.
     """
     if md is None:
         md = {}
@@ -1400,10 +1400,20 @@ def count(detectors, num=1, delay=None, *, md=None):
     plan_stack = deque()
     with stage_context(plan_stack, detectors):
         with run_context(plan_stack, md):
-            for _ in counter:
+            for i in counter:
                 plan_stack.append(single_gen(Msg('checkpoint')))
                 plan_stack.append(trigger_and_read(detectors))
-                d = next(delay)
+                try:
+                    d = next(delay)
+                except StopIteration:
+                    if num is None:
+                        break
+                    elif i + 1 == num:
+                        break
+                    else:
+                        # num specifies a number of iterations less than delay
+                        raise ValueError("num=%r but delays only provides %r "
+                                         "entries" % (num, i))
                 if d is not None:
                     plan_stack.append(single_gen(Msg('sleep', None, d)))
     return plan_stack

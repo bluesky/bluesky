@@ -13,7 +13,7 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            stage_context, planify, finalize, fly_during,
                            lazily_stage, relative_set, reset_positions,
                            configure_count_time, trigger_and_read,
-                           repeater, caching_repeater)
+                           repeater, caching_repeater, count)
 
 
 class DummyMover:
@@ -391,3 +391,30 @@ def test_trigger_and_read():
     for msg in msgs:
         msg.kwargs.pop('group', None)
     assert msgs == expected
+
+
+def test_count_delay_argument():
+    # num=7 but delay only provides 5 entries
+    with pytest.raises(ValueError):
+        # count raises ValueError when delay generator is expired
+        list(count([det], num=7, delay=(2**i for i in range(5))))
+
+    # num=6 with 5 delays between should product 6 readings
+    msgs = count([det], num=6, delay=(2**i for i in range(5)))
+    read_count = len([msg for msg in msgs if msg.command == 'read'])
+    assert read_count == 6
+
+    # num=5 with 5 delays should produce 5 readings
+    msgs = count([det], num=5, delay=(2**i for i in range(5)))
+    read_count = len([msg for msg in msgs if msg.command == 'read'])
+    assert read_count == 5
+
+    # num=4 with 5 delays should produce 4 readings
+    msgs = count([det], num=4, delay=(2**i for i in range(5)))
+    read_count = len([msg for msg in msgs if msg.command == 'read'])
+    assert read_count == 4
+
+    # num=None with 5 delays should produce 6 readings
+    msgs = count([det], num=None, delay=(2**i for i in range(5)))
+    read_count = len([msg for msg in msgs if msg.command == 'read'])
+    assert read_count == 6
