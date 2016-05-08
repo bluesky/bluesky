@@ -5,6 +5,7 @@ import sys
 from itertools import count
 from collections import deque, namedtuple, OrderedDict
 import warnings
+import time as ttime
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -508,6 +509,17 @@ class LiveTable(CallbackBase):
     def stop(self, doc):
         if doc['run_start'] != self._start['uid']:
             return
+
+        # This sleep is just cosmetic. It improves the odds that the bottom
+        # border is not printed until all the rows from events are printed,
+        # avoiding this ugly scenario:
+        #
+        # |         4 | 22:08:56.7 |      0.000 |
+        # +-----------+------------+------------+
+        # generator scan ['6d3f71'] (scan num: 1)
+        # Out[2]: |         5 | 22:08:56.8 |      0.000 |
+        ttime.sleep(0.1)
+
         if self._sep_format is not None:
             self._print(self._sep_format)
         self._stop = doc
