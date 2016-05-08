@@ -864,7 +864,7 @@ def event_context(plan_stack, name='primary'):
 
 def fly(flyers, *, md=None):
     """
-    Like a 'count' for flyers.
+    Perform a fly scan with one or more 'flyers'.
 
     Parameters
     ----------
@@ -877,6 +877,10 @@ def fly(flyers, *, md=None):
         'kickoff', 'wait', 'complete, 'wait', 'collect' messages
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.fly_during`
     """
     yield from open_run(md)
     for flyer in flyers:

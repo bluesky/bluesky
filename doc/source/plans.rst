@@ -45,6 +45,7 @@ The names below are links. Click for details, and see below for examples.
     adaptive_scan
     relative_adaptive_scan
     tweak
+    fly
 
 Basic Usage
 -----------
