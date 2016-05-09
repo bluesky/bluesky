@@ -2312,12 +2312,12 @@ class Plan(Struct):
                     plan = self._gen()
                     plan_stack.append(fly_during(plan, flyers))
                     plan_stack.append(single_gen(Msg('checkpoint')))
+
+            for gen in plan_stack:
+                yield from gen
         finally:
             for key, val in current_settings.items():
                 setattr(self, key, val)
-
-        for gen in plan_stack:
-            yield from gen
 
     def _gen(self):
         "Subclasses override this to provide the main plan content."
