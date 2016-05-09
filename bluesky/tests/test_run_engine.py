@@ -5,7 +5,7 @@ from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence)
 from bluesky import Msg
 from bluesky.examples import det, Mover, Flyer
-from bluesky.plans import trigger_and_read
+from bluesky.plans import trigger_and_read, count, Count
 
 
 def test_states():
@@ -334,3 +334,30 @@ def test_pause_resume_devices(fresh_RE):
     fresh_RE.resume()
     assert 'dummy' in paused
     assert 'dummy' in resumed
+
+
+def test_plan_name_and_type(fresh_RE):
+    mutable = []
+
+    def collector(name, doc):
+        mutable.append(doc)
+
+    # generator
+    mutable.clear()
+    fresh_RE(count([det]), collector)
+    assert mutable[0]['plan_name'] == 'count'
+    assert mutable[0]['plan_type'] == 'generator'
+
+    # Plan.__iter__
+    mutable.clear()
+    c = Count([det])
+    fresh_RE(c, collector)
+    assert mutable[0]['plan_type'] == 'Count'
+    assert mutable[0]['plan_name'] == ''
+
+    # Plan.__call__
+    mutable.clear()
+    c = Count([det])
+    fresh_RE(c(), collector)
+    assert mutable[0]['plan_type'] == 'Count'
+    assert mutable[0]['plan_name'] == ''
