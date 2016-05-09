@@ -2331,14 +2331,15 @@ class Count(Plan):
     _fields = ['detectors', 'num', 'delay']
     __doc__ = count.__doc__
 
-    def __init__(self, detectors, num=1, delay=0):
+    def __init__(self, detectors, num=1, delay=0, *, md=None):
         self.detectors = detectors
         self.num = num
         self.delay = delay
         self.flyers = []
+        self.md = md
 
     def _gen(self):
-        return count(self.detectors, self.num, self.delay)
+        return count(self.detectors, self.num, self.delay, md=self.md)
 
 
 class ListScan(Plan):
@@ -2346,7 +2347,8 @@ class ListScan(Plan):
     __doc__ = list_scan.__doc__
 
     def _gen(self):
-        return list_scan(self.detectors, self.motor, self.steps)
+        return list_scan(self.detectors, self.motor, self.steps,
+                         md=self.md)
 
 AbsListScanPlan = ListScan  # back-compat
 
@@ -2356,7 +2358,8 @@ class RelativeListScan(Plan):
     __doc__ = relative_list_scan.__doc__
 
     def _gen(self):
-        return relative_list_scan(self.detectors, self.motor, self.steps)
+        return relative_list_scan(self.detectors, self.motor, self.steps,
+                                  md=self.md)
 
 DeltaListScanPlan = RelativeListScan  # back-compat
 
@@ -2367,7 +2370,7 @@ class Scan(Plan):
 
     def _gen(self):
         return scan(self.detectors, self.motor, self.start, self.stop,
-                    self.num)
+                    self.num, md=self.md)
 
 AbsScanPlan = Scan  # back-compat
 
@@ -2378,7 +2381,7 @@ class LogScan(Plan):
 
     def _gen(self):
         return log_scan(self.detectors, self.motor, self.start, self.stop,
-                        self.num)
+                        self.num, md=self.md)
 
 LogAbsScanPlan = LogScan  # back-compat
 
@@ -2389,7 +2392,7 @@ class RelativeScan(Plan):
 
     def _gen(self):
         return relative_scan(self.detectors, self.motor, self.start, self.stop,
-                             self.num)
+                             self.num, md=self.md)
 
 DeltaScanPlan = RelativeScan  # back-compat
 
@@ -2400,7 +2403,7 @@ class RelativeLogScan(Plan):
 
     def _gen(self):
         return relative_log_scan(self.detectors, self.motor, self.start,
-                                 self.stop, self.num)
+                                 self.stop, self.num, md=self.md)
 
 LogDeltaScanPlan = RelativeLogScan  # back-compat
 
@@ -2413,7 +2416,7 @@ class AdaptiveScan(Plan):
 
     def __init__(self, detectors, target_field, motor, start, stop,
                  min_step, max_step, target_delta, backstep,
-                 threshold=0.8):
+                 threshold=0.8, *, md=None):
         self.detectors = detectors
         self.target_field = target_field
         self.motor = motor
@@ -2425,12 +2428,13 @@ class AdaptiveScan(Plan):
         self.backstep = backstep
         self.threshold = threshold
         self.flyers = []
+        self.md = md
 
     def _gen(self):
         return adaptive_scan(self.detectors, self.target_field, self.motor,
                              self.start, self.stop, self.min_step,
                              self.max_step, self.target_delta,
-                             self.backstep, self.threshold)
+                             self.backstep, self.threshold, md=self.md)
 
 AdaptiveAbsScanPlan = AdaptiveScan  # back-compat
 
@@ -2443,7 +2447,7 @@ class RelativeAdaptiveScan(AdaptiveAbsScanPlan):
                                       self.motor, self.start, self.stop,
                                       self.min_step, self.max_step,
                                       self.target_delta, self.backstep,
-                                      self.threshold)
+                                      self.threshold, md=self.md)
 
 AdaptiveDeltaScanPlan = RelativeAdaptiveScan  # back-compat
 
@@ -2453,7 +2457,7 @@ class ScanND(PlanBase):
     __doc__ = scan_nd.__doc__
 
     def _gen(self):
-        return scan_nd(self.detectors, self.cycler)
+        return scan_nd(self.detectors, self.cycler, md=self.md)
 
 PlanND = ScanND  # back-compat
 
@@ -2461,14 +2465,16 @@ PlanND = ScanND  # back-compat
 class InnerProductScan(Plan):
     __doc__ = inner_product_scan.__doc__
 
-    def __init__(self, detectors, num, *args):
+    def __init__(self, detectors, num, *args, md=None):
         self.detectors = detectors
         self.num = num
         self.args = args
         self.flyers = []
+        self.md = md
 
     def _gen(self):
-        return inner_product_scan(self.detectors, self.num, *self.args)
+        return inner_product_scan(self.detectors, self.num, *self.args,
+                                  md=self.md)
 
 InnerProductAbsScanPlan = InnerProductScan  # back-compat
 
@@ -2478,7 +2484,7 @@ class RelativeInnerProductScan(InnerProductScan):
 
     def _gen(self):
         return relative_inner_product_scan(self.detectors, self.num,
-                                           *self.args)
+                                           *self.args, md=self.md)
 
 InnerProductDeltaScanPlan = RelativeInnerProductScan  # back-compat
 
@@ -2486,13 +2492,14 @@ InnerProductDeltaScanPlan = RelativeInnerProductScan  # back-compat
 class OuterProductScan(Plan):
     __doc__ = outer_product_scan.__doc__
 
-    def __init__(self, detectors, *args):
+    def __init__(self, detectors, *args, md=None):
         self.detectors = detectors
         self.args = args
         self.flyers = []
+        self.md = md
 
     def _gen(self):
-        return outer_product_scan(self.detectors, *self.args)
+        return outer_product_scan(self.detectors, *self.args, md=self.md)
 
 OuterProductAbsScanPlan = OuterProductScan  # back-compat
 
@@ -2501,7 +2508,8 @@ class RelativeOuterProductScan(OuterProductScan):
     __doc__ = relative_outer_product_scan.__doc__
 
     def _gen(self):
-        return relative_outer_product_scan(self.detectors, *self.args)
+        return relative_outer_product_scan(self.detectors, *self.args,
+                                           md=self.md)
 
 OuterProductDeltaScanPlan = RelativeOuterProductScan  # back-compat
 
@@ -2511,7 +2519,8 @@ class Tweak(Plan):
     __doc__ = tweak.__doc__
 
     def _gen(self):
-        return tweak(self.detector, self.target_field, self.motor, self.step)
+        return tweak(self.detector, self.target_field, self.motor, self.step,
+                     md=self.md)
 
 
 class SpiralScan(Plan):
@@ -2522,7 +2531,7 @@ class SpiralScan(Plan):
     def _gen(self):
         return spiral(self.detectors, self.x_motor, self.y_motor, self.x_start,
                       self.y_start, self.x_range, self.y_range, self.dr,
-                      self.nth)
+                      self.nth, md=self.md)
 
 
 class SpiralFermatScan(Plan):
@@ -2533,7 +2542,8 @@ class SpiralFermatScan(Plan):
     def _gen(self):
         return spiral_fermat(self.detectors, self.x_motor, self.y_motor,
                              self.x_start, self.y_start, self.x_range,
-                             self.y_range, self.dr, self.factor)
+                             self.y_range, self.dr, self.factor,
+                             md=self.md)
 
 
 class RelativeSpiralScan(Plan):
@@ -2543,7 +2553,8 @@ class RelativeSpiralScan(Plan):
 
     def _gen(self):
         return relative_spiral(self.detectors, self.x_motor, self.y_motor,
-                               self.x_range, self.y_range, self.dr, self.nth)
+                               self.x_range, self.y_range, self.dr, self.nth,
+                               md=self.md)
 
 
 class RelativeSpiralFermatScan(Plan):
@@ -2554,4 +2565,4 @@ class RelativeSpiralFermatScan(Plan):
     def _gen(self):
         return relative_spiral_fermat(self.detectors, self.x_motor,
                                       self.y_motor, self.x_range, self.y_range,
-                                      self.dr, self.factor)
+                                      self.dr, self.factor, md=self.md)
