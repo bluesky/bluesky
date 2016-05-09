@@ -2328,6 +2328,7 @@ PlanBase = Plan  # back-compat
 
 
 class Count(Plan):
+    _fields = ['detectors', 'num', 'delay']
     __doc__ = count.__doc__
 
     def __init__(self, detectors, num=1, delay=0):
