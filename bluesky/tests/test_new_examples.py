@@ -2,7 +2,7 @@ import copy
 from collections import deque
 import pytest
 from bluesky import Msg
-from bluesky.examples import det, det1, det2, Mover, NullStatus
+from bluesky.examples import det, det1, det2, Mover, NullStatus, motor
 from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
@@ -13,7 +13,7 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            stage_context, planify, finalize, fly_during,
                            lazily_stage, relative_set, reset_positions,
                            configure_count_time, trigger_and_read,
-                           repeater, caching_repeater, count)
+                           repeater, caching_repeater, count, Count, Scan)
 
 
 class DummyMover:
@@ -418,3 +418,26 @@ def test_count_delay_argument():
     msgs = count([det], num=None, delay=(2**i for i in range(5)))
     read_count = len([msg for msg in msgs if msg.command == 'read'])
     assert read_count == 6
+
+
+def test_plan_md(fresh_RE):
+    mutable = []
+    md = {'color': 'red'}
+
+    def collector(name, doc):
+        mutable.append(doc)
+
+    # test genereator
+    mutable.clear()
+    fresh_RE(count([det], md=md), collector)
+    assert 'color' in mutable[0]
+
+    # test Plan with explicit __init__
+    mutable.clear()
+    fresh_RE(Count([det], md=md), collector)
+    assert 'color' in mutable[0]
+
+    # test Plan with implicit __init__ (created via metaclasss)
+    mutable.clear()
+    fresh_RE(Scan([det], motor, 1, 2, 2, md=md), collector)
+    assert 'color' in mutable[0]
