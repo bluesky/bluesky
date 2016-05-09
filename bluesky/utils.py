@@ -1,3 +1,4 @@
+import asyncio
 import os
 import signal
 import operator
@@ -633,3 +634,22 @@ def register_transform(RE, *, prefix='<'):
     ip = IPython.get_ipython()
     ip.input_splitter.logical_line_transforms.append(tr_re())
     ip.input_transformer_manager.logical_line_transforms.append(tr_re())
+
+
+class AsyncInput:
+    """a input prompt that allows event loop to run in the background
+
+    adapted from http://stackoverflow.com/a/35514777/1221924
+    """
+    def __init__(self, loop=None):
+        self.loop = loop or asyncio.get_event_loop()
+        self.q = asyncio.Queue(loop=self.loop)
+        self.loop.add_reader(sys.stdin, self.got_input)
+
+    def got_input(self):
+        asyncio.ensure_future(self.q.put(sys.stdin.readline()), loop=self.loop)
+
+    @asyncio.coroutine
+    def __call__(self, prompt, end='\n', flush=False):
+        print(prompt, end=end, flush=flush)
+        return (yield from self.q.get()).rstrip('\n')

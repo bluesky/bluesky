@@ -23,8 +23,6 @@ def test_suspender(klass, sc_args, start_val, fail_val,
                    resume_val, wait_time, fresh_RE):
     RE = fresh_RE
     loop = RE._loop
-    if sys.platform == 'darwin':
-        pytest.xfail('OSX event loop is different; resolve this later')
     sig = ophyd.Signal()
     my_suspender = klass(sig,
                          *sc_args, sleep=wait_time)
@@ -107,3 +105,7 @@ def test_pre_suspend_plan(fresh_RE, pre_plan, post_plan, expected_list):
 
     assert len(msg_lst) == len(expected_list)
     assert expected_list == [m[0] for m in msg_lst]
+
+    RE.remove_suspender(susp)
+    RE(scan)
+    assert susp.RE is None

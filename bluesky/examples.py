@@ -19,6 +19,38 @@ class MockSignal:
         return {self._field: (0, 0)}
 
 
+class NullStatus:
+    "a simple Status object that is always immediately done"
+    def __init__(self):
+        self._cb = None
+        self.done = True
+        self.success = True
+
+    @property
+    def finished_cb(self):
+        return self._cb
+
+    @finished_cb.setter
+    def finished_cb(self, cb):
+        cb()
+        self._cb = cb
+
+
+class Flyer:
+    def kickoff(self):
+        return NullStatus()
+
+    def describe_collect(self):
+        return {'stream_name': {}}
+
+    def complete(self):
+        return NullStatus()
+
+    def collect(self):
+        for i in range(100):
+            yield {'data': {}, 'timestamps': {}, 'time': i, 'seq_num': i}
+
+
 class Base:
     def __init__(self, name, fields):
         self.name = name
@@ -45,7 +77,9 @@ class Base:
         return '{}: {}'.format(self._klass, self.name)
 
     def read_configuration(self):
-        return {}
+        return {'some_configuration':
+                   {'value': 'there is a sandwich in the vacuum chamber',
+                    'timestamp': 0}}
 
     def describe_configuration(self):
         return {}
@@ -305,20 +339,29 @@ class MockFlyer:
     def describe_configuration(self):
         return OrderedDict()
 
-    def describe(self):
+    def describe_collect(self):
         dd = dict()
         dd.update(self._mot.describe())
         dd.update(self._detector.describe())
-        return [dd, ]
+        return {'stream_name': dd}
 
-    def kickoff(self, start, stop, steps):
+    def complete(self):
         self.success = True
         self.ready = False
-        self._data = deque()
+        return self
+
+    def kickoff(self, start, stop, steps):
         self._steps = np.linspace(start, stop, steps)
+        self._data = deque()
+
+        # setup the status object (self) that will be returned by
+        # self.complete(). Separately, make dummy status object
+        # that is immediately done, and return that, indicated that
+        # the 'kickoff' step is done.
         self._future = loop.run_in_executor(None, self._scan)
         self._future.add_done_callback(lambda x: self._finish())
-        return self
+
+        return NullStatus()
 
     def collect(self):
         if not self.ready:
@@ -406,10 +449,11 @@ class FlyMagic(Base):
         self.ready = True
         return self
 
-    def describe(self):
-        return [{k: {'source': self.name, 'dtype': 'number'}
+    def describe_collect(self):
+        return {'stream1': {k: {'source': self.name, 'dtype': 'number'}
                  for k in [self._motor, self._det]},
-                {self._det2: {'source': self.name, 'dtype': 'number'}}]
+                'stream2':
+                {self._det2: {'source': self.name, 'dtype': 'number'}}}
 
     def collect(self):
         if self._time is None or not self.ready:
@@ -513,7 +557,7 @@ def wait_one(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')
     yield Msg('set', motor, 5, group='A')  # Add to group 'A'.
-    yield Msg('wait', None, 'A')  # Wait for everything in group 'A' to finish.
+    yield Msg('wait', None, group='A')  # Wait for everything in group 'A' to finish.
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('close_run')
@@ -525,7 +569,7 @@ def wait_multiple(det, motors):
     for motor in motors:
         yield Msg('set', motor, 5, group='A')
     # Wait for everything in group 'A' to report done.
-    yield Msg('wait', None, 'A')
+    yield Msg('wait', None, group='A')
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('close_run')
@@ -541,12 +585,12 @@ def wait_complex(det, motors):
     # ...but put the last motor is separate group.
     yield Msg('set', motors[-1], 5, group='B')
     # Wait for everything in group 'A' to report done.
-    yield Msg('wait', None, 'A')
+    yield Msg('wait', None, group='A')
     yield Msg('trigger', det)
     yield Msg('read', det)
 
     # Wait for everything in group 'B' to report done.
-    yield Msg('wait', None, 'B')
+    yield Msg('wait', None, group='B')
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('close_run')
@@ -608,11 +652,15 @@ def cautious_stepscan(det, motor):
 
 def fly_gen(flyer, start, stop, step):
     yield Msg('open_run')
-    yield Msg('kickoff', flyer, start, stop, step, group='fly')
-    yield Msg('wait', None, 'fly')
+    yield Msg('kickoff', flyer, start, stop, step, group='fly-kickoff')
+    yield Msg('wait', None, group='fly-kickoff')
+    yield Msg('complete', flyer, group='fly-complete')
+    yield Msg('wait', None, group='fly-complete')
     yield Msg('collect', flyer)
-    yield Msg('kickoff', flyer, start, stop, step, group='fly')
-    yield Msg('wait', None, 'fly')
+    yield Msg('kickoff', flyer, start, stop, step, group='fly-kickoff2')
+    yield Msg('wait', None, group='fly-kickoff2')
+    yield Msg('complete', flyer, group='fly-complete2')
+    yield Msg('wait', None, group='fly-complete2')
     yield Msg('collect', flyer)
     yield Msg('close_run')
 

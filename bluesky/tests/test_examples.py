@@ -1,7 +1,7 @@
 import pytest
 from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               wait_multiple, motor1, motor2, conditional_pause,
-                              loop, checkpoint_forever, simple_scan_saving,
+                              checkpoint_forever, simple_scan_saving,
                               stepscan, MockFlyer, fly_gen,
                               conditional_break, SynGauss
                               )
@@ -127,12 +127,12 @@ def test_pause_from_outside():
     def local_pause():
         RE.request_pause()
 
-    loop.call_later(1, local_pause)
+    RE.loop.call_later(1, local_pause)
     RE(checkpoint_forever())
     assert RE.state == 'paused'
 
     # Cue up a second pause requests in 2 seconds.
-    loop.call_later(2, local_pause)
+    RE.loop.call_later(2, local_pause)
     RE.resume()
     assert RE.state == 'paused'
 
@@ -277,9 +277,9 @@ def test_suspend():
     def ev_cb(name, ev):
         out.append(ev)
     # trigger the suspend right after the check point
-    loop.call_later(.1, local_suspend)
+    RE.loop.call_later(.1, local_suspend)
     # wait a second and then resume
-    loop.call_later(1, resume_cb)
+    RE.loop.call_later(1, resume_cb)
     # grab the start time
     start = ttime.time()
     # run, this will not return until it is done
@@ -305,9 +305,9 @@ def test_pause_resume():
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    loop.call_later(1, sim_kill)
-    loop.call_later(1.1, sim_kill)
-    loop.call_later(2, done)
+    RE.loop.call_later(1, sim_kill)
+    RE.loop.call_later(1.1, sim_kill)
+    RE.loop.call_later(2, done)
 
     RE(scan)
     assert RE.state == 'paused'
@@ -335,9 +335,9 @@ def test_pause_abort():
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    loop.call_later(1, sim_kill)
-    loop.call_later(1.1, sim_kill)
-    loop.call_later(2, done)
+    RE.loop.call_later(1, sim_kill)
+    RE.loop.call_later(1.1, sim_kill)
+    RE.loop.call_later(2, done)
 
     RE(scan)
     assert RE.state == 'paused'
@@ -545,7 +545,7 @@ def test_interruption_exception():
     RE.stop()
 
 
-def test_failed_status_object():
+def test_failed_status_object(fresh_RE):
     try:
         from ophyd import StatusBase
     except ImportError:
@@ -554,7 +554,12 @@ def test_failed_status_object():
     class failer:
         def set(self, inp):
             st = StatusBase()
-            loop.call_later(1, lambda: st._finished(success=False))
+            fresh_RE.loop.call_later(1, lambda: st._finished(success=False))
+            return st
+
+        def trigger(self):
+            st = StatusBase()
+            fresh_RE.loop.call_later(1, lambda: st._finished(success=False))
             return st
 
         def stop(self):
@@ -562,8 +567,12 @@ def test_failed_status_object():
 
     ff = failer()
     with pytest.raises(FailedStatus):
-        RE([Msg('set', ff, None, group='a'),
-            Msg('wait', None, 'a')])
+        fresh_RE([Msg('set', ff, None, group='a'),
+                  Msg('wait', None, group='a')])
+
+    with pytest.raises(FailedStatus):
+        fresh_RE([Msg('trigger', ff, group='a'),
+                  Msg('wait', None, group='a')])
 
 
 def test_rewindable_by_default():

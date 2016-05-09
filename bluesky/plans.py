@@ -14,6 +14,7 @@ from boltons.iterutils import chunked
 
 from . import Msg
 
+from .plan_tools import ensure_generator
 from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists)
 
@@ -170,7 +171,7 @@ def plan_mutator(plan, msg_proc):
 
 def msg_mutator(plan, msg_proc):
     """
-    A simple preprocessor that mutates or deltes single messages in a plan
+    A simple preprocessor that mutates or deletes single messages in a plan
 
     To *insert* messages, use ``plan_mutator`` instead.
 
@@ -259,7 +260,7 @@ def create(name='primary'):
     msg : Msg
         Msg('create', name=name)
     """
-    yield Msg('create', name=name)
+    return (yield from single_gen(Msg('create', name=name)))
 
 
 def save():
@@ -271,7 +272,7 @@ def save():
     msg : Msg
         Msg('save')
     """
-    yield Msg('save')
+    return (yield from single_gen(Msg('save')))
 
 
 def read(obj):
@@ -287,7 +288,7 @@ def read(obj):
     msg : Msg
         Msg('read', obj)
     """
-    yield Msg('read', obj)
+    return (yield from single_gen(Msg('read', obj)))
 
 
 def monitor(obj, *args, name=None, **kwargs):
@@ -297,10 +298,10 @@ def monitor(obj, *args, name=None, **kwargs):
     Parameters
     ----------
     obj : Signal
-    name : string, optional
-        name of event stream; default is None
     args :
         passed through to ``obj.subscribe()``
+    name : string, optional
+        name of event stream; default is None
     kwargs :
         passed through to ``obj.subscribe()``
 
@@ -309,7 +310,8 @@ def monitor(obj, *args, name=None, **kwargs):
     msg : Msg
         Msg('monitor', obj, *args, **kwargs)
     """
-    yield Msg('monitor', obj, *args, **kwargs)
+    return (yield from single_gen(Msg('monitor', obj, *args, name=name,
+                                      **kwargs)))
 
 
 def unmonitor(obj):
@@ -325,7 +327,7 @@ def unmonitor(obj):
     msg : Msg
         Msg('unmonitor', obj)
     """
-    yield Msg('unmonitor', obj)
+    return (yield from single_gen(Msg('unmonitor', obj)))
 
 
 def null():
@@ -337,7 +339,7 @@ def null():
     msg : Msg
         Msg('null')
     """
-    yield Msg('null', obj)
+    return (yield from single_gen(Msg('null')))
 
 
 def abs_set(obj, *args, group=None, wait=False, **kwargs):
@@ -361,9 +363,10 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     ------
     msg : Msg
     """
-    yield Msg('set', obj, *args, group=group, **kwargs)
+    ret = yield from single_gen(Msg('set', obj, *args, group=group, **kwargs))
     if wait:
-        yield Msg('wait', None, group=group)
+        yield from single_gen(Msg('wait', None, group=group))
+    return ret
 
 
 def rel_set(obj, *args, group=None, wait=False, **kwargs):
@@ -387,9 +390,10 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     ------
     msg : Msg
     """
-    yield from relative_set(abs_set(obj, *args, group=group, **kwargs))
+    ret = yield from relative_set(abs_set(obj, *args, group=group, **kwargs))
     if wait:
-        yield Msg('wait', None, group=group)
+        yield from single_gen(Msg('wait', None, group=group))
+    return ret
 
 
 def trigger(obj, *, group=None, wait=False):
@@ -409,9 +413,10 @@ def trigger(obj, *, group=None, wait=False):
     ------
     msg : Msg
     """
-    yield Msg('trigger', obj, group=group)
+    ret = yield from single_gen(Msg('trigger', obj, group=group))
     if wait:
-        yield Msg('wait', None, group=group)
+        yield from single_gen(Msg('wait', None, group=group))
+    return ret
 
 
 def sleep(time):
@@ -431,7 +436,7 @@ def sleep(time):
     msg : Msg
         Msg('sleep', None, time)
     """
-    yield Msg('sleep', None, time)
+    return (yield from single_gen(Msg('sleep', None, time)))
 
 
 def wait(group=None):
@@ -448,7 +453,10 @@ def wait(group=None):
     msg : Msg
         Msg('wait', None, group=group)
     """
-    yield Msg('wait', None, group=group)
+    return (yield from single_gen(Msg('wait', None, group=group)))
+
+
+_wait = wait  # for internal references to avoid collision with 'wait' kwarg
 
 
 def checkpoint():
@@ -460,7 +468,7 @@ def checkpoint():
     msg : Msg
         Msg('checkpoint')
     """
-    yield Msg('checkpoint')
+    return (yield from single_gen(Msg('checkpoint')))
 
 
 def clear_checkpoint():
@@ -472,7 +480,7 @@ def clear_checkpoint():
     msg : Msg
         Msg('clear_checkpoint')
     """
-    yield Msg('clear_checkpoint')
+    return (yield from single_gen(Msg('clear_checkpoint')))
 
 
 def pause():
@@ -484,7 +492,7 @@ def pause():
     msg : Msg
         Msg('pause')
     """
-    yield Msg('pause')
+    return (yield from single_gen(Msg('pause', None, defer=False)))
 
 
 def deferred_pause():
@@ -496,7 +504,7 @@ def deferred_pause():
     msg : Msg
         Msg('pause', defer=True)
     """
-    yield Msg('pause', defer=True)
+    return (yield from single_gen(Msg('pause', None, defer=True)))
 
 
 def input(prompt=''):
@@ -513,21 +521,22 @@ def input(prompt=''):
     msg : Msg
         Msg('input', prompt=prompt)
     """
-    return (yield from (m in [Msg('input', prompt=prompt)]))
+    return (yield from single_gen(Msg('input', prompt=prompt)))
 
 
-def kickoff(obj, *, name=None, group=None, **kwargs):
+def kickoff(obj, *, group=None, wait=False, **kwargs):
     """
     Kickoff a fly-scanning device.
 
     Parameters
     ----------
     obj : fly-able
-        Device with 'kickoff' and 'collect' methods
-    name : string, optional
-        event stream name, a convenient human-friendly identifier
+        Device with 'kickoff', 'complete', and 'collect' methods
     group : string (or any hashable object), optional
         identifier used by 'wait'
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
     kwargs
         passed through to ``obj.kickoff()``
 
@@ -536,7 +545,46 @@ def kickoff(obj, *, name=None, group=None, **kwargs):
     msg : Msg
         Msg('kickoff', obj)
     """
-    yield Msg('kickoff', obj, name=name, group=group, **kwargs)
+    ret = (yield from single_gen(
+         Msg('kickoff', obj, group=group, **kwargs)))
+    if wait:
+        yield from _wait(group=group)
+    return ret
+
+
+def complete(obj, *, group=None, wait=True, **kwargs):
+    """
+    Tell a flyer, 'stop collecting, whenver you are ready'.
+
+    The flyer returns a status object. Some flyers respond to this
+    command by stopping collection and returning a finished status
+    object immedately. Other flyers finish their given course and
+    finish whenever they finish, irrespective of when this command is
+    issued.
+
+    Parameters
+    ----------
+    obj : fly-able
+        Device with 'kickoff', 'complete', and 'collect' methods
+    group : string (or any hashable object), optional
+        identifier used by 'wait'
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    kwargs
+        passed through to ``obj.complete()``
+
+    Yields
+    ------
+    msg : Msg
+        a 'complete' Msg and maybe a 'wait' message
+    """
+    ret = (yield from single_gen(
+         Msg('complete', obj, group=group, **kwargs)))
+    if wait:
+        yield from _wait(group=group)
+    return ret
+
 
 
 def collect(obj, *, stream=False):
@@ -546,7 +594,7 @@ def collect(obj, *, stream=False):
     Parameters
     ----------
     obj : fly-able
-        Device with 'kickoff' and 'collect' methods
+        Device with 'kickoff', 'complete', and 'collect' methods
     stream : boolean
         If False (default), emit events documents in one bulk dump. If True,
         emit events one at time.
@@ -556,7 +604,7 @@ def collect(obj, *, stream=False):
     msg : Msg
         Msg('collect', obj)
     """
-    yield Msg('collect', obj, stream=stream)
+    return (yield from single_gen(Msg('collect', obj, stream=stream)))
 
 
 def configure(obj, *args, **kwargs):
@@ -576,7 +624,7 @@ def configure(obj, *args, **kwargs):
     msg : Msg
         Msg('configure', obj, *args, **kwargs)
     """
-    yield Msg('configure', obj, *args, **kwargs)
+    return (yield from single_gen(Msg('configure', obj, *args, **kwargs)))
 
 
 def stage(obj):
@@ -592,7 +640,7 @@ def stage(obj):
     msg : Msg
         Msg('stage', obj)
     """
-    yield Msg('stage', obj)
+    return (yield from single_gen(Msg('stage', obj)))
 
 
 def unstage(obj):
@@ -608,7 +656,7 @@ def unstage(obj):
     msg : Msg
         Msg('unstage', obj)
     """
-    yield Msg('unstage', obj)
+    return (yield from single_gen(Msg('unstage', obj)))
 
 
 def subscribe(name, func):
@@ -627,7 +675,7 @@ def subscribe(name, func):
     msg : Msg
         Msg('subscribe', None, name, func)
     """
-    yield Msg('subscribe', None, name, func)
+    return (yield from single_gen(Msg('subscribe', None, name, func)))
 
 
 def unsubscribe(token):
@@ -644,16 +692,16 @@ def unsubscribe(token):
     msg : Msg
         Msg('unsubscribe', token=token)
     """
-    yield Msg('unsubscribe', token=token)
+    return (yield from single_gen(Msg('unsubscribe', token=token)))
 
 
-def open_run(md):
+def open_run(md=None):
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
 
     Parameters
     ----------
-    md : dict
+    md : dict, optional
         metadata
 
     Yields
@@ -661,7 +709,9 @@ def open_run(md):
     msg : Msg
         Msg('open_run', **md)
     """
-    yield Msg('open_run', **md)
+    if md is None:
+        md = {}
+    return (yield from single_gen(Msg('open_run', **md)))
 
 
 def close_run():
@@ -673,7 +723,7 @@ def close_run():
     msg : Msg
         Msg('close_run')
     """
-    yield Msg('close_run')
+    return (yield from single_gen(Msg('close_run')))
 
 
 def wait_for(futures, **kwargs):
@@ -692,7 +742,7 @@ def wait_for(futures, **kwargs):
     msg : Msg
         Msg('wait_for', None, futures, **kwargs)
     """
-    yield Msg('wait_for', None, futures, **kwargs)
+    return (yield from single_gen(Msg('wait_for', None, futures, **kwargs)))
 
 
 def finalize(plan, final_plan):
@@ -719,7 +769,7 @@ def finalize(plan, final_plan):
     try:
         ret = yield from plan
     finally:
-        yield from final_plan
+        yield from ensure_generator(final_plan)
     return ret
 
 
@@ -763,7 +813,7 @@ def subs_context(plan_stack, subs):
 
     def unsubscribe():
         for token in tokens:
-            yield Msg('unsubscribe', None, token)
+            yield Msg('unsubscribe', None, token=token)
 
     plan_stack.append(subscribe())
     try:
@@ -812,6 +862,36 @@ def event_context(plan_stack, name='primary'):
     plan_stack.append(single_gen(Msg('save')))
 
 
+def fly(flyers, *, md=None):
+    """
+    Perform a fly scan with one or more 'flyers'.
+
+    Parameters
+    ----------
+    flyers : collection
+        objects that support the flyer interface
+
+    Yields
+    ------
+    msg : Msg
+        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    `bluesky.plans.fly_during`
+    """
+    yield from open_run(md)
+    for flyer in flyers:
+        yield from kickoff(flyer, wait=True)
+    for flyer in flyers:
+        yield from complete(flyer, wait=True)
+    for flyer in flyers:
+        yield from collect(flyer)
+    yield from close_run()
+
+
 def fly_during(plan, flyers):
     """
     Kickoff and collect "flyer" (asynchronously collect) objects during runs.
@@ -832,17 +912,20 @@ def fly_during(plan, flyers):
         messages from plan with 'kickoff', 'wait' and 'collect' messages
         inserted
     """
-    grp = _short_uid('flyers')
-    kickoff_msgs = [Msg('kickoff', flyer, group=grp) for flyer in flyers]
+    grp1 = _short_uid('flyers-kickoff')
+    grp2 = _short_uid('flyers-complete')
+    kickoff_msgs = [Msg('kickoff', flyer, group=grp1) for flyer in flyers]
+    complete_msgs = [Msg('complete', flyer, group=grp1) for flyer in flyers]
     collect_msgs = [Msg('collect', flyer) for flyer in flyers]
     if flyers:
-        # If there are any flyers, insert a Msg that waits for them to finish.
-        collect_msgs = [Msg('wait', None, grp)] + collect_msgs
+        # If there are any flyers, insert a 'wait' Msg after kickoff, complete
+        kickoff_msgs += [Msg('wait', None, group=grp1)]
+        complete_msgs += [Msg('wait', None, group=grp2)]
 
     def insert_after_open(msg):
         if msg.command == 'open_run':
             def new_gen():
-                yield from kickoff_msgs
+                yield from ensure_generator(kickoff_msgs)
             return single_gen(msg), new_gen()
         else:
             return None, None
@@ -850,7 +933,8 @@ def fly_during(plan, flyers):
     def insert_before_close(msg):
         if msg.command == 'close_run':
             def new_gen():
-                yield from collect_msgs
+                yield from ensure_generator(complete_msgs)
+                yield from ensure_generator(collect_msgs)
                 yield msg
             return new_gen(), None
         else:
@@ -864,7 +948,7 @@ def fly_during(plan, flyers):
 
 def lazily_stage(plan):
     """
-    This is a preprocessor that inserts 'stage' Messages.
+    This is a preprocessor that inserts 'stage' messages and appends 'unstage'.
 
     The first time an object is seen in `plan`, it is staged. To avoid
     redundant staging we actually stage the object's ultimate parent, pointed
@@ -907,7 +991,11 @@ def lazily_stage(plan):
         else:
             return None, None
 
-    return (yield from plan_mutator(plan, inner))
+    def unstage_all():
+        for device in reversed(devices_staged):
+            yield Msg('unstage', device)
+
+    return (yield from finalize(plan_mutator(plan, inner), unstage_all()))
 
 
 @contextmanager
@@ -958,15 +1046,18 @@ def relative_set(plan, devices=None):
     initial_positions = {}
 
     def read_and_stash_a_motor(obj):
+        # obj should have a `position` attribution
         try:
             cur_pos = obj.position
         except AttributeError:
+            # ... but as a fallback we can read obj and grab the value of the
+            # first key
             reading = yield Msg('read', obj)
             if reading is None:
                 # this plan may be being list-ified
                 cur_pos = 0
             else:
-                k = reading.keys()[0]
+                k = list(reading.keys())[0]
                 cur_pos = reading[k]['value']
         initial_positions[obj] = cur_pos
 
@@ -1020,7 +1111,7 @@ def reset_positions(plan, devices=None):
                 # this plan may be being list-ified
                 cur_pos = 0
             else:
-                k = reading.keys()[0]
+                k = list(reading.keys())[0]
                 cur_pos = reading[k]['value']
         initial_positions[obj] = cur_pos
 
@@ -1037,7 +1128,7 @@ def reset_positions(plan, devices=None):
         blk_grp = 'reset-{}'.format(str(uuid.uuid4())[:6])
         for k, v in initial_positions.items():
             yield Msg('set', k, v, group=blk_grp)
-        yield Msg('wait', None, blk_grp)
+        yield Msg('wait', None, group=blk_grp)
 
     return (yield from finalize(plan_mutator(plan, insert_reads), reset()))
 
@@ -1072,13 +1163,18 @@ def configure_count_time(plan, time):
                 # marked as belonging to a different event stream (or no
                 # event stream.
                 original_times[obj] = obj.count_time.get()
-                return pchain(single_gen(Msg('set', obj.count_time, time)),
+                grp = _short_uid('set-count-time')
+                return pchain(single_gen(Msg('set', obj.count_time, time,
+                                             group=grp)),
+                              single_gen(Msg('wait', None, group=grp)),
                               single_gen(msg)), None
         return None, None
 
     def reset():
         for obj, time in original_times.items():
-            yield Msg('set', obj.count_time, time)
+            grp = _short_uid('reset-count-time')
+            yield Msg('set', obj.count_time, time, group=grp)
+            yield Msg('wait', None, group=grp)
 
     if time is None:
         # no-op
@@ -1104,9 +1200,9 @@ def baseline_context(plan_stack, devices, name='baseline'):
     name : string, optional
         name for event stream; by default, 'baseline'
     """
-    plan_stack.append(trigger_and_read(devices), name=name)
+    plan_stack.append(trigger_and_read(devices, name=name))
     yield
-    plan_stack.append(trigger_and_read(devices), name=name)
+    plan_stack.append(trigger_and_read(devices, name=name))
 
 
 @contextmanager
@@ -1177,7 +1273,7 @@ def trigger_and_read(devices, name='primary'):
         if hasattr(obj, 'trigger'):
             plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
     if plan_stack:
-        plan_stack.append(single_gen(Msg('wait', None, grp)))
+        plan_stack.append(single_gen(Msg('wait', None, group=grp)))
     with event_context(plan_stack, name=name):
         for obj in devices:
             plan_stack.append(single_gen(Msg('read', obj)))
@@ -1215,8 +1311,8 @@ def repeater(n, gen_func, *args, **kwargs):
 
     Parameters
     ----------
-    n : int
-        total number of repetitions
+    n : int or None
+        total number of repetitions; if None, infinite
     gen_func : callable
         returns generator instance
     *args
@@ -1246,16 +1342,21 @@ def caching_repeater(n, plan):
 
     Parameters
     ----------
-    n : int
-        total number of repetitions
+    n : int or None
+        total number of repetitions; if None, infinite
     plan : iterable
 
     Yields
     ------
     msg : Msg
     """
+    it = range
+    if n is None:
+        n = 0
+        it = itertools.count
+
     lst_plan = list(plan)
-    for j in range(n):
+    for j in it(n):
         yield from (m for m in lst_plan)
 
 
@@ -1277,8 +1378,8 @@ def count(detectors, num=1, delay=None, *, md=None):
 
     Note
     ----
-    If ``delay`` is an iterable, it must have at least ``num`` entries or the
-    plan will raise a ``StopIteration`` error.
+    If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
+    the plan will raise a ``ValueError`` during iteration.
     """
     if md is None:
         md = {}
@@ -1299,10 +1400,20 @@ def count(detectors, num=1, delay=None, *, md=None):
     plan_stack = deque()
     with stage_context(plan_stack, detectors):
         with run_context(plan_stack, md):
-            for _ in counter:
+            for i in counter:
                 plan_stack.append(single_gen(Msg('checkpoint')))
                 plan_stack.append(trigger_and_read(detectors))
-                d = next(delay)
+                try:
+                    d = next(delay)
+                except StopIteration:
+                    if num is None:
+                        break
+                    elif i + 1 == num:
+                        break
+                    else:
+                        # num specifies a number of iterations less than delay
+                        raise ValueError("num=%r but delays only provides %r "
+                                         "entries" % (num, i))
                 if d is not None:
                     plan_stack.append(single_gen(Msg('sleep', None, d)))
     return plan_stack
@@ -1319,7 +1430,7 @@ def one_1d_step(detectors, motor, step):
         grp = _short_uid('set')
         yield Msg('checkpoint')
         yield Msg('set', motor, step, group=grp)
-        yield Msg('wait', None, grp)
+        yield Msg('wait', None, group=grp)
 
     plan_stack = deque()
     plan_stack.append(move())
@@ -1689,7 +1800,7 @@ def one_nd_step(detectors, step, pos_cache):
                 continue
             yield Msg('set', motor, pos, group=grp)
             pos_cache[motor] = pos
-        yield Msg('wait', None, grp)
+        yield Msg('wait', None, group=grp)
 
     motors = step.keys()
     plan_stack = deque()
@@ -1922,7 +2033,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
                 pos = motor.position
             except AttributeError:
                 ret_mot = yield Msg('read', motor)
-                key = ret_mot.keys()[0]
+                key = list(ret_mot.keys())[0]
                 pos = ret_mot[key]['value']
             yield Msg('trigger', d, group='A')
             yield Msg('wait', None, 'A')

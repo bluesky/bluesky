@@ -28,6 +28,12 @@ v0.5.0
     * hklmesh
   They can be defined in configuration files as desired, and in that location
   they will be easier to customize.
+* The ``describe`` method on flyers, which returns an iterable of dicts of
+  data keys for one or more descriptors documents, has been renamed to
+  ``describe_collect`` to avoid confusion with ``describe`` on other devices,
+  which returns a dict of data keys for one descriptor document.
+* An obscure feature in ``RunEngine.request_pause`` has been removed, which
+  involved removing the optional arguments ``callback`` and ``name``.
 
 v0.3.0
 ------

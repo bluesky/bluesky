@@ -62,17 +62,46 @@ def test_separate_devices():
 
 
 @requires_ophyd
-def test_monitor():
+def test_monitor(fresh_RE):
     docs = []
     def collect(name, doc):
         docs.append(doc)
 
-    RE = setup_test_run_engine()
     a = A('')
     def plan():
         yield Msg('open_run')
         yield Msg('monitor', a.s1)
         a.s1._run_subs(sub_type='value')
         yield Msg('close_run')
-    RE(plan(), collect)
+    fresh_RE(plan(), collect)
     assert len(docs) == 4
+
+
+@requires_ophyd
+def test_monitor_with_pause_resume(fresh_RE):
+    docs = []
+    def collect(name, doc):
+        docs.append(doc)
+
+    a = A('')
+    def plan():
+        yield Msg('open_run')
+        yield Msg('monitor', a.s1)
+        yield Msg('checkpoint')
+        a.s1._run_subs(sub_type='value')
+        yield Msg('pause')
+        a.s1._run_subs(sub_type='value')
+        yield Msg('close_run')
+    fresh_RE(plan(), collect)
+    assert len(docs) == 3  # RunStart, EventDescriptor, one Event
+    # All but one of these will be ignored. Why is one not ignored, you ask?
+    # Beacuse ophyd runs subscriptions when they are (re-)subscriped.
+    a.s1._run_subs(sub_type='value')
+    a.s1._run_subs(sub_type='value')
+    a.s1._run_subs(sub_type='value')
+    a.s1._run_subs(sub_type='value')
+    a.s1._run_subs(sub_type='value')
+    a.s1._run_subs(sub_type='value')
+    assert len(docs) == 3
+    fresh_RE.resume()
+    assert len(docs) == 6  # two new Events + RunStop
