@@ -915,7 +915,7 @@ def fly_during(plan, flyers):
     grp1 = _short_uid('flyers-kickoff')
     grp2 = _short_uid('flyers-complete')
     kickoff_msgs = [Msg('kickoff', flyer, group=grp1) for flyer in flyers]
-    complete_msgs = [Msg('complete', flyer, group=grp1) for flyer in flyers]
+    complete_msgs = [Msg('complete', flyer, group=grp2) for flyer in flyers]
     collect_msgs = [Msg('collect', flyer) for flyer in flyers]
     if flyers:
         # If there are any flyers, insert a 'wait' Msg after kickoff, complete
