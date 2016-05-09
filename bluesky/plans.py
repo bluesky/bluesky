@@ -1011,7 +1011,7 @@ def stage_context(plan_stack, devices):
         list of devices to stage immediately on entrance and unstage on exit
     """
     # Resolve unique devices, avoiding redundant staging.
-    devices = [device.root for device in devices]
+    devices = separate_devices([device.root for device in devices])
 
     def stage():
         # stage devices explicitly passed to 'devices' argument
