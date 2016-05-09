@@ -274,7 +274,7 @@ class StructMeta(type):
         args_params  = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
                         for name in clsobj._fields]
         kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None)
-                         for name in ['pre_run', 'post_run']]
+                         for name in ['md']]
         sig = Signature(args_params + kwargs_params)
         setattr(clsobj, '__signature__', sig)
         return clsobj
@@ -295,7 +295,6 @@ class Struct(metaclass=StructMeta):
                 bound.arguments[name] = param.default
         for name, val in bound.arguments.items():
             setattr(self, name, val)
-        self._md = {}
         self.flyers = []
 
     def set(self, **kwargs):
