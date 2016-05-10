@@ -63,5 +63,4 @@ Robustness
    callbacks
    state-machine
    metadata 
-   custom-plans
    simple_api
