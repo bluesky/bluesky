@@ -655,8 +655,7 @@ class RunEngine:
             print("No checkpoint; cannot suspend. Aborting...")
             self._exception = FailedPause()
         else:
-            print("Suspending....To get prompt hit Ctrl-C twice to pause the "
-                  "scan")
+            print("Suspending....To get prompt hit Ctrl-C twice to pause.")
             # Stash a copy in a local var to re-instating the monitors.
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
                 obj.clear_sub(cb)
