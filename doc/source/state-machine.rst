@@ -1,5 +1,3 @@
-.. currentmodule:: bluesky
-
 Interruptions
 *************
 
@@ -156,11 +154,11 @@ again, the RunEngine resumes.
 .. code-block:: python
 
     from ophyd import EpicsSignal
-    import bluesky.suspenders
+    from bluesky.suspenders SuspendBoolHigh
 
     shutter = EpicsSignal('XF:23ID1-PPS{PSh}Pos-Sts')  # main shutter PV
 
-    sus = bluesky.suspenders.PVSuspendBoolHigh(signal)
+    sus = SuspendBoolHigh(signal)
     RE.install_suspender(sus)
 
 The above is all that is required. It will watch the PV indefinitely.
@@ -187,15 +185,19 @@ back to the last checkpoint and re-took the second data point cleanly.
 Built-in Suspenders
 -------------------
 
-The example above demonstrates ``PVSuspendBoolHigh``. Several other variants
+The example above demonstrates ``SuspendBoolHigh``. Several other variants
 are built in, and it is straightforward to write customized ones.
 
-.. autoclass:: bluesky.suspenders.PVSuspendBoolHigh
-.. autoclass:: bluesky.suspenders.PVSuspendBoolLow
-.. autoclass:: bluesky.suspenders.PVSuspendFloor
-.. autoclass:: bluesky.suspenders.PVSuspendCeil
-.. autoclass:: bluesky.suspenders.PVSuspendInBand
-.. autoclass:: bluesky.suspenders.PVSuspendOutBand
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
+   bluesky.suspenders.SuspendBoolHigh
+   bluesky.suspenders.SuspendBoolLow
+   bluesky.suspenders.SuspendFloor
+   bluesky.suspenders.SuspendCeil
+   bluesky.suspenders.SuspendInBand
+   bluesky.suspenders.SuspendOutBand
 
 Deferred Pause
 --------------

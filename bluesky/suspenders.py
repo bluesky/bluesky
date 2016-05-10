@@ -164,8 +164,7 @@ class SuspenderBase(metaclass=ABCMeta):
 
 class SuspendBoolHigh(SuspenderBase):
     """
-    Suspender which suspends the scan when a boolean signal
-    goes high and resumes when the value goes low.
+    Suspend when a boolean signal goes high; resume when it goes low.
 
     Parameters
     ----------
@@ -192,8 +191,7 @@ class SuspendBoolHigh(SuspenderBase):
 
 class SuspendBoolLow(SuspenderBase):
     """
-    Suspender which suspends the scan when a boolean signal
-    goes low and resumes when the value goes high.
+    Suspend when a boolean signal goes low; resume when it goes high.
 
     Parameters
     ----------
@@ -250,9 +248,10 @@ class _Threshold(SuspenderBase):
 
 class SuspendFloor(_Threshold):
     """
-    A suspender that watches a scalar signal and suspends when it
-    falls below a given threshold.  Optionally, the threshold to
-    resume can be set to be greater than the threshold to suspend.
+    Suspend when a scalar falls below a threshold.
+
+    Optionally, the threshold to resume can be set to be greater than the
+    threshold to suspend.
 
     Parameters
     ----------
@@ -292,9 +291,10 @@ class SuspendFloor(_Threshold):
 
 class SuspendCeil(_Threshold):
     """
-    A suspender that watches a scalar signal and suspends when it
-    rises above a given threshold.  Optionally, the threshold to
-    resume can be set to be less than the threshold to suspend.
+    Suspend when a scalar rises above a threshold.
+
+    Optionally, the threshold to resume can be set to be less than the
+    threshold to suspend.
 
     Parameters
     ----------
@@ -351,8 +351,7 @@ class _SuspendBandBase(SuspenderBase):
 
 class SuspendInBand(_SuspendBandBase):
     """
-    A suspender class to keep a scalar signal with in a band.  Suspends if
-    the value leaves the band, resume when it re-enters.
+    Suspend when a scalar signal leaves a given band of values.
 
     Parameters
     ----------
@@ -383,8 +382,7 @@ class SuspendInBand(_SuspendBandBase):
 
 class SuspendOutBand(_SuspendBandBase):
     """
-    A suspender class to keep a scalar signal out of a band.  Suspends if
-    the value enters the band and resumes when it leaves.
+    Suspend when a scalar signal enters a given band of values.
 
     This is mostly here because it is the opposite of `SuspenderInBand`.
 
