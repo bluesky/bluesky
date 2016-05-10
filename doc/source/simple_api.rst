@@ -1,6 +1,13 @@
 (Optional) SPEC-like Interface
 ==============================
 
+.. warning::
+
+    The SPEC-like interface was changed in bluesky v0.5.0, and this
+    documentation has not yet been updated. It will be updated before the
+    start of the Summer 2016 cycle. Until then, consult the DAMA group with
+    any questions.
+
 Conceptual Differences Between Bluesky and SPEC
 -----------------------------------------------
 
