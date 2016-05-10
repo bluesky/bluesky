@@ -6,7 +6,6 @@ import functools
 import operator
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable, defaultdict, deque
-import types
 
 import numpy as np
 from cycler import cycler
@@ -130,7 +129,8 @@ def plan_mutator(plan, msg_proc):
             # gets to see the exception on its way out to the user.
             # If this is a plan that came in through the RE, the top plan has
             # had its shot do deal with it and now the next plan gets it.
-            plan_stack.pop()
+            failed_plan = plan_stack.pop()
+            failed_plan.close()
             if plan_stack:
                 msg = plan_stack[-1].throw(ex)
                 plan_stack.append(single_gen(msg))
