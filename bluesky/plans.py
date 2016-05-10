@@ -970,13 +970,13 @@ def fly(flyers, *, md=None):
     ----------
     flyers : collection
         objects that support the flyer interface
+    md : dict, optional
+        metadata
 
     Yields
     ------
     msg : Msg
         'kickoff', 'wait', 'complete, 'wait', 'collect' messages
-    md : dict, optional
-        metadata
 
     See Also
     --------
