@@ -509,15 +509,6 @@ def test_new_ev_desc():
     assert len(descs) == 1
 
 
-def test_bad_checkpoint():
-    bad_plan = [Msg('open_run'), Msg('checkpoint'), Msg('close_run'),
-                Msg('pause')]
-    RE(bad_plan)
-    # Resuming will cause us to write the same close_run twice.
-    with pytest.raises(IllegalMessageSequence):
-        RE.resume()
-
-
 def test_clear_checkpoint():
     bad_plan = [Msg('checkpoint'),
                 Msg('clear_checkpoint'),

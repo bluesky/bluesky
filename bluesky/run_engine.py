@@ -97,7 +97,8 @@ class RunEngine:
 
     state = LoggingPropertyMachine(RunEngineStateMachine)
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage',
-                             'unstage', 'monitor', 'unmonitor']
+                             'unstage', 'monitor', 'unmonitor', 'open_run',
+                             'close_run']
 
     def __init__(self, md=None, *, loop=None, md_validator=None):
         """
@@ -970,6 +971,7 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
         yield from self.emit(DocumentNames.start, doc)
         self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
+        yield from self._reset_checkpoint_state()
 
     @asyncio.coroutine
     def _close_run(self, msg):
@@ -997,6 +999,7 @@ class RunEngine:
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
+        yield from self._reset_checkpoint_state()
 
     @asyncio.coroutine
     def _create(self, msg):
