@@ -2492,7 +2492,6 @@ class Plan(Struct):
                 with subs_context(plan_stack, subs):
                     plan = self._gen()
                     plan_stack.append(fly_during(plan, flyers))
-                    plan_stack.append(single_gen(Msg('checkpoint')))
 
             for gen in plan_stack:
                 yield from gen

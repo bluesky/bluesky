@@ -96,7 +96,9 @@ class LoggingPropertyMachine(PropertyMachine):
 class RunEngine:
 
     state = LoggingPropertyMachine(RunEngineStateMachine)
-    _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage']
+    _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage',
+                             'unstage', 'monitor', 'unmonitor', 'open_run',
+                             'close_run']
 
     def __init__(self, md=None, *, loop=None, md_validator=None):
         """
@@ -209,6 +211,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
+        self._checkpoint_enabled = True  # make scans pauseable by default
         self._plan_stack = deque()  # stack of generators to work off of
         self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
@@ -968,6 +971,7 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
         yield from self.emit(DocumentNames.start, doc)
         self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
+        yield from self._reset_checkpoint_state()
 
     @asyncio.coroutine
     def _close_run(self, msg):
@@ -995,6 +999,7 @@ class RunEngine:
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
+        yield from self._reset_checkpoint_state()
 
     @asyncio.coroutine
     def _create(self, msg):
@@ -1131,6 +1136,7 @@ class RunEngine:
         self._monitor_params[obj] = emit_event, msg.kwargs
         obj.subscribe(emit_event, **msg.kwargs)
         yield from self.emit(DocumentNames.descriptor, desc_doc)
+        yield from self._reset_checkpoint_state()
 
     @asyncio.coroutine
     def _unmonitor(self, msg):
@@ -1148,6 +1154,7 @@ class RunEngine:
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
+        yield from self._reset_checkpoint_state()
 
     @asyncio.coroutine
     def _save(self, msg):
@@ -1529,14 +1536,8 @@ class RunEngine:
         if self._bundling:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
-        self._msg_cache = deque()
 
-        # Keep a safe separate copy of the sequence counters to use if we
-        # rewind and retake some data points.
-        for key, counter in list(self._sequence_counters.items()):
-            counter_copy1, counter_copy2 = tee(counter)
-            self._sequence_counters[key] = counter_copy1
-            self._teed_sequence_counters[key] = counter_copy2
+        yield from self._reset_checkpoint_state()
 
         if self._deferred_pause_requested:
             # We are at a checkpoint; we are done deferring the pause.
@@ -1545,6 +1546,20 @@ class RunEngine:
             # an abort.
             yield from asyncio.sleep(0.5)
             self.request_pause(defer=False)
+
+    @asyncio.coroutine
+    def _reset_checkpoint_state(self):
+        if self._msg_cache is None:
+            return
+
+        self._msg_cache = deque()
+
+        # Keep a safe separate copy of the sequence counters to use if we
+        # rewind and retake some data points.
+        for key, counter in list(self._sequence_counters.items()):
+            counter_copy1, counter_copy2 = tee(counter)
+            self._sequence_counters[key] = counter_copy1
+            self._teed_sequence_counters[key] = counter_copy2
 
     @asyncio.coroutine
     def _clear_checkpoint(self, msg):
@@ -1603,6 +1618,7 @@ class RunEngine:
             return []
         result = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
+        yield from self._reset_checkpoint_state()
         return result
 
     @asyncio.coroutine
@@ -1620,6 +1636,7 @@ class RunEngine:
         result = obj.unstage()
         # use `discard()` to ignore objects that are not in the staged set.
         self._staged.discard(obj)
+        yield from self._reset_checkpoint_state()
         return result
 
     @asyncio.coroutine
@@ -1652,6 +1669,7 @@ class RunEngine:
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
+        yield from self._reset_checkpoint_state()
         return token
 
     @asyncio.coroutine
@@ -1675,6 +1693,7 @@ class RunEngine:
             token, = args
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
+        yield from self._reset_checkpoint_state()
 
     @asyncio.coroutine
     def _input(self, msg):
