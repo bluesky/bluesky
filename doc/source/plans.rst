@@ -23,29 +23,29 @@ Standard Plans (ready to use)
 The names below are links. Click for details, and see below for examples.
 
 .. autosummary::
-   :nosignatures:
    :toctree:
+   :nosignatures:
 
-    count
-    scan
-    relative_scan
-    list_scan
-    relative_list_scan
-    log_scan
-    relative_log_scan
-    inner_product_scan
-    outer_product_scan
-    relative_inner_product_scan
-    relative_outer_product_scan
-    scan_nd
-    spiral
-    spiral_fermat
-    relative_spiral
-    relative_spiral_fermat
-    adaptive_scan
-    relative_adaptive_scan
-    tweak
-    fly
+   count
+   scan
+   relative_scan
+   list_scan
+   relative_list_scan
+   log_scan
+   relative_log_scan
+   inner_product_scan
+   outer_product_scan
+   relative_inner_product_scan
+   relative_outer_product_scan
+   scan_nd
+   spiral
+   spiral_fermat
+   relative_spiral
+   relative_spiral_fermat
+   adaptive_scan
+   relative_adaptive_scan
+   tweak
+   fly
 
 Basic Usage
 -----------
