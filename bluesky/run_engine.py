@@ -211,7 +211,6 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
-        self._checkpoint_enabled = True  # make scans pauseable by default
         self._plan_stack = deque()  # stack of generators to work off of
         self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
