@@ -326,7 +326,7 @@ def monitor(obj, *args, name=None, **kwargs):
     Yields
     ------
     msg : Msg
-        Msg('monitor', obj, *args, **kwargs)
+        ``Msg('monitor', obj, *args, **kwargs)``
 
     See Also
     --------
@@ -652,7 +652,6 @@ def complete(obj, *, group=None, wait=True, **kwargs):
     return ret
 
 
-
 def collect(obj, *, stream=False):
     """
     Collect data cached by a fly-scanning device and emit documents.
@@ -694,7 +693,7 @@ def configure(obj, *args, **kwargs):
     Yields
     ------
     msg : Msg
-        Msg('configure', obj, *args, **kwargs)
+        ``Msg('configure', obj, *args, **kwargs)``
     """
     return (yield from single_gen(Msg('configure', obj, *args, **kwargs)))
 
@@ -795,7 +794,7 @@ def open_run(md=None):
     Yields
     ------
     msg : Msg
-        Msg('open_run', **md)
+        ``Msg('open_run', **md)``
 
     See Also
     --------
@@ -836,7 +835,7 @@ def wait_for(futures, **kwargs):
     Yields
     ------
     msg : Msg
-        Msg('wait_for', None, futures, **kwargs)
+        ``Msg('wait_for', None, futures, **kwargs)``
 
     See Also
     --------
@@ -1339,10 +1338,12 @@ def monitor_context(plan_stack, signals):
     >>> plan_stack = deque()
 
     With custom event stream names
+
     >>> with monitor_context(plan_stack, {sig1: 'sig1', sig2: 'sig2'}):
             ...
 
     With no event stream names
+
     >>> with monitor_context(plan_stack, [sig1, sig2]):
             ...
     """
@@ -1400,9 +1401,9 @@ def broadcast_msg(command, objs, *args, **kwargs):
     ----------
     command : string
     devices : iterable
-    *args
+    ``*args``
         args for message
-    **kwargs
+    ``**kwargs``
         kwargs for message
 
     Yields
@@ -1427,9 +1428,9 @@ def repeater(n, gen_func, *args, **kwargs):
         total number of repetitions; if None, infinite
     gen_func : callable
         returns generator instance
-    *args
+    ``*args``
         args for gen_func
-    **kwargs
+    ``**kwargs``
         kwargs for gen_func
 
     Yields
@@ -1577,7 +1578,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         Expected signature:
-        ``f(detectors, motor, step) -> plan (a generator)
+        ``f(detectors, motor, step) -> plan (a generator)``
     md : dict, optional
         metadata
 
@@ -2059,9 +2060,8 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
         list of 'readable' objects
     num : integer
         number of steps
-    *args
-        patterned like (``motor1, start1, stop1,`` ...,
-                        ``motorN, startN, stopN``)
+    ``*args`` : {Positioner, Positioner, int}
+        patterned like (``motor1, start1, stop1, ..., motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
@@ -2105,7 +2105,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     ----------
     detectors : list
         list of 'readable' objects
-    *args
+    ``*args``
         patterned like (``motor1, start1, stop1, num1,```
                         ``motor2, start2, stop2, num2, snake2,``
                         ``motor3, start3, stop3, num3, snake3,`` ...
@@ -2170,7 +2170,7 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     ----------
     detectors : list
         list of 'readable' objects
-    *args
+    ``*args``
         patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
         num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
         Motors can be any 'setable' object (motor, temp controller, etc.)
@@ -2211,9 +2211,8 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
         list of 'readable' objects
     num : integer
         number of steps
-    *args
-        patterned like (``motor1, start1, stop1,`` ...,
-                        ``motorN, startN, stopN``)
+    ``*args``
+        patterned like (``motor1, start1, stop1, ..., motorN, startN, stopN``)
         Motors can be any 'setable' object (motor, temp controller, etc.)
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)

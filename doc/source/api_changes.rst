@@ -18,14 +18,16 @@ v0.5.0
   as desired. But since that usage renders the plans un-composable, it is
   discouraged.
 * The 'time' argument of the SPEC-like plans is a keyword-only argument.
-* The following special-case SPEC-like scans have been removed:
+* The following special-case SPEC-like scans have been removed
+
     * hscan
     * kscan
     * lscan
     * tscan
-    * dtscan 
-    * hklscan 
+    * dtscan
+    * hklscan
     * hklmesh
+
   They can be defined in configuration files as desired, and in that location
   they will be easier to customize.
 * The ``describe`` method on flyers, which returns an iterable of dicts of
@@ -55,7 +57,8 @@ v0.3.0
 * Removed method ``increment_scan_id``
 * `callbacks.broker.post_run` API and docstring brought into agreement.
   The API is change to expect a callable with signature
-  ``foo(doc_name, doc)`` rather than:
+  ``foo(doc_name, doc)`` rather than
+
     - a callable which takes a document (as documented)
     - an object with ``start``, ``descriptor``, ``event`` and ``stop``
       methods (as implemented).

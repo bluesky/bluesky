@@ -255,7 +255,7 @@ initial position.
     def relative_scan(detectors, motor, start, stop, num):
         absolute = scan(detectors, motor, start, stop, num)
         relative = relative_set(absolute, [motor])
-        yield from relative    
+        yield from relative
 
 Or, equivalently, using the ``planify`` decorator:
 
@@ -275,7 +275,7 @@ Plan Utilities
     planify
     msg_mutator
     plan_mutator
-    bschain
+    pchain
     single_gen
     broadcast_msg
     repeater
