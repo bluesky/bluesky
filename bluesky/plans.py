@@ -72,6 +72,10 @@ def plan_mutator(plan, msg_proc):
     ------
     msg : Msg
         messages from `plan`, altered by `msg_proc`
+
+    See Also
+    --------
+    `bluesky.plans.msg_mutator`
     """
     # internal stacks
     msgs_seen = dict()
@@ -186,6 +190,10 @@ def msg_mutator(plan, msg_proc):
     ------
     msg : Msg
         messages from `plan`, altered by `msg_proc`
+
+    See Also
+    --------
+    `bluesky.plans.plan_mutator`
     """
     ret = None
     while True:
@@ -259,6 +267,11 @@ def create(name='primary'):
     ------
     msg : Msg
         Msg('create', name=name)
+
+    See Also
+    --------
+    `bluesky.plans.save`
+    `bluesky.plans.event_context`
     """
     return (yield from single_gen(Msg('create', name=name)))
 
@@ -271,6 +284,11 @@ def save():
     -------
     msg : Msg
         Msg('save')
+
+    See Also
+    --------
+    `bluesky.plans.create`
+    `bluesky.plans.event_context`
     """
     return (yield from single_gen(Msg('save')))
 
@@ -309,6 +327,10 @@ def monitor(obj, *args, name=None, **kwargs):
     ------
     msg : Msg
         Msg('monitor', obj, *args, **kwargs)
+
+    See Also
+    --------
+    `bluesky.plans.unmonitor`
     """
     return (yield from single_gen(Msg('monitor', obj, *args, name=name,
                                       **kwargs)))
@@ -326,6 +348,10 @@ def unmonitor(obj):
     ------
     msg : Msg
         Msg('unmonitor', obj)
+
+    See Also
+    --------
+    `bluesky.plans.monitor`
     """
     return (yield from single_gen(Msg('unmonitor', obj)))
 
@@ -362,6 +388,11 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     Yields
     ------
     msg : Msg
+
+    See Also
+    --------
+    `bluesky.plans.rel_set`
+    `bluesky.plans.wait`
     """
     ret = yield from single_gen(Msg('set', obj, *args, group=group, **kwargs))
     if wait:
@@ -389,6 +420,11 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     Yields
     ------
     msg : Msg
+
+    See Also
+    --------
+    `bluesky.plans.abs_set`
+    `bluesky.plans.wait`
     """
     ret = yield from relative_set(abs_set(obj, *args, group=group, **kwargs))
     if wait:
@@ -467,6 +503,10 @@ def checkpoint():
     ------
     msg : Msg
         Msg('checkpoint')
+
+    See Also
+    --------
+    `bluesky.plans.clear_checkpoint`
     """
     return (yield from single_gen(Msg('checkpoint')))
 
@@ -479,6 +519,10 @@ def clear_checkpoint():
     ------
     msg : Msg
         Msg('clear_checkpoint')
+
+    See Also
+    --------
+    `bluesky.plans.checkpoint`
     """
     return (yield from single_gen(Msg('clear_checkpoint')))
 
@@ -491,6 +535,11 @@ def pause():
     ------
     msg : Msg
         Msg('pause')
+
+    See Also
+    --------
+    `bluesky.plans.deferred_pause`
+    `bluesky.plans.sleep`
     """
     return (yield from single_gen(Msg('pause', None, defer=False)))
 
@@ -503,6 +552,11 @@ def deferred_pause():
     ------
     msg : Msg
         Msg('pause', defer=True)
+
+    See Also
+    --------
+    `bluesky.plans.pause`
+    `bluesky.plans.sleep`
     """
     return (yield from single_gen(Msg('pause', None, defer=True)))
 
@@ -544,6 +598,12 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     ------
     msg : Msg
         Msg('kickoff', obj)
+
+    See Also
+    --------
+    `bluesky.plans.complete`
+    `bluesky.plans.collect`
+    `bluesky.plans.wait`
     """
     ret = (yield from single_gen(
          Msg('kickoff', obj, group=group, **kwargs)))
@@ -578,6 +638,12 @@ def complete(obj, *, group=None, wait=True, **kwargs):
     ------
     msg : Msg
         a 'complete' Msg and maybe a 'wait' message
+
+    See Also
+    --------
+    `bluesky.plans.kickoff`
+    `bluesky.plans.collect`
+    `bluesky.plans.wait`
     """
     ret = (yield from single_gen(
          Msg('complete', obj, group=group, **kwargs)))
@@ -603,6 +669,12 @@ def collect(obj, *, stream=False):
     ------
     msg : Msg
         Msg('collect', obj)
+
+    See Also
+    --------
+    `bluesky.plans.kickoff`
+    `bluesky.plans.complete`
+    `bluesky.plans.wait`
     """
     return (yield from single_gen(Msg('collect', obj, stream=stream)))
 
@@ -639,6 +711,10 @@ def stage(obj):
     ------
     msg : Msg
         Msg('stage', obj)
+
+    See Also
+    --------
+    `bluesky.plans.unstage`
     """
     return (yield from single_gen(Msg('stage', obj)))
 
@@ -655,6 +731,10 @@ def unstage(obj):
     ------
     msg : Msg
         Msg('unstage', obj)
+
+    See Also
+    --------
+    `bluesky.plans.stage`
     """
     return (yield from single_gen(Msg('unstage', obj)))
 
@@ -674,6 +754,10 @@ def subscribe(name, func):
     ------
     msg : Msg
         Msg('subscribe', None, name, func)
+
+    See Also
+    --------
+    `bluesky.plans.unsubscribe`
     """
     return (yield from single_gen(Msg('subscribe', None, name, func)))
 
@@ -691,6 +775,10 @@ def unsubscribe(token):
     ------
     msg : Msg
         Msg('unsubscribe', token=token)
+
+    See Also
+    --------
+    `bluesky.plans.subscribe`
     """
     return (yield from single_gen(Msg('unsubscribe', token=token)))
 
@@ -708,6 +796,10 @@ def open_run(md=None):
     ------
     msg : Msg
         Msg('open_run', **md)
+
+    See Also
+    --------
+    `bluesky.plans.close_run`
     """
     if md is None:
         md = {}
@@ -722,6 +814,10 @@ def close_run():
     ------
     msg : Msg
         Msg('close_run')
+
+    See Also
+    --------
+    `bluesky.plans.open_run`
     """
     return (yield from single_gen(Msg('close_run')))
 
@@ -741,6 +837,10 @@ def wait_for(futures, **kwargs):
     ------
     msg : Msg
         Msg('wait_for', None, futures, **kwargs)
+
+    See Also
+    --------
+    `bluesky.plans.wait`
     """
     return (yield from single_gen(Msg('wait_for', None, futures, **kwargs)))
 
@@ -911,6 +1011,10 @@ def fly_during(plan, flyers):
     msg : Msg
         messages from plan with 'kickoff', 'wait' and 'collect' messages
         inserted
+
+    See Also
+    --------
+    `bluesky.plans.fly`
     """
     grp1 = _short_uid('flyers-kickoff')
     grp2 = _short_uid('flyers-complete')
@@ -967,6 +1071,10 @@ def lazily_stage(plan):
     msg : Msg
         messages from plan with 'stage' messages inserted and 'unstage'
         messages appended
+
+    See Also
+    --------
+    `bluesky.plans.stage_context`
     """
     COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
     # Cache devices in the order they are staged; then unstage in reverse.
@@ -1009,6 +1117,10 @@ def stage_context(plan_stack, devices):
         appendable collection of generators that yield messages (`Msg` objects)
     devices : collection
         list of devices to stage immediately on entrance and unstage on exit
+
+    See Also
+    --------
+    `bluesky.plans.lazily_stage`
     """
     # Resolve unique devices, avoiding redundant staging.
     devices = separate_devices([device.root for device in devices])
@@ -1323,6 +1435,10 @@ def repeater(n, gen_func, *args, **kwargs):
     Yields
     ------
     msg : Msg
+
+    See Also
+    --------
+    `bluesky.plans.caching_repeater`
     """
     it = range
     if n is None:
@@ -1349,6 +1465,10 @@ def caching_repeater(n, plan):
     Yields
     ------
     msg : Msg
+
+    See Also
+    --------
+    `bluesky.plans.repeater`
     """
     it = range
     if n is None:
@@ -1457,6 +1577,10 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
         ``f(detectors, motor, step) -> plan (a generator)
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_list_scan`
     """
     if md is None:
         md = {}
@@ -1494,6 +1618,10 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.list_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
@@ -1524,6 +1652,10 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_scan`
     """
     if md is None:
         md = {}
@@ -1569,6 +1701,10 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
@@ -1599,6 +1735,10 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_log_scan`
     """
     if md is None:
         md = {}
@@ -1644,6 +1784,10 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.log_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = log_scan(detectors, motor, start, stop, num, per_step=per_step,
@@ -1684,6 +1828,10 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         threshold for going backward and rescanning a region, default is 0.8
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_adaptive_scan`
     """
     def core():
         next_pos = start
@@ -1766,6 +1914,10 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
         threshold for going backward and rescanning a region, default is 0.8
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.adaptive_scan`
     """
     plan = adaptive_scan(detectors, target_field, motor, start, stop,
                          min_step, max_step, target_delta, backstep,
@@ -1825,6 +1977,11 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         details.
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.inner_product_scan`
+    `bluesky.plans.outer_product_scan`
     """
     if md is None:
         md = {}
@@ -1867,6 +2024,12 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
         details.
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_inner_product_scan`
+    `bluesky.plans.outer_product_scan`
+    `bluesky.plans.scan_nd`
     """
     if len(args) % 3 != 0:
         raise ValueError("wrong number of positional arguments")
@@ -1906,6 +2069,12 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
         details.
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_outer_product_scan`
+    `bluesky.plans.inner_product_scan`
+    `bluesky.plans.scan_nd`
     """
     args = list(args)
     # The first (slowest) axis is never "snaked." Insert False to
@@ -1958,6 +2127,12 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
         details.
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_inner_product_scan`
+    `bluesky.plans.outer_product_scan`
+    `bluesky.plans.scan_nd`
     """
     plan = outer_product_scan(detectors, *args, per_step=per_step, md=md)
     plan = relative_set(plan)  # re-write trajectory as relative
@@ -1986,6 +2161,12 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
         details.
     md : dict, optional
         metadata
+
+    See Also
+    --------
+    `bluesky.plans.relative_outer_product_scan`
+    `bluesky.plans.inner_product_scan`
+    `bluesky.plans.scan_nd`
     """
     plan = inner_product_scan(detectors, num, *args, per_step=per_step, md=md)
     plan = relative_set(plan)  # re-write trajectory as relative
