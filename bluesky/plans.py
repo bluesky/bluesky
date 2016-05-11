@@ -5,7 +5,7 @@ import itertools
 import functools
 import operator
 from contextlib import contextmanager
-from collections import OrderedDict, Iterable, defaultdict, deque
+from collections import OrderedDict, Iterable, defaultdict, deque, ChainMap
 
 import numpy as np
 from cycler import cycler
@@ -1503,8 +1503,11 @@ def count(detectors, num=1, delay=None, *, md=None):
     """
     if md is None:
         md = {}
-    md.update({'detectors': [det.name for det in detectors]})
-    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num}
+    md = ChainMap(
+        md, 
+        {'detectors': [det.name for det in detectors],
+         'plan_args':{'detectors': list(map(repr, detectors)), 'num': num},
+         'plan_name': 'count'})
 
     if num is None:
         counter = itertools.count()  # run forever, until interrupted
@@ -1584,11 +1587,14 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     if md is None:
         md = {}
-    md.update({'detectors': [det.name for det in detectors],
-               'motors': [motor.name]})
-    md['plan_args'] = {'detectors': list(map(repr, detectors)),
+    md = ChainMap(
+        md,
+        {'detectors': [det.name for det in detectors],
+         'motors': [motor.name],
+         'plan_args': {'detectors': list(map(repr, detectors)),
                        'motor': repr(motor), 'steps': steps,
-                       'per_step': repr(per_step)}
+                       'per_step': repr(per_step)},
+                       'plan_name': 'list_scan'})
     if per_step is None:
         per_step = one_1d_step
 
@@ -1624,6 +1630,9 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     `bluesky.plans.list_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'relative_list_scan'})
     plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
     plan = relative_set(plan)  # re-write trajectory as relative
     plan = reset_positions(plan)  # return motors to starting pos
@@ -1659,11 +1668,15 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     if md is None:
         md = {}
-    md.update({'detectors': [det.name for det in detectors],
-               'motors': [motor.name]})
-    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num,
+    md = ChainMap(
+        md,
+        {'detectors': [det.name for det in detectors],
+         'motors': [motor.name],
+         'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
+                       'motor': repr(motor),
                        'start': start, 'stop': stop,
-                       'per_step': repr(per_step)}
+                       'per_step': repr(per_step)},
+         'plan_name': 'scan'})
 
     if per_step is None:
         per_step = one_1d_step
@@ -1706,6 +1719,9 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     --------
     `bluesky.plans.scan`
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'relative_scan'})
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
@@ -1742,11 +1758,14 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     if md is None:
         md = {}
-    md.update({'detectors': [det.name for det in detectors],
-               'motors': [motor.name]})
-    md['plan_args'] = {'detectors': list(map(repr, detectors)), 'num': num,
-                       'start': start, 'stop': stop,
-                       'per_step': repr(per_step)}
+    md = ChainMap(
+        md,
+        {'detectors': [det.name for det in detectors],
+         'motors': [motor.name],
+         'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
+                       'start': start, 'stop': stop, 'motor': repr(motor),
+                       'per_step': repr(per_step)},
+         'plan_name': 'log_scan'})
 
     if per_step is None:
         per_step = one_1d_step
@@ -1790,6 +1809,9 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     `bluesky.plans.log_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'relative_log_scan'})
     plan = log_scan(detectors, motor, start, stop, num, per_step=per_step,
                     md=md)
     plan = relative_set(plan, [motor])  # re-write trajectory as relative
@@ -1833,6 +1855,22 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     --------
     `bluesky.plans.relative_adaptive_scan`
     """
+    if md is None:
+        md = {}
+    md = ChainMap(
+        md,
+        {'detectors': [det.name for det in detectors],
+         'motors': [motor.name],
+         'plan_args':{'detectors': list(map(repr, detectors)),
+                      'motor': repr(motor),
+                      'start': start,
+                      'stop': stop,
+                      'min_step': min_step,
+                      'max_step': max_step,
+                      'target_delta': target_delta,
+                      'backstep': backstep,
+                      'threshold': threshold},
+         'plan_name': 'adaptive_scan'})
     def core():
         next_pos = start
         step = (max_step - min_step) / 2
@@ -1919,6 +1957,9 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
     --------
     `bluesky.plans.adaptive_scan`
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'adaptive_relative_scan'})
     plan = adaptive_scan(detectors, target_field, motor, start, stop,
                          min_step, max_step, target_delta, backstep,
                          threshold, md=md)
@@ -1985,10 +2026,14 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     """
     if md is None:
         md = {}
-    md.update({'detectors': [det.name for det in detectors],
-               'motors': [motor.name for motor in cycler.keys]})
-    md['plan_args'] = {'detectors': list(map(repr, detectors)),
-                       'cycler': repr(cycler)}
+    md = ChainMap(
+        md,
+        {'detectors': [det.name for det in detectors],
+         'motors': [motor.name for motor in cycler.keys],
+         'plan_args': {'detectors': list(map(repr, detectors)),
+                       'cycler': repr(cycler),
+                       'per_step': repr(per_step)},
+         'plan_name': 'scan_nd'})
 
     if per_step is None:
         per_step = one_nd_step
@@ -2031,6 +2076,13 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     `bluesky.plans.outer_product_scan`
     `bluesky.plans.scan_nd`
     """
+    if md is None:
+        md = {}
+    md = ChainMap(
+        md,
+        {'plan_args': {'detectors': list(map(repr, detectors)),
+                       'num': num, 'args': args, 'per_step': repr(per_step)},
+         'plan_name': 'inner_product_scan'})
     if len(args) % 3 != 0:
         raise ValueError("wrong number of positional arguments")
     cyclers = []
@@ -2097,8 +2149,13 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
 
     if md is None:
         md = {}
-    md.update({'shape': tuple(shape), 'extents': tuple(extents),
-               'snaking': tuple(snaking), 'num': len(full_cycler)})
+    md = ChainMap(
+        md,
+        {'shape': tuple(shape), 'extents': tuple(extents),
+         'snaking': tuple(snaking), 'num': len(full_cycler),
+         'plan_args': {'detectors': list(map(repr, detectors)), 'args': args,
+                       'per_step': repr(per_step)},
+         'plan_name': 'outer_product_scan'})
 
     plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
     return [plan]
@@ -2134,6 +2191,9 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     `bluesky.plans.outer_product_scan`
     `bluesky.plans.scan_nd`
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'relative_outer_product_scan'})
     plan = outer_product_scan(detectors, *args, per_step=per_step, md=md)
     plan = relative_set(plan)  # re-write trajectory as relative
     plan = reset_positions(plan)  # return motors to starting pos
@@ -2168,6 +2228,9 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     `bluesky.plans.inner_product_scan`
     `bluesky.plans.scan_nd`
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'relative_inner_product_scan'})
     plan = inner_product_scan(detectors, num, *args, per_step=per_step, md=md)
     plan = relative_set(plan)  # re-write trajectory as relative
     plan = reset_positions(plan)  # return motors to starting pos
@@ -2194,9 +2257,15 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
     if md is None:
         md = {}
-    md.update({'detectors': [detector.name],
-               'motors': [motor.name]})
-
+    md = ChainMap(
+        md,
+        {'detectors': [detector.name],
+         'motors': [motor.name],
+         'plan_args': {'detector': repr(detector),
+                       'target_field': target_field,
+                       'motor': repr(motor),
+                       'step': step},
+         'plan_name': 'tweak'})
     d = detector
     try:
         from IPython.display import clear_output
@@ -2280,6 +2349,18 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     `bluesky.plans.relative_spiral`
     `bluesky.plans.relative_spiral_fermat`
     '''
+    if md is None:
+        md = {}
+    md = ChainMap(
+        md,
+        {'detectors': [detector.name for detector in detectors],
+         'motors': [motor.name for motor in [x_motor, y_motor]],
+         'plan_args': {'detectors': list(map(repr, detectors)),
+                       'x_motor': x_motor, 'y_motor': y_motor,
+                       'x_start': x_start, 'y_start': y_start,
+                       'x_range': x_range, 'y_range': y_range,
+                       'dr': dr, 'factor': factor, 'per_step': repr(per_step)},
+         'plan_name': 'spiral_fermat'})
     phi = 137.508 * np.pi / 180.
 
     half_x = x_range / 2
@@ -2337,6 +2418,9 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     `bluesky.plans.relative_spiral`
     `bluesky.plans.spiral_fermat`
     '''
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'relative_spiral_fermat'})
     yield from spiral_fermat(detectors, x_motor, y_motor, x_motor.position,
                              y_motor.position, x_range, y_range, dr, factor,
                              per_step=per_step, md=md)
@@ -2377,6 +2461,18 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     `bluesky.plans.spiral_fermat`
     `bluesky.plans.relative_spiral_fermat`
     '''
+    if md is None:
+        md = {}
+    md = ChainMap(
+        md,
+        {'detectors': [detector.name for detector in detectors],
+         'motors': [motor.name for motor in [x_motor, y_motor]],
+         'plan_args': {'detectors': list(map(repr, detectors)),
+                       'x_motor': x_motor, 'y_motor': y_motor,
+                       'x_start': x_start, 'y_start': y_start,
+                       'x_range': x_range, 'y_range': y_range,
+                       'dr': dr, 'nth': nth, 'per_step': repr(per_step)},
+         'plan_name': 'spiral'})
     half_x = x_range / 2
     half_y = y_range / 2
 
@@ -2436,6 +2532,9 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     `bluesky.plans.spiral`
     `bluesky.plans.spiral_fermat`
     '''
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'relative_spiral_fermat'})
     yield from spiral(detectors, x_motor, y_motor, x_motor.position,
                       y_motor.position, x_range, y_range, dr, nth,
                       per_step=per_step, md=md)
