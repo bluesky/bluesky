@@ -2,6 +2,7 @@ import asyncio
 import os
 import signal
 import operator
+import uuid
 from functools import reduce
 from weakref import ref, WeakKeyDictionary
 import types
