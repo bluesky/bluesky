@@ -1069,7 +1069,7 @@ class RunEngine:
         config_values = {}
         config_ts = {}
         for key, val in obj.read_configuration().items():
-            config_values[key] = val['value']
+            config_values[key] = _sanitize_np(val['value'])
             config_ts[key] = val['timestamp']
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
@@ -1106,6 +1106,8 @@ class RunEngine:
         descriptor_uid = new_uid()
         data_keys = obj.describe()
         config = obj.read_configuration()
+        for key, val in list(config.items()):
+            val['value'] = _sanitize_np(val['value'])
         object_keys = {obj.name: list(data_keys)}
         desc_doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                         data_keys=data_keys, uid=descriptor_uid,
@@ -1805,9 +1807,10 @@ def new_uid():
     return str(uuid.uuid4())
 
 
+
 def _sanitize_np(val):
     "Convert any numpy objects into built-in Python types."
-    if isinstance(val, np.generic):
+    if isinstance(val, (np.generic, np.ndarray)):
         if np.isscalar(val):
             return val.item()
         return val.tolist()
