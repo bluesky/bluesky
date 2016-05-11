@@ -2,6 +2,7 @@ import asyncio
 import os
 import signal
 import operator
+import uuid
 from functools import reduce
 from weakref import ref, WeakKeyDictionary
 import types
@@ -652,3 +653,16 @@ class AsyncInput:
     def __call__(self, prompt, end='\n', flush=False):
         print(prompt, end=end, flush=flush)
         return (yield from self.q.get()).rstrip('\n')
+
+
+def new_uid():
+    return str(uuid.uuid4())
+
+
+def sanitize_np(val):
+    "Convert any numpy objects into built-in Python types."
+    if isinstance(val, (np.generic, np.ndarray)):
+        if np.isscalar(val):
+            return val.item()
+        return val.tolist()
+    return val

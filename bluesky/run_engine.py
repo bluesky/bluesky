@@ -19,7 +19,7 @@ from super_state_machine.errors import TransitionError
 import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
-                    AsyncInput)
+                    AsyncInput, new_uid, sanitize_np)
 from . import Msg
 from .plan_tools import ensure_generator
 from .plans import single_gen
@@ -1069,7 +1069,7 @@ class RunEngine:
         config_values = {}
         config_ts = {}
         for key, val in obj.read_configuration().items():
-            config_values[key] = val['value']
+            config_values[key] = sanitize_np(val['value'])
             config_ts[key] = val['timestamp']
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
@@ -1106,6 +1106,8 @@ class RunEngine:
         descriptor_uid = new_uid()
         data_keys = obj.describe()
         config = obj.read_configuration()
+        for key, val in list(config.items()):
+            val['value'] = sanitize_np(val['value'])
         object_keys = {obj.name: list(data_keys)}
         desc_doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                         data_keys=data_keys, uid=descriptor_uid,
@@ -1226,7 +1228,7 @@ class RunEngine:
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
         for key in readings:
-            readings[key]['value'] = _sanitize_np(readings[key]['value'])
+            readings[key]['value'] = sanitize_np(readings[key]['value'])
         data, timestamps = _rearrange_into_parallel_dicts(readings)
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
@@ -1373,7 +1375,7 @@ class RunEngine:
 
             reading = ev['data']
             for key in ev['data']:
-                reading[key] = _sanitize_np(reading[key])
+                reading[key] = sanitize_np(reading[key])
             ev['data'] = reading
             ev['descriptor'] = descriptor_uid
             ev['seq_num'] = seq_num
@@ -1799,19 +1801,6 @@ class Dispatcher:
     @ignore_exceptions.setter
     def ignore_exceptions(self, val):
         self.cb_registry.ignore_exceptions = val
-
-
-def new_uid():
-    return str(uuid.uuid4())
-
-
-def _sanitize_np(val):
-    "Convert any numpy objects into built-in Python types."
-    if isinstance(val, np.generic):
-        if np.isscalar(val):
-            return val.item()
-        return val.tolist()
-    return val
 
 
 def _rearrange_into_parallel_dicts(readings):
