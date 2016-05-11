@@ -957,8 +957,8 @@ class RunEngine:
         plan_name = getattr(self._plan, '__name__', '')
 
         # Combine metadata, in order of decreasing precedence:
-        md = ChainMap(msg.kwargs,  # from 'open_run' Msg
-                      self._metadata_per_call,  # from kwargs to self.__call__
+        md = ChainMap(self._metadata_per_call,  # from kwargs to self.__call__
+                      msg.kwargs,  # from 'open_run' Msg
                       {'plan_type': plan_type,  # computed from self._plan
                        'plan_name': plan_name},
                       self.md)  # stateful, persistent metadata
