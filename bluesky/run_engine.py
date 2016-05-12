@@ -508,7 +508,13 @@ class RunEngine:
         if not self.state.is_idle:
             raise RuntimeError("The RunEngine is in a %s state" % self.state)
 
-        futs = [f for sup in self.suspenders for f in sup.get_futures()]
+        futs = []
+        for sup in self.suspenders:
+            f_lst, msg = sup.get_futures()
+            if f_lst:
+                futs.extend(f_lst)
+                print(msg)
+
         self._clear_call_cache()
         self.state = 'running'
 
