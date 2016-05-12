@@ -510,6 +510,7 @@ class RunEngine:
 
         futs = [f for sup in self.suspenders for f in sup.get_futures()]
         self._clear_call_cache()
+        self._clear_run_cache()  # paranoia, in case of previous bad exit
         self.state = 'running'
 
         for name, funcs in normalize_subs_input(subs).items():
@@ -843,6 +844,7 @@ class RunEngine:
                                    self._run_start_uid, exc)
                     # Exceptions from the callbacks should be re-raised.
                     # Close the loop first.
+                    self._clear_run_cache()
                     for task in asyncio.Task.all_tasks(self.loop):
                         task.cancel()
                     self.loop.stop()
