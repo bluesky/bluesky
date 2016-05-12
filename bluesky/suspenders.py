@@ -152,14 +152,28 @@ class SuspenderBase(metaclass=ABCMeta):
 
         This will only work correctly if this suspender is 'installed'
         and watching a signal
+
+        Returns
+        -------
+        futs : list
+            List of futures to wait on
+
+        msg : str
+            String explaining why the suspender is tripped
         '''
         if not self.tripped:
-            return []
-        return [self.__make_event().wait()]
+            return [], ''
+        return [self.__make_event().wait()], self.get_justification()
 
     @property
     def tripped(self):
         return self._tripped
+
+    def get_justification(self):
+        if not self.tripped:
+            return ''
+        template = 'Suspender of type {} stopped by signal {!r}'
+        return template.format(self.__class__.__name__, self._sig)
 
 
 class SuspendBoolHigh(SuspenderBase):
