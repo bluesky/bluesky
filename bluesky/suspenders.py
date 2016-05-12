@@ -24,13 +24,18 @@ class SuspenderBase(metaclass=ABCMeta):
 
     post_plan : iterable or iterator, optional
             a generator, list, or similar containing `Msg` objects
+
+    tripped_message : str, optional
+        Message to include in the trip notification
     """
-    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None):
+    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None,
+                 tripped_message=''):
         """
         """
         self.RE = None
         self._ev = None
         self._tripped = False
+        self._tripped_message = tripped_message
         self._sleep = sleep
         self._lock = Lock()
         self._sig = signal
@@ -172,8 +177,11 @@ class SuspenderBase(metaclass=ABCMeta):
     def get_justification(self):
         if not self.tripped:
             return ''
+
         template = 'Suspender of type {} stopped by signal {!r}'
-        return template.format(self.__class__.__name__, self._sig)
+        just = template.format(self.__class__.__name__, self._sig)
+        return ': '.join(s for s in (just, self._tripped_message)
+                         if s)
 
 
 class SuspendBoolHigh(SuspenderBase):
@@ -202,6 +210,14 @@ class SuspendBoolHigh(SuspenderBase):
     def _should_resume(self, value):
         return not bool(value)
 
+    def get_justification(self):
+        if not self.tripped:
+            return ''
+
+        just = 'Signal {} is high'.format(self._sig.name)
+        return ': '.join(s for s in (just, self._tripped_message)
+                         if s)
+
 
 class SuspendBoolLow(SuspenderBase):
     """
@@ -228,6 +244,14 @@ class SuspendBoolLow(SuspenderBase):
 
     def _should_resume(self, value):
         return bool(value)
+
+    def get_justification(self):
+        if not self.tripped:
+            return ''
+
+        just = 'Signal {} is low'.format(self._sig.name),
+        return ': '.join(s for s in (just, self._tripped_message)
+                         if s)
 
 
 class _Threshold(SuspenderBase):
@@ -302,6 +326,17 @@ class SuspendFloor(_Threshold):
     def _op(self):
         return operator.lt
 
+    def get_justification(self):
+        if not self.tripped:
+            return ''
+
+        just = ('Signal {} = {!r} is below {}'
+                ''.format(self._sig.name, self._sig.get(),
+                          self._suspend_thresh)
+                )
+        return ': '.join(s for s in (just, self._tripped_message)
+                         if s)
+
 
 class SuspendCeil(_Threshold):
     """
@@ -344,6 +379,17 @@ class SuspendCeil(_Threshold):
     @property
     def _op(self):
         return operator.gt
+
+    def get_justification(self):
+        if not self.tripped:
+            return ''
+
+        just = ('Signal {} = {!r} is above {}'
+                ''.format(self._sig.name, self._sig.get(),
+                          self._suspend_thresh)
+                )
+        return ': '.join(s for s in (just, self._tripped_message)
+                         if s)
 
 
 class _SuspendBandBase(SuspenderBase):
@@ -393,6 +439,17 @@ class SuspendInBand(_SuspendBandBase):
     def _should_suspend(self, value):
         return not (self._bot < value < self._top)
 
+    def get_justification(self):
+        if not self.tripped:
+            return ''
+
+        just = ('Signal {} = {!r} is outside of the range ({}, {})'
+                ''.format(self._sig.name, self._sig.get(),
+                          self._bot, self._top)
+                )
+        return ': '.join(s for s in (just, self._tripped_message)
+                         if s)
+
 
 class SuspendOutBand(_SuspendBandBase):
     """
@@ -426,3 +483,14 @@ class SuspendOutBand(_SuspendBandBase):
 
     def _should_suspend(self, value):
         return (self._bot < value < self._top)
+
+    def get_justification(self):
+        if not self.tripped:
+            return ''
+
+        just = ('Signal {} = {!r} is inside of the range ({}, {})'
+                ''.format(self._sig.name, self._sig.get(),
+                          self._bot, self._top)
+                )
+        return ': '.join(s for s in (just, self._tripped_message)
+                         if s)
