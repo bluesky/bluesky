@@ -58,7 +58,7 @@ def plan_mutator(plan, msg_proc):
     msg_proc : callable
         functions that takes in a message and returns replacement messages
 
-        fucntion signatures:
+        function signatures:
 
         msg -> None, None (no op)
         msg -> gen, None (mutate and/or insert before current message;
@@ -1294,6 +1294,45 @@ def configure_count_time(plan, time):
         return (yield from finalize(plan_mutator(plan, insert_set), reset()))
 
 
+def baseline_mutator(plan, devices, name='baseline'):
+    """
+    Preprocessor that records a baseline of all `devices` after `open_run`
+
+    The readings are designated for a separate event stream named 'baseline' by
+    default.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    devices : collection
+        collection of Devices to read
+        If None, the plan passes through unchanged.
+    name : string, optional
+        name for event stream; by default, 'baseline'
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'set' messages inserted
+    """
+    def insert_baseline(msg):
+        if msg.command == 'open_run':
+            return (single_gen(msg),
+                    trigger_and_read(devices, name=name))
+        elif msg.command == 'close_run':
+            return (trigger_and_read(devices, name=name),
+                    single_gen(msg))
+
+        return None, None
+
+    if not devices:
+        # no-op
+        return (yield from plan)
+    else:
+        return (yield from plan_mutator(plan, insert_baseline))
+
+
 @contextmanager
 def baseline_context(plan_stack, devices, name='baseline'):
     """
@@ -1505,7 +1544,7 @@ def count(detectors, num=1, delay=None, *, md=None):
     if md is None:
         md = {}
     md = ChainMap(
-        md, 
+        md,
         {'detectors': [det.name for det in detectors],
          'plan_args':{'detectors': list(map(repr, detectors)), 'num': num},
          'plan_name': 'count'})
