@@ -1507,7 +1507,8 @@ def count(detectors, num=1, delay=None, *, md=None):
     md = ChainMap(
         md,
         {'detectors': [det.name for det in detectors],
-         'plan_args':{'detectors': list(map(repr, detectors)), 'num': num},
+         'num_steps': num,
+         'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
          'plan_name': 'count'})
 
     if num is None:
@@ -1592,10 +1593,13 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name],
+         'num_steps': len(steps),
          'plan_args': {'detectors': list(map(repr, detectors)),
                        'motor': repr(motor), 'steps': steps,
                        'per_step': repr(per_step)},
-                       'plan_name': 'list_scan'})
+         'plan_name': 'list_scan',
+         }
+    )
     if per_step is None:
         per_step = one_1d_step
 
@@ -1673,6 +1677,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name],
+         'num_steps': num,
          'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
                        'motor': repr(motor),
                        'start': start, 'stop': stop,
@@ -1763,6 +1768,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name],
+         'num_steps': num,
          'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
                        'start': start, 'stop': stop, 'motor': repr(motor),
                        'per_step': repr(per_step)},
@@ -1862,6 +1868,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name],
+         # 'num_steps': 'adaptive',
          'plan_args':{'detectors': list(map(repr, detectors)),
                       'motor': repr(motor),
                       'start': start,
@@ -2031,6 +2038,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name for motor in cycler.keys],
+         'num_steps': len(cycler),
          'plan_args': {'detectors': list(map(repr, detectors)),
                        'cycler': repr(cycler),
                        'per_step': repr(per_step)},
@@ -2165,7 +2173,8 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     md = ChainMap(
         md,
         {'shape': tuple(shape), 'extents': tuple(extents),
-         'snaking': tuple(snaking), 'num': len(full_cycler),
+         'snaking': tuple(snaking),
+         # 'num_steps': inserted by scan_nd
          'plan_args': {'detectors': list(map(repr, detectors)),
                        'args': mds_args,
                        'per_step': repr(per_step)},
@@ -2274,6 +2283,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
         md,
         {'detectors': [detector.name],
          'motors': [motor.name],
+         # 'num_steps': 'adaptive',
          'plan_args': {'detector': repr(detector),
                        'target_field': target_field,
                        'motor': repr(motor),
@@ -2366,8 +2376,9 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
         md = {}
     md = ChainMap(
         md,
-        {'detectors': [detector.name for detector in detectors],
-         'motors': [motor.name for motor in [x_motor, y_motor]],
+        {# 'detectors': inserted by scan_nd
+         # 'motors': inserted by scan_nd
+         # 'num_steps': inserted by scan_nd
          'plan_args': {'detectors': list(map(repr, detectors)),
                        'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                        'x_start': x_start, 'y_start': y_start,
@@ -2478,8 +2489,9 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         md = {}
     md = ChainMap(
         md,
-        {'detectors': [detector.name for detector in detectors],
-         'motors': [motor.name for motor in [x_motor, y_motor]],
+        {# 'detectors': inserted by scan_nd
+         # 'motors': inserted by scan_nd
+         # 'num_steps': inserted by scan_nd
          'plan_args': {'detectors': list(map(repr, detectors)),
                        'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                        'x_start': x_start, 'y_start': y_start,
