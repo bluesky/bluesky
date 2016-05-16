@@ -1505,7 +1505,7 @@ def count(detectors, num=1, delay=None, *, md=None):
     if md is None:
         md = {}
     md = ChainMap(
-        md, 
+        md,
         {'detectors': [det.name for det in detectors],
          'plan_args':{'detectors': list(map(repr, detectors)), 'num': num},
          'plan_name': 'count'})
@@ -2078,10 +2078,17 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     if md is None:
         md = {}
+
+    # mds can't handle ophyd devices, so all replace them with reprs where
+    # necessary:
+    mds_args = [repr(arg) if hasattr(arg, 'name') else arg
+                for arg in args]
+
     md = ChainMap(
         md,
         {'plan_args': {'detectors': list(map(repr, detectors)),
-                       'num': num, 'args': args, 'per_step': repr(per_step)},
+                       'num': num, 'args': mds_args,
+                       'per_step': repr(per_step)},
          'plan_name': 'inner_product_scan'})
     if len(args) % 3 != 0:
         raise ValueError("wrong number of positional arguments")
@@ -2149,11 +2156,18 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
 
     if md is None:
         md = {}
+
+    # mds can't handle ophyd devices, so all replace them with reprs where
+    # necessary:
+    mds_args = [repr(arg) if hasattr(arg, 'name') else arg
+                for arg in args]
+
     md = ChainMap(
         md,
         {'shape': tuple(shape), 'extents': tuple(extents),
          'snaking': tuple(snaking), 'num': len(full_cycler),
-         'plan_args': {'detectors': list(map(repr, detectors)), 'args': args,
+         'plan_args': {'detectors': list(map(repr, detectors)),
+                       'args': mds_args,
                        'per_step': repr(per_step)},
          'plan_name': 'outer_product_scan'})
 
@@ -2355,7 +2369,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
         {'detectors': [detector.name for detector in detectors],
          'motors': [motor.name for motor in [x_motor, y_motor]],
          'plan_args': {'detectors': list(map(repr, detectors)),
-                       'x_motor': x_motor, 'y_motor': y_motor,
+                       'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                        'x_start': x_start, 'y_start': y_start,
                        'x_range': x_range, 'y_range': y_range,
                        'dr': dr, 'factor': factor, 'per_step': repr(per_step)},
@@ -2467,7 +2481,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         {'detectors': [detector.name for detector in detectors],
          'motors': [motor.name for motor in [x_motor, y_motor]],
          'plan_args': {'detectors': list(map(repr, detectors)),
-                       'x_motor': x_motor, 'y_motor': y_motor,
+                       'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                        'x_start': x_start, 'y_start': y_start,
                        'x_range': x_range, 'y_range': y_range,
                        'dr': dr, 'nth': nth, 'per_step': repr(per_step)},
