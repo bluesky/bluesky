@@ -113,6 +113,7 @@ class GlobalState(HasTraits):
     "A bucket of validated global state used by the simple scan API"
     RE = RunEngineTraitType()
     DETS = ReadableList()
+    BASELINE_DEVICES = ReadableList()
     FLYERS = FlyableList()
     MASTER_DET = Readable()
     MASTER_DET_FIELD = Unicode()
