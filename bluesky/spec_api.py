@@ -14,14 +14,13 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
 from collections import deque
 import matplotlib.pyplot as plt
-from bluesky import plans, Msg
+from bluesky import plans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
 from bluesky.callbacks.scientific import PeakStats
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
-from bluesky.utils import (normalize_subs_input, Subs, DefaultSubs,
-                           first_key_heuristic, apply_sub_factories,
-                           update_sub_lists)
+from bluesky.utils import (first_key_heuristic)
+
 from bluesky.plans import (subs_context, count, scan,
                            relative_scan, relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
