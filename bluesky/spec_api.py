@@ -14,14 +14,13 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
 from collections import deque
 import matplotlib.pyplot as plt
-from bluesky import plans, Msg
+from bluesky import plans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
 from bluesky.callbacks.scientific import PeakStats
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
-from bluesky.utils import (normalize_subs_input, Subs, DefaultSubs,
-                           first_key_heuristic, apply_sub_factories,
-                           update_sub_lists)
+from bluesky.utils import (first_key_heuristic)
+
 from bluesky.plans import (subs_context, count, scan,
                            relative_scan, relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
@@ -29,6 +28,7 @@ from bluesky.plans import (subs_context, count, scan,
                            baseline_mutator)
 import itertools
 from itertools import chain
+from collections import ChainMap
 
 ### Factory functions for generating callbacks
 
@@ -98,6 +98,9 @@ def ct(num=1, delay=None, time=None, *, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'ct'})
     subs = {'all': [LiveTable(gs.TABLE_COLS + [gs.PLOT_Y])]}
     if num is not None and num > 1:
         subs['all'].append(setup_plot([]))
@@ -132,6 +135,9 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'ascan'})
     subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
                     setup_plot([motor]),
                     setup_peakstats([motor])]}
@@ -168,7 +174,9 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
                     setup_plot([motor]),
                     setup_peakstats([motor])]}
-
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'dscan'})
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals,
@@ -196,6 +204,9 @@ def mesh(*args, time=None, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'mesh'})
     if len(args) % 4 != 0:
         raise ValueError("wrong number of positional arguments")
     motors = []
@@ -248,6 +259,9 @@ def a2scan(*args, time=None, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'a2scan'})
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
     motors = []
@@ -267,8 +281,14 @@ def a2scan(*args, time=None, md=None):
         plan_stack.append(plan)
     return plan_stack
 
+
 # This implementation works for *all* dimensions, but we follow SPEC naming.
-a3scan = a2scan
+def a3scan(*args, time=None, md=None):
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'a3scan'})
+    return (yield from a2scan(*args, time=time, md=md))
+a3scan.__doc__ = a2scan.__doc__
 
 
 @planify
@@ -288,6 +308,9 @@ def d2scan(*args, time=None, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'd2scan'})
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
     motors = []
@@ -307,8 +330,14 @@ def d2scan(*args, time=None, md=None):
         plan_stack.append(plan)
     return plan_stack
 
+
 # This implementation works for *all* dimensions, but we follow SPEC naming.
-d3scan = d2scan
+def d3scan(*args, time=None, md=None):
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'd3scan'})
+    return (yield from d2scan(*args, time=time, md=md))
+d3scan.__doc__ = d2scan.__doc__
 
 
 @planify
@@ -334,6 +363,9 @@ def th2th(start, finish, intervals, time=None, *, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'th2th'})
     plan = d2scan(gs.TTH_MOTOR, start, finish,
                   gs.TH_MOTOR, start/2, finish/2,
                   intervals, time=time, md=md)
@@ -358,6 +390,9 @@ def tw(motor, step, time=None, *, md=None):
     md : dict, optional
         metadata
     """
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'tw'})
     plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, md=md)
     plan = baseline_mutator(plan, [motor] + gs.BASELINE_DEVICES)
     plan = configure_count_time(plan, time)
@@ -402,6 +437,9 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
     `bluesky.spec_api.aspiral`
     `bluesky.spec_api.spiral`
     '''
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'afermat'})
     subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
                     ]}
 
@@ -450,6 +488,9 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
     `bluesky.spec_api.aspiral`
     `bluesky.spec_api.spiral`
     '''
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'fermat'})
     plan = afermat(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, factor, time=time, per_step=per_step,
                    md=md)
@@ -491,6 +532,9 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
     `bluesky.spec_api.afermat`
     `bluesky.spec_api.spiral`
     '''
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'aspiral'})
     subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
                     ]}
 
@@ -539,6 +583,9 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
     `bluesky.spec_api.afermat`
     `bluesky.spec_api.aspiral`
     '''
+    if md is None:
+        md = {}
+    md = ChainMap(md, {'plan_name': 'spiral'})
     plan = aspiral(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, nth, time=time, per_step=per_step,
                    md=md)

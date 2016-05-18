@@ -1,56 +1,70 @@
 from traitlets import TraitError
 from bluesky.examples import motor, motor1, motor2, det, det1, det2, FlyMagic
 import pytest
+from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
+                              d3scan, mesh, th2th, afermat, fermat, spiral,
+                              aspiral)
 
-def test_basic_usage_for_smoke():
-    try:
-        import metadatastore
-    except ImportError as ie:
-        pytest.skip('metadatastore is not installed. Cannot run basic usage '
-                    'test. ImportError: {}'.format(ie))
+
+@pytest.mark.parametrize('pln,name,args,kwargs', [
+    (ct, 'ct', (), {}),
+    (ct, 'ct', (), {'num': 3}),
+    (ascan, 'ascan', (motor, 1, 2, 2), {}),
+    (a2scan, 'a2scan', (motor, 1, 2, 2), {}),
+    (a3scan, 'a3scan', (motor, 1, 2, 2), {}),
+    (dscan, 'dscan', (motor, 1, 2, 2), {}),
+    (d2scan, 'd2scan', (motor, 1, 2, 2), {}),
+    (d3scan, 'd3scan', (motor, 1, 2, 2), {}),
+    (mesh, 'mesh', (motor1, 1, 2, 2, motor2, 1, 2, 3), {}),
+    (th2th, 'th2th', (1, 2, 2), {}),
+    (aspiral, 'aspiral', (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
+    (spiral, 'spiral', (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {}),
+    (afermat, 'afermat', (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
+    (fermat, 'fermat', (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {}),
+    # with count time specified as keyword arg
+    (ct, 'ct', (), {'time': 0.1}),
+    (ascan, 'ascan', (motor, 1, 2, 2), {'time': 0.1}),
+    (a2scan, 'a2scan', (motor, 1, 2, 2), {'time': 0.1}),
+    (a3scan, 'a3scan', (motor, 1, 2, 2), {'time': 0.1}),
+    (dscan, 'dscan', (motor, 1, 2, 2), {'time': 0.1}),
+    (d2scan, 'd2scan', (motor, 1, 2, 2), {'time': 0.1}),
+    (d3scan, 'd3scan', (motor, 1, 2, 2), {'time': 0.1}),
+    (mesh, 'mesh', (motor1, 1, 2, 2, motor2, 1, 2, 3), {'time': 0.1}),
+    (th2th, 'th2th', (1, 2, 2), {'time': 0.1}),
+    (aspiral, 'aspiral',
+     (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {'time': 0.1}),
+    (spiral, 'spiral', (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {'time': 0.1}),
+    (afermat, 'afermat',
+     (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {'time': 0.1}),
+    (fermat, 'fermat',
+     (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {'time': 0.1})])
+def test_spec_plans(fresh_RE, pln, name, args, kwargs):
     from bluesky.global_state import gs
-    from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
-                                  d3scan, mesh, th2th, afermat, fermat, spiral,
-                                  aspiral)
+
     gs.DETS = [det]
-    with pytest.raises(TraitError):
-        gs.DETS = [det, det]  # no duplicate data keys
     gs.TH_MOTOR = motor1
     gs.TTH_MOTOR = motor2
-    gs.RE.md['owner'] = 'test'
-    gs.RE.md['group'] = 'test'
-    gs.RE.md['beamline_id'] = 'test'
-    gs.RE.md['config'] = {}
-    # without count time specified
-    RE = gs.RE
-    RE(ct())
-    RE(ct(num=3))  # passing kwargs through to scan
-    RE(ascan(motor, 1, 2, 2))
-    RE(a2scan(motor, 1, 2, 2))
-    RE(a3scan(motor, 1, 2, 2))
-    RE(dscan(motor, 1, 2, 2))
-    RE(d2scan(motor, 1, 2, 2))
-    RE(d3scan(motor, 1, 2, 2))
-    RE(mesh(motor1, 1, 2, 2, motor2, 1, 2, 3))
-    RE(th2th(1, 2, 2))
-    RE(aspiral(motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0))
-    RE(spiral(motor1, motor2, 0.1, 0.1, 0.05, 1.0))
-    RE(afermat(motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0))
-    RE(fermat(motor1, motor2, 0.1, 0.1, 0.05, 1.0))
-    # with count time specified as keyword arg
-    RE(ct())
-    RE(ascan(motor, 1, 2, 2, time=0.1))
-    RE(a2scan(motor, 1, 2, 2, time=0.1))
-    RE(a3scan(motor, 1, 2, 2, time=0.1))
-    RE(dscan(motor, 1, 2, 2, time=0.1))
-    RE(d2scan(motor, 1, 2, 2, time=0.1))
-    RE(d3scan(motor, 1, 2, 2, time=0.1))
-    RE(mesh(motor1, 1, 2, 2, motor2, 1, 2, 3, time=0.1))
-    RE(th2th(1, 2, 2, time=0.1))
-    RE(aspiral(motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0, time=0.1))
-    RE(spiral(motor1, motor2, 0.1, 0.1, 0.05, 1.0, time=0.1))
-    RE(afermat(motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0, time=0.1))
-    RE(fermat(motor1, motor2, 0.1, 0.1, 0.05, 1.0, time=0.1))
+    run_start = None
+
+    def capture_run_start(name, doc):
+        nonlocal run_start
+        if name == 'start':
+            run_start = doc
+
+    fresh_RE(pln(*args, **kwargs), capture_run_start)
+
+    assert run_start['plan_name'] == name
+
+
+def test_flyers(fresh_RE):
+    from bluesky.global_state import gs
+    RE = fresh_RE
     flyer = FlyMagic('wheee', motor, det1, det2)
     gs.FLYERS = [flyer]
     RE(ct())
+
+
+def test_gs_validation():
+    from bluesky.global_state import gs
+    with pytest.raises(TraitError):
+        gs.DETS = [det, det]  # no duplicate data keys
