@@ -100,7 +100,8 @@ def ct(num=1, delay=None, time=None, *, md=None):
     """
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'ct'})
+    md = ChainMap(md, {'plan_name': 'ct',
+                       gs.MD_TIME_KEY: time})
     subs = {'all': [LiveTable(gs.TABLE_COLS + [gs.PLOT_Y])]}
     if num is not None and num > 1:
         subs['all'].append(setup_plot([]))
@@ -137,7 +138,8 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
     """
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'ascan'})
+    md = ChainMap(md, {'plan_name': 'ascan',
+                       gs.MD_TIME_KEY: time})
     subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
                     setup_plot([motor]),
                     setup_peakstats([motor])]}
@@ -176,7 +178,8 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
                     setup_peakstats([motor])]}
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'dscan'})
+    md = ChainMap(md, {'plan_name': 'dscan',
+                       gs.MD_TIME_KEY: time})
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals,
@@ -206,7 +209,8 @@ def mesh(*args, time=None, md=None):
     """
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'mesh'})
+    md = ChainMap(md, {'plan_name': 'mesh',
+                       gs.MD_TIME_KEY: time})
     if len(args) % 4 != 0:
         raise ValueError("wrong number of positional arguments")
     motors = []
@@ -261,7 +265,8 @@ def a2scan(*args, time=None, md=None):
     """
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'a2scan'})
+    md = ChainMap(md, {'plan_name': 'a2scan',
+                       gs.MD_TIME_KEY: time})
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
     motors = []
@@ -310,7 +315,8 @@ def d2scan(*args, time=None, md=None):
     """
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'd2scan'})
+    md = ChainMap(md, {'plan_name': 'd2scan',
+                       gs.MD_TIME_KEY: time})
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
     motors = []
@@ -392,7 +398,8 @@ def tw(motor, step, time=None, *, md=None):
     """
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'tw'})
+    md = ChainMap(md, {'plan_name': 'tw',
+                       gs.MD_TIME_KEY: time})
     plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, md=md)
     plan = baseline_mutator(plan, [motor] + gs.BASELINE_DEVICES)
     plan = configure_count_time(plan, time)
@@ -439,7 +446,8 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
     '''
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'afermat'})
+    md = ChainMap(md, {'plan_name': 'afermat',
+                       gs.MD_TIME_KEY: time})
     subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
                     ]}
 
@@ -490,7 +498,8 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
     '''
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'fermat'})
+    md = ChainMap(md, {'plan_name': 'fermat',
+                       gs.MD_TIME_KEY: time})
     plan = afermat(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, factor, time=time, per_step=per_step,
                    md=md)
@@ -534,7 +543,8 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
     '''
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'aspiral'})
+    md = ChainMap(md, {'plan_name': 'aspiral',
+                       gs.MD_TIME_KEY: time})
     subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
                     ]}
 
@@ -585,7 +595,8 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
     '''
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'spiral'})
+    md = ChainMap(md, {'plan_name': 'spiral',
+                       gs.MD_TIME_KEY: time})
     plan = aspiral(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, nth, time=time, per_step=per_step,
                    md=md)
