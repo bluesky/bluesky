@@ -45,6 +45,7 @@ def test_spec_plans(fresh_RE, pln, name, args, kwargs):
     gs.TH_MOTOR = motor1
     gs.TTH_MOTOR = motor2
     run_start = None
+    gs.MD_TIME_KEY = 'exposure_time'
 
     def capture_run_start(name, doc):
         nonlocal run_start
@@ -54,6 +55,9 @@ def test_spec_plans(fresh_RE, pln, name, args, kwargs):
     fresh_RE(pln(*args, **kwargs), capture_run_start)
 
     assert run_start['plan_name'] == name
+    assert gs.MD_TIME_KEY in run_start
+    if 'time' in kwargs:
+        assert run_start[gs.MD_TIME_KEY] == kwargs['time']
 
 
 def test_flyers(fresh_RE):
