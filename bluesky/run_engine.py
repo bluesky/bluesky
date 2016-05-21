@@ -537,6 +537,9 @@ class RunEngine:
         futs = []
         for sup in self.suspenders:
             f_lst, justification = sup.get_futures()
+            print("At least one suspender is tripped. Execution will begin "
+                  "when all suspenders are ready.")
+            print("Suspending....To get prompt hit Ctrl-C twice to pause.")
             if f_lst:
                 futs.extend(f_lst)
                 print(justification)
@@ -668,7 +671,8 @@ class RunEngine:
             suspender.remove()
         self._suspenders.discard(suspender)
 
-    def request_suspend(self, fut, *, pre_plan=None, post_plan=None):
+    def request_suspend(self, fut, *, pre_plan=None, post_plan=None,
+                        justification=None):
         """
         Request that the run suspend itself until the future is finished.
 
@@ -681,15 +685,18 @@ class RunEngine:
         fut : asyncio.Future
         pre_plan : iterable, optional
             Plan to execute just before suspending
-
         post_plan : iterable, optional
             Plan to execute just before resuming
+        justification : str, optional
+            explanation of why the suspension has been requested
         """
         if not self.resumable:
             print("No checkpoint; cannot suspend. Aborting...")
             self._exception = FailedPause()
         else:
             print("Suspending....To get prompt hit Ctrl-C twice to pause.")
+            if justification is not None:
+                print("Justification for this suspension:\n%s" % justification)
             self._record_interruption('suspend')
             # Stash a copy in a local var to re-instating the monitors.
             for obj, (cb, kwargs) in list(self._monitor_params.items()):

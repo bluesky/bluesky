@@ -124,7 +124,8 @@ class SuspenderBase(metaclass=ABCMeta):
                         self.RE.request_suspend,
                         self._ev.wait(),
                         pre_plan=self._pre_plan,
-                        post_plan=self._post_plan)
+                        post_plan=self._post_plan,
+                        justification=self.get_justification())
                     if self.RE.state.is_running:
                         loop.call_soon_threadsafe(cb)
             elif self._should_resume(value):
