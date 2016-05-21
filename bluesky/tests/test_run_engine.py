@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 import time as ttime
 import pytest
 from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
@@ -334,3 +335,36 @@ def test_pause_resume_devices(fresh_RE):
     fresh_RE.resume()
     assert 'dummy' in paused
     assert 'dummy' in resumed
+
+
+def test_record_interruptions(fresh_RE):
+    docs = defaultdict(lambda: [])
+
+    def collect(name, doc):
+        print("HI", name)
+        docs[name].append(doc)
+        print(docs)
+
+    fresh_RE.subscribe('all', collect)
+    fresh_RE.ignore_callback_exceptions = False
+    fresh_RE.msg_hook = print
+
+    # The 'pause' inside the run should generate an event iff
+    # record_interruptions is True.
+    plan = [Msg('pause'), Msg('open_run'), Msg('pause'), Msg('close_run')]
+
+    assert not fresh_RE.record_interruptions
+    fresh_RE(plan)
+    fresh_RE.resume()
+    fresh_RE.resume()
+    assert len(docs['descriptor']) == 0
+    assert len(docs['event']) == 0
+
+    fresh_RE.record_interruptions = True
+    fresh_RE(plan)
+    fresh_RE.resume()
+    fresh_RE.resume()
+    assert len(docs['descriptor']) == 1
+    assert len(docs['event']) == 2
+    docs['event'][0]['data']['interruption'] == 'pause'
+    docs['event'][1]['data']['interruption'] == 'resume'
