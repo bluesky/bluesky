@@ -163,7 +163,7 @@ class SuspenderBase(metaclass=ABCMeta):
         futs : list
             List of futures to wait on
 
-        msg : str
+        justification : str
             String explaining why the suspender is tripped
         '''
         if not self.tripped:

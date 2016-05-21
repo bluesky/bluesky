@@ -536,10 +536,10 @@ class RunEngine:
 
         futs = []
         for sup in self.suspenders:
-            f_lst, msg = sup.get_futures()
+            f_lst, justification = sup.get_futures()
             if f_lst:
                 futs.extend(f_lst)
-                print(msg)
+                print(justification)
 
         self._clear_call_cache()
         self._clear_run_cache()  # paranoia, in case of previous bad exit
