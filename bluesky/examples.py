@@ -73,9 +73,6 @@ class Base:
                     'precision': self.precision}
                 for k in self._fields}
 
-    def __repr__(self):
-        return '{}: {}'.format(self._klass, self.name)
-
     def read_configuration(self):
         return {'some_configuration':
                    {'value': 'there is a sandwich in the vacuum chamber',
