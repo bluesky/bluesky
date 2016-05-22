@@ -241,6 +241,7 @@ These "preprocessors" take in a plan and modify its contents on the fly.
    :nosignatures:
    :toctree:
 
+    baseline
     relative_set
     reset_positions
     lazily_stage

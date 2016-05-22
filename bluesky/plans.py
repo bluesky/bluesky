@@ -1294,7 +1294,7 @@ def configure_count_time(plan, time):
         return (yield from finalize(plan_mutator(plan, insert_set), reset()))
 
 
-def baseline_mutator(plan, devices, name='baseline'):
+def baseline(plan, devices, name='baseline'):
     """
     Preprocessor that records a baseline of all `devices` after `open_run`
 

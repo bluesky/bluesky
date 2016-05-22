@@ -25,7 +25,7 @@ from bluesky.plans import (subs_context, count, scan,
                            relative_scan, relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
                            tweak, configure_count_time, planify,
-                           baseline_mutator)
+                           baseline)
 import itertools
 from itertools import chain
 from collections import ChainMap
@@ -147,7 +147,7 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = scan(gs.DETS, motor, start, finish, 1 + intervals, md=md)
-        plan = baseline_mutator(plan, [motor] + gs.BASELINE_DEVICES)
+        plan = baseline(plan, [motor] + gs.BASELINE_DEVICES)
         plan = configure_count_time(plan, time)
         plan_stack.append(plan)
         return plan_stack
@@ -184,7 +184,7 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     with subs_context(plan_stack, subs):
         plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals,
                              md=md)
-        plan = baseline_mutator(plan, [motor] + gs.BASELINE_DEVICES)
+        plan = baseline(plan, [motor] + gs.BASELINE_DEVICES)
         plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
@@ -240,7 +240,7 @@ def mesh(*args, time=None, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = outer_product_scan(gs.DETS, *new_args, md=md)
-        plan = baseline_mutator(plan, motors + gs.BASELINE_DEVICES)
+        plan = baseline(plan, motors + gs.BASELINE_DEVICES)
         plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
@@ -281,7 +281,7 @@ def a2scan(*args, time=None, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = inner_product_scan(gs.DETS, num, *args[:-1], md=md)
-        plan = baseline_mutator(plan, motors + gs.BASELINE_DEVICES)
+        plan = baseline(plan, motors + gs.BASELINE_DEVICES)
         plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
@@ -331,7 +331,7 @@ def d2scan(*args, time=None, md=None):
     plan_stack = deque()
     with subs_context(plan_stack, subs):
         plan = relative_inner_product_scan(gs.DETS, num, *args[:-1], md=md)
-        plan = baseline_mutator(plan, motors + gs.BASELINE_DEVICES)
+        plan = baseline(plan, motors + gs.BASELINE_DEVICES)
         plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
@@ -401,7 +401,7 @@ def tw(motor, step, time=None, *, md=None):
     md = ChainMap(md, {'plan_name': 'tw',
                        gs.MD_TIME_KEY: time})
     plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, md=md)
-    plan = baseline_mutator(plan, [motor] + gs.BASELINE_DEVICES)
+    plan = baseline(plan, [motor] + gs.BASELINE_DEVICES)
     plan = configure_count_time(plan, time)
     return [plan]
 
@@ -456,7 +456,7 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
         plan = plans.spiral_fermat(gs.DETS, x_motor, y_motor, x_start, y_start,
                                    x_range, y_range, dr, factor,
                                    per_step=per_step, md=md)
-        plan = baseline_mutator(plan, [x_motor, y_motor] + gs.BASELINE_DEVICES)
+        plan = baseline(plan, [x_motor, y_motor] + gs.BASELINE_DEVICES)
         plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
@@ -553,7 +553,7 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
         plan = plans.spiral(gs.DETS, x_motor, y_motor, x_start, y_start,
                             x_range, y_range, dr, nth, per_step=per_step,
                             md=md)
-        plan = baseline_mutator(plan, [x_motor, y_motor] + gs.BASELINE_DEVICES)
+        plan = baseline(plan, [x_motor, y_motor] + gs.BASELINE_DEVICES)
         plan = configure_count_time(plan, time)
         plan_stack.append(plan)
     return plan_stack
