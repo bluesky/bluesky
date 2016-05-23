@@ -2373,7 +2373,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
 
 def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
-                  y_range, dr, factor, *, per_step=None, md=None):
+                  y_range, dr, factor, *, tilt=0.0, per_step=None, md=None):
     '''Absolute fermat spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -2396,6 +2396,8 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
         delta radius
     factor : float
         radius gets divided by this
+    tilt : float, optional
+        Tilt angle in degrees, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -2417,7 +2419,8 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
                        'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                        'x_start': x_start, 'y_start': y_start,
                        'x_range': x_range, 'y_range': y_range,
-                       'dr': dr, 'factor': factor, 'per_step': repr(per_step)},
+                       'dr': dr, 'factor': factor, 'tilt': tilt,
+                       'per_step': repr(per_step)},
          'plan_name': 'spiral_fermat',
          'plan_pattern': 'spiral_fermat',
          'plan_pattern_module': plan_patterns.__name__,
@@ -2426,14 +2429,14 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     md['plan_pattern_args'] = dict(x_motor=x_motor, y_motor=y_motor,
                                    x_start=x_start, y_start=y_start,
                                    x_range=x_range, y_range=y_range, dr=dr,
-                                   factor=factor)
+                                   factor=factor, tilt=tilt)
 
     cyc = plan_patterns.spiral_fermat(**md['plan_pattern_args'])
     yield from scan_nd(detectors, cyc, per_step=per_step, md=md)
 
 
 def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
-                           factor, *, per_step=None, md=None):
+                           factor, *, tilt=0.0, per_step=None, md=None):
     '''Relative fermat spiral scan
 
     Parameters
@@ -2452,6 +2455,8 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
         delta radius
     factor : float
         radius gets divided by this
+    tilt : float, optional
+        Tilt angle in degrees, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -2470,11 +2475,11 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     md = ChainMap(md, {'plan_name': 'relative_spiral_fermat'})
     yield from spiral_fermat(detectors, x_motor, y_motor, x_motor.position,
                              y_motor.position, x_range, y_range, dr, factor,
-                             per_step=per_step, md=md)
+                             tilt=tilt, per_step=per_step, md=md)
 
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
-           nth, *, per_step=None, md=None):
+           nth, *, tilt=0.0, per_step=None, md=None):
     '''Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -2495,6 +2500,8 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         Delta radius
     nth : float
         Number of theta steps
+    tilt : float, optional
+        Tilt angle in degrees, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -2516,7 +2523,8 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
                        'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                        'x_start': x_start, 'y_start': y_start,
                        'x_range': x_range, 'y_range': y_range,
-                       'dr': dr, 'nth': nth, 'per_step': repr(per_step)},
+                       'dr': dr, 'nth': nth, 'tilt': tilt,
+                       'per_step': repr(per_step)},
          'plan_name': 'spiral',
          'plan_pattern': 'spiral',
          'plan_pattern_module': plan_patterns.__name__,
@@ -2525,13 +2533,13 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     md['plan_pattern_args'] = dict(x_motor=x_motor, y_motor=y_motor,
                                    x_start=x_start, y_start=y_start,
                                    x_range=x_range, y_range=y_range, dr=dr,
-                                   nth=nth)
+                                   nth=nth, tilt=tilt)
     cyc = plan_patterns.spiral(**md['plan_pattern_args'])
     yield from scan_nd(detectors, cyc, per_step=per_step, md=md)
 
 
 def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
-                    *, per_step=None, md=None):
+                    *, tilt=0.0, per_step=None, md=None):
     '''Relative spiral scan
 
     Parameters
@@ -2552,6 +2560,8 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
         Delta radius
     nth : float
         Number of theta steps
+    tilt : float, optional
+        Tilt angle in degrees, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -2569,7 +2579,7 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     md = ChainMap(md, {'plan_name': 'relative_spiral_fermat'})
     yield from spiral(detectors, x_motor, y_motor, x_motor.position,
                       y_motor.position, x_range, y_range, dr, nth,
-                      per_step=per_step, md=md)
+                      tilt=tilt, per_step=per_step, md=md)
 
 
 # The code below adds no new logic, but it wraps the generators above in
@@ -2840,44 +2850,45 @@ class Tweak(Plan):
 
 class SpiralScan(Plan):
     _fields = ['detectors', 'x_motor', 'y_motor', 'x_start', 'y_start',
-               'x_range', 'y_range', 'dr', 'nth']
+               'x_range', 'y_range', 'dr', 'nth', 'tilt']
     __doc__ = spiral.__doc__
 
     def _gen(self):
         return spiral(self.detectors, self.x_motor, self.y_motor, self.x_start,
                       self.y_start, self.x_range, self.y_range, self.dr,
-                      self.nth, md=self.md)
+                      self.nth, tilt=self.tilt, md=self.md)
 
 
 class SpiralFermatScan(Plan):
     _fields = ['detectors', 'x_motor', 'y_motor', 'x_start', 'y_start',
-               'x_range', 'y_range', 'dr', 'factor']
+               'x_range', 'y_range', 'dr', 'factor', 'tilt']
     __doc__ = spiral_fermat.__doc__
 
     def _gen(self):
         return spiral_fermat(self.detectors, self.x_motor, self.y_motor,
                              self.x_start, self.y_start, self.x_range,
                              self.y_range, self.dr, self.factor,
-                             md=self.md)
+                             tilt=self.tilt, md=self.md)
 
 
 class RelativeSpiralScan(Plan):
     _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
-               'nth']
+               'nth', 'tilt']
     __doc__ = relative_spiral.__doc__
 
     def _gen(self):
         return relative_spiral(self.detectors, self.x_motor, self.y_motor,
                                self.x_range, self.y_range, self.dr, self.nth,
-                               md=self.md)
+                               tilt=self.tilt, md=self.md)
 
 
 class RelativeSpiralFermatScan(Plan):
     _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
-               'factor']
+               'factor', 'tilt']
     __doc__ = relative_spiral_fermat.__doc__
 
     def _gen(self):
         return relative_spiral_fermat(self.detectors, self.x_motor,
                                       self.y_motor, self.x_range, self.y_range,
-                                      self.dr, self.factor, md=self.md)
+                                      self.dr, self.factor, tilt=self.tilt,
+                                      md=self.md)

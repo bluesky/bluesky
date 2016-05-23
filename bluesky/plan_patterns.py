@@ -8,7 +8,8 @@ from boltons.iterutils import chunked
 from .utils import snake_cyclers
 
 
-def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth):
+def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
+           tilt=0.0):
     '''Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -29,6 +30,8 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth):
         Delta radius
     nth : float
         Number of theta steps
+    tilt : float, optional
+        Tilt angle in degrees, default 0.0
 
     Returns
     -------
@@ -39,9 +42,10 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth):
 
     r_max = np.sqrt(half_x ** 2 + half_y ** 2)
     num_ring = 1 + int(r_max / dr)
+    tilt_tan = np.tan(np.radians(tilt + 90.0))
 
-    x_points = []
-    y_points = []
+    x_points, y_points = [], []
+
     for i_ring in range(1, num_ring + 2):
         radius = i_ring * dr
         angle_step = 2. * np.pi / (i_ring * nth)
@@ -50,7 +54,8 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth):
             angle = i_angle * angle_step
             x = radius * np.cos(angle)
             y = radius * np.sin(angle)
-            if abs(x) <= half_x and abs(y) <= half_y:
+            if (abs(x - y / tilt_tan) <= half_x and
+                    abs(y - x / tilt_tan) <= half_y):
                 x_points.append(x_start + x)
                 y_points.append(y_start + y)
 
@@ -60,7 +65,7 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth):
 
 
 def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
-                  factor):
+                  factor, *, tilt=0.0):
     '''Absolute fermat spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -81,10 +86,8 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         delta radius
     factor : float
         radius gets divided by this
-    per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plans.one_nd_step (the default) for
-        details.
+    tilt : float, optional
+        Tilt angle in degrees, default 0.0
 
     Returns
     -------
@@ -94,6 +97,7 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 
     half_x = x_range / 2
     half_y = y_range / 2
+    tilt_tan = np.tan(np.radians(tilt + 90.0))
 
     x_points, y_points = [], []
 
@@ -105,7 +109,8 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         x = radius * np.cos(angle)
         y = radius * np.sin(angle)
 
-        if abs(x) <= half_x and abs(y) <= half_y:
+        if (abs(x - y / tilt_tan) <= half_x and
+                abs(y - x / tilt_tan) <= half_y):
             x_points.append(x_start + x)
             y_points.append(y_start + y)
 
