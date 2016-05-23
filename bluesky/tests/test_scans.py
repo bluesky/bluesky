@@ -335,10 +335,10 @@ def _get_spiral_data(start_x, start_y):
 def test_absolute_spiral():
     motor1.set(1.0)
     motor2.set(1.0)
-    scan = SpiralScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0)
+    scan = SpiralScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0, 0.0)
     approx_multi_traj_checker(scan, _get_spiral_data(0.0, 0.0), decimal=2)
 
-    scan = SpiralScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0)
+    scan = SpiralScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0, 0.0)
     approx_multi_traj_checker(scan, _get_spiral_data(0.5, 0.5), decimal=2)
 
 
@@ -348,7 +348,7 @@ def test_relative_spiral():
 
     motor1.set(start_x)
     motor2.set(start_y)
-    scan = RelativeSpiralScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0)
+    scan = RelativeSpiralScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0, 0.0)
 
     approx_multi_traj_checker(scan, _get_spiral_data(start_x, start_y),
                               decimal=2)
@@ -397,11 +397,11 @@ def test_absolute_fermat_spiral():
     motor1.set(1.0)
     motor2.set(1.0)
     scan = SpiralFermatScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1,
-                            1.0)
+                            1.0, 0.0)
     approx_multi_traj_checker(scan, _get_fermat_data(0.0, 0.0), decimal=2)
 
     scan = SpiralFermatScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1,
-                            1.0)
+                            1.0, 0.0)
     approx_multi_traj_checker(scan, _get_fermat_data(0.5, 0.5), decimal=2)
 
 
@@ -411,7 +411,8 @@ def test_relative_fermat_spiral():
 
     motor1.set(start_x)
     motor2.set(start_y)
-    scan = RelativeSpiralFermatScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0)
+    scan = RelativeSpiralFermatScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0,
+                                    0.0)
 
     approx_multi_traj_checker(scan, _get_fermat_data(start_x, start_y),
                               decimal=2)
