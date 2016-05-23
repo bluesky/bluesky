@@ -1634,14 +1634,12 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
                        'motor': repr(motor), 'steps': steps,
                        'per_step': repr(per_step)},
          'plan_name': 'list_scan',
-
-         # TODO what to do in this case?
-         'plan_pattern': 'list',
-         'plan_pattern_module': '__builtin__',
+         'plan_pattern': 'array',
+         'plan_pattern_module': 'numpy',
          }
     )
 
-    md['plan_pattern_args'] = [steps]
+    md['plan_pattern_args'] = dict(object=steps)
     if per_step is None:
         per_step = one_1d_step
 
