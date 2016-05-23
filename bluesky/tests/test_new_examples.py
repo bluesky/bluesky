@@ -13,6 +13,7 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            stage_context, planify, finalize, fly_during,
                            lazily_stage, relative_set, reset_positions,
                            configure_count_time, trigger_and_read,
+                           subs_wrapper,
                            repeater, caching_repeater, count, Count, Scan)
 
 
@@ -177,6 +178,22 @@ def test_lazily_stage():
     expected = [Msg('stage', det1), Msg('read', det1), Msg('read', det1),
                 Msg('stage', det2), Msg('read', det2), Msg('unstage', det2),
                 Msg('unstage', det1)]
+
+    assert processed_plan == expected
+
+
+def test_subs_wrapper():
+
+    def cb(name, doc):
+        pass
+
+    def plan():
+        yield from [Msg('null')]
+
+    processed_plan = list(subs_wrapper(plan(), {'all': cb}))
+    
+    expected = [Msg('subscribe', None, 'all', cb), Msg('null'),
+                Msg('unsubscribe', token=None)]
 
     assert processed_plan == expected
 

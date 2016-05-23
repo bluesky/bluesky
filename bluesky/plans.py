@@ -779,6 +779,67 @@ def unsubscribe(token):
     return (yield from single_gen(Msg('unsubscribe', token=token)))
 
 
+def subs_wrapper(plan, subs):
+    """
+    Subscribe callbacks to the document stream; finally, unsubscribe.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    subs : callable, list of callables, or dict of lists of callables
+         Documents of each type are routed to a list of functions.
+         Input is normalized to a dict of lists of functions, like so:
+
+         None -> {'all': [], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         func -> {'all': [func], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         [f1, f2] -> {'all': [f1, f2], 'start': [], 'stop': [], 'event': [],
+                      'descriptor': []}
+
+         {'event': [func]} ->  {'all': [], 'start': [], 'stop': [],
+                                'event': [func], 'descriptor': []}
+
+         Signature of functions must confirm to `f(name, doc)` where
+         name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
+         doc is a dictionary.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'subscribe' and 'unsubscribe' messages
+        inserted and appended
+    """
+    subs = normalize_subs_input(subs)
+    tokens = set()
+
+    def _subscribe():
+        for name, funcs in subs.items():
+            for func in funcs:
+                token = yield Msg('subscribe', None, name, func)
+                tokens.add(token)
+
+    def _unsubscribe():
+        for token in tokens:
+            yield Msg('unsubscribe', None, token=token)
+
+    first_msg = True
+
+    def insert_subscribe(msg):
+        nonlocal first_msg
+        if first_msg:
+            first_msg = False
+            return pchain(_subscribe(), single_gen(msg)), None
+        else:
+            return None, None
+
+    return (yield from finalize(plan_mutator(plan, insert_subscribe),
+                                _unsubscribe()))
+
+
 def open_run(md=None):
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
@@ -872,7 +933,7 @@ def finalize(plan, final_plan):
 @contextmanager
 def subs_context(plan_stack, subs):
     """
-    Subscribe to callbacks to the document stream; then unsubscribe on exit.
+    Subscribe callbacks to the document stream; then unsubscribe on exit.
 
     Parameters
     ----------
@@ -901,24 +962,24 @@ def subs_context(plan_stack, subs):
     subs = normalize_subs_input(subs)
     tokens = set()
 
-    def subscribe():
+    def _subscribe():
         for name, funcs in subs.items():
             for func in funcs:
                 token = yield Msg('subscribe', None, name, func)
                 tokens.add(token)
 
-    def unsubscribe():
+    def _unsubscribe():
         for token in tokens:
             yield Msg('unsubscribe', None, token=token)
 
-    plan_stack.append(subscribe())
+    plan_stack.append(_subscribe())
     try:
         yield plan_stack
     finally:
         # The RunEngine might never process these if the execution fails,
         # but it keeps its own cache of tokens and will try to remove them
         # itself if this plan fails to do so.
-        plan_stack.append(unsubscribe())
+        plan_stack.append(_unsubscribe())
 
 
 @contextmanager
