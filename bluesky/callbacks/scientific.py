@@ -78,6 +78,9 @@ class PeakStats(CollectThenCompute):
                 y.append(_y)
         x = np.array(x)
         y = np.array(y)
+        if not len(x):
+            # nothing to do
+            return
         self.x_data = x
         self.y_data = y
         if self._edge_count is not None:
