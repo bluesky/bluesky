@@ -250,7 +250,7 @@ class SuspendBoolLow(SuspenderBase):
         if not self.tripped:
             return ''
 
-        just = 'Signal {} is low'.format(self._sig.name),
+        just = 'Signal {} is low'.format(self._sig.name)
         return ': '.join(s for s in (just, self._tripped_message)
                          if s)
 
