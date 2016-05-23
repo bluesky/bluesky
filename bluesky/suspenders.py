@@ -124,7 +124,8 @@ class SuspenderBase(metaclass=ABCMeta):
                         self.RE.request_suspend,
                         self._ev.wait(),
                         pre_plan=self._pre_plan,
-                        post_plan=self._post_plan)
+                        post_plan=self._post_plan,
+                        justification=self._get_justification())
                     if self.RE.state.is_running:
                         loop.call_soon_threadsafe(cb)
             elif self._should_resume(value):
@@ -163,18 +164,18 @@ class SuspenderBase(metaclass=ABCMeta):
         futs : list
             List of futures to wait on
 
-        msg : str
+        justification : str
             String explaining why the suspender is tripped
         '''
         if not self.tripped:
             return [], ''
-        return [self.__make_event().wait()], self.get_justification()
+        return [self.__make_event().wait()], self._get_justification()
 
     @property
     def tripped(self):
         return self._tripped
 
-    def get_justification(self):
+    def _get_justification(self):
         if not self.tripped:
             return ''
 
@@ -210,7 +211,7 @@ class SuspendBoolHigh(SuspenderBase):
     def _should_resume(self, value):
         return not bool(value)
 
-    def get_justification(self):
+    def _get_justification(self):
         if not self.tripped:
             return ''
 
@@ -245,11 +246,11 @@ class SuspendBoolLow(SuspenderBase):
     def _should_resume(self, value):
         return bool(value)
 
-    def get_justification(self):
+    def _get_justification(self):
         if not self.tripped:
             return ''
 
-        just = 'Signal {} is low'.format(self._sig.name),
+        just = 'Signal {} is low'.format(self._sig.name)
         return ': '.join(s for s in (just, self._tripped_message)
                          if s)
 
@@ -326,7 +327,7 @@ class SuspendFloor(_Threshold):
     def _op(self):
         return operator.lt
 
-    def get_justification(self):
+    def _get_justification(self):
         if not self.tripped:
             return ''
 
@@ -380,7 +381,7 @@ class SuspendCeil(_Threshold):
     def _op(self):
         return operator.gt
 
-    def get_justification(self):
+    def _get_justification(self):
         if not self.tripped:
             return ''
 
@@ -439,7 +440,7 @@ class SuspendInBand(_SuspendBandBase):
     def _should_suspend(self, value):
         return not (self._bot < value < self._top)
 
-    def get_justification(self):
+    def _get_justification(self):
         if not self.tripped:
             return ''
 
@@ -484,7 +485,7 @@ class SuspendOutBand(_SuspendBandBase):
     def _should_suspend(self, value):
         return (self._bot < value < self._top)
 
-    def get_justification(self):
+    def _get_justification(self):
         if not self.tripped:
             return ''
 
