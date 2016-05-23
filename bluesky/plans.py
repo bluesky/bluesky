@@ -2,19 +2,16 @@ import uuid
 import sys
 from functools import wraps
 import itertools
-import functools
-import operator
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable, defaultdict, deque, ChainMap
 
 import numpy as np
-from cycler import cycler
 from boltons.iterutils import chunked
 
-from . import Msg
+from . import (Msg, plan_patterns)
 
 from .plan_tools import ensure_generator
-from .utils import (Struct, snake_cyclers, Subs, normalize_subs_input,
+from .utils import (Struct, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists)
 
 
@@ -1546,7 +1543,8 @@ def count(detectors, num=1, delay=None, *, md=None):
     md = ChainMap(
         md,
         {'detectors': [det.name for det in detectors],
-         'plan_args':{'detectors': list(map(repr, detectors)), 'num': num},
+         'num_steps': num,
+         'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
          'plan_name': 'count'})
 
     if num is None:
@@ -1631,10 +1629,17 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name],
+         'num_steps': len(steps),
          'plan_args': {'detectors': list(map(repr, detectors)),
                        'motor': repr(motor), 'steps': steps,
                        'per_step': repr(per_step)},
-                       'plan_name': 'list_scan'})
+         'plan_name': 'list_scan',
+         'plan_pattern': 'array',
+         'plan_pattern_module': 'numpy',
+         }
+    )
+
+    md['plan_pattern_args'] = dict(object=steps)
     if per_step is None:
         per_step = one_1d_step
 
@@ -1712,16 +1717,21 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name],
+         'num_steps': num,
          'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
                        'motor': repr(motor),
                        'start': start, 'stop': stop,
                        'per_step': repr(per_step)},
-         'plan_name': 'scan'})
+         'plan_name': 'scan',
+         'plan_pattern': 'linspace',
+         'plan_pattern_module': 'numpy',
+         })
 
     if per_step is None:
         per_step = one_1d_step
 
-    steps = np.linspace(start, stop, num)
+    md['plan_pattern_args'] = dict(start=start, stop=stop, num=num)
+    steps = np.linspace(**md['plan_pattern_args'])
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
@@ -1802,15 +1812,20 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name],
+         'num_steps': num,
          'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
                        'start': start, 'stop': stop, 'motor': repr(motor),
                        'per_step': repr(per_step)},
-         'plan_name': 'log_scan'})
+         'plan_name': 'log_scan',
+         'plan_pattern': 'logspace',
+         'plan_pattern_module': 'numpy',
+         })
 
     if per_step is None:
         per_step = one_1d_step
 
-    steps = np.logspace(start, stop, num)
+    md['plan_pattern_args'] = dict(start=start, stop=stop, num=num)
+    steps = np.logspace(**md['plan_pattern_args'])
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
@@ -1901,6 +1916,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name],
+         # 'num_steps': 'adaptive',
          'plan_args':{'detectors': list(map(repr, detectors)),
                       'motor': repr(motor),
                       'start': start,
@@ -2070,6 +2086,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         md,
         {'detectors': [det.name for det in detectors],
          'motors': [motor.name for motor in cycler.keys],
+         'num_steps': len(cycler),
          'plan_args': {'detectors': list(map(repr, detectors)),
                        'cycler': repr(cycler),
                        'per_step': repr(per_step)},
@@ -2118,26 +2135,23 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     if md is None:
         md = {}
 
-    # mds can't handle ophyd devices, so all replace them with reprs where
-    # necessary:
-    mds_args = [repr(arg) if hasattr(arg, 'name') else arg
-                for arg in args]
+    md_args = list(itertools.chain((repr(motor), start, stop)
+                                   for motor, start, stop in chunked(args, 3)))
 
     md = ChainMap(
         md,
         {'plan_args': {'detectors': list(map(repr, detectors)),
-                       'num': num, 'args': mds_args,
+                       'num': num, 'args': md_args,
                        'per_step': repr(per_step)},
-         'plan_name': 'inner_product_scan'})
-    if len(args) % 3 != 0:
-        raise ValueError("wrong number of positional arguments")
-    cyclers = []
-    for motor, start, stop, in chunked(args, 3):
-        steps = np.linspace(start, stop, num=num, endpoint=True)
-        c = cycler(motor, steps)
-        cyclers.append(c)
-    full_cycler = functools.reduce(operator.add, cyclers)
+         'plan_name': 'inner_product_scan',
+         'plan_pattern': 'inner_product',
+         'plan_pattern_module': plan_patterns.__name__,
+         }
+    )
 
+
+    md['plan_pattern_args'] = dict(num=num, args=list(args))
+    full_cycler = plan_patterns.inner_product(**md['plan_pattern_args'])
     plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
     return [plan]
 
@@ -2174,39 +2188,32 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     `bluesky.plans.inner_product_scan`
     `bluesky.plans.scan_nd`
     """
-    args = list(args)
-    # The first (slowest) axis is never "snaked." Insert False to
-    # make it easy to iterate over the chunks or args..
-    args.insert(4, False)
-    if len(args) % 5 != 0:
-        raise ValueError("wrong number of positional arguments")
-    shape = []
-    extents = []
-    snaking = []
-    cyclers = []
-    for motor, start, stop, num, snake in chunked(args, 5):
-        shape.append(num)
-        extents.append([start, stop])
-        snaking.append(snake)
-        steps = np.linspace(start, stop, num=num, endpoint=True)
-        c = cycler(motor, steps)
-        cyclers.append(c)
-    full_cycler = snake_cyclers(cyclers, snaking)
-
     if md is None:
         md = {}
 
-    # mds can't handle ophyd devices, so all replace them with reprs where
-    # necessary:
-    mds_args = [repr(arg) if hasattr(arg, 'name') else arg
-                for arg in args]
+    md['plan_pattern_args'] = dict(args=list(args))
+    full_cycler = plan_patterns.outer_product(**md['plan_pattern_args'])
+
+    chunk_args = list(plan_patterns.chunk_outer_product_args(args))
+
+    md_args = []
+    for i, (motor, start, stop, num, snake) in enumerate(chunk_args):
+        md_args.extend([repr(motor), start, stop, num])
+        if i > 0:
+            # snake argument only shows up after the first motor
+            md_args.append(snake)
 
     md = ChainMap(
         md,
-        {'shape': tuple(shape), 'extents': tuple(extents),
-         'snaking': tuple(snaking), 'num': len(full_cycler),
+        {'shape': tuple(num for motor, start, stop, num, snake
+                        in chunk_args),
+         'extents': tuple([start, stop] for motor, start, stop, num, snake
+                          in chunk_args),
+         'snaking': tuple(snake for motor, start, stop, num, snake
+                          in chunk_args),
+         # 'num_steps': inserted by scan_nd
          'plan_args': {'detectors': list(map(repr, detectors)),
-                       'args': mds_args,
+                       'args': md_args,
                        'per_step': repr(per_step)},
          'plan_name': 'outer_product_scan'})
 
@@ -2313,6 +2320,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
         md,
         {'detectors': [detector.name],
          'motors': [motor.name],
+         # 'num_steps': 'adaptive',
          'plan_args': {'detector': repr(detector),
                        'target_field': target_field,
                        'motor': repr(motor),
@@ -2405,35 +2413,22 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
         md = {}
     md = ChainMap(
         md,
-        {'detectors': [detector.name for detector in detectors],
-         'motors': [motor.name for motor in [x_motor, y_motor]],
-         'plan_args': {'detectors': list(map(repr, detectors)),
+        {'plan_args': {'detectors': list(map(repr, detectors)),
                        'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                        'x_start': x_start, 'y_start': y_start,
                        'x_range': x_range, 'y_range': y_range,
                        'dr': dr, 'factor': factor, 'per_step': repr(per_step)},
-         'plan_name': 'spiral_fermat'})
-    phi = 137.508 * np.pi / 180.
+         'plan_name': 'spiral_fermat',
+         'plan_pattern': 'spiral_fermat',
+         'plan_pattern_module': plan_patterns.__name__,
+         })
 
-    half_x = x_range / 2
-    half_y = y_range / 2
+    md['plan_pattern_args'] = dict(x_motor=x_motor, y_motor=y_motor,
+                                   x_start=x_start, y_start=y_start,
+                                   x_range=x_range, y_range=y_range, dr=dr,
+                                   factor=factor)
 
-    x_points, y_points = [], []
-
-    diag = np.sqrt(half_x ** 2 + half_y ** 2)
-    num_rings = int((1.5 * diag / (dr / factor)) ** 2)
-    for i_ring in range(1, num_rings):
-        radius = np.sqrt(i_ring) * dr / factor
-        angle = phi * i_ring
-        x = radius * np.cos(angle)
-        y = radius * np.sin(angle)
-
-        if abs(x) <= half_x and abs(y) <= half_y:
-            x_points.append(x_start + x)
-            y_points.append(y_start + y)
-
-    cyc = cycler(x_motor, x_points)
-    cyc += cycler(y_motor, y_points)
+    cyc = plan_patterns.spiral_fermat(**md['plan_pattern_args'])
     yield from scan_nd(detectors, cyc, per_step=per_step, md=md)
 
 
@@ -2517,36 +2512,21 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         md = {}
     md = ChainMap(
         md,
-        {'detectors': [detector.name for detector in detectors],
-         'motors': [motor.name for motor in [x_motor, y_motor]],
-         'plan_args': {'detectors': list(map(repr, detectors)),
+        {'plan_args': {'detectors': list(map(repr, detectors)),
                        'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                        'x_start': x_start, 'y_start': y_start,
                        'x_range': x_range, 'y_range': y_range,
                        'dr': dr, 'nth': nth, 'per_step': repr(per_step)},
-         'plan_name': 'spiral'})
-    half_x = x_range / 2
-    half_y = y_range / 2
+         'plan_name': 'spiral',
+         'plan_pattern': 'spiral',
+         'plan_pattern_module': plan_patterns.__name__,
+         })
 
-    r_max = np.sqrt(half_x ** 2 + half_y ** 2)
-    num_ring = 1 + int(r_max / dr)
-
-    x_points = []
-    y_points = []
-    for i_ring in range(1, num_ring + 2):
-        radius = i_ring * dr
-        angle_step = 2. * np.pi / (i_ring * nth)
-
-        for i_angle in range(int(i_ring * nth)):
-            angle = i_angle * angle_step
-            x = radius * np.cos(angle)
-            y = radius * np.sin(angle)
-            if abs(x) <= half_x and abs(y) <= half_y:
-                x_points.append(x_start + x)
-                y_points.append(y_start + y)
-
-    cyc = cycler(x_motor, x_points)
-    cyc += cycler(y_motor, y_points)
+    md['plan_pattern_args'] = dict(x_motor=x_motor, y_motor=y_motor,
+                                   x_start=x_start, y_start=y_start,
+                                   x_range=x_range, y_range=y_range, dr=dr,
+                                   nth=nth)
+    cyc = plan_patterns.spiral(**md['plan_pattern_args'])
     yield from scan_nd(detectors, cyc, per_step=per_step, md=md)
 
 
