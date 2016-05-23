@@ -44,6 +44,7 @@ def _raising_callbacks_helper(stream_name, callback):
 
 
 def test_raising_ignored_or_not():
+    RE.ignore_callback_exceptions = True
     assert RE.ignore_callback_exceptions
     def cb(name, doc):
         raise Exception
