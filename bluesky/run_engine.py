@@ -219,6 +219,7 @@ class RunEngine:
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
+        self._failed_status_tasks = deque()  # Tasks from self._failed_status
         self._plan = None  # the scan plan instance from __call__
         self._command_registry = {
             'create': self._create,
@@ -319,6 +320,7 @@ class RunEngine:
         self._exit_status = 'success'
         self._reason = ''
         self._task = None
+        self._failed_status_tasks.clear()
         self._plan = None
         self._interrupted = False
         self._last_sigint_time = None
@@ -408,6 +410,8 @@ class RunEngine:
             print("No checkpoint; cannot pause. Aborting...")
             self._exception = FailedPause()
             self._task.cancel()
+            for task in self._failed_status_tasks:
+                task.cancel()
             return
         # stop accepting new tasks in the event loop (existing tasks will
         # still be processed)
@@ -741,6 +745,8 @@ class RunEngine:
         self._reason = reason
         self._exception = RequestAbort()
         self._task.cancel()
+        for task in self._failed_status_tasks:
+            task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
 
@@ -1329,7 +1335,9 @@ class RunEngine:
 
             def done_callback():
                 if not ret.success:
-                    self.loop.call_soon_threadsafe(self._failed_status, ret)
+                    task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                          ret)
+                    self._failed_status_tasks.append(task)
                 self.loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
@@ -1362,7 +1370,9 @@ class RunEngine:
 
             def done_callback():
                 if not ret.success:
-                    self.loop.call_soon_threadsafe(self._failed_status, ret)
+                    task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                          ret)
+                    self._failed_status_tasks.append(task)
                 self.loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
@@ -1480,7 +1490,9 @@ class RunEngine:
                                msg.obj, ret.success)
 
                 if not ret.success:
-                    self.loop.call_soon_threadsafe(self._failed_status, ret)
+                    task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                          ret)
+                    self._failed_status_tasks.append(task)
                 self.loop.call_soon_threadsafe(p_event.set)
 
             ret.finished_cb = done_callback
@@ -1509,7 +1521,9 @@ class RunEngine:
                                msg.obj, ret.success)
 
                 if not ret.success:
-                    self.loop.call_soon_threadsafe(self._failed_status, ret)
+                    task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                          ret)
+                    self._failed_status_tasks.append(task)
 
                 self.loop.call_soon_threadsafe(p_event.set)
 
