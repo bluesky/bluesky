@@ -7,4 +7,6 @@ import pytest
 def fresh_RE(request):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
-    return RunEngine({}, loop=loop)
+    RE = RunEngine({}, loop=loop)
+    RE.ignore_callback_exceptions = False
+    return RE
