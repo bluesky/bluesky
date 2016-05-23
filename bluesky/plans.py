@@ -2137,23 +2137,20 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     if md is None:
         md = {}
 
-    # mds can't handle ophyd devices, so all replace them with reprs where
-    # necessary:
-    mds_args = [repr(arg) if hasattr(arg, 'name') else arg
-                for arg in args]
+    md_args = list(itertools.chain((repr(motor), start, stop)
+                                   for motor, start, stop in chunked(args, 3)))
 
     md = ChainMap(
         md,
         {'plan_args': {'detectors': list(map(repr, detectors)),
-                       'num': num, 'args': mds_args,
+                       'num': num, 'args': md_args,
                        'per_step': repr(per_step)},
          'plan_name': 'inner_product_scan',
          'plan_pattern': 'inner_product',
          'plan_pattern_module': plan_patterns.__name__,
          }
     )
-    if len(args) % 3 != 0:
-        raise ValueError("wrong number of positional arguments")
+
 
     md['plan_pattern_args'] = dict(num=num, args=list(args))
     full_cycler = plan_patterns.inner_product(**md['plan_pattern_args'])
@@ -2196,15 +2193,18 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     if md is None:
         md = {}
 
-    # mds can't handle ophyd devices, so all replace them with reprs where
-    # necessary:
-    mds_args = [repr(arg) if hasattr(arg, 'name') else arg
-                for arg in args]
-
     md['plan_pattern_args'] = dict(args=list(args))
     full_cycler = plan_patterns.outer_product(**md['plan_pattern_args'])
 
     chunk_args = list(plan_patterns.chunk_outer_product_args(args))
+
+    md_args = []
+    for i, (motor, start, stop, num, snake) in enumerate(chunk_args):
+        md_args.extend([repr(motor), start, stop, num])
+        if i > 0:
+            # snake argument only shows up after the first motor
+            md_args.append(snake)
+
     md = ChainMap(
         md,
         {'shape': tuple(num for motor, start, stop, num, snake
@@ -2215,7 +2215,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
                           in chunk_args),
          # 'num_steps': inserted by scan_nd
          'plan_args': {'detectors': list(map(repr, detectors)),
-                       'args': mds_args,
+                       'args': md_args,
                        'per_step': repr(per_step)},
          'plan_name': 'outer_product_scan'})
 
