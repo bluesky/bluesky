@@ -2397,7 +2397,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     factor : float
         radius gets divided by this
     tilt : float, optional
-        Tilt angle in degrees, default 0.0
+        Tilt angle in radians, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -2456,7 +2456,7 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     factor : float
         radius gets divided by this
     tilt : float, optional
-        Tilt angle in degrees, default 0.0
+        Tilt angle in radians, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -2501,7 +2501,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     nth : float
         Number of theta steps
     tilt : float, optional
-        Tilt angle in degrees, default 0.0
+        Tilt angle in radians, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -2561,7 +2561,7 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     nth : float
         Number of theta steps
     tilt : float, optional
-        Tilt angle in degrees, default 0.0
+        Tilt angle in radians, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for

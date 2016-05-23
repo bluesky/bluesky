@@ -31,7 +31,7 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     nth : float
         Number of theta steps
     tilt : float, optional
-        Tilt angle in degrees, default 0.0
+        Tilt angle in radians, default 0.0
 
     Returns
     -------
@@ -42,7 +42,7 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
 
     r_max = np.sqrt(half_x ** 2 + half_y ** 2)
     num_ring = 1 + int(r_max / dr)
-    tilt_tan = np.tan(np.radians(tilt + 90.0))
+    tilt_tan = np.tan(tilt + np.pi / 2.)
 
     x_points, y_points = [], []
 
@@ -87,7 +87,7 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     factor : float
         radius gets divided by this
     tilt : float, optional
-        Tilt angle in degrees, default 0.0
+        Tilt angle in radians, default 0.0
 
     Returns
     -------
@@ -97,7 +97,7 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 
     half_x = x_range / 2
     half_y = y_range / 2
-    tilt_tan = np.tan(np.radians(tilt + 90.0))
+    tilt_tan = np.tan(tilt + np.pi / 2.)
 
     x_points, y_points = [], []
 
