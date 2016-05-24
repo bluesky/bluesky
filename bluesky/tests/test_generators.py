@@ -5,7 +5,7 @@ from itertools import zip_longest
 from bluesky import Msg
 
 from bluesky.plans import (msg_mutator, plan_mutator, pchain,
-                           single_gen as single_message_gen, finalize)
+                           single_gen as single_message_gen, finalize_wrapper)
 
 from bluesky.plan_tools import ensure_generator
 
@@ -153,8 +153,8 @@ def test_finialize_fail():
 
     num = 5
     cmd = 'echo'
-    plan = finalize(erroring_plan(),
-                    echo_plan(command=cmd, num=num))
+    plan = finalize_wrapper(erroring_plan(),
+                            echo_plan(command=cmd, num=num))
     msgs = list()
     try:
         EchoRE(plan, msg_list=msgs)
@@ -173,8 +173,8 @@ def test_finialize_success():
 
     num = 5
     cmd = 'echo'
-    plan = finalize(single_message_gen(Msg(suc_cmd, None)),
-                    echo_plan(command=cmd, num=num))
+    plan = finalize_wrapper(single_message_gen(Msg(suc_cmd, None)),
+                            echo_plan(command=cmd, num=num))
     msgs = list()
     try:
         EchoRE(plan, msg_list=msgs)

@@ -10,11 +10,13 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            unsubscribe, open_run, close_run, wait_for,
                            subs_context, run_context, event_context,
                            baseline_context, monitor_context,
-                           stage_context, planify, finalize, fly_during,
-                           lazily_stage, relative_set, reset_positions,
-                           configure_count_time, trigger_and_read,
-                           subs_wrapper,
-                           repeater, caching_repeater, count, Count, Scan)
+                           stage_context, planify, finalize_wrapper,
+                           fly_during_wrapper, reset_positions_wrapper,
+                           lazily_stage_wrapper, relative_set_wrapper,
+                           configure_count_time_wrapper,
+                           subs_wrapper, trigger_and_read,
+                           repeater, caching_repeater, count, Count, Scan,
+                           fly_during_decorator, subs_decorator)
 
 
 class DummyMover:
@@ -148,6 +150,11 @@ def test_plan_contexts(cm, args, kwargs, before, after):
     assert actual_after == after
 
 
+def strip_group(plan):
+    for msg in plan:
+        msg.kwargs.pop('group', None)
+
+
 def test_fly_during():
     def plan():
         # can't use 2 * [Msg('open_run'), Msg('null'), Msg('close_run')]
@@ -155,7 +162,7 @@ def test_fly_during():
         yield from [Msg('open_run'), Msg('null'), Msg('close_run'),
                     Msg('open_run'), Msg('null'), Msg('close_run')]
 
-    processed_plan = list(fly_during(plan(), ['foo']))
+    processed_plan = list(fly_during_wrapper(plan(), ['foo']))
     expected = 2 * [Msg('open_run'),
                     Msg('kickoff', 'foo'), Msg('wait'),  # inserted
                     Msg('null'),
@@ -163,9 +170,11 @@ def test_fly_during():
                     Msg('collect', 'foo'),  # inserted
                     Msg('close_run')]
 
-    for msg in processed_plan:
-        msg.kwargs.pop('group', None)
+    strip_group(processed_plan)
+    assert processed_plan == expected
 
+    processed_plan = list(fly_during_decorator(plan, ['foo'])())
+    strip_group(processed_plan)
     assert processed_plan == expected
 
 
@@ -173,7 +182,7 @@ def test_lazily_stage():
     def plan():
         yield from [Msg('read', det1), Msg('read', det1), Msg('read', det2)]
 
-    processed_plan = list(lazily_stage(plan()))
+    processed_plan = list(lazily_stage_wrapper(plan()))
 
     expected = [Msg('stage', det1), Msg('read', det1), Msg('read', det1),
                 Msg('stage', det2), Msg('read', det2), Msg('unstage', det2),
@@ -182,19 +191,26 @@ def test_lazily_stage():
     assert processed_plan == expected
 
 
-def test_subs_wrapper():
+def test_subs():
 
     def cb(name, doc):
         pass
 
-    def plan():
-        yield from [Msg('null')]
+    def plan(*args, **kwargs):
+        # check that args to plan are passed through
+        yield from [Msg('null', None, *args, **kwargs)]
 
-    processed_plan = list(subs_wrapper(plan(), {'all': cb}))
+    processed_plan = list(subs_wrapper(plan('test_arg', test_kwarg='val'),
+                                       {'all': cb}))
     
-    expected = [Msg('subscribe', None, 'all', cb), Msg('null'),
+    expected = [Msg('subscribe', None, 'all', cb),
+                Msg('null', None, 'test_arg', test_kwarg='val'),
                 Msg('unsubscribe', token=None)]
 
+    assert processed_plan == expected
+
+    processed_plan = list(subs_decorator(plan, {'all': cb})('test_arg',
+                                                            test_kwarg='val'))
     assert processed_plan == expected
 
 
@@ -202,7 +218,7 @@ def test_finalize():
     def plan():
         yield from [Msg('null')]
 
-    processed_plan = list(finalize(plan(), [Msg('read', det)]))
+    processed_plan = list(finalize_wrapper(plan(), [Msg('read', det)]))
 
     expected = [Msg('null'), Msg('read', det)]
 
@@ -221,7 +237,7 @@ def test_finalize_runs_after_error(fresh_RE):
 
     fresh_RE.msg_hook = accumulator
     try:
-        fresh_RE(finalize(plan(), [Msg('read', det)]))
+        fresh_RE(finalize_wrapper(plan(), [Msg('read', det)]))
     except Exception:
         pass # swallow the Exception; we are interested in msgs below
 
@@ -244,7 +260,7 @@ def test_reset_positions(fresh_RE):
     def plan():
         yield from (m for m in [Msg('set', motor, 8)])
 
-    fresh_RE(reset_positions(plan()))
+    fresh_RE(reset_positions_wrapper(plan()))
 
     expected = [Msg('set', motor, 8), Msg('set', motor, 5), Msg('wait')]
 
@@ -268,7 +284,7 @@ def test_reset_positions_no_position_attr(fresh_RE):
     def plan():
         yield from (m for m in [Msg('set', motor, 8)])
 
-    fresh_RE(reset_positions(plan()))
+    fresh_RE(reset_positions_wrapper(plan()))
 
     expected = [Msg('read', motor),
                 Msg('set', motor, 8), Msg('set', motor, 5), Msg('wait')]
@@ -293,7 +309,7 @@ def test_relative_set(fresh_RE):
     def plan():
         yield from (m for m in [Msg('set', motor, 8)])
 
-    fresh_RE(relative_set(plan()))
+    fresh_RE(relative_set_wrapper(plan()))
 
     expected = [Msg('set', motor, 13)]
 
@@ -317,7 +333,7 @@ def test_relative_set_no_position_attr(fresh_RE):
     def plan():
         yield from (m for m in [Msg('set', motor, 8)])
 
-    fresh_RE(relative_set(plan()))
+    fresh_RE(relative_set_wrapper(plan()))
 
     expected = [Msg('read', motor),
                 Msg('set', motor, 13)]
@@ -352,7 +368,7 @@ def test_configure_count_time(fresh_RE):
 
     fresh_RE.msg_hook = accumulator
 
-    fresh_RE(configure_count_time(plan(), 7))
+    fresh_RE(configure_count_time_wrapper(plan(), 7))
 
     expected = [Msg('set', det.count_time, 7), Msg('wait'),
                 Msg('read', det), Msg('set', det.count_time, 3),
