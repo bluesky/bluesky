@@ -1,3 +1,4 @@
+import bson
 from traitlets import TraitError
 from bluesky.examples import motor, motor1, motor2, det, det1, det2, FlyMagic
 import pytest
@@ -58,6 +59,9 @@ def test_spec_plans(fresh_RE, pln, name, args, kwargs):
     assert gs.MD_TIME_KEY in run_start
     if 'time' in kwargs:
         assert run_start[gs.MD_TIME_KEY] == kwargs['time']
+
+    # Ensure that the runstart document can be stored
+    bson.BSON.encode(run_start)
 
 
 def test_flyers(fresh_RE):
