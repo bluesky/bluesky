@@ -20,6 +20,34 @@ def _short_uid(label, truncate=6):
     return '-'.join([label, str(uuid.uuid4())[:truncate]])
 
 
+def make_decorator(wrapper, *args, **kwargs):
+    """
+    The functions named *_wrapper accept a generator instance and return
+    a mutated generator instance.
+
+    Example of a 'wrapper':
+    >>> plan = count([det])  # returns a generator instance
+    >>> revised_plan = some_wrapper(plan)  # returns a new instance
+
+    Example of a decorator:
+    >>> some_decorator = make_decorator(some_wrapper)  # returns decorator
+    >>> customized_count = some_decorator(count)  # returns generator func
+    >>> plan = customized_count([det])  # returns a generator instance
+
+    This turns a 'wrapper' into a decorator, which accepts a generator
+    function and returns a generator function.
+    """
+    @wraps(wrapper)
+    def gen_func_decorator(gen_func, *args, **kwargs):
+        @wraps(gen_func)
+        def inner(*inner_args, **inner_kwargs):
+            plan = gen_func(*inner_args, **inner_kwargs)
+            plan = wrapper(plan, *args, **kwargs)
+            return (yield from plan)
+        return inner
+    return gen_func_decorator
+
+
 def planify(func):
     """
     Turn a function that returns a list of generators into a coroutine.
@@ -423,7 +451,8 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     `bluesky.plans.abs_set`
     `bluesky.plans.wait`
     """
-    ret = yield from relative_set(abs_set(obj, *args, group=group, **kwargs))
+    ret = yield from relative_set_wrapper(
+        abs_set(obj, *args, group=group, **kwargs))
     if wait:
         yield from single_gen(Msg('wait', None, group=group))
     return ret
@@ -779,6 +808,57 @@ def unsubscribe(token):
     return (yield from single_gen(Msg('unsubscribe', token=token)))
 
 
+def subs_wrapper(plan, subs):
+    """
+    Subscribe callbacks to the document stream; finally, unsubscribe.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    subs : callable, list of callables, or dict of lists of callables
+         Documents of each type are routed to a list of functions.
+         Input is normalized to a dict of lists of functions, like so:
+
+         None -> {'all': [], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         func -> {'all': [func], 'start': [], 'stop': [], 'event': [],
+                  'descriptor': []}
+
+         [f1, f2] -> {'all': [f1, f2], 'start': [], 'stop': [], 'event': [],
+                      'descriptor': []}
+
+         {'event': [func]} ->  {'all': [], 'start': [], 'stop': [],
+                                'event': [func], 'descriptor': []}
+
+         Signature of functions must confirm to `f(name, doc)` where
+         name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
+         doc is a dictionary.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'subscribe' and 'unsubscribe' messages
+        inserted and appended
+    """
+    subs = normalize_subs_input(subs)
+    tokens = set()
+
+    def _subscribe():
+        for name, funcs in subs.items():
+            for func in funcs:
+                token = yield Msg('subscribe', None, name, func)
+                tokens.add(token)
+
+    def _unsubscribe():
+        for token in tokens:
+            yield Msg('unsubscribe', None, token=token)
+
+    return (yield from finalize_wrapper(pchain(_subscribe(), plan),
+                                        _unsubscribe()))
+
+
 def open_run(md=None):
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
@@ -841,7 +921,7 @@ def wait_for(futures, **kwargs):
     return (yield from single_gen(Msg('wait_for', None, futures, **kwargs)))
 
 
-def finalize(plan, final_plan):
+def finalize_wrapper(plan, final_plan):
     '''try...finally helper
 
     Run the first plan and then the second.  If any of the messages
@@ -872,7 +952,7 @@ def finalize(plan, final_plan):
 @contextmanager
 def subs_context(plan_stack, subs):
     """
-    Subscribe to callbacks to the document stream; then unsubscribe on exit.
+    Subscribe callbacks to the document stream; then unsubscribe on exit.
 
     Parameters
     ----------
@@ -901,24 +981,24 @@ def subs_context(plan_stack, subs):
     subs = normalize_subs_input(subs)
     tokens = set()
 
-    def subscribe():
+    def _subscribe():
         for name, funcs in subs.items():
             for func in funcs:
                 token = yield Msg('subscribe', None, name, func)
                 tokens.add(token)
 
-    def unsubscribe():
+    def _unsubscribe():
         for token in tokens:
             yield Msg('unsubscribe', None, token=token)
 
-    plan_stack.append(subscribe())
+    plan_stack.append(_subscribe())
     try:
         yield plan_stack
     finally:
         # The RunEngine might never process these if the execution fails,
         # but it keeps its own cache of tokens and will try to remove them
         # itself if this plan fails to do so.
-        plan_stack.append(unsubscribe())
+        plan_stack.append(_unsubscribe())
 
 
 @contextmanager
@@ -988,7 +1068,7 @@ def fly(flyers, *, md=None):
     yield from close_run()
 
 
-def fly_during(plan, flyers):
+def fly_during_wrapper(plan, flyers):
     """
     Kickoff and collect "flyer" (asynchronously collect) objects during runs.
 
@@ -1046,7 +1126,7 @@ def fly_during(plan, flyers):
     return (yield from plan2)
 
 
-def lazily_stage(plan):
+def lazily_stage_wrapper(plan):
     """
     This is a preprocessor that inserts 'stage' messages and appends 'unstage'.
 
@@ -1099,7 +1179,8 @@ def lazily_stage(plan):
         for device in reversed(devices_staged):
             yield Msg('unstage', device)
 
-    return (yield from finalize(plan_mutator(plan, inner), unstage_all()))
+    return (yield from finalize_wrapper(plan_mutator(plan, inner),
+                                        unstage_all()))
 
 
 @contextmanager
@@ -1134,7 +1215,7 @@ def stage_context(plan_stack, devices):
     plan_stack.append(unstage())
 
 
-def relative_set(plan, devices=None):
+def relative_set_wrapper(plan, devices=None):
     """
     Interpret 'set' messages on devices as relative to initial position.
 
@@ -1192,7 +1273,7 @@ def relative_set(plan, devices=None):
     return (yield from plan)
 
 
-def reset_positions(plan, devices=None):
+def reset_positions_wrapper(plan, devices=None):
     """
     Return movable devices to their initial positions at the end.
 
@@ -1238,10 +1319,11 @@ def reset_positions(plan, devices=None):
             yield Msg('set', k, v, group=blk_grp)
         yield Msg('wait', None, group=blk_grp)
 
-    return (yield from finalize(plan_mutator(plan, insert_reads), reset()))
+    return (yield from finalize_wrapper(plan_mutator(plan, insert_reads),
+                                        reset()))
 
 
-def configure_count_time(plan, time):
+def configure_count_time_wrapper(plan, time):
     """
     Preprocessor that sets all devices with a `count_time` to the same time.
 
@@ -1288,10 +1370,11 @@ def configure_count_time(plan, time):
         # no-op
         return (yield from plan)
     else:
-        return (yield from finalize(plan_mutator(plan, insert_set), reset()))
+        return (yield from finalize_wrapper(plan_mutator(plan, insert_set),
+                                            reset()))
 
 
-def baseline(plan, devices, name='baseline'):
+def baseline_wrapper(plan, devices, name='baseline'):
     """
     Preprocessor that records a baseline of all `devices` after `open_run`
 
@@ -1517,6 +1600,16 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
+# Make generator function decorator for each generator instance wrapper.
+baseline_decorator = make_decorator(baseline_wrapper)
+subs_decorator = make_decorator(subs_wrapper)
+relative_set_decorator = make_decorator(relative_set_wrapper)
+reset_positions_decorator = make_decorator(reset_positions_wrapper)
+finalize_decorator = make_decorator(finalize_wrapper)
+lazily_stage_decorator = make_decorator(lazily_stage_wrapper)
+fly_during_decorator = make_decorator(fly_during_wrapper)
+
+
 @planify
 def count(detectors, num=1, delay=None, *, md=None):
     """
@@ -1679,8 +1772,8 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_list_scan'})
     plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
-    plan = relative_set(plan)  # re-write trajectory as relative
-    plan = reset_positions(plan)  # return motors to starting pos
+    plan = relative_set_wrapper(plan)  # re-write trajectory as relative
+    plan = reset_positions_wrapper(plan)  # return motors to starting pos
     return [plan]
 
 
@@ -1774,8 +1867,8 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     md = ChainMap(md, {'plan_name': 'relative_scan'})
     # TODO read initial positions (redundantly) so they can be put in md here
     plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
-    plan = relative_set(plan, [motor])  # re-write trajectory as relative
-    plan = reset_positions(plan, [motor])  # return motors to starting pos
+    plan = relative_set_wrapper(plan, [motor])  # re-write trajectory relative
+    plan = reset_positions_wrapper(plan, [motor])  # return to starting pos
     return [plan]
 
 
@@ -1869,8 +1962,8 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     md = ChainMap(md, {'plan_name': 'relative_log_scan'})
     plan = log_scan(detectors, motor, start, stop, num, per_step=per_step,
                     md=md)
-    plan = relative_set(plan, [motor])  # re-write trajectory as relative
-    plan = reset_positions(plan, [motor])  # return motors to starting pos
+    plan = relative_set_wrapper(plan, [motor])  # re-write trajectory as relative
+    plan = reset_positions_wrapper(plan, [motor])  # return motors to starting pos
     return [plan]
 
 
@@ -2019,8 +2112,8 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
     plan = adaptive_scan(detectors, target_field, motor, start, stop,
                          min_step, max_step, target_delta, backstep,
                          threshold, md=md)
-    plan = relative_set(plan, [motor])  # re-write trajectory as relative
-    plan = reset_positions(plan, [motor])  # return motors to starting pos
+    plan = relative_set_wrapper(plan, [motor])  # re-write trajectory relative
+    plan = reset_positions_wrapper(plan, [motor])  # return to starting pos
     return [plan]
 
 
@@ -2256,8 +2349,8 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_outer_product_scan'})
     plan = outer_product_scan(detectors, *args, per_step=per_step, md=md)
-    plan = relative_set(plan)  # re-write trajectory as relative
-    plan = reset_positions(plan)  # return motors to starting pos
+    plan = relative_set_wrapper(plan)  # re-write trajectory as relative
+    plan = reset_positions_wrapper(plan)  # return motors to starting pos
     return [plan]
 
 
@@ -2292,8 +2385,8 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_inner_product_scan'})
     plan = inner_product_scan(detectors, num, *args, per_step=per_step, md=md)
-    plan = relative_set(plan)  # re-write trajectory as relative
-    plan = reset_positions(plan)  # return motors to starting pos
+    plan = relative_set_wrapper(plan)  # re-write trajectory as relative
+    plan = reset_positions_wrapper(plan)  # return motors to starting pos
     return [plan]
 
 
@@ -2641,7 +2734,7 @@ class Plan(Struct):
                 with stage_context(plan_stack, flyers):
                     with subs_context(plan_stack, subs):
                         plan = self._gen()
-                        plan_stack.append(fly_during(plan, flyers))
+                        plan_stack.append(fly_during_wrapper(plan, flyers))
 
                 for gen in plan_stack:
                     yield from gen

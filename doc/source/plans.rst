@@ -241,12 +241,13 @@ These "preprocessors" take in a plan and modify its contents on the fly.
    :nosignatures:
    :toctree:
 
-    baseline
-    relative_set
-    reset_positions
-    lazily_stage
-    fly_during
-    finalize
+    subs_wrapper
+    baseline_wrapper
+    relative_set_wrapper
+    reset_positions_wrapper
+    lazily_stage_wrapper
+    fly_during_wrapper
+    finalize_wrapper
 
 For example, ``relative_set`` rewrites all positions to be relative to the
 initial position.
