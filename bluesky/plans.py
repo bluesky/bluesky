@@ -2309,7 +2309,9 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
          'plan_args': {'detectors': list(map(repr, detectors)),
                        'args': md_args,
                        'per_step': repr(per_step)},
-         'plan_name': 'outer_product_scan'})
+         'plan_name': 'outer_product_scan',
+         'plan_pattern': 'outer_product',
+         'plan_pattern_module': plan_patterns.__name__})
 
     plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
     return [plan]
