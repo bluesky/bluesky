@@ -322,9 +322,9 @@ def d2scan(*args, time=None, md=None):
     motors = []
     for motor, start, stop, in chunked(args[:-1], 3):
         motors.append(motor)
-        subs = {'all': [LiveTable(gs.DETS + motors),
-                        setup_plot(motors),
-                        setup_peakstats(motors)]}
+    subs = {'all': [LiveTable(gs.DETS + motors),
+                    setup_plot(motors),
+                    setup_peakstats(motors)]}
     intervals = list(args)[-1]
     num = 1 + intervals
 
