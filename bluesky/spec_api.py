@@ -322,15 +322,15 @@ def d2scan(*args, time=None, md=None):
     motors = []
     for motor, start, stop, in chunked(args[:-1], 3):
         motors.append(motor)
-        subs = {'all': [LiveTable(gs.DETS + motors),
-                        setup_plot(motors),
-                        setup_peakstats(motors)]}
+    subs = {'all': [LiveTable(gs.DETS + motors),
+                    setup_plot(motors),
+                    setup_peakstats(motors)]}
     intervals = list(args)[-1]
     num = 1 + intervals
 
     plan_stack = deque()
     with subs_context(plan_stack, subs):
-        plan = relative_inner_product_scan(gs.DETS, num, *args[:-1], md=md)
+        plan = relative_inner_product_scan(gs.DETS, num, *(args[:-1]), md=md)
         plan = baseline_wrapper(plan, motors + gs.BASELINE_DEVICES)
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
