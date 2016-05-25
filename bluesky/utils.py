@@ -605,7 +605,7 @@ def update_sub_lists(out, inp):
 
 
 def register_transform(RE, *, prefix='<'):
-    '''Register RunEngine convenience transform
+    '''Register RunEngine IPython magic convenience transform
 
     Assuming the default parameters
 
@@ -627,8 +627,8 @@ def register_transform(RE, *, prefix='<'):
 
     @StatelessInputTransformer.wrap
     def tr_re(line):
-        if line.startswith('<'):
-            line = line[1:].strip()
+        if line.startswith(prefix):
+            line = line[len(prefix):].strip()
             return '{}({})'.format(RE, line)
         return line
     ip = IPython.get_ipython()
