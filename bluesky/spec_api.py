@@ -330,7 +330,7 @@ def d2scan(*args, time=None, md=None):
 
     plan_stack = deque()
     with subs_context(plan_stack, subs):
-        plan = relative_inner_product_scan(gs.DETS, num, *args[:-1], md=md)
+        plan = relative_inner_product_scan(gs.DETS, num, *(args[:-1]), md=md)
         plan = baseline_wrapper(plan, motors + gs.BASELINE_DEVICES)
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
