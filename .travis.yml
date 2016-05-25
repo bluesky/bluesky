@@ -50,6 +50,7 @@ install:
   # Need to clean the python build directory (and other cruft) or pytest is
   # going to find the build directory and get confused why there are two sets
   # of every test file
+  - python -c "from filestore import utils, conf; utils.install_sentinels(conf.connection_config, 1)"
   - git clean -xfd
 
 script:
