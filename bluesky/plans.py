@@ -2228,8 +2228,8 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     if md is None:
         md = {}
 
-    md_args = list(itertools.chain((repr(motor), start, stop)
-                                   for motor, start, stop in chunked(args, 3)))
+    md_args = list(itertools.chain(*((repr(motor), start, stop)
+                                   for motor, start, stop in chunked(args, 3))))
 
     md = ChainMap(
         md,
