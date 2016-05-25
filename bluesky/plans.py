@@ -855,17 +855,7 @@ def subs_wrapper(plan, subs):
         for token in tokens:
             yield Msg('unsubscribe', None, token=token)
 
-    first_msg = True
-
-    def insert_subscribe(msg):
-        nonlocal first_msg
-        if first_msg:
-            first_msg = False
-            return pchain(_subscribe(), single_gen(msg)), None
-        else:
-            return None, None
-
-    return (yield from finalize_wrapper(plan_mutator(plan, insert_subscribe),
+    return (yield from finalize_wrapper(pchain(_subscribe(), plan),
                                         _unsubscribe()))
 
 
