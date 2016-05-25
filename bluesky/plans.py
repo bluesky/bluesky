@@ -2149,9 +2149,9 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
          }
     )
 
+    md['plan_pattern_args'] = dict(num=num, args=md_args)
+    full_cycler = plan_patterns.inner_product(num=num, args=args)
 
-    md['plan_pattern_args'] = dict(num=num, args=list(args))
-    full_cycler = plan_patterns.inner_product(**md['plan_pattern_args'])
     plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
     return [plan]
 
@@ -2191,8 +2191,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     if md is None:
         md = {}
 
-    md['plan_pattern_args'] = dict(args=list(args))
-    full_cycler = plan_patterns.outer_product(**md['plan_pattern_args'])
+    full_cycler = plan_patterns.outer_product(args=list(args))
 
     chunk_args = list(plan_patterns.chunk_outer_product_args(args))
 
@@ -2202,6 +2201,8 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
         if i > 0:
             # snake argument only shows up after the first motor
             md_args.append(snake)
+
+    md['plan_pattern_args'] = dict(args=md_args)
 
     md = ChainMap(
         md,
@@ -2426,12 +2427,15 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
          'plan_pattern_module': plan_patterns.__name__,
          })
 
-    md['plan_pattern_args'] = dict(x_motor=x_motor, y_motor=y_motor,
-                                   x_start=x_start, y_start=y_start,
-                                   x_range=x_range, y_range=y_range, dr=dr,
-                                   factor=factor, tilt=tilt)
+    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
+                        y_start=y_start, x_range=x_range, y_range=y_range,
+                        dr=dr, factor=factor, tilt=tilt)
 
-    cyc = plan_patterns.spiral_fermat(**md['plan_pattern_args'])
+    cyc = plan_patterns.spiral_fermat(**pattern_args)
+
+    pattern_args['x_motor'] = repr(x_motor)
+    pattern_args['y_motor'] = repr(y_motor)
+    md['plan_pattern_args'] = pattern_args
     yield from scan_nd(detectors, cyc, per_step=per_step, md=md)
 
 
@@ -2530,11 +2534,15 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
          'plan_pattern_module': plan_patterns.__name__,
          })
 
-    md['plan_pattern_args'] = dict(x_motor=x_motor, y_motor=y_motor,
-                                   x_start=x_start, y_start=y_start,
-                                   x_range=x_range, y_range=y_range, dr=dr,
-                                   nth=nth, tilt=tilt)
-    cyc = plan_patterns.spiral(**md['plan_pattern_args'])
+    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
+                        y_start=y_start, x_range=x_range, y_range=y_range,
+                        dr=dr, nth=nth, tilt=tilt)
+
+    cyc = plan_patterns.spiral(**pattern_args)
+
+    pattern_args['x_motor'] = repr(x_motor)
+    pattern_args['y_motor'] = repr(y_motor)
+    md['plan_pattern_args'] = pattern_args
     yield from scan_nd(detectors, cyc, per_step=per_step, md=md)
 
 
