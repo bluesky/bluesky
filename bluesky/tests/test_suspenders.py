@@ -109,3 +109,50 @@ def test_pre_suspend_plan(fresh_RE, pre_plan, post_plan, expected_list):
     RE.remove_suspender(susp)
     RE(scan)
     assert susp.RE is None
+
+
+def test_pause_from_suspend(fresh_RE):
+    'Tests what happens when a pause is requested from a suspended state'
+    RE = fresh_RE
+    sig = ophyd.Signal()
+    scan = [Msg('checkpoint')]
+    msg_lst = []
+    sig.put(1)
+
+    def accum(msg):
+        msg_lst.append(msg)
+
+    susp = SuspendBoolHigh(sig)
+
+    RE.install_suspender(susp)
+    RE._loop.call_later(1, RE.request_pause)
+    RE._loop.call_later(2, sig.put, 0)
+    RE.msg_hook = accum
+    RE(scan)
+    assert [m[0] for m in msg_lst] == ['wait_for']
+    RE.resume()
+    assert ['wait_for', 'wait_for', 'checkpoint'] == [m[0] for m in msg_lst]
+
+
+def test_deferred_pause_from_suspend(fresh_RE):
+    'Tests what happens when a soft pause is requested from a suspended state'
+    RE = fresh_RE
+    sig = ophyd.Signal()
+    scan = [Msg('checkpoint'), Msg('null')]
+    msg_lst = []
+    sig.put(1)
+
+    def accum(msg):
+        print(msg)
+        msg_lst.append(msg)
+
+    susp = SuspendBoolHigh(sig)
+
+    RE.install_suspender(susp)
+    RE._loop.call_later(1, RE.request_pause, True)
+    RE._loop.call_later(4, sig.put, 0)
+    RE.msg_hook = accum
+    RE(scan)
+    assert [m[0] for m in msg_lst] == ['wait_for', 'checkpoint']
+    RE.resume()
+    assert ['wait_for', 'checkpoint', 'null'] == [m[0] for m in msg_lst]
