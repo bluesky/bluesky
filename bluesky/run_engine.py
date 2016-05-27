@@ -1610,9 +1610,8 @@ class RunEngine:
         if self._deferred_pause_requested:
             # We are at a checkpoint; we are done deferring the pause.
             # Give the _check_for_signals courtine time to look for
-            # additional SIGINTs that would trigger a non-deferred pause or
-            # an abort.
-            yield from asyncio.sleep(0.5)
+            # additional SIGINTs that would trigger an abort.
+            yield from asyncio.sleep(0.5, loop=self.loop)
             self.request_pause(defer=False)
 
     @asyncio.coroutine
