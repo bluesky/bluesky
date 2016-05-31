@@ -28,7 +28,6 @@ def make_publisher(host, port=5559):
     fmt_string = '{hostname} {pid} {{name}} {{doc}}'.format(
             hostname=local_hostname, pid=pid)
 
-    port = "5559"
     context = zmq.Context()
     s = context.socket(zmq.PUB)
     s.connect(url)
