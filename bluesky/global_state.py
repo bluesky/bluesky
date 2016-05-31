@@ -123,8 +123,7 @@ class GlobalState(HasTraits):
     TABLE_COLS = List()
     PLOT_Y = Unicode()
     OVERPLOT = Bool(True)
-    COUNT_TIME = Float(1.0)
-    MD_TIME_KEY = Unicode('exposure_time')
+    MD_TIME_KEY = Unicode('count_time')
 
 
 gs = GlobalState()  # a singleton instance
