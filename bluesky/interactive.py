@@ -69,7 +69,7 @@ class ROIPlanCreator:
 
 
 class OuterProductWidget(ROIPlanCreator):
-    def __init__(self, ax, dets, m1, m2, numsteps1, numsteps2=None,
+    def __init__(self, ax, dets, motor1, motor2, num1, num2=None,
                  snake=True, md=None):
         '''Create a 2D raster scan in the ROI bounding box
 
@@ -81,18 +81,18 @@ class OuterProductWidget(ROIPlanCreator):
         dets : list
             List of detectors to read at each point
 
-        m1 : Positioner
+        motor1 : Positioner
             The 'slow' motor
 
-        m2 : Positioner
+        motor2 : Positioner
             The 'fast' motor
 
-        numsteps1 : int
+        num1 : int
             Number of steps to take along the slow direction
 
-        numsteps2 : int, optional
+        num2 : int, optional
             Number of steps to take along the fast direction.  Defaults to
-            ``numsteps1``.
+            ``num1``.
 
         snake : bool, optional
             Should the fast direction snake.  Defaults to `True`
@@ -101,15 +101,15 @@ class OuterProductWidget(ROIPlanCreator):
             Any extra metadata to pass through to the plan
         '''
         super().__init__(ax)
-        self.m1 = m1
-        self.m2 = m2
+        self.motor1 = motor1
+        self.motor2 = motor2
         self.dets = dets
         self.snake = snake
-        if numsteps2 is None:
-            numsteps2 = numsteps1
+        if num2 is None:
+            num2 = num1
 
-        self.numsteps1 = numsteps1
-        self.numsteps2 = numsteps2
+        self.num1 = num1
+        self.num2 = num2
         if md is None:
             md = {}
         self.md = md
@@ -125,6 +125,6 @@ class OuterProductWidget(ROIPlanCreator):
         md = ChainMap(self.md, local_md)
 
         return outer_product_scan(self.dets,
-                                  self.m1, x1, x2, self.numsteps1,
-                                  self.m2, y1, y2, self.numsteps2,
+                                  self.motor1, x1, x2, self.num1,
+                                  self.motor2, y1, y2, self.num2,
                                   self.snake, md=md)
