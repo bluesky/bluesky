@@ -22,7 +22,7 @@ from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     AsyncInput, new_uid, sanitize_np)
 from . import Msg
 from .plan_tools import ensure_generator
-from .plans import single_gen
+from .plans import single_gen, msg_mutator
 
 
 def expiring_function(func, loop, *args, **kwargs):
@@ -1927,3 +1927,37 @@ def _default_md_validator(md):
             "GOOD: sample='dirt' "
             "GOOD: sample={'color': 'red', 'number': 5} "
             "BAD: sample=[1, 2] ")
+
+
+class RunEngineNamedLookup(RunEngine):
+    """
+    A RunEngine that takes a plan of JSON-compatible dicts, not Msg objects.
+
+    This adds a new required argument in the first position: a mapping between
+    string identifiers and Device/Signal objects, `name_obj_mapping`.
+
+    The 'plan' should be an interable of dictionaries with the keys
+    'command', 'obj', 'args', and 'kwargs', matching the fields of the Msg
+    namedtuple. The value of 'obj' should be a string identifier (or None),
+    which is contained in the named_obj_mapping.
+    """
+    def __init__(self, name_obj_mapping, *args, **kwargs):
+        self.name_obj_mapping = name_obj_mapping
+        self.name_obj_mapping[None] = None
+        super().__init__(*args, **kwargs)
+
+    def _resolve_obj(self, msg):
+        msg['obj'] = self.name_obj_mapping[msg['obj']]
+        return msg
+
+    @staticmethod
+    def unpack_msg(msg):
+        "Unpack a msg *dict* into Msg, the namedtuple."
+        # Msg(**msg_dict) does not work because of special Msg.__init__
+        return Msg(msg['command'], msg['obj'], *msg['args'], **msg['kwargs'])
+
+    def __call__(self, plan, *args, **kwargs):
+        plan = ensure_generator(plan)
+        plan = msg_mutator(plan, self._resolve_obj)
+        plan = msg_mutator(plan, self.unpack_msg)
+        return super().__call__(plan, *args, **kwargs)
