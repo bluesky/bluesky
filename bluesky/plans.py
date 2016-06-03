@@ -2995,3 +2995,31 @@ class RelativeSpiralFermatScan(Plan):
                                       self.y_motor, self.x_range, self.y_range,
                                       self.dr, self.factor, tilt=self.tilt,
                                       md=self.md)
+
+
+def jsonify(plan):
+    """
+    Convert a plan's messages to JSON for use with server/client.
+
+    See bluesky.service_server and bluesky.service_client.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+
+    Yields
+    ------
+    msg : dict
+        {'msg': input_msg_as_dict}
+    """
+    def convert(msg):
+        "Msg(...) -> {'msg': Msg_as_dict}"
+        d = dict(msg._asdict())  # _asdict() returns OrderedDict
+        obj = d['obj']
+        if not (obj is None or isinstance(obj, str)):
+            # heuristic:
+            # convert any Device/Signal objects to their string names
+            d['obj'] = obj.name
+        return {'msg': d}
+    yield from msg_mutator(plan, convert)
