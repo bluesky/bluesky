@@ -27,6 +27,10 @@ else:
         a1 = Cpt(A, '')
         a2 = Cpt(A, '')
 
+    class DCM(Device):
+        th = Cpt(Signal, value=0)
+        x = Cpt(Signal, value=0)
+
 # define a skip condition based on if ophyd is available or not
 requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
 
@@ -115,11 +119,9 @@ def test_monitor_with_pause_resume(fresh_RE):
 
 @requires_ophyd
 def test_overlapping_read(fresh_RE):
-    class DCM(Device):
-        th = Cpt(Signal, value=0)
-        x = Cpt(Signal, value=0)
 
     dcm = DCM('', name='dcm')
+    dcm2 = DCM('', name='dcm')
 
     def collect(name, doc):
         docs[name].append(doc)
@@ -135,12 +137,40 @@ def test_overlapping_read(fresh_RE):
     fresh_RE([Msg('open_run'),
               *list(trigger_and_read([dcm])),
               *list(trigger_and_read([dcm.th])),
-              Msg('close_run')])
+              Msg('close_run')], collect)
+    assert len(docs['descriptor']) == 2
+
+    docs = defaultdict(list)
+    fresh_RE([Msg('open_run'),
+              *list(trigger_and_read([dcm])),
+              *list(trigger_and_read([dcm2])),
+              Msg('close_run')], collect)
     assert len(docs['descriptor']) == 2
 
     docs = defaultdict(list)
     fresh_RE([Msg('open_run'),
               *list(trigger_and_read([dcm, dcm.th])),
               *list(trigger_and_read([dcm])),
-              Msg('close_run')])
+              Msg('close_run')], collect)
     assert len(docs['descriptor']) == 1
+
+
+@requires_ophyd
+def test_read_clash(fresh_RE):
+    dcm = DCM('', name='dcm')
+    dcm2 = DCM('', name='dcm')
+
+    with pytest.raises(ValueError):
+        fresh_RE([Msg('open_run'),
+                  *list(trigger_and_read([dcm, dcm2.th])),
+                  Msg('close_run')])
+
+    with pytest.raises(ValueError):
+        fresh_RE([Msg('open_run'),
+                  *list(trigger_and_read([dcm, dcm2])),
+                  Msg('close_run')])
+
+    with pytest.raises(ValueError):
+        fresh_RE([Msg('open_run'),
+                  *list(trigger_and_read([dcm.th, dcm2.th])),
+                  Msg('close_run')])
