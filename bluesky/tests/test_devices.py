@@ -11,19 +11,18 @@ reason = ''
 
 try:
     import ophyd
-    from ophyd import Component as Cpt, Device, Signal as UnusableSignal
+    from ophyd import Component as Cpt, Device, Signal
 except ImportError as ie:
     # pytestmark = pytest.mark.skip
     ophyd = None
     reason = str(ie)
 else:
     # define the classes only if ophyd is available
-    class Signal(UnusableSignal):
-        def __init__(self, _, *, name=None, parent=None):
-            super().__init__(name=name, parent=parent)
+
     class A(Device):
-        s1 = Cpt(Signal, '')
-        s2 = Cpt(Signal, '')
+        s1 = Cpt(Signal, value=0)
+        s2 = Cpt(Signal, value=0)
+
     class B(Device):
         a1 = Cpt(A, '')
         a2 = Cpt(A, '')
@@ -34,10 +33,11 @@ requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
 
 @requires_ophyd
 def test_ancestry():
-    b = B('')
+    b = B('', name='b')
     assert ancestry(b) == [b]
     assert ancestry(b.a1) == [b.a1, b]
     assert ancestry(b.a1.s1) == [b.a1.s1, b.a1, b]
+
 
 @requires_ophyd
 def test_share_ancestor():
@@ -53,9 +53,9 @@ def test_share_ancestor():
 
 @requires_ophyd
 def test_separate_devices():
-    b1 = B('')
-    b2 = B('')
-    a = A('')
+    b1 = B('', name='b1')
+    b2 = B('', name='b2')
+    a = A('', name='a')
     assert separate_devices([b1, b1.a1]) == [b1]
     assert separate_devices([b1.a1, b1.a2]) == [b1.a1, b1.a2]
     assert separate_devices([b1, b2.a1]) == [b1, b2.a1]
@@ -66,10 +66,12 @@ def test_separate_devices():
 @requires_ophyd
 def test_monitor(fresh_RE):
     docs = []
+
     def collect(name, doc):
         docs.append(doc)
 
     a = A('')
+
     def plan():
         yield Msg('open_run')
         yield Msg('monitor', a.s1)
@@ -82,10 +84,12 @@ def test_monitor(fresh_RE):
 @requires_ophyd
 def test_monitor_with_pause_resume(fresh_RE):
     docs = []
+
     def collect(name, doc):
         docs.append(doc)
 
     a = A('')
+
     def plan():
         yield Msg('open_run')
         yield Msg('monitor', a.s1)
