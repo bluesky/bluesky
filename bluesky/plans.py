@@ -1528,6 +1528,8 @@ def count(detectors, num=1, delay=None, *, md=None):
         list of 'readable' objects
     num : integer, optional
         number of readings to take; default is 1
+
+        If None, capture data until canceled
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
     md : dict, optional
@@ -1547,36 +1549,48 @@ def count(detectors, num=1, delay=None, *, md=None):
          'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
          'plan_name': 'count'})
 
-    if num is None:
-        counter = itertools.count()  # run forever, until interrupted
-    else:
-        counter = range(num)
-
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
     if not isinstance(delay, Iterable):
         delay = itertools.repeat(delay)
     else:
         delay = iter(delay)
 
+    def finite_plan():
+        for i in range(num):
+            yield from single_gen(Msg('checkpoint'))
+            yield from trigger_and_read(detectors)
+            try:
+                d = next(delay)
+            except StopIteration:
+                if i + 1 == num:
+                    break
+                else:
+                    # num specifies a number of iterations less than delay
+                    raise ValueError("num=%r but delays only provides %r "
+                                     "entries" % (num, i))
+            if d is not None:
+                yield from single_gen(Msg('sleep', None, d))
+
+    def infinite_plan():
+        while True:
+            yield from single_gen(Msg('checkpoint'))
+            yield from trigger_and_read(detectors)
+            try:
+                d = next(delay)
+            except StopIteration:
+                break
+            if d is not None:
+                yield from single_gen(Msg('sleep', None, d))
+
+    if num is None:
+        plan = infinite_plan()
+    else:
+        plan = finite_plan()
+
     plan_stack = deque()
     with stage_context(plan_stack, detectors):
         with run_context(plan_stack, md):
-            for i in counter:
-                plan_stack.append(single_gen(Msg('checkpoint')))
-                plan_stack.append(trigger_and_read(detectors))
-                try:
-                    d = next(delay)
-                except StopIteration:
-                    if num is None:
-                        break
-                    elif i + 1 == num:
-                        break
-                    else:
-                        # num specifies a number of iterations less than delay
-                        raise ValueError("num=%r but delays only provides %r "
-                                         "entries" % (num, i))
-                if d is not None:
-                    plan_stack.append(single_gen(Msg('sleep', None, d)))
+            plan_stack.append(plan)
     return plan_stack
 
 

@@ -1,5 +1,5 @@
 import copy
-from collections import deque
+from collections import deque, defaultdict
 import pytest
 from bluesky import Msg
 from bluesky.examples import det, det1, det2, Mover, NullStatus, motor
@@ -48,8 +48,8 @@ def cb(name, doc):
      (create, ('custom_name',), {}, [Msg('create', name='custom_name')]),
      (save, (), {}, [Msg('save')]),
      (read, (det,), {}, [Msg('read', det)]),
-     (monitor, ('foo',), {}, [Msg('monitor', 'foo', name=None)]), 
-     (monitor, ('foo',), {'name': 'c'}, [Msg('monitor', 'foo', name='c')]), 
+     (monitor, ('foo',), {}, [Msg('monitor', 'foo', name=None)]),
+     (monitor, ('foo',), {'name': 'c'}, [Msg('monitor', 'foo', name='c')]),
      (unmonitor, ('foo',), {}, [Msg('unmonitor', 'foo')]),
      (null, (), {}, [Msg('null')]),
      (abs_set, (det, 5), {}, [Msg('set', det, 5, group=None)]),
@@ -73,7 +73,7 @@ def cb(name, doc):
      (pause, (), {}, [Msg('pause', None, defer=False)]),
      (deferred_pause, (), {}, [Msg('pause', None, defer=True)]),
      (kickoff, ('foo',), {}, [Msg('kickoff', 'foo', group=None)]),
-     (kickoff, ('foo',), {'custom': 5}, [Msg('kickoff', 'foo', 
+     (kickoff, ('foo',), {'custom': 5}, [Msg('kickoff', 'foo',
                                              group=None, custom=5)]),
      (collect, ('foo',), {}, [Msg('collect', 'foo', stream=False)]),
      (configure, (det, 1), {'a': 2}, [Msg('configure', det, 1, a=2)]),
@@ -198,7 +198,7 @@ def test_finalize_runs_after_error(fresh_RE):
         raise Exception
 
     msgs = []
-        
+
     def accumulator(msg):
         msgs.append(msg)
 
@@ -218,7 +218,7 @@ def test_reset_positions(fresh_RE):
     motor.set(5)
 
     msgs = []
-        
+
     def accumulator(msg):
         msgs.append(msg)
 
@@ -242,7 +242,7 @@ def test_reset_positions_no_position_attr(fresh_RE):
     motor.set(5)
 
     msgs = []
-        
+
     def accumulator(msg):
         msgs.append(msg)
 
@@ -267,7 +267,7 @@ def test_relative_set(fresh_RE):
     motor.set(5)
 
     msgs = []
-        
+
     def accumulator(msg):
         msgs.append(msg)
 
@@ -291,7 +291,7 @@ def test_relative_set_no_position_attr(fresh_RE):
     motor.set(5)
 
     msgs = []
-        
+
     def accumulator(msg):
         msgs.append(msg)
 
@@ -329,7 +329,7 @@ def test_configure_count_time(fresh_RE):
         yield from (m for m in [Msg('read', det)])
 
     msgs = []
-        
+
     def accumulator(msg):
         msgs.append(msg)
 
@@ -441,3 +441,20 @@ def test_plan_md(fresh_RE):
     mutable.clear()
     fresh_RE(Scan([det], motor, 1, 2, 2, md=md), collector)
     assert 'color' in mutable[0]
+
+
+def test_infinite_count(fresh_RE):
+    loop = fresh_RE.loop
+
+    loop.call_later(2, fresh_RE.stop)
+    docs = defaultdict(list)
+
+    def collector(name, doc):
+        docs[name].append(doc)
+
+    fresh_RE(count([det], num=None), collector)
+
+    assert len(docs['start']) == 1
+    assert len(docs['stop']) == 1
+    assert len(docs['descriptor']) == 1
+    assert len(docs['event']) > 0
