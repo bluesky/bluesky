@@ -32,7 +32,6 @@ class ROIPlanCreator:
         points : tuple
            ((x1, y1), (x2, y2))
         '''
-        # TODO deal with ordering issues
         x1, y1 = self._pt1.xdata, self._pt1.ydata
         x2, y2 = self._pt2.xdata, self._pt2.ydata
         return (x1, y1), (x2, y2)
