@@ -1,17 +1,14 @@
 """
 Useful callbacks for the Run Engine
 """
-import sys
 from itertools import count
 from collections import deque, namedtuple, OrderedDict
-import warnings
 import time as ttime
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from datetime import datetime
 import numpy as np
-import os
 import logging
 logger = logging.getLogger(__name__)
 
