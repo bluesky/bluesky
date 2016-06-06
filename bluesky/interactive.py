@@ -59,6 +59,14 @@ class ROIPlanCreator:
         raise NotImplementedError()
 
     @property
+    def creator_md(self):
+        p1, p2 = self.last_rect
+        local_md = {'interactive': {
+            'widget_class': self.__class__.__name__,
+            'rect_points': {'p1': p1, 'p2': p2}}}
+        return local_md
+
+    @property
     def active(self):
         'If the widget should be active'
         return self.widget.get_active()
@@ -112,19 +120,17 @@ class OuterProductWidget(ROIPlanCreator):
         self.num2 = num2
         if md is None:
             md = {}
-        self.md = md
+        self._md = md
+
+    @property
+    def md(self):
+        return ChainMap(self._md, self.creator_md)
 
     def _plan(self, p1, p2):
         x1, y1 = p1
         x2, y2 = p2
 
-        local_md = {'interactive': {
-            'created_by': self.__class__.__name__,
-            'rect_points': {'p1': p1, 'p2': p2}}}
-
-        md = ChainMap(self.md, local_md)
-
         return outer_product_scan(self.dets,
                                   self.motor1, x1, x2, self.num1,
                                   self.motor2, y1, y2, self.num2,
-                                  self.snake, md=md)
+                                  self.snake, md=self.md)
