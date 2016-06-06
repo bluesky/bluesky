@@ -90,7 +90,9 @@ def ct(num=1, delay=None, time=None, *, md=None):
     Parameters
     ----------
     num : integer, optional
-        number of readings to take; default is 1
+        number of readings to take; default is 1.
+
+        If None, capture data until canceled
     delay : iterable or scalar, optional
         time delay between successive readings; default is 0
     time : float, optional
