@@ -377,6 +377,9 @@ class LiveTable(CallbackBase):
     fields : list
          List of fields to add to the table.
 
+    stream_name : str, optional
+         The event stream to watch for
+
     print_header_interval : int, optional
          Reprint the header every this many lines, defaults to 50
 
@@ -409,13 +412,15 @@ class LiveTable(CallbackBase):
                   "(scan num: {st[scan_id]})")
     ev_time_key = 'SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES'
 
-    def __init__(self, fields, *, print_header_interval=50,
+    def __init__(self, fields, *, stream_name='primary',
+                 print_header_interval=50,
                  min_width=12, default_prec=3, extra_pad=1,
                  logbook=None):
         super().__init__()
         self._header_interval = print_header_interval
         # expand objects
         self._fields = _get_obj_fields(fields)
+        self._stream = stream_name
         self._start = None
         self._stop = None
         self._descriptors = set()
@@ -437,6 +442,11 @@ class LiveTable(CallbackBase):
                 return int(p)
             except (TypeError, ValueError):
                 return self._default_prec
+
+        if doc['name'] != self._stream:
+            return
+
+        self._descriptors.add(doc['uid'])
 
         dk = doc['data_keys']
         for k in self._fields:
@@ -489,6 +499,8 @@ class LiveTable(CallbackBase):
 
     def event(self, doc):
         # shallow copy so we can mutate
+        if doc['descriptor'] not in self._descriptors:
+            return
         data = dict(doc['data'])
         self._count += 1
         if not self._count % self._header_interval:
