@@ -1105,22 +1105,35 @@ class RunEngine:
             Msg('read', obj)
         """
         obj = msg.obj
-        self._objs_read.append(obj)
-        if obj not in self._describe_cache:
-            # Validate that there is no data key name collision.
-            data_keys = obj.describe()
-            keys = data_keys.keys()  # that is, field names
-            for known_obj, known_data_keys in self._describe_cache.items():
-                known_keys = known_data_keys.keys()  # that is, field names
-                if set(known_keys) & set(keys):
+        # actually _read_ the object
+        ret = obj.read(*msg.args, **msg.kwargs)
+
+        if self._bundling:
+            # if the object is not in the _describe_cache, cache it
+            if obj not in self._describe_cache:
+                # Validate that there is no data key name collision.
+                data_keys = obj.describe()
+                self._describe_cache[obj] = data_keys
+                self._config_desc_cache[obj] = obj.describe_configuration()
+                self._cache_config(obj)
+
+            # check that current read collides with nothing else in
+            # current event
+            cur_keys = set(self._describe_cache[obj].keys())
+            for read_obj in self._objs_read:
+                # that is, field names
+                known_keys = self._describe_cache[read_obj].keys()
+                if set(known_keys) & cur_keys:
                     raise ValueError("Data keys (field names) from {0!r} "
                                      "collide with those from {1!r}"
-                                     "".format(obj, known_obj))
-            self._describe_cache[obj] = data_keys
-            self._config_desc_cache[obj] = obj.describe_configuration()
-            self._cache_config(obj)
-        ret = obj.read(*msg.args, **msg.kwargs)
-        self._read_cache.append(ret)
+                                     "".format(obj, read_obj))
+
+            # add this object to the cache of things we have read
+            self._objs_read.append(obj)
+
+            # stash the results
+            self._read_cache.append(ret)
+
         return ret
 
     def _cache_config(self, obj):

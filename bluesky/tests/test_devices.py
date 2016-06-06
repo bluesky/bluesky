@@ -1,5 +1,7 @@
+from collections import defaultdict
+
 from bluesky.utils import ancestry, share_ancestor, separate_devices
-from bluesky.tests.utils import setup_test_run_engine
+from bluesky.plans import trigger_and_read
 from bluesky import Msg
 import pytest
 
@@ -9,22 +11,25 @@ reason = ''
 
 try:
     import ophyd
-    from ophyd import Component as Cpt, Device, Signal as UnusableSignal
+    from ophyd import Component as Cpt, Device, Signal
 except ImportError as ie:
     # pytestmark = pytest.mark.skip
     ophyd = None
     reason = str(ie)
 else:
     # define the classes only if ophyd is available
-    class Signal(UnusableSignal):
-        def __init__(self, _, *, name=None, parent=None):
-            super().__init__(name=name, parent=parent)
+
     class A(Device):
-        s1 = Cpt(Signal, '')
-        s2 = Cpt(Signal, '')
+        s1 = Cpt(Signal, value=0)
+        s2 = Cpt(Signal, value=0)
+
     class B(Device):
         a1 = Cpt(A, '')
         a2 = Cpt(A, '')
+
+    class DCM(Device):
+        th = Cpt(Signal, value=0)
+        x = Cpt(Signal, value=0)
 
 # define a skip condition based on if ophyd is available or not
 requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
@@ -32,10 +37,11 @@ requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
 
 @requires_ophyd
 def test_ancestry():
-    b = B('')
+    b = B('', name='b')
     assert ancestry(b) == [b]
     assert ancestry(b.a1) == [b.a1, b]
     assert ancestry(b.a1.s1) == [b.a1.s1, b.a1, b]
+
 
 @requires_ophyd
 def test_share_ancestor():
@@ -51,9 +57,9 @@ def test_share_ancestor():
 
 @requires_ophyd
 def test_separate_devices():
-    b1 = B('')
-    b2 = B('')
-    a = A('')
+    b1 = B('', name='b1')
+    b2 = B('', name='b2')
+    a = A('', name='a')
     assert separate_devices([b1, b1.a1]) == [b1]
     assert separate_devices([b1.a1, b1.a2]) == [b1.a1, b1.a2]
     assert separate_devices([b1, b2.a1]) == [b1, b2.a1]
@@ -64,10 +70,12 @@ def test_separate_devices():
 @requires_ophyd
 def test_monitor(fresh_RE):
     docs = []
+
     def collect(name, doc):
         docs.append(doc)
 
     a = A('')
+
     def plan():
         yield Msg('open_run')
         yield Msg('monitor', a.s1)
@@ -80,10 +88,12 @@ def test_monitor(fresh_RE):
 @requires_ophyd
 def test_monitor_with_pause_resume(fresh_RE):
     docs = []
+
     def collect(name, doc):
         docs.append(doc)
 
     a = A('')
+
     def plan():
         yield Msg('open_run')
         yield Msg('monitor', a.s1)
@@ -105,3 +115,62 @@ def test_monitor_with_pause_resume(fresh_RE):
     assert len(docs) == 3
     fresh_RE.resume()
     assert len(docs) == 6  # two new Events + RunStop
+
+
+@requires_ophyd
+def test_overlapping_read(fresh_RE):
+
+    dcm = DCM('', name='dcm')
+    dcm2 = DCM('', name='dcm')
+
+    def collect(name, doc):
+        docs[name].append(doc)
+
+    docs = defaultdict(list)
+    fresh_RE(([Msg('open_run')] +
+              list(trigger_and_read([dcm.th])) +
+              list(trigger_and_read([dcm])) +
+              [Msg('close_run')]), collect)
+    assert len(docs['descriptor']) == 2
+
+    docs = defaultdict(list)
+    fresh_RE(([Msg('open_run')] +
+              list(trigger_and_read([dcm])) +
+              list(trigger_and_read([dcm.th])) +
+              [Msg('close_run')]), collect)
+    assert len(docs['descriptor']) == 2
+
+    docs = defaultdict(list)
+    fresh_RE(([Msg('open_run')] +
+              list(trigger_and_read([dcm])) +
+              list(trigger_and_read([dcm2])) +
+              [Msg('close_run')]), collect)
+    assert len(docs['descriptor']) == 2
+
+    docs = defaultdict(list)
+    fresh_RE(([Msg('open_run')] +
+              list(trigger_and_read([dcm, dcm.th])) +
+              list(trigger_and_read([dcm])) +
+              [Msg('close_run')]), collect)
+    assert len(docs['descriptor']) == 1
+
+
+@requires_ophyd
+def test_read_clash(fresh_RE):
+    dcm = DCM('', name='dcm')
+    dcm2 = DCM('', name='dcm')
+
+    with pytest.raises(ValueError):
+        fresh_RE(([Msg('open_run')] +
+                  list(trigger_and_read([dcm, dcm2.th])) +
+                  [Msg('close_run')]))
+
+    with pytest.raises(ValueError):
+        fresh_RE(([Msg('open_run')] +
+                  list(trigger_and_read([dcm, dcm2])) +
+                  [Msg('close_run')]))
+
+    with pytest.raises(ValueError):
+        fresh_RE(([Msg('open_run')] +
+                  list(trigger_and_read([dcm.th, dcm2.th])) +
+                  [Msg('close_run')]))
