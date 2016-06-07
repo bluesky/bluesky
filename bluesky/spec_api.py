@@ -391,8 +391,6 @@ def tw(motor, step, time=None, *, md=None):
 
     Parameters
     ----------
-    target_field : string
-        data field whose output is the focus of the adaptive tuning
     motor : Device
     step : float
         initial suggestion for step size
@@ -403,7 +401,7 @@ def tw(motor, step, time=None, *, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'tw',
                        gs.MD_TIME_KEY: time})
-    plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, md=md)
+    plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, motor, step, md=md)
     plan = baseline_wrapper(plan, [motor] + gs.BASELINE_DEVICES)
     plan = configure_count_time_wrapper(plan, time)
     return [plan]
