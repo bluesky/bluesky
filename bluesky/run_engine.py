@@ -214,6 +214,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
+        self._rewindable = True  # if the RE is allowed to cache msgs to replay
         self._plan_stack = deque()  # stack of generators to work off of
         self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
@@ -266,6 +267,16 @@ class RunEngine:
         self._lossless_dispatcher = Dispatcher()
 
         self.loop.call_soon(self._check_for_signals)
+
+    @property
+    def rewindable(self):
+        return self._rewindable
+
+    @rewindable.setter
+    def rewindable(self, v):
+        self._rewindable = bool(v)
+        if self._rewindable and self.resumable:
+            self._reset_checkpoint_state_meth()
 
     @property
     def loop(self):
@@ -838,7 +849,7 @@ class RunEngine:
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
                     self._objs_seen.add(msg.obj)
-                    if (self._msg_cache is not None and
+                    if (self._msg_cache is not None and self._rewindable and
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
@@ -1668,6 +1679,9 @@ class RunEngine:
 
     @asyncio.coroutine
     def _reset_checkpoint_state(self):
+        self._reset_checkpoint_state_meth()
+
+    def _reset_checkpoint_state_meth(self):
         if self._msg_cache is None:
             return
 
