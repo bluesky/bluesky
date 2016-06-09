@@ -16,7 +16,8 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            configure_count_time_wrapper,
                            subs_wrapper, trigger_and_read,
                            repeater, caching_repeater, count, Count, Scan,
-                           fly_during_decorator, subs_decorator)
+                           fly_during_decorator, subs_decorator,
+                           inject_md_wrapper)
 
 
 class DummyMover:
@@ -211,6 +212,17 @@ def test_subs():
 
     processed_plan = list(subs_decorator(plan, {'all': cb})('test_arg',
                                                             test_kwarg='val'))
+    assert processed_plan == expected
+
+
+def test_md():
+    def plan():
+        yield from open_run(md={'a': 1})
+
+    processed_plan = list(inject_md_wrapper(plan(), {'b': 2}))
+
+    expected = [Msg('open_run', None, a=1, b=2)]
+
     assert processed_plan == expected
 
 
