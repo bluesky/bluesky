@@ -1068,6 +1068,29 @@ def fly(flyers, *, md=None):
     yield from close_run()
 
 
+def inject_md_wrapper(plan, md):
+    """
+    Inject additional metadata into a run.
+
+    This takes precedences over the original metadata dict in the event of
+    overlapping keys, but it does not mutate the original metadata dict.
+    (It uses ChainMap.)
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    md : dict
+        metadata
+    """
+    def _inject_md(msg):
+        if msg.command == 'open_run':
+            msg = msg._replace(kwargs=ChainMap(md, msg.kwargs))
+        return msg
+
+    return (yield from msg_mutator(plan, _inject_md))
+
+
 def fly_during_wrapper(plan, flyers):
     """
     Kickoff and collect "flyer" (asynchronously collect) objects during runs.
@@ -1611,6 +1634,7 @@ reset_positions_decorator = make_decorator(reset_positions_wrapper)
 finalize_decorator = make_decorator(finalize_wrapper)
 lazily_stage_decorator = make_decorator(lazily_stage_wrapper)
 fly_during_decorator = make_decorator(fly_during_wrapper)
+inject_md_decorator = make_decorator(inject_md_wrapper)
 
 
 @planify
