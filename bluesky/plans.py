@@ -1498,6 +1498,9 @@ def trigger_and_read(devices, name='primary'):
     msg : Msg
         messages to 'trigger', 'wait' and 'read'
     """
+    # If devices is empty, don't emit 'create'/'save' messages.
+    if not devices:
+        return []
     devices = separate_devices(devices)  # remove redundant entries
     grp = _short_uid('trigger')
     plan_stack = deque()
