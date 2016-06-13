@@ -214,7 +214,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
-        self._rewindable = True  # if the RE is allowed to cache msgs to replay
+        self._rewindable_flag = True  # if the RE is allowed to replay msgs
         self._plan_stack = deque()  # stack of generators to work off of
         self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
@@ -235,6 +235,7 @@ class RunEngine:
             'wait': self._wait,
             'checkpoint': self._checkpoint,
             'clear_checkpoint': self._clear_checkpoint,
+            'rewindable': self._rewindable,
             'pause': self._pause,
             'collect': self._collect,
             'kickoff': self._kickoff,
@@ -270,12 +271,12 @@ class RunEngine:
 
     @property
     def rewindable(self):
-        return self._rewindable
+        return self._rewindable_flag
 
     @rewindable.setter
     def rewindable(self, v):
-        self._rewindable = bool(v)
-        if self._rewindable and self.resumable:
+        self._rewindable_flag = bool(v)
+        if self._rewindable_flag and self.resumable:
             self._reset_checkpoint_state_meth()
 
     @property
@@ -849,7 +850,8 @@ class RunEngine:
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
                     self._objs_seen.add(msg.obj)
-                    if (self._msg_cache is not None and self._rewindable and
+                    if (self._msg_cache is not None and
+                            self._rewindable_flag and
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
@@ -1706,6 +1708,21 @@ class RunEngine:
         self._msg_cache = None
         # clear stashed
         self._teed_sequence_counters.clear()
+
+    @asyncio.coroutine
+    def _rewindable(self, msg):
+        '''Set rewindable state of RunEngine
+
+        Expected message object is:
+
+            Msg('rewindable', None, bool or None)
+        '''
+
+        rw_flag, = msg.args
+        if rw_flag is not None:
+            self.rewindable = rw_flag
+
+        return self.rewindable
 
     @asyncio.coroutine
     def _configure(self, msg):

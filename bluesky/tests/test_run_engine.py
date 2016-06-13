@@ -575,3 +575,46 @@ def test_no_rewind(fresh_RE):
     RE(plan)
     RE.resume()
     assert msg_lst == plan
+
+
+def test_no_rewindable_msg(fresh_RE):
+    RE = fresh_RE
+    RE.rewindable = True
+
+    msg_lst = []
+
+    def msg_collector(msg):
+        msg_lst.append(msg)
+
+    plan = ([Msg('null')] * 3 +
+            [Msg('pause'), Msg('rewindable', None, False)] +
+            [Msg('null')] * 3)
+
+    RE.msg_hook = msg_collector
+
+    RE(plan)
+    RE.resume()
+    assert msg_lst[:4] == plan[:4]
+    assert msg_lst[4:7] == plan[:3]
+    assert msg_lst[7:] == plan[4:]
+
+
+@pytest.mark.parametrize('start_state', [True, False])
+def test_rewindable_state_retrival(fresh_RE, start_state):
+    RE = fresh_RE
+    RE.rewindable = start_state
+
+    def rewind_plan(start_value):
+        ret = yield Msg('rewindable', None, None)
+        assert ret is start_state
+        cache_state = ret
+        ret = yield Msg('rewindable', None, start_state)
+        assert ret is start_state
+
+        ret = yield Msg('rewindable', None, not start_state)
+        assert ret is (not start_state)
+
+        ret = yield Msg('rewindable', None, cache_state)
+        assert ret is start_state
+
+    RE(rewind_plan(start_state))
