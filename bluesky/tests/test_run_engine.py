@@ -559,3 +559,19 @@ def test_sideband_cancel(fresh_RE):
     stop = ttime.time()
 
     assert .5 < (stop - start) < 2
+
+
+def test_no_rewind(fresh_RE):
+    RE = fresh_RE
+    msg_lst = []
+
+    def msg_collector(msg):
+        msg_lst.append(msg)
+
+    RE.rewindable = False
+
+    plan = [Msg('null')] * 3 + [Msg('pause')] + [Msg('null')] * 3
+    RE.msg_hook = msg_collector
+    RE(plan)
+    RE.resume()
+    assert msg_lst == plan
