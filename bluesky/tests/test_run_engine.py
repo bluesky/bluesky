@@ -17,7 +17,7 @@ def test_states():
 
 def test_verbose(fresh_RE):
     fresh_RE.verbose = True
-    assert fresh_RE.verbose is True
+    assert fresh_RE.verbose
     # Emit all four kinds of document, exercising the logging.
     fresh_RE([Msg('open_run'), Msg('create'), Msg('read', det), Msg('save'),
               Msg('close_run')])
@@ -216,7 +216,6 @@ def test_redundant_monitors_are_illegal(fresh_RE):
     # Monitoring, unmonitoring, and monitoring again is legal.
     fresh_RE([Msg('open_run'), Msg('monitor', dummy), Msg('unmonitor', dummy),
               Msg('monitor', dummy)])
-
 
     # Monitoring outside a run is illegal.
     with pytest.raises(IllegalMessageSequence):
