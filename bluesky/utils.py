@@ -482,6 +482,27 @@ def separate_devices(devices):
     return result
 
 
+def all_safe_rewind(devices):
+    '''If all devices can have their trigger method re-run on resume.
+
+    Parameters
+    ----------
+    devices : list
+        List of devices
+
+    Returns
+    -------
+    safe_rewind : bool
+       If all the device can safely re-triggered
+    '''
+    for d in devices:
+        if hasattr(d, 'rewindable'):
+            rewindable = d.rewindable.get()
+            if not rewindable:
+                return False
+    return True
+
+
 SEARCH_PATH = []
 ENV_VAR = 'BLUESKY_HISTORY_PATH'
 if ENV_VAR in os.environ:

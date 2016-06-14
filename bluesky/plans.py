@@ -12,7 +12,8 @@ from . import (Msg, plan_patterns)
 
 from .plan_tools import ensure_generator
 from .utils import (Struct, Subs, normalize_subs_input,
-                    separate_devices, apply_sub_factories, update_sub_lists)
+                    separate_devices, apply_sub_factories, update_sub_lists,
+                    all_safe_rewind)
 
 
 def _short_uid(label, truncate=6):
@@ -805,6 +806,12 @@ def unsubscribe(token):
     return (yield Msg('unsubscribe', token=token))
 
 
+def run_wrapper(plan, md=None):
+    yield from open_run(md)
+    yield from plan
+    yield from close_run()
+
+
 def subs_wrapper(plan, subs):
     """
     Subscribe callbacks to the document stream; finally, unsubscribe.
@@ -1047,6 +1054,42 @@ def event_context(plan_stack, name='primary'):
     plan_stack.append(single_gen(Msg('create', None, name=name)))
     yield plan_stack
     plan_stack.append(single_gen(Msg('save')))
+
+
+@contextmanager
+def rewindable_context(plan_stack, rewindable):
+    '''Toggle the 'rewindable' state of the RE
+
+    Only strictly
+
+    Parameters
+    ----------
+    plan_stack : list-like
+        appendable collection of generators that yield messages (`Msg` objects)
+    rewindable : bool
+
+    '''
+    initial_rewindable = None
+
+    def capture_rewindable_state():
+        nonlocal initial_rewindable
+        initial_rewindable = yield Msg('rewindable', None, None)
+
+    def set_rewindable(rewindable):
+        print(initial_rewindable)
+        if initial_rewindable != rewindable:
+            yield Msg('rewindable', None, rewindable)
+
+    def restore_rewindable():
+        if initial_rewindable != rewindable:
+            yield Msg('rewindable', None, initial_rewindable)
+
+    if not rewindable:
+        plan_stack.append(capture_rewindable_state())
+        plan_stack.append(set_rewindable(rewindable))
+    yield plan_stack
+    if not rewindable:
+        plan_stack.append(restore_rewindable())
 
 
 def fly(flyers, *, md=None):
@@ -1536,16 +1579,19 @@ def trigger_and_read(devices, name='primary'):
     if not devices:
         return []
     devices = separate_devices(devices)  # remove redundant entries
+    rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
     grp = _short_uid('trigger')
     plan_stack = deque()
-    for obj in devices:
-        if hasattr(obj, 'trigger'):
-            plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
-    if plan_stack:
-        plan_stack.append(single_gen(Msg('wait', None, group=grp)))
-    with event_context(plan_stack, name=name):
+
+    with rewindable_context(plan_stack, rewindable):
         for obj in devices:
-            plan_stack.append(single_gen(Msg('read', obj)))
+            if hasattr(obj, 'trigger'):
+                plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
+        if plan_stack:
+            plan_stack.append(single_gen(Msg('wait', None, group=grp)))
+        with event_context(plan_stack, name=name):
+            for obj in devices:
+                plan_stack.append(single_gen(Msg('read', obj)))
     return plan_stack
 
 
