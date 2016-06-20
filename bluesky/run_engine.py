@@ -798,13 +798,14 @@ class RunEngine:
                     # processed first on resume (instead of the first
                     # message in self._msg_cache).
                     yield from asyncio.sleep(0.0001, loop=self.loop)
-                    if self._exception is not None:
-                        raise self._exception
                     # Send last response;
                     # get new message but don't process it yet.
                     try:
-                        resp = self._response_stack.pop()
-                        msg = self._plan_stack[-1].send(resp)
+                        if self._exception is not None:
+                            msg = self._plan_stack[-1].throw(self._exception)
+                        else:
+                            resp = self._response_stack.pop()
+                            msg = self._plan_stack[-1].send(resp)
 
                     except StopIteration:
                         self._plan_stack.pop()
@@ -812,6 +813,9 @@ class RunEngine:
                             continue
                         else:
                             raise
+                    # If we are here one of the plans handled the exception
+                    # and wants to do something with it
+                    self._exception = None
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
                     self._objs_seen.add(msg.obj)
