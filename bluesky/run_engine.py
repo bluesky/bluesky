@@ -802,7 +802,26 @@ class RunEngine:
                     # get new message but don't process it yet.
                     try:
                         if self._exception is not None:
-                            msg = self._plan_stack[-1].throw(self._exception)
+                            # throw the message at the current plan
+                            try:
+                                msg = self._plan_stack[-1].throw(
+                                    self._exception)
+                            except Exception as e:
+                                # deal with the case where the top
+                                # plan is a re-wind/suspender injected
+                                # plan, all plans in stack get a
+                                # chance to take a bite at this apple.
+
+                                # if the exact same exception comes
+                                # back up, then the plan did not
+                                # handle it and the next plan gets to
+                                # try.
+                                if e is self._exception:
+                                    self._plan_stack.pop()
+                                    if len(self._plan_stack):
+                                        continue
+                                    else:
+                                        raise
                         else:
                             resp = self._response_stack.pop()
                             msg = self._plan_stack[-1].send(resp)
