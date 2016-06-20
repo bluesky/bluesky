@@ -849,9 +849,8 @@ class RunEngine:
                     except KeyboardInterrupt:
                         raise
                     except Exception as e:
-                        msg = self._plan_stack[-1].throw(e)
-                        self._plan_stack.append(single_gen(msg))
-                        self._response_stack.append(None)
+                        self._exception = e
+                        continue
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
                     # -- overriding the RunEngine -- and then raises instead
