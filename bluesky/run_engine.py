@@ -859,6 +859,15 @@ class RunEngine:
                           "a hard pause instead.")
                     self.loop.call_soon(self.request_pause, False)
                     print(PAUSE_MSG)
+                except asyncio.CancelledError as e:
+                    # if we are handling this twice, raise and leave the plans
+                    # alone
+                    if self._exception is e:
+                        raise e
+                    # the case where FailedPause, RequestAbort or a coro
+                    # raised error is not already stashed in _exception
+                    if self._exception is None:
+                        self._exception = e
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             # TODO Is the sleep here necessasry?
