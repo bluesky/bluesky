@@ -1,7 +1,36 @@
+import multiprocessing
 import zmq
-import random
 import socket
 import os
+
+
+def run_forwarder_device(frontend_port, backend_port):
+    try:
+        context = zmq.Context(1)
+        # Socket facing clients
+        frontend = context.socket(zmq.SUB)
+        frontend.bind("tcp://*:%d" % frontend_port)
+        
+        frontend.setsockopt_string(zmq.SUBSCRIBE, "")
+        
+        # Socket facing services
+        backend = context.socket(zmq.PUB)
+        backend.bind("tcp://*:%d" % backend_port)
+
+        zmq.device(zmq.FORWARDER, frontend, backend)
+    finally:
+        frontend.close()
+        backend.close()
+        context.term()
+
+class Bridge:
+    def __init__(self):
+        self.forwarder = multiprocessing.Process(run_forwarder_device)
+        self.forwarder.start()
+
+    def close(self):
+        self.forwarder.terminate()
+
 
 
 def make_publisher(host, port=5559):
