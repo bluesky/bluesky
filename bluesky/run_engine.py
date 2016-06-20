@@ -922,8 +922,15 @@ class RunEngine:
 
             for task in asyncio.Task.all_tasks(self.loop):
                 task.cancel()
+            for p in self._plan_stack:
+                try:
+                    p.close()
+                except RuntimeError as e:
+                    print('The plan {!r} tried to yield a value on close.  '
+                          'Please fix your plan.')
             self.loop.stop()
             self.state = 'idle'
+        print('exited run loop')
 
     def _check_for_signals(self):
         # Check for pause requests from keyboard.

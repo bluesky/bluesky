@@ -942,10 +942,24 @@ def finalize_wrapper(plan, final_plan):
         messages from `plan` until it terminates or an error is raised, then
         messages from `final_plan`
     '''
+    cleanup = True
     try:
         ret = yield from plan
+    except GeneratorExit:
+        cleanup = False
+        raise
     finally:
-        yield from ensure_generator(final_plan)
+        # if the exception raised in `GeneratorExit` that means
+        # someone called `gen.close()` on this generator.  In those
+        # cases generators must either re-raise the GeneratorExit or
+        # raise a different exception.  Trying to yield any values
+        # results in a RuntimeError being raised where `close` is
+        # called.  Thus, we catch, the GeneratorExit, disable cleanup
+        # and then re-raise
+
+        # https://docs.python.org/3/reference/expressions.html?#generator.close
+        if cleanup:
+            yield from ensure_generator(final_plan)
     return ret
 
 
