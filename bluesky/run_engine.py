@@ -846,8 +846,6 @@ class RunEngine:
                         coro = self._command_registry[msg.command]
                         response = yield from coro(msg)
                         self._response_stack.append(response)
-                    except KeyboardInterrupt:
-                        raise
                     except Exception as e:
                         self._exception = e
                         continue
