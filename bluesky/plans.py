@@ -298,7 +298,7 @@ def create(name='primary'):
     `bluesky.plans.save`
     `bluesky.plans.event_context`
     """
-    return (yield from single_gen(Msg('create', name=name)))
+    return (yield Msg('create', name=name))
 
 
 def save():
@@ -315,7 +315,7 @@ def save():
     `bluesky.plans.create`
     `bluesky.plans.event_context`
     """
-    return (yield from single_gen(Msg('save')))
+    return (yield Msg('save'))
 
 
 def read(obj):
@@ -331,7 +331,7 @@ def read(obj):
     msg : Msg
         Msg('read', obj)
     """
-    return (yield from single_gen(Msg('read', obj)))
+    return (yield Msg('read', obj))
 
 
 def monitor(obj, *args, name=None, **kwargs):
@@ -357,8 +357,7 @@ def monitor(obj, *args, name=None, **kwargs):
     --------
     `bluesky.plans.unmonitor`
     """
-    return (yield from single_gen(Msg('monitor', obj, *args, name=name,
-                                      **kwargs)))
+    return (yield Msg('monitor', obj, *args, name=name, **kwargs))
 
 
 def unmonitor(obj):
@@ -378,7 +377,7 @@ def unmonitor(obj):
     --------
     `bluesky.plans.monitor`
     """
-    return (yield from single_gen(Msg('unmonitor', obj)))
+    return (yield Msg('unmonitor', obj))
 
 
 def null():
@@ -390,7 +389,7 @@ def null():
     msg : Msg
         Msg('null')
     """
-    return (yield from single_gen(Msg('null')))
+    return (yield Msg('null'))
 
 
 def abs_set(obj, *args, group=None, wait=False, **kwargs):
@@ -419,9 +418,9 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     `bluesky.plans.rel_set`
     `bluesky.plans.wait`
     """
-    ret = yield from single_gen(Msg('set', obj, *args, group=group, **kwargs))
+    ret = yield Msg('set', obj, *args, group=group, **kwargs)
     if wait:
-        yield from single_gen(Msg('wait', None, group=group))
+        yield Msg('wait', None, group=group)
     return ret
 
 
@@ -454,7 +453,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     ret = yield from relative_set_wrapper(
         abs_set(obj, *args, group=group, **kwargs))
     if wait:
-        yield from single_gen(Msg('wait', None, group=group))
+        yield Msg('wait', None, group=group)
     return ret
 
 
@@ -475,9 +474,9 @@ def trigger(obj, *, group=None, wait=False):
     ------
     msg : Msg
     """
-    ret = yield from single_gen(Msg('trigger', obj, group=group))
+    ret = yield Msg('trigger', obj, group=group)
     if wait:
-        yield from single_gen(Msg('wait', None, group=group))
+        yield Msg('wait', None, group=group)
     return ret
 
 
@@ -498,7 +497,7 @@ def sleep(time):
     msg : Msg
         Msg('sleep', None, time)
     """
-    return (yield from single_gen(Msg('sleep', None, time)))
+    return (yield Msg('sleep', None, time))
 
 
 def wait(group=None):
@@ -515,7 +514,7 @@ def wait(group=None):
     msg : Msg
         Msg('wait', None, group=group)
     """
-    return (yield from single_gen(Msg('wait', None, group=group)))
+    return (yield Msg('wait', None, group=group))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
@@ -534,7 +533,7 @@ def checkpoint():
     --------
     `bluesky.plans.clear_checkpoint`
     """
-    return (yield from single_gen(Msg('checkpoint')))
+    return (yield Msg('checkpoint'))
 
 
 def clear_checkpoint():
@@ -550,7 +549,7 @@ def clear_checkpoint():
     --------
     `bluesky.plans.checkpoint`
     """
-    return (yield from single_gen(Msg('clear_checkpoint')))
+    return (yield Msg('clear_checkpoint'))
 
 
 def pause():
@@ -567,7 +566,7 @@ def pause():
     `bluesky.plans.deferred_pause`
     `bluesky.plans.sleep`
     """
-    return (yield from single_gen(Msg('pause', None, defer=False)))
+    return (yield Msg('pause', None, defer=False))
 
 
 def deferred_pause():
@@ -584,7 +583,7 @@ def deferred_pause():
     `bluesky.plans.pause`
     `bluesky.plans.sleep`
     """
-    return (yield from single_gen(Msg('pause', None, defer=True)))
+    return (yield Msg('pause', None, defer=True))
 
 
 def input(prompt=''):
@@ -601,7 +600,7 @@ def input(prompt=''):
     msg : Msg
         Msg('input', prompt=prompt)
     """
-    return (yield from single_gen(Msg('input', prompt=prompt)))
+    return (yield Msg('input', prompt=prompt))
 
 
 def kickoff(obj, *, group=None, wait=False, **kwargs):
@@ -631,8 +630,7 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     `bluesky.plans.collect`
     `bluesky.plans.wait`
     """
-    ret = (yield from single_gen(
-         Msg('kickoff', obj, group=group, **kwargs)))
+    ret = (yield Msg('kickoff', obj, group=group, **kwargs))
     if wait:
         yield from _wait(group=group)
     return ret
@@ -671,8 +669,7 @@ def complete(obj, *, group=None, wait=True, **kwargs):
     `bluesky.plans.collect`
     `bluesky.plans.wait`
     """
-    ret = (yield from single_gen(
-         Msg('complete', obj, group=group, **kwargs)))
+    ret = yield Msg('complete', obj, group=group, **kwargs)
     if wait:
         yield from _wait(group=group)
     return ret
@@ -701,7 +698,7 @@ def collect(obj, *, stream=False):
     `bluesky.plans.complete`
     `bluesky.plans.wait`
     """
-    return (yield from single_gen(Msg('collect', obj, stream=stream)))
+    return (yield Msg('collect', obj, stream=stream))
 
 
 def configure(obj, *args, **kwargs):
@@ -721,7 +718,7 @@ def configure(obj, *args, **kwargs):
     msg : Msg
         ``Msg('configure', obj, *args, **kwargs)``
     """
-    return (yield from single_gen(Msg('configure', obj, *args, **kwargs)))
+    return (yield Msg('configure', obj, *args, **kwargs))
 
 
 def stage(obj):
@@ -741,7 +738,7 @@ def stage(obj):
     --------
     `bluesky.plans.unstage`
     """
-    return (yield from single_gen(Msg('stage', obj)))
+    return (yield Msg('stage', obj))
 
 
 def unstage(obj):
@@ -761,7 +758,7 @@ def unstage(obj):
     --------
     `bluesky.plans.stage`
     """
-    return (yield from single_gen(Msg('unstage', obj)))
+    return (yield Msg('unstage', obj))
 
 
 def subscribe(name, func):
@@ -784,7 +781,7 @@ def subscribe(name, func):
     --------
     `bluesky.plans.unsubscribe`
     """
-    return (yield from single_gen(Msg('subscribe', None, name, func)))
+    return (yield Msg('subscribe', None, name, func))
 
 
 def unsubscribe(token):
@@ -805,7 +802,7 @@ def unsubscribe(token):
     --------
     `bluesky.plans.subscribe`
     """
-    return (yield from single_gen(Msg('unsubscribe', token=token)))
+    return (yield Msg('unsubscribe', token=token))
 
 
 def subs_wrapper(plan, subs):
@@ -879,7 +876,7 @@ def open_run(md=None):
     """
     if md is None:
         md = {}
-    return (yield from single_gen(Msg('open_run', **md)))
+    return (yield Msg('open_run', **md))
 
 
 def close_run():
@@ -895,7 +892,7 @@ def close_run():
     --------
     `bluesky.plans.open_run`
     """
-    return (yield from single_gen(Msg('close_run')))
+    return (yield Msg('close_run'))
 
 
 def wait_for(futures, **kwargs):
@@ -918,7 +915,7 @@ def wait_for(futures, **kwargs):
     --------
     `bluesky.plans.wait`
     """
-    return (yield from single_gen(Msg('wait_for', None, futures, **kwargs)))
+    return (yield Msg('wait_for', None, futures, **kwargs))
 
 
 def finalize_wrapper(plan, final_plan):
@@ -1677,7 +1674,7 @@ def count(detectors, num=1, delay=None, *, md=None):
 
     def finite_plan():
         for i in range(num):
-            yield from single_gen(Msg('checkpoint'))
+            yield Msg('checkpoint')
             yield from trigger_and_read(detectors)
             try:
                 d = next(delay)
@@ -1689,18 +1686,18 @@ def count(detectors, num=1, delay=None, *, md=None):
                     raise ValueError("num=%r but delays only provides %r "
                                      "entries" % (num, i))
             if d is not None:
-                yield from single_gen(Msg('sleep', None, d))
+                yield Msg('sleep', None, d)
 
     def infinite_plan():
         while True:
-            yield from single_gen(Msg('checkpoint'))
+            yield Msg('checkpoint')
             yield from trigger_and_read(detectors)
             try:
                 d = next(delay)
             except StopIteration:
                 break
             if d is not None:
-                yield from single_gen(Msg('sleep', None, d))
+                yield Msg('sleep', None, d)
 
     if num is None:
         plan = infinite_plan()
