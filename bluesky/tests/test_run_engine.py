@@ -2,7 +2,7 @@ import asyncio
 from collections import defaultdict
 import time as ttime
 import pytest
-from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
+from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence)
 from bluesky import Msg
 from bluesky.examples import det, Mover, Flyer
@@ -15,7 +15,7 @@ def test_states():
 
 def test_verbose(fresh_RE):
     fresh_RE.verbose = True
-    fresh_RE.verbose == True
+    assert fresh_RE.verbose is True
     # Emit all four kinds of document, exercising the logging.
     fresh_RE([Msg('open_run'), Msg('create'), Msg('read', det), Msg('save'),
               Msg('close_run')])
@@ -23,9 +23,9 @@ def test_verbose(fresh_RE):
 
 def test_reset(fresh_RE):
     fresh_RE([Msg('open_run'), Msg('pause')])
-    assert fresh_RE._run_start_uid != None
+    assert fresh_RE._run_start_uid is not None
     fresh_RE.reset()
-    assert fresh_RE._run_start_uid == None
+    assert fresh_RE._run_start_uid is None
 
 
 def test_running_from_paused_state_raises(fresh_RE):
@@ -97,7 +97,6 @@ def test_stop_motors_and_log_any_errors(fresh_RE):
             stopped[self.name] = True
             raise Exception
 
-
     motor = MoverWithFlag('a', ['a'])
     broken_motor = BrokenMoverWithFlag('b', ['b'])
 
@@ -125,7 +124,6 @@ def test_collect_uncollected_and_log_any_errors(fresh_RE):
         def collect(self):
             super().collect()
             raise Exception
-
 
     flyer1 = DummyFlyerWithFlag()
     flyer1.name = 'flyer1'
@@ -272,7 +270,7 @@ def test_dispatcher_unsubscribe_all(fresh_RE):
         pass
 
     fresh_RE.subscribe('all', cb)
-    assert count_callbacks(fresh_RE) == 5 
+    assert count_callbacks(fresh_RE) == 5
     fresh_RE.dispatcher.unsubscribe_all()
     assert count_callbacks(fresh_RE) == 0
 
