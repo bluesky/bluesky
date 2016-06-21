@@ -934,10 +934,9 @@ class RunEngine:
                     p.close()
                 except RuntimeError as e:
                     print('The plan {!r} tried to yield a value on close.  '
-                          'Please fix your plan.')
+                          'Please fix your plan.'.format(p))
             self.loop.stop()
             self.state = 'idle'
-        print('exited run loop')
 
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
