@@ -7,6 +7,7 @@ from bluesky.run_engine import (RunEngineStateMachine,
 from bluesky import Msg
 from bluesky.examples import det, Mover, Flyer
 from bluesky.plans import trigger_and_read
+import bluesky.plans as bp
 
 
 def test_states():
@@ -326,7 +327,6 @@ def test_pause_resume_devices(fresh_RE):
         def resume(self):
             resumed[self.name] = True
 
-
     dummy = Dummy('dummy')
 
     fresh_RE([Msg('stage', dummy), Msg('pause')])
@@ -366,3 +366,90 @@ def test_record_interruptions(fresh_RE):
     assert len(docs['event']) == 2
     docs['event'][0]['data']['interruption'] == 'pause'
     docs['event'][1]['data']['interruption'] == 'resume'
+
+
+@pytest.mark.parametrize('unpause_func', [lambda RE: RE.stop(),
+                                          lambda RE: RE.abort(),
+                                          lambda RE: RE.resume()])
+def test_cleanup_after_pause(fresh_RE, unpause_func, motor_det):
+    RE = fresh_RE
+
+    motor, det = motor_det
+    motor.set(1024)
+
+    @bp.reset_positions_decorator
+    def simple_plan(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+        yield Msg('pause')
+        for j in range(15):
+            yield Msg('set', motor, -j)
+
+    RE(simple_plan(motor))
+    assert motor.position == 14
+    unpause_func(RE)
+    assert motor.position == 1024
+
+
+def _make_plan_marker():
+    @bp.reset_positions_decorator
+    def raiser(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+        raise RuntimeError()
+
+    @bp.reset_positions_decorator
+    def pausing_raiser(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+        yield Msg('pause')
+        raise RuntimeError()
+
+    @bp.reset_positions_decorator
+    def bad_set(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+            yield Msg('set', None, j)
+
+    @bp.reset_positions_decorator
+    def bad_msg(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+        yield Msg('aardvark')
+
+    @bp.reset_positions_decorator
+    def cannot_pauser(motor):
+        yield Msg('clear_checkpoint')
+        for j in range(15):
+            yield Msg('set', motor, j)
+        yield Msg('pause')
+
+    return pytest.mark.parametrize('plan', [raiser, bad_set, bad_msg,
+                                            pausing_raiser, cannot_pauser])
+
+
+@_make_plan_marker()
+def test_cleanup_pathological_plans(fresh_RE, motor_det, plan):
+    RE = fresh_RE
+
+    motor, det = motor_det
+    motor.set(1024)
+    try:
+        RE(plan(motor))
+        if RE.state == 'paused':
+            assert motor.position != 1024
+            RE.resume()
+    except:
+        pass
+    assert motor.position == 1024
+
+
+def test_finalizer_closeable():
+    pre = (j for j in range(18))
+    post = (j for j in range(18))
+
+    plan = bp.finalize_wrapper(pre, post)
+
+    for j in range(3):
+        next(plan)
+    plan.close()

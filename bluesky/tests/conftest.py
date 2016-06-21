@@ -1,5 +1,6 @@
 import asyncio
 from bluesky.run_engine import RunEngine
+from bluesky.examples import Mover, SynGauss
 import pytest
 
 
@@ -10,3 +11,11 @@ def fresh_RE(request):
     RE = RunEngine({}, loop=loop)
     RE.ignore_callback_exceptions = False
     return RE
+
+
+@pytest.fixture(scope='function')
+def motor_det(request):
+    motor = Mover('motor', ['motor'])
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1,
+                   sigma=1, exposure_time=0)
+    return motor, det
