@@ -12,11 +12,13 @@ reason = ''
 try:
     import ophyd
     from ophyd import Component as Cpt, Device, Signal
+    from ophyd import setup_ophyd
 except ImportError as ie:
     # pytestmark = pytest.mark.skip
     ophyd = None
     reason = str(ie)
 else:
+    setup_ophyd()
     # define the classes only if ophyd is available
 
     class A(Device):
