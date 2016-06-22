@@ -528,3 +528,28 @@ def test_exception_cascade(fresh_RE):
     with pytest.raises(KeyError):
         RE.resume()
     assert except_hit
+
+
+def test_sideband_cancel(fresh_RE):
+    RE = fresh_RE
+    ev = asyncio.Event()
+
+    def done():
+        print("Done")
+        ev.set()
+
+    def side_band_kill():
+        RE._task.cancel()
+
+    scan = [Msg('wait_for', None, [ev.wait(), ]), ]
+    assert RE.state == 'idle'
+    start = ttime.time()
+    RE.loop.call_later(.5, side_band_kill)
+    RE.loop.call_later(2, done)
+
+    RE(scan)
+    assert RE.state == 'idle'
+
+    stop = ttime.time()
+
+    assert .5 < (stop - start) < 2
