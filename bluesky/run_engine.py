@@ -846,6 +846,10 @@ class RunEngine:
                         coro = self._command_registry[msg.command]
                         response = yield from coro(msg)
                         self._response_stack.append(response)
+                    except asyncio.CancelledError:
+                        # spacial case `CancelledError` and let the outer
+                        # exception block deal with it.
+                        raise
                     except Exception as e:
                         self._exception = e
                         continue
