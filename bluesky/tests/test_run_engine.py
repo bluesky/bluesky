@@ -498,3 +498,33 @@ def test_invalid_plan(fresh_RE, motor_det):
                         'Please fix your plan.\n')[::-1]
     assert actual_err[:len(expected_prefix)] == expected_prefix
     assert actual_err[::-1][:len(expected_postfix)] == expected_postfix
+
+
+def test_exception_cascade(fresh_RE):
+    RE = fresh_RE
+    except_hit = False
+
+    def pausing_plan():
+        nonlocal except_hit
+        for j in range(5):
+            yield Msg('null')
+        try:
+            yield Msg('pause')
+        except:
+            except_hit = True
+            raise
+
+    def pre_plan():
+        yield Msg('aardvark')
+
+    def post_plan():
+        for j in range(5):
+            yield Msg('null')
+
+    RE(pausing_plan())
+    ev = asyncio.Event(loop=RE.loop)
+    ev.set()
+    RE.request_suspend(ev, pre_plan=pre_plan())
+    with pytest.raises(KeyError):
+        RE.resume()
+    assert except_hit
