@@ -351,13 +351,30 @@ def test_pause_abort():
 
 
 def test_abort():
-    errmsg = ("Aborting is not successful from the test suite yet.  The new "
-              "plan, as can be seen in this function is to subprocess the "
-              "abort via two sequential SIGINT's because if we do it in the "
-              "pytest process it kills pytest.")
-    pytest.xfail(errmsg)
-    import subprocess
-    subprocess.check_call(['python', 'abort.py'], cwd='.')
+    ev = asyncio.Event()
+
+    def done():
+        print("Done")
+        ev.set()
+
+    pid = os.getpid()
+
+    def sim_kill():
+        os.kill(pid, signal.SIGINT)
+
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
+    assert RE.state == 'idle'
+    start = ttime.time()
+    RE.loop.call_later(1, sim_kill)
+    RE.loop.call_later(1.1, sim_kill)
+    RE.loop.call_later(1.1, sim_kill)
+    RE.loop.call_later(2, done)
+
+    RE(scan)
+    assert RE.state == 'idle'
+    stop = ttime.time()
+
+    assert stop - start < 2
 
 
 def test_rogue_sigint():
