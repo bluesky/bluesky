@@ -272,7 +272,7 @@ def test_dispatcher_unsubscribe_all(fresh_RE):
         pass
 
     fresh_RE.subscribe('all', cb)
-    assert count_callbacks(fresh_RE) == 5 
+    assert count_callbacks(fresh_RE) == 5
     fresh_RE.dispatcher.unsubscribe_all()
     assert count_callbacks(fresh_RE) == 0
 
@@ -335,6 +335,13 @@ def test_pause_resume_devices(fresh_RE):
     fresh_RE.resume()
     assert 'dummy' in paused
     assert 'dummy' in resumed
+
+
+def test_bad_call_args(fresh_RE):
+    RE = fresh_RE
+    with pytest.raises(Exception):
+        RE(53)
+    assert RE.state == 'idle'
 
 
 def test_record_interruptions(fresh_RE):

@@ -550,7 +550,6 @@ class RunEngine:
 
         self._clear_call_cache()
         self._clear_run_cache()  # paranoia, in case of previous bad exit
-        self.state = 'running'
 
         for name, funcs in normalize_subs_input(subs).items():
             for func in funcs:
@@ -788,6 +787,7 @@ class RunEngine:
         """
         self._reason = ''
         try:
+            self.state = 'running'
             while True:
                 try:
                     # This 'yield from' must be here to ensure that this
