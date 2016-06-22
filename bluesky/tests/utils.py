@@ -1,4 +1,7 @@
 from bluesky.run_engine import RunEngine
+import contextlib
+import tempfile
+import sys
 
 
 def setup_test_run_engine():
@@ -10,3 +13,14 @@ def setup_test_run_engine():
     RE.md['config'] = {'detector_model': 'XYZ', 'pixel_size': 10}
     RE.md['beamline_id'] = 'test_beamline'
     return RE
+
+
+@contextlib.contextmanager
+def _print_redirect():
+    old_stdout = sys.stdout
+    try:
+        fout = tempfile.TemporaryFile(mode='w+', encoding='utf-8')
+        sys.stdout = fout
+        yield fout
+    finally:
+        sys.stdout = old_stdout

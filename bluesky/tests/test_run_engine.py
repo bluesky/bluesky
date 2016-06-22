@@ -8,6 +8,7 @@ from bluesky import Msg
 from bluesky.examples import det, Mover, Flyer
 from bluesky.plans import trigger_and_read
 import bluesky.plans as bp
+from bluesky.tests.utils import _print_redirect
 
 
 def test_states():
@@ -453,3 +454,47 @@ def test_finalizer_closeable():
     for j in range(3):
         next(plan)
     plan.close()
+
+
+def test_invalid_plan(fresh_RE, motor_det):
+
+    RE = fresh_RE
+    motor, det = motor_det
+
+    def patho_finalize_wrapper(plan, post):
+        try:
+            yield from plan
+        finally:
+            yield from post
+
+    def base_plan(motor):
+        for j in range(5):
+            yield Msg('set', motor, j * 2 + 1)
+        yield Msg('pause')
+
+    def post_plan(motor):
+        yield Msg('set', motor, 5)
+
+    def pre_suspend_plan():
+        yield Msg('set', motor, 5)
+        raise RuntimeError()
+
+    def make_plan():
+        return patho_finalize_wrapper(base_plan(motor),
+                                      post_plan(motor))
+
+    with _print_redirect() as fout:
+        RE(make_plan())
+        RE.request_suspend(None, pre_plan=pre_suspend_plan())
+        try:
+            RE.resume()
+        except RuntimeError:
+            pass
+
+    fout.seek(0)
+    actual_err = list(fout)[-1]
+    expected_prefix = 'The plan '
+    expected_postfix = (' tried to yield a value on close.  '
+                        'Please fix your plan.\n')[::-1]
+    assert actual_err[:len(expected_prefix)] == expected_prefix
+    assert actual_err[::-1][:len(expected_postfix)] == expected_postfix
