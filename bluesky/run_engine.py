@@ -802,7 +802,7 @@ class RunEngine:
                     # get new message but don't process it yet.
                     try:
                         if self._exception is not None:
-                            # throw the message at the current plan
+                            # throw the exception at the current plan
                             try:
                                 msg = self._plan_stack[-1].throw(
                                     self._exception)
