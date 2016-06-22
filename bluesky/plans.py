@@ -1692,6 +1692,7 @@ finalize_decorator = make_decorator(finalize_wrapper)
 lazily_stage_decorator = make_decorator(lazily_stage_wrapper)
 fly_during_decorator = make_decorator(fly_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
+run_decorator = make_decorator(run_wrapper)
 
 
 @planify
