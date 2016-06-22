@@ -798,13 +798,33 @@ class RunEngine:
                     # processed first on resume (instead of the first
                     # message in self._msg_cache).
                     yield from asyncio.sleep(0.0001, loop=self.loop)
-                    if self._exception is not None:
-                        raise self._exception
                     # Send last response;
                     # get new message but don't process it yet.
                     try:
-                        resp = self._response_stack.pop()
-                        msg = self._plan_stack[-1].send(resp)
+                        if self._exception is not None:
+                            # throw the exception at the current plan
+                            try:
+                                msg = self._plan_stack[-1].throw(
+                                    self._exception)
+                            except Exception as e:
+                                # deal with the case where the top
+                                # plan is a re-wind/suspender injected
+                                # plan, all plans in stack get a
+                                # chance to take a bite at this apple.
+
+                                # if the exact same exception comes
+                                # back up, then the plan did not
+                                # handle it and the next plan gets to
+                                # try.
+                                if e is self._exception:
+                                    self._plan_stack.pop()
+                                    if len(self._plan_stack):
+                                        continue
+                                    else:
+                                        raise
+                        else:
+                            resp = self._response_stack.pop()
+                            msg = self._plan_stack[-1].send(resp)
 
                     except StopIteration:
                         self._plan_stack.pop()
@@ -812,6 +832,9 @@ class RunEngine:
                             continue
                         else:
                             raise
+                    # If we are here one of the plans handled the exception
+                    # and wants to do something with it
+                    self._exception = None
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
                     self._objs_seen.add(msg.obj)
@@ -823,12 +846,13 @@ class RunEngine:
                         coro = self._command_registry[msg.command]
                         response = yield from coro(msg)
                         self._response_stack.append(response)
-                    except KeyboardInterrupt:
+                    except asyncio.CancelledError:
+                        # spacial case `CancelledError` and let the outer
+                        # exception block deal with it.
                         raise
                     except Exception as e:
-                        msg = self._plan_stack[-1].throw(e)
-                        self._plan_stack.append(single_gen(msg))
-                        self._response_stack.append(None)
+                        self._exception = e
+                        continue
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
                     # -- overriding the RunEngine -- and then raises instead
@@ -839,6 +863,15 @@ class RunEngine:
                           "a hard pause instead.")
                     self.loop.call_soon(self.request_pause, False)
                     print(PAUSE_MSG)
+                except asyncio.CancelledError as e:
+                    # if we are handling this twice, raise and leave the plans
+                    # alone
+                    if self._exception is e:
+                        raise e
+                    # the case where FailedPause, RequestAbort or a coro
+                    # raised error is not already stashed in _exception
+                    if self._exception is None:
+                        self._exception = e
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             # TODO Is the sleep here necessasry?
@@ -900,6 +933,12 @@ class RunEngine:
 
             for task in asyncio.Task.all_tasks(self.loop):
                 task.cancel()
+            for p in self._plan_stack:
+                try:
+                    p.close()
+                except RuntimeError as e:
+                    print('The plan {!r} tried to yield a value on close.  '
+                          'Please fix your plan.'.format(p))
             self.loop.stop()
             self.state = 'idle'
 

@@ -2,11 +2,13 @@ import asyncio
 from collections import defaultdict
 import time as ttime
 import pytest
-from bluesky.run_engine import (RunEngine, RunEngineStateMachine,
+from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence)
 from bluesky import Msg
 from bluesky.examples import det, Mover, Flyer
 from bluesky.plans import trigger_and_read
+import bluesky.plans as bp
+from bluesky.tests.utils import _print_redirect
 
 
 def test_states():
@@ -15,7 +17,7 @@ def test_states():
 
 def test_verbose(fresh_RE):
     fresh_RE.verbose = True
-    fresh_RE.verbose == True
+    assert fresh_RE.verbose is True
     # Emit all four kinds of document, exercising the logging.
     fresh_RE([Msg('open_run'), Msg('create'), Msg('read', det), Msg('save'),
               Msg('close_run')])
@@ -23,9 +25,9 @@ def test_verbose(fresh_RE):
 
 def test_reset(fresh_RE):
     fresh_RE([Msg('open_run'), Msg('pause')])
-    assert fresh_RE._run_start_uid != None
+    assert fresh_RE._run_start_uid is not None
     fresh_RE.reset()
-    assert fresh_RE._run_start_uid == None
+    assert fresh_RE._run_start_uid is None
 
 
 def test_running_from_paused_state_raises(fresh_RE):
@@ -97,7 +99,6 @@ def test_stop_motors_and_log_any_errors(fresh_RE):
             stopped[self.name] = True
             raise Exception
 
-
     motor = MoverWithFlag('a', ['a'])
     broken_motor = BrokenMoverWithFlag('b', ['b'])
 
@@ -125,7 +126,6 @@ def test_collect_uncollected_and_log_any_errors(fresh_RE):
         def collect(self):
             super().collect()
             raise Exception
-
 
     flyer1 = DummyFlyerWithFlag()
     flyer1.name = 'flyer1'
@@ -328,7 +328,6 @@ def test_pause_resume_devices(fresh_RE):
         def resume(self):
             resumed[self.name] = True
 
-
     dummy = Dummy('dummy')
 
     fresh_RE([Msg('stage', dummy), Msg('pause')])
@@ -375,3 +374,189 @@ def test_record_interruptions(fresh_RE):
     assert len(docs['event']) == 2
     docs['event'][0]['data']['interruption'] == 'pause'
     docs['event'][1]['data']['interruption'] == 'resume'
+
+
+@pytest.mark.parametrize('unpause_func', [lambda RE: RE.stop(),
+                                          lambda RE: RE.abort(),
+                                          lambda RE: RE.resume()])
+def test_cleanup_after_pause(fresh_RE, unpause_func, motor_det):
+    RE = fresh_RE
+
+    motor, det = motor_det
+    motor.set(1024)
+
+    @bp.reset_positions_decorator
+    def simple_plan(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+        yield Msg('pause')
+        for j in range(15):
+            yield Msg('set', motor, -j)
+
+    RE(simple_plan(motor))
+    assert motor.position == 14
+    unpause_func(RE)
+    assert motor.position == 1024
+
+
+def _make_plan_marker():
+    @bp.reset_positions_decorator
+    def raiser(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+        raise RuntimeError()
+
+    @bp.reset_positions_decorator
+    def pausing_raiser(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+        yield Msg('pause')
+        raise RuntimeError()
+
+    @bp.reset_positions_decorator
+    def bad_set(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+            yield Msg('set', None, j)
+
+    @bp.reset_positions_decorator
+    def bad_msg(motor):
+        for j in range(15):
+            yield Msg('set', motor, j)
+        yield Msg('aardvark')
+
+    @bp.reset_positions_decorator
+    def cannot_pauser(motor):
+        yield Msg('clear_checkpoint')
+        for j in range(15):
+            yield Msg('set', motor, j)
+        yield Msg('pause')
+
+    return pytest.mark.parametrize('plan', [raiser, bad_set, bad_msg,
+                                            pausing_raiser, cannot_pauser])
+
+
+@_make_plan_marker()
+def test_cleanup_pathological_plans(fresh_RE, motor_det, plan):
+    RE = fresh_RE
+
+    motor, det = motor_det
+    motor.set(1024)
+    try:
+        RE(plan(motor))
+        if RE.state == 'paused':
+            assert motor.position != 1024
+            RE.resume()
+    except:
+        pass
+    assert motor.position == 1024
+
+
+def test_finalizer_closeable():
+    pre = (j for j in range(18))
+    post = (j for j in range(18))
+
+    plan = bp.finalize_wrapper(pre, post)
+
+    for j in range(3):
+        next(plan)
+    plan.close()
+
+
+def test_invalid_plan(fresh_RE, motor_det):
+
+    RE = fresh_RE
+    motor, det = motor_det
+
+    def patho_finalize_wrapper(plan, post):
+        try:
+            yield from plan
+        finally:
+            yield from post
+
+    def base_plan(motor):
+        for j in range(5):
+            yield Msg('set', motor, j * 2 + 1)
+        yield Msg('pause')
+
+    def post_plan(motor):
+        yield Msg('set', motor, 5)
+
+    def pre_suspend_plan():
+        yield Msg('set', motor, 5)
+        raise RuntimeError()
+
+    def make_plan():
+        return patho_finalize_wrapper(base_plan(motor),
+                                      post_plan(motor))
+
+    with _print_redirect() as fout:
+        RE(make_plan())
+        RE.request_suspend(None, pre_plan=pre_suspend_plan())
+        try:
+            RE.resume()
+        except RuntimeError:
+            pass
+
+    fout.seek(0)
+    actual_err = list(fout)[-1]
+    expected_prefix = 'The plan '
+    expected_postfix = (' tried to yield a value on close.  '
+                        'Please fix your plan.\n')[::-1]
+    assert actual_err[:len(expected_prefix)] == expected_prefix
+    assert actual_err[::-1][:len(expected_postfix)] == expected_postfix
+
+
+def test_exception_cascade(fresh_RE):
+    RE = fresh_RE
+    except_hit = False
+
+    def pausing_plan():
+        nonlocal except_hit
+        for j in range(5):
+            yield Msg('null')
+        try:
+            yield Msg('pause')
+        except:
+            except_hit = True
+            raise
+
+    def pre_plan():
+        yield Msg('aardvark')
+
+    def post_plan():
+        for j in range(5):
+            yield Msg('null')
+
+    RE(pausing_plan())
+    ev = asyncio.Event(loop=RE.loop)
+    ev.set()
+    RE.request_suspend(ev, pre_plan=pre_plan())
+    with pytest.raises(KeyError):
+        RE.resume()
+    assert except_hit
+
+
+def test_sideband_cancel(fresh_RE):
+    RE = fresh_RE
+    ev = asyncio.Event()
+
+    def done():
+        print("Done")
+        ev.set()
+
+    def side_band_kill():
+        RE._task.cancel()
+
+    scan = [Msg('wait_for', None, [ev.wait(), ]), ]
+    assert RE.state == 'idle'
+    start = ttime.time()
+    RE.loop.call_later(.5, side_band_kill)
+    RE.loop.call_later(2, done)
+
+    RE(scan)
+    assert RE.state == 'idle'
+
+    stop = ttime.time()
+
+    assert .5 < (stop - start) < 2

@@ -4,9 +4,7 @@ from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
 from bluesky.spec_api import mesh
 from bluesky.tests.utils import setup_test_run_engine
-import contextlib
-import sys
-import tempfile
+from bluesky.tests.utils import _print_redirect
 import pytest
 # import numpy as numpy
 RE = setup_test_run_engine()
@@ -112,17 +110,6 @@ def test_unknown_cb_raises():
     # back-compat alias for subscribe_lossless
     with pytest.raises(KeyError):
         RE._subscribe_lossless('not a thing', f)
-
-
-@contextlib.contextmanager
-def _print_redirect():
-    old_stdout = sys.stdout
-    try:
-        fout = tempfile.TemporaryFile(mode='w+', encoding='utf-8')
-        sys.stdout = fout
-        yield fout
-    finally:
-        sys.stdout = old_stdout
 
 
 def test_table():

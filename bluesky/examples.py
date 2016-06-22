@@ -205,7 +205,7 @@ class SynGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
-                 noise=None, noise_multiplier=1):
+                 noise=None, noise_multiplier=1, exposure_time=0.05):
         super(SynGauss, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
@@ -216,6 +216,7 @@ class SynGauss(Reader):
         self.noise = noise
         self.noise_multiplier = noise_multiplier
         self._data = {self.name: {'value': 0, 'timestamp': ttime.time()}}
+        self.exposure_time = exposure_time
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
 
@@ -228,7 +229,8 @@ class SynGauss(Reader):
         elif self.noise == 'uniform':
             v += np.random.uniform(-1, 1) * self.noise_multiplier
         self._data = {self.name: {'value': v, 'timestamp': ttime.time()}}
-        ttime.sleep(0.05)  # simulate exposure time
+        if self.exposure_time:
+            ttime.sleep(self.exposure_time)  # simulate exposure time
         self.ready = True
         return self
 
