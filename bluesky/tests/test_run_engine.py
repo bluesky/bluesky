@@ -573,7 +573,7 @@ def test_invalid_plan(fresh_RE, motor_det):
 
     def pre_suspend_plan():
         yield Msg('set', motor, 5)
-        raise RuntimeError()
+        raise GeneratorExit()
 
     def make_plan():
         return patho_finalize_wrapper(base_plan(motor),
@@ -584,7 +584,7 @@ def test_invalid_plan(fresh_RE, motor_det):
         RE.request_suspend(None, pre_plan=pre_suspend_plan())
         try:
             RE.resume()
-        except RuntimeError:
+        except GeneratorExit:
             pass
 
     fout.seek(0)

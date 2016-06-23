@@ -855,6 +855,11 @@ class RunEngine:
                                     continue
                                 else:
                                     raise
+                            except Exception as e:
+                                if self._exception is e:
+                                    raise
+                                self._exception = e
+                                continue
 
                     except StopIteration:
                         raise
