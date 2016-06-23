@@ -806,7 +806,7 @@ def unsubscribe(token):
     return (yield Msg('unsubscribe', token=token))
 
 
-def run_wrapper(plan, md=None):
+def run_wrapper(plan, *, md=None):
     yield from open_run(md)
     yield from plan
     yield from close_run()
@@ -1020,7 +1020,7 @@ def subs_context(plan_stack, subs):
 
 
 @contextmanager
-def run_context(plan_stack, md=None):
+def run_context(plan_stack, *, md=None):
     """Enclose in 'open_run' and 'close_run' messages.
 
     Parameters
@@ -1765,7 +1765,7 @@ def count(detectors, num=1, delay=None, *, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, detectors):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             plan_stack.append(plan)
     return plan_stack
 
@@ -1835,7 +1835,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             for step in steps:
                 plan_stack.append(per_step(detectors, motor, step))
     return plan_stack
@@ -1925,7 +1925,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             for step in steps:
                 plan_stack.append(per_step(detectors, motor, step))
     return plan_stack
@@ -2019,7 +2019,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             for step in steps:
                 plan_stack.append(per_step(detectors, motor, step))
     return plan_stack
@@ -2162,7 +2162,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             plan_stack.append(core())
     return plan_stack
 
@@ -2289,7 +2289,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + motors):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             for step in list(cycler):
                 plan_stack.append(per_step(detectors, step, pos_cache))
     return plan_stack
@@ -2560,7 +2560,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, [detector, motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             plan_stack.append(core())
     return plan_stack
 
