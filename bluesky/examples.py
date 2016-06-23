@@ -237,6 +237,64 @@ class SynGauss(Reader):
     def read(self):
         return self._data
 
+class SynEdge(Reader):
+    '''Tanh curve base on the value of a motor
+
+    Parameters
+    ----------
+    name : str
+        The same to report  in `read`
+
+    motor : Reader
+        The device to base the value of this SynEdge on
+
+    motor_field : str
+        Data key in `motor` to use
+
+    center : float
+        The center of edge
+
+    Imax : float
+        The peak-to-peak height
+
+    noise : {'poisson', 'uniform', None}, optional
+        Add noise to the gaussian peak
+.
+    noise_multiplier : float, optional
+        Only relevant for 'uniform' noise. Multiply the random amount of
+        noise by 'noise_multiplier'
+
+    '''
+    def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
+                 noise=None, noise_multiplier=1):
+        super(SynGauss, self).__init__(name, [name, ])
+        self.ready = True
+        self._motor = motor
+        self._motor_field = motor_field
+        self.center = center
+        self.Imax = Imax
+        self.sigma = sigma
+        self.noise = noise
+        self.noise_multiplier = noise_multiplier
+        self._data = {self.name: {'value': 0, 'timestamp': ttime.time()}}
+        if noise not in ('poisson', 'uniform', None):
+            raise ValueError("noise must be one of 'poisson', 'uniform', None")
+
+    def trigger(self, *, group=True):
+        self.ready = False
+        m = self._motor.read()[self._motor_field]['value']
+        v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
+        if self.noise == 'poisson':
+            v = int(np.random.poisson(np.round(v), 1))
+        elif self.noise == 'uniform':
+            v += np.random.uniform(-1, 1) * self.noise_multiplier
+        self._data = {self.name: {'value': v, 'timestamp': ttime.time()}}
+        ttime.sleep(0.05)  # simulate exposure time
+        self.ready = True
+        return self
+
+    def read(self):
+        return self._data
 
 class Syn2DGauss(Reader):
     """
