@@ -847,14 +847,18 @@ class RunEngine:
                                         raise
                         else:
                             resp = self._response_stack.pop()
-                            msg = self._plan_stack[-1].send(resp)
+                            try:
+                                msg = self._plan_stack[-1].send(resp)
+                            except StopIteration:
+                                self._plan_stack.pop()
+                                if len(self._plan_stack):
+                                    continue
+                                else:
+                                    raise
 
                     except StopIteration:
-                        self._plan_stack.pop()
-                        if len(self._plan_stack):
-                            continue
-                        else:
-                            raise
+                        raise
+
                     # If we are here one of the plans handled the exception
                     # and wants to do something with it
                     self._exception = None
