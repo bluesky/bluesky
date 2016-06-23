@@ -1056,40 +1056,39 @@ def event_context(plan_stack, name='primary'):
     plan_stack.append(single_gen(Msg('save')))
 
 
-@contextmanager
-def rewindable_context(plan_stack, rewindable):
+def rewindable_wrapper(plan, rewindable):
     '''Toggle the 'rewindable' state of the RE
 
     Only strictly
 
     Parameters
     ----------
-    plan_stack : list-like
-        appendable collection of generators that yield messages (`Msg` objects)
+    plan : generator
+        The plan to wrap in a 'rewindable' contextlib
     rewindable : bool
 
     '''
-    initial_rewindable = None
+    initial_rewindable = True
 
     def capture_rewindable_state():
         nonlocal initial_rewindable
         initial_rewindable = yield Msg('rewindable', None, None)
 
     def set_rewindable(rewindable):
-        print(initial_rewindable)
         if initial_rewindable != rewindable:
-            yield Msg('rewindable', None, rewindable)
+            return (yield Msg('rewindable', None, rewindable))
 
     def restore_rewindable():
         if initial_rewindable != rewindable:
-            yield Msg('rewindable', None, initial_rewindable)
+            return (yield Msg('rewindable', None, initial_rewindable))
 
     if not rewindable:
-        plan_stack.append(capture_rewindable_state())
-        plan_stack.append(set_rewindable(rewindable))
-    yield plan_stack
-    if not rewindable:
-        plan_stack.append(restore_rewindable())
+        yield from capture_rewindable_state()
+        yield from set_rewindable(rewindable)
+        return (yield from finalize_wrapper(plan,
+                                            restore_rewindable()))
+    else:
+        return (yield from plan)
 
 
 def fly(flyers, *, md=None):
@@ -1557,7 +1556,6 @@ def monitor_context(plan_stack, signals):
         plan_stack.append(single_gen(Msg('unmonitor', sig)))
 
 
-@planify
 def trigger_and_read(devices, name='primary'):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
@@ -1583,16 +1581,16 @@ def trigger_and_read(devices, name='primary'):
     grp = _short_uid('trigger')
     plan_stack = deque()
 
-    with rewindable_context(plan_stack, rewindable):
+    for obj in devices:
+        if hasattr(obj, 'trigger'):
+            plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
+    if plan_stack:
+        plan_stack.append(single_gen(Msg('wait', None, group=grp)))
+    with event_context(plan_stack, name=name):
         for obj in devices:
-            if hasattr(obj, 'trigger'):
-                plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
-        if plan_stack:
-            plan_stack.append(single_gen(Msg('wait', None, group=grp)))
-        with event_context(plan_stack, name=name):
-            for obj in devices:
-                plan_stack.append(single_gen(Msg('read', obj)))
-    return plan_stack
+            plan_stack.append(single_gen(Msg('read', obj)))
+
+    return (yield from rewindable_wrapper(pchain(*plan_stack), rewindable))
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
