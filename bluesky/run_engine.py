@@ -278,7 +278,7 @@ class RunEngine:
         cur_state = self._rewindable_flag
         self._rewindable_flag = bool(v)
         if self.resumable and self._rewindable_flag != cur_state:
-            self._reset_checkpoint_state_meth()
+            self._reset_checkpoint_state()
 
     @property
     def loop(self):
@@ -1071,7 +1071,7 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
         yield from self.emit(DocumentNames.start, doc)
         self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
         if self.record_interruptions:
@@ -1110,7 +1110,7 @@ class RunEngine:
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine
     def _create(self, msg):
@@ -1262,7 +1262,7 @@ class RunEngine:
         self._monitor_params[obj] = emit_event, msg.kwargs
         obj.subscribe(emit_event, **msg.kwargs)
         yield from self.emit(DocumentNames.descriptor, desc_doc)
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine
     def _unmonitor(self, msg):
@@ -1280,7 +1280,7 @@ class RunEngine:
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine
     def _save(self, msg):
@@ -1671,7 +1671,7 @@ class RunEngine:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
 
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
         if self._deferred_pause_requested:
             # We are at a checkpoint; we are done deferring the pause.
@@ -1680,11 +1680,7 @@ class RunEngine:
             yield from asyncio.sleep(0.5, loop=self.loop)
             self.request_pause(defer=False)
 
-    @asyncio.coroutine
     def _reset_checkpoint_state(self):
-        self._reset_checkpoint_state_meth()
-
-    def _reset_checkpoint_state_meth(self):
         if self._msg_cache is None:
             return
 
@@ -1696,6 +1692,8 @@ class RunEngine:
             counter_copy1, counter_copy2 = tee(counter)
             self._sequence_counters[key] = counter_copy1
             self._teed_sequence_counters[key] = counter_copy2
+
+    _reset_checkpoint_state_coro = asyncio.coroutine(_reset_checkpoint_state)
 
     @asyncio.coroutine
     def _clear_checkpoint(self, msg):
@@ -1769,7 +1767,7 @@ class RunEngine:
             return []
         result = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
         return result
 
     @asyncio.coroutine
@@ -1787,7 +1785,7 @@ class RunEngine:
         result = obj.unstage()
         # use `discard()` to ignore objects that are not in the staged set.
         self._staged.discard(obj)
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
         return result
 
     @asyncio.coroutine
@@ -1820,7 +1818,7 @@ class RunEngine:
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
         return token
 
     @asyncio.coroutine
@@ -1844,7 +1842,7 @@ class RunEngine:
             token, = args
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine
     def _input(self, msg):
