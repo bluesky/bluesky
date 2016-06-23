@@ -1,6 +1,11 @@
 language: python
 sudo: false
 
+cache:
+  directories:
+    - $HOME/.cache/pip
+    - $HOME/.cache/matplotlib
+
 services:
   - mongodb
 addons:
@@ -36,7 +41,7 @@ before_install:
 
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
-  - conda create -n testenv nose python=$TRAVIS_PYTHON_VERSION scipy requests matplotlib jsonschema traitlets pytest coverage pip
+  - conda create -n testenv nose python=$TRAVIS_PYTHON_VERSION scipy requests matplotlib jsonschema traitlets pytest coverage pip nomkl
   - source activate testenv
   - 'pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model'
   - conda install metadatastore databroker ophyd historydict boltons doct toolz tifffile pymongo pcaspy pyepics readline super_state_machine cycler xray-vision lmfit jinja2 -c lightsource2 -c conda-forge -c soft-matter
