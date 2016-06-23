@@ -1,4 +1,3 @@
-import copy
 from collections import deque, defaultdict
 import pytest
 from bluesky import Msg
@@ -19,7 +18,7 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            repeater, caching_repeater, count, Count, Scan,
                            fly_during_decorator, subs_decorator,
                            inject_md_wrapper)
-
+from bluesky.utils import all_safe_rewind
 
 class DummyMover:
     def __init__(self, name):
@@ -43,9 +42,9 @@ class DummyMover:
         return {self.name: {'value': self._value, 'timestamp': 0}}
 
 
-
 def cb(name, doc):
     pass
+
 
 @pytest.mark.parametrize(
     'plan,plan_args,plan_kwargs,msgs',
@@ -513,3 +512,5 @@ def test_no_rewind_device():
 
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     det.rewindable = FakeSig()
+
+    assert not all_safe_rewind([det])
