@@ -275,8 +275,9 @@ class RunEngine:
 
     @rewindable.setter
     def rewindable(self, v):
+        cur_state = self._rewindable_flag
         self._rewindable_flag = bool(v)
-        if self._rewindable_flag and self.resumable:
+        if self.resumable and self._rewindable_flag != cur_state:
             self._reset_checkpoint_state_meth()
 
     @property
