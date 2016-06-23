@@ -11,7 +11,7 @@ from bluesky.plans import (AbsListScanPlan, AbsScanPlan, LogAbsScanPlan,
                            RelativeSpiralFermatScan)
 
 from bluesky import Msg
-from bluesky.examples import motor, det, SynGauss, motor1, motor2
+from bluesky.examples import motor, det, SynGauss, motor1, motor2, Mover
 from bluesky.tests.utils import setup_test_run_engine
 import asyncio
 import time as ttime
@@ -40,7 +40,7 @@ def multi_traj_checker(scan, expected_data):
     assert actual_data == expected_data
 
 
-def approx_multi_traj_checker(scan, expected_data, *, decimal=2):
+def approx_multi_traj_checker(RE, scan, expected_data, *, decimal=2):
     actual_data = []
 
     def collect_data(name, event):
@@ -61,7 +61,7 @@ def approx_multi_traj_checker(scan, expected_data, *, decimal=2):
 def test_outer_product_ascan():
     motor.set(0)
     scan = OuterProductAbsScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
-                               False)
+                                   False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -301,12 +301,14 @@ def test_wait_for():
 
 def test_pre_run_post_run():
     c = Count([])
+
     def f(x):
         yield Msg('HEY', None)
     c.pre_run = f
     list(c)[0].command == 'HEY'
 
     c = Count([])
+
     def f(x):
         yield Msg('HEY', None)
     c.pre_run = f
@@ -332,17 +334,31 @@ def _get_spiral_data(start_x, start_y):
             ]
 
 
-def test_absolute_spiral():
+def test_absolute_spiral(fresh_RE):
+    motor = Mover('motor', ['motor'])
+    motor.set(0)
+    motor1 = Mover('motor1', ['motor1'])
+    motor2 = Mover('motor2', ['motor2'])
+
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     motor1.set(1.0)
     motor2.set(1.0)
     scan = SpiralScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0, 0.0)
-    approx_multi_traj_checker(scan, _get_spiral_data(0.0, 0.0), decimal=2)
+    approx_multi_traj_checker(fresh_RE, scan, _get_spiral_data(0.0, 0.0),
+                              decimal=2)
 
     scan = SpiralScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0, 0.0)
-    approx_multi_traj_checker(scan, _get_spiral_data(0.5, 0.5), decimal=2)
+    approx_multi_traj_checker(fresh_RE, scan, _get_spiral_data(0.5, 0.5),
+                              decimal=2)
 
 
-def test_relative_spiral():
+def test_relative_spiral(fresh_RE):
+    motor = Mover('motor', ['motor'])
+    motor.set(0)
+    motor1 = Mover('motor1', ['motor1'])
+    motor2 = Mover('motor2', ['motor2'])
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+
     start_x = 1.0
     start_y = 1.0
 
@@ -350,7 +366,8 @@ def test_relative_spiral():
     motor2.set(start_y)
     scan = RelativeSpiralScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0, 0.0)
 
-    approx_multi_traj_checker(scan, _get_spiral_data(start_x, start_y),
+    approx_multi_traj_checker(fresh_RE, scan,
+                              _get_spiral_data(start_x, start_y),
                               decimal=2)
 
 
@@ -393,26 +410,43 @@ def _get_fermat_data(x_start, y_start):
     ]
 
 
-def test_absolute_fermat_spiral():
+def test_absolute_fermat_spiral(fresh_RE):
+    motor = Mover('motor', ['motor'])
+    motor.set(0)
+    motor1 = Mover('motor1', ['motor1'])
+    motor2 = Mover('motor2', ['motor2'])
+
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+
     motor1.set(1.0)
     motor2.set(1.0)
     scan = SpiralFermatScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1,
                             1.0, 0.0)
-    approx_multi_traj_checker(scan, _get_fermat_data(0.0, 0.0), decimal=2)
+    approx_multi_traj_checker(fresh_RE, scan, _get_fermat_data(0.0, 0.0),
+                              decimal=2)
 
     scan = SpiralFermatScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1,
                             1.0, 0.0)
-    approx_multi_traj_checker(scan, _get_fermat_data(0.5, 0.5), decimal=2)
+    approx_multi_traj_checker(fresh_RE, scan, _get_fermat_data(0.5, 0.5),
+                              decimal=2)
 
 
-def test_relative_fermat_spiral():
+def test_relative_fermat_spiral(fresh_RE):
     start_x = 1.0
     start_y = 1.0
+
+    motor = Mover('motor', ['motor'])
+    motor.set(0)
+    motor1 = Mover('motor1', ['motor1'])
+    motor2 = Mover('motor2', ['motor2'])
+
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 
     motor1.set(start_x)
     motor2.set(start_y)
     scan = RelativeSpiralFermatScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0,
                                     0.0)
 
-    approx_multi_traj_checker(scan, _get_fermat_data(start_x, start_y),
+    approx_multi_traj_checker(fresh_RE, scan,
+                              _get_fermat_data(start_x, start_y),
                               decimal=2)
