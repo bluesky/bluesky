@@ -857,7 +857,16 @@ class RunEngine:
                                 continue
                             else:
                                 raise
+                        # Any other exception that comes out of the plan
                         except Exception as e:
+                            # pop the dead plan, stash the exception and
+                            # go to the top of the loop
+                            self._plan_stack.pop()
+                            if len(self._plan_stack):
+                                continue
+                            # or reraise to get out of the infinite loop
+                            else:
+                                raise
                             self._exception = e
                             continue
 
