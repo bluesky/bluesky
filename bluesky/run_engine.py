@@ -794,7 +794,7 @@ class RunEngine:
             raise TransitionError("RunEngine is already idle.")
         print("HALTING...")
         self._interrupted = True
-        self._exception = GeneratorExit()
+        self._exception = PlanHalt()
         self._task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
@@ -959,7 +959,7 @@ class RunEngine:
             # TODO Is the sleep here necessasry?
             yield from asyncio.sleep(0.001, loop=self.loop)
         except (FailedPause, RequestAbort, asyncio.CancelledError,
-                GeneratorExit):
+                PlanHalt):
             self._exit_status = 'abort'
             # TODO Is the sleep here necessasry?
             yield from asyncio.sleep(0.001, loop=self.loop)
@@ -2074,6 +2074,10 @@ Pro Tip: Next time, if you want to abort, tap Ctrl+C three times quickly.
 
 
 class InvalidCommand(KeyError):
+    pass
+
+
+class PlanHalt(GeneratorExit):
     pass
 
 
