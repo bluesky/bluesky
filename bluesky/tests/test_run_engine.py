@@ -818,6 +818,8 @@ def test_nonrewindable_finalizer(fresh_RE, motor_det, start_state, msg_seq):
 def test_halt_from_pause(fresh_RE):
     RE = fresh_RE
     except_hit = False
+    m_coll = MsgCollector()
+    RE.msg_hook = m_coll
 
     def pausing_plan():
         nonlocal except_hit
@@ -826,12 +828,14 @@ def test_halt_from_pause(fresh_RE):
         try:
             yield Msg('pause')
         except Exception:
+            yield Msg('null')
             except_hit = True
             raise
 
     RE(pausing_plan())
     RE.halt()
     assert not except_hit
+    assert [m.command for m in m_coll.msgs] == ['null'] * 5 + ['pause']
 
 
 def test_halt_async(fresh_RE):
@@ -860,16 +864,28 @@ def test_halt_async(fresh_RE):
 
 @pytest.mark.parametrize('cancel_func',
                          [lambda RE: RE.stop(), lambda RE: RE.abort(),
-                          lambda RE: RE.halt(),
                           lambda RE: RE.request_pause(defer=False)])
 def test_prompt_stop(fresh_RE, cancel_func):
     RE = fresh_RE
-    plan = [Msg('sleep', None, 50)]
+    except_hit = False
+    m_coll = MsgCollector()
+    RE.msg_hook = m_coll
+
+    def sleeping_plan():
+        nonlocal except_hit
+        try:
+            yield Msg('sleep', None, 50)
+        except Exception:
+            yield Msg('null')
+            except_hit = True
+            raise
+
     RE.loop.call_later(.1, partial(cancel_func, RE))
     start = ttime.time()
-    RE(plan)
+    RE(sleeping_plan())
     stop = ttime.time()
-
-    assert .1 < stop - start < .2
     if RE.state != 'idle':
         RE.abort()
+    assert .1 < stop - start < .2
+    assert except_hit
+    assert [m.command for m in m_coll.msgs] == ['sleep', 'null']
