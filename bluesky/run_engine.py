@@ -832,21 +832,17 @@ class RunEngine:
                             msg = self._plan_stack[-1].throw(
                                 self._exception)
                         except Exception as e:
-                            # deal with the case where the top
-                            # plan is a re-wind/suspender injected
-                            # plan, all plans in stack get a
-                            # chance to take a bite at this apple.
-
-                            # if the exact same exception comes
-                            # back up, then the plan did not
-                            # handle it and the next plan gets to
-                            # try.
-                            if e is self._exception:
-                                self._plan_stack.pop()
-                                if len(self._plan_stack):
-                                    continue
-                                else:
-                                    raise
+                            # The current plan did not handle it,
+                            # maybe the next plan (if any) would like
+                            # to try
+                            self._plan_stack.pop()
+                            if len(self._plan_stack):
+                                self._exception = e
+                                continue
+                            # no plans left and still an UN-handled
+                            # re-raise to exit the infinite loop
+                            else:
+                                raise
                     else:
                         resp = self._response_stack.pop()
                         try:
