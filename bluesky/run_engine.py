@@ -715,6 +715,7 @@ class RunEngine:
         """
         if not self.resumable:
             print("No checkpoint; cannot suspend. Aborting...")
+            self._interrupted = True
             self._exception = FailedPause()
             self._task.cancel()
         else:

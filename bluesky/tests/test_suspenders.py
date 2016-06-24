@@ -1,15 +1,18 @@
 import pytest
 import ophyd
-import sys
+import asyncio
+from functools import partial
 from bluesky.suspenders import (SuspendBoolHigh,
                                 SuspendBoolLow,
                                 SuspendFloor,
                                 SuspendCeil,
                                 SuspendInBand,
                                 SuspendOutBand)
+from bluesky.tests.utils import MsgCollector
 from bluesky import Msg
 import time as ttime
-
+from bluesky.run_engine import RunEngineInterrupted
+import time
 
 @pytest.mark.parametrize(
     'klass,sc_args,start_val,fail_val,resume_val,wait_time',
@@ -156,3 +159,22 @@ def test_deferred_pause_from_suspend(fresh_RE):
     assert [m[0] for m in msg_lst] == ['wait_for', 'checkpoint']
     RE.resume()
     assert ['wait_for', 'checkpoint', 'null'] == [m[0] for m in msg_lst]
+
+
+def test_unresumable_suspend_fail(fresh_RE):
+    'Tests what happens when a soft pause is requested from a suspended state'
+    RE = fresh_RE
+
+    scan = [Msg('clear_checkpoint'), Msg('sleep', None, 50)]
+    m_coll = MsgCollector()
+    RE.msg_hook = m_coll
+
+    ev = asyncio.Event()
+    loop = RE.loop
+    loop.call_later(.1, partial(RE.request_suspend, fut=ev.wait()))
+    loop.call_later(1, ev.set)
+    start = time.time()
+    with pytest.raises(RunEngineInterrupted):
+        RE(scan, raise_if_interrupted=True)
+    stop = time.time()
+    assert .1 < stop - start < 1
