@@ -8,12 +8,11 @@ from collections import OrderedDict, Iterable, defaultdict, deque, ChainMap
 import numpy as np
 from boltons.iterutils import chunked
 
-from . import (Msg, plan_patterns)
+from . import plan_patterns
 
-from .plan_tools import ensure_generator
 from .utils import (Struct, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists,
-                    all_safe_rewind)
+                    all_safe_rewind, Msg, ensure_generator, single_gen)
 
 
 def _short_uid(label, truncate=6):
@@ -258,25 +257,6 @@ def pchain(*args):
     for p in args:
         rets.append((yield from p))
     return tuple(rets)
-
-
-def single_gen(msg):
-    '''Turn a single message into a plan
-
-    If ``lambda x: yield x`` were valid Python, this would be equivalent.
-    In Python 3.6 or 3.7 we might get lambda generators.
-
-    Parameters
-    ----------
-    msg : Msg
-        a single message
-
-    Yields
-    ------
-    msg : Msg
-        the input message
-    '''
-    yield msg
 
 
 def create(name='primary'):

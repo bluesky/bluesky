@@ -20,10 +20,7 @@ from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     AsyncInput, new_uid, sanitize_np, NoReplayAllowed,
                     RequestAbort, RequestStop,  RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
-                    InvalidCommand, PlanHalt, Msg)
-
-from .plan_tools import ensure_generator
-from .plans import single_gen
+                    InvalidCommand, PlanHalt, Msg, ensure_generator, single_gen)
 
 
 def expiring_function(func, loop, *args, **kwargs):
