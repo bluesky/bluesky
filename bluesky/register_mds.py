@@ -1,5 +1,5 @@
 import uuid
-from bluesky.run_engine import DocumentNames
+from event_model import DocumentNames
 
 
 __all__ = ['register_mds', 'register_mdc']
