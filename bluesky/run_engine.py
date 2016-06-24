@@ -906,7 +906,8 @@ class RunEngine:
             self._exit_status = 'success'
             # TODO Is the sleep here necessasry?
             yield from asyncio.sleep(0.001, loop=self.loop)
-        except (FailedPause, RequestAbort, asyncio.CancelledError):
+        except (FailedPause, RequestAbort, asyncio.CancelledError,
+                GeneratorExit):
             self._exit_status = 'abort'
             # TODO Is the sleep here necessasry?
             yield from asyncio.sleep(0.001, loop=self.loop)
