@@ -894,13 +894,15 @@ class RunEngine:
                         # exceptions (coming in via throw) can be
                         # raised
                         response = yield from coro(msg)
-                        self._response_stack.append(response)
                     except asyncio.CancelledError:
                         # spacial case `CancelledError` and let the outer
                         # exception block deal with it.
                         raise
                     except Exception as e:
                         self._exception = e
+                        continue
+                    else:
+                        self._response_stack.append(response)
                         continue
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
