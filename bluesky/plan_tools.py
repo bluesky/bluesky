@@ -1,6 +1,4 @@
-import types
 import matplotlib.pyplot as plt
-from .utils import ensure_generator
 from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
 
