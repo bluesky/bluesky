@@ -823,7 +823,7 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
-        is_canceled = None
+        pending_cancel_exception = None
         self._reason = ''
         try:
             self.state = 'running'
@@ -953,7 +953,7 @@ class RunEngine:
                     # raised error is not already stashed in _exception
                     if self._exception is None:
                         self._exception = e
-                    is_canceled = e
+                    pending_cancel_exception = e
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             # TODO Is the sleep here necessasry?
@@ -1025,8 +1025,8 @@ class RunEngine:
             self.loop.stop()
             self.state = 'idle'
         # if the task was canceled
-        if is_canceled is not None:
-            raise is_canceled
+        if pending_cancel_exception is not None:
+            raise pending_cancel_exception
 
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
