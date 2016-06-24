@@ -88,6 +88,8 @@ def ensure_generator(plan):
     -------
     gen : coroutine
     """
+    if isinstance(plan, Msg):
+        return single_gen(plan)
     gen = iter(plan)  # no-op on generators; needed for classes
     if not isinstance(gen, PLAN_TYPES):
         # If plan does not support .send, we must wrap it in a generator.
