@@ -826,6 +826,7 @@ class RunEngine:
                     # that any of the 'async' exceptions get thrown in the
                     # correct place
                     yield from asyncio.sleep(0.0001, loop=self.loop)
+                    # The case where we have a stashed exception
                     if self._exception is not None:
                         # throw the exception at the current plan
                         try:
@@ -847,14 +848,18 @@ class RunEngine:
                         # handled it.
                         else:
                             self._exception = None
+                    # The normal case of clean operation
                     else:
                         resp = self._response_stack.pop()
                         try:
                             msg = self._plan_stack[-1].send(resp)
+                        # We have exhausted the top generator
                         except StopIteration:
+                            # pop the dead generator go back to the top
                             self._plan_stack.pop()
                             if len(self._plan_stack):
                                 continue
+                            # or reraise to get out of the infinite loop
                             else:
                                 raise
                         # Any other exception that comes out of the plan
@@ -870,14 +875,20 @@ class RunEngine:
                             self._exception = e
                             continue
 
+                    # if we have a message hook, call it
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
+
+                    # update the running set of all objects we have seen
                     self._objs_seen.add(msg.obj)
+
+                    # if this message can be cached for rewinding, cache it
                     if (self._msg_cache is not None and
                             self._rewindable_flag and
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
+
                     # try to look up the coroutine to execute the command
                     try:
                         coro = self._command_registry[msg.command]
@@ -894,16 +905,20 @@ class RunEngine:
                         # exceptions (coming in via throw) can be
                         # raised
                         response = yield from coro(msg)
+                    # spacial case `CancelledError` and let the outer
+                    # exception block deal with it.
                     except asyncio.CancelledError:
-                        # spacial case `CancelledError` and let the outer
-                        # exception block deal with it.
                         raise
+                    # any other exception, stash it and go to the top of loop
                     except Exception as e:
                         self._exception = e
                         continue
+                    # normal use, if it runs cleanly, stash the response and
+                    # go to the top of the loop
                     else:
                         self._response_stack.append(response)
                         continue
+
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
                     # -- overriding the RunEngine -- and then raises instead
@@ -1999,7 +2014,6 @@ def _rearrange_into_parallel_dicts(readings):
         data[key] = payload['value']
         timestamps[key] = payload['timestamp']
     return data, timestamps
-
 
 class RequestAbort(Exception):
     pass
