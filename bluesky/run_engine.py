@@ -786,6 +786,18 @@ class RunEngine:
         if self.state == 'paused':
             self._resume_event_loop()
 
+    def halt(self):
+        '''Stop the running plan and do not allow the plan a chance to clean up
+        '''
+        if self.state.is_idle:
+            raise TransitionError("RunEngine is already idle.")
+        print("HALTING...")
+        self._interrupted = True
+        self._exception = GeneratorExit()
+        self._task.cancel()
+        if self.state == 'paused':
+            self._resume_event_loop()
+
     def _stop_movable_objects(self):
         "Call obj.stop() for all objects we have moved. Log any exceptions."
         for obj in self._movable_objs_touched:

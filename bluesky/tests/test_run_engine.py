@@ -815,8 +815,52 @@ def test_nonrewindable_finalizer(fresh_RE, motor_det, start_state, msg_seq):
     assert [m.command for m in m_col.msgs] == msg_seq
 
 
+def test_halt_from_pause(fresh_RE):
+    RE = fresh_RE
+    except_hit = False
+
+    def pausing_plan():
+        nonlocal except_hit
+        for j in range(5):
+            yield Msg('null')
+        try:
+            yield Msg('pause')
+        except Exception:
+            except_hit = True
+            raise
+
+    RE(pausing_plan())
+    RE.halt()
+    assert not except_hit
+
+
+def test_halt_async(fresh_RE):
+    RE = fresh_RE
+    except_hit = False
+    m_coll = MsgCollector()
+    RE.msg_hook = m_coll
+
+    def sleeping_plan():
+        nonlocal except_hit
+        try:
+            yield Msg('sleep', None, 50)
+        except Exception:
+            yield Msg('null')
+            except_hit = True
+            raise
+
+    RE.loop.call_later(.1, RE.halt)
+    start = ttime.time()
+    RE(sleeping_plan())
+    stop = ttime.time()
+    assert .1 < stop - start < .2
+    assert not except_hit
+    assert [m.command for m in m_coll.msgs] == ['sleep']
+
+
 @pytest.mark.parametrize('cancel_func',
                          [lambda RE: RE.stop(), lambda RE: RE.abort(),
+                          lambda RE: RE.halt(),
                           lambda RE: RE.request_pause(defer=False)])
 def test_prompt_stop(fresh_RE, cancel_func):
     RE = fresh_RE
