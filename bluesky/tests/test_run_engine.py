@@ -552,11 +552,13 @@ def test_finalizer_closeable():
     plan.close()
 
 
-def test_invalid_plan(fresh_RE, motor_det):
+def test_invalid_generator(fresh_RE, motor_det):
 
     RE = fresh_RE
     motor, det = motor_det
 
+    # this is not a valid generator as it will try to yield if it
+    # is throw a GeneratorExit
     def patho_finalize_wrapper(plan, post):
         try:
             yield from plan
