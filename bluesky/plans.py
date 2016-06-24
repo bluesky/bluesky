@@ -807,6 +807,15 @@ def unsubscribe(token):
 
 
 def run_wrapper(plan, *, md=None):
+    """Enclose in 'open_run' and 'close_run' messages.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    md : dict, optional
+        metadata to be passed into the 'open_run' message
+    """
     yield from open_run(md)
     yield from plan
     yield from close_run()
@@ -1059,12 +1068,13 @@ def event_context(plan_stack, name='primary'):
 def rewindable_wrapper(plan, rewindable):
     '''Toggle the 'rewindable' state of the RE
 
-    Only strictly
+    Allow or disallow rewinding during the processing of the wrapped messages.
+    Then restore the initial state (rewindable or not rewindable).
 
     Parameters
     ----------
     plan : generator
-        The plan to wrap in a 'rewindable' contextlib
+        The plan to wrap in a 'rewindable' or 'not rewindable' context
     rewindable : bool
 
     '''
