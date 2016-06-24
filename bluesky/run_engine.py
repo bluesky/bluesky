@@ -843,6 +843,10 @@ class RunEngine:
                             # re-raise to exit the infinite loop
                             else:
                                 raise
+                        # clear the stashed exception, the top plan
+                        # handled it.
+                        else:
+                            self._exception = None
                     else:
                         resp = self._response_stack.pop()
                         try:
@@ -857,7 +861,6 @@ class RunEngine:
                             self._exception = e
                             continue
 
-                    self._exception = None
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
                     self._objs_seen.add(msg.obj)
