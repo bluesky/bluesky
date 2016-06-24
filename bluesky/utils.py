@@ -17,6 +17,41 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class NoReplayAllowed(Exception):
+    pass
+
+class RequestAbort(Exception):
+    pass
+
+
+class RequestStop(Exception):
+    pass
+
+
+class RunEngineInterrupted(Exception):
+    pass
+
+
+class IllegalMessageSequence(Exception):
+    pass
+
+
+class FailedPause(Exception):
+    pass
+
+
+class FailedStatus(Exception):
+    'Exception to be raised if a SatusBase object reports done but failed'
+
+
+class InvalidCommand(KeyError):
+    pass
+
+
+class PlanHalt(GeneratorExit):
+    pass
+
+
 class SignalHandler:
     def __init__(self, sig, log=None):
         self.sig = sig
