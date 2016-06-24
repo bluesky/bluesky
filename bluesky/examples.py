@@ -4,8 +4,6 @@ from collections import deque, OrderedDict
 import numpy as np
 from .run_engine import Msg
 
-loop = asyncio.get_event_loop()
-
 
 class MockSignal:
     "hotfix for 2016 winter cycle -- build out more thoroughly later"
@@ -205,7 +203,7 @@ class SynGauss(Reader):
     _klass = 'reader'
 
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
-                 noise=None, noise_multiplier=1, exposure_time=0.05):
+                 noise=None, noise_multiplier=1, exposure_time=0):
         super(SynGauss, self).__init__(name, [name, ])
         self.ready = True
         self._motor = motor
@@ -321,7 +319,7 @@ class MockFlyer:
     Class for mocking a flyscan API implemented with stepper motors.
 
     """
-    def __init__(self, detector, motor):
+    def __init__(self, detector, motor, loop):
         self._mot = motor
         self._detector = detector
         self._steps = None
@@ -330,6 +328,7 @@ class MockFlyer:
         self._cb = None
         self.ready = False
         self.success = True
+        self.loop = loop
 
     @property
     def done(self):
@@ -360,7 +359,7 @@ class MockFlyer:
         # self.complete(). Separately, make dummy status object
         # that is immediately done, and return that, indicated that
         # the 'kickoff' step is done.
-        self._future = loop.run_in_executor(None, self._scan)
+        self._future = self.loop.run_in_executor(None, self._scan)
         self._future.add_done_callback(lambda x: self._finish())
 
         return NullStatus()
@@ -373,6 +372,8 @@ class MockFlyer:
         self._thread = None
 
     def _scan(self):
+        # this is needed because these objects are very dumb
+        ttime.sleep(.1)
         for p in self._steps:
             stat = self._mot.set(p)
             while True:
@@ -416,6 +417,7 @@ class MockFlyer:
             self._cb = cb
 
     def _finish(self):
+        print('finish fired')
         self.ready = True
         if self._cb is not None:
             self._cb()
@@ -490,9 +492,9 @@ class FlyMagic(Base):
 
 
 motor = Mover('motor', ['motor'])
-motor1 = Mover('motor1', ['motor1'], sleep_time=.1)
-motor2 = Mover('motor2', ['motor2'], sleep_time=.2)
-motor3 = Mover('motor3', ['motor3'], sleep_time=.5)
+motor1 = Mover('motor1', ['motor1'])
+motor2 = Mover('motor2', ['motor2'])
+motor3 = Mover('motor3', ['motor3'])
 noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
                      noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
