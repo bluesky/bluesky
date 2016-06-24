@@ -21,16 +21,21 @@ def ensure_generator(plan):
 
     Parameters
     ----------
-    plan : iterable or iterator
+    plan : iterable or iterator or a single Msg
 
     Returns
     -------
     gen : coroutine
     """
-    gen = iter(plan)  # no-op on generators; needed for classes
-    if not isinstance(gen, PLAN_TYPES):
-        # If plan does not support .send, we must wrap it in a generator.
-        gen = (msg for msg in gen)
+    if isinstance(plan, Msg):
+        # be forgiving: accept a single Msg and turn it into a generator
+        def gen():
+            yield plan
+    else:
+        gen = iter(plan)  # no-op on generators; needed for classes
+        if not isinstance(gen, PLAN_TYPES):
+            # If plan does not support .send, we must wrap it in a generator.
+            gen = (msg for msg in gen)
 
     return gen
 
