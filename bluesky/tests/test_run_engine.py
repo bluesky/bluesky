@@ -678,7 +678,7 @@ def test_sideband_cancel(fresh_RE):
 
     RE(scan)
     assert RE.state == 'idle'
-
+    assert RE._task.cancelled()
     stop = ttime.time()
 
     assert .5 < (stop - start) < 2
