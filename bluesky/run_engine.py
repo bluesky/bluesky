@@ -878,8 +878,21 @@ class RunEngine:
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
+                    # try to look up the coroutine to execute the command
                     try:
                         coro = self._command_registry[msg.command]
+                    # replace KeyError with a local sub-class and go
+                    # to top of the loop
+                    except KeyError:
+                        # TODO make this smarter
+                        self._exception = InvalidCommand(msg.command)
+                        continue
+
+                    # try to finally run the command the user asked for
+                    try:
+                        # this is one of two places that 'async'
+                        # exceptions (coming in via throw) can be
+                        # raised
                         response = yield from coro(msg)
                         self._response_stack.append(response)
                     except asyncio.CancelledError:
@@ -2023,6 +2036,8 @@ resume()  --> will resume the scan
 Pro Tip: Next time, if you want to abort, tap Ctrl+C three times quickly.
 """
 
+class InvalidCommand(KeyError):
+    pass
 
 def _default_md_validator(md):
     if 'sample' in md and not (hasattr(md['sample'], 'keys')
