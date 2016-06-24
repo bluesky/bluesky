@@ -536,7 +536,7 @@ def test_cleanup_pathological_plans(fresh_RE, motor_det, plan):
         if RE.state == 'paused':
             assert motor.position != 1024
             RE.resume()
-    except:
+    except Exception:
         pass
     assert motor.position == 1024
 
@@ -608,7 +608,7 @@ def test_exception_cascade_REside(fresh_RE):
             yield Msg('null')
         try:
             yield Msg('pause')
-        except:
+        except Exception:
             except_hit = True
             raise
 
@@ -638,7 +638,7 @@ def test_exception_cascade_planside(fresh_RE):
             yield Msg('null')
         try:
             yield Msg('pause')
-        except:
+        except Exception:
             except_hit = True
             raise
 
