@@ -5,7 +5,6 @@ import logging
 from warnings import warn
 from itertools import count, tee
 from collections import deque, defaultdict, ChainMap
-import uuid
 import signal
 from enum import Enum
 import functools
@@ -16,7 +15,6 @@ from event_model import DocumentNames, schemas
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
-import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     AsyncInput, new_uid, sanitize_np)
