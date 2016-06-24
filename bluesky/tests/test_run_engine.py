@@ -813,3 +813,19 @@ def test_nonrewindable_finalizer(fresh_RE, motor_det, start_state, msg_seq):
     assert RE.rewindable is start_state
 
     assert [m.command for m in m_col.msgs] == msg_seq
+
+
+@pytest.mark.parametrize('cancel_func',
+                         [lambda RE: RE.stop(), lambda RE: RE.abort(),
+                          lambda RE: RE.request_pause(defer=False)])
+def test_prompt_stop(fresh_RE, cancel_func):
+    RE = fresh_RE
+    plan = [Msg('sleep', None, 50)]
+    RE.loop.call_later(.1, partial(cancel_func, RE))
+    start = ttime.time()
+    RE(plan)
+    stop = ttime.time()
+
+    assert .1 < stop - start < .2
+    if RE.state != 'idle':
+        RE.abort()

@@ -716,6 +716,7 @@ class RunEngine:
         if not self.resumable:
             print("No checkpoint; cannot suspend. Aborting...")
             self._exception = FailedPause()
+            self._task.cancel()
         else:
             print("Suspending....To get prompt hit Ctrl-C twice to pause.")
             if justification is not None:
@@ -781,6 +782,7 @@ class RunEngine:
         print("Stopping...")
         self._interrupted = True
         self._exception = RequestStop()
+        self._task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
 
@@ -1688,7 +1690,7 @@ class RunEngine:
             a status object that has failed
         """
         self._exception = FailedStatus(ret)
-        # self._task.cancel()  # TODO -- should we kill ASAP?
+        self._task.cancel()
 
     @asyncio.coroutine
     def _sleep(self, msg):
