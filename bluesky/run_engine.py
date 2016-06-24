@@ -868,12 +868,11 @@ class RunEngine:
                             # go to the top of the loop
                             self._plan_stack.pop()
                             if len(self._plan_stack):
+                                self._exception = e
                                 continue
                             # or reraise to get out of the infinite loop
                             else:
                                 raise
-                            self._exception = e
-                            continue
 
                     # if we have a message hook, call it
                     if self.msg_hook is not None:
@@ -2015,6 +2014,7 @@ def _rearrange_into_parallel_dicts(readings):
         timestamps[key] = payload['timestamp']
     return data, timestamps
 
+
 class RequestAbort(Exception):
     pass
 
@@ -2052,8 +2052,10 @@ resume()  --> will resume the scan
 Pro Tip: Next time, if you want to abort, tap Ctrl+C three times quickly.
 """
 
+
 class InvalidCommand(KeyError):
     pass
+
 
 def _default_md_validator(md):
     if 'sample' in md and not (hasattr(md['sample'], 'keys')

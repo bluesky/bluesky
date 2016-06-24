@@ -596,7 +596,7 @@ def test_invalid_plan(fresh_RE, motor_det):
     assert actual_err[::-1][:len(expected_postfix)] == expected_postfix
 
 
-def test_exception_cascade(fresh_RE):
+def test_exception_cascade_REside(fresh_RE):
     RE = fresh_RE
     except_hit = False
 
@@ -620,8 +620,39 @@ def test_exception_cascade(fresh_RE):
     RE(pausing_plan())
     ev = asyncio.Event(loop=RE.loop)
     ev.set()
-    RE.request_suspend(ev, pre_plan=pre_plan())
+    RE.request_suspend(ev.wait(), pre_plan=pre_plan())
     with pytest.raises(KeyError):
+        RE.resume()
+    assert except_hit
+
+
+def test_exception_cascade_planside(fresh_RE):
+    RE = fresh_RE
+    except_hit = False
+
+    def pausing_plan():
+        nonlocal except_hit
+        for j in range(5):
+            yield Msg('null')
+        try:
+            yield Msg('pause')
+        except:
+            except_hit = True
+            raise
+
+    def pre_plan():
+        yield Msg('null')
+        raise RuntimeError()
+
+    def post_plan():
+        for j in range(5):
+            yield Msg('null')
+
+    RE(pausing_plan())
+    ev = asyncio.Event(loop=RE.loop)
+    ev.set()
+    RE.request_suspend(ev.wait(), pre_plan=pre_plan())
+    with pytest.raises(RuntimeError):
         RE.resume()
     assert except_hit
 
