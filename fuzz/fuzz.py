@@ -363,6 +363,8 @@ def run_fuzz():
                 print(msg.command)
                 msg_seq.append(msg.command)
                 RE([msg])
+                if msg.command == 'pause':
+                    RE.resume()
                 assert RE.state == 'idle'
             except IllegalMessageSequence as err:
                 print(err)
