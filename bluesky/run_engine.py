@@ -214,6 +214,7 @@ class RunEngine:
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
+        self._rewindable_flag = True  # if the RE is allowed to replay msgs
         self._plan_stack = deque()  # stack of generators to work off of
         self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
@@ -234,6 +235,7 @@ class RunEngine:
             'wait': self._wait,
             'checkpoint': self._checkpoint,
             'clear_checkpoint': self._clear_checkpoint,
+            'rewindable': self._rewindable,
             'pause': self._pause,
             'collect': self._collect,
             'kickoff': self._kickoff,
@@ -266,6 +268,17 @@ class RunEngine:
         self._lossless_dispatcher = Dispatcher()
 
         self.loop.call_soon(self._check_for_signals)
+
+    @property
+    def rewindable(self):
+        return self._rewindable_flag
+
+    @rewindable.setter
+    def rewindable(self, v):
+        cur_state = self._rewindable_flag
+        self._rewindable_flag = bool(v)
+        if self.resumable and self._rewindable_flag != cur_state:
+            self._reset_checkpoint_state()
 
     @property
     def loop(self):
@@ -839,6 +852,7 @@ class RunEngine:
                         self.msg_hook(msg)
                     self._objs_seen.add(msg.obj)
                     if (self._msg_cache is not None and
+                            self._rewindable_flag and
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
@@ -1057,7 +1071,7 @@ class RunEngine:
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
         yield from self.emit(DocumentNames.start, doc)
         self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
         if self.record_interruptions:
@@ -1096,7 +1110,7 @@ class RunEngine:
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine
     def _create(self, msg):
@@ -1248,7 +1262,7 @@ class RunEngine:
         self._monitor_params[obj] = emit_event, msg.kwargs
         obj.subscribe(emit_event, **msg.kwargs)
         yield from self.emit(DocumentNames.descriptor, desc_doc)
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine
     def _unmonitor(self, msg):
@@ -1266,7 +1280,7 @@ class RunEngine:
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine
     def _save(self, msg):
@@ -1657,7 +1671,7 @@ class RunEngine:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
 
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
         if self._deferred_pause_requested:
             # We are at a checkpoint; we are done deferring the pause.
@@ -1666,7 +1680,6 @@ class RunEngine:
             yield from asyncio.sleep(0.5, loop=self.loop)
             self.request_pause(defer=False)
 
-    @asyncio.coroutine
     def _reset_checkpoint_state(self):
         if self._msg_cache is None:
             return
@@ -1680,6 +1693,8 @@ class RunEngine:
             self._sequence_counters[key] = counter_copy1
             self._teed_sequence_counters[key] = counter_copy2
 
+    _reset_checkpoint_state_coro = asyncio.coroutine(_reset_checkpoint_state)
+
     @asyncio.coroutine
     def _clear_checkpoint(self, msg):
         """Clear a set checkpoint
@@ -1692,6 +1707,21 @@ class RunEngine:
         self._msg_cache = None
         # clear stashed
         self._teed_sequence_counters.clear()
+
+    @asyncio.coroutine
+    def _rewindable(self, msg):
+        '''Set rewindable state of RunEngine
+
+        Expected message object is:
+
+            Msg('rewindable', None, bool or None)
+        '''
+
+        rw_flag, = msg.args
+        if rw_flag is not None:
+            self.rewindable = rw_flag
+
+        return self.rewindable
 
     @asyncio.coroutine
     def _configure(self, msg):
@@ -1737,7 +1767,7 @@ class RunEngine:
             return []
         result = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
         return result
 
     @asyncio.coroutine
@@ -1755,7 +1785,7 @@ class RunEngine:
         result = obj.unstage()
         # use `discard()` to ignore objects that are not in the staged set.
         self._staged.discard(obj)
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
         return result
 
     @asyncio.coroutine
@@ -1788,7 +1818,7 @@ class RunEngine:
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
         return token
 
     @asyncio.coroutine
@@ -1812,7 +1842,7 @@ class RunEngine:
             token, = args
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
-        yield from self._reset_checkpoint_state()
+        yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine
     def _input(self, msg):

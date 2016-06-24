@@ -24,3 +24,14 @@ def _print_redirect():
         yield fout
     finally:
         sys.stdout = old_stdout
+
+
+class MsgCollector:
+    def __init__(self, msg_hook=None):
+        self.msgs = []
+        self.msg_hook = msg_hook
+
+    def __call__(self, msg):
+        self.msgs.append(msg)
+        if self.msg_hook:
+            self.msg_hook(msg)

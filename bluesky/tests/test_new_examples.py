@@ -1,8 +1,8 @@
-import copy
 from collections import deque, defaultdict
 import pytest
 from bluesky import Msg
-from bluesky.examples import det, det1, det2, Mover, NullStatus, motor
+from bluesky.examples import (det, det1, det2, Mover, NullStatus, motor,
+                              SynGauss)
 from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
@@ -18,7 +18,7 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            repeater, caching_repeater, count, Count, Scan,
                            fly_during_decorator, subs_decorator,
                            inject_md_wrapper)
-
+from bluesky.utils import all_safe_rewind
 
 class DummyMover:
     def __init__(self, name):
@@ -42,9 +42,9 @@ class DummyMover:
         return {self.name: {'value': self._value, 'timestamp': 0}}
 
 
-
 def cb(name, doc):
     pass
+
 
 @pytest.mark.parametrize(
     'plan,plan_args,plan_kwargs,msgs',
@@ -203,7 +203,7 @@ def test_subs():
 
     processed_plan = list(subs_wrapper(plan('test_arg', test_kwarg='val'),
                                        {'all': cb}))
-    
+
     expected = [Msg('subscribe', None, 'all', cb),
                 Msg('null', None, 'test_arg', test_kwarg='val'),
                 Msg('unsubscribe', token=None)]
@@ -503,3 +503,14 @@ def test_infinite_count(fresh_RE):
     assert len(docs['stop']) == 1
     assert len(docs['descriptor']) == 1
     assert len(docs['event']) > 0
+
+
+def test_no_rewind_device():
+    class FakeSig:
+        def get(self):
+            return False
+
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+    det.rewindable = FakeSig()
+
+    assert not all_safe_rewind([det])

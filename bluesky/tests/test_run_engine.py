@@ -8,7 +8,7 @@ from bluesky import Msg
 from bluesky.examples import det, Mover, Flyer
 from bluesky.plans import trigger_and_read
 import bluesky.plans as bp
-from bluesky.tests.utils import _print_redirect
+from bluesky.tests.utils import _print_redirect, MsgCollector
 
 
 def test_states():
@@ -17,7 +17,7 @@ def test_states():
 
 def test_verbose(fresh_RE):
     fresh_RE.verbose = True
-    assert fresh_RE.verbose is True
+    assert fresh_RE.verbose
     # Emit all four kinds of document, exercising the logging.
     fresh_RE([Msg('open_run'), Msg('create'), Msg('read', det), Msg('save'),
               Msg('close_run')])
@@ -216,7 +216,6 @@ def test_redundant_monitors_are_illegal(fresh_RE):
     # Monitoring, unmonitoring, and monitoring again is legal.
     fresh_RE([Msg('open_run'), Msg('monitor', dummy), Msg('unmonitor', dummy),
               Msg('monitor', dummy)])
-
 
     # Monitoring outside a run is illegal.
     with pytest.raises(IllegalMessageSequence):
@@ -560,3 +559,134 @@ def test_sideband_cancel(fresh_RE):
     stop = ttime.time()
 
     assert .5 < (stop - start) < 2
+
+
+def test_no_rewind(fresh_RE):
+    RE = fresh_RE
+    msg_lst = []
+
+    def msg_collector(msg):
+        msg_lst.append(msg)
+
+    RE.rewindable = False
+
+    plan = [Msg('null')] * 3 + [Msg('pause')] + [Msg('null')] * 3
+    RE.msg_hook = msg_collector
+    RE(plan)
+    RE.resume()
+    assert msg_lst == plan
+
+
+def test_no_rewindable_msg(fresh_RE):
+    RE = fresh_RE
+    RE.rewindable = True
+
+    msg_lst = []
+
+    def msg_collector(msg):
+        msg_lst.append(msg)
+
+    plan = ([Msg('null')] * 3 +
+            [Msg('pause'), Msg('rewindable', None, False)] +
+            [Msg('null')] * 3)
+
+    RE.msg_hook = msg_collector
+
+    RE(plan)
+    RE.resume()
+    assert msg_lst[:4] == plan[:4]
+    assert msg_lst[4:7] == plan[:3]
+    assert msg_lst[7:] == plan[4:]
+
+
+@pytest.mark.parametrize('start_state', [True, False])
+def test_rewindable_state_retrival(fresh_RE, start_state):
+    RE = fresh_RE
+    RE.rewindable = start_state
+
+    def rewind_plan(start_value):
+        ret = yield Msg('rewindable', None, None)
+        assert ret is start_state
+        cache_state = ret
+        ret = yield Msg('rewindable', None, start_state)
+        assert ret is start_state
+
+        ret = yield Msg('rewindable', None, not start_state)
+        assert ret is (not start_state)
+
+        ret = yield Msg('rewindable', None, cache_state)
+        assert ret is start_state
+
+    RE(rewind_plan(start_state))
+    assert RE.rewindable is start_state
+
+
+@pytest.mark.parametrize('start_state,msg_seq', ((True, ['open_run',
+                                                         'rewindable',
+                                                         'rewindable',
+                                                         'trigger',
+                                                         'trigger',
+                                                         'wait',
+                                                         'create',
+                                                         'read',
+                                                         'read',
+                                                         'save',
+                                                         'rewindable',
+                                                         'close_run']),
+                                                 (False, ['open_run',
+                                                          'rewindable',
+                                                          'trigger',
+                                                          'trigger',
+                                                          'wait',
+                                                          'create',
+                                                          'read',
+                                                          'read',
+                                                          'save',
+                                                          'close_run'])))
+def test_nonrewindable_detector(fresh_RE, motor_det, start_state, msg_seq):
+    class FakeSig:
+        def get(self):
+            return False
+
+    motor, det = motor_det
+    det.rewindable = FakeSig()
+
+    RE = fresh_RE
+    RE.rewindable = start_state
+    m_col = MsgCollector()
+    RE.msg_hook = m_col
+
+    RE(bp.run_wrapper(bp.trigger_and_read([motor, det])))
+
+    assert [m.command for m in m_col.msgs] == msg_seq
+
+
+@pytest.mark.parametrize('start_state,msg_seq', ((True,
+                                                  ['rewindable',
+                                                   'rewindable',
+                                                   'aardvark',
+                                                   'rewindable']),
+                                                 (False, ['rewindable',
+                                                          'aardvark'])))
+def test_nonrewindable_finalizer(fresh_RE, motor_det, start_state, msg_seq):
+    class FakeSig:
+        def get(self):
+            return False
+
+    motor, det = motor_det
+    det.rewindable = FakeSig()
+
+    RE = fresh_RE
+    RE.rewindable = start_state
+    m_col = MsgCollector()
+    RE.msg_hook = m_col
+
+    def evil_plan():
+        assert RE.rewindable is False
+        yield Msg('aardvark')
+    with pytest.raises(KeyError):
+        RE(bp.rewindable_wrapper(evil_plan(), False))
+
+    assert RE.rewindable is start_state
+
+    assert [m.command for m in m_col.msgs] == msg_seq

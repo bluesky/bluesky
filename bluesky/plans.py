@@ -12,7 +12,8 @@ from . import (Msg, plan_patterns)
 
 from .plan_tools import ensure_generator
 from .utils import (Struct, Subs, normalize_subs_input,
-                    separate_devices, apply_sub_factories, update_sub_lists)
+                    separate_devices, apply_sub_factories, update_sub_lists,
+                    all_safe_rewind)
 
 
 def _short_uid(label, truncate=6):
@@ -805,6 +806,12 @@ def unsubscribe(token):
     return (yield Msg('unsubscribe', token=token))
 
 
+def run_wrapper(plan, *, md=None):
+    yield from open_run(md)
+    yield from plan
+    yield from close_run()
+
+
 def subs_wrapper(plan, subs):
     """
     Subscribe callbacks to the document stream; finally, unsubscribe.
@@ -1013,7 +1020,7 @@ def subs_context(plan_stack, subs):
 
 
 @contextmanager
-def run_context(plan_stack, md=None):
+def run_context(plan_stack, *, md=None):
     """Enclose in 'open_run' and 'close_run' messages.
 
     Parameters
@@ -1047,6 +1054,41 @@ def event_context(plan_stack, name='primary'):
     plan_stack.append(single_gen(Msg('create', None, name=name)))
     yield plan_stack
     plan_stack.append(single_gen(Msg('save')))
+
+
+def rewindable_wrapper(plan, rewindable):
+    '''Toggle the 'rewindable' state of the RE
+
+    Only strictly
+
+    Parameters
+    ----------
+    plan : generator
+        The plan to wrap in a 'rewindable' contextlib
+    rewindable : bool
+
+    '''
+    initial_rewindable = True
+
+    def capture_rewindable_state():
+        nonlocal initial_rewindable
+        initial_rewindable = yield Msg('rewindable', None, None)
+
+    def set_rewindable(rewindable):
+        if initial_rewindable != rewindable:
+            return (yield Msg('rewindable', None, rewindable))
+
+    def restore_rewindable():
+        if initial_rewindable != rewindable:
+            return (yield Msg('rewindable', None, initial_rewindable))
+
+    if not rewindable:
+        yield from capture_rewindable_state()
+        yield from set_rewindable(rewindable)
+        return (yield from finalize_wrapper(plan,
+                                            restore_rewindable()))
+    else:
+        return (yield from plan)
 
 
 def fly(flyers, *, md=None):
@@ -1514,7 +1556,6 @@ def monitor_context(plan_stack, signals):
         plan_stack.append(single_gen(Msg('unmonitor', sig)))
 
 
-@planify
 def trigger_and_read(devices, name='primary'):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
@@ -1536,8 +1577,10 @@ def trigger_and_read(devices, name='primary'):
     if not devices:
         return []
     devices = separate_devices(devices)  # remove redundant entries
+    rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
     grp = _short_uid('trigger')
     plan_stack = deque()
+
     for obj in devices:
         if hasattr(obj, 'trigger'):
             plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
@@ -1546,7 +1589,8 @@ def trigger_and_read(devices, name='primary'):
     with event_context(plan_stack, name=name):
         for obj in devices:
             plan_stack.append(single_gen(Msg('read', obj)))
-    return plan_stack
+
+    return (yield from rewindable_wrapper(pchain(*plan_stack), rewindable))
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
@@ -1646,6 +1690,7 @@ finalize_decorator = make_decorator(finalize_wrapper)
 lazily_stage_decorator = make_decorator(lazily_stage_wrapper)
 fly_during_decorator = make_decorator(fly_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
+run_decorator = make_decorator(run_wrapper)
 
 
 @planify
@@ -1720,7 +1765,7 @@ def count(detectors, num=1, delay=None, *, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, detectors):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             plan_stack.append(plan)
     return plan_stack
 
@@ -1790,7 +1835,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             for step in steps:
                 plan_stack.append(per_step(detectors, motor, step))
     return plan_stack
@@ -1880,7 +1925,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             for step in steps:
                 plan_stack.append(per_step(detectors, motor, step))
     return plan_stack
@@ -1974,7 +2019,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             for step in steps:
                 plan_stack.append(per_step(detectors, motor, step))
     return plan_stack
@@ -2117,7 +2162,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + [motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             plan_stack.append(core())
     return plan_stack
 
@@ -2244,7 +2289,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, list(detectors) + motors):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             for step in list(cycler):
                 plan_stack.append(per_step(detectors, step, pos_cache))
     return plan_stack
@@ -2515,7 +2560,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
     plan_stack = deque()
     with stage_context(plan_stack, [detector, motor]):
-        with run_context(plan_stack, md):
+        with run_context(plan_stack, md=md):
             plan_stack.append(core())
     return plan_stack
 
