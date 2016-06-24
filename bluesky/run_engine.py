@@ -422,7 +422,9 @@ class RunEngine:
         self._record_interruption('pause')
         if not self.resumable:
             # cannot resume, so we cannot pause.  Abort the scan
-            print("No checkpoint; cannot pause. Aborting...")
+            print("No checkpoint; cannot pause.")
+            print("Aborting: running cleanup and marking "
+                  "exit_status as 'abort'...")
             self._exception = FailedPause()
             self._task.cancel()
             for task in self._failed_status_tasks:
@@ -712,7 +714,9 @@ class RunEngine:
             explanation of why the suspension has been requested
         """
         if not self.resumable:
-            print("No checkpoint; cannot suspend. Aborting...")
+            print("No checkpoint; cannot suspend.")
+            print("Aborting: running cleanup and marking "
+                  "exit_status as 'abort'...")
             self._interrupted = True
             self._exception = FailedPause()
             self._task.cancel()
@@ -762,7 +766,8 @@ class RunEngine:
         """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
-        print("Aborting....")
+        print("Aborting: running cleanup and marking "
+              "exit_status as 'abort'...")
         self._interrupted = True
         self._reason = reason
         self._exception = RequestAbort()
@@ -778,7 +783,8 @@ class RunEngine:
         """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
-        print("Stopping...")
+        print("Stopping: running cleanup and marking exit_status "
+              "as 'success'...")
         self._interrupted = True
         self._exception = RequestStop()
         self._task.cancel()
@@ -790,7 +796,8 @@ class RunEngine:
         '''
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
-        print("HALTING...")
+        print("Halting: skipping cleanup and marking exit_status as "
+              "'abort'...")
         self._interrupted = True
         self._exception = PlanHalt()
         self._task.cancel()
