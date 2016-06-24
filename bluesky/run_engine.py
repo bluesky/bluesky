@@ -25,6 +25,10 @@ from .plan_tools import ensure_generator
 from .plans import single_gen
 
 
+class NoReplayAllowed(Exception):
+    pass
+
+
 def expiring_function(func, loop, *args, **kwargs):
     """
     If timeout has not occurred, call func(*args, **kwargs).
@@ -439,7 +443,10 @@ class RunEngine:
         # Notify Devices of the pause in case they want to clean up.
         for obj in self._objs_seen:
             if hasattr(obj, 'pause'):
-                obj.pause()
+                try:
+                    obj.pause()
+                except NoReplayAllowed:
+                    self._reset_checkpoint_state_meth()
 
     def _record_interruption(self, content):
         """
@@ -723,7 +730,10 @@ class RunEngine:
             # Notify Devices of the pause in case they want to clean up.
             for obj in self._objs_seen:
                 if hasattr(obj, 'pause'):
-                    obj.pause()
+                    try:
+                        obj.pause()
+                    except NoReplayAllowed:
+                        self._reset_checkpoint_state_meth()
 
             # rewind to the last checkpoint
             new_plan = self._rewind()
@@ -1681,6 +1691,9 @@ class RunEngine:
             self.request_pause(defer=False)
 
     def _reset_checkpoint_state(self):
+        self._reset_checkpoint_state_meth()
+
+    def _reset_checkpoint_state_meth(self):
         if self._msg_cache is None:
             return
 

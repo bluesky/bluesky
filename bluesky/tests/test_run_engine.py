@@ -3,9 +3,11 @@ from collections import defaultdict
 import time as ttime
 import pytest
 from bluesky.run_engine import (RunEngineStateMachine,
-                                TransitionError, IllegalMessageSequence)
+                                TransitionError, IllegalMessageSequence,
+                                NoReplayAllowed)
 from bluesky import Msg
-from bluesky.examples import det, Mover, Flyer
+from functools import partial
+from bluesky.examples import det, Mover, Flyer, SynGauss, Mover
 from bluesky.plans import trigger_and_read
 import bluesky.plans as bp
 from bluesky.tests.utils import _print_redirect, MsgCollector
@@ -373,6 +375,94 @@ def test_record_interruptions(fresh_RE):
     assert len(docs['event']) == 2
     docs['event'][0]['data']['interruption'] == 'pause'
     docs['event'][1]['data']['interruption'] == 'resume'
+
+
+def _make_unrewindable_marker():
+    class UnReplayableSynGauss(SynGauss):
+        def pause(self):
+            raise NoReplayAllowed()
+
+    motor = Mover('motor', ['motor'])
+
+    def test_plan(motor, det):
+        yield Msg('set', motor, 0)
+        yield Msg('trigger', det)
+        yield Msg('pause')
+        yield Msg('set', motor, 1)
+        yield Msg('trigger', det)
+
+    inps = []
+    inps.append((test_plan,
+                 motor,
+                 UnReplayableSynGauss('det', motor, 'motor', center=0, Imax=1),
+                 ['set', 'trigger', 'pause', 'set', 'trigger']))
+
+    inps.append((test_plan,
+                 motor,
+                 SynGauss('det', motor, 'motor', center=0, Imax=1),
+                 ['set', 'trigger', 'pause',
+                  'set', 'trigger', 'set', 'trigger']))
+
+    return pytest.mark.parametrize('plan,motor,det,msg_seq', inps)
+
+
+@_make_unrewindable_marker()
+def test_unrewindable_det(fresh_RE, plan, motor, det, msg_seq):
+    RE = fresh_RE
+    msgs = []
+
+    def collector(msg):
+        msgs.append(msg)
+    RE.msg_hook = collector
+    RE(plan(motor, det))
+    RE.resume()
+    assert [m.command for m in msgs] == msg_seq
+
+
+def _make_unrewindable_suspender_marker():
+    class UnReplayableSynGauss(SynGauss):
+        def pause(self):
+            raise NoReplayAllowed()
+
+    motor = Mover('motor', ['motor'])
+
+    def test_plan(motor, det):
+        yield Msg('set', motor, 0)
+        yield Msg('trigger', det)
+        yield Msg('sleep', None, 1)
+        yield Msg('set', motor, 0)
+        yield Msg('trigger', det)
+
+    inps = []
+    inps.append((test_plan,
+                 motor,
+                 UnReplayableSynGauss('det', motor, 'motor', center=0, Imax=1),
+                 ['set', 'trigger', 'sleep', 'wait_for', 'set', 'trigger']))
+
+    inps.append((test_plan,
+                 motor,
+                 SynGauss('det', motor, 'motor', center=0, Imax=1),
+                 ['set', 'trigger', 'sleep', 'wait_for', 'set',
+                  'trigger', 'sleep', 'set', 'trigger']))
+
+    return pytest.mark.parametrize('plan,motor,det,msg_seq', inps)
+
+
+@_make_unrewindable_suspender_marker()
+def test_unrewindable_det_suspend(fresh_RE, plan, motor, det, msg_seq):
+    RE = fresh_RE
+    msgs = []
+
+    def collector(msg):
+        msgs.append(msg)
+    RE.msg_hook = collector
+
+    ev = asyncio.Event()
+    loop = RE.loop
+    loop.call_later(.5, partial(RE.request_suspend, fut=ev.wait()))
+    loop.call_later(1, ev.set)
+    RE(plan(motor, det))
+    assert [m.command for m in msgs] == msg_seq
 
 
 @pytest.mark.parametrize('unpause_func', [lambda RE: RE.stop(),
