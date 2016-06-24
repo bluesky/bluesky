@@ -813,59 +813,56 @@ class RunEngine:
             self.state = 'running'
             while True:
                 try:
-                    # This 'yield from' must be here to ensure that this
-                    # coroutine breaks out of its current bevior before trying
-                    # to get the next message from the top of the generator
-                    # stack in case there has been a pause requested.
-                    # Without this the next message after the pause may be
-                    # processed first on resume (instead of the first
-                    # message in self._msg_cache).
-                    yield from asyncio.sleep(0.0001, loop=self.loop)
-                    # Send last response;
-                    # get new message but don't process it yet.
-                    try:
-                        if self._exception is not None:
-                            # throw the exception at the current plan
-                            try:
-                                msg = self._plan_stack[-1].throw(
-                                    self._exception)
-                            except Exception as e:
-                                # deal with the case where the top
-                                # plan is a re-wind/suspender injected
-                                # plan, all plans in stack get a
-                                # chance to take a bite at this apple.
+                    # This 'yield from' must be here to ensure that
+                    # this coroutine breaks out of its current bevior
+                    # before trying to get the next message from the
+                    # top of the generator stack in case there has
+                    # been a pause requested.  Without this the next
+                    # message after the pause may be processed first
+                    # on resume (instead of the first message in
+                    # self._msg_cache).
 
-                                # if the exact same exception comes
-                                # back up, then the plan did not
-                                # handle it and the next plan gets to
-                                # try.
-                                if e is self._exception:
-                                    self._plan_stack.pop()
-                                    if len(self._plan_stack):
-                                        continue
-                                    else:
-                                        raise
-                        else:
-                            resp = self._response_stack.pop()
-                            try:
-                                msg = self._plan_stack[-1].send(resp)
-                            except StopIteration:
+                    # This sleep has to be inside of this try block so
+                    # that any of the 'async' exceptions get thrown in the
+                    # correct place
+                    yield from asyncio.sleep(0.0001, loop=self.loop)
+                    if self._exception is not None:
+                        # throw the exception at the current plan
+                        try:
+                            msg = self._plan_stack[-1].throw(
+                                self._exception)
+                        except Exception as e:
+                            # deal with the case where the top
+                            # plan is a re-wind/suspender injected
+                            # plan, all plans in stack get a
+                            # chance to take a bite at this apple.
+
+                            # if the exact same exception comes
+                            # back up, then the plan did not
+                            # handle it and the next plan gets to
+                            # try.
+                            if e is self._exception:
                                 self._plan_stack.pop()
                                 if len(self._plan_stack):
                                     continue
                                 else:
                                     raise
-                            except Exception as e:
-                                if self._exception is e:
-                                    raise
-                                self._exception = e
+                    else:
+                        resp = self._response_stack.pop()
+                        try:
+                            msg = self._plan_stack[-1].send(resp)
+                        except StopIteration:
+                            self._plan_stack.pop()
+                            if len(self._plan_stack):
                                 continue
+                            else:
+                                raise
+                        except Exception as e:
+                            if self._exception is e:
+                                raise
+                            self._exception = e
+                            continue
 
-                    except StopIteration:
-                        raise
-
-                    # If we are here one of the plans handled the exception
-                    # and wants to do something with it
                     self._exception = None
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
