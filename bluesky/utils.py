@@ -1,3 +1,4 @@
+from collections import namedtuple
 import asyncio
 import os
 import signal
@@ -17,8 +18,20 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
+    __slots__ = ()
+
+    def __new__(cls, command, obj=None, *args, **kwargs):
+        return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
+
+    def __repr__(self):
+        return '{}: ({}), {}, {}'.format(
+            self.command, self.obj, self.args, self.kwargs)
+
+
 class NoReplayAllowed(Exception):
     pass
+
 
 class RequestAbort(Exception):
     pass

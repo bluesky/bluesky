@@ -1,23 +1,12 @@
-from collections import namedtuple
-
 import logging
 logger = logging.getLogger(__name__)
 
-
-class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
-    __slots__ = ()
-
-    def __new__(cls, command, obj=None, *args, **kwargs):
-        return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
-
-    def __repr__(self):
-        return '{}: ({}), {}, {}'.format(
-            self.command, self.obj, self.args, self.kwargs)
+from .utils import Msg
+from .utils import RunEngineInterrupted
+from .utils import IllegalMessageSequence
+from .utils import FailedStatus
 
 from .run_engine import RunEngine
-from .run_engine import RunEngineInterrupted
-from .run_engine import IllegalMessageSequence
-from .run_engine import FailedStatus
 
 # for back-compat
 from .plans import PlanBase
