@@ -891,10 +891,11 @@ def test_prompt_stop(fresh_RE, cancel_func):
     assert [m.command for m in m_coll.msgs] == ['sleep', 'null']
 
 
-@pytest.mark.parametrize('stop_func', [lambda RE: RE.stop(),
-                                       lambda RE: RE.abort(),
-                                       lambda RE: RE.halt(),
-                                       lambda RE: RE.request_pause()])
-def test_bad_from_idle_transitions(fresh_RE, stop_func):
+@pytest.mark.parametrize('change_func', [lambda RE: RE.stop(),
+                                         lambda RE: RE.abort(),
+                                         lambda RE: RE.halt(),
+                                         lambda RE: RE.request_pause(),
+                                         lambda RE: RE.resume()])
+def test_bad_from_idle_transitions(fresh_RE, change_func):
     with pytest.raises(TransitionError):
-        stop_func(fresh_RE)
+        change_func(fresh_RE)

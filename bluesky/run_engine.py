@@ -610,9 +610,9 @@ class RunEngine:
         """
         # The state machine does not capture the whole picture.
         if not self.state.is_paused:
-            raise RuntimeError("The RunEngine is the {0} state. You can only "
-                               "resume for the paused state."
-                               "".format(self.state))
+            raise TransitionError("The RunEngine is the {0} state. "
+                                  "You can only resume for the paused state."
+                                  "".format(self.state))
 
         self._interrupted = False
         self._record_interruption('resume')
