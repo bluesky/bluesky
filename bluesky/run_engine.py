@@ -31,7 +31,7 @@ def expiring_function(func, loop, *args, **kwargs):
     """
     If timeout has not occurred, call func(*args, **kwargs).
 
-    This is meant to used with the event loop's run_in_exector
+    This is meant to used with the event loop's run_in_executor
     method. Outside that context, it doesn't make any sense.
     """
     def dummy(start_time, timeout):
@@ -103,17 +103,17 @@ class RunEngine:
                              'close_run']
 
     def __init__(self, md=None, *, loop=None, md_validator=None):
-        """
-        The Run Engine execute messages and emits Documents.
+        """The Run Engine execute messages and emits Documents.
 
         Parameters
         ----------
         md : dict-like, optional
-            The default is a standard Python dictionary, but fancier objects
-            can be used to store long-term history and persist it between
-            sessions. The standard configuration instantiates a Run Engine with
-            historydict.HistoryDict, a simple interface to a sqlite file. Any object
-            supporting `__getitem__`, `__setitem__`, and `clear` will work.
+            The default is a standard Python dictionary, but fancier
+            objects can be used to store long-term history and persist
+            it between sessions. The standard configuration
+            instantiates a Run Engine with historydict.HistoryDict, a
+            simple interface to a sqlite file. Any object supporting
+            `__getitem__`, `__setitem__`, and `clear` will work.
 
         loop : asyncio event loop
             e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
@@ -136,7 +136,7 @@ class RunEngine:
             number of seconds before Events yet unprocessed by callbacks are
             skipped
         ignore_callback_exceptions
-            boolean, True by default
+            Boolean, True by default
 
         msg_hook
             callable that receives all messages before they are processed
@@ -161,6 +161,7 @@ class RunEngine:
             Teach the Run Engine a new Message command.
         unregister_command
             Undo register_command.
+
         """
         if loop is None:
             loop = asyncio.get_event_loop()
@@ -211,7 +212,7 @@ class RunEngine:
         self._descriptors = dict()  # cache of {(name, objs_frozen_set): uid}
         self._monitor_params = dict()  # cache of {obj: (cb, kwargs)}
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
-        self._teed_sequence_counters = dict()  # for if we redo datapoints
+        self._teed_sequence_counters = dict()  # for if we redo data-points
         self._suspenders = set()  # set holding suspenders
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
@@ -264,7 +265,7 @@ class RunEngine:
 
         # private dispatcher of critical callbacks
         # which get a lossless Event stream and abort a run if they raise
-        # Ths subscribe/unsubscribe are exposed through the RunEngine
+        # The subscribe/unsubscribe are exposed through the RunEngine
         # as subscribe_lossless and unsubscribe_lossless, defined below
         # to provide special docstrings.
         self._lossless_dispatcher = Dispatcher()
@@ -528,7 +529,7 @@ class RunEngine:
             - a dictionary, mapping specific subscriptions to callables or
               lists of callables; valid keys are {'all', 'start', 'stop',
               'event', 'descriptor'}
-        raise_if_interrupted : boolean
+        raise_if_interrupted : bool
             If the RunEngine is called from inside a script or a function, it
             can be useful to make it raise an exception to halt further
             execution of the script after a pause or a stop. If True, these
@@ -835,7 +836,7 @@ class RunEngine:
             while True:
                 try:
                     # This 'yield from' must be here to ensure that
-                    # this coroutine breaks out of its current bevior
+                    # this coroutine breaks out of its current behavior
                     # before trying to get the next message from the
                     # top of the generator stack in case there has
                     # been a pause requested.  Without this the next
@@ -861,7 +862,7 @@ class RunEngine:
                             if len(self._plan_stack):
                                 self._exception = e
                                 continue
-                            # no plans left and still an UN-handled
+                            # no plans left and still an unhandled exception
                             # re-raise to exit the infinite loop
                             else:
                                 raise
@@ -925,7 +926,7 @@ class RunEngine:
                         # exceptions (coming in via throw) can be
                         # raised
                         response = yield from coro(msg)
-                    # spacial case `CancelledError` and let the outer
+                    # special case `CancelledError` and let the outer
                     # exception block deal with it.
                     except asyncio.CancelledError:
                         raise
@@ -961,12 +962,12 @@ class RunEngine:
                     pending_cancel_exception = e
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
-            # TODO Is the sleep here necessasry?
+            # TODO Is the sleep here necessary?
             yield from asyncio.sleep(0.001, loop=self.loop)
         except (FailedPause, RequestAbort, asyncio.CancelledError,
                 PlanHalt):
             self._exit_status = 'abort'
-            # TODO Is the sleep here necessasry?
+            # TODO Is the sleep here necessary?
             yield from asyncio.sleep(0.001, loop=self.loop)
             self.log.error("Run aborted")
             self.log.error("%r", self._exception)
@@ -1029,7 +1030,7 @@ class RunEngine:
                           'Please fix your plan.'.format(p))
             self.loop.stop()
             self.state = 'idle'
-        # if the task was canceled
+        # if the task was cancelled
         if pending_cancel_exception is not None:
             raise pending_cancel_exception
 
@@ -1064,7 +1065,7 @@ class RunEngine:
                         ttime.sleep(0.05)
                         if self._sigint_handler.count > 2:
                             self.log.debug("RunEngine detected a third "
-                                            "SIGINT -- aborting.")
+                                           "SIGINT -- aborting.")
                             self.loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
                             break
                     else:
@@ -1491,11 +1492,11 @@ class RunEngine:
     @asyncio.coroutine
     def _complete(self, msg):
         """
-        Tell a flyer, 'stop collecting, whenver you are ready'.
+        Tell a flyer, 'stop collecting, whenever you are ready'.
 
         The flyer returns a status object. Some flyers respond to this
         command by stopping collection and returning a finished status
-        object immedately. Other flyers finish their given course and
+        object immediately. Other flyers finish their given course and
         finish whenever they finish, irrespective of when this command is
         issued.
 
@@ -1614,7 +1615,7 @@ class RunEngine:
         Also, note that the device has been touched so it can be stopped upon
         exit.
 
-        Expected messgage object is
+        Expected message object is
 
             Msg('set', obj, *args, **kwargs)
 
@@ -1731,7 +1732,7 @@ class RunEngine:
             Msg('pause', defer=False, name=None, callback=None)
 
         See RunEngine.request_pause() docstring for explanation of the three
-        keyword arugments in the `Msg` signature
+        keyword arguments in the `Msg` signature
         """
         self.request_pause(*msg.args, **msg.kwargs)
 
@@ -1752,7 +1753,7 @@ class RunEngine:
 
         if self._deferred_pause_requested:
             # We are at a checkpoint; we are done deferring the pause.
-            # Give the _check_for_signals courtine time to look for
+            # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
             yield from asyncio.sleep(0.5, loop=self.loop)
             self.request_pause(defer=False)
@@ -1894,7 +1895,7 @@ class RunEngine:
         See the docstring of bluesky.run_engine.Dispatcher.subscribe() for more
         information.
         """
-        self.log.debug("Adding subsription %r", msg)
+        self.log.debug("Adding subscription %r", msg)
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
@@ -1927,7 +1928,7 @@ class RunEngine:
     @asyncio.coroutine
     def _input(self, msg):
         """
-        Process a 'input' Msg. Excpected Msg:
+        Process a 'input' Msg. Expected Msg:
 
             Msg('input', None)
             Msg('input', None, prompt='>')  # customize prompt
@@ -2087,8 +2088,8 @@ class PlanHalt(GeneratorExit):
 
 
 def _default_md_validator(md):
-    if 'sample' in md and not (hasattr(md['sample'], 'keys')
-                                or isinstance(md['sample'], str)):
+    if 'sample' in md and not (hasattr(md['sample'], 'keys') or
+                               isinstance(md['sample'], str)):
         raise ValueError(
             "You specified 'sample' metadata. We give this field special "
             "significance in order to make your data easily searchable. "
