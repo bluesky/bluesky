@@ -536,7 +536,7 @@ def test_cleanup_pathological_plans(fresh_RE, motor_det, plan):
         if RE.state == 'paused':
             assert motor.position != 1024
             RE.resume()
-    except:
+    except Exception:
         pass
     assert motor.position == 1024
 
@@ -552,11 +552,13 @@ def test_finalizer_closeable():
     plan.close()
 
 
-def test_invalid_plan(fresh_RE, motor_det):
+def test_invalid_generator(fresh_RE, motor_det):
 
     RE = fresh_RE
     motor, det = motor_det
 
+    # this is not a valid generator as it will try to yield if it
+    # is throw a GeneratorExit
     def patho_finalize_wrapper(plan, post):
         try:
             yield from plan
@@ -573,7 +575,7 @@ def test_invalid_plan(fresh_RE, motor_det):
 
     def pre_suspend_plan():
         yield Msg('set', motor, 5)
-        raise RuntimeError()
+        raise GeneratorExit()
 
     def make_plan():
         return patho_finalize_wrapper(base_plan(motor),
@@ -584,7 +586,7 @@ def test_invalid_plan(fresh_RE, motor_det):
         RE.request_suspend(None, pre_plan=pre_suspend_plan())
         try:
             RE.resume()
-        except RuntimeError:
+        except GeneratorExit:
             pass
 
     fout.seek(0)
@@ -596,7 +598,7 @@ def test_invalid_plan(fresh_RE, motor_det):
     assert actual_err[::-1][:len(expected_postfix)] == expected_postfix
 
 
-def test_exception_cascade(fresh_RE):
+def test_exception_cascade_REside(fresh_RE):
     RE = fresh_RE
     except_hit = False
 
@@ -606,7 +608,7 @@ def test_exception_cascade(fresh_RE):
             yield Msg('null')
         try:
             yield Msg('pause')
-        except:
+        except Exception:
             except_hit = True
             raise
 
@@ -620,8 +622,39 @@ def test_exception_cascade(fresh_RE):
     RE(pausing_plan())
     ev = asyncio.Event(loop=RE.loop)
     ev.set()
-    RE.request_suspend(ev, pre_plan=pre_plan())
+    RE.request_suspend(ev.wait(), pre_plan=pre_plan())
     with pytest.raises(KeyError):
+        RE.resume()
+    assert except_hit
+
+
+def test_exception_cascade_planside(fresh_RE):
+    RE = fresh_RE
+    except_hit = False
+
+    def pausing_plan():
+        nonlocal except_hit
+        for j in range(5):
+            yield Msg('null')
+        try:
+            yield Msg('pause')
+        except Exception:
+            except_hit = True
+            raise
+
+    def pre_plan():
+        yield Msg('null')
+        raise RuntimeError()
+
+    def post_plan():
+        for j in range(5):
+            yield Msg('null')
+
+    RE(pausing_plan())
+    ev = asyncio.Event(loop=RE.loop)
+    ev.set()
+    RE.request_suspend(ev.wait(), pre_plan=pre_plan())
+    with pytest.raises(RuntimeError):
         RE.resume()
     assert except_hit
 
@@ -645,7 +678,7 @@ def test_sideband_cancel(fresh_RE):
 
     RE(scan)
     assert RE.state == 'idle'
-
+    assert RE._task.cancelled()
     stop = ttime.time()
 
     assert .5 < (stop - start) < 2
@@ -780,3 +813,89 @@ def test_nonrewindable_finalizer(fresh_RE, motor_det, start_state, msg_seq):
     assert RE.rewindable is start_state
 
     assert [m.command for m in m_col.msgs] == msg_seq
+
+
+def test_halt_from_pause(fresh_RE):
+    RE = fresh_RE
+    except_hit = False
+    m_coll = MsgCollector()
+    RE.msg_hook = m_coll
+
+    def pausing_plan():
+        nonlocal except_hit
+        for j in range(5):
+            yield Msg('null')
+        try:
+            yield Msg('pause')
+        except Exception:
+            yield Msg('null')
+            except_hit = True
+            raise
+
+    RE(pausing_plan())
+    RE.halt()
+    assert not except_hit
+    assert [m.command for m in m_coll.msgs] == ['null'] * 5 + ['pause']
+
+
+def test_halt_async(fresh_RE):
+    RE = fresh_RE
+    except_hit = False
+    m_coll = MsgCollector()
+    RE.msg_hook = m_coll
+
+    def sleeping_plan():
+        nonlocal except_hit
+        try:
+            yield Msg('sleep', None, 50)
+        except Exception:
+            yield Msg('null')
+            except_hit = True
+            raise
+
+    RE.loop.call_later(.1, RE.halt)
+    start = ttime.time()
+    RE(sleeping_plan())
+    stop = ttime.time()
+    assert .09 < stop - start < .2
+    assert not except_hit
+    assert [m.command for m in m_coll.msgs] == ['sleep']
+
+
+@pytest.mark.parametrize('cancel_func',
+                         [lambda RE: RE.stop(), lambda RE: RE.abort(),
+                          lambda RE: RE.request_pause(defer=False)])
+def test_prompt_stop(fresh_RE, cancel_func):
+    RE = fresh_RE
+    except_hit = False
+    m_coll = MsgCollector()
+    RE.msg_hook = m_coll
+
+    def sleeping_plan():
+        nonlocal except_hit
+        try:
+            yield Msg('sleep', None, 50)
+        except Exception:
+            yield Msg('null')
+            except_hit = True
+            raise
+
+    RE.loop.call_later(.1, partial(cancel_func, RE))
+    start = ttime.time()
+    RE(sleeping_plan())
+    stop = ttime.time()
+    if RE.state != 'idle':
+        RE.abort()
+    assert 0.09 < stop - start < .2
+    assert except_hit
+    assert [m.command for m in m_coll.msgs] == ['sleep', 'null']
+
+
+@pytest.mark.parametrize('change_func', [lambda RE: RE.stop(),
+                                         lambda RE: RE.abort(),
+                                         lambda RE: RE.halt(),
+                                         lambda RE: RE.request_pause(),
+                                         lambda RE: RE.resume()])
+def test_bad_from_idle_transitions(fresh_RE, change_func):
+    with pytest.raises(TransitionError):
+        change_func(fresh_RE)

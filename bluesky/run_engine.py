@@ -5,7 +5,6 @@ import logging
 from warnings import warn
 from itertools import count, tee
 from collections import deque, defaultdict, ChainMap
-import uuid
 import signal
 from enum import Enum
 import functools
@@ -16,7 +15,6 @@ from event_model import DocumentNames, schemas
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
-import numpy as np
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     AsyncInput, new_uid, sanitize_np)
@@ -33,7 +31,7 @@ def expiring_function(func, loop, *args, **kwargs):
     """
     If timeout has not occurred, call func(*args, **kwargs).
 
-    This is meant to used with the event loop's run_in_exector
+    This is meant to used with the event loop's run_in_executor
     method. Outside that context, it doesn't make any sense.
     """
     def dummy(start_time, timeout):
@@ -105,17 +103,17 @@ class RunEngine:
                              'close_run']
 
     def __init__(self, md=None, *, loop=None, md_validator=None):
-        """
-        The Run Engine execute messages and emits Documents.
+        """The Run Engine execute messages and emits Documents.
 
         Parameters
         ----------
         md : dict-like, optional
-            The default is a standard Python dictionary, but fancier objects
-            can be used to store long-term history and persist it between
-            sessions. The standard configuration instantiates a Run Engine with
-            historydict.HistoryDict, a simple interface to a sqlite file. Any object
-            supporting `__getitem__`, `__setitem__`, and `clear` will work.
+            The default is a standard Python dictionary, but fancier
+            objects can be used to store long-term history and persist
+            it between sessions. The standard configuration
+            instantiates a Run Engine with historydict.HistoryDict, a
+            simple interface to a sqlite file. Any object supporting
+            `__getitem__`, `__setitem__`, and `clear` will work.
 
         loop : asyncio event loop
             e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
@@ -138,7 +136,7 @@ class RunEngine:
             number of seconds before Events yet unprocessed by callbacks are
             skipped
         ignore_callback_exceptions
-            boolean, True by default
+            Boolean, True by default
 
         msg_hook
             callable that receives all messages before they are processed
@@ -163,6 +161,7 @@ class RunEngine:
             Teach the Run Engine a new Message command.
         unregister_command
             Undo register_command.
+
         """
         if loop is None:
             loop = asyncio.get_event_loop()
@@ -213,7 +212,7 @@ class RunEngine:
         self._descriptors = dict()  # cache of {(name, objs_frozen_set): uid}
         self._monitor_params = dict()  # cache of {obj: (cb, kwargs)}
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
-        self._teed_sequence_counters = dict()  # for if we redo datapoints
+        self._teed_sequence_counters = dict()  # for if we redo data-points
         self._suspenders = set()  # set holding suspenders
         self._groups = defaultdict(set)  # sets of objs to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
@@ -266,7 +265,7 @@ class RunEngine:
 
         # private dispatcher of critical callbacks
         # which get a lossless Event stream and abort a run if they raise
-        # Ths subscribe/unsubscribe are exposed through the RunEngine
+        # The subscribe/unsubscribe are exposed through the RunEngine
         # as subscribe_lossless and unsubscribe_lossless, defined below
         # to provide special docstrings.
         self._lossless_dispatcher = Dispatcher()
@@ -424,7 +423,9 @@ class RunEngine:
         self._record_interruption('pause')
         if not self.resumable:
             # cannot resume, so we cannot pause.  Abort the scan
-            print("No checkpoint; cannot pause. Aborting...")
+            print("No checkpoint; cannot pause.")
+            print("Aborting: running cleanup and marking "
+                  "exit_status as 'abort'...")
             self._exception = FailedPause()
             self._task.cancel()
             for task in self._failed_status_tasks:
@@ -528,7 +529,7 @@ class RunEngine:
             - a dictionary, mapping specific subscriptions to callables or
               lists of callables; valid keys are {'all', 'start', 'stop',
               'event', 'descriptor'}
-        raise_if_interrupted : boolean
+        raise_if_interrupted : bool
             If the RunEngine is called from inside a script or a function, it
             can be useful to make it raise an exception to halt further
             execution of the script after a pause or a stop. If True, these
@@ -610,9 +611,9 @@ class RunEngine:
         """
         # The state machine does not capture the whole picture.
         if not self.state.is_paused:
-            raise RuntimeError("The RunEngine is the {0} state. You can only "
-                               "resume for the paused state."
-                               "".format(self.state))
+            raise TransitionError("The RunEngine is the {0} state. "
+                                  "You can only resume for the paused state."
+                                  "".format(self.state))
 
         self._interrupted = False
         self._record_interruption('resume')
@@ -714,8 +715,12 @@ class RunEngine:
             explanation of why the suspension has been requested
         """
         if not self.resumable:
-            print("No checkpoint; cannot suspend. Aborting...")
+            print("No checkpoint; cannot suspend.")
+            print("Aborting: running cleanup and marking "
+                  "exit_status as 'abort'...")
+            self._interrupted = True
             self._exception = FailedPause()
+            self._task.cancel()
         else:
             print("Suspending....To get prompt hit Ctrl-C twice to pause.")
             if justification is not None:
@@ -762,7 +767,8 @@ class RunEngine:
         """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
-        print("Aborting....")
+        print("Aborting: running cleanup and marking "
+              "exit_status as 'abort'...")
         self._interrupted = True
         self._reason = reason
         self._exception = RequestAbort()
@@ -778,9 +784,24 @@ class RunEngine:
         """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
-        print("Stopping...")
+        print("Stopping: running cleanup and marking exit_status "
+              "as 'success'...")
         self._interrupted = True
         self._exception = RequestStop()
+        self._task.cancel()
+        if self.state == 'paused':
+            self._resume_event_loop()
+
+    def halt(self):
+        '''Stop the running plan and do not allow the plan a chance to clean up
+        '''
+        if self.state.is_idle:
+            raise TransitionError("RunEngine is already idle.")
+        print("Halting: skipping cleanup and marking exit_status as "
+              "'abort'...")
+        self._interrupted = True
+        self._exception = PlanHalt()
+        self._task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
 
@@ -808,75 +829,117 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
+        pending_cancel_exception = None
         self._reason = ''
         try:
             self.state = 'running'
             while True:
                 try:
-                    # This 'yield from' must be here to ensure that this
-                    # coroutine breaks out of its current bevior before trying
-                    # to get the next message from the top of the generator
-                    # stack in case there has been a pause requested.
-                    # Without this the next message after the pause may be
-                    # processed first on resume (instead of the first
-                    # message in self._msg_cache).
+                    # This 'yield from' must be here to ensure that
+                    # this coroutine breaks out of its current behavior
+                    # before trying to get the next message from the
+                    # top of the generator stack in case there has
+                    # been a pause requested.  Without this the next
+                    # message after the pause may be processed first
+                    # on resume (instead of the first message in
+                    # self._msg_cache).
+
+                    # This sleep has to be inside of this try block so
+                    # that any of the 'async' exceptions get thrown in the
+                    # correct place
                     yield from asyncio.sleep(0.0001, loop=self.loop)
-                    # Send last response;
-                    # get new message but don't process it yet.
-                    try:
-                        if self._exception is not None:
-                            # throw the exception at the current plan
-                            try:
-                                msg = self._plan_stack[-1].throw(
-                                    self._exception)
-                            except Exception as e:
-                                # deal with the case where the top
-                                # plan is a re-wind/suspender injected
-                                # plan, all plans in stack get a
-                                # chance to take a bite at this apple.
-
-                                # if the exact same exception comes
-                                # back up, then the plan did not
-                                # handle it and the next plan gets to
-                                # try.
-                                if e is self._exception:
-                                    self._plan_stack.pop()
-                                    if len(self._plan_stack):
-                                        continue
-                                    else:
-                                        raise
+                    # The case where we have a stashed exception
+                    if self._exception is not None:
+                        # throw the exception at the current plan
+                        try:
+                            msg = self._plan_stack[-1].throw(
+                                self._exception)
+                        except Exception as e:
+                            # The current plan did not handle it,
+                            # maybe the next plan (if any) would like
+                            # to try
+                            self._plan_stack.pop()
+                            if len(self._plan_stack):
+                                self._exception = e
+                                continue
+                            # no plans left and still an unhandled exception
+                            # re-raise to exit the infinite loop
+                            else:
+                                raise
+                        # clear the stashed exception, the top plan
+                        # handled it.
                         else:
-                            resp = self._response_stack.pop()
+                            self._exception = None
+                    # The normal case of clean operation
+                    else:
+                        resp = self._response_stack.pop()
+                        try:
                             msg = self._plan_stack[-1].send(resp)
+                        # We have exhausted the top generator
+                        except StopIteration:
+                            # pop the dead generator go back to the top
+                            self._plan_stack.pop()
+                            if len(self._plan_stack):
+                                continue
+                            # or reraise to get out of the infinite loop
+                            else:
+                                raise
+                        # Any other exception that comes out of the plan
+                        except Exception as e:
+                            # pop the dead plan, stash the exception and
+                            # go to the top of the loop
+                            self._plan_stack.pop()
+                            if len(self._plan_stack):
+                                self._exception = e
+                                continue
+                            # or reraise to get out of the infinite loop
+                            else:
+                                raise
 
-                    except StopIteration:
-                        self._plan_stack.pop()
-                        if len(self._plan_stack):
-                            continue
-                        else:
-                            raise
-                    # If we are here one of the plans handled the exception
-                    # and wants to do something with it
-                    self._exception = None
+                    # if we have a message hook, call it
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
+
+                    # update the running set of all objects we have seen
                     self._objs_seen.add(msg.obj)
+
+                    # if this message can be cached for rewinding, cache it
                     if (self._msg_cache is not None and
                             self._rewindable_flag and
                             msg.command not in self._UNCACHEABLE_COMMANDS):
                         # We have a checkpoint.
                         self._msg_cache.append(msg)
+
+                    # try to look up the coroutine to execute the command
                     try:
                         coro = self._command_registry[msg.command]
+                    # replace KeyError with a local sub-class and go
+                    # to top of the loop
+                    except KeyError:
+                        # TODO make this smarter
+                        self._exception = InvalidCommand(msg.command)
+                        continue
+
+                    # try to finally run the command the user asked for
+                    try:
+                        # this is one of two places that 'async'
+                        # exceptions (coming in via throw) can be
+                        # raised
                         response = yield from coro(msg)
-                        self._response_stack.append(response)
+                    # special case `CancelledError` and let the outer
+                    # exception block deal with it.
                     except asyncio.CancelledError:
-                        # spacial case `CancelledError` and let the outer
-                        # exception block deal with it.
                         raise
+                    # any other exception, stash it and go to the top of loop
                     except Exception as e:
                         self._exception = e
                         continue
+                    # normal use, if it runs cleanly, stash the response and
+                    # go to the top of the loop
+                    else:
+                        self._response_stack.append(response)
+                        continue
+
                 except KeyboardInterrupt:
                     # This only happens if some external code captures SIGINT
                     # -- overriding the RunEngine -- and then raises instead
@@ -896,13 +959,15 @@ class RunEngine:
                     # raised error is not already stashed in _exception
                     if self._exception is None:
                         self._exception = e
+                    pending_cancel_exception = e
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
-            # TODO Is the sleep here necessasry?
+            # TODO Is the sleep here necessary?
             yield from asyncio.sleep(0.001, loop=self.loop)
-        except (FailedPause, RequestAbort, asyncio.CancelledError):
+        except (FailedPause, RequestAbort, asyncio.CancelledError,
+                PlanHalt):
             self._exit_status = 'abort'
-            # TODO Is the sleep here necessasry?
+            # TODO Is the sleep here necessary?
             yield from asyncio.sleep(0.001, loop=self.loop)
             self.log.error("Run aborted")
             self.log.error("%r", self._exception)
@@ -965,6 +1030,9 @@ class RunEngine:
                           'Please fix your plan.'.format(p))
             self.loop.stop()
             self.state = 'idle'
+        # if the task was cancelled
+        if pending_cancel_exception is not None:
+            raise pending_cancel_exception
 
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
@@ -997,7 +1065,7 @@ class RunEngine:
                         ttime.sleep(0.05)
                         if self._sigint_handler.count > 2:
                             self.log.debug("RunEngine detected a third "
-                                            "SIGINT -- aborting.")
+                                           "SIGINT -- aborting.")
                             self.loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
                             break
                     else:
@@ -1424,11 +1492,11 @@ class RunEngine:
     @asyncio.coroutine
     def _complete(self, msg):
         """
-        Tell a flyer, 'stop collecting, whenver you are ready'.
+        Tell a flyer, 'stop collecting, whenever you are ready'.
 
         The flyer returns a status object. Some flyers respond to this
         command by stopping collection and returning a finished status
-        object immedately. Other flyers finish their given course and
+        object immediately. Other flyers finish their given course and
         finish whenever they finish, irrespective of when this command is
         issued.
 
@@ -1547,7 +1615,7 @@ class RunEngine:
         Also, note that the device has been touched so it can be stopped upon
         exit.
 
-        Expected messgage object is
+        Expected message object is
 
             Msg('set', obj, *args, **kwargs)
 
@@ -1641,7 +1709,7 @@ class RunEngine:
             a status object that has failed
         """
         self._exception = FailedStatus(ret)
-        # self._task.cancel()  # TODO -- should we kill ASAP?
+        self._task.cancel()
 
     @asyncio.coroutine
     def _sleep(self, msg):
@@ -1664,7 +1732,7 @@ class RunEngine:
             Msg('pause', defer=False, name=None, callback=None)
 
         See RunEngine.request_pause() docstring for explanation of the three
-        keyword arugments in the `Msg` signature
+        keyword arguments in the `Msg` signature
         """
         self.request_pause(*msg.args, **msg.kwargs)
 
@@ -1685,7 +1753,7 @@ class RunEngine:
 
         if self._deferred_pause_requested:
             # We are at a checkpoint; we are done deferring the pause.
-            # Give the _check_for_signals courtine time to look for
+            # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
             yield from asyncio.sleep(0.5, loop=self.loop)
             self.request_pause(defer=False)
@@ -1827,7 +1895,7 @@ class RunEngine:
         See the docstring of bluesky.run_engine.Dispatcher.subscribe() for more
         information.
         """
-        self.log.debug("Adding subsription %r", msg)
+        self.log.debug("Adding subscription %r", msg)
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
@@ -1860,7 +1928,7 @@ class RunEngine:
     @asyncio.coroutine
     def _input(self, msg):
         """
-        Process a 'input' Msg. Excpected Msg:
+        Process a 'input' Msg. Expected Msg:
 
             Msg('input', None)
             Msg('input', None, prompt='>')  # customize prompt
@@ -2011,9 +2079,17 @@ Pro Tip: Next time, if you want to abort, tap Ctrl+C three times quickly.
 """
 
 
+class InvalidCommand(KeyError):
+    pass
+
+
+class PlanHalt(GeneratorExit):
+    pass
+
+
 def _default_md_validator(md):
-    if 'sample' in md and not (hasattr(md['sample'], 'keys')
-                                or isinstance(md['sample'], str)):
+    if 'sample' in md and not (hasattr(md['sample'], 'keys') or
+                               isinstance(md['sample'], str)):
         raise ValueError(
             "You specified 'sample' metadata. We give this field special "
             "significance in order to make your data easily searchable. "
