@@ -156,6 +156,20 @@ def test_overlapping_read(fresh_RE):
               [Msg('close_run')]), collect)
     assert len(docs['descriptor']) == 1
 
+    docs = defaultdict(list)
+    fresh_RE(([Msg('open_run')] +
+              list(trigger_and_read([dcm.th, dcm.x, dcm])) +
+              list(trigger_and_read([dcm])) +
+              [Msg('close_run')]), collect)
+    assert len(docs['descriptor']) == 1
+
+    docs = defaultdict(list)
+    fresh_RE(([Msg('open_run')] +
+              list(trigger_and_read([dcm, dcm.th, dcm.x])) +
+              list(trigger_and_read([dcm])) +
+              [Msg('close_run')]), collect)
+    assert len(docs['descriptor']) == 1
+
 
 @requires_ophyd
 def test_read_clash(fresh_RE):

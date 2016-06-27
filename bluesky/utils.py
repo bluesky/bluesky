@@ -569,7 +569,7 @@ def separate_devices(devices):
     """
     result = []
     for det in devices:
-        for existing_det in result:
+        for existing_det in result[:]:
             if existing_det in ancestry(det):
                 # known issue: here we assume that det is in the read_attrs
                 # of existing_det -- to be addressed after plans.py refactor
