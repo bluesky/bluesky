@@ -7,7 +7,7 @@ from bluesky import Msg
 from bluesky.plans import (msg_mutator, plan_mutator, pchain,
                            single_gen as single_message_gen, finalize_wrapper)
 
-from bluesky.plan_tools import ensure_generator
+from bluesky.utils import ensure_generator
 
 
 def EchoRE(plan, *, debug=False, msg_list=None):

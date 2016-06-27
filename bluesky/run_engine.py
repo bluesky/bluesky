@@ -17,14 +17,11 @@ from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
-                    AsyncInput, new_uid, sanitize_np)
-from . import Msg
-from .plan_tools import ensure_generator
-from .plans import single_gen
-
-
-class NoReplayAllowed(Exception):
-    pass
+                    AsyncInput, new_uid, sanitize_np, NoReplayAllowed,
+                    RequestAbort, RequestStop,  RunEngineInterrupted,
+                    IllegalMessageSequence, FailedPause, FailedStatus,
+                    InvalidCommand, PlanHalt, Msg, ensure_generator,
+                    single_gen)
 
 
 def expiring_function(func, loop, *args, **kwargs):
@@ -2041,30 +2038,6 @@ def _rearrange_into_parallel_dicts(readings):
     return data, timestamps
 
 
-class RequestAbort(Exception):
-    pass
-
-
-class RequestStop(Exception):
-    pass
-
-
-class RunEngineInterrupted(Exception):
-    pass
-
-
-class IllegalMessageSequence(Exception):
-    pass
-
-
-class FailedPause(Exception):
-    pass
-
-
-class FailedStatus(Exception):
-    'Exception to be raised if a SatusBase object reports done but failed'
-
-
 PAUSE_MSG = """
 Your RunEngine is entering a paused state. These are your options for changing
 the state of the RunEngine:
@@ -2077,14 +2050,6 @@ resume()  --> will resume the scan
 
 Pro Tip: Next time, if you want to abort, tap Ctrl+C three times quickly.
 """
-
-
-class InvalidCommand(KeyError):
-    pass
-
-
-class PlanHalt(GeneratorExit):
-    pass
 
 
 def _default_md_validator(md):

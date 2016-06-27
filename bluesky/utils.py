@@ -1,3 +1,4 @@
+from collections import namedtuple
 import asyncio
 import os
 import signal
@@ -15,6 +16,105 @@ import numpy as np
 from cycler import cycler
 import logging
 logger = logging.getLogger(__name__)
+
+
+class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
+    __slots__ = ()
+
+    def __new__(cls, command, obj=None, *args, **kwargs):
+        return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
+
+    def __repr__(self):
+        return '{}: ({}), {}, {}'.format(
+            self.command, self.obj, self.args, self.kwargs)
+
+
+class NoReplayAllowed(Exception):
+    pass
+
+
+class RequestAbort(Exception):
+    pass
+
+
+class RequestStop(Exception):
+    pass
+
+
+class RunEngineInterrupted(Exception):
+    pass
+
+
+class IllegalMessageSequence(Exception):
+    pass
+
+
+class FailedPause(Exception):
+    pass
+
+
+class FailedStatus(Exception):
+    'Exception to be raised if a SatusBase object reports done but failed'
+
+
+class InvalidCommand(KeyError):
+    pass
+
+
+class PlanHalt(GeneratorExit):
+    pass
+
+
+PLAN_TYPES = (types.GeneratorType,)
+try:
+    from types import CoroutineType
+except ImportError:
+    # < py35
+    pass
+else:
+    PLAN_TYPES = PLAN_TYPES + (CoroutineType, )
+    del CoroutineType
+
+
+def ensure_generator(plan):
+    """
+    Ensure that the input is a generator.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+
+    Returns
+    -------
+    gen : coroutine
+    """
+    if isinstance(plan, Msg):
+        return single_gen(plan)
+    gen = iter(plan)  # no-op on generators; needed for classes
+    if not isinstance(gen, PLAN_TYPES):
+        # If plan does not support .send, we must wrap it in a generator.
+        gen = (msg for msg in gen)
+
+    return gen
+
+
+def single_gen(msg):
+    '''Turn a single message into a plan
+
+    If ``lambda x: yield x`` were valid Python, this would be equivalent.
+    In Python 3.6 or 3.7 we might get lambda generators.
+
+    Parameters
+    ----------
+    msg : Msg
+        a single message
+
+    Yields
+    ------
+    msg : Msg
+        the input message
+    '''
+    yield msg
 
 
 class SignalHandler:
