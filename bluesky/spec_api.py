@@ -30,7 +30,7 @@ import itertools
 from itertools import chain
 from collections import ChainMap
 
-### Factory functions for generating callbacks
+# ## Factory functions for generating callbacks
 
 
 def _figure_name(base_name):
@@ -54,7 +54,7 @@ def _figure_name(base_name):
     return base_name
 
 
-def setup_plot(motors):
+def setup_plot(motors, dets, gs):
     """Setup a LivePlot by inspecting motors and gs.
 
     If motors is empty, use sequence number.
@@ -71,7 +71,7 @@ def setup_plot(motors):
         return LivePlot(y_key, fig=fig)
 
 
-def setup_peakstats(motors):
+def setup_peakstats(motors, dets, gs):
     "Set up peakstats"
     key = first_key_heuristic(list(motors)[0])
     ps = PeakStats(key, gs.MASTER_DET_FIELD, **gs.PS_CONFIG)
@@ -79,7 +79,12 @@ def setup_peakstats(motors):
     return ps
 
 
-### Counts (p. 140) ###
+def _construct_subs(plan_name, motors, dets):
+    factories = gs.SUB_FACTORIES.get(plan_name, [])
+    subs = [factory(motors, dets, gs) for factory in factories]
+    return {'all': subs}
+
+# ## Counts (p. 140) ###
 
 
 @planify
@@ -117,7 +122,7 @@ def ct(num=1, delay=None, time=None, *, md=None):
     return plan_stack
 
 
-### Motor Scans (p. 146) ###
+# ## Motor Scans (p. 146) ###
 
 @planify
 def ascan(motor, start, finish, intervals, time=None, *, md=None):
