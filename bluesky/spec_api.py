@@ -74,7 +74,7 @@ def setup_plot(motors):
 def setup_peakstats(motors):
     "Set up peakstats"
     key = first_key_heuristic(list(motors)[0])
-    ps = PeakStats(key, gs.MASTER_DET_FIELD, edge_count=3)
+    ps = PeakStats(key, gs.MASTER_DET_FIELD, **gs.PS_CONFIG)
     gs.PS = ps
     return ps
 
