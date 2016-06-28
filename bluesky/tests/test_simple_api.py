@@ -46,6 +46,7 @@ def test_spec_plans(fresh_RE, pln, name, args, kwargs):
     gs.TH_MOTOR = motor1
     gs.TTH_MOTOR = motor2
     run_start = None
+    gs.MASTER_DET_FIELD = det._fields[0]
     gs.MD_TIME_KEY = 'exposure_time'
 
     def capture_run_start(name, doc):
