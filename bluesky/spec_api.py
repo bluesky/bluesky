@@ -73,10 +73,16 @@ def setup_plot(motors, dets, gs):
 
 def setup_peakstats(motors, dets, gs):
     "Set up peakstats"
-    key = first_key_heuristic(list(motors)[0])
+    motor = list(motors)[0]
+    key = first_key_heuristic(motor)
     ps = PeakStats(key, gs.MASTER_DET_FIELD, **gs.PS_CONFIG)
     gs.PS = ps
+    ps.motor = motor
     return ps
+
+
+def setup_livetable(motors, dets, gs):
+    return LiveTable(motors + [gs.PLOT_Y] + gs.TABLE_COLS)
 
 
 def _construct_subs(plan_name, motors, dets):
@@ -109,9 +115,9 @@ def ct(num=1, delay=None, time=None, *, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'ct',
                        gs.MD_TIME_KEY: time})
-    subs = {'all': [LiveTable(gs.TABLE_COLS + [gs.PLOT_Y])]}
+    subs = _construct_subs('ct', [], gs.DETS)
     if num is not None and num > 1:
-        subs['all'].append(setup_plot([]))
+        subs['all'].append(setup_plot([], gs.DETS, gs))
 
     plan_stack = deque()
     with subs_context(plan_stack, subs):
@@ -120,6 +126,7 @@ def ct(num=1, delay=None, time=None, *, md=None):
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
     return plan_stack
+gs.SUB_FACTORIES['ct'] = [setup_livetable]
 
 
 # ## Motor Scans (p. 146) ###
@@ -148,9 +155,7 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'ascan',
                        gs.MD_TIME_KEY: time})
-    subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
-                    setup_plot([motor]),
-                    setup_peakstats([motor])]}
+    subs = _construct_subs('ascan', [motor], gs.DETS)
 
     plan_stack = deque()
     with subs_context(plan_stack, subs):
@@ -159,6 +164,10 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
         return plan_stack
+
+gs.SUB_FACTORIES['ascan'] = [setup_livetable,
+                             setup_plot,
+                             setup_peakstats]
 
 
 @planify
@@ -181,9 +190,7 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    subs = {'all': [LiveTable([motor] + gs.TABLE_COLS + [gs.PLOT_Y]),
-                    setup_plot([motor]),
-                    setup_peakstats([motor])]}
+    subs = _construct_subs('dscan', [motor], gs.DETS)
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'dscan',
@@ -196,6 +203,10 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
     return plan_stack
+
+gs.SUB_FACTORIES['dscan'] = [setup_livetable,
+                             setup_plot,
+                             setup_peakstats]
 
 
 @planify
@@ -229,7 +240,7 @@ def mesh(*args, time=None, md=None):
         shape.append(num)
         extents.append([start, stop])
 
-    subs = {'all': [LiveTable(gs.DETS + motors)]}
+    subs = _construct_subs('mesh', motors, gs.DETS)
     if len(motors) == 2:
         # first motor is 'slow' -> Y axis
         ylab, xlab = [first_key_heuristic(m) for m in motors]
@@ -252,6 +263,8 @@ def mesh(*args, time=None, md=None):
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
     return plan_stack
+
+gs.SUB_FACTORIES['mesh'] = [setup_livetable]
 
 
 @planify
@@ -280,9 +293,9 @@ def a2scan(*args, time=None, md=None):
     motors = []
     for motor, start, stop, in chunked(args[:-1], 3):
         motors.append(motor)
-        subs = {'all': [LiveTable(gs.DETS + motors),
-                        setup_plot(motors),
-                        setup_peakstats(motors)]}
+
+    subs = _construct_subs('a2scan', motors, gs.DETS)
+
     intervals = list(args)[-1]
     num = 1 + intervals
 
@@ -293,6 +306,9 @@ def a2scan(*args, time=None, md=None):
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
     return plan_stack
+gs.SUB_FACTORIES['a2scan'] = [setup_livetable,
+                              setup_plot,
+                              setup_peakstats]
 
 
 # This implementation works for *all* dimensions, but we follow SPEC naming.
@@ -330,9 +346,7 @@ def d2scan(*args, time=None, md=None):
     motors = []
     for motor, start, stop, in chunked(args[:-1], 3):
         motors.append(motor)
-    subs = {'all': [LiveTable(gs.DETS + motors),
-                    setup_plot(motors),
-                    setup_peakstats(motors)]}
+    subs = _construct_subs('d2scan', motors, gs.DETS)
     intervals = list(args)[-1]
     num = 1 + intervals
 
@@ -343,6 +357,9 @@ def d2scan(*args, time=None, md=None):
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
     return plan_stack
+gs.SUB_FACTORIES['d2scan'] = [setup_livetable,
+                              setup_plot,
+                              setup_peakstats]
 
 
 # This implementation works for *all* dimensions, but we follow SPEC naming.
@@ -454,8 +471,7 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
         md = {}
     md = ChainMap(md, {'plan_name': 'afermat',
                        gs.MD_TIME_KEY: time})
-    subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
-                    ]}
+    subs = _construct_subs('afermat', [x_motor, y_motor], gs.DETS)
 
     plan_stack = deque()
     with plans.subs_context(plan_stack, subs):
@@ -466,9 +482,9 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
     return plan_stack
+gs.SUB_FACTORIES['afermat'] = [setup_livetable]
 
 
-@planify
 def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
            per_step=None, md=None):
     '''Relative fermat spiral scan
@@ -510,7 +526,7 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
                    x_range, y_range, dr, factor, time=time, per_step=per_step,
                    md=md)
     plan = plans.reset_positions_wrapper(plan)  # return motors to starting pos
-    return [plan]
+    yield from plan
 
 
 @planify
@@ -551,8 +567,7 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
         md = {}
     md = ChainMap(md, {'plan_name': 'aspiral',
                        gs.MD_TIME_KEY: time})
-    subs = {'all': [LiveTable([x_motor, y_motor, gs.PLOT_Y] + gs.TABLE_COLS),
-                    ]}
+    subs = _construct_subs('aspiral', [x_motor, y_motor], gs.DETS)
 
     plan_stack = deque()
     with plans.subs_context(plan_stack, subs):
@@ -563,9 +578,9 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
     return plan_stack
+gs.SUB_FACTORIES['aspiral'] = [setup_livetable]
 
 
-@planify
 def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
            per_step=None, md=None):
     '''Relative spiral scan
@@ -607,4 +622,4 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
                    x_range, y_range, dr, nth, time=time, per_step=per_step,
                    md=md)
     plan = plans.reset_positions_wrapper(plan)  # return to starting pos
-    return [plan]
+    yield from plan
