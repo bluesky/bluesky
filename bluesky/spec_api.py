@@ -29,6 +29,8 @@ from bluesky.plans import (subs_context, count, scan,
 import itertools
 from itertools import chain
 from collections import ChainMap
+from inspect import signature, Parameter
+import warnings
 
 # ## Factory functions for generating callbacks
 
@@ -85,10 +87,45 @@ def setup_livetable(motors, dets, gs):
     return LiveTable(motors + [gs.PLOT_Y] + gs.TABLE_COLS)
 
 
-def _construct_subs(plan_name, motors, dets):
-    factories = gs.SUB_FACTORIES.get(plan_name, [])
-    subs = [factory(motors, dets, gs) for factory in factories]
+def setup_liveraster(motors, dets, gs, *, shape, extent):
+    if len(motors) != 2:
+        return None
+    ylab, xlab = [first_key_heuristic(m) for m in motors]
+    raster = LiveRaster(shape, gs.MASTER_DET_FIELD, xlabel=xlab,
+                        ylabel=ylab, extent=extent, clim=[0, 1])
+    return raster
+
+
+def _construct_subs(plan_name, motors, dets, **kwargs):
+    factories = gs.SUB_FACTORIES.get('common', [])
+    factories.extend(gs.SUB_FACTORIES.get(plan_name, []))
+    subs = []
+    for factory in factories:
+        sig = signature(factory)
+        fact_kwargs = {}
+        missing_kwargs = set()
+        for k, v in sig.parameters.items():
+            if v.kind is Parameter.KEYWORD_ONLY:
+                if k in kwargs:
+                    fact_kwargs[k] = kwargs[k]
+                else:
+                    if v.default is Parameter.empty:
+                        missing_kwargs.add(k)
+        if missing_kwargs:
+            warnings.warn('The factory {fn} could not be run due to missing '
+                          'mandatory kwargs {missing!r}'.format(
+                              fn=factory.__name__, missing=missing_kwargs))
+        else:
+            l_sub = factory(motors, dets, gs, **fact_kwargs)
+            if l_sub is None:
+                continue
+            elif callable(l_sub):
+                subs.append(l_sub)
+            else:
+                subs.extend(l_sub)
+
     return {'all': subs}
+
 
 # ## Counts (p. 140) ###
 
@@ -240,15 +277,10 @@ def mesh(*args, time=None, md=None):
         shape.append(num)
         extents.append([start, stop])
 
-    subs = _construct_subs('mesh', motors, gs.DETS)
-    if len(motors) == 2:
-        # first motor is 'slow' -> Y axis
-        ylab, xlab = [first_key_heuristic(m) for m in motors]
-        # shape goes in (rr, cc)
-        # extents go in (x, y)
-        raster = LiveRaster(shape, gs.MASTER_DET_FIELD, xlabel=xlab,
-                            ylabel=ylab, extent=list(chain(*extents[::-1])))
-        subs['all'].append(raster)
+    # shape goes in (rr, cc)
+    # extents go in (x, y)
+    subs = _construct_subs('mesh', motors, gs.DETS, shape=shape,
+                           extent=list(chain(*extents[::-1])))
 
     # outer_product_scan expects a 'snake' param for all but fist motor
     chunked_args = iter(chunked(args, 4))
@@ -264,7 +296,7 @@ def mesh(*args, time=None, md=None):
         plan_stack.append(plan)
     return plan_stack
 
-gs.SUB_FACTORIES['mesh'] = [setup_livetable]
+gs.SUB_FACTORIES['mesh'] = [setup_livetable, setup_liveraster]
 
 
 @planify
