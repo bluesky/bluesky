@@ -169,7 +169,7 @@ def test_unresumable_suspend_fail(fresh_RE):
     m_coll = MsgCollector()
     RE.msg_hook = m_coll
 
-    ev = asyncio.Event()
+    ev = asyncio.Event(loop=RE.loop)
     loop = RE.loop
     loop.call_later(.1, partial(RE.request_suspend, fut=ev.wait()))
     loop.call_later(1, ev.set)
