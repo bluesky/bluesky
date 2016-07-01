@@ -770,8 +770,8 @@ to control the behavior.
 
 #+END_SRC
 
+** Stop, Abort, Halt
 ** Suspending
-
 ** Object/hardware clean up
 
 ** Document creation and emission
