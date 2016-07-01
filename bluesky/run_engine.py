@@ -1167,6 +1167,8 @@ class RunEngine:
                                       run_start=self._run_start_uid)
             yield from self.emit(DocumentNames.descriptor, interruptions_desc)
 
+        return self._run_start_uid
+
     @asyncio.coroutine
     def _close_run(self, msg):
         """Instruct the RunEngine to write the RunStop document

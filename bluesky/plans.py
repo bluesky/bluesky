@@ -67,8 +67,11 @@ def planify(func):
     @wraps(func)
     def wrapped(*args, **kwargs):
         gen_stack = func(*args, **kwargs)
+        ret = []
         for g in gen_stack:
-            yield from g
+            res = yield from g
+            ret.append(res)
+        return tuple(ret)
 
     return wrapped
 
