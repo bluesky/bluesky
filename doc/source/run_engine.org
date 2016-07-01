@@ -336,12 +336,28 @@ a single =Msg= as input (ex =print=)
 #+END_SRC
 
 ** Pausing, Resuming, and Rewinding
+Adding the ability to pause/resume/rewind a scan adds a fair amount of
+complexity as now the =RunEngine= must keep track of a stack of plans
+rather than a single plan, cache =Msg= as they go by and expose enough API
+to control the behavior.
+
 
 #+BEGIN_SRC python
+  from collections import deque
   import asyncio
+
+  import datetime
+  import functools
+  from bluesky.utils import (AsyncInput, FailedPause, InvalidCommand, Msg,
+                             ensure_generator)
+  from bluesky.run_engine import RunEngineStateMachine, PropertyMachine
+  from super_state_machine.errors import TransitionError
 
 
   class RunEngine_v5:
+      state = PropertyMachine(RunEngineStateMachine)
+      _UNCACHEABLE_COMMANDS = ['pause', ]
+
       def __init__(self, *, loop=None):
           # map messages to coro
           self._command_registry = {
@@ -354,7 +370,7 @@ a single =Msg= as input (ex =print=)
               'rewindable': self._rewindable,
               'pause': self._pause,
               'input': self._input,
-              'null': self._null,}
+              'null': self._null, }
 
           # debugging hook
           self.msg_hook = None
@@ -371,13 +387,26 @@ a single =Msg= as input (ex =print=)
           self._deferred_pause_requested = False  # pause at next 'checkpoint'
           self._msg_cache = deque()  # history of processed msgs for rewinding
           self._rewindable_flag = True  # if the RE is allowed to replay msgs
+          self._plan = None  # the scan plan instance from __call__
           self._plan_stack = deque()  # stack of generators to work off of
           self._response_stack = deque([None])  # resps to send into the plans
           self._interrupted = False  # True if paused, aborted, or failed
 
       def __call__(self, plan):
-          self._task = self.loop.create_task(self._run(plan))
-          self.loop.run_until_complete(self._task)
+          # First thing's first: if we are in the wrong state, raise.
+          if not self.state.is_idle:
+              raise RuntimeError("The RunEngine is in a %s state" % self.state)
+
+          self._clear_call_cache()
+
+          self._plan = plan
+          gen = ensure_generator(plan)
+
+          self._plan_stack.append(gen)
+          self._response_stack.append(None)
+
+          self._task = self.loop.create_task(self._run())
+          self.loop.run_forever()
 
           if self._task.done() and not self._task.cancelled():
               exc = self._task.exception()
@@ -385,42 +414,163 @@ a single =Msg= as input (ex =print=)
                   raise exc
 
       def _clear_call_cache(self):
-          self._msg_cache = deque()
+          self._deferred_pause_requested = False
           self._plan_stack = deque()
+          self._msg_cache = deque()
+          self._response_stack = deque([None])
+          self._exception = None
+          self._task = None
+          self._plan = None
+          self._interrupted = False
+
+      @property
+      def rewindable(self):
+          return self._rewindable_flag
+
+      @rewindable.setter
+      def rewindable(self, v):
+          cur_state = self._rewindable_flag
+          self._rewindable_flag = bool(v)
+          if self.resumable and self._rewindable_flag != cur_state:
+              self._reset_checkpoint_state()
+
+      @property
+      def resumable(self):
+          "i.e., can the plan in progress by rewound"
+          return self._msg_cache is not None
 
       @asyncio.coroutine
-      def _run(self, plan):
-          plan = ensure_generator(plan)
-          last_result = None
-          _exception = None
-          while True:
-              try:
-                  yield from asyncio.sleep(0.0001, loop=self.loop)
-                  if _exception is not None:
-                      msg = plan.throw(_exception)
-                      _exception = None
-                  else:
-                      msg = plan.send(last_result)
+      def _run(self):
+          pending_cancel_exception = None
+          try:
+              self.state = 'running'
+              while True:
+                  try:
+                      yield from asyncio.sleep(0.0001, loop=self.loop)
+                      # The case where we have a stashed exception
+                      if self._exception is not None:
+                          # throw the exception at the current plan
+                          try:
+                              msg = self._plan_stack[-1].throw(
+                                  self._exception)
+                          except Exception as e:
+                              # The current plan did not handle it,
+                              # maybe the next plan (if any) would like
+                              # to try
+                              self._plan_stack.pop()
+                              if len(self._plan_stack):
+                                  self._exception = e
+                                  continue
+                              # no plans left and still an unhandled exception
+                              # re-raise to exit the infinite loop
+                              else:
+                                  raise
+                          # clear the stashed exception, the top plan
+                          # handled it.
+                          else:
+                              self._exception = None
+                      # The normal case of clean operation
+                      else:
+                          resp = self._response_stack.pop()
+                          try:
+                              msg = self._plan_stack[-1].send(resp)
+                          # We have exhausted the top generator
+                          except StopIteration:
+                              # pop the dead generator go back to the top
+                              self._plan_stack.pop()
+                              if len(self._plan_stack):
+                                  continue
+                              # or reraise to get out of the infinite loop
+                              else:
+                                  raise
+                          # Any other exception that comes out of the plan
+                          except Exception as e:
+                              # pop the dead plan, stash the exception and
+                              # go to the top of the loop
+                              self._plan_stack.pop()
+                              if len(self._plan_stack):
+                                  self._exception = e
+                                  continue
+                              # or reraise to get out of the infinite loop
+                              else:
+                                  raise
 
-              except StopIteration:
-                  break
+                      if self.msg_hook:
+                          self.msg_hook(msg)
 
-              if self.msg_hook:
-                  self.msg_hook(msg)
+                      # if this message can be cached for rewinding, cache it
+                      if (self._msg_cache is not None and
+                              self._rewindable_flag and
+                              msg.command not in self._UNCACHEABLE_COMMANDS):
+                          # We have a checkpoint.
+                          self._msg_cache.append(msg)
 
-              try:
-                  func = self._command_registry[msg.command]
-                  last_result = yield from func(msg)
-              except Exception as e:
-                  _exception = e
+                      # try to look up the coroutine to execute the command
+                      try:
+                          coro = self._command_registry[msg.command]
+                      # replace KeyError with a local sub-class and go
+                      # to top of the loop
+                      except KeyError:
+                          # TODO make this smarter
+                          self._exception = InvalidCommand(msg.command)
+                          continue
 
+                      # try to finally run the command the user asked for
+                      try:
+                          # this is one of two places that 'async'
+                          # exceptions (coming in via throw) can be
+                          # raised
+                          response = yield from coro(msg)
+                      # special case `CancelledError` and let the outer
+                      # exception block deal with it.
+                      except asyncio.CancelledError:
+                          raise
+                      # any other exception, stash it and go to the top of loop
+                      except Exception as e:
+                          self._exception = e
+                          continue
+                      # normal use, if it runs cleanly, stash the response and
+                      # go to the top of the loop
+                      else:
+                          self._response_stack.append(response)
+                          continue
+
+                  except KeyboardInterrupt:
+                      # This only happens if some external code captures SIGINT
+                      # -- overriding the RunEngine -- and then raises instead
+                      # of (properly) calling the RunEngine's handler.
+                      # See https://github.com/NSLS-II/bluesky/pull/242
+                      print("An unknown external library has improperly raised "
+                            "KeyboardInterrupt. Intercepting and triggering "
+                            "a hard pause instead.")
+                      self.loop.call_soon(self.request_pause, False)
+                      print(PAUSE_MSG)
+                  except asyncio.CancelledError as e:
+                      # if we are handling this twice, raise and leave the plans
+                      # alone
+                      if self._exception is e:
+                          raise e
+                      # the case where FailedPause, RequestAbort or a coro
+                      # raised error is not already stashed in _exception
+                      if self._exception is None:
+                          self._exception = e
+                      pending_cancel_exception = e
+          except StopIteration:
+              pass
+          finally:
+              self.loop.stop()
+              self.state = 'idle'
+          # if the task was cancelled
+          if pending_cancel_exception is not None:
+              raise pending_cancel_exception
       @asyncio.coroutine
       def _sleep(self, msg):
           yield from asyncio.sleep(msg.args[0])
 
       @asyncio.coroutine
       def _print(self, msg):
-          print('-- {!s:10.10s} : {: <25.25s} --'.format(now().time(), msg.obj)),
+          now = datetime.datetime.now
+          print('-- {!s:10.10s} : {: <25.25s} --'.format(now().time(), msg.obj))
 
       @asyncio.coroutine
       def _sum(self, msg):
@@ -451,7 +601,6 @@ a single =Msg= as input (ex =print=)
           keyword arguments in the `Msg` signature
           """
           self.request_pause(*msg.args, **msg.kwargs)
-
 
       def request_pause(self, defer=False):
           """
@@ -495,7 +644,136 @@ a single =Msg= as input (ex =print=)
           # still be processed)
           self.loop.stop()
 
+      def resume(self):
+          """Resume a paused plan from the last checkpoint.
+
+          Returns
+          -------
+          uids : list
+              list of Header uids (a.k.a RunStart uids) of run(s)
+          """
+          # The state machine does not capture the whole picture.
+          if not self.state.is_paused:
+              raise TransitionError("The RunEngine is the {0} state. "
+                                    "You can only resume for the paused state."
+                                    "".format(self.state))
+
+          self._interrupted = False
+          new_plan = self._rewind()
+          self._plan_stack.append(new_plan)
+          self._response_stack.append(None)
+
+          self._resume_event_loop()
+          return []
+
+      def _rewind(self):
+          '''Clean up in preparation for resuming from a pause or suspension.
+
+          Returns
+          -------
+          new_plan : generator
+               A new plan made from the messages in the message cache
+
+          '''
+          new_plan = ensure_generator(list(self._msg_cache))
+          self._msg_cache = deque()
+          # This is needed to 'cancel' an open bundling (e.g. create) if
+          # the pause happens after a 'checkpoint', after a 'create', but before
+          # the paired 'save'.
+          return new_plan
+
+      def _resume_event_loop(self):
+          # may be called by 'resume' or 'abort'
+          self.state = 'running'
+          self._last_sigint_time = None
+          self._num_sigints_processed = 0
+
+          if self._task.done():
+              return
+          self.loop.run_forever()
+          if self._task.done() and not self._task.cancelled():
+              exc = self._task.exception()
+              if exc is not None:
+                  raise exc
+
+      @asyncio.coroutine
+      def _checkpoint(self, msg):
+          """Instruct the RunEngine to create a checkpoint so that we can rewind
+          to this point if necessary
+
+          Expected message object is:
+
+              Msg('checkpoint')
+          """
+          yield from self._reset_checkpoint_state_coro()
+
+          if self._deferred_pause_requested:
+              # We are at a checkpoint; we are done deferring the pause.
+              # Give the _check_for_signals coroutine time to look for
+              # additional SIGINTs that would trigger an abort.
+              yield from asyncio.sleep(0.5, loop=self.loop)
+              self.request_pause(defer=False)
+
+      def _reset_checkpoint_state(self):
+          if self._msg_cache is None:
+              return
+
+          self._msg_cache = deque()
+
+      _reset_checkpoint_state_coro = asyncio.coroutine(_reset_checkpoint_state)
+
+      @asyncio.coroutine
+      def _clear_checkpoint(self, msg):
+          """Clear a set checkpoint
+
+          Expected message object is:
+
+              Msg('clear_checkpoint')
+          """
+          # clear message cache
+          self._msg_cache = None
+          # clear stashed
+          self._teed_sequence_counters.clear()
+
+      @asyncio.coroutine
+      def _rewindable(self, msg):
+          '''Set rewindable state of RunEngine
+
+          Expected message object is:
+
+              Msg('rewindable', None, bool or None)
+          '''
+
+          rw_flag, = msg.args
+          if rw_flag is not None:
+              self.rewindable = rw_flag
+
+          return self.rewindable
+
+      @asyncio.coroutine
+      def _null(self, msg):
+          """
+          A no-op message, mainly for debugging and testing.
+          """
+          pass
+
 
   RE_v5 = RunEngine_v5()
+  RE_v5.msg_hook = print
+
+
+  def pausing_plan():
+      yield Msg('null')
+      yield Msg('null')
+      yield Msg('pause')
+      yield Msg('null')
 
 #+END_SRC
+
+** Suspending
+
+** Object/hardware clean up
+
+** Document creation and emission
+
+** SIGINT interception
