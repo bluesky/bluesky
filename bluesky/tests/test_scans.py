@@ -287,7 +287,7 @@ def test_set():
 
 
 def test_wait_for():
-    ev = asyncio.Event()
+    ev = asyncio.Event(loop=loop)
 
     def done():
         ev.set()

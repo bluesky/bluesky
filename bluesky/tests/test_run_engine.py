@@ -457,7 +457,7 @@ def test_unrewindable_det_suspend(fresh_RE, plan, motor, det, msg_seq):
         msgs.append(msg)
     RE.msg_hook = collector
 
-    ev = asyncio.Event()
+    ev = asyncio.Event(loop=RE.loop)
     loop = RE.loop
     loop.call_later(.5, partial(RE.request_suspend, fut=ev.wait()))
     loop.call_later(1, ev.set)
@@ -661,7 +661,7 @@ def test_exception_cascade_planside(fresh_RE):
 
 def test_sideband_cancel(fresh_RE):
     RE = fresh_RE
-    ev = asyncio.Event()
+    ev = asyncio.Event(loop=RE.loop)
 
     def done():
         print("Done")
