@@ -164,6 +164,9 @@ class LiveTiffExporter(CallbackBase):
                   "\n\n\tpip install tifffile\n\nor\n\n\tconda install "
                   "tifffile")
             raise
+        else:
+            # stash a reference so the module is accessible in self._save_image
+            self._tifffile = tifffile
         self.field = field
         self.template = template
         self.dryrun = dryrun
@@ -177,7 +180,7 @@ class LiveTiffExporter(CallbackBase):
                 raise OSError("There is already a file at {}. Delete "
                               "it and try again.".format(filename))
         if not self.dryrun:
-            tifffile.imsave(filename, np.asarray(image))
+            self._tifffile.imsave(filename, np.asarray(image))
         self.filenames.append(filename)
 
     def start(self, doc):
