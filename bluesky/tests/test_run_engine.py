@@ -474,7 +474,7 @@ def test_cleanup_after_pause(fresh_RE, unpause_func, motor_det):
     motor, det = motor_det
     motor.set(1024)
 
-    @bp.reset_positions_decorator
+    @bp.reset_positions_decorator()
     def simple_plan(motor):
         for j in range(15):
             yield Msg('set', motor, j)
@@ -489,32 +489,32 @@ def test_cleanup_after_pause(fresh_RE, unpause_func, motor_det):
 
 
 def _make_plan_marker():
-    @bp.reset_positions_decorator
+    @bp.reset_positions_decorator()
     def raiser(motor):
         for j in range(15):
             yield Msg('set', motor, j)
         raise RuntimeError()
 
-    @bp.reset_positions_decorator
+    @bp.reset_positions_decorator()
     def pausing_raiser(motor):
         for j in range(15):
             yield Msg('set', motor, j)
         yield Msg('pause')
         raise RuntimeError()
 
-    @bp.reset_positions_decorator
+    @bp.reset_positions_decorator()
     def bad_set(motor):
         for j in range(15):
             yield Msg('set', motor, j)
             yield Msg('set', None, j)
 
-    @bp.reset_positions_decorator
+    @bp.reset_positions_decorator()
     def bad_msg(motor):
         for j in range(15):
             yield Msg('set', motor, j)
         yield Msg('aardvark')
 
-    @bp.reset_positions_decorator
+    @bp.reset_positions_decorator()
     def cannot_pauser(motor):
         yield Msg('clear_checkpoint')
         for j in range(15):

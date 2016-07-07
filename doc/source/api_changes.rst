@@ -28,6 +28,7 @@ Bug Fixes
   stopped or aborted.
 * When an exception is raised, give each plan in the plan stack an opportunity
   to handle it. If it is handled, carry on.
+* Make ``make_decorator`` return proper generators.
 * The SPEC-style ``tw`` was not passing its parameters through to the
   underlying ``tweak`` plan.
 * Silenced un-needed suspenders warnings

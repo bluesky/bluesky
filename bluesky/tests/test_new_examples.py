@@ -12,11 +12,13 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            baseline_context, monitor_context,
                            stage_context, planify, finalize_wrapper,
                            fly_during_wrapper, reset_positions_wrapper,
+                           monitor_during_wrapper,
                            lazily_stage_wrapper, relative_set_wrapper,
                            configure_count_time_wrapper,
                            subs_wrapper, trigger_and_read,
                            repeater, caching_repeater, count, Count, Scan,
                            fly_during_decorator, subs_decorator,
+                           monitor_during_decorator,
                            inject_md_wrapper)
 from bluesky.utils import all_safe_rewind
 
@@ -156,6 +158,28 @@ def strip_group(plan):
         msg.kwargs.pop('group', None)
 
 
+def test_monitor_during_wrapper():
+    def plan():
+        # can't use 2 * [Msg('open_run'), Msg('null'), Msg('close_run')]
+        # because plan_mutator sees the same ids twice and skips them
+        yield from [Msg('open_run'), Msg('null'), Msg('close_run'),
+                    Msg('open_run'), Msg('null'), Msg('close_run')]
+
+    processed_plan = list(monitor_during_wrapper(plan(), ['foo']))
+    expected = 2 * [Msg('open_run'),
+                    Msg('monitor', 'foo'),  # inserted
+                    Msg('null'),
+                    Msg('unmonitor', 'foo'),  # inserted
+                    Msg('close_run')]
+
+    strip_group(processed_plan)
+    assert processed_plan == expected
+
+    processed_plan = list(monitor_during_decorator(['foo'])(plan)())
+    strip_group(processed_plan)
+    assert processed_plan == expected
+
+
 def test_fly_during():
     def plan():
         # can't use 2 * [Msg('open_run'), Msg('null'), Msg('close_run')]
@@ -174,7 +198,7 @@ def test_fly_during():
     strip_group(processed_plan)
     assert processed_plan == expected
 
-    processed_plan = list(fly_during_decorator(plan, ['foo'])())
+    processed_plan = list(fly_during_decorator(['foo'])(plan)())
     strip_group(processed_plan)
     assert processed_plan == expected
 
@@ -210,7 +234,7 @@ def test_subs():
 
     assert processed_plan == expected
 
-    processed_plan = list(subs_decorator(plan, {'all': cb})('test_arg',
+    processed_plan = list(subs_decorator({'all': cb})(plan)('test_arg',
                                                             test_kwarg='val'))
     assert processed_plan == expected
 
