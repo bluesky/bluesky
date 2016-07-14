@@ -1,5 +1,15 @@
 language: python
 sudo: false
+env:
+  global:
+    BUILD_DOCS: true
+    BUILD_DOCS_BRANCH: master
+    DOCS_SUBDIR: ..
+    TARGET_DEV_SUBDIR: .
+    HTML_SUBDIR: build/html
+    DOCS_CONDA_DEPS: "bluesky"
+    DOCS_PIP_DEPS: "tqdm"
+    DOCS_SUBDIR: "doc/"
 
 cache:
   directories:
@@ -61,6 +71,19 @@ install:
 script:
   - coverage run run_tests.py
   - coverage report -m
+  - |
+    if [ $BUILD_DOCS == true ]; then
+      source ~/ci_scripts/make-docs.sh
+    fi
 
 after_success:
   - codecov
+  - |
+    if [[ $TRAVIS_PULL_REQUEST == false && $TRAVIS_REPO_SLUG == 'NSLS-II/bluesky' && $BUILD_DOCS == true && $TRAVIS_BRANCH == 'master' ]]; then
+      echo "Adding encrypted deployment key for uploading docs"
+      openssl aes-256-cbc -K $encrypted_5e70d93e51c3_key -iv $encrypted_5e70d93e51c3_iv -in bluesky-docs-deploy.enc -out bluesky-docs-deploy -d
+      eval `ssh-agent -s`
+      chmod 600 bluesky-docs-deploy
+      ssh-add bluesky-docs-deploy
+      source ~/ci_scripts/push-docs.sh
+    fi
