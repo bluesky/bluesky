@@ -2,7 +2,6 @@ language: python
 sudo: false
 env:
   global:
-    BUILD_DOCS: true
     BUILD_DOCS_BRANCH: master
     DOCS_SUBDIR: ..
     TARGET_DEV_SUBDIR: .
@@ -25,9 +24,12 @@ addons:
     packages:
     - mongodb-org-server
 
-python:
-  - 3.4
-  - 3.5
+matrix:
+  include:
+    - python: 3.4
+      env: BUILD_DOCS=false
+    - python: 3.5
+      env: BUILD_DOCS=true
 
 before_install:
   - git clone https://github.com/NSLS-II/nsls2-ci --branch master --single-branch ~/ci_scripts
