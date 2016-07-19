@@ -557,14 +557,22 @@ class RunEngine:
             raise RuntimeError("The RunEngine is in a %s state" % self.state)
 
         futs = []
+        tripped_justifications = []
         for sup in self.suspenders:
             f_lst, justification = sup.get_futures()
-            print("At least one suspender is tripped. Execution will begin "
-                  "when all suspenders are ready.")
-            print("Suspending....To get prompt hit Ctrl-C twice to pause.")
             if f_lst:
                 futs.extend(f_lst)
-                print(justification)
+                tripped_justifications.append(justification)
+
+        if tripped_justifications:
+            print("At least one suspender has tripped. The plan will begin "
+                  "when all suspenders are ready. Justification:")
+            for i, justification in enumerate(tripped_justifications):
+                print('    {}. {}'.format(i + 1, justification))
+
+            print()
+            print("Suspending... To get to the prompt, "
+                  "hit Ctrl-C twice to pause.")
 
         self._clear_call_cache()
         self._clear_run_cache()  # paranoia, in case of previous bad exit
