@@ -1,4 +1,5 @@
 import uuid
+import pytest
 from collections import deque
 from itertools import zip_longest
 
@@ -8,6 +9,10 @@ from bluesky.plans import (msg_mutator, plan_mutator, pchain,
                            single_gen as single_message_gen, finalize_wrapper)
 
 from bluesky.utils import ensure_generator
+
+
+class EchoException(Exception):
+    ...
 
 
 def EchoRE(plan, *, debug=False, msg_list=None):
@@ -43,6 +48,8 @@ def EchoRE(plan, *, debug=False, msg_list=None):
             if debug:
                 print(msg)
             msg_list.append(msg)
+            if msg.command == 'FAIL':
+                plan.throw(EchoException(msg))
             ret = msg
         except StopIteration:
             break
@@ -58,6 +65,43 @@ def echo_plan(*, command='echo', num=4):
         sent = '{}_{}'.format(seed, ch)
         ret = yield Msg(command, sent)
         assert ret.obj == sent
+
+
+def test_mutator_exceptions():
+    handled = False
+
+    def base_plan():
+        yield Msg('foo')
+        yield Msg('bar')
+
+    def failing_plan():
+        nonlocal handled
+        handled = False
+        yield Msg('pre')
+        try:
+            yield Msg('FAIL')
+        except EchoException:
+            handled = True
+            raise
+
+    def test_mutator(msg):
+        if msg.command == 'bar':
+            return (
+                failing_plan(),
+                single_message_gen(Msg('foo'))
+            )
+        return None, None
+
+    # check generator exit behavior
+    plan = plan_mutator(base_plan(), test_mutator)
+    next(plan)
+    plan.close()
+
+    # check exception fall through
+    plan = plan_mutator(base_plan(), test_mutator)
+    with pytest.raises(EchoException):
+        EchoRE(plan, debug=True)
+    assert handled
 
 
 def _verify_msg_seq(msgs, *,
@@ -125,7 +169,7 @@ def test_simple_mutator():
             _mut_active = False
 
             return (pchain(echo_plan(num=pre_count, command=pre_cmd),
-                            single_message_gen(msg)),
+                           single_message_gen(msg)),
                     echo_plan(num=post_count, command=post_cmd))
         return None, None
 

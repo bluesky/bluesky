@@ -107,6 +107,7 @@ def plan_mutator(plan, msg_proc):
     result_stack = deque()
     tail_cache = dict()
     tail_result_cache = dict()
+    exception = None
 
     # seed initial conditions
     plan_stack.append(plan)
@@ -114,56 +115,68 @@ def plan_mutator(plan, msg_proc):
 
     while True:
         # get last result
-        ret = result_stack.pop()
-        try:
-            # send last result to the top most generator in the
-            # stack this may raise StopIteration
-            msg = plan_stack[-1].send(ret)
+        if exception is not None:
+            # if we have a stashed exception, pass it along
+            try:
+                msg = plan_stack[-1].throw(exception)
+            except Exception as e:
+                # if we catch an exception,
+                # the current top plan is dead so pop it
+                plan_stack.pop()
+                if plan_stack:
+                    # stash the exception and go to the top
+                    exception = e
+                    continue
+                else:
+                    raise
+        else:
+            ret = result_stack.pop()
+            try:
+                msg = plan_stack[-1].send(ret)
+            except StopIteration:
+                # discard the exhausted generator
+                # TODO capture gen.close()?
+                exhausted_gen = plan_stack.pop()
+                # if we just came out of a 'tail' generator,
+                # discard its return value and replace it with the
+                # cached one (from the last message in its paired
+                # 'new_gen')
+                if id(exhausted_gen) in tail_result_cache:
+                    ret = tail_result_cache.pop(id(exhausted_gen))
 
-        except StopIteration:
-            # discard the exhausted generator
-            # TODO capture gen.close()?
-            exhausted_gen = plan_stack.pop()
-            # if we just came out of a 'tail' generator, discard its
-            # return value and replace it with the cached one (from the last
-            # message in its paired 'new_gen')
-            if id(exhausted_gen) in tail_result_cache:
-                ret = tail_result_cache.pop(id(exhausted_gen))
+                result_stack.append(ret)
 
-            result_stack.append(ret)
+                if id(exhausted_gen) in tail_cache:
+                    gen = tail_cache.pop(id(exhausted_gen))
+                    if gen is not None:
+                        plan_stack.append(gen)
+                        saved_result = result_stack.pop()
+                        tail_result_cache[id(gen)] = saved_result
+                        # must use None to prime generator
+                        result_stack.append(None)
 
-            if id(exhausted_gen) in tail_cache:
-                gen = tail_cache.pop(id(exhausted_gen))
-                if gen is not None:
-                    plan_stack.append(gen)
-                    saved_result = result_stack.pop()
-                    tail_result_cache[id(gen)] = saved_result
-                    # must use None to prime generator
-                    result_stack.append(None)
+                if plan_stack:
+                    continue
+                else:
+                    return exhausted_gen.close()
+            except Exception as ex:
+                # we are here because an exception came out of the send
+                # this may be due to
+                # a) the plan really raising or
+                # b) an exception that came out of the run engine via ophyd
 
-            if plan_stack:
-                continue
-            else:
-                return plan.close()
-        except Exception as ex:
-            # we are here because an exception came out of the send
-            # this may be due to
-            # a) the plan really raising or
-            # b) an exception that came out of the run engine via ophyd
-            # If the plan is raising from its side, then the next plan
-            # gets to see the exception on its way out to the user.
-            # If this is a plan that came in through the RE, the top plan has
-            # had its shot do deal with it and now the next plan gets it.
-            failed_plan = plan_stack.pop()
-            failed_plan.close()
-            if plan_stack:
-                msg = plan_stack[-1].throw(ex)
-                plan_stack.append(single_gen(msg))
-                result_stack.append(None)
-                continue
-            else:
-                raise ex
-
+                # in either case the current plan is dead so pop it
+                failed_gen = plan_stack.pop()
+                if id(failed_gen) in tail_cache:
+                    gen = tail_cache.pop(id(failed_gen))
+                    if gen is not None:
+                        plan_stack.append(gen)
+                # if there is at least
+                if plan_stack:
+                    exception = ex
+                    continue
+                else:
+                    raise ex
         # if inserting / mutating, put new generator on the stack
         # and replace the current msg with the first element from the
         # new generator
@@ -189,13 +202,20 @@ def plan_mutator(plan, msg_proc):
         try:
             # yield out the 'current message' and collect the return
             inner_ret = yield msg
+        except GeneratorExit:
+            # special case GeneratorExit.  We must clean up all of our plans
+            # and exit with out yielding anything else.
+            for p in plan_stack:
+                p.close()
+            raise
         except Exception as ex:
-            msg = plan.throw(ex)
-            plan_stack.append(single_gen(msg))
-            result_stack.append(None)
-            continue
-
-        result_stack.append(inner_ret)
+            if plan_stack:
+                exception = ex
+                continue
+            else:
+                raise
+        else:
+            result_stack.append(inner_ret)
 
 
 def msg_mutator(plan, msg_proc):
