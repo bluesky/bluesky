@@ -844,7 +844,7 @@ class RunEngine:
                     # This sleep has to be inside of this try block so
                     # that any of the 'async' exceptions get thrown in the
                     # correct place
-                    yield from asyncio.sleep(0.0001, loop=self.loop)
+                    yield from asyncio.sleep(0, loop=self.loop)
                     # The case where we have a stashed exception
                     if self._exception is not None:
                         # throw the exception at the current plan
@@ -960,12 +960,12 @@ class RunEngine:
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             # TODO Is the sleep here necessary?
-            yield from asyncio.sleep(0.001, loop=self.loop)
+            yield from asyncio.sleep(0, loop=self.loop)
         except (FailedPause, RequestAbort, asyncio.CancelledError,
                 PlanHalt):
             self._exit_status = 'abort'
             # TODO Is the sleep here necessary?
-            yield from asyncio.sleep(0.001, loop=self.loop)
+            yield from asyncio.sleep(0, loop=self.loop)
             self.log.error("Run aborted")
             self.log.error("%r", self._exception)
         except Exception as err:
