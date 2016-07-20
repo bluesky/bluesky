@@ -44,12 +44,13 @@ class PeakStats(CollectThenCompute):
         self.min = None
         self.nlls = None
         self.fwhm = None
+        self.peak_or_edge = None
         self.lin_bkg = None
-        self._edge_count = edge_count
+        self.edge_count = edge_count
         super().__init__()
 
     def __getitem__(self, key):
-        if key in ['com', 'cen', 'max', 'min']:
+        if key in ['com', 'cen', 'max', 'min', 'peak_or_edge']:
             return getattr(self, key)
         else:
             raise KeyError
@@ -64,6 +65,7 @@ class PeakStats(CollectThenCompute):
         self.nlls = None
         self.fwhm = None
         self.lin_bkg = None
+        self.peak_or_edge = None
 
         x = []
         y = []
