@@ -1,7 +1,7 @@
 API Changes
 ===========
 
-v0.5.4
+v0.6.0
 ------
 
 Enhancements
