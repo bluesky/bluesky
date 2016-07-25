@@ -30,11 +30,14 @@ Bug Fixes
   to handle it. If it is handled, carry on.
 * The SPEC-style ``tw`` was not passing its parameters through to the
   underlying ``tweak`` plan.
+* Silenced un-needed suspenders warnings
+* Fix bug in separating devices
 
 Cleanup
 ^^^^^^^
 * Reduce unneeded usage of ``bluesky.plans.single_gen``.
 * Don't emit create/save messages with no reads in between.
+* Re-work exception handling in main run engine event loop.
 
 v0.5.3
 ------
