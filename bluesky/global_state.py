@@ -76,9 +76,15 @@ class ReadableList(TraitType):
                 validate_readable(det)
             except TypeError:
                 self.error(obj, value)
+
+            # If dealing with an areadetector, ensure that all of the plugin
+            # ports are exposed to Python/ophyd:
+            if hasattr(det, 'validate_asyn_ports'):
+                det.validate_asyn_ports()
+
         # Read the scary line below as "flatten data key names"
         data_keys = list(itertools.chain.from_iterable(
-                             [list(det.describe().keys()) for det in value]))
+            [list(det.describe().keys()) for det in value]))
         # The data keys taken together must be unique.
         if len(set(data_keys)) < len(data_keys):
             self.error(obj, value)
