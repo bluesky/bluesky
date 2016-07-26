@@ -236,21 +236,28 @@ Plan Preprocessors
 ------------------
 
 These "preprocessors" take in a plan and modify its contents on the fly.
+For example, ``relative_set`` rewrites all positions to be relative to the
+initial position.
 
 .. autosummary::
    :nosignatures:
    :toctree:
 
+    finalize_wrapper
     subs_wrapper
+    inject_md_wrapper
+    run_wrapper
+    monitor_during_wrapper
+    fly_during_wrapper
     baseline_wrapper
     relative_set_wrapper
     reset_positions_wrapper
     lazily_stage_wrapper
-    fly_during_wrapper
-    finalize_wrapper
 
-For example, ``relative_set`` rewrites all positions to be relative to the
-initial position.
+
+These wrappers operate on a generator *instance*. There are corresponding
+functions that operate on a generator *function*. They are named
+``*_decorator``, corresponding to each ``*_wrapper`` above.
 
 .. code-block:: python
 
@@ -274,14 +281,15 @@ Plan Utilities
 
 .. autosummary::
 
-    planify
+    pchain
     msg_mutator
     plan_mutator
-    pchain
     single_gen
+    planify
     broadcast_msg
     repeater
     caching_repeater
+    make_decorator
 
 Object-Oriented Standard Plans
 ------------------------------

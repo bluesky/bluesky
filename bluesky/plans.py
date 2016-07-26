@@ -20,7 +20,7 @@ def _short_uid(label, truncate=6):
     return '-'.join([label, str(uuid.uuid4())[:truncate]])
 
 
-def make_decorator(wrapper, *args, **kwargs):
+def make_decorator(wrapper):
     """
     The functions named *_wrapper accept a generator instance and return
     a mutated generator instance.
@@ -38,14 +38,15 @@ def make_decorator(wrapper, *args, **kwargs):
     function and returns a generator function.
     """
     @wraps(wrapper)
-    def gen_func_decorator(gen_func, *args, **kwargs):
-        @wraps(gen_func)
-        def inner(*inner_args, **inner_kwargs):
-            plan = gen_func(*inner_args, **inner_kwargs)
-            plan = wrapper(plan, *args, **kwargs)
-            return (yield from plan)
-        return inner
-    return gen_func_decorator
+    def outer(*args, **kwargs):
+        def dec(gen_func):
+            def inner(*inner_args, **inner_kwargs):
+                plan = gen_func(*inner_args, **inner_kwargs)
+                plan = wrapper(plan, *args, **kwargs)
+                return (yield from plan)
+            return inner
+        return dec
+    return outer
 
 
 def planify(func):
@@ -1134,6 +1135,55 @@ def inject_md_wrapper(plan, md):
     return (yield from msg_mutator(plan, _inject_md))
 
 
+def monitor_during_wrapper(plan, signals):
+    """
+    Monitor (asynchronously read) devices during runs.
+
+    This is a preprocessor that insert messages immediately after a run is
+    opened and before it is closed.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    signals : collection
+        objects that support the Signal interface
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'monitor', and 'unmontior' messages inserted
+
+    See Also
+    --------
+    `bluesky.plans.fly_during_wrapper`
+    """
+    monitor_msgs = [Msg('monitor', sig) for sig in signals]
+    unmonitor_msgs = [Msg('unmonitor', sig) for sig in signals]
+
+    def insert_after_open(msg):
+        if msg.command == 'open_run':
+            def new_gen():
+                yield from ensure_generator(monitor_msgs)
+            return single_gen(msg), new_gen()
+        else:
+            return None, None
+
+    def insert_before_close(msg):
+        if msg.command == 'close_run':
+            def new_gen():
+                yield from ensure_generator(unmonitor_msgs)
+                yield msg
+            return new_gen(), None
+        else:
+            return None, None
+
+    # Apply nested mutations.
+    plan1 = plan_mutator(plan, insert_after_open)
+    plan2 = plan_mutator(plan1, insert_before_close)
+    return (yield from plan2)
+
+
 def fly_during_wrapper(plan, flyers):
     """
     Kickoff and collect "flyer" (asynchronously collect) objects during runs.
@@ -1679,6 +1729,7 @@ reset_positions_decorator = make_decorator(reset_positions_wrapper)
 finalize_decorator = make_decorator(finalize_wrapper)
 lazily_stage_decorator = make_decorator(lazily_stage_wrapper)
 fly_during_decorator = make_decorator(fly_during_wrapper)
+monitor_during_decorator = make_decorator(monitor_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
 run_decorator = make_decorator(run_wrapper)
 

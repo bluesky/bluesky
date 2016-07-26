@@ -1,5 +1,19 @@
-API Changes
-===========
+Release Notes
+=============
+
+v0.6.2
+------
+
+Bug Fixes
+^^^^^^^^^
+* Make ``make_decorator`` return proper decorators. The original implementation
+  returned functions that could not actually be used as decorators.
+
+v0.6.1
+------
+
+This release contained only a minor UX fix involving more informative error
+reporting.
 
 v0.6.0
 ------
