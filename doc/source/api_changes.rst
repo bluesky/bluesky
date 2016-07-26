@@ -1,5 +1,19 @@
-API Changes
-===========
+Release Notes
+=============
+
+v0.6.2
+------
+
+Bug Fixes
+^^^^^^^^^
+* Make ``make_decorator`` return proper decorators. The original implementation
+  returned functions that could not actually be used as decorators.
+
+v0.6.1
+------
+
+This release contained only a minor UX fix involving more informative error
+reporting.
 
 v0.6.0
 ------
@@ -28,7 +42,6 @@ Bug Fixes
   stopped or aborted.
 * When an exception is raised, give each plan in the plan stack an opportunity
   to handle it. If it is handled, carry on.
-* Make ``make_decorator`` return proper generators.
 * The SPEC-style ``tw`` was not passing its parameters through to the
   underlying ``tweak`` plan.
 * Silenced un-needed suspenders warnings
