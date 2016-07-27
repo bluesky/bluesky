@@ -6,6 +6,7 @@ import operator
 import uuid
 from functools import reduce
 from weakref import ref, WeakKeyDictionary
+from math import floor, log10
 import types
 import inspect
 from inspect import Parameter, Signature
@@ -858,3 +859,33 @@ def short_uid(label=None, truncate=6):
         return '-'.join([label, new_uid()[:truncate]])
     else:
         return new_uid()[:truncate]
+
+
+def status_progress_bar(*status_objects, loop):
+    from tqdm import tqdm
+    N = 2  # max decades to divide steps into
+    pbars = {}
+    for st in status_objects:
+        pbar = tqdm()
+        if hasattr(st, 'device'):
+            initial = status.device.position
+            if hasattr(st, 'target'):
+                dx = abs(st.target - initial)
+                pbar.total = dx / 10**(int(floor(log10(dx))) + (1 - N))
+        pbars[st] = pbar
+    sleep_times = itertools.chain((10**i for i in range(-6, -1)),
+                                  itertools.repeat(0.1))
+    while True:
+        # Poll the status objects.
+        if all(st.done for st in status_objects):
+            break
+        for st, pbar in pbars.items():
+            if pbar.total is not None:
+                dx = abs(st.device.position - st.target)
+                dn = dx / 10**(int(floor(log10(pbar.total))) + (1 - N))
+                inc = dn - pbar.n
+                if inc > 0:
+                    pbar.update(inc)
+            else:
+                pbar.update()
+        yield from asyncio.sleep(next(sleep_times), loop=loop)
