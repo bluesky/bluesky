@@ -1479,18 +1479,17 @@ class RunEngine:
 
         ret = obj.kickoff(*msg.args, **msg.kwargs)
 
-        if group:
-            p_event = asyncio.Event(loop=self.loop)
+        p_event = asyncio.Event(loop=self.loop)
 
-            def done_callback():
-                if not ret.success:
-                    task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                          ret)
-                    self._failed_status_tasks.append(task)
-                self.loop.call_soon_threadsafe(p_event.set)
+        def done_callback():
+            if not ret.success:
+                task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                      ret)
+                self._failed_status_tasks.append(task)
+            self.loop.call_soon_threadsafe(p_event.set)
 
-            ret.finished_cb = done_callback
-            self._groups[group].add(p_event.wait())
+        ret.finished_cb = done_callback
+        self._groups[group].add(p_event.wait())
 
         return ret
 
@@ -1514,18 +1513,17 @@ class RunEngine:
         group = msg.kwargs.pop('group', None)
         ret = msg.obj.complete(*msg.args, **msg.kwargs)
 
-        if group is not None:
-            p_event = asyncio.Event(loop=self.loop)
+        p_event = asyncio.Event(loop=self.loop)
 
-            def done_callback():
-                if not ret.success:
-                    task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                          ret)
-                    self._failed_status_tasks.append(task)
-                self.loop.call_soon_threadsafe(p_event.set)
+        def done_callback():
+            if not ret.success:
+                task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                      ret)
+                self._failed_status_tasks.append(task)
+            self.loop.call_soon_threadsafe(p_event.set)
 
-            ret.finished_cb = done_callback
-            self._groups[group].add(p_event.wait())
+        ret.finished_cb = done_callback
+        self._groups[group].add(p_event.wait())
 
         return ret
 
@@ -1629,23 +1627,22 @@ class RunEngine:
         group = msg.kwargs.pop('group', None)
         self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.set(*msg.args, **msg.kwargs)
-        if group:
-            p_event = asyncio.Event(loop=self.loop)
+        p_event = asyncio.Event(loop=self.loop)
 
-            def done_callback():
+        def done_callback():
 
-                self.log.debug("The object %r reports set is done "
-                               "with status %r",
-                               msg.obj, ret.success)
+            self.log.debug("The object %r reports set is done "
+                           "with status %r",
+                           msg.obj, ret.success)
 
-                if not ret.success:
-                    task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                          ret)
-                    self._failed_status_tasks.append(task)
-                self.loop.call_soon_threadsafe(p_event.set)
+            if not ret.success:
+                task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                      ret)
+                self._failed_status_tasks.append(task)
+            self.loop.call_soon_threadsafe(p_event.set)
 
-            ret.finished_cb = done_callback
-            self._groups[group].add(p_event.wait())
+        ret.finished_cb = done_callback
+        self._groups[group].add(p_event.wait())
 
         return ret
 
@@ -1661,23 +1658,22 @@ class RunEngine:
         group = msg.kwargs.pop('group', None)
         ret = msg.obj.trigger(*msg.args, **msg.kwargs)
 
-        if group:
-            p_event = asyncio.Event(loop=self.loop)
+        p_event = asyncio.Event(loop=self.loop)
 
-            def done_callback():
-                self.log.debug("The object %r reports trigger is "
-                               "done with status %r.",
-                               msg.obj, ret.success)
+        def done_callback():
+            self.log.debug("The object %r reports trigger is "
+                           "done with status %r.",
+                           msg.obj, ret.success)
 
-                if not ret.success:
-                    task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                          ret)
-                    self._failed_status_tasks.append(task)
+            if not ret.success:
+                task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                      ret)
+                self._failed_status_tasks.append(task)
 
-                self.loop.call_soon_threadsafe(p_event.set)
+            self.loop.call_soon_threadsafe(p_event.set)
 
-            ret.finished_cb = done_callback
-            self._groups[group].add(p_event.wait())
+        ret.finished_cb = done_callback
+        self._groups[group].add(p_event.wait())
 
         return ret
 
