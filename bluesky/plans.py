@@ -400,6 +400,8 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     `bluesky.plans.rel_set`
     `bluesky.plans.wait`
     """
+    if wait and group is None:
+        group = str(uuid.uuid4())
     ret = yield Msg('set', obj, *args, group=group, **kwargs)
     if wait:
         yield Msg('wait', None, group=group)
@@ -432,11 +434,8 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     `bluesky.plans.abs_set`
     `bluesky.plans.wait`
     """
-    ret = yield from relative_set_wrapper(
-        abs_set(obj, *args, group=group, **kwargs))
-    if wait:
-        yield Msg('wait', None, group=group)
-    return ret
+    return (yield from relative_set_wrapper(
+        abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
 def trigger(obj, *, group=None, wait=False):
