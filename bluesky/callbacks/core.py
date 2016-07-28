@@ -2,6 +2,7 @@
 Useful callbacks for the Run Engine
 """
 from itertools import count
+import warnings
 from collections import deque, namedtuple, OrderedDict
 import time as ttime
 
@@ -460,6 +461,9 @@ class LiveTable(CallbackBase):
                 continue
 
             if dk_entry['dtype'] not in self._FMT_MAP:
+                warnings.warn("The key {} will be skipped because LiveTable "
+                              "does not know how to display the dtype {}"
+                              "".format(k, dk_entry['dtype']))
                 continue
 
             prec = patch_up_precision(dk_entry.get('precision',
