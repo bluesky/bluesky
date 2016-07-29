@@ -1164,7 +1164,8 @@ def monitor_during_wrapper(plan, signals):
     --------
     `bluesky.plans.fly_during_wrapper`
     """
-    monitor_msgs = [Msg('monitor', sig) for sig in signals]
+    monitor_msgs = [Msg('monitor', sig, name=sig.name + '-monitor')
+                    for sig in signals]
     unmonitor_msgs = [Msg('unmonitor', sig) for sig in signals]
 
     def insert_after_open(msg):
