@@ -112,6 +112,14 @@ def test_unknown_cb_raises():
         RE._subscribe_lossless('not a thing', f)
 
 
+def test_table_warns():
+    table = LiveTable(['field'])
+    table('start', {})
+    with pytest.warns(UserWarning):
+        table('descriptor', {'uid': 'asdf', 'name': 'primary',
+                            'data_keys': {'field': {'dtype': 'array'}}})
+
+
 def test_table():
     with _print_redirect() as fout:
         det.precision = 2
