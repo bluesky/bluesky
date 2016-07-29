@@ -2305,12 +2305,14 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         cur_det = {}
         while next_pos < stop:
             yield Msg('checkpoint')
-            yield Msg('set', motor, next_pos)
-            yield Msg('wait', None, 'A')
+            grp = _short_uid('set')
+            yield Msg('set', motor, next_pos, group=grp)
+            yield Msg('wait', None, group=grp)
             yield Msg('create', None, name='primary')
+            grp = _short_uid('trigger')
             for det in detectors:
-                yield Msg('trigger', det, group='B')
-            yield Msg('wait', None, 'B')
+                yield Msg('trigger', det, group=grp)
+            yield Msg('wait', None, group=grp)
             for det in separate_devices(detectors + [motor]):
                 cur_det = yield Msg('read', det)
                 if target_field in cur_det:
@@ -2722,8 +2724,9 @@ def tweak(detector, target_field, motor, step, *, md=None):
                 ret_mot = yield Msg('read', motor)
                 key = list(ret_mot.keys())[0]
                 pos = ret_mot[key]['value']
-            yield Msg('trigger', d, group='A')
-            yield Msg('wait', None, 'A')
+            grp = _short_uid('trigger')
+            yield Msg('trigger', d, group=grp)
+            yield Msg('wait', None, group=grp)
             reading = yield Msg('read', d)
             val = reading[target_field]['value']
             yield Msg('save')
@@ -2735,10 +2738,11 @@ def tweak(detector, target_field, motor, step, *, md=None):
                     step = float(new_step)
                 except ValueError:
                     break
-            yield Msg('set', motor, pos + step, group='A')
+            grp = _short_uid('set')
+            yield Msg('set', motor, pos + step, group=grp)
             print('Motor moving...')
             sys.stdout.flush()
-            yield Msg('wait', None, 'A')
+            yield Msg('wait', None, group=grp)
             clear_output(wait=True)
             # stackoverflow.com/a/12586667/380231
             print('\x1b[1A\x1b[2K\x1b[1A')
