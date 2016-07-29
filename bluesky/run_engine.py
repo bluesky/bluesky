@@ -1248,7 +1248,9 @@ class RunEngine:
         if msg.args:
             raise ValueError("The 'monitor' Msg does not accept positional "
                              "arguments.")
-        name = msg.kwargs.get('name')
+        kwargs = dict(msg.kwargs)
+        name = kwargs.pop('name', new_uid()[:6] + '_monitor')
+
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'monitor' message was sent but no "
                                          "run is open.")
@@ -1281,8 +1283,8 @@ class RunEngine:
             jsonschema.validate(doc, schemas[DocumentNames.event])
             self.dispatcher.process(DocumentNames.event, doc)
 
-        self._monitor_params[obj] = emit_event, msg.kwargs
-        obj.subscribe(emit_event, **msg.kwargs)
+        self._monitor_params[obj] = emit_event, kwargs
+        obj.subscribe(emit_event, **kwargs)
         yield from self.emit(DocumentNames.descriptor, desc_doc)
         yield from self._reset_checkpoint_state_coro()
 
