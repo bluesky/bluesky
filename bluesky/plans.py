@@ -1813,7 +1813,6 @@ def count(detectors, num=1, delay=None, *, md=None):
     return plan_stack
 
 
-@planify
 def one_1d_step(detectors, motor, step):
     """
     Inner loop of a 1D step scan
@@ -1826,10 +1825,8 @@ def one_1d_step(detectors, motor, step):
         yield Msg('set', motor, step, group=grp)
         yield Msg('wait', None, group=grp)
 
-    plan_stack = deque()
-    plan_stack.append(move())
-    plan_stack.append(trigger_and_read(list(detectors) + [motor]))
-    return plan_stack
+    yield from move()
+    return (yield from trigger_and_read(list(detectors) + [motor]))
 
 
 @planify
@@ -1884,7 +1881,6 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     return plan_stack
 
 
-@planify
 def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     Scan over one variable in steps relative to current position.
@@ -1914,7 +1910,7 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
     plan = relative_set_wrapper(plan)  # re-write trajectory as relative
     plan = reset_positions_wrapper(plan)  # return motors to starting pos
-    return [plan]
+    return (yield from plan)
 
 
 @planify
@@ -1974,7 +1970,6 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return plan_stack
 
 
-@planify
 def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
                   md=None):
     """
@@ -2009,7 +2004,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
     plan = relative_set_wrapper(plan, [motor])  # re-write trajectory relative
     plan = reset_positions_wrapper(plan, [motor])  # return to starting pos
-    return [plan]
+    return (yield from plan)
 
 
 @planify
@@ -2068,7 +2063,6 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return plan_stack
 
 
-@planify
 def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
                       md=None):
     """
@@ -2102,9 +2096,11 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     md = ChainMap(md, {'plan_name': 'relative_log_scan'})
     plan = log_scan(detectors, motor, start, stop, num, per_step=per_step,
                     md=md)
-    plan = relative_set_wrapper(plan, [motor])  # re-write trajectory as relative
-    plan = reset_positions_wrapper(plan, [motor])  # return motors to starting pos
-    return [plan]
+    # re-write trajectory as relative
+    plan = relative_set_wrapper(plan, [motor])
+    # return motors to starting pos
+    plan = reset_positions_wrapper(plan, [motor])
+    return (yield from plan)
 
 
 @planify
@@ -2160,6 +2156,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
                       'backstep': backstep,
                       'threshold': threshold},
          'plan_name': 'adaptive_scan'})
+
     def core():
         next_pos = start
         step = (max_step - min_step) / 2
@@ -2338,7 +2335,6 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     return plan_stack
 
 
-@planify
 def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory.
@@ -2386,10 +2382,9 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     full_cycler = plan_patterns.inner_product(num=num, args=args)
 
     plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
-    return [plan]
+    return (yield from plan)
 
 
-@planify
 def outer_product_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -2454,10 +2449,9 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
          'plan_pattern_module': plan_patterns.__name__})
 
     plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
-    return [plan]
+    return (yield from plan)
 
 
-@planify
 def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh relative to current position.
@@ -2493,10 +2487,9 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     plan = outer_product_scan(detectors, *args, per_step=per_step, md=md)
     plan = relative_set_wrapper(plan)  # re-write trajectory as relative
     plan = reset_positions_wrapper(plan)  # return motors to starting pos
-    return [plan]
+    return (yield from plan)
 
 
-@planify
 def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current position.
@@ -2529,7 +2522,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     plan = inner_product_scan(detectors, num, *args, per_step=per_step, md=md)
     plan = relative_set_wrapper(plan)  # re-write trajectory as relative
     plan = reset_positions_wrapper(plan)  # return motors to starting pos
-    return [plan]
+    return (yield from plan)
 
 
 @planify
