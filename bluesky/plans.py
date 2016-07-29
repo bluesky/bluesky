@@ -322,7 +322,7 @@ def read(obj):
     return (yield Msg('read', obj))
 
 
-def monitor(obj, *args, name=None, **kwargs):
+def monitor(obj, *, name=None, **kwargs):
     """
     Asynchronously monitor for new values and emit Event documents.
 
@@ -345,7 +345,7 @@ def monitor(obj, *args, name=None, **kwargs):
     --------
     `bluesky.plans.unmonitor`
     """
-    return (yield Msg('monitor', obj, *args, name=name, **kwargs))
+    return (yield Msg('monitor', obj, name=name, **kwargs))
 
 
 def unmonitor(obj):
