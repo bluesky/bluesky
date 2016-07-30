@@ -56,7 +56,7 @@ def _figure_name(base_name):
     return base_name
 
 
-def setup_plot(motors, dets, gs):
+def setup_plot(*, motors, dets, gs):
     """Setup a LivePlot by inspecting motors and gs.
 
     If motors is empty, use sequence number.
@@ -73,7 +73,7 @@ def setup_plot(motors, dets, gs):
         return LivePlot(y_key, fig=fig)
 
 
-def setup_peakstats(motors, dets, gs):
+def setup_peakstats(*, motors, dets, gs):
     "Set up peakstats"
     motor = list(motors)[0]
     key = first_key_heuristic(motor)
@@ -83,11 +83,11 @@ def setup_peakstats(motors, dets, gs):
     return ps
 
 
-def setup_livetable(motors, dets, gs):
+def setup_livetable(*, motors, dets, gs):
     return LiveTable(motors + [gs.PLOT_Y] + gs.TABLE_COLS)
 
 
-def setup_liveraster(motors, dets, gs, *, shape, extent):
+def setup_liveraster(*, motors, dets, gs, shape, extent):
     if len(motors) != 2:
         return None
     ylab, xlab = [first_key_heuristic(m) for m in motors]
@@ -116,7 +116,7 @@ def _construct_subs(plan_name, motors, dets, **kwargs):
                           'mandatory kwargs {missing!r}'.format(
                               fn=factory.__name__, missing=missing_kwargs))
         else:
-            l_sub = factory(motors, dets, gs, **fact_kwargs)
+            l_sub = factory(motors=motors, dets=dets, gs=gs, **fact_kwargs)
             if l_sub is None:
                 continue
             elif callable(l_sub):
@@ -128,7 +128,6 @@ def _construct_subs(plan_name, motors, dets, **kwargs):
 
 
 # ## Counts (p. 140) ###
-
 
 @planify
 def ct(num=1, delay=None, time=None, *, md=None):
@@ -152,9 +151,9 @@ def ct(num=1, delay=None, time=None, *, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'ct',
                        gs.MD_TIME_KEY: time})
-    subs = _construct_subs('ct', [], gs.DETS)
+    subs = construct_subs('ct', [], gs.DETS)
     if num is not None and num > 1:
-        subs['all'].append(setup_plot([], gs.DETS, gs))
+        subs['all'].append(setup_plot(motors=[], dets=gs.DETS, gs=gs))
 
     plan_stack = deque()
     with subs_context(plan_stack, subs):
