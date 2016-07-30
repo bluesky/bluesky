@@ -799,9 +799,10 @@ def run_wrapper(plan, *, md=None):
     md : dict, optional
         metadata to be passed into the 'open_run' message
     """
-    yield from open_run(md)
+    ret = yield from open_run(md)
     yield from plan
     yield from close_run()
+    return ret
 
 
 def subs_wrapper(plan, subs):
