@@ -1333,6 +1333,24 @@ def stage_context(plan_stack, devices):
     plan_stack.append(unstage())
 
 
+def stage_wrapper(plan, devices):
+    devices = separate_devices([device.root for device in devices])
+
+    def stage_devices():
+        for d in devices:
+            yield Msg('stage', d)
+
+    def unstage_devices():
+        for d in devices:
+            yield Msg('unstage', d)
+
+    def inner():
+        yield from stage_devices()
+        return (yield from plan)
+
+    return (yield from finalize_wrapper(inner(), unstage_devices()))
+
+
 def relative_set_wrapper(plan, devices=None):
     """
     Interpret 'set' messages on devices as relative to initial position.
@@ -1730,6 +1748,7 @@ relative_set_decorator = make_decorator(relative_set_wrapper)
 reset_positions_decorator = make_decorator(reset_positions_wrapper)
 finalize_decorator = make_decorator(finalize_wrapper)
 lazily_stage_decorator = make_decorator(lazily_stage_wrapper)
+stage_decorator = make_decorator(stage_wrapper)
 fly_during_decorator = make_decorator(fly_during_wrapper)
 monitor_during_decorator = make_decorator(monitor_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
