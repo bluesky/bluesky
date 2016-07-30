@@ -2541,7 +2541,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
     md : dict, optional
         metadata
     """
-    prompt_str = '{0}, {1:.3}, {2}, ({3}) '
+    prompt_str = '{0}, {1:.3}, {2:.3}, ({3}) '
 
     if md is None:
         md = {}
@@ -2579,7 +2579,8 @@ def tweak(detector, target_field, motor, step, *, md=None):
             reading = yield Msg('read', d)
             val = reading[target_field]['value']
             yield Msg('save')
-            prompt = prompt_str.format(motor.name, pos, val, step)
+            prompt = prompt_str.format(motor.name, float(pos),
+                                       float(val), step)
             new_step = yield Msg('input', prompt=prompt)
             if new_step:
                 try:
