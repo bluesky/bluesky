@@ -96,7 +96,7 @@ def setup_liveraster(*, motors, dets, gs, shape, extent):
     return raster
 
 
-def _construct_subs(plan_name, motors, dets, **kwargs):
+def construct_subs(plan_name, motors, dets, **kwargs):
     factories = gs.SUB_FACTORIES.get('common', [])
     factories.extend(gs.SUB_FACTORIES.get(plan_name, []))
     subs = []
@@ -191,7 +191,7 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'ascan',
                        gs.MD_TIME_KEY: time})
-    subs = _construct_subs('ascan', [motor], gs.DETS)
+    subs = construct_subs('ascan', [motor], gs.DETS)
 
     plan_stack = deque()
     with subs_context(plan_stack, subs):
@@ -226,7 +226,7 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    subs = _construct_subs('dscan', [motor], gs.DETS)
+    subs = construct_subs('dscan', [motor], gs.DETS)
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'dscan',
@@ -278,7 +278,7 @@ def mesh(*args, time=None, md=None):
 
     # shape goes in (rr, cc)
     # extents go in (x, y)
-    subs = _construct_subs('mesh', motors, gs.DETS, shape=shape,
+    subs = construct_subs('mesh', motors, gs.DETS, shape=shape,
                            extent=list(chain(*extents[::-1])))
 
     # outer_product_scan expects a 'snake' param for all but fist motor
@@ -325,7 +325,7 @@ def a2scan(*args, time=None, md=None):
     for motor, start, stop, in chunked(args[:-1], 3):
         motors.append(motor)
 
-    subs = _construct_subs('a2scan', motors, gs.DETS)
+    subs = construct_subs('a2scan', motors, gs.DETS)
 
     intervals = list(args)[-1]
     num = 1 + intervals
@@ -377,7 +377,7 @@ def d2scan(*args, time=None, md=None):
     motors = []
     for motor, start, stop, in chunked(args[:-1], 3):
         motors.append(motor)
-    subs = _construct_subs('d2scan', motors, gs.DETS)
+    subs = construct_subs('d2scan', motors, gs.DETS)
     intervals = list(args)[-1]
     num = 1 + intervals
 
@@ -502,7 +502,7 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
         md = {}
     md = ChainMap(md, {'plan_name': 'afermat',
                        gs.MD_TIME_KEY: time})
-    subs = _construct_subs('afermat', [x_motor, y_motor], gs.DETS)
+    subs = construct_subs('afermat', [x_motor, y_motor], gs.DETS)
 
     plan_stack = deque()
     with plans.subs_context(plan_stack, subs):
@@ -598,7 +598,7 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
         md = {}
     md = ChainMap(md, {'plan_name': 'aspiral',
                        gs.MD_TIME_KEY: time})
-    subs = _construct_subs('aspiral', [x_motor, y_motor], gs.DETS)
+    subs = construct_subs('aspiral', [x_motor, y_motor], gs.DETS)
 
     plan_stack = deque()
     with plans.subs_context(plan_stack, subs):
