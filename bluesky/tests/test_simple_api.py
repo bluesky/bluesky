@@ -53,8 +53,9 @@ def test_spec_plans(fresh_RE, pln, name, args, kwargs):
         nonlocal run_start
         if name == 'start':
             run_start = doc
-
-    fresh_RE(pln(*args, **kwargs), capture_run_start)
+    gs.SUB_FACTORIES[pln.__name__].append(lambda: capture_run_start)
+    fresh_RE(pln(*args, **kwargs))
+    gs.SUB_FACTORIES[pln.__name__].pop()
 
     assert run_start['plan_name'] == name
     assert gs.MD_TIME_KEY in run_start

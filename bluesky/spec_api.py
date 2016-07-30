@@ -12,7 +12,8 @@ changes the behavior of these plans.
 Page numbers in the code comments refer to the SPEC manual at
 http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
-from collections import deque
+from collections import deque, OrderedDict
+
 import matplotlib.pyplot as plt
 from bluesky import plans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
@@ -25,7 +26,7 @@ from bluesky.plans import (subs_context, count, scan,
                            relative_scan, relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
                            tweak, configure_count_time_wrapper, planify,
-                           baseline_wrapper)
+                           baseline_wrapper, subs_wrapper)
 import itertools
 from itertools import chain
 from collections import ChainMap
@@ -56,7 +57,7 @@ def _figure_name(base_name):
     return base_name
 
 
-def setup_plot(*, motors, dets, gs):
+def setup_plot(*, motors, gs):
     """Setup a LivePlot by inspecting motors and gs.
 
     If motors is empty, use sequence number.
@@ -73,7 +74,13 @@ def setup_plot(*, motors, dets, gs):
         return LivePlot(y_key, fig=fig)
 
 
-def setup_peakstats(*, motors, dets, gs):
+def setup_ct_plot(*, num, motors, gs):
+    if num is not None and num > 1:
+        return setup_plot(motors=motors, gs=gs)
+    return None
+
+
+def setup_peakstats(*, motors, gs):
     "Set up peakstats"
     motor = list(motors)[0]
     key = first_key_heuristic(motor)
@@ -83,11 +90,11 @@ def setup_peakstats(*, motors, dets, gs):
     return ps
 
 
-def setup_livetable(*, motors, dets, gs):
+def setup_livetable(*, motors,  gs):
     return LiveTable(motors + [gs.PLOT_Y] + gs.TABLE_COLS)
 
 
-def setup_liveraster(*, motors, dets, gs, shape, extent):
+def setup_liveraster(*, motors, gs, shape, extent):
     if len(motors) != 2:
         return None
     ylab, xlab = [first_key_heuristic(m) for m in motors]
@@ -96,27 +103,60 @@ def setup_liveraster(*, motors, dets, gs, shape, extent):
     return raster
 
 
-def construct_subs(plan_name, motors, dets, **kwargs):
+def construct_subs(plan_name, **kwargs):
+    '''Construct the subscriptions functions from factories.
+
+
+    This is a small dependency injection tool to construct subscriptions
+    based on `plan_name` by consulting `gs.SUB_FACTORIES` and combining
+    `'common'` and `plan_name` lists.
+
+    The values in `**kwargs` are injected into the factories as needed
+    by consulting the signature.
+
+    Parameters
+    ----------
+    plan_name : str
+        The key used to get the subscription factories
+
+    Returns
+    -------
+    subs : dict
+       A dictionary suitable for handing to the RE or to the sub_wrapper
+       plan.
+    '''
     factories = gs.SUB_FACTORIES.get('common', [])
     factories.extend(gs.SUB_FACTORIES.get(plan_name, []))
     subs = []
+    kwargs.setdefault('gs', gs)
+
     for factory in factories:
+        # TODO, support positional injection
         sig = signature(factory)
         fact_kwargs = {}
         missing_kwargs = set()
+        missing_args = set()
         for k, v in sig.parameters.items():
-            if v.kind is Parameter.KEYWORD_ONLY:
+            if v.kind is Parameter.POSITIONAL_ONLY:
+                if v.defaut is Parameter.empty:
+                    missing_args.add(k)
+            else:
                 if k in kwargs:
                     fact_kwargs[k] = kwargs[k]
                 else:
                     if v.default is Parameter.empty:
                         missing_kwargs.add(k)
+
         if missing_kwargs:
             warnings.warn('The factory {fn} could not be run due to missing '
                           'mandatory kwargs {missing!r}'.format(
                               fn=factory.__name__, missing=missing_kwargs))
+        elif missing_args:
+            warnings.warn('The factory {fn} could not be run due to having '
+                          'positional only args {missing!r}'.format(
+                              fn=factory.__name__, missing=missing_kwargs))
         else:
-            l_sub = factory(motors=motors, dets=dets, gs=gs, **fact_kwargs)
+            l_sub = factory(**fact_kwargs)
             if l_sub is None:
                 continue
             elif callable(l_sub):
@@ -127,10 +167,83 @@ def construct_subs(plan_name, motors, dets, **kwargs):
     return {'all': subs}
 
 
+# TODO rename this
+def plan_sub_factory_input(plan_name):
+    '''Helper function for introspecting sub_factories
+
+    Assume this will be re-written, do not program against.
+    '''
+    factories = gs.SUB_FACTORIES.get('common', [])
+    factories.extend(gs.SUB_FACTORIES.get(plan_name, []))
+    opt = set()
+    req = set()
+    by_fac = OrderedDict()
+    for fac in factories:
+        try:
+            ret = get_sub_factory_input(fac)
+        except InvalidFactory as e:
+            by_fac[fac.__name__] = e
+        else:
+            opt.update(ret['opt'])
+            req.update(ret['req'])
+            by_fac[fac.__name__] = ret
+
+    return {'opt': opt, 'req': req}, by_fac
+
+
+class InvalidFactory(TypeError):
+    ...
+
+
+# TODO rename this
+def get_sub_factory_input(factory):
+    '''Helper function to re-organize signature information
+
+    Assume this will be re-written, do not program against.
+    '''
+    sig = signature(factory)
+    reqed = set()
+    optional = set()
+    for k, v in sig.parameters.items():
+        if v.kind is Parameter.POSITIONAL_ONLY:
+            # TODO make this nice?
+            raise InvalidFactory()
+        elif v.default is Parameter.empty:
+            reqed.add(k)
+        else:
+            optional.add(k)
+    return {'req': reqed, 'opt': optional}
+
+
+def inner_spec_decorator(plan_name, time, motors, **subs_kwargs):
+    subs = construct_subs(plan_name, motors=motors, **subs_kwargs)
+
+    # create the paramterized decorator
+    def outer(func):
+        # create the decorated function to return
+        def inner(*args, md=None, **kwargs):
+            # inject the plan name + time into the metadata
+            if md is None:
+                md = {}
+            md = ChainMap(md, {'plan_name': plan_name,
+                               gs.MD_TIME_KEY: time})
+            # get the 'base' plan
+            plan = func(*args, md=md, **kwargs)
+            # set up the baseline measurements
+            plan = baseline_wrapper(plan, list(gs.BASELINE_DEVICES) + motors)
+            # set up the 'count time' measurements'
+            plan = configure_count_time_wrapper(plan, time)
+            # set up the subscriptions
+            plan = subs_wrapper(plan, subs)
+            # yield from the whole thing
+            return (yield from plan)
+        return inner
+    return outer
+
 # ## Counts (p. 140) ###
 
-@planify
-def ct(num=1, delay=None, time=None, *, md=None):
+
+def ct(num=1, delay=None, time=None, *, md=None, **kwargs):
     """
     Take one or more readings from the global detectors.
 
@@ -147,27 +260,17 @@ def ct(num=1, delay=None, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'ct',
-                       gs.MD_TIME_KEY: time})
-    subs = construct_subs('ct', [], gs.DETS)
-    if num is not None and num > 1:
-        subs['all'].append(setup_plot(motors=[], dets=gs.DETS, gs=gs))
 
-    plan_stack = deque()
-    with subs_context(plan_stack, subs):
-        plan = count(gs.DETS, num, delay, md=md)
-        plan = baseline_wrapper(plan, gs.BASELINE_DEVICES)
-        plan = configure_count_time_wrapper(plan, time)
-        plan_stack.append(plan)
-    return plan_stack
-gs.SUB_FACTORIES['ct'] = [setup_livetable]
+    @inner_spec_decorator('ct', time, [], num=num, **kwargs)
+    def inner(*args, **kwargs):
+        return (yield from count(*args, **kwargs))
+
+    return (yield from inner(gs.DETS, num, delay, md=md))
+gs.SUB_FACTORIES['ct'] = [setup_livetable, setup_ct_plot]
 
 
 # ## Motor Scans (p. 146) ###
 
-@planify
 def ascan(motor, start, finish, intervals, time=None, *, md=None):
     """
     Scan over one variable in equally spaced steps.
@@ -187,26 +290,19 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'ascan',
-                       gs.MD_TIME_KEY: time})
-    subs = construct_subs('ascan', [motor], gs.DETS)
+    motors = [motor]
 
-    plan_stack = deque()
-    with subs_context(plan_stack, subs):
-        plan = scan(gs.DETS, motor, start, finish, 1 + intervals, md=md)
-        plan = baseline_wrapper(plan, [motor] + gs.BASELINE_DEVICES)
-        plan = configure_count_time_wrapper(plan, time)
-        plan_stack.append(plan)
-        return plan_stack
+    @inner_spec_decorator('ascan', time, motors)
+    def inner(*args, **kwargs):
+        return (yield from scan(*args, **kwargs))
 
+    return (yield from inner(gs.DETS, motor, start, finish,
+                             1 + intervals, md=md))
 gs.SUB_FACTORIES['ascan'] = [setup_livetable,
                              setup_plot,
                              setup_peakstats]
 
 
-@planify
 def dscan(motor, start, finish, intervals, time=None, *, md=None):
     """
     Scan over one variable in equally spaced steps relative to current pos.
@@ -226,26 +322,19 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    subs = construct_subs('dscan', [motor], gs.DETS)
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'dscan',
-                       gs.MD_TIME_KEY: time})
-    plan_stack = deque()
-    with subs_context(plan_stack, subs):
-        plan = relative_scan(gs.DETS, motor, start, finish, 1 + intervals,
-                             md=md)
-        plan = baseline_wrapper(plan, [motor] + gs.BASELINE_DEVICES)
-        plan = configure_count_time_wrapper(plan, time)
-        plan_stack.append(plan)
-    return plan_stack
+    motors = [motor]
 
+    @inner_spec_decorator('dscan', time, motors)
+    def inner(*args, **kwargs):
+        return (yield from relative_scan(*args, **kwargs))
+
+    return (yield from inner(gs.DETS, motor, start, finish, 1 + intervals,
+                             md=md))
 gs.SUB_FACTORIES['dscan'] = [setup_livetable,
                              setup_plot,
                              setup_peakstats]
 
 
-@planify
 def mesh(*args, time=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -262,10 +351,6 @@ def mesh(*args, time=None, md=None):
     md : dict, optional
         metadata
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'mesh',
-                       gs.MD_TIME_KEY: time})
     if len(args) % 4 != 0:
         raise ValueError("wrong number of positional arguments")
     motors = []
@@ -276,29 +361,23 @@ def mesh(*args, time=None, md=None):
         shape.append(num)
         extents.append([start, stop])
 
-    # shape goes in (rr, cc)
-    # extents go in (x, y)
-    subs = construct_subs('mesh', motors, gs.DETS, shape=shape,
-                           extent=list(chain(*extents[::-1])))
-
     # outer_product_scan expects a 'snake' param for all but fist motor
     chunked_args = iter(chunked(args, 4))
     new_args = list(next(chunked_args))
     for chunk in chunked_args:
         new_args.extend(list(chunk) + [False])
 
-    plan_stack = deque()
-    with subs_context(plan_stack, subs):
-        plan = outer_product_scan(gs.DETS, *new_args, md=md)
-        plan = baseline_wrapper(plan, motors + gs.BASELINE_DEVICES)
-        plan = configure_count_time_wrapper(plan, time)
-        plan_stack.append(plan)
-    return plan_stack
+    # shape goes in (rr, cc)
+    # extents go in (x, y)
+    @inner_spec_decorator('mesh', time, motors=motors, shape=shape,
+                          extent=list(chain(*extents[::-1])))
+    def inner(*args, **kwargs):
+        return (yield from outer_product_scan(*args, **kwargs))
 
+    return (yield from inner(gs.DETS, *new_args, md=md))
 gs.SUB_FACTORIES['mesh'] = [setup_livetable, setup_liveraster]
 
 
-@planify
 def a2scan(*args, time=None, md=None):
     """
     Scan over one multi-motor trajectory.
@@ -315,28 +394,21 @@ def a2scan(*args, time=None, md=None):
     md : dict, optional
         metadata
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'a2scan',
-                       gs.MD_TIME_KEY: time})
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
     motors = []
     for motor, start, stop, in chunked(args[:-1], 3):
         motors.append(motor)
 
-    subs = construct_subs('a2scan', motors, gs.DETS)
-
     intervals = list(args)[-1]
     num = 1 + intervals
 
-    plan_stack = deque()
-    with subs_context(plan_stack, subs):
-        plan = inner_product_scan(gs.DETS, num, *args[:-1], md=md)
-        plan = baseline_wrapper(plan, motors + gs.BASELINE_DEVICES)
-        plan = configure_count_time_wrapper(plan, time)
-        plan_stack.append(plan)
-    return plan_stack
+    @inner_spec_decorator('a2scan', time, motors=motors)
+    def inner(*args, **kwargs):
+        return (yield from inner_product_scan(*args, **kwargs))
+
+    return (yield from inner(gs.DETS, num, *args[:-1], md=md))
+
 gs.SUB_FACTORIES['a2scan'] = [setup_livetable,
                               setup_plot,
                               setup_peakstats]
@@ -349,9 +421,9 @@ def a3scan(*args, time=None, md=None):
     md = ChainMap(md, {'plan_name': 'a3scan'})
     return (yield from a2scan(*args, time=time, md=md))
 a3scan.__doc__ = a2scan.__doc__
+gs.SUB_FACTORIES['a3scan'] = gs.SUB_FACTORIES['a2scan']
 
 
-@planify
 def d2scan(*args, time=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current positions.
@@ -368,26 +440,21 @@ def d2scan(*args, time=None, md=None):
     md : dict, optional
         metadata
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'd2scan',
-                       gs.MD_TIME_KEY: time})
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
     motors = []
     for motor, start, stop, in chunked(args[:-1], 3):
         motors.append(motor)
-    subs = construct_subs('d2scan', motors, gs.DETS)
+
     intervals = list(args)[-1]
     num = 1 + intervals
 
-    plan_stack = deque()
-    with subs_context(plan_stack, subs):
-        plan = relative_inner_product_scan(gs.DETS, num, *(args[:-1]), md=md)
-        plan = baseline_wrapper(plan, motors + gs.BASELINE_DEVICES)
-        plan = configure_count_time_wrapper(plan, time)
-        plan_stack.append(plan)
-    return plan_stack
+    @inner_spec_decorator('d2scan', time, motors=motors)
+    def inner(*args, **kwargs):
+        return (yield from relative_inner_product_scan(*args, **kwargs))
+
+    return (yield from inner(gs.DETS, num, *(args[:-1]), md=md))
+
 gs.SUB_FACTORIES['d2scan'] = [setup_livetable,
                               setup_plot,
                               setup_peakstats]
@@ -400,9 +467,9 @@ def d3scan(*args, time=None, md=None):
     md = ChainMap(md, {'plan_name': 'd3scan'})
     return (yield from d2scan(*args, time=time, md=md))
 d3scan.__doc__ = d2scan.__doc__
+gs.SUB_FACTORIES['d3scan'] = gs.SUB_FACTORIES['d2scan']
 
 
-@planify
 def th2th(start, finish, intervals, time=None, *, md=None):
     """
     Scan the theta and two-theta motors together.
@@ -431,10 +498,10 @@ def th2th(start, finish, intervals, time=None, *, md=None):
     plan = d2scan(gs.TTH_MOTOR, start, finish,
                   gs.TH_MOTOR, start/2, finish/2,
                   intervals, time=time, md=md)
-    return [plan]
+    return (yield from plan)
+gs.SUB_FACTORIES['th2th'] = gs.SUB_FACTORIES['d2scan']
 
 
-@planify
 def tw(motor, step, time=None, *, md=None):
     """
     Move and motor and read a detector with an interactive prompt.
@@ -450,17 +517,14 @@ def tw(motor, step, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'tw',
-                       gs.MD_TIME_KEY: time})
-    plan = tweak(gs.MASTER_DET, gs.MASTER_DET_FIELD, motor, step, md=md)
-    plan = baseline_wrapper(plan, [motor] + gs.BASELINE_DEVICES)
-    plan = configure_count_time_wrapper(plan, time)
-    return [plan]
+    @inner_spec_decorator('tw', time, motors=[motor])
+    def inner(*args, **kwargs):
+        return (yield from tweak(*args, **kwargs))
+
+    return (yield from inner(gs.MASTER_DET, gs.MASTER_DET_FIELD, motor,
+                             step, md=md))
 
 
-@planify
 def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
             time=None, *, per_step=None, md=None):
     '''Absolute fermat spiral scan, centered around (0, 0)
@@ -498,21 +562,15 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
     `bluesky.spec_api.aspiral`
     `bluesky.spec_api.spiral`
     '''
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'afermat',
-                       gs.MD_TIME_KEY: time})
-    subs = construct_subs('afermat', [x_motor, y_motor], gs.DETS)
+    motors = [x_motor, y_motor]
 
-    plan_stack = deque()
-    with plans.subs_context(plan_stack, subs):
-        plan = plans.spiral_fermat(gs.DETS, x_motor, y_motor, x_start, y_start,
-                                   x_range, y_range, dr, factor,
-                                   per_step=per_step, md=md)
-        plan = baseline_wrapper(plan, [x_motor, y_motor] + gs.BASELINE_DEVICES)
-        plan = configure_count_time_wrapper(plan, time)
-        plan_stack.append(plan)
-    return plan_stack
+    @inner_spec_decorator('afermat', time, motors=motors)
+    def inner(*args, **kwargs):
+        return (yield from plans.spiral_fermat(*args, **kwargs))
+
+    return (yield from inner(gs.DETS, x_motor, y_motor, x_start, y_start,
+                             x_range, y_range, dr, factor,
+                             per_step=per_step, md=md))
 gs.SUB_FACTORIES['afermat'] = [setup_livetable]
 
 
@@ -551,16 +609,15 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
     '''
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'fermat',
-                       gs.MD_TIME_KEY: time})
+    md = ChainMap(md, {'plan_name': 'fermat'})
     plan = afermat(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, factor, time=time, per_step=per_step,
                    md=md)
     plan = plans.reset_positions_wrapper(plan)  # return motors to starting pos
-    yield from plan
+    return (yield from plan)
+gs.SUB_FACTORIES['fermat'] = gs.SUB_FACTORIES['afermat']
 
 
-@planify
 def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
             time=None, *, per_step=None, md=None):
     '''Spiral scan, centered around (x_start, y_start)
@@ -594,21 +651,15 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
     `bluesky.spec_api.afermat`
     `bluesky.spec_api.spiral`
     '''
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'aspiral',
-                       gs.MD_TIME_KEY: time})
-    subs = construct_subs('aspiral', [x_motor, y_motor], gs.DETS)
+    motors = [x_motor, y_motor]
 
-    plan_stack = deque()
-    with plans.subs_context(plan_stack, subs):
-        plan = plans.spiral(gs.DETS, x_motor, y_motor, x_start, y_start,
-                            x_range, y_range, dr, nth, per_step=per_step,
-                            md=md)
-        plan = baseline_wrapper(plan, [x_motor, y_motor] + gs.BASELINE_DEVICES)
-        plan = configure_count_time_wrapper(plan, time)
-        plan_stack.append(plan)
-    return plan_stack
+    @inner_spec_decorator('aspiral', time, motors=motors)
+    def inner(*args, **kwargs):
+        return (yield from plans.spiral(*args, **kwargs))
+
+    return (yield from inner(gs.DETS, x_motor, y_motor, x_start, y_start,
+                             x_range, y_range, dr, nth, per_step=per_step,
+                             md=md))
 gs.SUB_FACTORIES['aspiral'] = [setup_livetable]
 
 
@@ -647,10 +698,10 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
     '''
     if md is None:
         md = {}
-    md = ChainMap(md, {'plan_name': 'spiral',
-                       gs.MD_TIME_KEY: time})
+    md = ChainMap(md, {'plan_name': 'spiral'})
     plan = aspiral(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, nth, time=time, per_step=per_step,
                    md=md)
     plan = plans.reset_positions_wrapper(plan)  # return to starting pos
-    yield from plan
+    return (yield from plan)
+gs.SUB_FACTORIES['spiral'] = gs.SUB_FACTORIES['aspiral']
