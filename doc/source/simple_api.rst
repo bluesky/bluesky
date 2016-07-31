@@ -97,10 +97,18 @@ There are other settings which control the output of the scans --
 ``gs.TABLE_COLS`` and ``gs.PLOT_Y``  for example. Explore the contents of
 ``gs`` by typing ``gs.<TAB>``.
 
+Peak Stats
+----------
+
+
+
+Live Plotting
+-------------
+
 Count
 -----
 
-A ``ct`` ("count") scan reads all the detectors in the list ``DETS`` for 
+A ``ct`` ("count") scan reads all the detectors in the list ``DETS`` for
 a given acquisition time. If no time is specified, 1 second is the default.
 
 .. code-block:: python
@@ -137,7 +145,7 @@ trajectories.)
 
 .. code-block:: python
 
-    a3scan(motor1, start1, finish1, motor2, start2, finish2, motor3, 
+    a3scan(motor1, start1, finish1, motor2, start2, finish2, motor3,
            start3, finish3, intervals, time)
 
 We provide ``a2scan`` and ``a3scan`` for convenience, but in fact both of them

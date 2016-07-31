@@ -4,7 +4,8 @@ from bluesky.examples import motor, motor1, motor2, det, det1, det2, FlyMagic
 import pytest
 from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
                               d3scan, mesh, th2th, afermat, fermat, spiral,
-                              aspiral)
+                              aspiral, get_sub_factory_input, plan_sub_factory_input,
+                              InvalidFactory)
 
 
 @pytest.mark.parametrize('pln,name,args,kwargs', [
@@ -53,8 +54,9 @@ def test_spec_plans(fresh_RE, pln, name, args, kwargs):
         nonlocal run_start
         if name == 'start':
             run_start = doc
-
-    fresh_RE(pln(*args, **kwargs), capture_run_start)
+    gs.SUB_FACTORIES[pln.__name__].append(lambda: capture_run_start)
+    fresh_RE(pln(*args, **kwargs))
+    gs.SUB_FACTORIES[pln.__name__].pop()
 
     assert run_start['plan_name'] == name
     assert gs.MD_TIME_KEY in run_start
@@ -77,3 +79,34 @@ def test_gs_validation():
     from bluesky.global_state import gs
     with pytest.raises(TraitError):
         gs.DETS = [det, det]  # no duplicate data keys
+
+
+def test_factory_tools_smoke():
+    from bluesky.global_state import gs
+    from inspect import Signature, Parameter
+
+    def failer(*args, **kwargs):
+        ...
+
+    failer.__signature__ = Signature((Parameter('fail',
+                                                Parameter.POSITIONAL_ONLY), ))
+    with pytest.raises(InvalidFactory):
+        get_sub_factory_input(failer)
+
+    for pln in ['ct', 'ascan', 'dscan']:
+        merge, by_fac = plan_sub_factory_input(pln)
+        opt = set()
+        req = set()
+        for k, v in by_fac.items():
+            assert set(('opt', 'req')) == set(v.keys())
+            opt.update(v['opt'])
+            req.update(v['req'])
+
+        assert opt == merge['opt']
+        assert req == merge['req']
+
+    gs.SUB_FACTORIES['TST_DUMMY'] = [failer]
+
+    merge, by_fac = plan_sub_factory_input('TST_DUMMY')
+    for k, v in by_fac.items():
+        assert isinstance(v, InvalidFactory)
