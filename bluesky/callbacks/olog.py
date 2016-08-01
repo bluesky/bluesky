@@ -8,14 +8,16 @@ logger = logging.getLogger(__name__)
 
 TEMPLATES = {}
 TEMPLATES['long'] = """
-{{- start.plan_type }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})
+{{- start.plan_name }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})
 
 Scan Plan
 ---------
-{{ start.plan_type }}
-{%- for k, v in start.plan_args | dictsort %}
-    {{ k }}: {{ v }}
-{%-  endfor %}
+{{ start.plan_name }}
+{% if 'plan_args' in start %}
+    {%- for k, v in start.plan_args | dictsort %}
+        {{ k }}: {{ v }}
+    {%-  endfor %}
+{% endif %}
 
 {% if 'signature' in start -%}
 Call:
@@ -24,14 +26,14 @@ Call:
 Metadata
 --------
 {% for k, v in start.items() -%}
-{%- if k not in ['plan_type', 'plan_args'] -%}{{ k }} : {{ v }}
+{%- if k not in ['plan_name', 'plan_args'] -%}{{ k }} : {{ v }}
 {% endif -%}
 {%- endfor -%}"""
 
 TEMPLATES['desc'] = """
-{{- start.plan_type }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})"""
+{{- start.plan_name }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})"""
 
-TEMPLATES['call'] = """RE({{ start.plan_type }}(
+TEMPLATES['call'] = """RE({{ start.plan_name }}(
 {%- for k, v in start.plan_args.items() %}{%- if not loop.first %}   {% endif %}{{ k }}={{ v }}
 {%- if not loop.last %},
 {% endif %}{% endfor %}))
@@ -141,7 +143,7 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None,
 def call_str(start, call_template=None):
     """Given a start document generate an evalable call scring
 
-    The default template assumes that `plan_args` and `plan_type`
+    The default template assumes that `plan_args` and `plan_name`
     are at the top level of the document.
 
     Parameter
