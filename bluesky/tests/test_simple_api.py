@@ -2,10 +2,11 @@ import bson
 from traitlets import TraitError
 from bluesky.examples import motor, motor1, motor2, det, det1, det2, FlyMagic
 import pytest
-from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan, d2scan,
-                              d3scan, mesh, th2th, afermat, fermat, spiral,
-                              aspiral, get_sub_factory_input, plan_sub_factory_input,
-                              InvalidFactory)
+from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan,
+                              d2scan, d3scan, mesh, th2th, afermat,
+                              fermat, spiral, aspiral,
+                              get_factory_input,
+                              plan_sub_factory_input, InvalidFactory)
 
 
 @pytest.mark.parametrize('pln,name,args,kwargs', [
@@ -91,19 +92,18 @@ def test_factory_tools_smoke():
     failer.__signature__ = Signature((Parameter('fail',
                                                 Parameter.POSITIONAL_ONLY), ))
     with pytest.raises(InvalidFactory):
-        get_sub_factory_input(failer)
+        get_factory_input(failer)
 
     for pln in ['ct', 'ascan', 'dscan']:
         merge, by_fac = plan_sub_factory_input(pln)
         opt = set()
         req = set()
         for k, v in by_fac.items():
-            assert set(('opt', 'req')) == set(v.keys())
-            opt.update(v['opt'])
-            req.update(v['req'])
+            opt.update(v.opt)
+            req.update(v.req)
 
-        assert opt == merge['opt']
-        assert req == merge['req']
+        assert opt == merge.opt
+        assert req == merge.req
 
     gs.SUB_FACTORIES['TST_DUMMY'] = [failer]
 

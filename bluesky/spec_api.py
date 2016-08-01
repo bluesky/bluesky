@@ -12,7 +12,7 @@ changes the behavior of these plans.
 Page numbers in the code comments refer to the SPEC manual at
 http://www.certif.com/downloads/css_docs/spec_man.pdf
 """
-from collections import deque, OrderedDict
+from collections import OrderedDict, namedtuple
 
 import matplotlib.pyplot as plt
 from bluesky import plans
@@ -22,10 +22,10 @@ from boltons.iterutils import chunked
 from bluesky.global_state import gs
 from bluesky.utils import (first_key_heuristic)
 
-from bluesky.plans import (subs_context, count, scan,
-                           relative_scan, relative_inner_product_scan,
+from bluesky.plans import (count, scan, relative_scan,
+                           relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
-                           tweak, configure_count_time_wrapper, planify,
+                           tweak, configure_count_time_wrapper,
                            baseline_wrapper, subs_wrapper)
 import itertools
 from itertools import chain
@@ -131,31 +131,31 @@ def construct_subs(plan_name, **kwargs):
     kwargs.setdefault('gs', gs)
 
     for factory in factories:
-        # TODO, support positional injection
-        sig = signature(factory)
-        fact_kwargs = {}
-        missing_kwargs = set()
-        missing_args = set()
-        for k, v in sig.parameters.items():
-            if v.kind is Parameter.POSITIONAL_ONLY:
-                if v.defaut is Parameter.empty:
-                    missing_args.add(k)
-            else:
-                if k in kwargs:
-                    fact_kwargs[k] = kwargs[k]
-                else:
-                    if v.default is Parameter.empty:
-                        missing_kwargs.add(k)
-
-        if missing_kwargs:
-            warnings.warn('The factory {fn} could not be run due to missing '
-                          'mandatory kwargs {missing!r}'.format(
-                              fn=factory.__name__, missing=missing_kwargs))
-        elif missing_args:
-            warnings.warn('The factory {fn} could not be run due to having '
-                          'positional only args {missing!r}'.format(
-                              fn=factory.__name__, missing=missing_kwargs))
+        try:
+            inp = get_factory_input(factory)
+        except InvalidFactory as e:
+            warnings.warn('factory {fn} could not be run due to {e!r}'.format(
+                fn=factory.__name__, e=e))
         else:
+            fact_kwargs = {}
+            missing_kwargs = set()
+            for k in inp.req:
+                try:
+                    fact_kwargs[k] = kwargs[k]
+                except KeyError:
+                    missing_kwargs.add(k)
+            if missing_kwargs:
+                warnings.warn('The factory {fn} could not be run due to '
+                              'missing '
+                              'required input: {missing!r}'.format(
+                                  fn=factory.__name__, missing=missing_kwargs))
+                continue
+            for k in inp.opt:
+                try:
+                    fact_kwargs[k] = kwargs[k]
+                except KeyError:
+                    pass
+
             l_sub = factory(**fact_kwargs)
             if l_sub is None:
                 continue
@@ -180,39 +180,45 @@ def plan_sub_factory_input(plan_name):
     by_fac = OrderedDict()
     for fac in factories:
         try:
-            ret = get_sub_factory_input(fac)
+            ret = get_factory_input(fac)
         except InvalidFactory as e:
             by_fac[fac.__name__] = e
         else:
-            opt.update(ret['opt'])
-            req.update(ret['req'])
+            opt.update(ret.opt)
+            req.update(ret.req)
             by_fac[fac.__name__] = ret
 
-    return {'opt': opt, 'req': req}, by_fac
+    return FactoryInput(req, opt), by_fac
 
 
 class InvalidFactory(TypeError):
     ...
 
+FactoryInput = namedtuple('FactoryInput', ('req', 'opt'))
+
 
 # TODO rename this
-def get_sub_factory_input(factory):
+def get_factory_input(factory):
     '''Helper function to re-organize signature information
 
     Assume this will be re-written, do not program against.
     '''
     sig = signature(factory)
-    reqed = set()
+    req = set()
     optional = set()
+    failed = set()
     for k, v in sig.parameters.items():
         if v.kind is Parameter.POSITIONAL_ONLY:
-            # TODO make this nice?
-            raise InvalidFactory()
+            # TODO: make the injection system smarter to deal with
+            # these
+            failed.add(k)
         elif v.default is Parameter.empty:
-            reqed.add(k)
+            req.add(k)
         else:
             optional.add(k)
-    return {'req': reqed, 'opt': optional}
+    if failed:
+        raise InvalidFactory("")
+    return FactoryInput(req, optional)
 
 
 def inner_spec_decorator(plan_name, time, motors, **subs_kwargs):
