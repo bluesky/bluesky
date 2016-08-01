@@ -31,12 +31,6 @@ We subscribe callbacks to the live stream of Documents. You can think of a
 callback as a self-addressed stamped envelope. It tells the RunEngine,
 "When you create a Document, send it to this function for processing."
 
-In order to keep up with the scan and avoiding slowing down data collection,
-most subscriptions skip some Documents when they fall behind. A table might
-skip a row, a plot might skip a point. But *critical* subscriptions -- like
-saving the data -- are run in a lossless mode guananteed to process all
-the Docuemnts.
-
 Simplest Example
 ----------------
 
@@ -257,17 +251,17 @@ exporter in ``post_run`` and subscribe.
     RE.subscribe('all', post_run(exporter))
 
 It also possible to write TIFFs live, hence the name ``LiveTiffExporter``, but
-there is an important disadvantage to this: in order to ensure that every image
-is saved, a lossless subscription must be used. And, as a consequence, the
-progress of the experiment may be intermittently slowed while data is written
-to disk. In some circumstances, this affect on the timing of the experiment may
-not be acceptable.
+there is an important disadvantage to doing this subscription in the same
+process: progress of the experiment may be intermittently slowed while data is
+written to disk. In some circumstances, this affect on the timing of the
+experiment may not be acceptable.
 
 .. code-block:: python
 
-    RE.subscribe_lossless('all', exporter)
+    RE.subscribe('all', exporter)
 
-There are more configuration options avaiable, as given in detail below.
+There are more configuration options avaiable, as given in detail below. It is
+recommended to use these expensive callbacks in a separate process.
 
 .. autoclass:: bluesky.callbacks.broker.LiveTiffExporter
 
@@ -402,28 +396,13 @@ The base class, ``CallbackBase``, takes care of dispatching each Document to
 the corresponding method. If your application does not need all four, you may
 simple omit methods that aren't required.
 
-Lossless Subscriptions for Critical Functions
----------------------------------------------
+Subscriptions in Separate Processes
+-----------------------------------
 
-Because subscriptions are processed during a scan, it's possible that they
-can slow down data collection. We mitigate this by making the subscriptions
-*lossy*. That is, some Documents will be skipped if the subscription
-functions take too long and fall behind. For the purposes of real-time
-feedback, this is usually acceptable. For other purposes, like saving data to
-metadatastore, it is not.
+Because subscriptions are processed during a scan, it's possible that they can
+slow down data collection. We mitigate this by making the subscriptions run in
+a separate process.
 
-Critical subscriptions are subscriptions that are executed on every Document
-no matter how long they take to run, potentially slowing down data collection
-but guaranteeing that all tasks are completed but the scan proceeds.
-
-For example, in the standard configuration, metadatastore insertion functions
-are registered as critical subscriptions.
-
-If your subscription requires the complete, lossless stream of Documents
-and you are will to accept the possibility of slowing down data
-collection while that stream in processed, you can register your own critical
-subscriptions.
-
-.. automethod:: bluesky.run_engine.RunEngine.subscribe_lossless
-
-.. automethod:: bluesky.run_engine.RunEngine.unsubscribe_lossless
+If your subscription requires the complete, synchronous stream of Documents and
+you are will to accept the possibility of slowing down data collection while
+that stream in processed, you can register subscriptions in the main process.
