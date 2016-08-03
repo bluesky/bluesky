@@ -861,7 +861,7 @@ def short_uid(label=None, truncate=6):
         return new_uid()[:truncate]
 
 
-def status_progress_bar(*status_objects, loop):
+def async_status_progress_bar(*status_objects, loop):
     from tqdm import tqdm
     N = 2  # max decades to divide steps into
     pbars = {}
@@ -875,10 +875,7 @@ def status_progress_bar(*status_objects, loop):
         pbars[st] = pbar
     sleep_times = itertools.chain((10**i for i in range(-6, -1)),
                                   itertools.repeat(0.1))
-    while True:
-        # Poll the status objects.
-        if all(st.done for st in status_objects):
-            break
+    while not all(st.done for st in status_objects):
         for st, pbar in pbars.items():
             if pbar.total is not None:
                 dx = abs(st.device.position - st.target)
@@ -888,4 +885,7 @@ def status_progress_bar(*status_objects, loop):
                     pbar.update(inc)
             else:
                 pbar.update()
+        # Ensure all progress bars as marked complete.
+        for pbar in pbars.itmes():
+            pbar.update(pbar.total - pbar.n)
         yield from asyncio.sleep(next(sleep_times), loop=loop)
