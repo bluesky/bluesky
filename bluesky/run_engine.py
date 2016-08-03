@@ -644,14 +644,16 @@ class RunEngine:
              A new plan made from the messages in the message cache
 
         '''
+        len_msg_cache = len(self._msg_cache)
         new_plan = ensure_generator(list(self._msg_cache))
         self._msg_cache = deque()
-        self._sequence_counters.clear()
-        self._sequence_counters.update(self._teed_sequence_counters)
-        # This is needed to 'cancel' an open bundling (e.g. create) if
-        # the pause happens after a 'checkpoint', after a 'create', but before
-        # the paired 'save'.
-        self._bundling = False
+        if len_msg_cache:
+            self._sequence_counters.clear()
+            self._sequence_counters.update(self._teed_sequence_counters)
+            # This is needed to 'cancel' an open bundling (e.g. create) if
+            # the pause happens after a 'checkpoint', after a 'create', but before
+            # the paired 'save'.
+            self._bundling = False
         return new_plan
 
     def _resume_event_loop(self):
