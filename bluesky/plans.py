@@ -1345,7 +1345,7 @@ def stage_wrapper(plan, devices):
             yield Msg('stage', d)
 
     def unstage_devices():
-        for d in devices:
+        for d in reversed(devices):
             yield Msg('unstage', d)
 
     def inner():
