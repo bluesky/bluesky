@@ -52,8 +52,7 @@ def make_decorator(wrapper):
 
 
 def planify(func):
-    """
-    Turn a function that returns a list of generators into a coroutine.
+    """Turn a function that returns a list of generators into a coroutine.
 
     Parameters
     ----------
@@ -64,8 +63,10 @@ def planify(func):
     Returns
     -------
     gen : generator
-        a single generator that yields messages. The return value from the generator
-        is the return of the last plan in the plan stack.
+        a single generator that yields messages. The return value from
+        the generator is the return of the last plan in the plan
+        stack.
+
     """
     @wraps(func)
     def wrapped(*args, **kwargs):
