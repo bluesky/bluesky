@@ -1926,8 +1926,8 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_list_scan'})
 
-    @reset_positions_decorator()
-    @relative_set_decorator()
+    @reset_positions_decorator([motor])
+    @relative_set_decorator([motor])
     def inner_relative_list_scan():
         return (yield from list_scan(detectors, motor, steps,
                                      per_step=per_step, md=md))
@@ -2507,9 +2507,11 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_outer_product_scan'})
+    chunk_args = list(plan_patterns.chunk_outer_product_args(args))
+    motors = [m[0] for m in chunk_args]
 
-    @reset_positions_decorator()
-    @relative_set_decorator()
+    @reset_positions_decorator(motors)
+    @relative_set_decorator(motors)
     def inner_relative_outer_product_scan():
         return (yield from outer_product_scan(detectors, *args,
                                               per_step=per_step, md=md))
@@ -2546,9 +2548,11 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_inner_product_scan'})
+    chunk_args = list(plan_patterns.chunk_outer_product_args(args))
+    motors = [m[0] for m in chunk_args]
 
-    @reset_positions_decorator()
-    @relative_set_decorator()
+    @reset_positions_decorator(motors)
+    @relative_set_decorator(motors)
     def inner_relative_inner_product_scan():
         return (yield from inner_product_scan(detectors, num, *args,
                                               per_step=per_step, md=md))
