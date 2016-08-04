@@ -241,7 +241,7 @@ def inner_spec_decorator(plan_name, time, motors, **subs_kwargs):
 # ## Counts (p. 140) ###
 
 
-def ct(num=1, delay=None, time=None, *, md=None, **kwargs):
+def ct(num=1, delay=None, time=None, *, md=None):
     """
     Take one or more readings from the global detectors.
 
@@ -259,9 +259,7 @@ def ct(num=1, delay=None, time=None, *, md=None, **kwargs):
         metadata
     """
 
-    @inner_spec_decorator('ct', time, [], num=num, **kwargs)
-    def inner(*args, **kwargs):
-        return (yield from count(*args, **kwargs))
+    inner = inner_spec_decorator('ct', time, [], num=num)(count)
 
     return (yield from inner(gs.DETS, num, delay, md=md))
 gs.SUB_FACTORIES['ct'] = [setup_livetable, setup_ct_plot]
