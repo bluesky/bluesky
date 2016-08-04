@@ -1319,7 +1319,7 @@ def stage_context(plan_stack, devices):
     `bluesky.plans.lazily_stage`
     """
     # Resolve unique devices, avoiding redundant staging.
-    devices = separate_devices([device.root for device in devices])
+    devices = separate_devices(device.root for device in devices)
 
     def stage():
         # stage devices explicitly passed to 'devices' argument
@@ -1335,7 +1335,7 @@ def stage_context(plan_stack, devices):
 
 
 def stage_wrapper(plan, devices):
-    devices = separate_devices([device.root for device in devices])
+    devices = separate_devices(device.root for device in devices)
 
     def stage_devices():
         for d in devices:
