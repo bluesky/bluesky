@@ -1755,6 +1755,7 @@ fly_during_decorator = make_decorator(fly_during_wrapper)
 monitor_during_decorator = make_decorator(monitor_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
 run_decorator = make_decorator(run_wrapper)
+configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
 
 
 def count(detectors, num=1, delay=None, *, md=None):

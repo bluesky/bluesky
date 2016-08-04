@@ -26,8 +26,8 @@ from bluesky.utils import (first_key_heuristic, normalize_subs_input,
 from bluesky.plans import (count, scan, relative_scan,
                            relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
-                           tweak, configure_count_time_wrapper,
-                           baseline_wrapper, subs_wrapper)
+                           tweak, configure_count_time_decorator,
+                           baseline_decorator, subs_decorator)
 import itertools
 from itertools import chain
 from collections import ChainMap
@@ -223,23 +223,19 @@ def inner_spec_decorator(plan_name, time, motors, **subs_kwargs):
     # create the paramterized decorator
     def outer(func):
         # create the decorated function to return
-        def inner(*args, md=None, **kwargs):
+
+        @subs_decorator(subs)
+        @configure_count_time_decorator(time)
+        @baseline_decorator(list(gs.BASELINE_DEVICES) + motors)
+        def inner_spec_plan(*args, md=None, **kwargs):
             # inject the plan name + time into the metadata
             if md is None:
                 md = {}
             md = ChainMap(md, {'plan_name': plan_name,
                                gs.MD_TIME_KEY: time})
-            # get the 'base' plan
-            plan = func(*args, md=md, **kwargs)
-            # set up the baseline measurements
-            plan = baseline_wrapper(plan, list(gs.BASELINE_DEVICES) + motors)
-            # set up the 'count time' measurements'
-            plan = configure_count_time_wrapper(plan, time)
-            # set up the subscriptions
-            plan = subs_wrapper(plan, subs)
-            # yield from the whole thing
-            return (yield from plan)
-        return inner
+
+            return (yield from func(*args, md=md, **kwargs))
+        return inner_spec_plan
     return outer
 
 # ## Counts (p. 140) ###
