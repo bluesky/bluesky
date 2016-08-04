@@ -20,7 +20,8 @@ from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
 from bluesky.callbacks.scientific import PeakStats
 from boltons.iterutils import chunked
 from bluesky.global_state import gs
-from bluesky.utils import (first_key_heuristic)
+from bluesky.utils import (first_key_heuristic, normalize_subs_input,
+                           update_sub_lists)
 
 from bluesky.plans import (count, scan, relative_scan,
                            relative_inner_product_scan,
@@ -127,9 +128,9 @@ def construct_subs(plan_name, **kwargs):
     '''
     factories = gs.SUB_FACTORIES.get('common', [])
     factories.extend(gs.SUB_FACTORIES.get(plan_name, []))
-    subs = []
-    kwargs.setdefault('gs', gs)
 
+    kwargs.setdefault('gs', gs)
+    ret = normalize_subs_input(None)
     for factory in factories:
         try:
             inp = get_factory_input(factory)
@@ -156,15 +157,10 @@ def construct_subs(plan_name, **kwargs):
                 except KeyError:
                     pass
 
-            l_sub = factory(**fact_kwargs)
-            if l_sub is None:
-                continue
-            elif callable(l_sub):
-                subs.append(l_sub)
-            else:
-                subs.extend(l_sub)
+            update_sub_lists(ret,
+                             normalize_subs_input(factory(**fact_kwargs)))
 
-    return {'all': subs}
+    return ret
 
 
 # TODO rename this
