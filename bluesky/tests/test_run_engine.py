@@ -899,3 +899,15 @@ def test_prompt_stop(fresh_RE, cancel_func):
 def test_bad_from_idle_transitions(fresh_RE, change_func):
     with pytest.raises(TransitionError):
         change_func(fresh_RE)
+
+
+def test_empty_cache_pause(fresh_RE):
+    RE = fresh_RE
+    RE.rewindable = False
+    pln = [Msg('open_run'),
+           Msg('create'),
+           Msg('pause'),
+           Msg('save'),
+           Msg('close_run')]
+    RE(pln)
+    RE.resume()
