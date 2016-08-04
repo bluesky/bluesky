@@ -290,9 +290,7 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
     """
     motors = [motor]
 
-    @inner_spec_decorator('ascan', time, motors)
-    def inner(*args, **kwargs):
-        return (yield from scan(*args, **kwargs))
+    inner = inner_spec_decorator('ascan', time, motors)(scan)
 
     return (yield from inner(gs.DETS, motor, start, finish,
                              1 + intervals, md=md))
@@ -322,9 +320,7 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
     """
     motors = [motor]
 
-    @inner_spec_decorator('dscan', time, motors)
-    def inner(*args, **kwargs):
-        return (yield from relative_scan(*args, **kwargs))
+    inner = inner_spec_decorator('dscan', time, motors)(relative_scan)
 
     return (yield from inner(gs.DETS, motor, start, finish, 1 + intervals,
                              md=md))
@@ -367,10 +363,10 @@ def mesh(*args, time=None, md=None):
 
     # shape goes in (rr, cc)
     # extents go in (x, y)
-    @inner_spec_decorator('mesh', time, motors=motors, shape=shape,
-                          extent=list(chain(*extents[::-1])))
-    def inner(*args, **kwargs):
-        return (yield from outer_product_scan(*args, **kwargs))
+    inner = inner_spec_decorator('mesh', time, motors=motors,
+                                 shape=shape,
+                                 extent=list(chain(*extents[::-1])))(
+                                     outer_product_scan)
 
     return (yield from inner(gs.DETS, *new_args, md=md))
 gs.SUB_FACTORIES['mesh'] = [setup_livetable, setup_liveraster]
@@ -401,9 +397,8 @@ def a2scan(*args, time=None, md=None):
     intervals = list(args)[-1]
     num = 1 + intervals
 
-    @inner_spec_decorator('a2scan', time, motors=motors)
-    def inner(*args, **kwargs):
-        return (yield from inner_product_scan(*args, **kwargs))
+    inner = inner_spec_decorator('a2scan', time,
+                                 motors=motors)(inner_product_scan)
 
     return (yield from inner(gs.DETS, num, *args[:-1], md=md))
 
@@ -447,9 +442,8 @@ def d2scan(*args, time=None, md=None):
     intervals = list(args)[-1]
     num = 1 + intervals
 
-    @inner_spec_decorator('d2scan', time, motors=motors)
-    def inner(*args, **kwargs):
-        return (yield from relative_inner_product_scan(*args, **kwargs))
+    inner = inner_spec_decorator('d2scan', time, motors=motors)(
+        relative_inner_product_scan)
 
     return (yield from inner(gs.DETS, num, *(args[:-1]), md=md))
 
@@ -515,9 +509,7 @@ def tw(motor, step, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    @inner_spec_decorator('tw', time, motors=[motor])
-    def inner(*args, **kwargs):
-        return (yield from tweak(*args, **kwargs))
+    inner = inner_spec_decorator('tw', time, motors=[motor])(tweak)
 
     return (yield from inner(gs.MASTER_DET, gs.MASTER_DET_FIELD, motor,
                              step, md=md))
@@ -562,9 +554,8 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
     '''
     motors = [x_motor, y_motor]
 
-    @inner_spec_decorator('afermat', time, motors=motors)
-    def inner(*args, **kwargs):
-        return (yield from plans.spiral_fermat(*args, **kwargs))
+    inner = inner_spec_decorator('afermat', time, motors=motors)(
+        plans.spiral_fermat)
 
     return (yield from inner(gs.DETS, x_motor, y_motor, x_start, y_start,
                              x_range, y_range, dr, factor,
@@ -651,9 +642,7 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
     '''
     motors = [x_motor, y_motor]
 
-    @inner_spec_decorator('aspiral', time, motors=motors)
-    def inner(*args, **kwargs):
-        return (yield from plans.spiral(*args, **kwargs))
+    inner = inner_spec_decorator('aspiral', time, motors=motors)(plans.spiral)
 
     return (yield from inner(gs.DETS, x_motor, y_motor, x_start, y_start,
                              x_range, y_range, dr, nth, per_step=per_step,
