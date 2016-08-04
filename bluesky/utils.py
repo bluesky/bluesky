@@ -787,3 +787,19 @@ def sanitize_np(val):
             return val.item()
         return val.tolist()
     return val
+
+
+def expiring_function(func, loop, *args, **kwargs):
+    """
+    If timeout has not occurred, call func(*args, **kwargs).
+
+    This is meant to used with the event loop's run_in_executor
+    method. Outside that context, it doesn't make any sense.
+    """
+    def dummy(start_time, timeout):
+        if loop.time() > start_time + timeout:
+            return
+        func(*args, **kwargs)
+        return
+
+    return dummy

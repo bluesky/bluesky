@@ -10,7 +10,6 @@ from enum import Enum
 import functools
 
 
-
 import jsonschema
 from event_model import DocumentNames, schemas
 from super_state_machine.machines import StateMachine
@@ -23,22 +22,6 @@ from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
                     single_gen)
-
-
-def expiring_function(func, loop, *args, **kwargs):
-    """
-    If timeout has not occurred, call func(*args, **kwargs).
-
-    This is meant to used with the event loop's run_in_executor
-    method. Outside that context, it doesn't make any sense.
-    """
-    def dummy(start_time, timeout):
-        if loop.time() > start_time + timeout:
-            return
-        func(*args, **kwargs)
-        return
-
-    return dummy
 
 
 class RunEngineStateMachine(StateMachine):
