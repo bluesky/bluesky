@@ -24,22 +24,6 @@ from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     single_gen)
 
 
-def expiring_function(func, loop, *args, **kwargs):
-    """
-    If timeout has not occurred, call func(*args, **kwargs).
-
-    This is meant to used with the event loop's run_in_executor
-    method. Outside that context, it doesn't make any sense.
-    """
-    def dummy(start_time, timeout):
-        if loop.time() > start_time + timeout:
-            return
-        func(*args, **kwargs)
-        return
-
-    return dummy
-
-
 class RunEngineStateMachine(StateMachine):
     """
 
@@ -260,12 +244,11 @@ class RunEngine:
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
 
-        # private dispatcher of critical callbacks
-        # which get a lossless Event stream and abort a run if they raise
-        # The subscribe/unsubscribe are exposed through the RunEngine
-        # as subscribe_lossless and unsubscribe_lossless, defined below
-        # to provide special docstrings.
-        self._lossless_dispatcher = Dispatcher()
+        # aliases for back-compatibility
+        self.subscribe_lossless = self.dispatcher.subscribe
+        self.unsubscribe_lossless = self.dispatcher.unsubscribe
+        self._subscribe_lossless = self.dispatcher.subscribe
+        self._unsubscribe_lossless = self.dispatcher.unsubscribe
 
         self.loop.call_soon(self._check_for_signals)
 
@@ -346,7 +329,7 @@ class RunEngine:
 
     def reset(self):
         """
-        Clean up caches and unsubscribe lossy subscriptions.
+        Clean up caches and unsubscribe subscriptions.
 
         Lossless subscriptions are not unsubscribed.
         """
@@ -461,50 +444,7 @@ class RunEngine:
                        data={'interruption': content},
                        timestamps={'interruption': ttime.time()})
             jsonschema.validate(doc, schemas[DocumentNames.event])
-            self._lossless_dispatcher.process(DocumentNames.event, doc)
-            # Unlike the RunEngine.emit coroutine, here both dispatchers
-            # get a lossless stream of all documents.
             self.dispatcher.process(DocumentNames.event, doc)
-
-    def subscribe_lossless(self, name, func):
-        """Register a callback function to consume documents.
-
-        Functions registered here are considered "critical." They receive
-        a lossless stream of Event documents. If they generate an exception
-        they always abort the run. (In contrast, exceptions from normal
-        subscriptions are ignored by default.)
-
-        The Run Engine can execute callback functions at the start and end
-        of a scan, and after the insertion of new Event Descriptors
-        and Events.
-
-        Parameters
-        ----------
-        name : {'start', 'descriptor', 'event', 'stop', 'all'}
-        func : callable
-            expecting signature like ``f(name, document)``
-            where name is a string and document is a dict
-
-        Returns
-        -------
-        token : int
-            an integer token that can be used to unsubscribe
-        """
-        return self._lossless_dispatcher.subscribe(name, func)
-
-    def unsubscribe_lossless(self, token):
-        """Un-register a 'critical' callback function.
-
-        Parameters
-        ----------
-        token : int
-            an integer token returned by _subscribe_lossless
-        """
-        self._lossless_dispatcher.unsubscribe(token)
-
-    # aliases for back-compatibility
-    _unsubscribe_lossless = unsubscribe_lossless
-    _subscribe_lossless = subscribe_lossless
 
     def __call__(self, plan, subs=None, *, raise_if_interrupted=False,
                  **metadata_kw):
@@ -1339,12 +1279,6 @@ class RunEngine:
                        time=ttime.time(), data=data, timestamps=timestamps,
                        seq_num=next(seq_num_counter), uid=new_uid())
             jsonschema.validate(doc, schemas[DocumentNames.event])
-            self._lossless_dispatcher.process(DocumentNames.event, doc)
-            # Unlike the RunEngine.emit coroutine, here both dispatchers
-            # get a lossless stream of all documents. Monitors are already
-            # "lossy"; we will not mix in our own lossiness here. If
-            # monitors are generating too much data, they should be
-            # implemented as flyers.
             self.dispatcher.process(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, msg.kwargs
@@ -1948,15 +1882,7 @@ class RunEngine:
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
-        self._lossless_dispatcher.process(name, doc)
-        if name != DocumentNames.event:
-            self.dispatcher.process(name, doc)
-        else:
-            start_time = self.loop.time()
-            dummy = expiring_function(self.dispatcher.process, self.loop, name,
-                                      doc)
-            self.loop.run_in_executor(None, dummy, start_time,
-                                      self.event_timeout)
+        self.dispatcher.process(name, doc)
 
 
 class Dispatcher:

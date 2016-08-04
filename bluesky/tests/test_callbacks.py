@@ -105,9 +105,9 @@ def test_unknown_cb_raises():
         pass
     with pytest.raises(KeyError):
         RE.subscribe('not a thing', f)
+    # back-compat alias for subscribe
     with pytest.raises(KeyError):
         RE.subscribe_lossless('not a thing', f)
-    # back-compat alias for subscribe_lossless
     with pytest.raises(KeyError):
         RE._subscribe_lossless('not a thing', f)
 

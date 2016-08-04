@@ -358,6 +358,9 @@ class LiveRaster(CallbackBase):
         cb.set_label(self.I)
 
     def event(self, doc):
+        if self.I not in doc['data']:
+            return
+
         seq_num = doc['seq_num'] - 1
         pos = list(np.unravel_index(seq_num, self.raster_shape))
         if self.snaking[1] and (pos[0] % 2):

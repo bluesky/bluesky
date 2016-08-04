@@ -61,4 +61,4 @@ def _register_md(runengine, mds):
 
     # actually attach the callbacks to the RunEngine
     for name in insert_funcs.keys():
-        runengine._subscribe_lossless(name, insert_funcs[name])
+        runengine.subscribe(name, insert_funcs[name])
