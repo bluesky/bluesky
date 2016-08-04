@@ -62,16 +62,16 @@ def planify(func):
     Returns
     -------
     gen : generator
-        a single generator that yields messages
+        a single generator that yields messages. The return value from the generator
+        is the return of the last plan in the plan stack.
     """
     @wraps(func)
     def wrapped(*args, **kwargs):
         gen_stack = func(*args, **kwargs)
-        ret = []
+        ret = None
         for g in gen_stack:
-            res = yield from g
-            ret.append(res)
-        return tuple(ret)
+            ret = yield from g
+        return ret
 
     return wrapped
 
@@ -799,10 +799,10 @@ def run_wrapper(plan, *, md=None):
     md : dict, optional
         metadata to be passed into the 'open_run' message
     """
-    ret = yield from open_run(md)
+    yield from open_run(md)
     yield from plan
-    yield from close_run()
-    return ret
+    rs_uid = yield from close_run()
+    return rs_uid
 
 
 def subs_wrapper(plan, subs):
