@@ -38,15 +38,16 @@ def make_decorator(wrapper):
     function and returns a generator function.
     """
     @wraps(wrapper)
-    def outer(*args, **kwargs):
+    def dec_outer(*args, **kwargs):
         def dec(gen_func):
-            def inner(*inner_args, **inner_kwargs):
+            @wraps(gen_func)
+            def dec_inner(*inner_args, **inner_kwargs):
                 plan = gen_func(*inner_args, **inner_kwargs)
                 plan = wrapper(plan, *args, **kwargs)
                 return (yield from plan)
-            return inner
+            return dec_inner
         return dec
-    return outer
+    return dec_outer
 
 
 def planify(func):
@@ -1924,10 +1925,13 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_list_scan'})
-    plan = list_scan(detectors, motor, steps, per_step=per_step, md=md)
-    plan = relative_set_wrapper(plan)  # re-write trajectory as relative
-    plan = reset_positions_wrapper(plan)  # return motors to starting pos
-    return (yield from plan)
+
+    @reset_positions_decorator()
+    @relative_set_decorator()
+    def inner_relative_list_scan():
+        return (yield from list_scan(detectors, motor, steps,
+                                     per_step=per_step, md=md))
+    return (yield from inner_relative_list_scan())
 
 
 def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
@@ -2018,10 +2022,14 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_scan'})
     # TODO read initial positions (redundantly) so they can be put in md here
-    plan = scan(detectors, motor, start, stop, num, per_step=per_step, md=md)
-    plan = relative_set_wrapper(plan, [motor])  # re-write trajectory relative
-    plan = reset_positions_wrapper(plan, [motor])  # return to starting pos
-    return (yield from plan)
+
+    @reset_positions_decorator([motor])
+    @relative_set_decorator([motor])
+    def inner_relative_scan():
+        return (yield from scan(detectors, motor, start, stop,
+                                num, per_step=per_step, md=md))
+
+    return (yield from inner_relative_scan())
 
 
 def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
@@ -2073,11 +2081,11 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     @stage_decorator(list(detectors) + [motor])
     @run_decorator(md=md)
-    def inner_plan():
+    def inner_log_scan():
         for step in steps:
             yield from per_step(detectors, motor, step)
 
-    return (yield from inner_plan())
+    return (yield from inner_log_scan())
 
 
 def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
@@ -2111,13 +2119,14 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_log_scan'})
-    plan = log_scan(detectors, motor, start, stop, num, per_step=per_step,
-                    md=md)
-    # re-write trajectory as relative
-    plan = relative_set_wrapper(plan, [motor])
-    # return motors to starting pos
-    plan = reset_positions_wrapper(plan, [motor])
-    return (yield from plan)
+
+    @reset_positions_decorator([motor])
+    @relative_set_decorator([motor])
+    def inner_relative_log_scan():
+        return (yield from log_scan(detectors, motor, start, stop, num,
+                                    per_step=per_step, md=md))
+
+    return (yield from inner_relative_log_scan())
 
 
 def adaptive_scan(detectors, target_field, motor, start, stop,
@@ -2259,12 +2268,16 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'adaptive_relative_scan'})
-    plan = adaptive_scan(detectors, target_field, motor, start, stop,
-                         min_step, max_step, target_delta, backstep,
-                         threshold, md=md)
-    plan = relative_set_wrapper(plan, [motor])  # re-write trajectory relative
-    plan = reset_positions_wrapper(plan, [motor])  # return to starting pos
-    return (yield from plan)
+
+    @reset_positions_decorator([motor])
+    @relative_set_decorator([motor])
+    def inner_relative_adaptive_scan():
+        return (yield from adaptive_scan(detectors, target_field,
+                                         motor, start, stop, min_step,
+                                         max_step, target_delta,
+                                         backstep, threshold, md=md))
+
+    return (yield from inner_relative_adaptive_scan())
 
 
 def one_nd_step(detectors, step, pos_cache):
@@ -2338,11 +2351,11 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
 
     @stage_decorator(list(detectors) + motors)
     @run_decorator(md=md)
-    def inner_plan():
+    def inner_scan_nd():
         for step in list(cycler):
             yield from per_step(detectors, step, pos_cache)
 
-    return (yield from inner_plan())
+    return (yield from inner_scan_nd())
 
 
 def inner_product_scan(detectors, num, *args, per_step=None, md=None):
@@ -2391,8 +2404,8 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     md['plan_pattern_args'] = dict(num=num, args=md_args)
     full_cycler = plan_patterns.inner_product(num=num, args=args)
 
-    plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
-    return (yield from plan)
+    return (yield from scan_nd(detectors, full_cycler,
+                               per_step=per_step, md=md))
 
 
 def outer_product_scan(detectors, *args, per_step=None, md=None):
@@ -2458,8 +2471,8 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
          'plan_pattern': 'outer_product',
          'plan_pattern_module': plan_patterns.__name__})
 
-    plan = scan_nd(detectors, full_cycler, per_step=per_step, md=md)
-    return (yield from plan)
+    return (yield from scan_nd(detectors, full_cycler,
+                               per_step=per_step, md=md))
 
 
 def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
@@ -2494,10 +2507,14 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_outer_product_scan'})
-    plan = outer_product_scan(detectors, *args, per_step=per_step, md=md)
-    plan = relative_set_wrapper(plan)  # re-write trajectory as relative
-    plan = reset_positions_wrapper(plan)  # return motors to starting pos
-    return (yield from plan)
+
+    @reset_positions_decorator()
+    @relative_set_decorator()
+    def inner_relative_outer_product_scan():
+        return (yield from outer_product_scan(detectors, *args,
+                                              per_step=per_step, md=md))
+
+    return (yield from inner_relative_outer_product_scan())
 
 
 def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
@@ -2529,10 +2546,14 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_inner_product_scan'})
-    plan = inner_product_scan(detectors, num, *args, per_step=per_step, md=md)
-    plan = relative_set_wrapper(plan)  # re-write trajectory as relative
-    plan = reset_positions_wrapper(plan)  # return motors to starting pos
-    return (yield from plan)
+
+    @reset_positions_decorator()
+    @relative_set_decorator()
+    def inner_relative_inner_product_scan():
+        return (yield from inner_product_scan(detectors, num, *args,
+                                              per_step=per_step, md=md))
+
+    return (yield from inner_relative_inner_product_scan())
 
 
 def tweak(detector, target_field, motor, step, *, md=None):
@@ -2574,7 +2595,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
     @stage_decorator([detector, motor])
     @run_decorator(md=md)
-    def core():
+    def tweak_core():
         nonlocal step
 
         while True:
@@ -2606,7 +2627,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
             # stackoverflow.com/a/12586667/380231
             print('\x1b[1A\x1b[2K\x1b[1A')
 
-    return (yield from core())
+    return (yield from tweak_core())
 
 
 def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
