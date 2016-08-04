@@ -185,52 +185,11 @@ Here are a couple more useful recipes:
     "Run a plan several times, changing the step size each time."
 
     def make_master_plan():
-        for num in range(5, 10):
+         for num in range(5, 10):
             # Change the number of steps in the plan in each loop
             plan1 = scan([det1, det2], motor, 1, 5, num)
             yield from plan1
 
-Plan Context Managers
----------------------
-
-These context managers provide a sunninct, readable syntax for inserting plans
-before and after other plans.
-
-.. autosummary::
-   :nosignatures:
-   :toctree:
-
-    baseline_context
-    monitor_context
-    subs_context
-    run_context
-    event_context
-    stage_context
-
-For example, the ``baseline_context`` reads a list of detectors at the
-beginning and end of an experiment.
-
-.. code-block:: python
-
-    from bluesky.plans import baseline_context, count
-    from bluesky.examples import det
-
-    plans = []
-    with baseline_context(plans, [det]):
-        plans.append(count([det]))
-
-Use with the ``planify`` decorator to join the list of plans into one plan.
-
-.. code-block:: python
-
-    from bluesky.plans import planify
-
-    @planify
-    def count_with_baseline_readings():
-        plans = []
-        with baseline_context(plans, [det]):
-            plans.append(count([det]))
-        return plans
 
 Plan Preprocessors
 ------------------
@@ -266,16 +225,6 @@ functions that operate on a generator *function*. They are named
         relative = relative_set(absolute, [motor])
         yield from relative
 
-Or, equivalently, using the ``planify`` decorator:
-
-.. code-block:: python
-
-    @planify
-    def relative_scan(detectors, motor, start, stop, num):
-        absolute = scan(detectors, motor, start, stop, num)
-        relative = relative_set(absolute, [motor])
-        return [relative]
-
 Plan Utilities
 --------------
 
@@ -285,7 +234,6 @@ Plan Utilities
     msg_mutator
     plan_mutator
     single_gen
-    planify
     broadcast_msg
     repeater
     caching_repeater

@@ -114,7 +114,7 @@ def single_gen(msg):
     msg : Msg
         the input message
     '''
-    yield msg
+    return (yield msg)
 
 
 class SignalHandler:

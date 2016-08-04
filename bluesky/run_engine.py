@@ -1169,6 +1169,8 @@ class RunEngine:
                                       run_start=self._run_start_uid)
             yield from self.emit(DocumentNames.descriptor, interruptions_desc)
 
+        return self._run_start_uid
+
     @asyncio.coroutine
     def _close_run(self, msg):
         """Instruct the RunEngine to write the RunStop document
@@ -1196,6 +1198,7 @@ class RunEngine:
         yield from self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
         yield from self._reset_checkpoint_state_coro()
+        return doc['run_start']
 
     @asyncio.coroutine
     def _create(self, msg):
