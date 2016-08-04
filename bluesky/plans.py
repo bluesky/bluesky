@@ -2,6 +2,7 @@ import uuid
 import sys
 from functools import wraps
 import itertools
+from itertools import chain
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable, defaultdict, deque, ChainMap
 
@@ -2388,8 +2389,8 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     if md is None:
         md = {}
 
-    md_args = list(itertools.chain(*((repr(motor), start, stop)
-                                   for motor, start, stop in chunked(args, 3))))
+    md_args = list(chain(*((repr(motor), start, stop)
+                           for motor, start, stop in chunked(args, 3))))
 
     md = ChainMap(
         md,
@@ -2508,8 +2509,8 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_outer_product_scan'})
-    chunk_args = list(plan_patterns.chunk_outer_product_args(args))
-    motors = [m[0] for m in chunk_args]
+    motors = [m[0] for m in
+              plan_patterns.chunk_outer_product_args(args)]
 
     @reset_positions_decorator(motors)
     @relative_set_decorator(motors)
@@ -2549,8 +2550,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     if md is None:
         md = {}
     md = ChainMap(md, {'plan_name': 'relative_inner_product_scan'})
-    chunk_args = list(plan_patterns.chunk_outer_product_args(args))
-    motors = [m[0] for m in chunk_args]
+    motors = [motor for motor, start, stop in chunked(args, 3)]
 
     @reset_positions_decorator(motors)
     @relative_set_decorator(motors)
