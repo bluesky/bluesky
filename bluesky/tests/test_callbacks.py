@@ -2,9 +2,16 @@ from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
+from bluesky.callbacks.zmqpub import Publisher
+from bluesky.callbacks.zmqsub import RemoteDispatcher
 from bluesky.spec_api import mesh
 from bluesky.tests.utils import setup_test_run_engine
 from bluesky.tests.utils import _print_redirect
+import contextlib
+import multiprocessing
+import sys
+import tempfile
+import time
 import pytest
 # import numpy as numpy
 RE = setup_test_run_engine()
@@ -226,3 +233,89 @@ KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 |        69  |  04:17:25.8  |          0.00  |          4.20  |
 |        70  |  04:17:25.9  |          0.00  |          4.85  |
 +------------+--------------+----------------+----------------+"""
+
+
+def test_zmq(fresh_RE):
+
+    # COMPONENT 1
+    # Run a forwarder device on a separate process.
+    # This is a variant of the code in bluesky/examples/forwarder_device.py,
+    # but with hard-coded config.
+
+    def forwarder():
+        import zmq
+        def main(frontend_port, backend_port):
+            print('Starting forwarder device...')
+            try:
+                context = zmq.Context(1)
+                # Socket facing clients
+                frontend = context.socket(zmq.SUB)
+                frontend.bind("tcp://*:%d" % frontend_port)
+                
+                frontend.setsockopt_string(zmq.SUBSCRIBE, "")
+                
+                # Socket facing services
+                backend = context.socket(zmq.PUB)
+                backend.bind("tcp://*:%d" % backend_port)
+
+                print('Receiving on %d; publishing on %d' % (frontend_port,
+                                                             backend_port))
+                zmq.device(zmq.FORWARDER, frontend, backend)
+            except Exception as exc:
+                print('Exception in forwarder device:', exc)
+            finally:
+                print('Closing forwarder device...')
+                frontend.close()
+                backend.close()
+                context.term()
+
+        main(5567, 5568)
+    forwarder_proc = multiprocessing.Process(target=forwarder, daemon=True)
+    forwarder_proc.start()
+    time.sleep(2)
+
+    # COMPONENT 2 
+    # Run a Publisher and a RunEngine in this main process.
+
+    RE = fresh_RE
+    p = Publisher(RE, '127.0.0.1', 5567)
+
+    # COMPONENT 3
+    # Run a RemoteDispatcher on another separate process. Pass the documents
+    # it receives over a Queue to this process, so we can count them for our
+    # test.
+
+    def make_and_start_dispatcher(queue):
+        def put_in_queue(name, doc):
+            print('putting ', name, 'in queue')
+            queue.put((name, doc))
+        d = RemoteDispatcher('127.0.0.1', 5568)
+        d.subscribe('all', put_in_queue)
+        print("REMOTE IS READY TO START")
+        d.start()
+
+    queue = multiprocessing.Queue()
+    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher,
+                                              daemon=True, args=(queue,))
+    dispatcher_proc.start()
+
+    # Generate two documents. The Publisher will send them to the forwarder
+    # device over 5567, and the forwarder will send them to the
+    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
+    # the queue, where we can verify that they round-tripped.
+
+    local_accumulator = []
+    def local_cb(name, doc):
+        local_accumulator.append((name, doc))
+
+    RE([Msg('open_run'), Msg('close_run')], local_cb)
+    time.sleep(1)
+
+
+    # Get the two documents from the queue (or timeout --- test will fail)
+    remote_accumulator = []
+    for i in range(2):
+        remote_accumulator.append(queue.get(timeout=2))
+    forwarder_proc.terminate()
+    dispatcher_proc.terminate()
+    assert remote_accumulator == local_accumulator
