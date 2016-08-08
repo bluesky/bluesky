@@ -27,7 +27,7 @@ class Publisher:
         self._host = host
         self._port = int(port)
         self._RE = RE
-        url = "tcp://%s:%d" % (host, port)
+        url = "tcp://%s:%d" % (self.host, self.port)
         self._fmt_string = '{hostname} {pid} {RE_id} {{name}} {{doc}}'.format(
             hostname=socket.gethostname(),
             pid=os.getpid(),

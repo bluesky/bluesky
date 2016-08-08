@@ -46,14 +46,14 @@ class RemoteDispatcher(Dispatcher):
         >>> dispatcher.subscribe(LivePlot('y', 'x'))
         >>> dispatcher.start()
         """
+        self._host = host
+        self._port = int(port)
         self._context = zmq.asyncio.Context()
         self._socket = self._context.socket(zmq.SUB)
-        url = "tcp://%s:%d" % (host, port)
+        url = "tcp://%s:%d" % (self.host, self.port)
         self._socket.connect(url)
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self.event_timeout = event_timeout
-        self._host = host
-        self._port = port
 
         def is_our_message(hostname, pid, RE_id):
             # Close over filters and decide if this message applies to this
