@@ -43,7 +43,7 @@ class Publisher:
 
     @property
     def port(self):
-        return self._post
+        return self._port
 
     def __call__(self, name, doc):
         message = self._fmt_string.format(name=name, doc=doc)
