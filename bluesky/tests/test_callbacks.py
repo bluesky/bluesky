@@ -269,7 +269,7 @@ def test_zmq(fresh_RE):
         main(5567, 5568)
     forwarder_proc = multiprocessing.Process(target=forwarder, daemon=True)
     forwarder_proc.start()
-    time.sleep(2)
+    time.sleep(5)  # Give this plenty of time to start up.
 
     # COMPONENT 2 
     # Run a Publisher and a RunEngine in this main process.
@@ -295,6 +295,7 @@ def test_zmq(fresh_RE):
     dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher,
                                               daemon=True, args=(queue,))
     dispatcher_proc.start()
+    time.sleep(5)  # As above, give this plenty of time to start.
 
     # Generate two documents. The Publisher will send them to the forwarder
     # device over 5567, and the forwarder will send them to the
