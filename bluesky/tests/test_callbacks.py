@@ -7,10 +7,7 @@ from bluesky.callbacks.zmqsub import RemoteDispatcher
 from bluesky.spec_api import mesh
 from bluesky.tests.utils import setup_test_run_engine
 from bluesky.tests.utils import _print_redirect
-import contextlib
 import multiprocessing
-import sys
-import tempfile
 import time
 import pytest
 # import numpy as numpy
