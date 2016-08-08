@@ -18,7 +18,6 @@ for filename in filenames:
 
 
 def main(frontend_port, backend_port):
-
     try:
         context = zmq.Context(1)
         # Socket facing clients
@@ -30,7 +29,8 @@ def main(frontend_port, backend_port):
         # Socket facing services
         backend = context.socket(zmq.PUB)
         backend.bind("tcp://*:%d" % backend_port)
-
+        print("Receiving on %d; publishing to %d" % (frontend_port,
+                                                     backend_port))
         zmq.device(zmq.FORWARDER, frontend, backend)
     finally:
         frontend.close()
