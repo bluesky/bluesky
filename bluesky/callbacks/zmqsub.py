@@ -8,11 +8,11 @@ from ..utils import expiring_function
 from ..run_engine import Dispatcher, DocumentNames
 
 
+_loop = zmq.asyncio.ZMQEventLoop()
+asyncio.set_event_loop(_loop)
+
+
 class RemoteDispatcher(Dispatcher):
-
-    _loop = zmq.asyncio.ZMQEventLoop()
-    asyncio.set_event_loop(_loop)
-
     def __init__(self, host, port, *, filter_hostname=None, filter_pid=None,
                  filter_run_engine_id=None, event_timeout=None):
         """
