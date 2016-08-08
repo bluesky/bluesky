@@ -652,10 +652,10 @@ def get_history():
             return historydict.HistoryDict(':memory:')
 
 
-_QT_KICKER_INSTALLED = None
+_QT_KICKER_INSTALLED = {}
 
 
-def install_qt_kicker():
+def install_qt_kicker(loop=None):
     """Install a periodic callback to integrate qt and asyncio event loops
 
     If a version of the qt bindings are not already imported, this function
@@ -663,13 +663,13 @@ def install_qt_kicker():
 
     It is safe to call this function multiple times.
     """
-
+    if loop is None:
+        loop = asyncio.get_event_loop()
     global _QT_KICKER_INSTALLED
-    if _QT_KICKER_INSTALLED is not None:
+    if loop in _QT_KICKER_INSTALLED:
         return
     if not any(p in sys.modules for p in ['PyQt4', 'pyside', 'PyQt5']):
         return
-    import asyncio
     import matplotlib.backends.backend_qt5
     from matplotlib.backends.backend_qt5 import _create_qApp
     from matplotlib._pylab_helpers import Gcf
@@ -693,8 +693,7 @@ def install_qt_kicker():
         qApp.processEvents()
         loop.call_later(0.03, _qt_kicker)
 
-    loop = asyncio.get_event_loop()
-    _QT_KICKER_INSTALLED = loop.call_soon(_qt_kicker)
+    _QT_KICKER_INSTALLED[loop] = loop.call_soon(_qt_kicker)
 
 
 def apply_sub_factories(factories, plan):
