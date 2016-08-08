@@ -81,22 +81,22 @@ class RemoteDispatcher(Dispatcher):
         message = yield from self._socket.recv()
         hostname, pid, RE_id, name, doc = message.decode().split(' ', 4)
         doc = ast.literal_eval(doc)
-        self._loop.create_task(self._poll())
+        _loop.create_task(self._poll())
         start_time = time.time()  # for timeout, if used below
         yield from asyncio.sleep(0)  # Give scheduler second chance to switch.
         if self._is_our_message(hostname, pid, RE_id):
             if self.event_timeout is None or name != 'event':
-                self._loop.call_soon(self.process, DocumentNames[name],
+                _loop.call_soon(self.process, DocumentNames[name],
                                      doc)
                 pass
             else:
                 # This dummy function will execute self.process(name, doc)
                 # as long as it is called within `timeout` seconds
                 # `start_time`.
-                dummy = expiring_function(self.process, self._loop,
+                dummy = expiring_function(self.process, _loop,
                                           DocumentNames[name], doc)
-                self._loop.call_soon(dummy, start_time, self.event_timeout)
+                _loop.call_soon(dummy, start_time, self.event_timeout)
 
     def start(self):
-        self._loop.create_task(self._poll())
-        self._loop.run_forever()
+        _loop.create_task(self._poll())
+        _loop.run_forever()
