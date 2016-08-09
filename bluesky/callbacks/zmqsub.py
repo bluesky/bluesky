@@ -46,6 +46,7 @@ class RemoteDispatcher(Dispatcher):
         """
         self._host = host
         self._port = int(port)
+        self._running = False
         self._context = zmq.asyncio.Context()
         self._socket = self._context.socket(zmq.SUB)
         url = "tcp://%s:%d" % (self.host, self.port)
@@ -75,14 +76,16 @@ class RemoteDispatcher(Dispatcher):
 
     @asyncio.coroutine
     def _poll(self):
-        message = yield from self._socket.recv()
-        hostname, pid, RE_id, name, doc = message.decode().split(' ', 4)
-        doc = ast.literal_eval(doc)
-        _loop.create_task(self._poll())
-        yield from asyncio.sleep(0)  # Give scheduler second chance to switch.
-        if self._is_our_message(hostname, pid, RE_id):
-            _loop.call_soon(self.process, DocumentNames[name], doc)
+        while self._running:
+            message = yield from self._socket.recv()
+            hostname, pid, RE_id, name, doc = message.decode().split(' ', 4)
+            if self._is_our_message(hostname, pid, RE_id):
+                doc = ast.literal_eval(doc)
+                _loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
-        _loop.create_task(self._poll())
-        _loop.run_forever()
+        self._running = True
+        _loop.run_until_complete(self._poll())
+
+    def stop(self):
+        self._running = False
