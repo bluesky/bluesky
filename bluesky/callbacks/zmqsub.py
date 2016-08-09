@@ -8,13 +8,9 @@ from ..utils import expiring_function
 from ..run_engine import Dispatcher, DocumentNames
 
 
-_loop = zmq.asyncio.ZMQEventLoop()
-asyncio.set_event_loop(_loop)
-
-
 class RemoteDispatcher(Dispatcher):
     def __init__(self, host, port, *, filter_hostname=None, filter_pid=None,
-                 filter_run_engine_id=None):
+                 filter_run_engine_id=None, loop=None):
         """
         Dispatch documents received over a socket.
 
@@ -32,6 +28,7 @@ class RemoteDispatcher(Dispatcher):
         filter_run_engine_id : int, optional
             only process documents from a RunEngine with this Python id
             (memory address)
+        loop : zmq.asyncio.ZMQEventLoop, optional
 
         Example
         -------
@@ -44,6 +41,10 @@ class RemoteDispatcher(Dispatcher):
         >>> dispatcher.subscribe(LivePlot('y', 'x'))
         >>> dispatcher.start()
         """
+        if loop is None:
+            loop = zmq.asyncio.ZMQEventLoop()
+        self._loop = loop
+        asyncio.set_event_loop(self._loop)
         self._host = host
         self._port = int(port)
         self._recv_future = None
@@ -74,6 +75,10 @@ class RemoteDispatcher(Dispatcher):
     def port(self):
         return self._port
 
+    @property
+    def loop(self):
+        return self._loop
+
     @asyncio.coroutine
     def _poll(self):
         while True:
@@ -82,10 +87,10 @@ class RemoteDispatcher(Dispatcher):
             hostname, pid, RE_id, name, doc = message.decode().split(' ', 4)
             if self._is_our_message(hostname, pid, RE_id):
                 doc = ast.literal_eval(doc)
-                _loop.call_soon(self.process, DocumentNames[name], doc)
+                self._loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
-        _loop.run_until_complete(self._poll())
+        self._loop.run_until_complete(self._poll())
 
     def stop(self):
         if self._recv_future is not None:
