@@ -14,7 +14,7 @@ asyncio.set_event_loop(_loop)
 
 class RemoteDispatcher(Dispatcher):
     def __init__(self, host, port, *, filter_hostname=None, filter_pid=None,
-                 filter_run_engine_id=None, event_timeout=None):
+                 filter_run_engine_id=None):
         """
         Dispatch documents received over a socket.
 
@@ -32,8 +32,6 @@ class RemoteDispatcher(Dispatcher):
         filter_run_engine_id : int, optional
             only process documents from a RunEngine with this Python id
             (memory address)
-        event_timeout : float
-            expiring time for skipping an event
 
         Example
         -------
@@ -53,7 +51,6 @@ class RemoteDispatcher(Dispatcher):
         url = "tcp://%s:%d" % (self.host, self.port)
         self._socket.connect(url)
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
-        self.event_timeout = event_timeout
 
         def is_our_message(hostname, pid, RE_id):
             # Close over filters and decide if this message applies to this
@@ -82,20 +79,9 @@ class RemoteDispatcher(Dispatcher):
         hostname, pid, RE_id, name, doc = message.decode().split(' ', 4)
         doc = ast.literal_eval(doc)
         _loop.create_task(self._poll())
-        start_time = time.time()  # for timeout, if used below
         yield from asyncio.sleep(0)  # Give scheduler second chance to switch.
         if self._is_our_message(hostname, pid, RE_id):
-            if self.event_timeout is None or name != 'event':
-                _loop.call_soon(self.process, DocumentNames[name],
-                                     doc)
-                pass
-            else:
-                # This dummy function will execute self.process(name, doc)
-                # as long as it is called within `timeout` seconds
-                # `start_time`.
-                dummy = expiring_function(self.process, _loop,
-                                          DocumentNames[name], doc)
-                _loop.call_soon(dummy, start_time, self.event_timeout)
+            _loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
         _loop.create_task(self._poll())
