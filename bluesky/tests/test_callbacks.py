@@ -1,4 +1,5 @@
 from bluesky.run_engine import Msg
+import asyncio
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan
 from bluesky.callbacks import (CallbackCounter, LiveTable)
@@ -289,6 +290,7 @@ def test_zmq(fresh_RE):
         d = RemoteDispatcher('127.0.0.1', 5568)
         d.subscribe('all', put_in_queue)
         print("REMOTE IS READY TO START")
+        asyncio.get_event_loop().call_later(9, d.stop)
         d.start()
 
     queue = multiprocessing.Queue()

@@ -46,8 +46,7 @@ class RemoteDispatcher(Dispatcher):
         """
         self._host = host
         self._port = int(port)
-        self._running = False
-        self._recv_future = False
+        self._recv_future = None
         self._context = zmq.asyncio.Context()
         self._socket = self._context.socket(zmq.SUB)
         url = "tcp://%s:%d" % (self.host, self.port)
@@ -77,7 +76,7 @@ class RemoteDispatcher(Dispatcher):
 
     @asyncio.coroutine
     def _poll(self):
-        while self._running:
+        while True:
             self._recv_future = self._socket.recv()
 
             try:
@@ -93,11 +92,8 @@ class RemoteDispatcher(Dispatcher):
                 _loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
-        self._running = True
         _loop.run_until_complete(self._poll())
 
     def stop(self):
-        if self._running:
-            self._running = False
-            if self._recv_future is not None:
-                self._recv_future.cancel()
+        if self._recv_future is not None:
+            self._recv_future.cancel()
