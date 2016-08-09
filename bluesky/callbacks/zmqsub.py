@@ -78,14 +78,7 @@ class RemoteDispatcher(Dispatcher):
     def _poll(self):
         while True:
             self._recv_future = self._socket.recv()
-
-            try:
-                message = yield from self._recv_future
-            except asyncio.CancelledError:
-                break
-            finally:
-                self._recv_future = None
-
+            message = yield from self._recv_future
             hostname, pid, RE_id, name, doc = message.decode().split(' ', 4)
             if self._is_our_message(hostname, pid, RE_id):
                 doc = ast.literal_eval(doc)
@@ -97,3 +90,4 @@ class RemoteDispatcher(Dispatcher):
     def stop(self):
         if self._recv_future is not None:
             self._recv_future.cancel()
+            self._recv_future = None
