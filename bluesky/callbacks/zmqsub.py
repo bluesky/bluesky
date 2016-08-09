@@ -47,12 +47,12 @@ class RemoteDispatcher(Dispatcher):
         asyncio.set_event_loop(self._loop)
         self._host = host
         self._port = int(port)
-        self._recv_future = None
         self._context = zmq.asyncio.Context()
         self._socket = self._context.socket(zmq.SUB)
         url = "tcp://%s:%d" % (self.host, self.port)
         self._socket.connect(url)
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        self._task = None
 
         def is_our_message(hostname, pid, RE_id):
             # Close over filters and decide if this message applies to this
@@ -82,17 +82,17 @@ class RemoteDispatcher(Dispatcher):
     @asyncio.coroutine
     def _poll(self):
         while True:
-            self._recv_future = self._socket.recv()
-            message = yield from self._recv_future
+            message = yield from self._socket.recv()
             hostname, pid, RE_id, name, doc = message.decode().split(' ', 4)
             if self._is_our_message(hostname, pid, RE_id):
                 doc = ast.literal_eval(doc)
                 self._loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
-        self._loop.run_until_complete(self._poll())
+        self._task = self._loop.create_task(self._poll())
+        self._loop.run_forever()
 
     def stop(self):
-        if self._recv_future is not None:
-            self._recv_future.cancel()
-            self._recv_future = None
+        if self._task is not None:
+            self._task.cancel()
+        self._task = None
