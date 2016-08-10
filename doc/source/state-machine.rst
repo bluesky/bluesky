@@ -158,7 +158,7 @@ again, the RunEngine resumes.
 
     shutter = EpicsSignal('XF:23ID1-PPS{PSh}Pos-Sts')  # main shutter PV
 
-    sus = SuspendBoolHigh(signal)
+    sus = SuspendBoolHigh(shutter)
     RE.install_suspender(sus)
 
 The above is all that is required. It will watch the PV indefinitely.
