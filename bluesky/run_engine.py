@@ -777,12 +777,75 @@ class RunEngine:
             self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
             self._response_stack.append(None)
             # if there is a pre plan add on top of the wait
+
             if pre_plan is not None:
-                self._plan_stack.append(ensure_generator(pre_plan))
+                fut = asyncio.run_coroutine_threadsafe(
+                    self._simple_run(ensure_generator(pre_plan),
+                                     whitelist=('set', 'wait',
+                                                'stop', 'null')),
+                    self.loop)
+                self._plan_stack.append(
+                    single_gen(Msg('wait_for', None, [fut])))
                 self._response_stack.append(None)
-            # The event loop is still running. The pre_plan will be processed,
-            # and then the RunEngine will be hung up on processing the
-            # 'wait_for' message until `fut` is set.
+
+    @asyncio.coroutine
+    def _simple_run(self, plan, whitelist=None, blacklist=None):
+        ret = None
+        expt = None
+        if whitelist is not None:
+            whitelist = set(whitelist)
+        while True:
+            try:
+                yield from asyncio.sleep(0, loop=self.loop)
+                if expt is not None:
+                    msg = plan.throw(expt)
+                else:
+                    msg = plan.send(ret)
+
+                # if we have a message hook, call it
+                if self.msg_hook is not None:
+                    self.msg_hook(msg)
+
+                if whitelist is not None and msg.command not in whitelist:
+                    raise Exception("{!r} not one of blessed "
+                                    "commands {}".format(msg.command,
+                                                         whitelist))
+                if blacklist is not None and msg.command in blacklist:
+                    raise Exception('{!r} is in banned list of '
+                                    'commands {}'.format(msg.command,
+                                                         blacklist))
+
+                self._objs_seen.add(msg.obj)
+                # try to look up the coroutine to execute the command
+                try:
+                    coro = self._command_registry[msg.command]
+                    # replace KeyError with a local sub-class and go
+                    # to top of the loop
+                except KeyError:
+                    expt = InvalidCommand(msg.command)
+                    continue
+
+                # try to finally run the command the user asked for
+                try:
+                    # this is one of two places that 'async'
+                    # exceptions (coming in via throw) can be
+                    # raised
+                    response = yield from coro(msg)
+                    # special case `CancelledError` and let the outer
+                    # exception block deal with it.
+                except asyncio.CancelledError:
+                    raise
+                # any other exception, stash it and go to the top of loop
+                except Exception as e:
+                    expt = e
+                    continue
+                # normal use, if it runs cleanly, stash the response and
+                # go to the top of the loop
+                else:
+                    ret = response
+                    continue
+            except StopIteration:
+                break
 
     def abort(self, reason=''):
         """
@@ -1117,7 +1180,16 @@ class RunEngine:
         for ``asyncio.await``
         """
         futs, = msg.args
-        yield from asyncio.wait(futs, loop=self.loop, **msg.kwargs)
+        for f in futs:
+            if hasattr(f, 'exception'):
+                ex = f.exception()
+                if ex:
+                    raise ex
+
+        futs = set(filter(lambda x: not (hasattr(x, 'done') and x.done()),
+                          futs))
+        if futs:
+            yield from asyncio.wait(futs, loop=self.loop, **msg.kwargs)
 
     @asyncio.coroutine
     def _open_run(self, msg):
