@@ -234,7 +234,8 @@ class RunEngine:
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
-        self._plan_stack = deque()  # stack of generators to work off of
+        self.__plan_stack = deque()  # stack of generators to work off of
+        self._plan_append_stack = deque()  # stack of generators to work off of
         self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
@@ -342,7 +343,8 @@ class RunEngine:
         self._objs_seen.clear()
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
-        self._plan_stack = deque()
+        self.__plan_stack = deque()
+        self._plan_append_stack = deque()
         self._msg_cache = deque()
         self._response_stack = deque([None])
         self._exception = None
@@ -572,10 +574,10 @@ class RunEngine:
         for wrapper_func in self.preprocessors:
             gen = wrapper_func(gen)
 
-        self._plan_stack.append(gen)
+        self.__plan_stack.append(gen)
         self._response_stack.append(None)
         if futs:
-            self._plan_stack.append(single_gen(Msg('wait_for', None, futs)))
+            self.__plan_stack.append(single_gen(Msg('wait_for', None, futs)))
             self._response_stack.append(None)
 
         # Intercept ^C.
@@ -617,8 +619,7 @@ class RunEngine:
         self._interrupted = False
         self._record_interruption('resume')
         new_plan = self._rewind()
-        self._plan_stack.append(new_plan)
-        self._response_stack.append(None)
+        self._plan_append_stack.append(new_plan)
         # Re-instate monitoring callbacks.
         for obj, (cb, kwargs) in self._monitor_params.items():
             obj.subscribe(cb, **kwargs)
@@ -766,15 +767,13 @@ class RunEngine:
             # rewind to the last checkpoint
             new_plan = self._rewind()
             # queue up the cached messages
-            self._plan_stack.append(new_plan)
-            self._response_stack.append(None)
+            self._plan_append_stack.append(new_plan)
             # if there is a post plan add it between the wait
             # and the cached messages
             if post_plan is not None:
-                self._plan_stack.append(ensure_generator(post_plan))
-                self._response_stack.append(None)
+                self._plan_append_stack.append(ensure_generator(post_plan))
             # add the wait on the future to the stack
-            self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
+            self._plan_append_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
             self._response_stack.append(None)
             # if there is a pre plan add on top of the wait
 
@@ -784,9 +783,8 @@ class RunEngine:
                                      whitelist=('set', 'wait',
                                                 'stop', 'null')),
                     self.loop)
-                self._plan_stack.append(
+                self._plan_append_stack.append(
                     single_gen(Msg('wait_for', None, [fut])))
-                self._response_stack.append(None)
 
     @asyncio.coroutine
     def _simple_run(self, plan, whitelist=None, blacklist=None):
@@ -938,14 +936,14 @@ class RunEngine:
                     if self._exception is not None:
                         # throw the exception at the current plan
                         try:
-                            msg = self._plan_stack[-1].throw(
+                            msg = self.__plan_stack[-1].throw(
                                 self._exception)
                         except Exception as e:
                             # The current plan did not handle it,
                             # maybe the next plan (if any) would like
                             # to try
-                            self._plan_stack.pop()
-                            if len(self._plan_stack):
+                            self.__plan_stack.pop()
+                            if len(self.__plan_stack):
                                 self._exception = e
                                 continue
                             # no plans left and still an unhandled exception
@@ -958,14 +956,20 @@ class RunEngine:
                             self._exception = None
                     # The normal case of clean operation
                     else:
+                        # ingest any 'inserted' plans
+                        while len(self._plan_append_stack):
+                            self.__plan_stack.append(
+                                self._plan_append_stack.popleft())
+                            self._response_stack.append(None)
+
                         resp = self._response_stack.pop()
                         try:
-                            msg = self._plan_stack[-1].send(resp)
+                            msg = self.__plan_stack[-1].send(resp)
                         # We have exhausted the top generator
                         except StopIteration:
                             # pop the dead generator go back to the top
-                            self._plan_stack.pop()
-                            if len(self._plan_stack):
+                            self.__plan_stack.pop()
+                            if len(self.__plan_stack):
                                 continue
                             # or reraise to get out of the infinite loop
                             else:
@@ -974,8 +978,8 @@ class RunEngine:
                         except Exception as e:
                             # pop the dead plan, stash the exception and
                             # go to the top of the loop
-                            self._plan_stack.pop()
-                            if len(self._plan_stack):
+                            self.__plan_stack.pop()
+                            if len(self.__plan_stack):
                                 self._exception = e
                                 continue
                             # or reraise to get out of the infinite loop
@@ -1098,7 +1102,7 @@ class RunEngine:
                     self.log.error("Failed to close run %r. Error: %r",
                                    self._run_start_uid, exc)
 
-            for p in self._plan_stack:
+            for p in self.__plan_stack:
                 try:
                     p.close()
                 except RuntimeError as e:
