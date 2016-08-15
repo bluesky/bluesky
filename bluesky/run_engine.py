@@ -620,6 +620,7 @@ class RunEngine:
         self._record_interruption('resume')
         new_plan = self._rewind()
         self._plan_append_stack.append(new_plan)
+        print(self._plan_append_stack)
         # Re-instate monitoring callbacks.
         for obj, (cb, kwargs) in self._monitor_params.items():
             obj.subscribe(cb, **kwargs)
@@ -773,7 +774,8 @@ class RunEngine:
             if post_plan is not None:
                 self._plan_append_stack.append(ensure_generator(post_plan))
             # add the wait on the future to the stack
-            self._plan_append_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
+            self._plan_append_stack.append(
+                single_gen(Msg('wait_for', None, [fut, ])))
             self._response_stack.append(None)
             # if there is a pre plan add on top of the wait
 
@@ -788,6 +790,7 @@ class RunEngine:
 
     @asyncio.coroutine
     def _simple_run(self, plan, whitelist=None, blacklist=None):
+        print('running simple')
         ret = None
         expt = None
         if whitelist is not None:
@@ -796,6 +799,7 @@ class RunEngine:
             try:
                 yield from asyncio.sleep(0, loop=self.loop)
                 if expt is not None:
+                    print('throw')
                     msg = plan.throw(expt)
                 else:
                     msg = plan.send(ret)
@@ -844,6 +848,8 @@ class RunEngine:
                     continue
             except StopIteration:
                 break
+            finally:
+                print('BAILED')
 
     def abort(self, reason=''):
         """
@@ -918,6 +924,7 @@ class RunEngine:
         try:
             self.state = 'running'
             while True:
+                print('top of loop')
                 try:
                     # This 'yield from' must be here to ensure that
                     # this coroutine breaks out of its current behavior
@@ -958,6 +965,10 @@ class RunEngine:
                     else:
                         # ingest any 'inserted' plans
                         while len(self._plan_append_stack):
+                            print('--')
+                            print(self._plan_append_stack)
+                            print(self.__plan_stack)
+
                             self.__plan_stack.append(
                                 self._plan_append_stack.popleft())
                             self._response_stack.append(None)
