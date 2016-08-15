@@ -13,12 +13,8 @@ from . import plan_patterns
 
 from .utils import (Struct, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists,
-                    all_safe_rewind, Msg, ensure_generator, single_gen)
-
-
-def _short_uid(label, truncate=6):
-    "Return a readable but unique id like 'label-fjfi5a'"
-    return '-'.join([label, str(uuid.uuid4())[:truncate]])
+                    all_safe_rewind, Msg, ensure_generator, single_gen,
+                    short_uid as _short_uid)
 
 
 def make_decorator(wrapper):
@@ -322,7 +318,7 @@ def read(obj):
     return (yield Msg('read', obj))
 
 
-def monitor(obj, *args, name=None, **kwargs):
+def monitor(obj, *, name=None, **kwargs):
     """
     Asynchronously monitor for new values and emit Event documents.
 
@@ -345,7 +341,7 @@ def monitor(obj, *args, name=None, **kwargs):
     --------
     `bluesky.plans.unmonitor`
     """
-    return (yield Msg('monitor', obj, *args, name=name, **kwargs))
+    return (yield Msg('monitor', obj, name=name, **kwargs))
 
 
 def unmonitor(obj):
@@ -1164,7 +1160,8 @@ def monitor_during_wrapper(plan, signals):
     --------
     `bluesky.plans.fly_during_wrapper`
     """
-    monitor_msgs = [Msg('monitor', sig) for sig in signals]
+    monitor_msgs = [Msg('monitor', sig, name=sig.name + '-monitor')
+                    for sig in signals]
     unmonitor_msgs = [Msg('unmonitor', sig) for sig in signals]
 
     def insert_after_open(msg):

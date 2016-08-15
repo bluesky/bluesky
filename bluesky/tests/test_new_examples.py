@@ -165,17 +165,18 @@ def test_monitor_during_wrapper():
         yield from [Msg('open_run'), Msg('null'), Msg('close_run'),
                     Msg('open_run'), Msg('null'), Msg('close_run')]
 
-    processed_plan = list(monitor_during_wrapper(plan(), ['foo']))
+    processed_plan = list(monitor_during_wrapper(plan(), [det]))
     expected = 2 * [Msg('open_run'),
-                    Msg('monitor', 'foo'),  # inserted
+                    # inserted
+                    Msg('monitor', det, name=(det.name + '-monitor')),
                     Msg('null'),
-                    Msg('unmonitor', 'foo'),  # inserted
+                    Msg('unmonitor', det),  # inserted
                     Msg('close_run')]
 
     strip_group(processed_plan)
     assert processed_plan == expected
 
-    processed_plan = list(monitor_during_decorator(['foo'])(plan)())
+    processed_plan = list(monitor_during_decorator([det])(plan)())
     strip_group(processed_plan)
     assert processed_plan == expected
 
