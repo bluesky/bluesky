@@ -21,7 +21,7 @@ from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     RequestAbort, RequestStop,  RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
-                    single_gen)
+                    single_gen, short_uid)
 
 
 class RunEngineStateMachine(StateMachine):
@@ -1249,7 +1249,7 @@ class RunEngine:
             raise ValueError("The 'monitor' Msg does not accept positional "
                              "arguments.")
         kwargs = dict(msg.kwargs)
-        name = kwargs.pop('name', new_uid()[:6] + '_monitor')
+        name = kwargs.pop('name', short_uid('monitor'))
 
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'monitor' message was sent but no "

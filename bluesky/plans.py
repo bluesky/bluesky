@@ -13,12 +13,8 @@ from . import plan_patterns
 
 from .utils import (Struct, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists,
-                    all_safe_rewind, Msg, ensure_generator, single_gen)
-
-
-def _short_uid(label, truncate=6):
-    "Return a readable but unique id like 'label-fjfi5a'"
-    return '-'.join([label, str(uuid.uuid4())[:truncate]])
+                    all_safe_rewind, Msg, ensure_generator, single_gen,
+                    short_uid as _short_uid)
 
 
 def make_decorator(wrapper):
