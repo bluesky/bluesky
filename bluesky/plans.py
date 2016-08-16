@@ -5,6 +5,7 @@ import itertools
 from itertools import chain
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable, defaultdict, deque, ChainMap
+import time
 
 import numpy as np
 from boltons.iterutils import chunked
@@ -14,7 +15,7 @@ from . import plan_patterns
 from .utils import (Struct, Subs, normalize_subs_input,
                     separate_devices, apply_sub_factories, update_sub_lists,
                     all_safe_rewind, Msg, ensure_generator, single_gen,
-                    short_uid as _short_uid)
+                    short_uid as _short_uid, RampFail)
 
 
 def make_decorator(wrapper):
@@ -2851,6 +2852,86 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
                               x_motor.position, y_motor.position,
                               x_range, y_range, dr, nth, tilt=tilt,
                               per_step=per_step, md=md))
+
+
+def ramp_plan(go_plan,
+              monitor_sig,
+              inner_plan_func,
+              timeout=None,
+              period=None, md=None):
+    '''Take data while ramping one or more positioners.
+
+    The pseudo code for this plan is ::
+
+       sts = (yield from go_plan)
+
+       yield from open_run()
+       yield from inner_plan_func()
+       while not st.done:
+           yield from inner_plan_func()
+       yield from inner_plan_func()
+
+       yield from close_run()
+
+    Parameters
+    ----------
+    go_plan : generator
+        plan to start the ramp.  This will be run inside of a open/close
+        run.
+
+        This plan must return a `ophyd.StatusBase` object.
+
+    inner_plan_func : generator function
+        generator which takes no input
+
+        This will be called for every data point.  This should create
+        one or more events.
+
+    timeout : float, optional
+        If not None, the maximum time the ramp can run.
+
+        In seconds
+
+    period : fload, optional
+        If not None, take data no faster than this.  If None, take
+        data as fast as possible
+
+        If running the inner plan takes longer than `period` than take
+        data with no dead time.
+
+        In seconds.
+    '''
+    if md is None:
+        md = {}
+
+    @monitor_during_decorator((monitor_sig,))
+    @run_decorator(md=md)
+    def polling_plan():
+        fail_time = None
+        if timeout is not None:
+            # sort out if we should watch the clock
+            fail_time = time.time() + timeout
+
+        # take a 'pre' data point
+        yield from inner_plan_func()
+        # start the ramp
+        status = (yield from go_plan)
+
+        while not status.done:
+            start_time = time.time()
+            yield from inner_plan_func()
+            if fail_time is not None:
+                if time.time() > fail_time:
+                    raise RampFail()
+            if period is not None:
+                cur_time = time.time()
+                wait_time = (start_time + period) - cur_time
+                if wait_time > 0:
+                    yield from sleep(wait_time)
+            # take a 'post' data point
+        yield from inner_plan_func()
+
+    return (yield from polling_plan())
 
 
 # The code below adds no new logic, but it wraps the generators above in
