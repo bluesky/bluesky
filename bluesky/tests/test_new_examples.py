@@ -22,6 +22,7 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            inject_md_wrapper)
 from bluesky.utils import all_safe_rewind
 
+
 class DummyMover:
     def __init__(self, name):
         self._value = 0

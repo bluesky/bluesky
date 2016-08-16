@@ -7,14 +7,16 @@ from bluesky.run_engine import (RunEngineStateMachine,
                                 NoReplayAllowed)
 from bluesky import Msg
 from functools import partial
-from bluesky.examples import det, Mover, Flyer, SynGauss, Mover
+from bluesky.examples import det, Mover, Flyer, SynGauss
 from bluesky.plans import trigger_and_read
 import bluesky.plans as bp
 from bluesky.tests.utils import _print_redirect, MsgCollector
 
 
 def test_states():
-    assert RunEngineStateMachine.States.states() == ['idle', 'running', 'paused']
+    assert RunEngineStateMachine.States.states() == ['idle',
+                                                     'running',
+                                                     'paused']
 
 
 def test_verbose(fresh_RE):
