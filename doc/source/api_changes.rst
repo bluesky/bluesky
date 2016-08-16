@@ -1,6 +1,35 @@
 Release Notes
 =============
 
+v0.6.3
+------
+
+Enhancements
+^^^^^^^^^^^^
+* Change how "subscription factories" are handled, making them configurable
+  through global state.
+* Make PeakStats configurable through global state.
+* Add an experimental utility for passing documents over a network and
+  processing them on a separate process or host, using 0MZ.
+* Add ``monitor_duruing_wrapper`` and corresponding decorator.
+* Add ``stage_wrapper`` and corresponding decorator.
+* Built-in plans return the run uid that they generated.
+* Add a new ``ramp_plan`` for taking data while polling the status of a
+  movement.
+
+Bug Fixes
+^^^^^^^^^
+* Boost performance by removing unneeded "sleep" step in message processing.
+* Fix bug related to rewinding in preparation for resuming.
+
+API Changes
+^^^^^^^^^^^
+* Remove the ``planify`` decorator and the plan context managers. These were
+  experimental and ultimately proved problematic because they make it difficult
+  to pass through return values cleanly.
+* Remove "lossy" subscriptions feature, rendered unnecessary by the utility for
+  processing documents in separate processes (see Enhancements, above).
+
 v0.6.2
 ------
 
