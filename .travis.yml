@@ -53,13 +53,14 @@ before_install:
 
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
-  - conda create -n testenv nose python=$TRAVIS_PYTHON_VERSION scipy jsonschema traitlets pytest coverage pip databroker ophyd historydict boltons doct pcaspy pyepics super_state_machine xray-vision lmfit jinja2 icu pyzmq -c lightsource2 -c conda-forge -c soft-matter
+  - conda create -n testenv nose python=$TRAVIS_PYTHON_VERSION scipy jsonschema traitlets pytest coverage pip databroker ophyd historydict boltons doct pyepics super_state_machine xray-vision lmfit jinja2 icu pyzmq mongoquery -c lightsource2 -c conda-forge -c soft-matter
   - source activate testenv
   - 'pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model'
   - conda remove metadatastore databroker filestore --yes
   - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
   - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
   - 'pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore'
+  - 'pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds'
   - pip install codecov
   - python setup.py install
   # Need to clean the python build directory (and other cruft) or pytest is
