@@ -65,6 +65,10 @@ class PlanHalt(GeneratorExit):
     pass
 
 
+class RampFail(RuntimeError):
+    ...
+
+
 PLAN_TYPES = (types.GeneratorType,)
 try:
     from types import CoroutineType

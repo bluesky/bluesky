@@ -12,6 +12,8 @@ def fresh_RE(request):
     RE.ignore_callback_exceptions = False
     return RE
 
+RE = fresh_RE
+
 
 @pytest.fixture(scope='function')
 def motor_det(request):
@@ -19,3 +21,21 @@ def motor_det(request):
     det = SynGauss('det', motor, 'motor', center=0, Imax=1,
                    sigma=1, exposure_time=0)
     return motor, det
+
+
+@pytest.fixture(scope='function')
+def db(request):
+    """Return a data broker
+    """
+    from portable_mds.sqlite.mds import MDS
+    from databroker import Broker
+    import tempfile
+    import shutil
+    td = tempfile.mkdtemp()
+
+    def delete_tmpdir():
+        shutil.rmtree(td)
+
+    request.addfinalizer(delete_tmpdir)
+
+    return Broker(MDS({'directory': td}), None)

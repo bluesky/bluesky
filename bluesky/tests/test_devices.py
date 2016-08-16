@@ -4,22 +4,10 @@ from bluesky.utils import ancestry, share_ancestor, separate_devices
 from bluesky.plans import trigger_and_read
 from bluesky import Msg
 import pytest
+from bluesky.tests import requires_ophyd, ophyd
 
-# some module level globals.
-ophyd = None
-reason = ''
-
-try:
-    import ophyd
+if ophyd:
     from ophyd import Component as Cpt, Device, Signal
-    from ophyd import setup_ophyd
-except ImportError as ie:
-    # pytestmark = pytest.mark.skip
-    ophyd = None
-    reason = str(ie)
-else:
-    setup_ophyd()
-    # define the classes only if ophyd is available
 
     class A(Device):
         s1 = Cpt(Signal, value=0)
@@ -32,9 +20,6 @@ else:
     class DCM(Device):
         th = Cpt(Signal, value=0)
         x = Cpt(Signal, value=0)
-
-# define a skip condition based on if ophyd is available or not
-requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
 
 
 @requires_ophyd
