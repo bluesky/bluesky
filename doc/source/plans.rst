@@ -211,6 +211,7 @@ initial position.
     baseline_wrapper
     relative_set_wrapper
     reset_positions_wrapper
+    stage_wrapper
     lazily_stage_wrapper
 
 
