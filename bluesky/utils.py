@@ -657,6 +657,7 @@ def get_history():
 
 
 _QT_KICKER_INSTALLED = {}
+_NB_KICKER_INSTALLED = {}
 
 
 def install_qt_kicker(loop=None):
@@ -698,6 +699,33 @@ def install_qt_kicker(loop=None):
         loop.call_later(0.03, _qt_kicker)
 
     _QT_KICKER_INSTALLED[loop] = loop.call_soon(_qt_kicker)
+
+
+def install_nb_kicker(loop=None):
+    """
+    The RunEngine Event Loop interferes with the qt event loop. Here we
+    kick it to keep it going.
+
+    This works with the notebook, where `install_qt_kicker` does not.
+
+    Calling this function multiple times has no effect.
+    """
+    import matplotlib
+    if loop is None:
+        loop = asyncio.get_event_loop()
+    global _NB_KICKER_INSTALLED
+    if loop in _NB_KICKER_INSTALLED:
+        return
+    def _nbagg_kicker():
+        # This is more brute-force variant of the _qt_kicker function used
+        # inside install_qt_kicker.
+        for f_mgr in matplotlib._pylab_helpers.Gcf.get_all_fig_managers():
+            if f_mgr.canvas.figure.stale:
+                f_mgr.canvas.draw()
+
+        loop.call_later(0.03, _nbagg_kicker)
+
+    _NB_KICKER_INSTALLED[loop] = loop.call_soon(_nbagg_kicker)
 
 
 def apply_sub_factories(factories, plan):
