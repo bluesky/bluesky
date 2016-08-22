@@ -409,7 +409,7 @@ def tw(motor, step, time=None, *, md=None):
 
 @planify
 def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
-            time=None, *, per_step=None, md=None):
+            time=None, *, tilt=0.0, per_step=None, md=None):
     '''Absolute fermat spiral scan, centered around (0, 0)
 
     Parameters
@@ -432,6 +432,8 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
         radius gets divided by this
     time : float, optional
         applied to any detectors that have a `count_time` setting
+    tilt : float, optional
+        Tilt angle in radians, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -455,7 +457,7 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
     plan_stack = deque()
     with plans.subs_context(plan_stack, subs):
         plan = plans.spiral_fermat(gs.DETS, x_motor, y_motor, x_start, y_start,
-                                   x_range, y_range, dr, factor,
+                                   x_range, y_range, dr, factor, tilt=tilt,
                                    per_step=per_step, md=md)
         plan = baseline_wrapper(plan, [x_motor, y_motor] + gs.BASELINE_DEVICES)
         plan = configure_count_time_wrapper(plan, time)
@@ -465,7 +467,7 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
 
 @planify
 def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
-           per_step=None, md=None):
+           tilt=0.0, per_step=None, md=None):
     '''Relative fermat spiral scan
 
     Parameters
@@ -484,6 +486,8 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
         radius gets divided by this
     time : float, optional
         applied to any detectors that have a `count_time` setting
+    tilt : float, optional
+        Tilt angle in radians, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -502,15 +506,15 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
     md = ChainMap(md, {'plan_name': 'fermat',
                        gs.MD_TIME_KEY: time})
     plan = afermat(x_motor, y_motor, x_motor.position, y_motor.position,
-                   x_range, y_range, dr, factor, time=time, per_step=per_step,
-                   md=md)
+                   x_range, y_range, dr, factor, time=time, tilt=tilt,
+                   per_step=per_step, md=md)
     plan = plans.reset_positions_wrapper(plan)  # return motors to starting pos
     return [plan]
 
 
 @planify
 def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
-            time=None, *, per_step=None, md=None):
+            time=None, *, tilt=0.0, per_step=None, md=None):
     '''Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -529,6 +533,8 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
         Number of theta steps
     time : float, optional
         applied to any detectors that have a `count_time` setting
+    tilt : float, optional
+        Tilt angle in radians, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -552,8 +558,8 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
     plan_stack = deque()
     with plans.subs_context(plan_stack, subs):
         plan = plans.spiral(gs.DETS, x_motor, y_motor, x_start, y_start,
-                            x_range, y_range, dr, nth, per_step=per_step,
-                            md=md)
+                            x_range, y_range, dr, nth, tilt=tilt,
+                            per_step=per_step, md=md)
         plan = baseline_wrapper(plan, [x_motor, y_motor] + gs.BASELINE_DEVICES)
         plan = configure_count_time_wrapper(plan, time)
         plan_stack.append(plan)
@@ -562,7 +568,7 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
 
 @planify
 def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
-           per_step=None, md=None):
+           tilt=0.0, per_step=None, md=None):
     '''Relative spiral scan
 
     Parameters
@@ -581,6 +587,8 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
         Number of theta steps
     time : float, optional
         applied to any detectors that have a `count_time` setting
+    tilt : float, optional
+        Tilt angle in radians, default 0.0
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -599,7 +607,7 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
     md = ChainMap(md, {'plan_name': 'spiral',
                        gs.MD_TIME_KEY: time})
     plan = aspiral(x_motor, y_motor, x_motor.position, y_motor.position,
-                   x_range, y_range, dr, nth, time=time, per_step=per_step,
-                   md=md)
+                   x_range, y_range, dr, nth, time=time, tilt=tilt,
+                   per_step=per_step, md=md)
     plan = plans.reset_positions_wrapper(plan)  # return to starting pos
     return [plan]
