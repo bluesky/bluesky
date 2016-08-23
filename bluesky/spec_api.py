@@ -76,7 +76,8 @@ def setup_plot(*, motors, gs):
 
 
 def setup_ct_plot(*, num, motors, gs):
-    if num is not None and num > 1:
+    # If num is None, count runs until interrupted.
+    if num is None or num > 1:
         return setup_plot(motors=motors, gs=gs)
     return None
 
