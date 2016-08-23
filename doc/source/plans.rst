@@ -523,18 +523,81 @@ override ``multicount`` as the recorded plan name.
 Plan Preprocessors
 ------------------
 
-These "preprocessors" take in a plan and modify its contents on the fly.
-For example, ``relative_set`` rewrites all positions to be relative to the
+These "preprocessors" take in a plan and modify its contents on the fly.  For
+example, ``relative_set_wrapper`` rewrites all positions to be relative to the
 initial position.
 
 .. code-block:: python
 
     def relative_scan(detectors, motor, start, stop, num):
         absolute = scan(detectors, motor, start, stop, num)
-        relative = relative_set(absolute, [motor])
+        relative = relative_set_wrapper(absolute, [motor])
         yield from relative
 
 This is a subtle but remarkably powerful feature.
+
+Wrappers like ``relative_set_wrapper`` operate on a generator *instance*,
+like ``scan(...)``. There are corresponding decorator functions like
+``relative_set_decorator`` that operate on a generator
+*function* itself, like ``scan``.
+
+.. code-block:: python
+
+    # Using a decorator to modify a generator function
+    def relative_scan(detectors, motor, start, stop, num):
+
+        @relative_set_decorator([motor])
+        def inner_relative_scan():
+            yield from scan(detectors, motor, start, stop, num)
+
+        yield from inner_relative_scan()
+
+Incidentally, the name ``inner_relative_scan`` is just an internal variable,
+so why did we choose such a verbose name? Why not just name it ``f``? That
+would work, of course, but using a descriptive name can make debugging easier.
+When navigating gnarly, deeply nested tracebacks, it helps if internal variables
+have clear names.
+
+Revisiting the example of a custom plan from above, we can use the decorators
+to reduce boilerplate. These two implementation yield exactly the same sequence
+of messages.
+
+Before:
+
+.. code-block:: python
+
+    def multicount(dets, num=3, *, md=None):
+        for det in dets:
+            yield from bp.stage(det)
+        yield from bp.open_run(md=md)
+        for _ in range(num):
+            yield from bp.trigger_and_read(dets)
+        yield from bp.close_run()
+        for det in dets:
+            yield from bp.unstage(det)
+
+After:
+
+.. code-block:: python
+
+    def multicount(dets, num=3, *, md=None):
+
+        @bp.stage_decorator(dets)
+        @bp.run_decorator(md=md)
+        def inner_multicount():
+            for _ in range(num):
+                yield from bp.trigger_and_read(dets)
+
+        yield from inner_multicount()
+
+We gained some syntactical complexity but shedded some boilerplate code.
+
+Built-in Preprocessors
+++++++++++++++++++++++
+
+Each of the following functions, named ``<something>_wrapper``, operates on
+a generator instance. There are corresponding functions named
+``<something_decorator>`` that operate on a generator function.
 
 .. autosummary::
    :nosignatures:
@@ -552,30 +615,15 @@ This is a subtle but remarkably powerful feature.
     stage_wrapper
     lazily_stage_wrapper
 
+Custom Preprocessors
+++++++++++++++++++++
 
-These wrappers operate on a generator *instance*, like `scan(...)`. There are
-corresponding functions that operate on a generator *function*, like `scan`.
-They are named ``*_decorator``, corresponding to each ``*_wrapper`` above.
-
-.. code-block:: python
-
-    # Using a warpper to modify a generator instance
-    def relative_scan(detectors, motor, start, stop, num):
-        absolute = scan(detectors, motor, start, stop, num)
-        relative = relative_set(absolute, [motor])
-        yield from relative
-
-    # Using a decorator to modify a generator function
-    def relative_scan(detectors, motor, start, stop, num):
-
-        @relative_set_decorator([motor])
-        def inner():
-            yield from scan(detectors, motor, start, stop, num)
-
-        yield from inner()
+TO DO
 
 Plan Utilities
 --------------
+
+These are useful utilities for defining custom plans and plan preprocessors.
 
 .. autosummary::
    :toctree:
