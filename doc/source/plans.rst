@@ -816,7 +816,7 @@ To define a custom object-oriented Plan, follow this pattern. Here we define
     class Scan(Plan):
         __doc__ = scan.__doc__  # mirror the docstring of 'scan'
 
-        def __init__(detectors, motor, start, stop, num, *, md=None):
+        def __init__(self, detectors, motor, start, stop, num, *, md=None):
             self.detectors = detectors
             self.motor = motor
             self.start = start
@@ -829,7 +829,7 @@ To define a custom object-oriented Plan, follow this pattern. Here we define
                         self.num, md=self.md)
 
 
-This ``__init__`` method contains a lot of boilerplate code, assiging an
+This ``__init__`` method contains a lot of boilerplate code, assigning an
 attribute for each argument. For cases like this where a plan takes zero or
 more required arguments plus ``md``, the ``Plan`` class provides a shortcut
 using metaclass magic.
