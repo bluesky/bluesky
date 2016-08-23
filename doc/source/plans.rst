@@ -484,7 +484,7 @@ following pattern.
 
     from collections import ChainMap
 
-    def multicount(dets, num=3, md=None):
+    def multicount(dets, num=3, *, md=None):
         if md is None:
             md = {}
         md = ChainMap(md, 
@@ -591,31 +591,42 @@ Plan Utilities
 Object-Oriented-Style Plans
 ---------------------------
 
-These provide an alternative interface to plans. The plan becomes a reusable
-object, whose parameters can be adjusted interactively between uses.
+These provide an alternative interface to plans that is convenient for some
+workflows. The plan becomes a reusable object: unlike a generator instance, it
+is not "exhuasted" after the first use.
 
-.. ipython:: python
+.. code-block:: python
 
     from bluesky.plans import Scan
     from bluesky.examples import motor, det, det3
-    plan = Scan([det], motor, 1, 5, 10)
-    RE(plan)
-    RE(plan)
+    plan = Scan([det], motor, 1, 3, 3)  # a "reusable" object-oriented plan
 
-Any of the plan's parameters can be updated individually.
+When it is passed to the RunEngine (in general, when it is iterated over) it
+re-instantiates a generator automatically using the same parameters.
 
-.. ipython:: python
+.. code-block:: python
+
+    RE(plan)  # This is the same as before...
+    RE(plan)  # ...but this would not work with generators, only the OO plans.
+
+For each paramter there is an attribute that can be adjusted interactively.
+
+.. code-block:: python
 
     plan.num = 4  # change number of data points from 10 to 4
-    RE(plan)
     plan.detectors.append(det3)  # add another detector
-    RE(plan)
 
 The ``set`` method is a convenient way to update multiple parameters at once.
 
-.. ipython:: python
+.. code-block:: python
 
     plan.set(start=20, stop=25)
+
+Built-in Object-Oriented Plans
+++++++++++++++++++++++++++++++
+
+For each of the "pre-assembled" plans catalogued above, bluesky ships an
+object-oriented counterpart.
 
 .. autosummary::
    :nosignatures:
@@ -640,3 +651,45 @@ The ``set`` method is a convenient way to update multiple parameters at once.
     AdaptiveScan
     RelativeAdaptiveScan
     Tweak
+
+Custom Object-Oriented Plans
+++++++++++++++++++++++++++++
+
+To define a custom object-oriented Plan, follow this pattern. Here we define
+``Scan``, the object-oriented counterpart to ``scan``.
+
+.. code-block:: python
+
+    from bluesky.plans import Plan
+
+    class Scan(Plan):
+        __doc__ = scan.__doc__  # mirror the docstring of 'scan'
+
+        def __init__(detectors, motor, start, stop, num, *, md=None):
+            self.detectors = detectors
+            self.motor = motor
+            self.start = start
+            self.stop = stop
+            self.num = num
+            self.md = md
+
+        def _gen(self):
+            return scan(self.detectors, self.motor, self.start, self.stop,
+                        self.num, md=self.md)
+
+
+This ``__init__`` method contains a lot of boilerplate code, assiging an
+attribute for each argument. For cases like this where a plan takes zero or
+more required arguments plus ``md``, the ``Plan`` class provides a shortcut
+using metaclass magic.
+
+Optionally, the definition of ``__init__`` can be entirely removed and replaced
+by the line
+
+.. code-block:: python
+
+    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+
+which ``Plan`` uses to auto-generate an ``__init__`` at class definition
+time. If that is a little too "magical" for your taste, feel free to skip it
+and just write out the ``__init__`` method, as we did in the example above.
