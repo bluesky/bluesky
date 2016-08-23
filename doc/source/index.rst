@@ -4,7 +4,8 @@ Bluesky Data Collection Framework
 Bluesky is light-weight Python package for interactive data collection. There
 are three components:
 
-* *Messages,* simple, granular instructions,
+* A *Plan* --- an experimental procedures expressed as a iterable of
+  simple, granular instructions dubbed *Messages*
 * a *Run Engine,* which processes the messages and coordinates collection, 
 * and *Documents*, Python dictionaries containing data and metadata, organized
   in a
@@ -14,12 +15,33 @@ are three components:
 Basic Operation
 ---------------
 
+1. Make a "RunEngine", a kind of interpreter for plans. (It is initialized with
+   a dictionary of metadata --- here empty.)
+
 .. code-block:: python
 
-    from bluesky import RunEngine, Msg
-    RE = RunEngine()
-    plan = [Msg('set', motor), Msg('read', detector), ...]
-    RE(plan, f)  # where f is any function that does something with the data
+    from bluesky import RunEngine
+    RE = RunEngine({})
+
+2. Define a plan from scratch (as we do here) or use one of the numerous built-in
+plans.
+
+.. code-block:: python
+
+    from bluesky.plans import open_run, trigger_and_read, close_run
+    from bluesky.examples import det  # simulated hardware
+
+    def plan()
+        yield from open_run()
+        yield from trigger_and_read([det])
+        yield from close_run()
+
+3. Execute the plan, directing the generated "documents" to the print function
+or any other function that does something with the data (like save it).
+
+.. code-block:: python
+
+    RE(plan(), print)
 
 Key Features
 ------------
