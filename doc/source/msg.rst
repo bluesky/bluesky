@@ -1,10 +1,12 @@
-Message protocol
+.. _msg:
+
+Message Protocol
 ================
 
 Overview
 --------
 
-The `Msg` objects is a `namedtuple` subclass which has the fields
+The `bluesky.Msg` object is a `namedtuple` subclass which has the fields
 
 - command
 - obj
@@ -25,6 +27,10 @@ registered, but users can register their own functions to add custom commands.
 
 Commands
 --------
+
+.. warning::
+
+    This section of the documentation is incomplete.
 
 These are the 'built in' commands, some of which are deeply tied to the
 state of the `RunEnigne` instance.
