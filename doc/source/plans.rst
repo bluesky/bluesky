@@ -406,7 +406,7 @@ better to do the loop inside a custom plan, which we'll dub ``multicount``.
     RE(multicount(dets))
 
 In fact, instead of hard-coding 3, we could make it an argument configurable
-by the user. We can make tha configuration optioning by providing 3 as a
+by the user. We can make tha configuration optional by providing 3 as a
 default.
 
 .. code-block:: python
@@ -498,7 +498,7 @@ override ``multicount`` as the recorded plan name.
 
 .. note::
 
-    The built-in Python data structure ``ChainMap`` is a chain or mappings
+    The built-in Python data structure ``ChainMap`` is a chain of mappings
     (i.e., a sequence of dicts). It gives prioity to a the first mapping that
     defines a given key.
     
@@ -516,6 +516,9 @@ override ``multicount`` as the recorded plan name.
     Thus, ``a=1`` takes precedence of ``a=2``. We use it to give user-provided
     metadata precedence over a plan's hard-coded metadata in the event of a
     key collision.
+
+    See the `relevant section of the Python documentation <https://docs.python.org/3/library/collections.html#collections.ChainMap>`_
+    for more.
 
 Plan Preprocessors
 ------------------
