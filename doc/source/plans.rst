@@ -578,6 +578,8 @@ Plan Utilities
 --------------
 
 .. autosummary::
+   :toctree:
+   :nosignatures:
 
     pchain
     msg_mutator
