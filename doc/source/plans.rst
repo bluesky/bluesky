@@ -71,8 +71,8 @@ readings from ``det`` in real time.
 
 .. note::
 
-    Why ``[det]`` with square brackets and not just ``det``? It is common to
-    read a *list* of detectors as a group, like ``[det1, det2]``.
+    Why ``[det]`` and not just ``det``? It is common to read a *list* of
+    detectors as a group, like ``[det1, det2]``.
 
 Introspecting Plans
 -------------------
@@ -744,7 +744,7 @@ Object-Oriented-Style Plans
 
 These provide an alternative interface to plans that is convenient for some
 workflows. The plan becomes a reusable object: unlike a generator instance, it
-is not "exhuasted" after the first use.
+is not "exhausted" after the first use.
 
 .. code-block:: python
 
@@ -760,7 +760,7 @@ re-instantiates a generator automatically using the same parameters.
     RE(plan)  # This is the same as before...
     RE(plan)  # ...but this would not work with generators, only the OO plans.
 
-For each paramter there is an attribute that can be adjusted interactively.
+For each parameter there is an attribute that can be adjusted interactively.
 
 .. code-block:: python
 
