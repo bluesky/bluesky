@@ -446,7 +446,7 @@ Starting from the middle and explaining outward:
 Customizing metadata
 ++++++++++++++++++++
 
-Metadata can stored in a persistent file, specified by the user interactively
+Metadata can loaded from a persistent file, specified by the user interactively
 at execution time, or incorporated in a plan.
 
 To incorporate metadata in a plan, pass it to the ``open_run`` plan.
