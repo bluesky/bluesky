@@ -76,4 +76,4 @@ def test_timeout(RE):
     stop = time.time()
     elapsed = stop - start
 
-    assert 1 < elapsed < 1.1
+    assert 1 < elapsed < 1.2
