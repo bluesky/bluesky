@@ -693,6 +693,11 @@ Starting from the middle and explaining outward:
   the device is put into a ready, triggerable state and then restored to
   standby at the end of the plan.
 
+Plans with adaptive logic
++++++++++++++++++++++++++
+
+TO DO
+
 Customizing metadata (low level)
 ++++++++++++++++++++++++++++++++
 
