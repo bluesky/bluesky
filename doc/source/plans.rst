@@ -473,7 +473,7 @@ like ``scan(...)``. There are corresponding decorator functions like
     # Using a decorator to modify a generator function
     def relative_scan(detectors, motor, start, stop, num):
 
-        @relative_set_decorator([motor])
+        @relative_set_decorator([motor])  # unfamiliar syntax? -- see box below
         def inner_relative_scan():
             yield from scan(detectors, motor, start, stop, num)
 
@@ -484,6 +484,27 @@ so why did we choose such a verbose name? Why not just name it ``f``? That
 would work, of course, but using a descriptive name can make debugging easier.
 When navigating gnarly, deeply nested tracebacks, it helps if internal variables
 have clear names.
+
+.. note::
+
+    The decorator syntax --- the ``@`` --- is a succinct way of passing a
+    function to another function.
+
+    This:
+
+    .. code-block:: python
+
+        @g
+        def f(...):
+            pass
+
+        f(...)
+
+    is equivalent to
+
+    .. code-block:: python
+
+        g(f)(...)
 
 Revisiting the example of a custom plan from above, we can use the decorators
 to reduce boilerplate. These two implementation yield exactly the same sequence
