@@ -317,7 +317,7 @@ Multi-motor scans in any number of dimensions:
    relative_outer_product_scan
    scan_nd
 
-Two-dimensions scans that trace out spiral trajectories:
+Two-dimensional scans that trace out spiral trajectories:
 
 .. autosummary::
    :toctree:
