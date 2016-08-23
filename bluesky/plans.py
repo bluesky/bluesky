@@ -1336,6 +1336,27 @@ def stage_context(plan_stack, devices):
 
 
 def stage_wrapper(plan, devices):
+    """
+    'Stage' devices (i.e., prepare them for use, 'arm' them) and then unstage.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    devices : collection
+        list of devices to stage immediately on entrance and unstage on exit
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan with 'stage' and finally 'unstage' messages inserted
+
+    See Also
+    --------
+    `bluesky.plans.lazily_stage_wrapper`
+    `bluesky.plans.stage`
+    `bluesky.plans.unstage`
+    """
     devices = separate_devices(device.root for device in devices)
 
     def stage_devices():
