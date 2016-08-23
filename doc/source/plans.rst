@@ -29,8 +29,8 @@ understanding what follows.
             from bluesky import RunEngine
             RE = RunEngine({})
 
-        Close IPython when you are done, lest someone accidentally try to take
-        real data with your toy RunEngine!
+       Close IPython when you are done, lest someone accidentally try to take
+       real data with your toy RunEngine!
 
     3. If you are a scientist and Python user casually exploring this library,
        just define a toy ``RunEngine`` instance and carry on:
@@ -574,7 +574,7 @@ import the plans module like so.
 
     import bluesky.plans as bp
 
-What we referred to use ``count``, ``scan``, and so on above will in this
+What we referred to as ``count``, ``scan``, and so on above will in this
 section be referred to as ``bp.count``, ``bp.scan``, etc.
 
 .. code-block:: python
@@ -621,7 +621,7 @@ better to do the loop inside a custom plan, which we'll dub ``multicount``.
     RE(multicount(dets))
 
 In fact, instead of hard-coding 3, we could make it an argument configurable
-by the user. We can make tha configuration optional by providing 3 as a
+by the user. We can make the configuration optional by providing 3 as a
 default.
 
 .. code-block:: python
@@ -630,7 +630,7 @@ default.
         for _ in range(num):
             yield from bp.count(dets)
 
-But this still creates three runs --- there datasets --- for what we'd rather
+But this still creates three runs --- three datasets --- for what we'd rather
 think of as three events (rows) in one run. To fix that, we'll have to dive
 deeper, re-implementing ``count`` from scratch.
 
