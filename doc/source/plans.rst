@@ -72,8 +72,7 @@ readings from ``det`` in real time.
 .. note::
 
     Why ``[det]`` with square brackets and not just ``det``? It is common to
-    read a *list* of detectors as a group, like ``[det1, det2]``. In the
-    special case above where there is only one detector, we write ``[det]``.
+    read a *list* of detectors as a group, like ``[det1, det2]``.
 
 Introspecting Plans
 -------------------
