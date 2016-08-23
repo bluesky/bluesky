@@ -889,4 +889,7 @@ counterpart ``scan``.
   confusion, the argument names are different: non-SPEC-like plans have a
   ``num`` argument; SPEC-like plans have ``intervals`` instead.
 
+Global state
+++++++++++++
 
+TO DO
