@@ -385,9 +385,9 @@ it easy for a user-defined plan to pass in extra metadata.
 
     def master_plan():
         # ... insert code here to close shutter ...
-        yield from  bp.count([det], md={'is_dark_frame': True})
+        yield from bp.count([det], md={'is_dark_frame': True})
         # ... insert code here to open shutter ...
-        yield from  bp.count([det], md={'is_dark_frame': False})
+        yield from bp.count([det], md={'is_dark_frame': False})
 
 
 To enable users to pass in metadata that combines with and potentially
