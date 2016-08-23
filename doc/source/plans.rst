@@ -371,6 +371,21 @@ sections, below.
 Simple Custom Plans
 -------------------
 
+Loops
++++++
+
+TO DO
+
+Asynchronous data streams
++++++++++++++++++++++++++
+
+TO DO
+
+Pauses
+++++++
+
+TO DO
+
 Customizing metadata (high level)
 +++++++++++++++++++++++++++++++++
 
