@@ -466,8 +466,8 @@ overrides the hard-coded metadata, use the following pattern:
         yield from count(dets, num=num, md=md)
 
 For example, if the plan is called with the arguments
-``multicount([det], md={'plan_name': 'watermelon'})``, then ``watermelon`` will
-override ``multicount`` as the recorded plan name.
+``calib_count([det], md={'plan_name': 'watermelon'})``, then ``'watermelon'``
+will override ``'calib_count'`` as the recorded plan name.
 
 .. note::
 
