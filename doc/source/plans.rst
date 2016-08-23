@@ -197,15 +197,7 @@ There is another way to combine plans to accomodate this.
     RE(master_plan())
 
 The plan can employ control flow (``if`` blocks, ``for`` loops, etc.) and the
-full power of the Python language.
-
-.. code-block:: python
-
-    def master_plan():
-        "Run a plan several times, changing the step size each time."
-        for num in range(5, 10):
-            # Change the number of steps in the plan in each loop
-            yield from scan([det1, det2], motor, 1, 5, num)
+full power of the Python language. More examples follow.
 
 An Aside on ``yield`` and ``yield from``
 ----------------------------------------
@@ -299,9 +291,7 @@ their names are links: follow the links for usage details and more examples.
 Pre-assembled Plans
 +++++++++++++++++++
 
-These include plans with one- and multi-dimensional trajectories, plans with
-adaptive step sizes, and a plan that prompts the user for input between each
-step.
+Scans over time or one dimension in space:
 
 .. autosummary::
    :toctree:
@@ -314,17 +304,45 @@ step.
    relative_list_scan
    log_scan
    relative_log_scan
+
+Multi-motor scans in any number of dimensions:
+
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
    inner_product_scan
    outer_product_scan
    relative_inner_product_scan
    relative_outer_product_scan
    scan_nd
+
+Two-dimensional scans that trace out spiral trajectories:
+
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
    spiral
    spiral_fermat
    relative_spiral
    relative_spiral_fermat
+
+Scans with adaptive step sizes:
+
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
    adaptive_scan
    relative_adaptive_scan
+
+Misc:
+
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
    tweak
    fly
 
@@ -335,34 +353,34 @@ Stub Plans (ingredients for remixing)
    :nosignatures:
    :toctree:
 
-    trigger_and_read
     abs_set
-    rel_set
-    wait
-    sleep
     checkpoint
     clear_checkpoint
-    pause
-    deferred_pause
-    open_run
     close_run
-    create
-    save
-    trigger
-    read
-    monitor
-    unmonitor
-    kickoff
     collect
     configure
-    stage
-    unstage
-    subscribe
-    unsubscribe
-    wait_for
+    create
+    deferred_pause
+    kickoff
+    monitor
     null
     one_1d_step
     one_nd_step
+    open_run
+    pause
+    read
+    rel_set
+    save
+    sleep
+    stage
+    subscribe
+    trigger
+    trigger_and_read
+    unmonitor
+    unstage
+    unsubscribe
+    wait
+    wait_for
 
 We also have a number of wrapper functions, decorators, and utility functions
 that make building these easier. Examples and API documentation are in later
@@ -374,20 +392,40 @@ Simple Custom Plans
 Loops
 +++++
 
-TO DO
+Produce several runs, changing a parmeter each time.
 
-Asynchronous data streams
-+++++++++++++++++++++++++
+.. code-block:: python
 
-TO DO
+    def master_plan():
+        "Run a plan several times, changing the step size each time."
+        for num in range(5, 10):
+            # With each iteration, take more densely-spaced readings.
+            yield from scan([det1, det2], motor, 1, 5, num)
+
+Execute the sample plan, looping through different samples. Change the plan
+parameters depending on the sample.
+
+.. code-block:: python
+
+    sample_list = ['a', 'b', 'c']
+    sample_ranges = {'a': {'start': -5, 'stop': -1},
+                     'b': {'start': -1, 'stop': 1},
+                     'c': {'start': 1, 'stop': 5}}
+
+    def sample_plan(sample_list):
+        for sample in sample_list:
+            yield from abs_set(sample_plate, sample)
+            s_range = sample_ranges[sample]
+            md = {'sample': sample}
+            yield from scan(motor, num=10, md=md, **s_range)
 
 Pauses
 ++++++
 
 TO DO
 
-Customizing metadata (high level)
-+++++++++++++++++++++++++++++++++
+Customizing metadata
+++++++++++++++++++++
 
 Metadata can be loaded from a persistent file, specified by the user
 interactively at execution time, or incorporated in a plan.
@@ -403,6 +441,15 @@ it easy for a user-defined plan to pass in extra metadata.
         # ... insert code here to open shutter ...
         yield from bp.count([det], md={'is_dark_frame': False})
 
+By default, the ``count`` plan records the ``plan_name`` count. To customize
+the ``plan_name`` --- say, to differentiate separate *reasons* running a count
+--- you can override the metadata.
+
+.. code-block:: python
+
+    def calib_count(dets, num=3):
+        md = {'plan_name': 'calib_count'}
+        yield from count(dets, num=num, md=md)
 
 To enable users to pass in metadata that combines with and potentially
 overrides the hard-coded metadata, use the following pattern:
@@ -411,13 +458,12 @@ overrides the hard-coded metadata, use the following pattern:
 
     from collections import ChainMap
 
-    def multicount(dets, num=3, *, md=None):
+    def calib_count(dets, num=3, *, md=None):
         if md is None:
             md = {}
         md = ChainMap(md, 
-                      {'plan_name': 'multicount',
-                       'num': num})
-        # etc. -- the rest of multicount is unchanged
+                      {'plan_name': 'calib_count'})
+        yield from count(dets, num=num, md=md)
 
 For example, if the plan is called with the arguments
 ``multicount([det], md={'plan_name': 'watermelon'})``, then ``watermelon`` will
@@ -425,12 +471,11 @@ override ``multicount`` as the recorded plan name.
 
 .. note::
 
-    The built-in Python data structure ``ChainMap`` is a chain of mappings
-    (i.e., a sequence of dicts). It gives prioity to a the first mapping that
-    defines a given key.
+    The built-in Python data structure ``ChainMap`` is a sequence of
+    dictionaries (a "chain of mappings"). It gives prioity to a the first
+    mapping that defines a given key.
     
-    .. ipython:: python
-       :suppress:
+    .. ipython:: python :suppress:
 
         from collections import ChainMap
 
@@ -506,39 +551,7 @@ have clear names.
 
         g(f)(...)
 
-Revisiting the example of a custom plan from above, we can use the decorators
-to reduce boilerplate. These two implementation yield exactly the same sequence
-of messages.
-
-Before:
-
 .. code-block:: python
-
-    def multicount(dets, num=3, *, md=None):
-        for det in dets:
-            yield from bp.stage(det)
-        yield from bp.open_run(md=md)
-        for _ in range(num):
-            yield from bp.trigger_and_read(dets)
-        yield from bp.close_run()
-        for det in dets:
-            yield from bp.unstage(det)
-
-After:
-
-.. code-block:: python
-
-    def multicount(dets, num=3, *, md=None):
-
-        @bp.stage_decorator(dets)
-        @bp.run_decorator(md=md)
-        def inner_multicount():
-            for _ in range(num):
-                yield from bp.trigger_and_read(dets)
-
-        yield from inner_multicount()
-
-We gained some syntactical complexity but shedded some boilerplate code.
 
 Built-in Preprocessors
 ++++++++++++++++++++++
@@ -551,17 +564,17 @@ a generator instance. There are corresponding functions named
    :nosignatures:
    :toctree:
 
-    finalize_wrapper
-    subs_wrapper
-    inject_md_wrapper
-    run_wrapper
-    monitor_during_wrapper
-    fly_during_wrapper
     baseline_wrapper
+    finalize_wrapper
+    fly_during_wrapper
+    inject_md_wrapper
+    lazily_stage_wrapper
+    monitor_during_wrapper
     relative_set_wrapper
     reset_positions_wrapper
+    run_wrapper
     stage_wrapper
-    lazily_stage_wrapper
+    subs_wrapper
 
 Custom Preprocessors
 ++++++++++++++++++++
@@ -597,6 +610,11 @@ RunEngine when is attempts to execute the plan.
 
 Advanced Custom Plans
 ---------------------
+
+The ``per_step`` hook
++++++++++++++++++++++
+
+TO DO
 
 Reconstructing ``count`` from scratch
 +++++++++++++++++++++++++++++++++++++
@@ -671,55 +689,36 @@ deeper, re-implementing ``count`` from scratch.
 
 .. code-block:: python
 
-    def multicount(dets, num=3):
-        "Creates a single 'run'"
-        for det in dets:
-            yield from bp.stage(det)
-        yield from bp.open_run()
-        for _ in range(num):
-            yield from bp.trigger_and_read(dets)
-        yield from bp.close_run()
-        for det in dets:
-            yield from bp.unstage(det)
+    def multicount(dets, num=3, *, md=None):
+
+        @bp.stage_decorator(dets)
+        @bp.run_decorator(md=md)
+        def inner_multicount():
+            for _ in range(num):
+                yield from bp.trigger_and_read(dets)
+
+        yield from inner_multicount()
+
 
 Starting from the middle and explaining outward:
 
 * The ``trigger_and_read`` plan generates an "event" (a row of data) from
   reading ``dets``. This happens inside of a loop, ``num`` times.
-* The ``open_run`` and ``close_run`` plans designate the beginning and end of
-  a dataset.
-* The ``stage`` and ``unstage`` plans prime the hardware for data collection.
-  For some devices, this has no effect at all. But for others, it ensures that
-  the device is put into a ready, triggerable state and then restored to
-  standby at the end of the plan.
+* The ``run_decorator`` preprocessor designates the scope of one dataset.
+* The ``stage_decorator`` preprocessor addresses some hardware details. It
+  primes the hardware for data collection.  For some devices, this has no
+  effect at all. But for others, it ensures that the device is put into a
+  ready, triggerable state and then restored to standby at the end of the plan.
 
 Plans with adaptive logic
 +++++++++++++++++++++++++
 
 TO DO
 
-Customizing metadata (low level)
-++++++++++++++++++++++++++++++++
+Asynchronous data streams
++++++++++++++++++++++++++
 
-In plans built from scatch, such as our ``multicount`` example above, pass
-metadata to the ``open_run`` stub plan.
-
-.. code-block:: python
-
-    def multicount(dets, num=3):
-
-        # Define custom metadata.
-        md = {'plan_name': 'multicount',
-              'num': num}
-
-        for det in dets:
-            yield from bp.stage(det)
-        yield from bp.open_run(md=md)  # HERE
-        for _ in range(num):
-            yield from bp.trigger_and_read(dets)
-        yield from bp.close_run()
-        for det in dets:
-            yield from bp.unstage(det)
+TO DO
 
 Plan Utilities
 --------------
@@ -892,4 +891,37 @@ counterpart ``scan``.
 Global state
 ++++++++++++
 
-TO DO
+Bluesky ships ``bluesky.global_state.gs``, singleton ``GlobalState`` object
+that serves as a stash for configuration shared by the SPEC-like plans.
+
+In IPython, type ``gs??`` for an exhuastive list of its attributes. Highlights:
+
+======================= =======
+Attribute               Purpose
+======================= =======
+``gs.DETS``             the list of detectors
+``gs.TABLE_COLS``       list of field names to include in ``LiveTable``
+``gs.PLOT_Y``           field name to plot as y axis of ``LivePlot``
+``gs.OVERPLOT``         True or False; whether to replot to same axes
+``gs.FLYERS``           "flyable" devices to fly-scan during all plans
+``gs.BASELINE_DEVICES`` devices to read once before and after all plans
+======================= =======
+
+Another important one is ``gs.SUB_FACTORIES``, which requires some explaining.
+It maps a ``plan_name`` (e.g., ``'ascan'``) to *functions that return
+callbacks* to be subscribed to documents generated by that plan. Example:
+
+.. code-block:: python
+ 
+    def setup_livetable(*, motors,  gs):
+        return LiveTable(motors + [gs.PLOT_Y] + gs.TABLE_COLS)
+
+    gs.SUB_FACTORIES['ascan'] = [setup_livetable]
+
+The function can expect as arguments ``gs`` and any metadata generated by the
+plan --- in the example above, the list of motors. The function's signature is
+inspected automatically, and it is magically passed the correct parameters.
+
+The leading ``*`` in the function signature makes ``motors`` and ``gs``
+*required, keyword-only arguments*. Any custom functions must follow this
+pattern as well in order for the magic inspection to work properly.
