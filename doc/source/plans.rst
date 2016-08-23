@@ -24,7 +24,7 @@ understanding what follows.
        *without saving data*, start a new IPython session and define a clean
        RunEngine, which will not be configured to save data.
 
-        .. ipython:: python
+        .. code-block:: python
 
             from bluesky import RunEngine
             RE = RunEngine({})
@@ -35,7 +35,7 @@ understanding what follows.
     3. If you are a scientist and Python user casually exploring this library,
        just define a toy ``RunEngine`` instance and carry on:
 
-        .. ipython:: python
+        .. code-block:: python
 
             from bluesky import RunEngine
             RE = RunEngine({})
@@ -375,8 +375,8 @@ Simple Custom Plans
 Customizing metadata (high level)
 +++++++++++++++++++++++++++++++++
 
-Metadata can loaded from a persistent file, specified by the user interactively
-at execution time, or incorporated in a plan.
+Metadata can be loaded from a persistent file, specified by the user
+interactively at execution time, or incorporated in a plan.
 
 All of the pre-assembled plans also accept an ``md`` argument, which makes
 it easy for a user-defined plan to pass in extra metadata.
@@ -654,7 +654,7 @@ Starting from the middle and explaining outward:
 * The ``open_run`` and ``close_run`` plans designate the beginning and end of
   a dataset.
 * The ``stage`` and ``unstage`` plans prime the hardware for data collection.
-  For some devices, this has no affect at all. But for others, it ensures that
+  For some devices, this has no effect at all. But for others, it ensures that
   the device is put into a ready, triggerable state and then restored to
   standby at the end of the plan.
 
