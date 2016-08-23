@@ -321,10 +321,19 @@ class LiveRaster(CallbackBase):
 
     cmap : str or colormap, optional
        The color map to use
+
+    xlabel, ylabel : str, optional
+       Labels for the x and y axis
+
+    extent : scalars (left, right, bottom, top), optional
+       Passed through to `Axes.imshow`
+
+    aspect : str or float, optional
+       Passed through to `Axes.imshow`
     """
     def __init__(self, raster_shape, I, *,
                  clim=None, cmap='viridis',
-                 xlabel='x', ylabel='y', extent=None):
+                 xlabel='x', ylabel='y', extent=None, aspect='equal'):
         fig, ax = plt.subplots()
         self.I = I
         ax.set_xlabel(xlabel)
@@ -341,6 +350,7 @@ class LiveRaster(CallbackBase):
         self.raster_shape = raster_shape
         self.im = None
         self.extent = extent
+        self.aspect = aspect
 
     def start(self, doc):
         if self.im is not None:
@@ -348,7 +358,8 @@ class LiveRaster(CallbackBase):
         self._Idata = np.ones(self.raster_shape) * np.nan
         im = self.ax.imshow(self._Idata, norm=self._norm,
                             cmap=self.cmap, interpolation='none',
-                            extent=self.extent)
+                            extent=self.extent, aspect=self.aspect)
+
         self.im = im
         self.ax.set_title('scan {uid} [{sid}]'.format(sid=doc['scan_id'],
                                                       uid=doc['uid'][:6]))
