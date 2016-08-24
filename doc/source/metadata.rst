@@ -123,8 +123,8 @@ Example:
 .. ipython:: python
 
     from historydict import HistoryDict
-    hist = HistoryDict('metadata-cache.sqlite')
-    RE = RunEngine(hist)
+    h = HistoryDict('metadata-cache.sqlite')
+    RE = RunEngine(h)
     type(RE.md)
 
 Any metadata added to ``RE.md``, including the ``scan_id``, will be saved

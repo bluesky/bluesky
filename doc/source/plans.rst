@@ -44,8 +44,14 @@ understanding what follows.
 Executing Plans
 ---------------
 
-Define a ``count`` plan, which reads one or more detectors, and pass it to the
+Define a :func:`count` plan, which reads one or more detectors, and pass it to the
 RunEngine for execution.
+
+.. ipython:: python
+    :suppress:
+
+    from bluesky import RunEngine
+    RE = RunEngine({})
 
 .. ipython:: python
 
@@ -83,7 +89,7 @@ the plan before running it. It also allows to *modify* a plan on the fly, as
 we'll see later on.
 
 Bluesky provides a nice function for summarizing the action of a plan,
-``print_summary``. Here, we see that the plan ``count`` opens a "run" (i.e.,
+``print_summary``. Here, we see that the plan :func:`count` opens a "run" (i.e.,
 dataset), takes a reading, and marks the end of that run.
 
 .. ipython:: python
@@ -93,7 +99,7 @@ dataset), takes a reading, and marks the end of that run.
     from bluesky.plans import count, scan
     print_summary(count([det]))
 
-The plan ``scan`` moves a motor in steps and takes a reading at each position.
+The plan :func:`scan` moves a motor in steps and takes a reading at each position.
 
 
 .. ipython:: python
@@ -116,7 +122,7 @@ position.
 
 (Restoring the original position at the end of a ``relative_scan`` is a
 convention carried over from the data collection program SPEC, widely used in
-synchrontron science. It's possible to do this same for ``scan``, of course ---
+synchrontron science. It's possible to do this same for :func:`scan`, of course ---
 read on.)
 
 Summarizing a plan is also a quick way to check for some types of errors.
@@ -291,13 +297,61 @@ their names are links: follow the links for usage details and more examples.
 Pre-assembled Plans
 +++++++++++++++++++
 
-Scans over time or one dimension in space:
+Time series ("count")
+^^^^^^^^^^^^^^^^^^^^^
+
+Example:
+
+.. code-block:: python
+
+    from bluesky.examples import det
+    from bluesky.plans import count
+
+    # a single reading of the detector 'det'
+    RE(count([det]))
+
+    # five consecutive readings
+    RE(count([det], num=5))
+
+    # five sequential readings separated by a 1-second delay
+    RE(count([det], num=5, delay=1))
+
+    # a variable delay
+    RE(count([det], num=5, delay=[1, 2, 3, 4])
+
+    # Take readings forever, until interrupted (e.g., with Ctrl+C)
+    RE(count([det], num=None))
 
 .. autosummary::
    :toctree:
    :nosignatures:
 
    count
+
+Scans over one dimesion
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The "dimension" might be a physical motor position, a temperature, or a
+pseudo-axis. It's all the same to the plans. Examples:
+
+.. code-block:: python
+
+    from bluesky.examples import det, motor
+    from bluesky.plans import scan 
+
+    # scan a motor from 1 to 5, taking 5 equally-spaced readings of 'det'
+    RE(scan([det], motor, 1, 5, 5))
+
+    # scan a motor from 1 to 5 *relative to its current position*
+    RE(relative_scan([det], motor, 1, 5, 5))
+
+    # scan a motor through a list of user-specified positions
+    RE(list_scan([det], motor, [1, 1, 2, 3, 5, 8]))
+
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
    scan
    relative_scan
    list_scan
@@ -305,7 +359,59 @@ Scans over time or one dimension in space:
    log_scan
    relative_log_scan
 
-Multi-motor scans in any number of dimensions:
+Multi-dimensional scans
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Again, the "dimesions" may be a mixture of physical positions, temperatures, or
+pseudo-axes.
+
+We introduce jargon for two different kinds of a multi-motor scan: the case
+whether the motors move together in a joint trajectory ("inner product scan")
+and the case where they move separately, exploring every combination ("outer
+product scan"). Mixtures of these are also supported.
+
+.. code-block:: python
+
+    from bluesky.examples import det, motor1, motor2, motor3
+
+    # Inner product: move motors together.
+    # Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
+    RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50))
+
+    # Outer product: move motors in a mesh.
+    # Move motor1 from 1-5 in 3 steps and motor2 from 10-50 in 5 steps.
+    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
+
+The final parameter designates whether motor2 should "snake" back and forth
+along motor1's trajectory (``True``) or retread its positions in the same
+direction each time (``False``).
+
+Both :func:`inner_product_scan` and :func:`outer_product_scan` support an
+unlimited number of motors/dimensions.
+
+The general case, moving some motors together in an "inner product" against
+another (or motors) in an "outer product" can be addressed using a ``cycler``.
+Notice what happens when we add or multiply this objects.
+
+.. ipython:: python
+
+    from cycler import cycler
+    from bluesky.examples import motor1, motor2, motor3
+
+    traj1 = cycler(motor1, [1, 2, 3])
+    traj2 = cycler(motor2, [10, 20, 30])
+    list(traj1 + traj2)  # "inner product"
+    traj3 = cycler(motor3, [100, 200, 300])
+    list((traj1 + traj2) * traj3)  # "outer product" with traj3
+
+(For more on cycler, we refer you to the
+`cycler documentation <http://matplotlib.org/cycler/>`_.)
+
+To build a plan incorporating these trajectories, use :func:`scan_nd`.
+
+.. code-block:: python
+
+    RE(scan_nd((traj1 + traj2) * traj3))
 
 .. autosummary::
    :toctree:
@@ -316,6 +422,9 @@ Multi-motor scans in any number of dimensions:
    relative_inner_product_scan
    relative_outer_product_scan
    scan_nd
+
+Spiral trajectories
+^^^^^^^^^^^^^^^^^^^
 
 Two-dimensional scans that trace out spiral trajectories:
 
@@ -328,6 +437,9 @@ Two-dimensional scans that trace out spiral trajectories:
    relative_spiral
    relative_spiral_fermat
 
+Adaptive scans
+^^^^^^^^^^^^^^
+
 Scans with adaptive step sizes:
 
 .. autosummary::
@@ -337,7 +449,8 @@ Scans with adaptive step sizes:
    adaptive_scan
    relative_adaptive_scan
 
-Misc:
+Misc.
+^^^^^
 
 .. autosummary::
    :toctree:
@@ -419,10 +532,23 @@ parameters depending on the sample.
             md = {'sample': sample}
             yield from scan(motor, num=10, md=md, **s_range)
 
-Pauses
-++++++
+Planned Pauses
+++++++++++++++
 
-TO DO
+Pausing is typically done interactively (Ctrl+C) but it can also be
+incorporated into a plan. The plan can pause the RunEngine, requiring the user
+to type ``RE.resume()`` to continue or ``RE.stop()`` to clean up and stop.
+
+.. code-block:: python
+
+    from bluesky.plans import pause, checkpoint
+
+    def pausing_plan():
+        while True:
+            yield from some_plan(...)
+            print("Type RE.resume() to go again or RE.stop() to stop.")
+            yield from checkpoint()  # marking where to resume from
+            yield from pause()
 
 Customizing metadata
 ++++++++++++++++++++
@@ -441,7 +567,7 @@ it easy for a user-defined plan to pass in extra metadata.
         # ... insert code here to open shutter ...
         yield from bp.count([det], md={'is_dark_frame': False})
 
-By default, the ``count`` plan records the ``plan_name`` count. To customize
+By default, the :func:`count` plan records the ``plan_name`` count. To customize
 the ``plan_name`` --- say, to differentiate separate *reasons* running a count
 --- you can override the metadata.
 
@@ -492,6 +618,8 @@ will override ``'calib_count'`` as the recorded plan name.
     See the `relevant section of the Python documentation <https://docs.python.org/3/library/collections.html#collections.ChainMap>`_
     for more.
 
+.. _preprocessors:
+
 Plan Preprocessors
 ------------------
 
@@ -511,7 +639,7 @@ This is a subtle but remarkably powerful feature.
 Wrappers like ``relative_set_wrapper`` operate on a generator *instance*,
 like ``scan(...)``. There are corresponding decorator functions like
 ``relative_set_decorator`` that operate on a generator
-*function* itself, like ``scan``.
+*function* itself, like :func:`scan`.
 
 .. code-block:: python
 
@@ -614,9 +742,84 @@ Advanced Custom Plans
 The ``per_step`` hook
 +++++++++++++++++++++
 
-TO DO
+The one-dimensional and multi-dimensional plans are composed (1) setup,
+(2) a loop over a plan to perform at each position, (3) cleanup.
 
-Reconstructing ``count`` from scratch
+We provide a hook for customizing step (2). This enables you to write a
+variation of an existing plan without starting from scratch.
+
+For one-dimensional plans, the default inner loop is:
+
+.. code-block:: python
+
+    from bluesky.plans import checkpoint, abs_set, trigger_and_read
+
+    def one_1d_step(detectors, motor, step):
+        """
+        Inner loop of a 1D step scan
+
+        This is the default function for ``per_step`` param in 1D plans.
+        """
+        yield from checkpoint()
+        yield from abs_set(motor, step, wait=True)
+        return (yield from trigger_and_read(list(detectors) + [motor]))
+
+Some user-defined function, ``custom_step``, with the same signature can be
+used in its place:
+
+.. code-block:: python
+
+    scan([det], motor, 1, 5, 5, per_step=custom_step)
+
+For convenience, this could be wrapped into the definition of a new plan:
+
+.. code-block:: python
+
+    def custom_scan(detectors, motor, start, stop, step, *, md=None):
+        yield from scan([det], motor, start, stop, step, md=md
+                        per_step=custom_step)
+
+For multi-dimensional plans, the default inner loop is:
+
+.. code-block:: python
+
+    from bluesky.utils import short_uid
+    from bluesky.plans import checkpoint, abs_set, wait, trigger_and_read
+
+    def one_nd_step(detectors, step, pos_cache):
+        """
+        Inner loop of an N-dimensional step scan
+
+        This is the default function for ``per_step`` param`` in ND plans.
+
+        Parameters
+        ----------
+        detectors : iterable
+            devices to read
+        step : dict
+            mapping motors to positions in this step
+        pos_cache : dict
+            mapping motors to their last-set positions
+        """
+        def move():
+            yield from checkpoint()
+            grp = short_uid('set')
+            for motor, pos in step.items():
+                if pos == pos_cache[motor]:
+                    # This step does not move this motor.
+                    continue
+                yield from abs_set(motor, pos, group=grp)
+                pos_cache[motor] = pos
+            yield from wait(group=grp)
+
+        motors = step.keys()
+        yield from move()
+        yield from trigger_and_read(list(detectors) + list(motors))
+
+Likewise, a custom function with the same signature may be passed into the
+``per_step`` argument of any of the multi-dimensional plans.
+
+Reconstructing :func:`count` from scratch
 +++++++++++++++++++++++++++++++++++++
 
 In this section we will build a custom plan out of the stub plans above.
@@ -627,7 +830,7 @@ import the plans module like so.
 
     import bluesky.plans as bp
 
-What we referred to as ``count``, ``scan``, and so on above will in this
+What we referred to as :func:`count`, :func:`scan`, and so on above will in this
 section be referred to as ``bp.count``, ``bp.scan``, etc.
 
 .. code-block:: python
@@ -635,7 +838,7 @@ section be referred to as ``bp.count``, ``bp.scan``, etc.
     from bluesky.examples import det1, det2
     import bluesky.plans as bp
 
-The basic usage of the ``count`` plan generates one "run" (i.e., dataset)
+The basic usage of the :func:`count` plan generates one "run" (i.e., dataset)
 with one "event" (i.e., one bundle of readings from the detectors, one row in
 a table of the data).
 
@@ -685,7 +888,7 @@ default.
 
 But this still creates three runs --- three datasets --- for what we'd rather
 think of as three events (rows) in one run. To fix that, we'll have to dive
-deeper, re-implementing ``count`` from scratch.
+deeper, re-implementing :func:`count` from scratch.
 
 .. code-block:: python
 
@@ -806,7 +1009,7 @@ Custom Object-Oriented Plans
 ++++++++++++++++++++++++++++
 
 To define a custom object-oriented Plan, follow this pattern. Here we define
-``Scan``, the object-oriented counterpart to ``scan``.
+``Scan``, the object-oriented counterpart to :func:`scan`.
 
 .. code-block:: python
 
@@ -860,7 +1063,7 @@ Differences from non-SPEC-like plans
 ++++++++++++++++++++++++++++++++++++
 
 To see the differences, compare the SPEC-like plan ``ascan`` its non-SPEC-like
-counterpart ``scan``.
+counterpart :func:`scan`.
 
 .. code-block:: python
 
@@ -871,7 +1074,7 @@ counterpart ``scan``.
     gs.DETS = [det]
     RE(ascan(motor, 1, 5, 4))
 
-* **Global list of detectors.** ``scan`` expects a list of detectors --- e.g.,
+* **Global list of detectors.** :func:`scan` expects a list of detectors --- e.g.,
   ``[det]`` --- as its first argument. ``ascan`` obtains the detector list
   implicitly by checking the current value of ``gs.DETS``.
 * **Globally configured subscriptions.** ``ascan`` bakes in subscriptions to
@@ -880,7 +1083,7 @@ counterpart ``scan``.
 * **Arguments' names and ordering.** The signatures match those in the SPEC
   manual. In some cases they are different from the signature of their non-SPEC
   counterparts, which adhere more closely to idiomatic scientific Python.
-  What ``scan`` calls "start" and "stop" ``ascan`` calls "start" and "finish".
+  What :func:`scan` calls "start" and "stop" ``ascan`` calls "start" and "finish".
 * **Count strides, not points.** Following the convention in SPEC, the
   SPEC-like plans expect the number of "intervals" (strides) N, leading to N +
   1 points. In all other parts of bluesky, we adhere to the Python/scipy

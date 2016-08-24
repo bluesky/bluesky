@@ -1,203 +1,204 @@
-Live Feedback and Processing
-****************************
+Live Visualization and Export
+*****************************
 
 .. ipython:: python
    :suppress:
    :okwarning:
 
-   from bluesky.examples import det1, det2, det3, det, motor
-   from bluesky.callbacks import *
-   from bluesky import RunEngine, Msg
-   RE = RunEngine()
-   RE.verbose = False
-   RE.md['owner'] = 'Jane'
-   RE.md['group'] = 'Grant No. 12345'
-   from bluesky.plans import Count, AbsScanPlan
-   plan = AbsScanPlan([det, det1, det2, det3], motor, 1, 4, 4)
+   from bluesky import RunEngine
+   RE = RunEngine({})
 
 Overview of Callbacks
 ---------------------
 
-As the RunEngine processes instructions, it creates *Documents,* plain Python
-dictionaries organized in a `specified but flexible
-<http://nsls-ii.github.io/architecture-overview.html>`__ way. These Documents
-contain the data and metadata generated during the plan's execution. Each time
-a new Document is created, the RunEngine passes it to a list of functions.
-These functions can do anyting: store the data to disk, print a line of text
-to the scren, add a point to a plot, or even transfer the data to a cluster
-for immediate processing. These functions are called "callbacks."
+As the RunEngine executes a plan, it organizes metadata and data into
+*Documents,* Python dictionaries organized in a `specified but flexible
+<http://nsls-ii.github.io/architecture-overview.html>`__ way. 
+Each time a new Document is created, the RunEngine passes it to a list of
+functions. These functions can do anyting: store the data to disk, print a
+line of text to the scren, add a point to a plot, or even transfer the data to
+a cluster for immediate processing. These functions are called "callbacks."
 
-We subscribe callbacks to the live stream of Documents. You can think of a
-callback as a self-addressed stamped envelope. It tells the RunEngine,
-"When you create a Document, send it to this function for processing."
+We "subscribe" callbacks to the live stream of Documents coming from the
+RunEngine. You can think of a callback as a self-addressed stamped envelope: it
+tells the RunEngine, "When you create a Document, send it to this function for
+processing."
 
-Simplest Example
-----------------
+Simplest Working Example
+------------------------
 
 This example passes every Document to the ``print`` function, printing
 each Document as it is generated during data collection.
 
 .. code-block:: python
 
-    RE(plan, print)
+    from bluesky.plans import count
+    from bluesky.examples import det
 
-We will not show the lenthy output of this command here; the documents are not
-so nice to read in their raw form. See ``LiveTable`` below for a more refined
-implementation of this basic example.
+    RE(count([det]), print)
+
+The ``print`` function is a blunt instrument; it dumps too much information to
+the screen.  See ``LiveTable`` below for a more refined option.
 
 Ways to Invoke Callbacks
 ------------------------
 
-Subscribe on a per-run basis
-++++++++++++++++++++++++++++
+Interactively
++++++++++++++
 
 As in the simple example above, pass a second argument to the RunEngine.
-
-.. ipython:: python
-
-    dets = [det1, det2, det3]
-    RE(plan, LiveTable(dets))
-
-``LiveTable`` takes a list of objects or names to tell it which data columns to
-show. It prints the lines one at a time, as data collection proceeds.
-
-To use multiple callbacks, you may pass a list of them.
-
-.. ipython:: python
-
-    RE(plan, [LiveTable(dets), LivePlot(det1)])
-
-Use this more verbose form to filter the Documents by type, feeding only
-certain document types to certain callbacks.
+For some callback function ``cb``, the usage is:
 
 .. code-block:: python
 
-    # Give all documents to LiveTable and LivePlot.
-    # Send only 'start' Documents to the print function.
-    RE(plan, {'all': [LiveTable(dets), LivePlot(det1)], 'start': print})
+    RE(plan(), cb))
 
-The allowed keys are 'all', 'start', 'stop', 'descriptor', and 'event',
-corresponding to the names of the Documents.
-
-Subscribe each time a certain plan is used
-++++++++++++++++++++++++++++++++++++++++++
-
-Often, the same subscriptions are useful each time a certain kind of plan is
-run. To associate particular callbacks with a given plan, give the plan 
-a ``subs`` attribute. All the built-in plans already have a ``subs``
-attribute, primed with a dictionary of empty lists.
-
-.. ipython:: python
-
-    plan.subs
-
-Append functions to these lists to route Documents to them every time the plan
-is executed.
-
-.. ipython:: python
-
-    plan.subs['all'].append(LiveTable(dets))
-
-Now our ``plan`` will invoke ``LiveTable`` every time.
-
-.. ipython:: python
-
-    RE(plan)
-
-Now suppose we change the detectors used by the plan.
-
-.. ipython:: python
-
-    plan.detectors.remove(det3)
-    plan.detectors
-
-The ``LiveTable`` callback is now out of date; it still includes
-``[det1, det2, det3]``. How can we make this more convenient?
-
-To customize the callback based on the content of the plan, use a subscription
-factory: a function that takes in a plan and returns a callback function.
+A working example:
 
 .. code-block:: python
 
-    def make_table_with_detectors(plan):
-        dets = plan.detectors
-        return LiveTable(dets)
+    from bluesky.examples import det, motor
+    from bluesky.plans import scan
+    from bluesky.callbacks import LiveTable
+    dets = [det]
+    RE(scan(dets, motor, 1, 5, 5), LiveTable(dets))
 
-    plan.sub_factories['all'].append(make_table_with_detectors)
+A *list* of callbacks --- ``[cb1, cb2]`` --- is also accepted; see
+:ref:`filtering`, below, for addtional options.
 
-When the plan is executed, it passes *itself* as an argument to its own
-``sub_factories``, producing customized callbacks. In this examples, a new
-``LiveTable`` is made on the fly. Each time the plan is executed, new
-callbacks are made via factory functions like this one.
+Persistently
+++++++++++++
 
-A plan can have both normal subscriptions in ``plan.subs`` and subscription
-factories in ``plan.sub_factories``. All will be used.
+The RunEngine keeps a list of callbacks to apply to *every* plan it executes.
+For example, the callback that saves the data to a database is typically
+invoked this way. For some callback function ``cb``, the usage is:
 
-Subscribe for every run
-+++++++++++++++++++++++
+.. code-block:: python
 
-The RunEngine itself can store a collection of subscriptions to be applied to
-every single scan it executes.
+    RE.subscribe('all', cb)
 
-Usually, if a subscription is useful for every single run, it should be added
-to a IPython configuration file and subscribed automatically at startup.
+This step is usually performed in a startup file (i.e., IPython profile).
 
-The method ``RE.subscribe`` passes through to this method:
+The method ``RunEngine.subscribe`` is an alias for this method:
 
 .. automethod:: bluesky.run_engine.Dispatcher.subscribe
 
+The method ``RunEngine.unsubscribe`` is an alias for this method:
+
 .. automethod:: bluesky.run_engine.Dispatcher.unsubscribe
 
+.. _filtering:
 
-Running Callbacks on Saved Data
-+++++++++++++++++++++++++++++++
+Through a plan
+++++++++++++++
 
-Callbacks are designed to work live, but they also work retroactively on
-completed runs with data that has been saved to disk.
+Use the ``subs_decorator`` :ref:`plan preprocessor <preprocessors>` to attach
+callbacks to a plan so that they are subscribed every time it is run.
 
-.. warning::
-
-    This subsection documents a feature that has not been released yet.
-
-If the data is accessible from the Data Broker (as it is if you use the standard
-configuration) then you can feed data from the Data Broker in the callbacks.
+In this example, we define a new plan, ``plan2``, that adds some callback
+``cb`` to some existing plan, ``plan1``.
 
 .. code-block:: python
 
-    from dataportal import DataBroker, stream
-    stream(header, callback_func) 
+    from bluesky.plans import subs_decorator
 
-Live Table
-----------
+    @subs_decorator(cb)
+    def plan2():
+        yield from plan1()
+
+or, equivalently,
+
+.. code-block:: python
+
+    plan2 = subs_decorator(cb)(plan1)
+
+For example, to define a variant of ``scan`` that includes a table by default:
+
+.. code-block:: python
+
+    from bluesky.plans import scan, subs_decorator
+
+    def my_scan(detectors, motor, start, stop, num, *, md=None):
+        "This plan takes the same arguments as `scan`."
+
+        table = LiveTable([motor] + list(detectors))
+
+        @subs_decorator(table)
+        def inner():
+            yield from scan(detectors, motor, start, stop, num, md=md)
+
+        yield from inner()
+
+Filtering by Document Type
+--------------------------
+
+There are four "subscriptions" that a callback to receive documents from:
+
+* 'start'
+* 'stop'
+* 'event'
+* 'descriptor'
+
+Additionally, there is an 'all' subscription.
+
+The command:
+
+.. code-block:: python
+
+    RE(plan(), cb)
+
+is a shorthand that is normalized to ``{'all': [cb]}``. To receive only certain
+documents, specify the document routing explicitly. Examples:
+
+.. code-block:: python
+
+    RE(plan(), {'start': [cb]}
+    RE(plan(), {'all': [cb1, cb2], 'start': [cb3]})
+
+The ``subs_decorator``, presented above, accepts the same variety of inputs.
+
+LiveTable
+---------
 
 As each data point is collected (i.e., as each Event Document is generated) a
-row is added to the table. For nonscalar detectors, such as area detectors,
-the sum is shown. (See LiveImage, below, to view the images themselves.)
+row is added to the table. Demo:
 
-The only crucial parameter is the first one, which specifies which fields to
-include in the table. These can include specific fields (e.g., the string
-``'sclr_chan4'``) or readable objects (e.g., the object ``sclr``).
+.. ipython:: python
 
-Numerous other parameters allow you to customize the display style.
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+    from bluesky.callbacks import LiveTable
+
+    RE(scan([det], motor, 1, 5, 5), LiveTable([motor, det]))
 
 .. autoclass:: bluesky.callbacks.LiveTable
 
-Live Plot for Scalar Data
--------------------------
+LivePlot for scalar data
+------------------------
 
 Plot scalars.
 
 .. autoclass:: bluesky.callbacks.LivePlot
 
-Live Image Plot
----------------
+Live Image
+---------
 
 .. autoclass:: bluesky.callbacks.broker.LiveImage
 
-Live Raster Plot (Heat Map)
----------------------------
+LiveRaster (Heat Map)
+---------------------
 
 .. autoclass:: bluesky.callbacks.LiveRaster
+
+LiveMesh (Heat Map)
+---------------------
+
+.. autoclass:: bluesky.callbacks.LiveMesh
+
+PeakStats 
+---------
+
+TO DO
 
 Automated Data Export
 ---------------------
@@ -335,8 +336,10 @@ We are setting up a *subscription*.
 
 .. ipython:: python
 
-    s = Count([det])
-    RE(s, {'event': print_data})
+    from bluesky.examples import det
+    from bluesky.plans import count
+
+    RE(count([det]), {'event': print_data})
 
 Each time the RunEngine generates a new Event Doucment (i.e., data point)
 ``print_data`` is called.
@@ -353,7 +356,7 @@ an 'all' subscription that receives all Documents.
 We can use the 'stop' subscription to trigger automatic end-of-run activities.
 For example:
 
-.. ipython:: python
+.. code-block:: python
 
     def celebrate(name, doc):
         # Do nothing with the input; just use it as a signal that run is over.
@@ -361,9 +364,9 @@ For example:
 
 Let's use both ``print_data`` and ``celebrate`` at once.
 
-.. ipython:: python
+.. code-block:: python
 
-    RE(s, {'event': print_data, 'stop': celebrate})
+    RE(plan(), {'event': print_data, 'stop': celebrate})
 
 Using multiple document types
 +++++++++++++++++++++++++++++
@@ -378,6 +381,7 @@ for each Document type.
 .. code-block:: python
 
     from bluesky.callbacks import CallbackBase
+
     class MyCallback(CallbackBase):
         def start(self, doc):
             print("I got a new 'start' Document")
