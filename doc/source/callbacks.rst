@@ -8,6 +8,8 @@ Live Visualization and Export
    from bluesky import RunEngine
    RE = RunEngine({})
 
+.. _callbacks:
+
 Overview of Callbacks
 ---------------------
 
@@ -118,14 +120,15 @@ For example, to define a variant of ``scan`` that includes a table by default:
 
     from bluesky.plans import scan, subs_decorator
 
-    def my_scan(detectors, motor, start, stop, num, *, md=None):
+    def my_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         "This plan takes the same arguments as `scan`."
 
         table = LiveTable([motor] + list(detectors))
 
         @subs_decorator(table)
         def inner():
-            yield from scan(detectors, motor, start, stop, num, md=md)
+            yield from scan(detectors, motor, start, stop, num,
+                            per_step=per_step, md=md)
 
         yield from inner()
 
