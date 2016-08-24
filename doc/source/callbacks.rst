@@ -5,31 +5,24 @@ Live Visualization and Export
    :suppress:
    :okwarning:
 
-   from bluesky.examples import det1, det2, det3, det, motor
-   from bluesky.callbacks import *
-   from bluesky import RunEngine, Msg
-   RE = RunEngine()
-   RE.verbose = False
-   RE.md['owner'] = 'Jane'
-   RE.md['group'] = 'Grant No. 12345'
-   from bluesky.plans import Count, AbsScanPlan
-   plan = AbsScanPlan([det, det1, det2, det3], motor, 1, 4, 4)
+   from bluesky import RunEngine
+   RE = RunEngine({})
 
 Overview of Callbacks
 ---------------------
 
-As the RunEngine processes instructions, it creates *Documents,* plain Python
-dictionaries organized in a `specified but flexible
-<http://nsls-ii.github.io/architecture-overview.html>`__ way. These Documents
-contain the data and metadata generated during the plan's execution. Each time
-a new Document is created, the RunEngine passes it to a list of functions.
-These functions can do anyting: store the data to disk, print a line of text
-to the scren, add a point to a plot, or even transfer the data to a cluster
-for immediate processing. These functions are called "callbacks."
+As the RunEngine executes a plan, it organizes metadata and data into
+*Documents,* Python dictionaries organized in a `specified but flexible
+<http://nsls-ii.github.io/architecture-overview.html>`__ way. 
+Each time a new Document is created, the RunEngine passes it to a list of
+functions. These functions can do anyting: store the data to disk, print a
+line of text to the scren, add a point to a plot, or even transfer the data to
+a cluster for immediate processing. These functions are called "callbacks."
 
-We subscribe callbacks to the live stream of Documents. You can think of a
-callback as a self-addressed stamped envelope. It tells the RunEngine,
-"When you create a Document, send it to this function for processing."
+We "subscribe" callbacks to the live stream of Documents coming from the
+RunEngine. You can think of a callback as a self-addressed stamped envelope: it
+tells the RunEngine, "When you create a Document, send it to this function for
+processing."
 
 Simplest Working Example
 ------------------------
@@ -54,7 +47,7 @@ Interactively
 +++++++++++++
 
 As in the simple example above, pass a second argument to the RunEngine.
-Schematically, the usage looks like this:
+For some callback function ``cb``, the usage is:
 
 .. code-block:: python
 
@@ -71,7 +64,30 @@ A working example:
     RE(scan(dets, motor, 1, 5, 5), LiveTable(dets))
 
 A *list* of callbacks --- ``[cb1, cb2]`` --- is also accepted; see
-:ref:`_filtering` for details.
+:ref:`filtering`, below, for addtional options.
+
+Persistently
+++++++++++++
+
+The RunEngine keeps a list of callbacks to apply to *every* plan it executes.
+For example, the callback that saves the data to a database is typically
+invoked this way. For some callback function ``cb``, the usage is:
+
+.. code-block:: python
+
+    RE.subscribe('all', cb)
+
+This step is usually performed in a startup file (i.e., IPython profile).
+
+The method ``RunEngine.subscribe`` is an alias for this method:
+
+.. automethod:: bluesky.run_engine.Dispatcher.subscribe
+
+The method ``RunEngine.unsubscribe`` is an alias for this method:
+
+.. automethod:: bluesky.run_engine.Dispatcher.unsubscribe
+
+.. _filtering:
 
 Through a plan
 ++++++++++++++
@@ -113,27 +129,6 @@ For example, to define a variant of ``scan`` that includes a table by default:
 
         yield from inner()
 
-Permanently
-+++++++++++
-
-The RunEngine keeps a list of callbacks that receive documents from *every*
-plan it executes. For example, the callback that saves the data to a database
-is typically invoked this way.
-
-.. code-block:: python
-
-    RE.subscribe('all', cb)
-
-This step is usually performed in a startup file (i.e., IPython profile).
-
-The method ``RunEngine.subscribe`` is an alias for this method:
-
-.. automethod:: bluesky.run_engine.Dispatcher.subscribe
-
-The method ``RunEngine.unsubscribe`` is an alias for this method:
-
-.. automethod:: bluesky.run_engine.Dispatcher.unsubscribe
-
 Filtering by Document Type
 --------------------------
 
@@ -166,14 +161,15 @@ LiveTable
 ---------
 
 As each data point is collected (i.e., as each Event Document is generated) a
-row is added to the table. For nonscalar detectors, such as area detectors,
-the sum is shown. (See LiveImage, below, to view the images themselves.)
+row is added to the table. Demo:
 
-The only crucial parameter is the first one, which specifies which fields to
-include in the table. These can include specific fields (e.g., the string
-``'sclr_chan4'``) or readable objects (e.g., the object ``sclr``).
+.. ipython:: python
 
-Numerous other parameters allow you to customize the display style.
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+    from bluesky.callbacks import LiveTable
+
+    RE(scan([det], motor, 1, 5, 5), LiveTable([motor, det]))
 
 .. autoclass:: bluesky.callbacks.LiveTable
 
