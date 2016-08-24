@@ -532,24 +532,6 @@ parameters depending on the sample.
             md = {'sample': sample}
             yield from scan(motor, num=10, md=md, **s_range)
 
-Planned Pauses
-++++++++++++++
-
-Pausing is typically done interactively (Ctrl+C) but it can also be
-incorporated into a plan. The plan can pause the RunEngine, requiring the user
-to type ``RE.resume()`` to continue or ``RE.stop()`` to clean up and stop.
-
-.. code-block:: python
-
-    from bluesky.plans import pause, checkpoint
-
-    def pausing_plan():
-        while True:
-            yield from some_plan(...)
-            print("Type RE.resume() to go again or RE.stop() to stop.")
-            yield from checkpoint()  # marking where to resume from
-            yield from pause()
-
 Customizing metadata
 ++++++++++++++++++++
 
@@ -617,6 +599,24 @@ will override ``'calib_count'`` as the recorded plan name.
 
     See the `relevant section of the Python documentation <https://docs.python.org/3/library/collections.html#collections.ChainMap>`_
     for more.
+
+Planned Pauses
+++++++++++++++
+
+Pausing is typically done interactively (Ctrl+C) but it can also be
+incorporated into a plan. The plan can pause the RunEngine, requiring the user
+to type ``RE.resume()`` to continue or ``RE.stop()`` to clean up and stop.
+
+.. code-block:: python
+
+    from bluesky.plans import pause, checkpoint
+
+    def pausing_plan():
+        while True:
+            yield from some_plan(...)
+            print("Type RE.resume() to go again or RE.stop() to stop.")
+            yield from checkpoint()  # marking where to resume from
+            yield from pause()
 
 .. _preprocessors:
 
@@ -707,7 +707,13 @@ a generator instance. There are corresponding functions named
 Custom Preprocessors
 ++++++++++++++++++++
 
-TO DO
+The preprocessors are implemented using :func:`msg_mutator` (for altering
+messages in place) and :func:`plan_mutator` (for inserting
+messages into the plan or removing messages).
+
+It's easiest to learn this by example, studying the implementations of the built-in
+processors (catalogued above) in the
+`the source of the plans module <https://github.com/NSLS-II/bluesky/blob/master/bluesky/plans.py>`_.
 
 How Plans Handle Exceptions
 ---------------------------
@@ -819,7 +825,7 @@ For multi-dimensional plans, the default inner loop is:
 Likewise, a custom function with the same signature may be passed into the
 ``per_step`` argument of any of the multi-dimensional plans.
 
-Reconstructing :func:`count` from scratch
+Reconstructing ``count`` from scratch
 +++++++++++++++++++++++++++++++++++++
 
 In this section we will build a custom plan out of the stub plans above.
