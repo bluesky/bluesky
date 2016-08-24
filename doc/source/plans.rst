@@ -156,7 +156,7 @@ coverage of the sample.
 Combining Plans
 ---------------
 
-To simply chain plans together, use ``pchain`` to make one long plan.
+To simply chain plans together, use :func:`pchain` to make one long plan.
 
 .. code-block:: python
 
@@ -185,8 +185,8 @@ To simply chain plans together, use ``pchain`` to make one long plan.
     recover if it maintains control. In the bad example above, it loses control
     between completing ``plan1`` and beginning ``plan2``.
     
-    Instead, use ``pchain`` (see above) or ``yield from`` (see below) to make
-    one long plan.
+    Instead, use :func:`pchain` or ``yield from`` (see below) to make one long
+    plan.
 
 What if want to ``print`` or do other activities between executing the plans?
 There is another way to combine plans to accomodate this.
@@ -287,12 +287,12 @@ syntax we commonly use to combine plans.
 Built-in Plans
 --------------
 
-The plans are organized like a deli menu. A variety of pre-assembled plans
-are provided, like a B.L.T. sandwich on a menu.  But you can also build your
-own plans by mixing the individual ingredients, the "stub" plans.
+A variety of pre-assembled plans are provided. Like sandwiches on a deli menu,
+you can use our pre-assembled plans or assembled your own from the same
+ingredients, catalogued in :ref:`stub_plans` below.
 
-The pre-assembled plans and the "stub" plans are catalogued below. Notice that
-their names are links: follow the links for usage details and more examples.
+Notice that their names are links. Follow the links for usage details and more
+examples.
 
 Pre-assembled Plans
 +++++++++++++++++++
@@ -404,10 +404,9 @@ Notice what happens when we add or multiply this objects.
     traj3 = cycler(motor3, [100, 200, 300])
     list((traj1 + traj2) * traj3)  # "outer product" with traj3
 
-(For more on cycler, we refer you to the
-`cycler documentation <http://matplotlib.org/cycler/>`_.)
-
-To build a plan incorporating these trajectories, use :func:`scan_nd`.
+For more on cycler, we refer you to the
+`cycler documentation <http://matplotlib.org/cycler/>`_. To build a plan
+incorporating these trajectories, use :func:`scan_nd`.
 
 .. code-block:: python
 
@@ -458,6 +457,8 @@ Misc.
 
    tweak
    fly
+
+.. _stub_plans:
 
 Stub Plans (ingredients for remixing)
 +++++++++++++++++++++++++++++++++++++
@@ -538,8 +539,8 @@ Customizing metadata
 Metadata can be loaded from a persistent file, specified by the user
 interactively at execution time, or incorporated in a plan.
 
-All of the pre-assembled plans also accept an ``md`` argument, which makes
-it easy for a user-defined plan to pass in extra metadata.
+All of the pre-assembled plans also accept an ``md`` ("metadata") argument,
+which makes it easy for a user-defined plan to pass in extra metadata.
 
 .. code-block:: python
 
@@ -573,9 +574,14 @@ overrides the hard-coded metadata, use the following pattern:
                       {'plan_name': 'calib_count'})
         yield from count(dets, num=num, md=md)
 
-For example, if the plan is called with the arguments
-``calib_count([det], md={'plan_name': 'watermelon'})``, then ``'watermelon'``
-will override ``'calib_count'`` as the recorded plan name.
+For example, if the plan is called with the arguments:
+
+.. code-block:: python
+
+    calib_count([det], md={'plan_name': 'watermelon'})
+
+then ``'watermelon'`` will override ``'calib_count'`` as the recorded plan
+name.
 
 .. note::
 
@@ -624,8 +630,8 @@ Plan Preprocessors
 ------------------
 
 These "preprocessors" take in a plan and modify its contents on the fly.  For
-example, ``relative_set_wrapper`` rewrites all positions to be relative to the
-initial position.
+example, :func:`relative_set_wrapper` rewrites all positions to be relative to
+the initial position.
 
 .. code-block:: python
 
@@ -636,7 +642,7 @@ initial position.
 
 This is a subtle but remarkably powerful feature.
 
-Wrappers like ``relative_set_wrapper`` operate on a generator *instance*,
+Wrappers like :func:`relative_set_wrapper` operate on a generator *instance*,
 like ``scan(...)``. There are corresponding decorator functions like
 ``relative_set_decorator`` that operate on a generator
 *function* itself, like :func:`scan`.
@@ -732,12 +738,13 @@ messsages before re-raising the exception and killing plan execution.
             yield from cleanup_plan()
             raise  # Re-raise the exception.
 
-The ``finalize`` preprocessor provides a succinct way of applying this pattern.
+The :func:`finalize_wrapper` preprocessor provides a succinct way of applying
+this pattern.
 
 .. code-block:: python
 
     def plan_with_cleanup():
-        yield from finalize(main_plan(), cleanup_plan())
+        yield from finalize_wrapper(main_plan(), cleanup_plan())
 
 The exception in question may originate from the plan itself or from the
 RunEngine when is attempts to execute the plan.
@@ -796,7 +803,7 @@ For multi-dimensional plans, the default inner loop is:
         """
         Inner loop of an N-dimensional step scan
 
-        This is the default function for ``per_step`` param`` in ND plans.
+        This is the default function for ``per_step`` param in ND plans.
 
         Parameters
         ----------
@@ -911,7 +918,7 @@ deeper, re-implementing :func:`count` from scratch.
 
 Starting from the middle and explaining outward:
 
-* The ``trigger_and_read`` plan generates an "event" (a row of data) from
+* The :func:`trigger_and_read` plan generates an "event" (a row of data) from
   reading ``dets``. This happens inside of a loop, ``num`` times.
 * The ``run_decorator`` preprocessor designates the scope of one dataset.
 * The ``stage_decorator`` preprocessor addresses some hardware details. It
@@ -991,6 +998,7 @@ object-oriented counterpart.
    :nosignatures:
    :toctree:
 
+    Plan
     Count
     Scan
     RelativeScan
@@ -1015,7 +1023,7 @@ Custom Object-Oriented Plans
 ++++++++++++++++++++++++++++
 
 To define a custom object-oriented Plan, follow this pattern. Here we define
-``Scan``, the object-oriented counterpart to :func:`scan`.
+:class:`Scan`, the object-oriented counterpart to :func:`scan`.
 
 .. code-block:: python
 
@@ -1039,7 +1047,7 @@ To define a custom object-oriented Plan, follow this pattern. Here we define
 
 This ``__init__`` method contains a lot of boilerplate code, assigning an
 attribute for each argument. For cases like this where a plan takes zero or
-more required arguments plus ``md``, the ``Plan`` class provides a shortcut
+more required arguments plus ``md``, the :class:`Plan` class provides a shortcut
 using metaclass magic.
 
 Optionally, the definition of ``__init__`` can be entirely removed and replaced
@@ -1049,7 +1057,7 @@ by the line
 
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
 
-which ``Plan`` uses to auto-generate an ``__init__`` at class definition
+which :class:`Plan` uses to auto-generate an ``__init__`` at class definition
 time. If that is a little too "magical" for your taste, feel free to skip it
 and just write out the ``__init__`` method, as we did in the example above.
 
