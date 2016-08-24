@@ -492,6 +492,8 @@ will override ``'calib_count'`` as the recorded plan name.
     See the `relevant section of the Python documentation <https://docs.python.org/3/library/collections.html#collections.ChainMap>`_
     for more.
 
+.. _preprocessors:
+
 Plan Preprocessors
 ------------------
 
