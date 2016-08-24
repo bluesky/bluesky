@@ -1,24 +1,25 @@
 Interruptions
 *************
 
-The RunEngine can be cleanly paused and resumed. Plans are resumed at specified
-checkpoints to ensure that the interruption does not corrupt the data or a miss
-a step. When an interruption occurs, the RunEngine "rewinds" the plan and
-carefully re-executes the steps between the interruption and last checkpoint.
+The RunEngine can be safely interrupted and resumed. All plans get this
+feature "for free."
 
-Pausing and Suspending
-======================
+Pausing Interactively
+====================
 
-A pause can be initiated interactively:
+.. note::
 
-* Ctrl+C once: Pause at the next checkpoint (e.g., finish the current step
-  in a scan first).
-* Ctrl+C twice: Pause immediately.
+    Looking for a quick refresher on pausing, resuming, or aborting
+    interactively? Skip to the :ref:`interactive_pause_summary`.
 
-.. ipython:: python
-    :verbatim:
+While the RunEngine is executing a plan, it captures SIGINT (Ctrl+C).
 
-    In [1]: RE(scan([det], motor, -10, 10, 15), subs)
+Pause Now: Ctrl+C twice
+-----------------------
+
+.. code-block:: python
+
+    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor, det]))
     +-----------+------------+------------+------------+
     |   seq_num |       time |      motor |        det |
     +-----------+------------+------------+------------+
@@ -29,37 +30,148 @@ A pause can be initiated interactively:
     Pausing...
     In [2]:
 
-or planned as part of the logic of an experiment:
+Before returning the prompt the user, the RunEngine ensures that all motors
+that it has touched are stopped. It also performs any device-specific cleanup
+defined in the device's (optional) ``pause()`` method.
 
-.. ipython:: python
-    :verbatim:
+If execution is later resumed, the RunEngine will "rewind" through the plan to
+the most recent :ref:`checkpoint`, the last safe place to restart.
 
-    # count; pause and wait for the user to resume; count again
-    In [1]: RE(pchain(count([det]), pause(), count([det]))
+Pause Soon: Ctrl+C once
+-----------------------
 
-When the RunEngine is paused, it returns the command prompt to the user.
-During the pause, the user can do anything: check readings, move motors, etc.
-Then, from a paused state, the user can choose to resume:
+Pause at the next :ref:`checkpoint`: typically, the next step in a step
+scan. We call this "deferred pause." It avoids having to repeat any work when
+the plan is resumed.
 
-.. ipython:: python
-    :verbatim:
+Notice that this time when Ctrl+C (^C) is hit, the current step (4) is allowed
+to complete before execution is paused.
 
-    In [2]: RE.resume()
-    Resuming from last checkpoint...
+.. code-block:: python
+
+    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor, det]))
+    +-----------+------------+------------+------------+
+    |   seq_num |       time |      motor |        det |
+    +-----------+------------+------------+------------+
+    |         1 | 07:21:29.2 |    -10.000 |      0.000 |
+    |         2 | 07:21:29.3 |     -8.571 |      0.000 |
+    |         3 | 07:21:29.4 |     -7.143 |      0.000 |
+    ^C
+    A 'deferred pause' has been requested. The RunEngine will pause at the next
+    checkpoint. To pause immediately, hit Ctrl+C again in the next 10 seconds.
+    Deferred pause acknowledged. Continuing to checkpoint.
+    |         4 | 07:21:29.5 |     -5.728 |      0.000 |
+    Pausing...
+    In [2]:
+
+What to do after pausing
+------------------------
+
+After being paused, the RunEngine holds on to information that it might need in
+order to resume later. It "knows" that it is in a paused state, and you can
+check that at any time:
+
+.. code-block:: python
+
+    In [2]: RE.state
+    Out[2]: 'paused'
+
+
+During the pause, we can do anything: check readings, move motors, etc. It will
+not allow you to execute a new plan until the current one is either resumed or
+terminated. Your options are:
+
+Resume
+^^^^^^
+
+.. code-block:: python
+
+    In [3]: RE.resume()
     |         4 | 07:21:29.5 |     -5.714 |      0.000 |
     |         5 | 07:21:29.5 |     -4.286 |      0.000 |
     |         6 | 07:21:29.6 |     -2.857 |      0.017 |
     |         7 | 07:21:29.7 |     -1.429 |      0.360 |
     (etc.)
 
-or choose to stop/abort. (Read on for the distinction between these two.)
+Depending on the plan, it may "rewind" to safely continue on and ensure all
+data is collected correctly.
 
-.. ipython:: python
-    :verbatim:
+Abort
+^^^^^
+
+Allow the plan to perform any final cleanup. For example, some plans move
+motors back to their starting positions. Mark the data as having been aborted,
+so that this fact can be noted (if desired) in later analysis. All of the data
+collected up this point will be saved regardless.
+
+From a paused state:
+
+.. code-block:: python
 
     In [3]: RE.abort()
     Aborting...
     Out[3]: ['8ef9388c-75d3-498c-a800-3b0bd24b88ed']
+
+.. note::
+
+    It is common to go through the steps
+
+    * Ctrl+C
+    * Ctrl+C
+    * RE.abort()
+
+    Ctrl+C *three times fast* is a convenient shortcut for this.
+
+Stop
+^^^^
+
+``RE.stop()`` is functionally identifical to ``RE.abort()``. The only
+difference is that aborted runs are marked with ``exit_status: 'abort'``
+instead of ``exit_status: 'success'``. This distiction may be a useful
+distinction during analysis`.
+
+Halt
+^^^^
+
+Aborting or stopping allows the plan to perform cleanup. We already mentioned
+the example of a plan moving motors back to their starting positions at the
+end.
+
+In some situations, you may wish to prevent the plan from doing *anything*
+--- you want to halt immediately, skipping cleanup. For this, use
+``RE.halt()``.
+
+.. _interactive_pause_summary:
+
+Summary
+-------
+
+Interactively Interrupt Execution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+======================= ===========
+Command                 Outcome
+======================= ===========
+Ctrl+C                  Pause soon.
+Ctrl+C twice            Pause now.
+Ctrl+C three times fast (Shortcut) Pause now and abort.
+======================= ===========
+    
+From a paused state
+^^^^^^^^^^^^^^^^^^^
+
+============== ===========
+Command        Outcome
+============== ===========
+RE.resume()    Safely resume plan.
+RE.abort()     Perform cleanup. Mark as aborted.
+RE.stop()      Perform cleanup. Mark as success.
+RE.halt()      Do not perform cleanup --- just stop.
+RE.state       Check if 'paused' or 'idle'.
+============== ===========
+
+Automated Suspension
+====================
 
 It can also be useful to interrupt execution automatically in response some
 condition (e.g., shutter closed, beam dumped, temperature exceed some limit).
@@ -72,9 +184,9 @@ after some interval. This can operate unattended.
 .. ipython::
     :verbatim:
 
-    In [6]: RE(my_scan)
+    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor, det]))
     +------------+-------------------+----------------+----------------+
-    |   seq_num  |             time  |         theta  |    sclr_chan4  |
+    |   seq_num  |             time  |         motor  |           det  |
     +------------+-------------------+----------------+----------------+
     |         1  |  16:46:08.953815  |          0.03  |        290.00  |
     Suspending....To get prompt hit Ctrl-C to pause the scan
@@ -88,55 +200,14 @@ it stops executing new instructions and rewinds to the most recent checkpoint.
 But unlike a paused plan, it resumes execution automatically when conditions
 return to normal.
 
-To take manual control of a suspended plan, pause it using Ctrl+C. This will
-override its plan to automatically resume.
+To take manual control of a suspended plan, pause it by hitting Ctrl+C twice.
+You will be given the prompt. When conditions are good again, you may manually
+resume using ``RE.resume()``.
 
-Read on for an example of installing a suspender.
+.. _installing_suspenders:
 
-Checkpoints
------------
-
-Plan are specified as a sequence of granualor instructions like 'read' and
-'set'. The instructions can optionally include one or more 'checkpoint'
-messages, indicating a place where it safe to resume after an interruption. For
-example, checkpoints are placed before each step of a `bluesky.plans.scan`.
-
-Some experiments are not resumable: for example, the sample may be melting or
-aging. Incorporating `bluesky.plans.clear_checkpoint` in a plan makes it
-un-resuming. If a pause or suspension are requested, the plan will abort
-instead.
-
-.. note::
-
-    For developers, here some gritty details about checkpoints.
-
-    It is not legal to create checkpoint in the middle of a data point (between
-    'create' and 'save') Checkpoints are implicitly created after actions that
-    it is not safe to replay: staging a device, adding a monitor, or adding a
-    subscription.
-
-
-Deferred Pause vs Hard Pause
-----------------------------
-
-When a *deferred pause* is requested (Ctrl+C once), the RunEngine continues
-processing messages until the next checkpoint or the end of the plan, whichever
-happens first. When (if) it reaches a checkpoint, it pauses. Then it can be
-resumed from that checkpoint without repeating any work.
-
-When a *hard pause* is requested (Ctrl+C twice), the RunEngine pauses as soon
-as possible --- normally within less than second.
-
-Stopping vs Aborting
---------------------
-
-To stop a paused plan, use ``RE.stop()`` or ``RE.abort()``. In both cases, any
-data that has been generated will be saved. The only difference is that
-aborted runs are marked with ``exit_status: 'abort'`` instead of
-``exit_status: 'success'``, which may be a useful distinction during analysis.
-
-Suspenders
-==========
+Installing Suspenders
+---------------------
 
 Bluesky includes several "suspenders" that work with ophyd Signals to monitor
 conditions and suspend execution. It's also possible to write suspenders
@@ -144,26 +215,24 @@ from scratch to monitor anything at all.
 
 We'll start with an example.
 
-Example: Suspend a plan if a shutter closes; resume when it opens
------------------------------------------------------------------
+Example: Suspend a plan if the beam current dips low
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We will use a built-in utility that watches an EPICS PV. It tells the
-RunEngine to suspend when the PV's value goes high. When it goes low
-again, the RunEngine resumes.
+This defines a suspender and installs it on the RunEngine. With this, plans
+will be automatically suspended when the ``beam_current`` signal goes below 2
+and resume once it exceeds 3.
 
 .. code-block:: python
 
     from ophyd import EpicsSignal
-    from bluesky.suspenders SuspendBoolHigh
+    from bluesky.suspenders import SuspendFloor
 
-    shutter = EpicsSignal('XF:23ID1-PPS{PSh}Pos-Sts')  # main shutter PV
-
-    sus = SuspendBoolHigh(shutter)
+    beam_current = EpicsSignal('...PV string...')
+    sus = SuspendFloor(beam_current, 2, 3)
     RE.install_suspender(sus)
 
-The above is all that is required. It will watch the PV indefinitely.
-In the following example, the shuttle was closed in the middle of the
-second data point.
+In the following example, the beam current dipped below 2 in the middle of
+taking the second data point. It later recovered.
 
 .. ipython::
     :verbatim:
@@ -179,8 +248,12 @@ second data point.
     |         4  |  16:46:33.540643  |          0.23  |        278.00  |
     +------------+-------------------+----------------+----------------+
 
-Notice that the plan was suspended and then resumed.  When it resumed, it went
+Notice that the plan was suspended and then resumed. When it resumed, it went
 back to the last checkpoint and re-took the second data point cleanly.
+
+See the API documentation (follow the links in the table below) for other
+suspender types and options, including a waiting period and cleanup
+procuredures to run pre-suspend and pre-resume.
 
 Built-in Suspenders
 -------------------
@@ -199,13 +272,36 @@ are built in, and it is straightforward to write customized ones.
    bluesky.suspenders.SuspendInBand
    bluesky.suspenders.SuspendOutBand
 
-Deferred Pause
---------------
+Checkpoints
+===========
 
-When a *deferred pause* is requested, the RunEngine continues processing
-messages until the next checkpoint or the end of the plan, whichever happens
-first. When (if) it reaches a checkpoint, it pauses. Then it can be resumed
-from that checkpoint without repeating any work.
+Plan are specified as a sequence of :ref:`messages <msg>`, granular
+instructions like 'read' and 'set'. The messages can optionally include one
+or more 'checkpoint' messages, indicating a place where it safe to resume after
+an interruption. For example, checkpoints are placed before each step of a
+:func:`bluesky.plans.scan`.
+
+Some experiments are not resumable: for example, the sample may be melting or
+aging. Incorporating :func:`bluesky.plans.clear_checkpoint` in a plan makes it
+un-resuming. If a pause or suspension are requested, the plan will abort
+instead.
+
+.. note::
+
+    Some details about checkpoints and when they are allowed:
+
+    It is not legal to create checkpoint in the middle of a data point (between
+    'create' and 'save') Checkpoints are implicitly created after actions that
+    it is not safe to replay: staging a device, adding a monitor, or adding a
+    subscription.
+
+Planned Pauses
+==============
+
+It's possible to write a custom *plan* that pauses at certain points, requiring
+the user to manually resume or abort.
+
+See the :ref:`planned_pauses` subsection of the documentation on *Plans*.
 
 Associated RunEngine Interface
 ==============================
@@ -222,6 +318,15 @@ The states are:
 * ``'idle'``: RunEngine is waiting for instructions.
 * ``'running'``: RunEngine is executing instructions.
 * ``'paused'``: RunEngine is waiting for user input. It can be 
+
+Suspender-related Methods
+-------------------------
+
+.. automethod:: bluesky.run_engine.RunEngine.install_suspender
+.. automethod:: bluesky.run_engine.RunEngine.remove_suspender
+
+The RunEngine also has a ``suspenders`` property, a collection of the
+currently-installed suspenders.
 
 Request Methods
 ---------------

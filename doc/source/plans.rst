@@ -85,8 +85,8 @@ Introspecting Plans
 
 Separating the *specification* of the plan --- e.g., ``count([det])`` --- from
 the *execution* of the plan --- ``RE(count([det]))`` --- permits us to inspect
-the plan before running it. It also allows to *modify* a plan on the fly, as
-we'll see later on.
+the plan before running it. It also allows to modify a plan on the fly, as
+we'll see :ref:`later below <preprocessors>`.
 
 Bluesky provides a nice function for summarizing the action of a plan,
 ``print_summary``. Here, we see that the plan :func:`count` opens a "run" (i.e.,
