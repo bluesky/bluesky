@@ -316,6 +316,8 @@ ingredients, catalogued in :ref:`stub_plans` below.
 Notice that their names are links. Follow the links for usage details and more
 examples.
 
+.. _preassembled_plans:
+
 Pre-assembled Plans
 +++++++++++++++++++
 
@@ -554,6 +556,8 @@ parameters depending on the sample.
             s_range = sample_ranges[sample]
             md = {'sample': sample}
             yield from scan(motor, num=10, md=md, **s_range)
+
+.. _customizing_metadata:
 
 Customizing metadata
 ++++++++++++++++++++
