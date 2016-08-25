@@ -76,6 +76,9 @@ def setup_plot(*, motors, gs):
 
 
 def setup_ct_plot(*, num, motors, gs):
+    """
+    Setup a plot only if there could be more than one point.
+    """
     # If num is None, count runs until interrupted.
     if num is None or num > 1:
         return setup_plot(motors=motors, gs=gs)
@@ -93,10 +96,14 @@ def setup_peakstats(*, motors, gs):
 
 
 def setup_livetable(*, motors,  gs):
+    """Setup a LiveTable by inspecting motors and gs.
+    """
     return LiveTable(motors + [gs.PLOT_Y] + gs.TABLE_COLS)
 
 
 def setup_liveraster(*, motors, gs, shape, extent):
+    """Setup a LiveTable by inspecting motors, shape, extent, and gs.
+    """
     if len(motors) != 2:
         return None
     ylab, xlab = [first_key_heuristic(m) for m in motors]
