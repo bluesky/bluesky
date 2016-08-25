@@ -153,6 +153,53 @@ row is added to the table. Demo:
 
 .. autoclass:: bluesky.callbacks.LiveTable
 
+Aside: Making plots update live
++++++++++++++++++++++++++++++++
+
+.. note::
+
+    If you are a user working with a pre-configured setup, you can probably
+    skip this. Come back if your plots are appearing / updating.
+
+    This configuration is typically performed in an IPython profile startup
+    script so that is happens automatically at startup time.
+
+To make plots live-update while the RunEngine is executing a plan, you have run
+this command once. In an IPython terminal, the command is:
+
+.. code-block::
+
+    from bluesky.utils import install_qt_kickcer
+    install_qt_kicker()
+
+You may also need to run the command:
+
+.. code-block::
+
+    %matplotlib
+
+If you are using a Jupyter notebook, the command is:
+
+.. code-block::
+
+    from bluesky.utils import install_nb_kickcer
+    install_nb_kicker()
+
+And you may also need to run the command:
+
+.. code-block::
+
+    %matplotlib notebook
+
+See
+`the relevant section of the IPython documentation <https://ipython.readthedocs.io/en/stable/interactive/magics.html?highlight=matplotlib#magic-matplotlib>`_
+for details.
+
+Why? The RunEngine and matplotlib (technically, matplotlib's Qt backend) both
+use an event loop. The RunEngine takes control of the event loop while it is
+executing a plan. These functions periodically "kick" the Qt GUI event loop so
+that the plots can re-draw while the RunEngine is running.
+
 .. _liveplot:
 
 LivePlot (for scalar data)
