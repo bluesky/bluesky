@@ -525,7 +525,6 @@ A simple spiral:
     from bluesky.plan_tools import plot_raster_path
     from bluesky.examples import motor1, motor2, det
     from bluesky.plans import spiral
-    import matplotlib.pyplot as plt
 
     plan = spiral([det], motor1, motor2, x_start=0.0, y_start=0.0, x_range=1.,
                   y_range=1.0, dr=0.1, nth=10)
@@ -540,7 +539,6 @@ A fermat spiral:
     from bluesky.plan_tools import plot_raster_path
     from bluesky.examples import motor1, motor2, det
     from bluesky.plans import spiral_fermat
-    import matplotlib.pyplot as plt
 
     plan = spiral_fermat([det], motor1, motor2, x_start=0.0, y_start=0.0,
                          x_range=2.0, y_range=2.0, dr=0.1, factor=2.0, tilt=0.0)
