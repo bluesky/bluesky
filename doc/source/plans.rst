@@ -446,7 +446,7 @@ product scan"). Mixtures of these are also supported.
     RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50))
 
     # Outer product: move motors in a mesh.
-    # Move motor1 from 1-5 in 3 steps and motor2 from 10-50 in 5 steps.
+    # Move motor1 from 1-3 in 3 steps and motor2 from 10-50 in 5 steps.
     RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
 
 The final parameter designates whether motor2 should "snake" back and forth
