@@ -35,14 +35,14 @@ that it has touched are stopped. It also performs any device-specific cleanup
 defined in the device's (optional) ``pause()`` method.
 
 If execution is later resumed, the RunEngine will "rewind" through the plan to
-the most recent :ref:`checkpoint`, the last safe place to restart.
+the most recent :ref:`checkpoint <checkpoints>`, the last safe place to restart.
 
 Pause Soon: Ctrl+C once
 -----------------------
 
-Pause at the next :ref:`checkpoint`: typically, the next step in a step
-scan. We call this "deferred pause." It avoids having to repeat any work when
-the plan is resumed.
+Pause at the next :ref:`checkpoint <checkpoints>`: typically, the next step in
+a step scan. We call this "deferred pause." It avoids having to repeat any work
+when the plan is resumed.
 
 Notice that this time when Ctrl+C (^C) is hit, the current step (4) is allowed
 to complete before execution is paused.
@@ -271,6 +271,8 @@ are built in, and it is straightforward to write customized ones.
    bluesky.suspenders.SuspendCeil
    bluesky.suspenders.SuspendInBand
    bluesky.suspenders.SuspendOutBand
+
+.. _checkpoints:
 
 Checkpoints
 ===========

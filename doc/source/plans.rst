@@ -325,7 +325,7 @@ Pre-assembled Plans
 Time series ("count")
 ^^^^^^^^^^^^^^^^^^^^^
 
-Example:
+Examples:
 
 .. code-block:: python
 
@@ -346,6 +346,27 @@ Example:
 
     # Take readings forever, until interrupted (e.g., with Ctrl+C)
     RE(count([det], num=None))
+
+With a plot:
+
+.. code-block:: python
+
+    from bluesky.callbacks import LivePlot
+
+    RE(count([det], num=5), LivePlot('det'))
+
+Or, to save some typing for repeated use,
+:ref:`define a custom plan with the plot incorporated <subs_decorator>`.
+(LivePlot itself is documented :ref:`here <liveplot>`.)
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import count
+    from bluesky.examples import det
+    from bluesky.callbacks import LivePlot
+    RE = RunEngine({})
+    RE(count([det], num=5), LivePlot('det'))
 
 .. autosummary::
    :toctree:
@@ -372,6 +393,27 @@ pseudo-axis. It's all the same to the plans. Examples:
 
     # scan a motor through a list of user-specified positions
     RE(list_scan([det], motor, [1, 1, 2, 3, 5, 8]))
+
+With a plot:
+
+.. code-block:: python
+
+    from bluesky.callbacks import LivePlot
+
+    RE(scan([det], motor, 1, 5, 5), LivePlot('det', 'motor'))
+
+Or, again, to save some typing for repeated use,
+:ref:`define a custom plan with the plot incorporated <subs_decorator>`.
+(LivePlot itself is documented :ref:`here <liveplot>`.)
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import scan
+    from bluesky.examples import det, motor
+    from bluesky.callbacks import LivePlot
+    RE = RunEngine({})
+    RE(scan([det], motor, 1, 5, 5), LivePlot('det', 'motor'))
 
 .. autosummary::
    :toctree:
@@ -413,6 +455,29 @@ direction each time (``False``).
 
 Both :func:`inner_product_scan` and :func:`outer_product_scan` support an
 unlimited number of motors/dimensions.
+
+With a plot:
+
+.. code-block:: python
+
+    from bluesky.callbacks import LiveRaster
+
+    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
+       LiveRaster((3, 5), 'det'))
+
+Or, again, to save some typing for repeated use,
+:ref:`define a custom plan with the plot incorporated <subs_decorator>`.
+(LiveRaster itself is documented :ref:`here <liveraster>`.)
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import outer_product_scan
+    from bluesky.examples import det, motor1, motor2
+    from bluesky.callbacks import LiveRaster
+    RE = RunEngine({})
+    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
+       LiveRaster((3, 5), 'det'))
 
 The general case, moving some motors together in an "inner product" against
 another (or motors) in an "outer product" can be addressed using a ``cycler``.
