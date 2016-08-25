@@ -481,7 +481,7 @@ Or, again, to save some typing for repeated use,
 
 The general case, moving some motors together in an "inner product" against
 another (or motors) in an "outer product" can be addressed using a ``cycler``.
-Notice what happens when we add or multiply this objects.
+Notice what happens when we add or multiply ``cycler`` objects.
 
 .. ipython:: python
 
