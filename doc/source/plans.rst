@@ -497,6 +497,7 @@ Stub Plans (ingredients for remixing)
     clear_checkpoint
     close_run
     collect
+    complete
     configure
     create
     deferred_pause
