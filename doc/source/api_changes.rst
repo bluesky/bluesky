@@ -1,6 +1,24 @@
 Release Notes
 =============
 
+v0.6.4
+------
+
+Enhancements
+^^^^^^^^^^^^
+
+* Much-expanded and overhauled documentation.
+* Add ``aspect`` argument to ``LiveRaster``.
+* Add ``install_nb_kicker`` to get live-updating matplotlib figures in the
+  notebook while the RunEngine is running.
+
+Bug Fixes
+^^^^^^^^^
+
+* Minor fix in the tilt computation for spiral scans.
+* Expost 'tilt' option through SPEC-like API
+* The "infinite count" (``ct`` with ``num=None``) should spawn a LivePlot.
+
 v0.6.3
 ------
 
