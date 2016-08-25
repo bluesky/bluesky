@@ -1036,7 +1036,6 @@ object-oriented counterpart.
    :nosignatures:
    :toctree:
 
-    Plan
     Count
     Scan
     RelativeScan
@@ -1085,7 +1084,7 @@ To define a custom object-oriented Plan, follow this pattern. Here we define
 
 This ``__init__`` method contains a lot of boilerplate code, assigning an
 attribute for each argument. For cases like this where a plan takes zero or
-more required arguments plus ``md``, the :class:`Plan` class provides a shortcut
+more required arguments plus ``md``, the ``Plan`` class provides a shortcut
 using metaclass magic.
 
 Optionally, the definition of ``__init__`` can be entirely removed and replaced
@@ -1095,9 +1094,9 @@ by the line
 
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
 
-which :class:`Plan` uses to auto-generate an ``__init__`` at class definition
-time. If that is a little too "magical" for your taste, feel free to skip it
-and just write out the ``__init__`` method, as we did in the example above.
+which ``Plan`` uses to auto-generate an ``__init__`` at class definition time.
+If that is a little too "magical" for your taste, feel free to skip it and just
+write out the ``__init__`` method, as we did in the example above.
 
 SPEC-like API with Global State
 -------------------------------
