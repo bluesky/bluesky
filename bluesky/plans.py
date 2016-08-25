@@ -20,8 +20,10 @@ from .utils import (Struct, Subs, normalize_subs_input,
 
 def make_decorator(wrapper):
     """
-    The functions named *_wrapper accept a generator instance and return
-    a mutated generator instance.
+    Turn a generator instance wrapper into a generator function decorator.
+
+    The functions named <something>_wrapper accept a generator instance and
+    return a mutated generator instance.
 
     Example of a 'wrapper':
     >>> plan = count([det])  # returns a generator instance
