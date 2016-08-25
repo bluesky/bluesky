@@ -5,7 +5,7 @@ The RunEngine can be safely interrupted and resumed. All plans get this
 feature "for free."
 
 Pausing Interactively
-====================
+=====================
 
 .. note::
 

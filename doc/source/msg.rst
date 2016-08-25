@@ -1,9 +1,9 @@
 .. _msg:
 
-*Note: This is a technical document not optimized for user readability.*
-
 Message Protocol
 ================
+
+*Note: This is a technical document not optimized for user readability.*
 
 Overview
 --------

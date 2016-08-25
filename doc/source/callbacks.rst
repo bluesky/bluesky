@@ -40,7 +40,7 @@ each Document as it is generated during data collection.
     RE(count([det]), print)
 
 The ``print`` function is a blunt instrument; it dumps too much information to
-the screen.  See ``LiveTable`` below for a more refined option.
+the screen.  See :ref:`LiveTable <livetable>` below for a more refined option.
 
 Ways to Invoke Callbacks
 ------------------------
@@ -134,6 +134,8 @@ For example, to define a variant of ``scan`` that includes a table by default:
 
 Text and Visualization
 ----------------------
+
+.. _livetable:
 
 LiveTable
 +++++++++
