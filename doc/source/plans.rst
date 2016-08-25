@@ -204,10 +204,13 @@ To simply chain plans together, use :func:`pchain` to make one long plan.
             RE(plan1())
             RE(plan2())
 
-    In the event of an error or interruptions, the RunEngine can do more to
-    recover if it maintains control. In the bad example above, it loses control
-    between completing ``plan1`` and beginning ``plan2``.
+    Calling ``RE(...)`` inside a functions means that you can not use any of
+    the introspection tools on the actions it will take.
     
+    Also, in the event of an error or interruptions, the RunEngine can do more
+    to recover if it maintains control. In the bad example above, it loses
+    control between completing ``plan1`` and beginning ``plan2``.
+
     Instead, use :func:`pchain` or ``yield from`` (see below) to make one long
     plan.
 
