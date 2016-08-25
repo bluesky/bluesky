@@ -97,10 +97,13 @@ class LivePlot(CallbackBase):
         The list of keys to extract from the RunStart document and format
         in the legend of the plot. The legend will always show the
         scan_id followed by a colon ("1: ").  Each
-    xlim : tuple
+    xlim : tuple, optional
         passed to Axes.set_xlim
-    ylim : tuple
+    ylim : tuple, optional
         passed to Axes.set_ylim
+    fig : Figure, optional
+        matplotib Figure; if none specified, current figure (``plt.gcf()``)
+        is used.
     All additional keyword arguments are passed through to ``Axes.plot``.
 
     Examples
