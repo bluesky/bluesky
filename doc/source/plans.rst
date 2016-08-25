@@ -165,14 +165,15 @@ coverage of the sample.
     `the relevant section of the IPython documentation <https://ipython.readthedocs.io/en/stable/interactive/magics.html?highlight=matplotlib#magic-matplotlib>`_
     for details.
 
-.. ipython:: python
+.. plot::
+   :include-source:
 
     from bluesky.plan_tools import plot_raster_path
     from bluesky.examples import motor1, motor2, det
     from bluesky.plans import outer_product_scan
     import matplotlib.pyplot as plt
+
     plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
-    @savefig plot-raster-path-1.png
     plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
 
 Combining Plans
