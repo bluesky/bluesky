@@ -113,9 +113,6 @@ class RunEngine:
             {'idle', 'running', 'paused'}
         md
             direct access to the dict-like persistent storage described above
-        event_timeout
-            number of seconds before Events yet unprocessed by callbacks are
-            skipped
         ignore_callback_exceptions
             Boolean, True by default
 
@@ -240,7 +237,6 @@ class RunEngine:
         # RunEngine for user convenience.
         self.dispatcher = Dispatcher()
         self.ignore_callback_exceptions = True
-        self.event_timeout = 0.1
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
 
