@@ -13,7 +13,7 @@ your input.
 Ways metadata is provided
 =========================
 
-When a RunEngine executes a plan, it combined metadata that was
+When a RunEngine executes a plan, it combines metadata:
 
 * entered interactively by the user
 * provided in the code of the *plan*
