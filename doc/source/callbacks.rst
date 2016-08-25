@@ -403,13 +403,128 @@ The base class, ``CallbackBase``, takes care of dispatching each Document to
 the corresponding method. If your application does not need all four, you may
 simple omit methods that aren't required.
 
-Subscriptions in Separate Processes
------------------------------------
+Subscriptions in Separate Processes or Host
+-------------------------------------------
 
 Because subscriptions are processed during a scan, it's possible that they can
 slow down data collection. We mitigate this by making the subscriptions run in
 a separate process.
 
-If your subscription requires the complete, synchronous stream of Documents and
-you are will to accept the possibility of slowing down data collection while
-that stream in processed, you can register subscriptions in the main process.
+In the main process, where the RunEngine is executing the plan, a ``Publisher``
+is created. It subscribes to the RunEngine. It serializes the documents it
+receives and it sends them over a socket to a 0MQ "forwarder device," which
+rebroadcasts the documents to any number of other processes or machines on the
+network.
+
+These other processes or machines set up a ``RemoteDispatcher`` which connects
+to the "forwarder device," receives the documents, and then runs callbacks just
+as they would be run if they were in the local ``RunEngine`` process.
+
+Multiple Publishers (each with its own RunEngine) can send documents to the
+same forwarder device. RemoteDispatchers can filter the document stream based
+on host, process ID, and/or ``id(RunEngine)``.
+
+Minimal Example
++++++++++++++++
+
+Look for a forwarder device configuration file at
+``/etc/zmq_forwarder_device.yml`` or
+``~/.config/zmq_forwarder_device/connection.yml``. If there isn't one, create
+one:
+
+.. code-block:: yaml
+
+    #~/.config/zmq_forwarder_device.yml
+    {'frontend_port': 5577
+    'backend_port': 5578
+    'host': 'localhost'}  # optional
+
+In production (e.g., at NSLS-II beamlines) the forwarder device should be
+running in the background as a service. Here is how to start one just for play:
+
+.. code-block:: bash
+
+    # uses config in /etc/zmq_forwarder_device.yml
+    #  or ~/.config/zmq_forwarder_device/connection.yml
+    $ python bluesky/examples/forwarder_device.py
+
+Start a callback that will receive documents from the forwarder and, in this
+simple example, just print them.
+
+.. code-block:: python
+
+    from bluesky.callbacks.zmqsub import RemoteDispatcher
+    d = RemoteDispatcher('localhost', 5578)
+    d.subscribe('all', print)
+    d.start()  # runs event loop forever
+
+On the machine/process where you want to actually collect data,
+hook up a subscription to publish documents to the forwarder. Finally,
+generate some documents with a simple plan.
+
+.. code-block:: python
+
+    # Assume you have already create a RunEngine, RE.
+
+    from bluesky.callbacks.zmqpub import Publisher
+    Publisher(RE, 'localhost', 5577)
+    RE([Msg('open_run'), Msg('close_run')])
+
+As a result, the callback prints:
+
+.. code-block:: python
+
+    start
+    stop
+
+The connection between the publisher and the subscriber is lossless. (Messages
+are cached on the publisher side if the subscriber is slow.)
+
+Example: Plotting in separate process
++++++++++++++++++++++++++++++++++++++
+
+As in the minimal example above, start a forwarder device. Then:
+
+On the plotting machine:
+
+.. code-block:: python
+
+    import matplotlib
+    matplotlib.use('Qt4Agg')
+
+    import matplotlib.pyplot as plt
+    plt.ion()
+
+    from bluesky.utils import install_qt_kicker
+    from bluesky.callbacks import LivePlot
+    from bluesky.callbacks.zmqsub import RemoteDispatcher
+
+    d = RemoteDispatcher('localhost', 5578)
+    install_qt_kicker(d.loop)
+    d.subscribe('all', LivePlot('det', 'motor'))
+    d.start()
+
+On the data collection machine, if there is not already a ``Publisher``
+running, add one.
+
+.. code-block:: python
+
+    # Assume you have already create a RunEngine, RE.
+
+    from bluesky.callbacks.zmqpub import Publisher
+    p = Publisher(RE, 'localhost', 5577)
+
+And now run a demo scan with a simulated motor and detector.
+
+.. code-block:: python
+
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+    motor._fake_sleep = 0.5  # makes motor "move" slowly so we can watch it
+    RE(scan([det], motor, 1, 10, 100))
+
+API Documentation
+^^^^^^^^^^^^^^^^^
+
+.. autoclass:: bluesky.callbacks.zmqpub.Publisher
+.. autoclass:: bluesky.callbacks.zmqsub.RemoteDispatcher

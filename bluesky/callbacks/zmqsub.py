@@ -9,38 +9,38 @@ from ..run_engine import Dispatcher, DocumentNames
 
 
 class RemoteDispatcher(Dispatcher):
+    """
+    Dispatch documents received over a socket.
+
+    Parameters
+    ----------
+    host : string
+        name of host running forwarder_device
+        (See bluesky/examples/forwarder_device.py.)
+    port : int, optional
+        default 5560
+    filter_hostname : string, optional
+        only process documents from a host with this name
+    filter_pid : int, optional
+        only process documents from a process with this pid
+    filter_run_engine_id : int, optional
+        only process documents from a RunEngine with this Python id
+        (memory address)
+    loop : zmq.asyncio.ZMQEventLoop, optional
+
+    Example
+    -------
+    Create a LivePlot and feed it documents published to a 0MQ forwarder
+    device at running on localhost at port 5560.
+
+    >>> from bluesky.qt_kicker import install_qt_kicker
+    >>> install_qt_kicker()
+    >>> dispatcher = Dispatcher('localhost', 5568)
+    >>> dispatcher.subscribe(LivePlot('y', 'x'))
+    >>> dispatcher.start()
+    """
     def __init__(self, host, port, *, filter_hostname=None, filter_pid=None,
                  filter_run_engine_id=None, loop=None):
-        """
-        Dispatch documents received over a socket.
-
-        Parameters
-        ----------
-        host : string
-            name of host running forwarder_device
-            (See bluesky/examples/forwarder_device.py.)
-        port : int, optional
-            default 5560
-        filter_hostname : string, optional
-            only process documents from a host with this name
-        filter_pid : int, optional
-            only process documents from a process with this pid
-        filter_run_engine_id : int, optional
-            only process documents from a RunEngine with this Python id
-            (memory address)
-        loop : zmq.asyncio.ZMQEventLoop, optional
-
-        Example
-        -------
-        Create a LivePlot and feed it documents published to a 0MQ forwarder
-        device at running on localhost at port 5560.
-
-        >>> from bluesky.qt_kicker import install_qt_kicker
-        >>> install_qt_kicker()
-        >>> dispatcher = Dispatcher('localhost', 5568)
-        >>> dispatcher.subscribe(LivePlot('y', 'x'))
-        >>> dispatcher.start()
-        """
         if loop is None:
             loop = zmq.asyncio.ZMQEventLoop()
         self._loop = loop
