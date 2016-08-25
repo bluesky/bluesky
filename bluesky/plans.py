@@ -105,7 +105,7 @@ def plan_mutator(plan, msg_proc):
 
     See Also
     --------
-    `bluesky.plans.msg_mutator`
+    :func:`bluesky.plans.msg_mutator`
     """
     # internal stacks
     msgs_seen = dict()
@@ -224,7 +224,7 @@ def msg_mutator(plan, msg_proc):
 
     See Also
     --------
-    `bluesky.plans.plan_mutator`
+    :func:`bluesky.plans.plan_mutator`
     """
     ret = None
     while True:
@@ -282,8 +282,8 @@ def create(name='primary'):
 
     See Also
     --------
-    `bluesky.plans.save`
-    `bluesky.plans.event_context`
+    :func:`bluesky.plans.save`
+    :func:`bluesky.plans.event_context`
     """
     return (yield Msg('create', name=name))
 
@@ -299,8 +299,8 @@ def save():
 
     See Also
     --------
-    `bluesky.plans.create`
-    `bluesky.plans.event_context`
+    :func:`bluesky.plans.create`
+    :func:`bluesky.plans.event_context`
     """
     return (yield Msg('save'))
 
@@ -342,7 +342,7 @@ def monitor(obj, *, name=None, **kwargs):
 
     See Also
     --------
-    `bluesky.plans.unmonitor`
+    :func:`bluesky.plans.unmonitor`
     """
     return (yield Msg('monitor', obj, name=name, **kwargs))
 
@@ -362,7 +362,7 @@ def unmonitor(obj):
 
     See Also
     --------
-    `bluesky.plans.monitor`
+    :func:`bluesky.plans.monitor`
     """
     return (yield Msg('unmonitor', obj))
 
@@ -402,8 +402,8 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
 
     See Also
     --------
-    `bluesky.plans.rel_set`
-    `bluesky.plans.wait`
+    :func:`bluesky.plans.rel_set`
+    :func:`bluesky.plans.wait`
     """
     if wait and group is None:
         group = str(uuid.uuid4())
@@ -436,8 +436,8 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
 
     See Also
     --------
-    `bluesky.plans.abs_set`
-    `bluesky.plans.wait`
+    :func:`bluesky.plans.abs_set`
+    :func:`bluesky.plans.wait`
     """
     return (yield from relative_set_wrapper(
         abs_set(obj, *args, group=group, wait=wait, **kwargs)))
@@ -517,7 +517,7 @@ def checkpoint():
 
     See Also
     --------
-    `bluesky.plans.clear_checkpoint`
+    :func:`bluesky.plans.clear_checkpoint`
     """
     return (yield Msg('checkpoint'))
 
@@ -533,7 +533,7 @@ def clear_checkpoint():
 
     See Also
     --------
-    `bluesky.plans.checkpoint`
+    :func:`bluesky.plans.checkpoint`
     """
     return (yield Msg('clear_checkpoint'))
 
@@ -549,8 +549,8 @@ def pause():
 
     See Also
     --------
-    `bluesky.plans.deferred_pause`
-    `bluesky.plans.sleep`
+    :func:`bluesky.plans.deferred_pause`
+    :func:`bluesky.plans.sleep`
     """
     return (yield Msg('pause', None, defer=False))
 
@@ -566,8 +566,8 @@ def deferred_pause():
 
     See Also
     --------
-    `bluesky.plans.pause`
-    `bluesky.plans.sleep`
+    :func:`bluesky.plans.pause`
+    :func:`bluesky.plans.sleep`
     """
     return (yield Msg('pause', None, defer=True))
 
@@ -612,9 +612,9 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
 
     See Also
     --------
-    `bluesky.plans.complete`
-    `bluesky.plans.collect`
-    `bluesky.plans.wait`
+    :func:`bluesky.plans.complete`
+    :func:`bluesky.plans.collect`
+    :func:`bluesky.plans.wait`
     """
     ret = (yield Msg('kickoff', obj, group=group, **kwargs))
     if wait:
@@ -651,9 +651,9 @@ def complete(obj, *, group=None, wait=True, **kwargs):
 
     See Also
     --------
-    `bluesky.plans.kickoff`
-    `bluesky.plans.collect`
-    `bluesky.plans.wait`
+    :func:`bluesky.plans.kickoff`
+    :func:`bluesky.plans.collect`
+    :func:`bluesky.plans.wait`
     """
     ret = yield Msg('complete', obj, group=group, **kwargs)
     if wait:
@@ -680,9 +680,9 @@ def collect(obj, *, stream=False):
 
     See Also
     --------
-    `bluesky.plans.kickoff`
-    `bluesky.plans.complete`
-    `bluesky.plans.wait`
+    :func:`bluesky.plans.kickoff`
+    :func:`bluesky.plans.complete`
+    :func:`bluesky.plans.wait`
     """
     return (yield Msg('collect', obj, stream=stream))
 
@@ -722,7 +722,7 @@ def stage(obj):
 
     See Also
     --------
-    `bluesky.plans.unstage`
+    :func:`bluesky.plans.unstage`
     """
     return (yield Msg('stage', obj))
 
@@ -742,7 +742,7 @@ def unstage(obj):
 
     See Also
     --------
-    `bluesky.plans.stage`
+    :func:`bluesky.plans.stage`
     """
     return (yield Msg('unstage', obj))
 
@@ -765,7 +765,7 @@ def subscribe(name, func):
 
     See Also
     --------
-    `bluesky.plans.unsubscribe`
+    :func:`bluesky.plans.unsubscribe`
     """
     return (yield Msg('subscribe', None, name, func))
 
@@ -786,7 +786,7 @@ def unsubscribe(token):
 
     See Also
     --------
-    `bluesky.plans.subscribe`
+    :func:`bluesky.plans.subscribe`
     """
     return (yield Msg('unsubscribe', token=token))
 
@@ -874,7 +874,7 @@ def open_run(md=None):
 
     See Also
     --------
-    `bluesky.plans.close_run`
+    :func:`bluesky.plans.close_run`
     """
     if md is None:
         md = {}
@@ -892,7 +892,7 @@ def close_run():
 
     See Also
     --------
-    `bluesky.plans.open_run`
+    :func:`bluesky.plans.open_run`
     """
     return (yield Msg('close_run'))
 
@@ -915,7 +915,7 @@ def wait_for(futures, **kwargs):
 
     See Also
     --------
-    `bluesky.plans.wait`
+    :func:`bluesky.plans.wait`
     """
     return (yield Msg('wait_for', None, futures, **kwargs))
 
@@ -1105,7 +1105,7 @@ def fly(flyers, *, md=None):
 
     See Also
     --------
-    `bluesky.plans.fly_during`
+    :func:`bluesky.plans.fly_during`
     """
     yield from open_run(md)
     for flyer in flyers:
@@ -1161,7 +1161,7 @@ def monitor_during_wrapper(plan, signals):
 
     See Also
     --------
-    `bluesky.plans.fly_during_wrapper`
+    :func:`bluesky.plans.fly_during_wrapper`
     """
     monitor_msgs = [Msg('monitor', sig, name=sig.name + '-monitor')
                     for sig in signals]
@@ -1212,7 +1212,7 @@ def fly_during_wrapper(plan, flyers):
 
     See Also
     --------
-    `bluesky.plans.fly`
+    :func:`bluesky.plans.fly`
     """
     grp1 = _short_uid('flyers-kickoff')
     grp2 = _short_uid('flyers-complete')
@@ -1272,7 +1272,7 @@ def lazily_stage_wrapper(plan):
 
     See Also
     --------
-    `bluesky.plans.stage_context`
+    :func:`bluesky.plans.stage_context`
     """
     COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
     # Cache devices in the order they are staged; then unstage in reverse.
@@ -1319,7 +1319,7 @@ def stage_context(plan_stack, devices):
 
     See Also
     --------
-    `bluesky.plans.lazily_stage`
+    :func:`bluesky.plans.lazily_stage`
     """
     # Resolve unique devices, avoiding redundant staging.
     devices = separate_devices(device.root for device in devices)
@@ -1355,9 +1355,9 @@ def stage_wrapper(plan, devices):
 
     See Also
     --------
-    `bluesky.plans.lazily_stage_wrapper`
-    `bluesky.plans.stage`
-    `bluesky.plans.unstage`
+    :func:`bluesky.plans.lazily_stage_wrapper`
+    :func:`bluesky.plans.stage`
+    :func:`bluesky.plans.unstage`
     """
     devices = separate_devices(device.root for device in devices)
 
@@ -1724,7 +1724,7 @@ def repeater(n, gen_func, *args, **kwargs):
 
     See Also
     --------
-    `bluesky.plans.caching_repeater`
+    :func:`bluesky.plans.caching_repeater`
     """
     it = range
     if n is None:
@@ -1754,7 +1754,7 @@ def caching_repeater(n, plan):
 
     See Also
     --------
-    `bluesky.plans.repeater`
+    :func:`bluesky.plans.repeater`
     """
     it = range
     if n is None:
@@ -1892,7 +1892,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.relative_list_scan`
+    :func:`bluesky.plans.relative_list_scan`
     """
     if md is None:
         md = {}
@@ -1943,7 +1943,7 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.list_scan`
+    :func:`bluesky.plans.list_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     if md is None:
@@ -1982,7 +1982,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.relative_scan`
+    :func:`bluesky.plans.relative_scan`
     """
     if md is None:
         md = {}
@@ -2040,7 +2040,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
 
     See Also
     --------
-    `bluesky.plans.scan`
+    :func:`bluesky.plans.scan`
     """
     if md is None:
         md = {}
@@ -2080,7 +2080,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.relative_log_scan`
+    :func:`bluesky.plans.relative_log_scan`
     """
     if md is None:
         md = {}
@@ -2137,7 +2137,7 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
 
     See Also
     --------
-    `bluesky.plans.log_scan`
+    :func:`bluesky.plans.log_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     if md is None:
@@ -2186,7 +2186,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
 
     See Also
     --------
-    `bluesky.plans.relative_adaptive_scan`
+    :func:`bluesky.plans.relative_adaptive_scan`
     """
     if md is None:
         md = {}
@@ -2287,7 +2287,7 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
 
     See Also
     --------
-    `bluesky.plans.adaptive_scan`
+    :func:`bluesky.plans.adaptive_scan`
     """
     if md is None:
         md = {}
@@ -2353,8 +2353,8 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.inner_product_scan`
-    `bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.inner_product_scan`
+    :func:`bluesky.plans.outer_product_scan`
     """
     if md is None:
         md = {}
@@ -2404,9 +2404,9 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.relative_inner_product_scan`
-    `bluesky.plans.outer_product_scan`
-    `bluesky.plans.scan_nd`
+    :func:`bluesky.plans.relative_inner_product_scan`
+    :func:`bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.scan_nd`
     """
     if md is None:
         md = {}
@@ -2459,9 +2459,9 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.relative_outer_product_scan`
-    `bluesky.plans.inner_product_scan`
-    `bluesky.plans.scan_nd`
+    :func:`bluesky.plans.relative_outer_product_scan`
+    :func:`bluesky.plans.inner_product_scan`
+    :func:`bluesky.plans.scan_nd`
     """
     if md is None:
         md = {}
@@ -2524,9 +2524,9 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.relative_inner_product_scan`
-    `bluesky.plans.outer_product_scan`
-    `bluesky.plans.scan_nd`
+    :func:`bluesky.plans.relative_inner_product_scan`
+    :func:`bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.scan_nd`
     """
     if md is None:
         md = {}
@@ -2565,9 +2565,9 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
 
     See Also
     --------
-    `bluesky.plans.relative_outer_product_scan`
-    `bluesky.plans.inner_product_scan`
-    `bluesky.plans.scan_nd`
+    :func:`bluesky.plans.relative_outer_product_scan`
+    :func:`bluesky.plans.inner_product_scan`
+    :func:`bluesky.plans.scan_nd`
     """
     if md is None:
         md = {}
@@ -2692,9 +2692,9 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
 
     See Also
     --------
-    `bluesky.plans.spiral`
-    `bluesky.plans.relative_spiral`
-    `bluesky.plans.relative_spiral_fermat`
+    :func:`bluesky.plans.spiral`
+    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.relative_spiral_fermat`
     '''
     if md is None:
         md = {}
@@ -2754,9 +2754,9 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
 
     See Also
     --------
-    `bluesky.plans.spiral`
-    `bluesky.plans.relative_spiral`
-    `bluesky.plans.spiral_fermat`
+    :func:`bluesky.plans.spiral`
+    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.spiral_fermat`
     '''
     if md is None:
         md = {}
@@ -2801,9 +2801,9 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 
     See Also
     --------
-    `bluesky.plans.relative_spiral`
-    `bluesky.plans.spiral_fermat`
-    `bluesky.plans.relative_spiral_fermat`
+    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.spiral_fermat`
+    :func:`bluesky.plans.relative_spiral_fermat`
     '''
     if md is None:
         md = {}
@@ -2865,8 +2865,8 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
 
     See Also
     --------
-    `bluesky.plans.spiral`
-    `bluesky.plans.spiral_fermat`
+    :func:`bluesky.plans.spiral`
+    :func:`bluesky.plans.spiral_fermat`
     '''
     if md is None:
         md = {}
