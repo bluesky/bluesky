@@ -156,7 +156,25 @@ row is added to the table. Demo:
 LivePlot (for scalar data)
 ++++++++++++++++++++++++++
 
-Plot scalars.
+Plot scalars. Example:
+
+.. code-block:: python
+
+    from bluesky.plans import scan
+    from bluesky.examples import det, motor
+    from bluesky.callbacks import LivePlot
+
+    RE(scan([det], motor, -5, 5, 30), LivePlot('det', 'motor'))
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import scan
+    from bluesky.examples import det, motor
+    from bluesky.callbacks import LivePlot
+    RE = RunEngine({})
+    RE(scan([det], motor, -5, 5, 30), LivePlot('det', 'motor'))
+
 
 .. autoclass:: bluesky.callbacks.LivePlot
 
