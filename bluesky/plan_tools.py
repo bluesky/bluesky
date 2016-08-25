@@ -41,6 +41,8 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
 
     x, y = zip(*traj)
     path, = ax.plot(x, y, marker='', linestyle='-', lw=lw)
+    ax.set_xlabel(x_motor)
+    ax.set_ylabel(y_motor)
     if probe_size is None:
         read_points = ax.scatter(x, y, marker='o', lw=lw)
     else:
