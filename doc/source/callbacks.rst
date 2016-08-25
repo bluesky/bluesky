@@ -132,36 +132,11 @@ For example, to define a variant of ``scan`` that includes a table by default:
 
         yield from inner()
 
-Filtering by Document Type
---------------------------
-
-There are four "subscriptions" that a callback to receive documents from:
-
-* 'start'
-* 'stop'
-* 'event'
-* 'descriptor'
-
-Additionally, there is an 'all' subscription.
-
-The command:
-
-.. code-block:: python
-
-    RE(plan(), cb)
-
-is a shorthand that is normalized to ``{'all': [cb]}``. To receive only certain
-documents, specify the document routing explicitly. Examples:
-
-.. code-block:: python
-
-    RE(plan(), {'start': [cb]}
-    RE(plan(), {'all': [cb1, cb2], 'start': [cb3]})
-
-The ``subs_decorator``, presented above, accepts the same variety of inputs.
+Built-in Callbacks
+------------------
 
 LiveTable
----------
++++++++++
 
 As each data point is collected (i.e., as each Event Document is generated) a
 row is added to the table. Demo:
@@ -176,30 +151,30 @@ row is added to the table. Demo:
 
 .. autoclass:: bluesky.callbacks.LiveTable
 
-LivePlot for scalar data
-------------------------
+LivePlot (for scalar data)
+++++++++++++++++++++++++++
 
 Plot scalars.
 
 .. autoclass:: bluesky.callbacks.LivePlot
 
 Live Image
----------
+++++++++++
 
 .. autoclass:: bluesky.callbacks.broker.LiveImage
 
 LiveRaster (Heat Map)
----------------------
++++++++++++++++++++++
 
 .. autoclass:: bluesky.callbacks.LiveRaster
 
 LiveMesh (Heat Map)
----------------------
++++++++++++++++++++
 
 .. autoclass:: bluesky.callbacks.LiveMesh
 
 PeakStats 
----------
+++++++++++
 
 TO DO
 
@@ -310,6 +285,50 @@ false alarm.
     from bluesky.callbacks.broker import post_run, verify_files_saved
 
     RE.subscribe('all', post_run(verify_files_saved))
+
+Debugging Callbacks
+-------------------
+
+If a callback raises an exception, the RunEngine catches that exception and
+merely prints a warning. This behavior is intended to prevent some problem in
+the callbacks from aborting the plan. Often, users to prefer to let data
+collection complete and "pick up the pieces" later.
+
+But this is not always desirable, especially when trying to debug problems with
+callbacks. To stop the RunEngine from catching exceptions from the callbacks,
+set
+
+.. code-block:: python
+
+    RE.ignore_callback_exceptions = False
+
+Filtering by Document Type
+--------------------------
+
+There are four "subscriptions" that a callback to receive documents from:
+
+* 'start'
+* 'stop'
+* 'event'
+* 'descriptor'
+
+Additionally, there is an 'all' subscription.
+
+The command:
+
+.. code-block:: python
+
+    RE(plan(), cb)
+
+is a shorthand that is normalized to ``{'all': [cb]}``. To receive only certain
+documents, specify the document routing explicitly. Examples:
+
+.. code-block:: python
+
+    RE(plan(), {'start': [cb]}
+    RE(plan(), {'all': [cb1, cb2], 'start': [cb3]})
+
+The ``subs_decorator``, presented above, accepts the same variety of inputs.
 
 Writing Custom Callbacks
 ------------------------
