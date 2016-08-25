@@ -44,8 +44,8 @@ understanding what follows.
 Executing Plans
 ---------------
 
-Define a :func:`count` plan, which reads one or more detectors, and pass it to the
-RunEngine for execution.
+Define a :func:`count` plan, which simply triggers and reads one or more
+detectors, and pass it to the RunEngine for execution.
 
 .. ipython:: python
     :suppress:
