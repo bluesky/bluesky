@@ -159,7 +159,7 @@ Aside: Making plots update live
 .. note::
 
     If you are a user working with a pre-configured setup, you can probably
-    skip this. Come back if your plots are appearing / updating.
+    skip this. Come back if your plots are not appearing / updating.
 
     This configuration is typically performed in an IPython profile startup
     script so that is happens automatically at startup time.
@@ -167,27 +167,27 @@ Aside: Making plots update live
 To make plots live-update while the RunEngine is executing a plan, you have run
 this command once. In an IPython terminal, the command is:
 
-.. code-block::
+.. code-block:: python
 
     from bluesky.utils import install_qt_kickcer
     install_qt_kicker()
 
 You may also need to run the command:
 
-.. code-block::
+.. code-block:: python
 
     %matplotlib
 
 If you are using a Jupyter notebook, the command is:
 
-.. code-block::
+.. code-block:: python
 
     from bluesky.utils import install_nb_kickcer
     install_nb_kicker()
 
 And you may also need to run the command:
 
-.. code-block::
+.. code-block:: python
 
     %matplotlib notebook
 
@@ -197,7 +197,7 @@ for details.
 
 Why? The RunEngine and matplotlib (technically, matplotlib's Qt backend) both
 use an event loop. The RunEngine takes control of the event loop while it is
-executing a plan. These functions periodically "kick" the Qt GUI event loop so
+executing a plan. These functions periodically "kick" the Qt event loop so
 that the plots can re-draw while the RunEngine is running.
 
 .. _liveplot:
