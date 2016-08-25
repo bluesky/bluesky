@@ -3,7 +3,7 @@ from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
 
 
-def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None):
+def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     """Plot the raster path for this plan
 
     Parameters
@@ -19,6 +19,9 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None):
 
     probe_size : float, optional
        If not None, use as radius of probe (in same units as motor positions)
+
+    lw : float, optional
+        Width of lines drawn between points
     """
     if ax is None:
         ax = plt.subplots()[1]
@@ -37,9 +40,11 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None):
             traj.append((cur_x, cur_y))
 
     x, y = zip(*traj)
-    path, = ax.plot(x, y, marker='', linestyle='-', lw=2)
+    path, = ax.plot(x, y, marker='', linestyle='-', lw=lw)
+    ax.set_xlabel(x_motor)
+    ax.set_ylabel(y_motor)
     if probe_size is None:
-        read_points = ax.scatter(x, y, marker='o', lw=2)
+        read_points = ax.scatter(x, y, marker='o', lw=lw)
     else:
         circles = [mpatches.Circle((_x, _y), probe_size,
                                    facecolor='black', alpha=0.5)
