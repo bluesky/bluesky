@@ -259,6 +259,6 @@ Apply this function by setting
 
 .. code-block:: python
 
-    RE.md_validator = ensure_sample_number``.
+    RE.md_validator = ensure_sample_number
 
 The function will be executed immediately before each new run in opened.

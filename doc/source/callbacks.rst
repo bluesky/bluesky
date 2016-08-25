@@ -89,7 +89,7 @@ The method ``RunEngine.unsubscribe`` is an alias for this method:
 
 .. automethod:: bluesky.run_engine.Dispatcher.unsubscribe
 
-.. _filtering:
+.. _subs_decorator:
 
 Through a plan
 ++++++++++++++
@@ -132,8 +132,8 @@ For example, to define a variant of ``scan`` that includes a table by default:
 
         yield from inner()
 
-Built-in Callbacks
-------------------
+Text and Visualization
+----------------------
 
 LiveTable
 +++++++++
@@ -151,6 +151,8 @@ row is added to the table. Demo:
 
 .. autoclass:: bluesky.callbacks.LiveTable
 
+.. _liveplot:
+
 LivePlot (for scalar data)
 ++++++++++++++++++++++++++
 
@@ -162,6 +164,8 @@ Live Image
 ++++++++++
 
 .. autoclass:: bluesky.callbacks.broker.LiveImage
+
+.. _liveraster:
 
 LiveRaster (Heat Map)
 +++++++++++++++++++++
@@ -178,8 +182,8 @@ PeakStats
 
 TO DO
 
-Automated Data Export
----------------------
+Export
+------
 
 Exporting Image Data as TIFF Files
 ++++++++++++++++++++++++++++++++++
@@ -301,6 +305,8 @@ set
 .. code-block:: python
 
     RE.ignore_callback_exceptions = False
+
+.. _filtering:
 
 Filtering by Document Type
 --------------------------
