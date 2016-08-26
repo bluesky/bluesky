@@ -567,8 +567,8 @@ The base class, ``CallbackBase``, takes care of dispatching each Document to
 the corresponding method. If your application does not need all four, you may
 simple omit methods that aren't required.
 
-Subscriptions in Separate Processes or Host
--------------------------------------------
+Subscriptions in Separate Processes or Host with 0MQ
+----------------------------------------------------
 
 Because subscriptions are processed during a scan, it's possible that they can
 slow down data collection. We mitigate this by making the subscriptions run in
@@ -687,8 +687,8 @@ And now run a demo scan with a simulated motor and detector.
     motor._fake_sleep = 0.5  # makes motor "move" slowly so we can watch it
     RE(scan([det], motor, 1, 10, 100))
 
-API Documentation
-^^^^^^^^^^^^^^^^^
+Publisher / RemoteDispatcher API
+++++++++++++++++++++++++++++++++
 
 .. autoclass:: bluesky.callbacks.zmqpub.Publisher
 .. autoclass:: bluesky.callbacks.zmqsub.RemoteDispatcher
