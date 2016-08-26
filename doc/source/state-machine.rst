@@ -370,3 +370,53 @@ seconds.
     RE.state
 
 Above, we passed ``True`` to ``RE.request_pause`` to request a deferred pause.
+
+Experimental: Record Interruptions
+==================================
+
+In the analysis stage, it can be useful to know if and when a run was
+interrupted.  This experimental feature creates a special event stream
+recording the time and nature of any interruptions.
+
+.. warning::
+
+    This is an experimental feature. It is tested but not yet widely used. It
+    might be changed or removed in the future.
+
+Activate this feature by setting
+
+.. code-block:: python
+
+    RE.record_interruptions = True
+
+In this mode, the RunEngine emits a special event descriptor after opening a
+new run. This name field in the descriptor is 'interruptions'. It has a single
+data key:
+
+.. code-block:: python
+
+    {'interruptions': {'dtype': 'string',
+                       'shape': None,
+                       'source': 'RunEngine'}}
+
+Each time the RunEngine is paused, suspended, or resumed during the run, an
+Event document for that descriptor is created. The data payload
+``event['data']['interruptions']`` is ``'pause'``, ``'suspend'``, or
+``'resume'``. The associated time notes when the interruptions/resume was
+processed.
+
+To see this in action, try this example:
+
+.. code-block:: python
+
+    from bluesky.plans import pchain, count, pause
+    from bluesky.examples import det
+
+    RE.record_interruptions = True
+
+    RE(pchain(count([det]), pause(), count([det])), print)
+    # ... RunEngine pauses
+    RE.resume()
+
+In the text that ``print`` dumps to the screen, look for the special
+'interruptions' event descriptor and associated events.
