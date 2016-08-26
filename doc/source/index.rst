@@ -4,9 +4,9 @@ Bluesky Data Collection Framework
 Bluesky is light-weight Python package for interactive data collection. There
 are three components:
 
-* A *Plan* --- an experimental procedures expressed as a iterable of
-  simple, granular instructions dubbed *Messages*
-* a *Run Engine,* which processes the messages and coordinates collection, 
+* A *Plan*, an experimental procedures composed of simple, granular
+  instructions dubbed *Messages*;
+* a *Run Engine,* which processes the messages and coordinates collection; 
 * and *Documents*, Python dictionaries containing data and metadata, organized
   in a
   `specified but flexible <http://nsls-ii.github.io/architecture-overview.html>`__
@@ -15,31 +15,39 @@ are three components:
 Basic Operation
 ---------------
 
-1. Make a "RunEngine", a kind of interpreter for plans. (It is initialized with
-   a dictionary of metadata --- here empty.)
+1. Make a *RunEngine*, a kind of interpreter for plans.
 
-.. code-block:: python
+    .. code-block:: python
 
-    from bluesky import RunEngine
-    RE = RunEngine({})
+        from bluesky import RunEngine
+        RE = RunEngine({})
 
-2. Define a plan from scratch (as we do here) or use one of the numerous built-in
-plans.
+2. Use a built-in *plan* (an experimental procedure)
+
+    .. code-block:: python
+
+        from bluesky.plans import scan
+        from bluesky.examples import det, motor  # simulated detector, motor
+
+
+3. Execute the plan, directing the generated metadata and data *documents* to
+   the print function or any other function that does something with the data
+   (like save it).
+
+    .. code-block:: python
+
+        RE(scan([det], motor, 1, 5, 5), print)
+
+Or compose and execute a custom plan:
 
 .. code-block:: python
 
     from bluesky.plans import open_run, trigger_and_read, close_run
-    from bluesky.examples import det  # simulated hardware
 
-    def plan()
+    def plan():
         yield from open_run()
         yield from trigger_and_read([det])
         yield from close_run()
-
-3. Execute the plan, directing the generated "documents" to the print function
-or any other function that does something with the data (like save it).
-
-.. code-block:: python
 
     RE(plan(), print)
 
