@@ -90,9 +90,10 @@ Robustness
    :hidden:
 
    plans 
+   metadata
    callbacks
    state-machine
-   metadata 
+   debugging
    msg
    run_engine
    api_changes

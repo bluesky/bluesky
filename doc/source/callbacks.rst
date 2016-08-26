@@ -429,6 +429,8 @@ false alarm.
 
     RE.subscribe('all', post_run(verify_files_saved))
 
+.. _debugging_callbacks:
+
 Debugging Callbacks
 -------------------
 
