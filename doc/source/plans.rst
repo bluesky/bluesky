@@ -736,36 +736,6 @@ name.
 
 .. _planned_pauses:
 
-Planned Pauses
-++++++++++++++
-
-Pausing is typically done interactively (Ctrl+C) but it can also be
-incorporated into a plan. The plan can pause the RunEngine, requiring the user
-to type ``RE.resume()`` to continue or ``RE.stop()`` to clean up and stop.
-
-Pauses can be interspersed using :func:`chain`. Demo:
-
-.. ipython:: python
-
-    from bluesky.plans import pchain, count, pause
-    from bluesky.examples import det
-    RE(pchain(count([det]), pause(), count([det])))
-    RE.state  # optional -- just doing this to show that we are paused
-    RE.resume()  # or, alternatively, RE.stop()
-
-Or pauses can be incorporated in a plan like so:
-
-.. code-block:: python
-
-    from bluesky.plans import pause, checkpoint
-
-    def pausing_plan():
-        while True:
-            yield from some_plan(...)
-            print("Type RE.resume() to go again or RE.stop() to stop.")
-            yield from checkpoint()  # marking where to resume from
-            yield from pause()
-
 Sleeping
 ++++++++
 
@@ -862,6 +832,36 @@ at different points in the plan:
 
         # Then wait for the slow motor.
         yield from wait('B')
+
+Planned Pauses
+++++++++++++++
+
+Pausing is typically done interactively (Ctrl+C) but it can also be
+incorporated into a plan. The plan can pause the RunEngine, requiring the user
+to type ``RE.resume()`` to continue or ``RE.stop()`` to clean up and stop.
+
+Pauses can be interspersed using :func:`chain`. Demo:
+
+.. ipython:: python
+
+    from bluesky.plans import pchain, count, pause
+    from bluesky.examples import det
+    RE(pchain(count([det]), pause(), count([det])))
+    RE.state  # optional -- just doing this to show that we are paused
+    RE.resume()  # or, alternatively, RE.stop()
+
+Or pauses can be incorporated in a plan like so:
+
+.. code-block:: python
+
+    from bluesky.plans import pause, checkpoint
+
+    def pausing_plan():
+        while True:
+            yield from some_plan(...)
+            print("Type RE.resume() to go again or RE.stop() to stop.")
+            yield from checkpoint()  # marking where to resume from
+            yield from pause()
 
 .. _preprocessors:
 
