@@ -19,7 +19,7 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            repeater, caching_repeater, count, Count, Scan,
                            fly_during_decorator, subs_decorator,
                            monitor_during_decorator,
-                           inject_md_wrapper)
+                           inject_md_wrapper, finalize_decorator)
 from bluesky.utils import all_safe_rewind
 
 
@@ -256,11 +256,55 @@ def test_finalize():
     def plan():
         yield from [Msg('null')]
 
+    def cleanup_plan():
+        yield from [Msg('read', det)]
+
+    # wrapper accepts list
     processed_plan = list(finalize_wrapper(plan(), [Msg('read', det)]))
-
     expected = [Msg('null'), Msg('read', det)]
-
     assert processed_plan == expected
+
+    # or func that returns list
+    def plan():
+        yield from [Msg('null')]
+
+    processed_plan = list(finalize_wrapper(plan(), lambda: [Msg('read', det)]))
+    expected = [Msg('null'), Msg('read', det)]
+    assert processed_plan == expected
+
+    # or generator instance
+    def plan():
+        yield from [Msg('null')]
+
+    processed_plan = list(finalize_wrapper(plan(), cleanup_plan()))
+    expected = [Msg('null'), Msg('read', det)]
+    assert processed_plan == expected
+
+    # or generator func
+    def plan():
+        yield from [Msg('null')]
+
+    processed_plan = list(finalize_wrapper(plan(), cleanup_plan))
+    expected = [Msg('null'), Msg('read', det)]
+    assert processed_plan == expected
+
+    # decorator accepts generator func
+    processed_plan = list(finalize_decorator(cleanup_plan)(plan)())
+    expected = [Msg('null'), Msg('read', det)]
+    assert processed_plan == expected
+
+    # or func that returns list
+    processed_plan = list(finalize_decorator(lambda: [Msg('read', det)])(plan)())
+    expected = [Msg('null'), Msg('read', det)]
+    assert processed_plan == expected
+
+    # decorator does NOT accept list
+    with pytest.raises(TypeError):
+        list(finalize_decorator([Msg('read', det)])(plan)())
+
+    # nor generator instance
+    with pytest.raises(TypeError):
+        list(finalize_decorator(cleanup_plan())(plan)())
 
 
 def test_finalize_runs_after_error(fresh_RE):
