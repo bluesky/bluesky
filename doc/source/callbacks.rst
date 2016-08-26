@@ -169,36 +169,26 @@ this command once. In an IPython terminal, the command is:
 
 .. code-block:: python
 
+    %matplotlib qt
     from bluesky.utils import install_qt_kickcer
     install_qt_kicker()
-
-You may also need to run the command:
-
-.. code-block:: python
-
-    %matplotlib
 
 If you are using a Jupyter notebook, the command is:
 
 .. code-block:: python
 
+    %matplotlib notebook
     from bluesky.utils import install_nb_kickcer
     install_nb_kicker()
 
-And you may also need to run the command:
-
-.. code-block:: python
-
-    %matplotlib notebook
-
-See
-`the relevant section of the IPython documentation <https://ipython.readthedocs.io/en/stable/interactive/magics.html?highlight=matplotlib#magic-matplotlib>`_
-for details.
-
 Why? The RunEngine and matplotlib (technically, matplotlib's Qt backend) both
 use an event loop. The RunEngine takes control of the event loop while it is
-executing a plan. These functions periodically "kick" the Qt event loop so
+executing a plan. The kicker function periodically "kicks" the Qt event loop so
 that the plots can re-draw while the RunEngine is running.
+
+As for the ``%matplotlib ...`` command, see
+`the relevant section of the IPython documentation <https://ipython.readthedocs.io/en/stable/interactive/magics.html?highlight=matplotlib#magic-matplotlib>`_
+for details.
 
 .. _liveplot:
 
