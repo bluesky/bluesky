@@ -96,7 +96,7 @@ change the log level to skip DEBUG-level messages:
 
     RE.log.setLevel(logging.INFO)
 
-.. info::
+.. note::
 
     For back-compatibility with old versions of bluesky, there is also an
     ``RE.verbose`` attribute. ``RE.verbose`` is a synonym for
