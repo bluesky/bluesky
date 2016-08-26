@@ -624,6 +624,9 @@ Produce several runs, changing a parmeter each time.
 
 .. code-block:: python
 
+    from bluesky.plans import scan
+    from bluesky.examples import det1, det2, motor
+
     def master_plan():
         "Run a plan several times, changing the step size each time."
         for num in range(5, 10):
@@ -633,7 +636,13 @@ Produce several runs, changing a parmeter each time.
 Execute the sample plan, looping through different samples. Change the plan
 parameters depending on the sample.
 
+Here we introduce :func:`abs_set`, which sets a motor a position (or a
+temperature controller to a temperature, etc.). See also :func:`rel_set`, which
+sets *relative* to the current value.
+
 .. code-block:: python
+
+    from bluesky.plans import abs_set
 
     sample_list = ['a', 'b', 'c']
     sample_ranges = {'a': {'start': -5, 'stop': -1},
@@ -645,7 +654,7 @@ parameters depending on the sample.
             yield from abs_set(sample_plate, sample)
             s_range = sample_ranges[sample]
             md = {'sample': sample}
-            yield from scan(motor, num=10, md=md, **s_range)
+            yield from scan([det1, det2], motor, num=10, md=md, **s_range)
 
 .. _customizing_metadata:
 
@@ -660,11 +669,14 @@ which makes it easy for a user-defined plan to pass in extra metadata.
 
 .. code-block:: python
 
+    from bluesky.plans import count
+    from bluesky.examples import det
+
     def master_plan():
         # ... insert code here to close shutter ...
-        yield from bp.count([det], md={'is_dark_frame': True})
+        yield from count([det], md={'is_dark_frame': True})
         # ... insert code here to open shutter ...
-        yield from bp.count([det], md={'is_dark_frame': False})
+        yield from count([det], md={'is_dark_frame': False})
 
 By default, the :func:`count` plan records the ``plan_name`` count. To customize
 the ``plan_name`` --- say, to differentiate separate *reasons* running a count
@@ -753,6 +765,103 @@ Or pauses can be incorporated in a plan like so:
             print("Type RE.resume() to go again or RE.stop() to stop.")
             yield from checkpoint()  # marking where to resume from
             yield from pause()
+
+Sleeping
+++++++++
+
+A "sleep" is a timed delay.
+
+.. code-block:: python
+
+    from bluesky.plans import sleep, abs_set
+    from bluesky.examples import motor
+
+    def sleepy():
+        "Set motor; sleep for a fixed time; set it to a new position."
+        yield from abs_set(motor, 5)
+        yield from sleep(2)  # units: seconds
+        yield from abs_set(motor, 10)
+
+The ``sleep`` plan is not the same as Python's built-in sleep function,
+``time.sleep(...)``. Never use ``time.sleep(...)`` in a plan; use ``yield from
+sleep(...)`` instead. It allows other tasks --- such as watching for Ctrl+C,
+updating plots --- to be executed while the clock runs.
+
+Waiting
++++++++
+
+Use the :func:`wait` plan to block progress until a device reports that it is
+ready. For example, wait for a motor to finish moving or a detector to finish
+triggering.
+
+Here, we move to motors at once and wait for them both to finish.
+
+.. code-block:: python
+
+    from bluesky.plans import abs_set, wait
+    from bluesky.examples import motor1, motor2
+
+    def wait_multiple():
+        "Set, trigger, read"
+        yield from abs_set(motor1, 5, group='A')  # Start moving motor1.
+        yield from abs_set(motor2, 5, group='A')  # Start moving motor2.
+        yield from wait('A')  # Now wait for both to finish.
+
+The ``group`` is just label that we can use to refer to groups of devices that
+we want let set or trigger simulataneously and then wait for them as a group.
+The plan will continue once both motors have reported that they have finished
+moving successfully.
+
+We could have written this some logic with a loop:
+
+.. code-block:: python
+
+    def wait_multiple(motors):
+        "Set all motors moving; then wait for all motors to finish."
+        for motor in motors:
+            yield from abs_set(motor, 5, group='A')
+        yield from wait('A')
+
+Two convenient shortcuts are available for common cases. If you are setting one
+motor at a time, use the ``wait`` keyword argument.
+
+.. code-block:: python
+
+    def wait_one():
+        yield from abs_set(motor1, wait=True)
+        # `wait=True` implicitly adds a group and `wait` plan to match.
+
+The same works for :func:`rel_set` and :func:`trigger`. Also, if you are only
+dealing with one group at a time, you do not actually need to label the group:
+
+.. code-block:: python
+
+    def wait_multiple(motors):
+        "Set all motors moving; then wait for all motors to finish."
+        for motor in motors:
+            yield from abs_set(motor, 5)
+        yield from wait()
+
+But by using labels you can express complex logic, waiting for different groups
+at different points in the plan:
+
+.. code-block:: python
+
+    def staggered_wait(det, fast_motors, slow_motor):
+        # Start all the motors, fast and slow, moving at once.
+        # Put all the fast_motors in one group.
+        for motor in slow_motors:
+            yield from abs_set(motor, 5, group='A')
+        # ...but put the slow motor is separate group.
+        yield from set(slow_motor, 5, group='B')
+
+        # Wait for all the fast motors.
+        yield from wait('A')
+
+        # Do some stuff that doesn't require the slow motor to be finished.
+
+        # Then wait for the slow motor.
+        yield from wait('B')
 
 .. _preprocessors:
 
@@ -1060,10 +1169,51 @@ Starting from the middle and explaining outward:
 Plans with adaptive logic
 +++++++++++++++++++++++++
 
-TO DO
+Two-way communication is possible between the generator and the RunEngine.
+For example, the 'read' command responds with its reading. We can use it to
+make an on-the-fly decision about whether to continue or stop.
 
-Asynchronous data streams
-+++++++++++++++++++++++++
+.. code-block:: python
+
+    from bluesky.plans import abs_set, trigger, read
+    from bluesky.examples import det, motor
+
+    def conditional_break(det, motor, threshold):
+        """Set, trigger, read until the detector reads intensity < threshold"""
+        i = 0
+        while True:
+            print("LOOP %d" % i)
+            from abs_set(motor, i)
+            reading = yield from trigger_and_read([det])
+            if reading['det']['value'] < threshold:
+                print('DONE')
+                break
+            i += 1
+
+The important line in this example is
+
+.. code-block:: python
+
+    reading = yield from read(det)
+
+The action proceeds like this:
+
+1. The plan yields a 'read' message to the RunEngine.
+2. The RunEngine reads the detector.
+3. The RunEngine sends that reading *back to the plan*, and that response is
+   assigned to the variable ``reading``.
+
+The response from 'read' -- ``reading``, above -- is formatted like:
+
+.. code-block:: python
+
+     {<name>: {'value': <value>, 'timestamp': <timestamp>}, ...}
+
+For a detailed technical description of the messages and their responses,
+see :ref:`msg`.
+
+Asynchronous plans: "fly scans" and "monitoring"
+++++++++++++++++++++++++++++++++++++++++++++++++
 
 TO DO
 
