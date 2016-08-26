@@ -1178,13 +1178,14 @@ make an on-the-fly decision about whether to continue or stop.
     from bluesky.plans import abs_set, trigger, read
     from bluesky.examples import det, motor
 
-    def conditional_break(det, motor, threshold):
+    def conditional_break(threshold):
         """Set, trigger, read until the detector reads intensity < threshold"""
         i = 0
         while True:
             print("LOOP %d" % i)
             from abs_set(motor, i)
-            reading = yield from trigger_and_read([det])
+            yield from trigger(det, wait=True)
+            reading = yield from read(det)
             if reading['det']['value'] < threshold:
                 print('DONE')
                 break
