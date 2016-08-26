@@ -1,7 +1,7 @@
 Bluesky Data Collection Framework
 =================================
 
-Bluesky is light-weight Python package for interactive data collection. There
+Bluesky is a light-weight Python package for interactive data collection. There
 are three components:
 
 * A *Plan*, an experimental procedures composed of simple, granular
@@ -22,7 +22,7 @@ Basic Operation
         from bluesky import RunEngine
         RE = RunEngine({})
 
-2. Use a built-in *plan* (an experimental procedure)
+2. Use a built-in *plan* (an experimental procedure).
 
     .. code-block:: python
 

@@ -151,6 +151,35 @@ row is added to the table. Demo:
 
     RE(scan([det], motor, 1, 5, 5), LiveTable([motor, det]))
 
+Pass an empty list of columns to show simply 'time' and 'seq_num' (sequence
+number).
+
+.. code-block:: python
+
+    LiveTable([])
+
+In the demo above, we passed in a list of *device(s)*, like so:
+
+.. code-block:: python
+
+    LiveTable([motor])
+
+Internally, ``LiveTable`` obtains the name(s) of the field(s) produced by
+reading ``motor``. (You can do this yourself too:
+``list(motor.describe().keys())``.) In this simple case, there is only one
+field and it is also named ``'motor'``. But in the general case, a device can
+produce tens or even hundreds of separate readings, and it can be useful to
+spell out specific fields rather than a whole device.
+
+.. code-block:: python
+
+    # the field 'motor', in quotes, not the device, motor
+    LiveTable(['motor'])
+
+In fact, almost all other callbacks (including ``LivePlot``) *require* a
+specific field. They will not accept a device because it may have more than one
+field.
+
 .. autoclass:: bluesky.callbacks.LiveTable
 
 .. _kickers:
@@ -217,6 +246,24 @@ Plot scalars. Example:
     RE = RunEngine({})
     RE(scan([det], motor, -5, 5, 30), LivePlot('det', 'motor'))
 
+To customize style, pass in any
+`matplotlib line style keyword argument <http://matplotlib.org/api/lines_api.html#module-matplotlib.lines>`_.
+(``LivePlot`` will pass it through to ``Axes.plot``.) Example:
+
+.. code-block:: python
+
+    RE(scan([det], motor, -5, 5, 30),
+       LivePlot('det', 'motor', marker='x', markersize=10, color='red'))
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import scan
+    from bluesky.examples import det, motor
+    from bluesky.callbacks import LivePlot
+    RE = RunEngine({})
+    RE(scan([det], motor, -5, 5, 30),
+       LivePlot('det', 'motor', marker='x', markersize=10, color='red'))
 
 .. autoclass:: bluesky.callbacks.LivePlot
 
@@ -303,6 +350,8 @@ Now attributes of ps, documented below, contain various peak statistics.
 There is also a convenience function for plotting:
 
 .. code-block:: python
+
+    from bluesky.callbacks.scientific import plot_peak_stats
 
     plot_peak_stats(ps)
 
