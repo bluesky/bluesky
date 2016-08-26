@@ -258,9 +258,6 @@ procuredures to run pre-suspend and pre-resume.
 Built-in Suspenders
 -------------------
 
-The example above demonstrates ``SuspendBoolHigh``. Several other variants
-are built in, and it is straightforward to write customized ones.
-
 .. autosummary::
    :toctree:
    :nosignatures:
