@@ -340,7 +340,10 @@ With a plot:
 
     from bluesky.callbacks import LivePlot
 
-    RE(count([det], num=5), LivePlot('det'))
+    # We'll use the 'noisy_det' example detector for a more interesting plot.
+    from bluesky.examples import noisy_det
+
+    RE(count([noisy_det], num=5), LivePlot('noisy_det'))
 
 Or, to save some typing for repeated use,
 :ref:`define a custom plan with the plot incorporated <subs_decorator>`.
@@ -350,10 +353,10 @@ Or, to save some typing for repeated use,
 
     from bluesky import RunEngine
     from bluesky.plans import count
-    from bluesky.examples import det
+    from bluesky.examples import noisy_det
     from bluesky.callbacks import LivePlot
     RE = RunEngine({})
-    RE(count([det], num=5), LivePlot('det'))
+    RE(count([noisy_det], num=5), LivePlot('noisy_det'))
 
 .. autosummary::
    :toctree:
@@ -426,7 +429,7 @@ product scan"). Mixtures of these are also supported.
 
 .. code-block:: python
 
-    from bluesky.examples import det, motor1, motor2, motor3
+    from bluesky.examples import det, motor1, motor2
 
     # Inner product: move motors together.
     # Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
@@ -449,8 +452,11 @@ With a plot:
 
     from bluesky.callbacks import LiveRaster
 
-    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
-       LiveRaster((3, 5), 'det'))
+    # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
+    from bluesky.examples import det4
+
+    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+       LiveRaster((6, 10), 'det4'))
 
 Or, again, to save some typing for repeated use,
 :ref:`define a custom plan with the plot incorporated <subs_decorator>`.
@@ -460,11 +466,13 @@ Or, again, to save some typing for repeated use,
 
     from bluesky import RunEngine
     from bluesky.plans import outer_product_scan
-    from bluesky.examples import det, motor1, motor2
+    from bluesky.examples import det4, motor1, motor2
     from bluesky.callbacks import LiveRaster
+    motor1._fake_sleep = 0
+    motor2._fake_sleep = 0
     RE = RunEngine({})
-    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
-       LiveRaster((3, 5), 'det'))
+    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+       LiveRaster((6, 10), 'det4'))
 
 The general case, moving some motors together in an "inner product" against
 another (or motors) in an "outer product" can be addressed using a ``cycler``.

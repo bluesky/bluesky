@@ -501,6 +501,8 @@ det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
 det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
 det3 = SynGauss('det3', motor3, 'motor3', center=-1, Imax=2, sigma=1)
+det4 = Syn2DGauss('det4', motor1, 'motor1', motor2, 'motor2',
+                  center=(0, 0), Imax=1)
 
 
 def simple_scan(motor):
