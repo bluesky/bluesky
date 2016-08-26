@@ -147,23 +147,7 @@ coverage of the sample.
 .. note::
 
     In IPython, before running examples that generate plots, you may need to
-    first run this command once:
-
-    .. code-block:: python
-
-        %matplotlib
-
-    or, if you are using a Jupyter notebook,
-
-    .. code-block:: python
-
-        %matplotlib notebook
-
-    Then, the following example should spawn a new window with a plot in it.
-
-    See
-    `the relevant section of the IPython documentation <https://ipython.readthedocs.io/en/stable/interactive/magics.html?highlight=matplotlib#magic-matplotlib>`_
-    for details.
+    first run :ref:`some setup commands <kickers>`.
 
 .. plot::
    :include-source:

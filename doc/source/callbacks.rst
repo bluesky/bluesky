@@ -153,6 +153,8 @@ row is added to the table. Demo:
 
 .. autoclass:: bluesky.callbacks.LiveTable
 
+.. _kickers:
+
 Aside: Making plots update live
 +++++++++++++++++++++++++++++++
 
@@ -186,7 +188,8 @@ use an event loop. The RunEngine takes control of the event loop while it is
 executing a plan. The kicker function periodically "kicks" the Qt event loop so
 that the plots can re-draw while the RunEngine is running.
 
-As for the ``%matplotlib ...`` command, see
+The ``%matplotlib ...`` command is standard setup, having nothing to do with
+bluesky in particular. See
 `the relevant section of the IPython documentation <https://ipython.readthedocs.io/en/stable/interactive/magics.html?highlight=matplotlib#magic-matplotlib>`_
 for details.
 

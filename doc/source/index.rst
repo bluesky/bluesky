@@ -6,7 +6,7 @@ are three components:
 
 * A *Plan*, an experimental procedures composed of simple, granular
   instructions dubbed *Messages*;
-* a *Run Engine,* which processes the messages and coordinates collection; 
+* a *Run Engine,* which processes the messages and coordinates collection;
 * and *Documents*, Python dictionaries containing data and metadata, organized
   in a
   `specified but flexible <http://nsls-ii.github.io/architecture-overview.html>`__
