@@ -929,9 +929,10 @@ def finalize_wrapper(plan, final_plan):
     ----------
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
-    final_plan : iterable or iterator
-        a generator, list, or similar containing `Msg` objects; attempted to be
-        run no matter what happens in the first plan
+    final_plan : callable, iterable or iterator
+        a generator, list, or similar containing `Msg` objects or a callable
+        that reurns one; attempted to be run no matter what happens in the
+        first plan
 
     Yields
     ------
@@ -939,6 +940,12 @@ def finalize_wrapper(plan, final_plan):
         messages from `plan` until it terminates or an error is raised, then
         messages from `final_plan`
     '''
+    # If final_plan is a generator *function* (as opposed to a generator
+    # *instance*), call it.
+    if callable(final_plan):
+        final_plan_instance = final_plan()
+    else:
+        final_plan_instance = final_plan
     cleanup = True
     try:
         ret = yield from plan
