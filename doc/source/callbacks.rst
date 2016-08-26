@@ -230,10 +230,58 @@ Live Image
 LiveRaster (Heat Map)
 +++++++++++++++++++++
 
+Plot a scalar value as a function of two variables on a regular grid. Example:
+
+.. code-block:: python
+
+    from bluesky.plans import outer_product_scan
+    from bluesky.examples import det4, motor1, motor2
+    from bluesky.callbacks import LiveRaster
+
+    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+       LiveRaster((6, 10), 'det4'))
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import outer_product_scan
+    from bluesky.examples import det4, motor1, motor2
+    from bluesky.callbacks import LiveRaster
+    motor1._fake_sleep = 0
+    motor2._fake_sleep = 0
+    RE = RunEngine({})
+    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+       LiveRaster((6, 10), 'det4'))
+
 .. autoclass:: bluesky.callbacks.LiveRaster
 
 LiveMesh (Heat Map)
 +++++++++++++++++++
+
+Plot a scalar value as a function of two variables. Unlike
+:class:`bluesky.callbacks.LiveRaster`, this does not assume a regular grid.
+Example:
+
+.. code-block:: python
+
+    from bluesky.plans import outer_product_scan
+    from bluesky.examples import det4, motor1, motor2
+    from bluesky.callbacks import LiveMesh
+
+    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+       LiveMesh('motor1', 'motor2', 'det4', xlim=(-3, 3), ylim=(-5, 5)))
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import outer_product_scan
+    from bluesky.examples import det4, motor1, motor2
+    from bluesky.callbacks import LiveMesh
+    motor1._fake_sleep = 0
+    motor2._fake_sleep = 0
+    RE = RunEngine({})
+    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+       LiveMesh('motor1', 'motor2', 'det4', xlim=(-3, 3), ylim=(-5, 5)))
 
 .. autoclass:: bluesky.callbacks.LiveMesh
 
