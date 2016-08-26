@@ -288,7 +288,38 @@ Example:
 PeakStats 
 ++++++++++
 
+Compute statistics of peak-like data. Example:
+
+.. code-block:: python
+
+    from bluesky.callbacks.scientific import PeakStats
+    from bluesky.examples import motor, det
+    from bluesky.plans import scan
+
+    ps = PeakStats('motor', 'det')
+    RE(scan([det], motor, -5, 5, 10), ps)
+
+Now attributes of ps, documented below, contain various peak statistics.
+There is also a convenience function for plotting:
+
+.. code-block:: python
+
+    plot_peak_stats(ps)
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.callbacks.scientific import PeakStats, plot_peak_stats
+    from bluesky.examples import motor, det
+    from bluesky.plans import scan
+
+    RE = RunEngine({})
+    ps = PeakStats('motor', 'det')
+    RE(scan([det], motor, -5, 5, 10), ps)
+    plot_peak_stats(ps)
+
 .. autoclass:: bluesky.callbacks.scientific.PeakStats
+.. autofunction:: bluesky.callbacks.scientific.plot_peak_stats
 
 Export
 ------
