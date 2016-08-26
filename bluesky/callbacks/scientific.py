@@ -6,36 +6,36 @@ from bluesky.callbacks import CollectThenCompute
 
 
 class PeakStats(CollectThenCompute):
+    """
+    Compute peak statsitics after a run finishes.
+
+    Results are stored in the attributes.
+
+    Parameters
+    ----------
+    x : string
+        field name for the x variable (e.g., a motor)
+    y : string
+        field name for the y variable (e.g., a detector)
+
+    edge_count : int or None, optional
+        If not None, number of points at beginning and end to use
+        for quick and dirty background subtraction.
+
+    Note
+    ----
+    It is assumed that the two fields, x and y, are recorded in the same
+    Event stream.
+
+    Attributes
+    ----------
+    com : center of mass
+    cen : mid-point between half-max points on each side of the peak
+    max : x location of y maximum
+    min : x location of y minimum
+    """
 
     def __init__(self, x, y, edge_count=None):
-        """
-        Compute peak statsitics after a run finishes.
-
-        Results are stored in the attributes.
-
-        Parameters
-        ----------
-        x : string
-            field name for the x variable (e.g., a motor)
-        y : string
-            field name for the y variable (e.g., a detector)
-
-        edge_count : int or None, optional
-            If not None, number of points at beginning and end to use
-            for quick and dirty background subtraction.
-
-        Note
-        ----
-        It is assumed that the two fields, x and y, are recorded in the same
-        Event stream.
-
-        Attributes
-        ----------
-        com : center of mass
-        cen : TBD
-        max : x location of y maximum
-        min : x location of y minimum
-        """
         self.x = x
         self.y = y
         self.com = None

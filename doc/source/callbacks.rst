@@ -288,7 +288,7 @@ Example:
 PeakStats 
 ++++++++++
 
-TO DO
+.. autoclass:: bluesky.callbacks.scientific.PeakStats
 
 Export
 ------
