@@ -142,12 +142,13 @@ class Reader(Base):
 class Mover(Base):
     _klass = 'mover'
 
-    def __init__(self, name, fields, *, sleep_time=0, **kwargs):
+    def __init__(self, name, fields, *, sleep_time=0, jitter=0, **kwargs):
         super(Mover, self).__init__(name, fields, **kwargs)
         self._data = {f: {'value': 0, 'timestamp': ttime.time()}
                       for f in self._fields}
         self.ready = True
         self._fake_sleep = sleep_time
+        self._fake_jitter = jitter
 
     def read(self):
         return self._data
@@ -162,9 +163,11 @@ class Mover(Base):
             ttime.sleep(self._fake_sleep)  # simulate moving time
         if isinstance(val, dict):
             for k, v in val.items():
-                self._data[k] = v
+                self._data[k] = v + self._fake_jitter * np.random.randn()
         else:
-            self._data = {f: {'value': val, 'timestamp': ttime.time()}
+            self._data = {f: {'value': (val +
+                                        self._fake_jitter * np.random.randn()),
+                              'timestamp': ttime.time()}
                           for f in self._fields}
         self.ready = True
         return self

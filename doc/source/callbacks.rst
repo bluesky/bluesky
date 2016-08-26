@@ -176,7 +176,7 @@ spell out specific fields rather than a whole device.
     # the field 'motor', in quotes, not the device, motor
     LiveTable(['motor'])
 
-In fact, almost all other callbacks (including ``LivePlot``) *require* a
+In fact, almost all other callbacks (including :ref:`LivePlot`) *require* a
 specific field. They will not accept a device because it may have more than one
 field.
 
@@ -315,6 +315,11 @@ Example:
     from bluesky.examples import det4, motor1, motor2
     from bluesky.callbacks import LiveMesh
 
+    # We'll introduce some simulated "jitter" in the simulated motors.
+    # Now, they won't go exactly where they are told to go.
+    motor1._fake_jitter = 0.2
+    motor2._fake_jitter = 0.2
+
     RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveMesh('motor1', 'motor2', 'det4', xlim=(-3, 3), ylim=(-5, 5)))
 
@@ -326,9 +331,14 @@ Example:
     from bluesky.callbacks import LiveMesh
     motor1._fake_sleep = 0
     motor2._fake_sleep = 0
+    motor1._fake_jitter = 0.2
+    motor2._fake_jitter = 0.2
     RE = RunEngine({})
     RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveMesh('motor1', 'motor2', 'det4', xlim=(-3, 3), ylim=(-5, 5)))
+    # Take the jitter back out for later reuse of these motors.
+    motor1._fake_jitter = 0
+    motor2._fake_jitter = 0
 
 .. autoclass:: bluesky.callbacks.LiveMesh
 
