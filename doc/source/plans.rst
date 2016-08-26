@@ -866,6 +866,9 @@ messsages before re-raising the exception and killing plan execution.
 
 .. code-block:: python
 
+    # This example is illustrative, but it is not completely correct.
+    # Use `finalize_wrapper` instead (or read its source code).
+
     def plan_with_cleanup():
         try:
             yield from main_plan()
@@ -874,8 +877,8 @@ messsages before re-raising the exception and killing plan execution.
             yield from cleanup_plan()
             raise  # Re-raise the exception.
 
-The :func:`finalize_wrapper` preprocessor provides a succinct way of applying
-this pattern.
+The :func:`finalize_wrapper` preprocessor provides a succinct and fully correct
+way of applying this general pattern.
 
 .. code-block:: python
 
