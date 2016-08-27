@@ -89,9 +89,10 @@ Robustness
    :maxdepth: 1
    :hidden:
 
-   plans 
+   plans_intro
    documents
    metadata
+   plans
    callbacks
    state-machine
    debugging
