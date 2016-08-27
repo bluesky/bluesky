@@ -552,7 +552,49 @@ A fermat spiral:
 Adaptive scans
 ^^^^^^^^^^^^^^
 
-Scans with adaptive step sizes:
+These are one-dimension scans with an adaptive step size tuned to move quickly
+over flat regions can concentrate readings in areas of high variation by
+computing the local slope aiming for a target delta between points.
+
+This is a basic example of the power of adaptive plan logic.
+
+.. code-block:: python
+
+    from bluesky.plans import adaptive_scan
+    from bluesky.callbacks import LivePlot
+    from bluesky.examples import motor, det
+
+    RE(adaptive_scan([det], 'det', motor,
+                     start=-15,
+                     stop=10,
+                     min_step=0.01,
+                     max_step=5,
+                     target_delta=.05,
+                     backstep=True),
+       LivePlot('det', 'motor', markersize=10, marker='o'))
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import adaptive_scan
+    from bluesky.callbacks import LivePlot
+    from bluesky.examples import motor, det
+
+    RE = RunEngine({})
+
+    RE(adaptive_scan([det], 'det', motor,
+                     start=-15,
+                     stop=10,
+                     min_step=0.01,
+                     max_step=5,
+                     target_delta=.05,
+                     backstep=True),
+       LivePlot('det', 'motor', markersize=10, marker='o'))
+
+From left to right, the scan lengthens its stride through the flat region. At
+first, it steps past the peak. The large jump causes it to double back and then
+sample more densely through the peak. As the peak flattens, it lengthens its
+stride again.
 
 .. autosummary::
    :toctree:
