@@ -11,7 +11,7 @@ documents themselves, aiming to give a sense of the structure and familiarity
 with useful components.
 
 When a plan instructs the RunEngine to read a detector, the RunEngine records
-hat reading in a Python dictionary that relates the measurement to associated
+that reading in a Python dictionary that relates the measurement to associated
 metadata. We dub this dictionary, which is organized in a formally specified
 way, a *document*.
 
