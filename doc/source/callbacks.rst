@@ -274,8 +274,8 @@ Live Image
 
 .. _liveraster:
 
-LiveRaster (Heat Map)
-+++++++++++++++++++++
+LiveRaster (gridded heat map)
++++++++++++++++++++++++++++++
 
 Plot a scalar value as a function of two variables on a regular grid. Example:
 
@@ -302,8 +302,8 @@ Plot a scalar value as a function of two variables on a regular grid. Example:
 
 .. autoclass:: bluesky.callbacks.LiveRaster
 
-LiveMesh (Heat Map)
-+++++++++++++++++++
+LiveMesh (scattered heat map)
++++++++++++++++++++++++++++++
 
 Plot a scalar value as a function of two variables. Unlike
 :class:`bluesky.callbacks.LiveRaster`, this does not assume a regular grid.
