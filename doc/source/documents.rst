@@ -72,8 +72,9 @@ Event
 
 An 'event' is a data point with an associated time. One event might contain
 more than one reading, but it is presumed that these readings took place at
-roughly the same time --- that, for the purposes of later analysis, that can
-usually be treated as synchronous.
+roughly the same time --- that, for the purposes of later analysis, the
+measurements in an can usually be treated as synchronous. For example, they
+could be presented together as one row in a table.
 
 .. code-block:: python
 
