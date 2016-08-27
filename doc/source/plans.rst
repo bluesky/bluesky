@@ -1000,9 +1000,9 @@ have clear names.
 Built-in Preprocessors
 ++++++++++++++++++++++
 
-Each of the following functions, named ``<something>_wrapper``, operates on
-a generator instance. There are corresponding functions named
-``<something_decorator>`` that operate on a generator function.
+Each of the following functions named ``<something>_wrapper`` operates on
+a generator instance. The corresponding functions named
+``<something_decorator>`` operate on a generator function.
 
 .. autosummary::
    :nosignatures:
