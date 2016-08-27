@@ -43,6 +43,7 @@ Index
    callbacks
    state-machine
    debugging
+   hardware
    msg
    run_engine
    api_changes
