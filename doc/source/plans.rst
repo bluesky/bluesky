@@ -113,18 +113,18 @@ The plan :func:`scan` moves a motor in steps and takes a reading at each positio
 
     motor.set(3)
 
-As you might guess, ``relative_scan`` moves the motor relative to its starting
-position. And at the end, ``relative_scan`` then returns it to that starting
-position.
+As you might guess, :func:`relative_scan` moves the motor relative to its
+starting position. And at the end, :func:`relative_scan` then returns it to
+that starting position.
 
 .. ipython:: python
 
     print_summary(relative_scan([det], motor, 1, 3, 3))
 
-(Restoring the original position at the end of a ``relative_scan`` is a
+(Restoring the original position at the end of a :func:`relative_scan` is a
 convention carried over from the data collection program SPEC, widely used in
-synchrontron science. It's possible to do this same for :func:`scan`, of course ---
-read on.)
+synchrontron science. It's possible to do this same for :func:`scan`, of course
+--- read on.)
 
 Summarizing a plan is also a quick way to check for some types of errors.
 More sophisticated error checking is possible and a likely area of future
