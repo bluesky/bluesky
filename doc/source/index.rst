@@ -90,6 +90,7 @@ Robustness
    :hidden:
 
    plans 
+   documents
    metadata
    callbacks
    state-machine

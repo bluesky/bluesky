@@ -1156,7 +1156,9 @@ For multi-dimensional plans, the default inner loop is:
 Likewise, a custom function with the same signature may be passed into the
 ``per_step`` argument of any of the multi-dimensional plans.
 
-Reconstructing ``count`` from scratch
+.. _reimplementing_count:
+
+Reimplementing ``count`` from scratch
 +++++++++++++++++++++++++++++++++++++
 
 In this section we will build a custom plan out of the stub plans above.
