@@ -560,10 +560,10 @@ Here, we move two motors at once and wait for them both to finish.
         yield from abs_set(motor2, 5, group='A')  # Start moving motor2.
         yield from wait('A')  # Now wait for both to finish.
 
-The ``group`` is just label that we can use to refer to groups of devices that
-we want to move or trigger simulataneously and then wait for them as a group.
-This plan will continue once both motors have reported that they have finished
-moving successfully.
+The ``group`` is just temporary label that we can use to refer to groups of
+devices that we want to move or trigger simulataneously and then wait for them
+as a group.  This plan will continue once both motors have reported that they
+have finished moving successfully.
 
 We could have written this some logic with a loop:
 

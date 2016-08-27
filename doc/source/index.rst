@@ -16,7 +16,8 @@ and metadata. It emphasizes the following virtues:
 * **Pluggable I/O:** Export data (live) into any desired format or database.
 * **Customizability:** Integrate custom experimental procedures and commands,
   and get the I/O and interruption features for free.
-* **Robust Design:** A strong automated test suite ensures project stability.
+* **Integration with Scientific Python:** Interface naturally with numpy and
+  Python scientific stack.
 
 Bluesky interacts with hardware through Python objects that are expected to
 have a specified interface. This interface is implemented for "simulated"
