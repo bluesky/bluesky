@@ -12,8 +12,9 @@ with useful components.
 
 When a plan instructs the RunEngine to read a detector, the RunEngine records
 that reading in a Python dictionary that relates the measurement to associated
-metadata. We dub this dictionary, which is organized in a formally specified
-way, a *document*.
+metadata. We dub this dictionary, which is organized in a
+`formally specified <https://github.com/NSLS-II/event-model>`_ way, a
+*document*.
 
 Overview of a "Run"
 -------------------
