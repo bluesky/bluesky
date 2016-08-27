@@ -1497,7 +1497,7 @@ counterpart :func:`scan`.
   SPEC-like plans expect the number of "intervals" (strides) N, leading to N +
   1 points. In all other parts of bluesky, we adhere to the Python/scipy
   convention, expecting the user to input the number of points. To avoid
-  confusion, the argument names are different: non-SPEC-like plans have a
+  ambiguity, the argument names are different: non-SPEC-like plans have a
   ``num`` argument; SPEC-like plans have ``intervals`` instead.
 
 Global state
