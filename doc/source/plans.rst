@@ -188,8 +188,8 @@ To simply chain plans together, use :func:`pchain` to make one long plan.
             RE(plan1())
             RE(plan2())
 
-    Calling ``RE(...)`` inside a functions means that you can not use any of
-    the introspection tools on the actions it will take.
+    Calling ``RE(...)`` inside a function means that you can not use any of
+    the introspection tools on the actions the function will take.
     
     Also, in the event of an error or interruptions, the RunEngine can do more
     to recover if it maintains control. In the bad example above, it loses
@@ -198,15 +198,19 @@ To simply chain plans together, use :func:`pchain` to make one long plan.
     Instead, use :func:`pchain` or ``yield from`` (see below) to make one long
     plan.
 
-What if want to ``print`` or do other activities between executing the plans?
-There is another way to combine plans to accomodate this.
+What if want to ``print`` or do other activities as part of a plan?
+There is another way to combine plans to accomodate this:
 
 .. code-block:: python
 
     def master_plan():
+        "a plan that combines other plans, with interspersed code"
+
         # Scan and read detectors 1 and 2.
         yield from scan([det1, det2], motor, 1, 5, 10)
+
         print('Now plan1 is finished. Moving on to plan2.')
+
         # Scan again and just read detector 1.
         yield from relative_scan([det1], motor, 5, 10, 10)
 
@@ -264,7 +268,7 @@ To examine what is happening when, we can add prints.
 
 .. ipython:: python
 
-    def f():
+    def verbose_f():
         print("before 1")
         yield 1
         print("before 2")
@@ -272,7 +276,7 @@ To examine what is happening when, we can add prints.
 
 .. ipython:: python
 
-    it = f()
+    it = verbose_f()
     next(it)
     next(it)
 
@@ -298,7 +302,7 @@ Built-in Plans
 --------------
 
 A variety of pre-assembled plans are provided. Like sandwiches on a deli menu,
-you can use our pre-assembled plans or assembled your own from the same
+you can use our pre-assembled plans or assemble your own from the same
 ingredients, catalogued in :ref:`stub_plans` below.
 
 Notice that their names are links. Follow the links for usage details and more
@@ -615,8 +619,12 @@ Misc.
 
 .. _stub_plans:
 
-Stub Plans (ingredients for remixing)
-+++++++++++++++++++++++++++++++++++++
+Stub Plans
+++++++++++
+
+These are the aforementioned "ingredients" for remixing, the pieces from which
+the pre-assembled plans above were made. The next section provides many
+examples.
 
 .. autosummary::
    :nosignatures:
@@ -652,9 +660,9 @@ Stub Plans (ingredients for remixing)
     wait
     wait_for
 
-We also have a number of wrapper functions, decorators, and utility functions
-that make building these easier. Examples and API documentation are in later
-sections, below.
+We also provide :ref:`wrapper and decorator functions <preprocessors>` and
+:ref:`utility functions <plan_utils>`, documented below, that make building
+these easier.
 
 Simple Custom Plans
 -------------------
@@ -670,13 +678,10 @@ Produce several runs, changing a parmeter each time.
     from bluesky.examples import det1, det2, motor
 
     def master_plan():
-        "Run a plan several times, changing the step size each time."
+        "Run a scan several times, changing the step size each time."
         for num in range(5, 10):
             # With each iteration, take more densely-spaced readings.
             yield from scan([det1, det2], motor, 1, 5, num)
-
-Execute the sample plan, looping through different samples. Change the plan
-parameters depending on the sample.
 
 Here we introduce :func:`abs_set`, which sets a motor a position (or a
 temperature controller to a temperature, etc.). See also :func:`rel_set`, which
@@ -684,19 +689,41 @@ sets *relative* to the current value.
 
 .. code-block:: python
 
-    from bluesky.plans import abs_set
+    from bluesky.plans import count, abs_set
+    from bluesky.examples import det1, det2, motor
 
-    sample_list = ['a', 'b', 'c']
+    def master_plan():
+        "Move a motor into place, then take a reading from detectors."
+        yield from abs_set(motor, 3)
+        yield from count([det1, det2])
+
+This more complex example loops through a list of "samples." It changes the
+plan parameters depending on the sample.
+
+.. code-block:: python
+
+    from bluesky.plans import abs_set
+    from bluesky.examples import det1, det2, motor1, motor2
+    sample_plate = motor1
+
+    sample_list = ['a', 'b', 'c']  # list of sample names
+
+    # mapping each sample name to a range of interest
     sample_ranges = {'a': {'start': -5, 'stop': -1},
                      'b': {'start': -1, 'stop': 1},
                      'c': {'start': 1, 'stop': 5}}
 
-    def sample_plan(sample_list):
+    def sample_plan(sample_list, sample_ranges):
+        "Loop over sample_list, and scan each one based on sample_ranges."
         for sample in sample_list:
+            # Move the sample into place.
             yield from abs_set(sample_plate, sample)
+
+            # Look up the range of interest for this sample.
             s_range = sample_ranges[sample]
-            md = {'sample': sample}
-            yield from scan([det1, det2], motor, num=10, md=md, **s_range)
+
+            # Run a scan over that range.
+            yield from scan([det1, det2], motor, num=10, **s_range)
 
 .. _customizing_metadata:
 
@@ -715,6 +742,7 @@ which makes it easy for a user-defined plan to pass in extra metadata.
     from bluesky.examples import det
 
     def master_plan():
+        "Read a detector with the shutter closed and then open."
         # ... insert code here to close shutter ...
         yield from count([det], md={'is_dark_frame': True})
         # ... insert code here to open shutter ...
@@ -727,6 +755,7 @@ the ``plan_name`` --- say, to differentiate separate *reasons* running a count
 .. code-block:: python
 
     def calib_count(dets, num=3):
+        "A count whose data will be designated 'calibration'."
         md = {'plan_name': 'calib_count'}
         yield from count(dets, num=num, md=md)
 
@@ -738,6 +767,7 @@ overrides the hard-coded metadata, use the following pattern:
     from collections import ChainMap
 
     def calib_count(dets, num=3, *, md=None):
+        "A count whose data will be designated 'calibration'."
         if md is None:
             md = {}
         md = ChainMap(md, 
@@ -794,7 +824,7 @@ A "sleep" is a timed delay.
         yield from sleep(2)  # units: seconds
         yield from abs_set(motor, 10)
 
-The ``sleep`` plan is not the same as Python's built-in sleep function,
+The :func:`sleep` plan is not the same as Python's built-in sleep function,
 ``time.sleep(...)``. Never use ``time.sleep(...)`` in a plan; use ``yield from
 sleep(...)`` instead. It allows other tasks --- such as watching for Ctrl+C,
 updating plots --- to be executed while the clock runs.
@@ -806,7 +836,7 @@ Use the :func:`wait` plan to block progress until a device reports that it is
 ready. For example, wait for a motor to finish moving or a detector to finish
 triggering.
 
-Here, we move to motors at once and wait for them both to finish.
+Here, we move two motors at once and wait for them both to finish.
 
 .. code-block:: python
 
@@ -820,8 +850,8 @@ Here, we move to motors at once and wait for them both to finish.
         yield from wait('A')  # Now wait for both to finish.
 
 The ``group`` is just label that we can use to refer to groups of devices that
-we want let set or trigger simulataneously and then wait for them as a group.
-The plan will continue once both motors have reported that they have finished
+we want to move or trigger simulataneously and then wait for them as a group.
+This plan will continue once both motors have reported that they have finished
 moving successfully.
 
 We could have written this some logic with a loop:
@@ -861,7 +891,7 @@ at different points in the plan:
 
     def staggered_wait(det, fast_motors, slow_motor):
         # Start all the motors, fast and slow, moving at once.
-        # Put all the fast_motors in one group.
+        # Put all the fast_motors in one group...
         for motor in slow_motors:
             yield from abs_set(motor, 5, group='A')
         # ...but put the slow motor is separate group.
@@ -878,9 +908,10 @@ at different points in the plan:
 Planned Pauses
 ++++++++++++++
 
-Pausing is typically done interactively (Ctrl+C) but it can also be
-incorporated into a plan. The plan can pause the RunEngine, requiring the user
-to type ``RE.resume()`` to continue or ``RE.stop()`` to clean up and stop.
+Pausing is typically done :ref:`interactively <pausing_interactively>` (Ctrl+C)
+but it can also be incorporated into a plan. The plan can pause the RunEngine,
+requiring the user to type ``RE.resume()`` to continue or ``RE.stop()`` to
+clean up and stop.
 
 Pauses can be interspersed using :func:`chain`. Demo:
 
@@ -977,16 +1008,27 @@ a generator instance. There are corresponding functions named
    :nosignatures:
    :toctree:
 
+    baseline_decorator
     baseline_wrapper
+    finalize_decorator
     finalize_wrapper
+    fly_during_decorator
     fly_during_wrapper
+    inject_md_decorator
     inject_md_wrapper
+    lazily_stage_decorator
     lazily_stage_wrapper
+    monitor_during_decorator
     monitor_during_wrapper
+    relative_set_decorator
     relative_set_wrapper
+    reset_positions_decorator
     reset_positions_wrapper
+    run_decorator
     run_wrapper
+    stage_decorator
     stage_wrapper
+    subs_decorator
     subs_wrapper
 
 Custom Preprocessors
@@ -1118,20 +1160,11 @@ Reconstructing ``count`` from scratch
 +++++++++++++++++++++++++++++++++++++
 
 In this section we will build a custom plan out of the stub plans above.
-To make clear which of the variables below come from ``bluesky.plans`` we will
-import the plans module like so.
-
-.. code-block:: python
-
-    import bluesky.plans as bp
-
-What we referred to as :func:`count`, :func:`scan`, and so on above will in this
-section be referred to as ``bp.count``, ``bp.scan``, etc.
 
 .. code-block:: python
 
     from bluesky.examples import det1, det2
-    import bluesky.plans as bp
+    from bluesky.plans import count
 
 The basic usage of the :func:`count` plan generates one "run" (i.e., dataset)
 with one "event" (i.e., one bundle of readings from the detectors, one row in
@@ -1140,25 +1173,25 @@ a table of the data).
 .. code-block:: python
 
     dets = [det1, det2]
-    RE(bp.count(dets))
+    RE(count(dets))
 
 The ``num`` argument enables multiple events (rows) in one run.
 
 .. code-block:: python
 
     # one 'run' with three 'events'
-    RE(bp.count(dets, num=3))
+    RE(count(dets, num=3))
 
 If we didn't provide a num option, how could you make one yourself?
 
 A tempting --- but wrong! --- possibility is to loop over calls to
-``RE(bp.count(dets))``.
+``RE(count(dets))``.
 
 .. code-block:: python
 
     # Don't do this!
     for _ in range(3):
-        RE(bp.count(dets))
+        RE(count(dets))
 
 As stated above, this ruins error-recovery and interruption recovery. It's much
 better to do the loop inside a custom plan, which we'll dub ``multicount``.
@@ -1167,7 +1200,7 @@ better to do the loop inside a custom plan, which we'll dub ``multicount``.
 
     def multicount(dets):
         for _ in range(3):
-            yield from bp.count(dets)
+            yield from count(dets)
 
     RE(multicount(dets))
 
@@ -1179,7 +1212,7 @@ default.
 
     def multicount(dets, num=3):
         for _ in range(num):
-            yield from bp.count(dets)
+            yield from count(dets)
 
 But this still creates three runs --- three datasets --- for what we'd rather
 think of as three events (rows) in one run. To fix that, we'll have to dive
@@ -1187,13 +1220,15 @@ deeper, re-implementing :func:`count` from scratch.
 
 .. code-block:: python
 
+    from bluesky.plans import run_decorator, stage_decorator, trigger_and_read
+
     def multicount(dets, num=3, *, md=None):
 
-        @bp.stage_decorator(dets)
-        @bp.run_decorator(md=md)
+        @stage_decorator(dets)
+        @run_decorator(md=md)
         def inner_multicount():
             for _ in range(num):
-                yield from bp.trigger_and_read(dets)
+                yield from trigger_and_read(dets)
 
         yield from inner_multicount()
 
@@ -1202,8 +1237,8 @@ Starting from the middle and explaining outward:
 
 * The :func:`trigger_and_read` plan generates an "event" (a row of data) from
   reading ``dets``. This happens inside of a loop, ``num`` times.
-* The ``run_decorator`` preprocessor designates the scope of one dataset.
-* The ``stage_decorator`` preprocessor addresses some hardware details. It
+* The :func:`run_decorator` preprocessor designates the scope of one dataset.
+* The :func:`stage_decorator` preprocessor addresses some hardware details. It
   primes the hardware for data collection.  For some devices, this has no
   effect at all. But for others, it ensures that the device is put into a
   ready, triggerable state and then restored to standby at the end of the plan.
@@ -1225,13 +1260,24 @@ make an on-the-fly decision about whether to continue or stop.
         i = 0
         while True:
             print("LOOP %d" % i)
-            from abs_set(motor, i)
+            yield from abs_set(motor, i)
             yield from trigger(det, wait=True)
             reading = yield from read(det)
             if reading['det']['value'] < threshold:
                 print('DONE')
                 break
             i += 1
+
+Demo:
+
+.. code-block:: python
+
+    In [5]: RE(conditional_break(0.2))
+    LOOP 0
+    LOOP 1
+    LOOP 2
+    DONE
+    Out[5]: []
 
 The important line in this example is
 
@@ -1246,7 +1292,7 @@ The action proceeds like this:
 3. The RunEngine sends that reading *back to the plan*, and that response is
    assigned to the variable ``reading``.
 
-The response from 'read' -- ``reading``, above -- is formatted like:
+The response, ``reading``, is formatted like:
 
 .. code-block:: python
 
@@ -1259,6 +1305,8 @@ Asynchronous plans: "fly scans" and "monitoring"
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
 TO DO
+
+.. _plan_utils:
 
 Plan Utilities
 --------------
