@@ -18,6 +18,8 @@ Bug Fixes
 * Minor fix in the tilt computation for spiral scans.
 * Expost 'tilt' option through SPEC-like API
 * The "infinite count" (``ct`` with ``num=None``) should spawn a LivePlot.
+* ``finalize_decorator`` accepts a callable (e.g., generator function)
+  and does not accept an iterable (e.g., generator instance)
 
 v0.6.3
 ------

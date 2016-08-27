@@ -963,8 +963,63 @@ def finalize_wrapper(plan, final_plan):
 
         # https://docs.python.org/3/reference/expressions.html?#generator.close
         if cleanup:
-            yield from ensure_generator(final_plan)
+            yield from ensure_generator(final_plan_instance)
     return ret
+
+
+def finalize_decorator(final_plan):
+    '''try...finally helper
+
+    Run the first plan and then the second.  If any of the messages
+    raise an error in the RunEngine (or otherwise), the second plan
+    will attempted to be run anyway.
+
+    Notice that, this decorator requires a generator *function* so that it can
+    be used multiple times, whereas :func:`bluesky.plans.finalize_wrapper`
+    accepts either a generator function or a generator instance.
+
+    Parameters
+    ----------
+    final_plan : callable
+        a callable that returns a generator, list, or similar containing `Msg`
+        objects; attempted to be run no matter what happens in the first plan
+
+    Yields
+    ------
+    msg : Msg
+        messages from `plan` until it terminates or an error is raised, then
+        messages from `final_plan`
+    '''
+    def dec(gen_func):
+        @wraps(gen_func)
+        def dec_inner(*inner_args, **inner_kwargs):
+            if not callable(final_plan):
+                raise TypeError("final_plan must be a callable (e.g., a "
+                                "generator function) not an iterable (e.g., a "
+                                "generator instance).")
+            final_plan_instance = final_plan()
+            plan = gen_func(*inner_args, **inner_kwargs)
+            cleanup = True
+            try:
+                ret = yield from plan
+            except GeneratorExit:
+                cleanup = False
+                raise
+            finally:
+                # if the exception raised in `GeneratorExit` that means
+                # someone called `gen.close()` on this generator.  In those
+                # cases generators must either re-raise the GeneratorExit or
+                # raise a different exception.  Trying to yield any values
+                # results in a RuntimeError being raised where `close` is
+                # called.  Thus, we catch, the GeneratorExit, disable cleanup
+                # and then re-raise
+
+                # https://docs.python.org/3/reference/expressions.html?#generator.close
+                if cleanup:
+                    yield from ensure_generator(final_plan_instance)
+            return ret
+        return dec_inner
+    return dec
 
 
 @contextmanager
@@ -1776,7 +1831,8 @@ baseline_decorator = make_decorator(baseline_wrapper)
 subs_decorator = make_decorator(subs_wrapper)
 relative_set_decorator = make_decorator(relative_set_wrapper)
 reset_positions_decorator = make_decorator(reset_positions_wrapper)
-finalize_decorator = make_decorator(finalize_wrapper)
+# finalize_decorator is custom-made since it takes a plan as its
+# argument. See its docstring for details why.
 lazily_stage_decorator = make_decorator(lazily_stage_wrapper)
 stage_decorator = make_decorator(stage_wrapper)
 fly_during_decorator = make_decorator(fly_during_wrapper)
