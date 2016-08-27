@@ -27,7 +27,7 @@ of the :ref:`built-in pre-assembled plans <preassembled_plans>`, like
 
     Fundamentally, the scope of a run is intentionally vague and flexible. One
     plan might generate many runs or one long run. It just depends on how you
-    want to organize your data.
+    want to organize your data, both at collection time and analysis time.
 
     The section :ref:`reimplementing_count` explores this.
 
