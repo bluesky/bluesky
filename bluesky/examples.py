@@ -63,7 +63,6 @@ class Base:
                 # hotfix 2016 -- revisit this!
                 setattr(self, field, MockSignal(field))
         self.success = True
-        self.root = self
         self.precision = 3
 
     def describe(self):
