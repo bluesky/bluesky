@@ -151,11 +151,19 @@ def test_unstage_and_log_errors(fresh_RE):
     unstaged = {}
 
     class MoverWithFlag(Mover):
+
+        def stage(self):
+            return [self]
+
         def unstage(self):
             unstaged[self.name] = True
             return [self]
 
     class BrokenMoverWithFlag(Mover):
+
+        def stage(self):
+            return [self]
+
         def unstage(self):
             unstaged[self.name] = True
             return [self]
