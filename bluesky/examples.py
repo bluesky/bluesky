@@ -132,14 +132,19 @@ class Mover(Reader):
 
     Example
     -------
+    A motor with one field.
+    >>> motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+
     A motor that simply goes where it is set.
-    >>> motor = Positioner('motor', {'readback': lambda x: x},
-    ...                              'setpoint': lambda x: x})
+    >>> motor = Mover('motor', {'readback': lambda x: x},
+    ...                         'setpoint': lambda x: x},
+    ...               {'x': 0})
 
     A motor that adds jitter.
     >>> import numpy as np
-    >>> motor = Positioner('motor', {'readback': lambda x: x + np.random.randn()},
-    ...                              'setpoint': lambda x: x})
+    >>> motor = Mover('motor', {'readback': lambda x: x + np.random.randn()},
+    ...                         'setpoint': lambda x: x},
+    ...               {'x': 0})
     """
     def __init__(self, name, read_fields, initial_set, conf_fields=None, *,
                  fake_sleep=0):
@@ -156,6 +161,7 @@ class Mover(Reader):
         self._state = {field: {'value': func(*args, **kwargs),
                                'timestamp': ttime.time()}
                        for field, func in self._read_fields.items()}
+        # TODO Do this asynchronously and return a status object immediately.
         if self._fake_sleep:
             ttime.sleep(self._fake_sleep)
         return NullStatus()
@@ -207,6 +213,7 @@ class SynGauss(Reader):
         super().__init__(name, {name: func})
 
     def trigger(self):
+        # TODO Do this asynchronously and return a status object immediately.
         if self.exposure_time:
             ttime.sleep(self.exposure_time)
         return super().trigger()
@@ -272,6 +279,7 @@ class Syn2DGauss(Reader):
         super().__init__(name, {name: func})
 
     def trigger(self):
+        # TODO Do this asynchronously and return a status object immediately.
         if self.exposure_time:
             ttime.sleep(self.exposure_time)
         return super().trigger()
@@ -495,11 +503,11 @@ motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
 motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
 motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
 motor3 = Mover('motor3', {'motor3': lambda x: x}, {'x': 0})
-jittery_motor1 = ('jittery_motor1',
-                  {'jiterry_motor1': lambda x: x + np.random.randn()},
+jittery_motor1 = Mover('jittery_motor1',
+                  {'jittery_motor1': lambda x: x + np.random.randn()},
                   {'x': 0})
-jittery_motor2 = ('jittery_motor2',
-                  {'jiterry_motor2': lambda x: x + np.random.randn()},
+jittery_motor2 = Mover('jittery_motor2',
+                  {'jittery_motor2': lambda x: x + np.random.randn()},
                   {'x': 0})
 noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
                      noise='uniform', sigma=1)
