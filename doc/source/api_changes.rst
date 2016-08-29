@@ -11,6 +11,8 @@ Enhancements
 * Add ``aspect`` argument to ``LiveRaster``.
 * Add ``install_nb_kicker`` to get live-updating matplotlib figures in the
   notebook while the RunEngine is running.
+* Simulated hardware devices ``Reader`` and ``Mover`` can be easily customized
+  to mock a wider range of behaviors, for testing and demos.
 
 Bug Fixes
 ^^^^^^^^^
@@ -20,6 +22,12 @@ Bug Fixes
 * The "infinite count" (``ct`` with ``num=None``) should spawn a LivePlot.
 * ``finalize_decorator`` accepts a callable (e.g., generator function)
   and does not accept an iterable (e.g., generator instance)
+
+API Changes
+^^^^^^^^^^^
+
+* The API for the simulated hardware example devices ``Reader`` and ``Mover``
+  has been changed to make them more general.
 
 v0.6.3
 ------
