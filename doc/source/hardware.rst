@@ -1,5 +1,5 @@
-How Bluesky Interface to Hardware
-=================================
+How Bluesky Interfaces with Hardware
+====================================
 
 Overview
 --------
@@ -19,7 +19,7 @@ Implementations
 ---------------
 
 Real Hardware
-^^^^^^^^^^^^^
++++++++++++++
 
 The `ophyd
 <https://nsls-ii.github.io/ophyd>`_ package implements this interface for
@@ -28,10 +28,9 @@ Other control systems (Tango, LabView, etc.) could be integrated with bluesky
 in the future by implementing this same interface.
 
 Simulated Hardware
-^^^^^^^^^^^^^^^^^^
+++++++++++++++++++
 
-A working reference implementation of a ``Reader`` (e.g., a detector) and a
-``Mover`` (e.g., a motor or temperature controller) are in the
+A toy "test" implementation the interface is included in the
 ``bluesky.examples`` module. These implementations act as "simulated hardware,"
 and we use them extensively in examples, demos, and the test suite. Their API
 documentation is below.
@@ -42,4 +41,231 @@ documentation is below.
 Specification
 -------------
 
-TO DO
+Status object
++++++++++++++
+
+The interface of a "status" object, which the ``RunEngine`` uses to
+asynchronously monitor the competition of having triggered or set a device.
+
+.. class:: Status:
+
+    .. attribute:: done
+
+        boolean
+
+    .. attribute:: success
+
+        boolean
+
+    If ``success`` is ``False`` when the Status is marked done, this is taken
+    to mean, "We have given up." For example, "The motor is stuck and will
+    never get where it is going." A ``FailedStatus`` exception will be raised
+    inside the RunEngine.
+
+    .. attribute:: finished_cb
+
+        a callback function that ``Status`` will call when it is marked done.
+
+    It may be that ``Status`` is done before a function has been attached to
+    ``finished_cb``. In that case, the function should be called as soon as it
+    is attached.
+
+Readable Device
++++++++++++++++
+
+The interface of a readable device:
+
+.. class:: ReadableDevice(name=None)
+
+    .. attribute:: name
+
+        a human-readable string identifying the device
+
+    .. attribute:: parent
+
+        ``None``, or a reference to a parent device
+
+        See the ``stage`` method below for the operational signifance of
+        ``parent``.
+
+    .. method:: read()
+
+        Return an OrderedDict mapping field name(s) to values and timestamps.
+        The field names must be strings. The values can be any JSON-encodable
+        type or a numpy array, which the RunEngine will convert to (nested)
+        lsits. The timestamps should be UNIX time (seconds since 1970).
+
+        Example return value:
+
+        .. code-block:: python
+
+            OrderedDict(('channel1',
+                         {'value': 5, 'timestamp': 1472493713.271991})
+                         ('channel2',
+                         {'value': 16, 'timestamp': 1472493713.539238}))
+
+
+    .. method:: describe()
+
+        Return an OrderedDict with exactly the same keys as the ``read``
+        method, here mapped to metadata about each field.
+
+        Example return value:
+
+        .. code-block:: python
+
+            OrderedDict(('channel1',
+                         {'source': 'XF23-ID:SOME_PV_NAME',
+                          'dtype': 'number',
+                          'shape': []})
+                        ('channel2',
+                         {'source': 'XF23-ID:SOME_PV_NAME',
+                          'dtype': 'number',
+                          'shape': []}))
+
+        We refer to each entry as a "data key." These fields are required:
+
+        * source (a descriptive string --- e.g., an EPICS Process Variable)
+        * dtype: one of the JSON data types: {'number', 'string', 'array'}
+        * shape: ``None`` or a list of dimensions --- e.g., [5, 5] for a 5x5
+          array
+
+        Optinal additional fields (precision, units, etc.) are allowed.
+        The optional field ``external`` should be used to provide information
+        about references to externally-stored data, such as large image arrays.
+
+    .. method:: trigger()
+
+        Return a ``Status`` that is marked done when the device is done
+        triggering.
+
+        If the device does not need to be triggered, simply return a ``Status``
+        that is marked done immediately.
+
+    .. method:: read_configuration()
+
+        Same API as ``read`` but for slow-changing fields related to
+        configuration (e.g., exposure time). These will typically be read only
+        once per run.
+
+        Of course, for simple cases, you can effectively omit this complexity
+        by returning an empty dictionary.
+
+    .. method:: describe_configuration()
+
+        Same API as ``describe``, but corresponding to the keys in
+        ``read_configuration``.
+
+    .. method:: configure(*args, **kwargs)
+
+        This can change the device's configuration in an arbitrary way. When
+        the RunEngine calls this method, it also emits a fresh Event Descriptor
+        because it assumes that the configuration in the previous Event
+        Descriptor might no longer be valid.
+
+        Returns a tuple of the *old* result of ``read_configuration()`` and the
+        *new* result of ``read_configuration()``.
+
+    *This concludes the required API. The following are optional.*
+
+    .. method:: stage()
+
+        An optional hook for "setting up" the device for acquisition.
+
+        It should return a list of devices including itself and any other
+        devices that are staged as a result of staging this one.
+        (The ``parent`` attribute expresses this relationship: a device should
+        be staged/unstaged whenever its parent is staged/unstaged.)
+
+    .. method:: unstage()
+
+        A hook for "cleaning up" the device after acquisition.
+
+        It should return a list of devices including itself and any other
+        devices that are unstaged as a result of unstaging this one.
+
+
+Settable (Movable) Device
++++++++++++++++++++++++++
+
+The interface of a settable device extends the interface of a readable device
+with the following additional methods and attributes:
+
+.. class:: SettableDevice:
+
+    .. method:: stop()
+
+        Safely stop a device that may or may not be in motion.
+
+    .. method:: set(*args, **kwargs)
+
+        Return a ``Status`` that is marked done when the device is done
+        moving.
+
+    .. attribute :: position
+
+        a heuristic that describes the current position of a device as a
+        single scalar, as opposed to the potentially multi-valued description
+        provided by ``read()``
+
+"Flyer" Interface
++++++++++++++++++
+
+*Refer to the section of asynchronous "fly scanning" (TO DO).*
+
+The interace of a "flyable" device is separate from the interface of a readable
+or settable device, though there is some overlap.
+
+.. class:: FlyableDevice:
+
+    .. method:: kickoff()
+
+       Begin acculumating data. Return a ``Status`` and mark it done when
+       acqusition has begun.
+
+    .. method:: complete()
+
+       Return a ``Status`` and mark it done when acquisition has completed. 
+
+    .. method:: collect()
+
+        Yield dictionaries that are partial Event documents. They should
+        contain the keys 'time', 'data', and 'timestamps'. A 'uid' is added by
+        the RunEngine.
+
+    .. method:: describe_collect()
+
+        This is like ``describe()`` on readable devices, but with an extra
+        layer of nesting. Since a flyer can potentially return more than one
+        event stream, this is a dict of stream names (strings) mapped to a
+        ``describe()``-type output for each.
+
+    *The remaining methods and attributes match ReadableDevice.*
+
+    .. method:: configure(*args, **kwargs)
+
+        same as for a readable device
+
+    .. method:: read_configuration()
+
+        same as for a readable device
+
+    .. method:: describe_configuration()
+
+        same as for a readable device
+
+    .. attribute:: name
+
+        same as for a readable device
+
+    .. attribute:: parent
+
+        same as for a readable device
+
+    .. attribute:: stage()
+
+        optional, same as for a readable device
+
+    .. attribute:: unstage()
+
+        optional, same as for a readable device
