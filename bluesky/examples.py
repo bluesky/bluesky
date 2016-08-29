@@ -34,155 +34,142 @@ class NullStatus:
         self._cb = cb
 
 
-class Flyer:
-    def kickoff(self):
-        return NullStatus()
+class Reader:
+    """
 
-    def describe_collect(self):
-        return {'stream_name': {}}
+    Parameters
+    ----------
+    name : string
+    read_fields : dict
+        Mapping field names to functions that return simulated data. The
+        function will be passed no arguments.
+    conf_fields : dict, optional
+        Like `read_fields`, but providing slow-changing configuration data.
+        If `None`, the configuration will simply be an empty dict.
 
-    def complete(self):
-        return NullStatus()
+    Example
+    -------
+    A detector that always returns 5.
+    >>> det = Detector('det', {'intensity': lambda: 5})
 
-    def collect(self):
-        for i in range(100):
-            yield {'data': {}, 'timestamps': {}, 'time': i, 'seq_num': i}
-
-
-class Base:
-    def __init__(self, name, fields):
+    A detector that is coupled to a motor, such that measured insensity
+    varies with motor position.
+    >>> motor = Motor('motor')
+    >>> det = Detector('det',
+    ...                {'intensity': lambda: 2 * motor.read()['value']})
+    """
+    def __init__(self, name, read_fields, conf_fields=None):
         self.name = name
         self.parent = None
-        self._fields = fields
-        self._cb = None
-        self._ready = False
-        self.configuration_attrs = []
-        for field in fields:
-            if isinstance(field, str):
-                # Flyers pass objects in as fields, not names.
-                # hotfix 2016 -- revisit this!
-                setattr(self, field, MockSignal(field))
-        self.success = True
-        self.precision = 3
-
-    def describe(self):
-        return {k: {'source': self.name, 'dtype': 'number', 'shape': None,
-                    'precision': self.precision}
-                for k in self._fields}
-
-    def __repr__(self):
-        return '{}: {}'.format(self._klass, self.name)
-
-    def read_configuration(self):
-        return {'some_configuration':
-                   {'value': 'there is a sandwich in the vacuum chamber',
-                    'timestamp': 0}}
-
-    def describe_configuration(self):
-        return {}
-
-    def configure(self, d):
-        return {}, {}
-
-    def stage(self):
-        pass
-
-    def unstage(self):
-        pass
-
-    @property
-    def done(self):
-        return self.ready
-
-    @property
-    def finished_cb(self):
-        """
-        Callback to be run when the status is marked as finished
-
-        The call back has no arguments
-        """
-        return self._cb
-
-    @finished_cb.setter
-    def finished_cb(self, cb):
-        if self._cb is not None:
-            raise RuntimeError("Can not change the call back")
-        if self.done:
-            cb()
-        else:
-            self._cb = cb
-
-    def _finish(self):
-        self.ready = True
-        if self._cb is not None:
-            self._cb()
-            self._cb = None
-
-
-class Reader(Base):
-    _klass = 'reader'
-
-    def __init__(self, *args, **kwargs):
-        super(Reader, self).__init__(*args, **kwargs)
-        self._cnt = 0
-
-    def read(self):
-        data = dict()
-        for k in self._fields:
-            data[k] = {'value': self._cnt, 'timestamp': ttime.time()}
-            self._cnt += 1
-
-        return data
+        self._read_fields = read_fields
+        if conf_fields is None:
+            conf_fields = {}
+        self._conf_fields = conf_fields
 
     def trigger(self):
-        return self
-
-
-class Mover(Base):
-    _klass = 'mover'
-
-    def __init__(self, name, fields, *, sleep_time=0, jitter=0, **kwargs):
-        super(Mover, self).__init__(name, fields, **kwargs)
-        self._data = {f: {'value': 0, 'timestamp': ttime.time()}
-                      for f in self._fields}
-        self.ready = True
-        self._fake_sleep = sleep_time
-        self._fake_jitter = jitter
+        "No-op: returns a status object immediately marked 'done'."
+        return NullStatus()
 
     def read(self):
-        return self._data
+        """
+        Simulate readings by calling functions.
 
-    def set(self, val, *, trigger=True, group=None):
-        # If trigger is False, wait for a separate 'trigger' command to move.
-        if not trigger:
-            raise NotImplementedError
-        # group is handled by the RunEngine
-        self.ready = False
+        The readings are collated with timestamps.
+        """
+        return {field: {'value': func(), 'timestamp': ttime.time()}
+                        for field, func in self._read_fields.items()}
+
+    def describe(self):
+        """
+        Provide metadata for each of the fields returned by `read`.
+
+        In this simple example, the metadata is hard-coded: we assume all
+        readings are numeric and scalar.
+        """
+        return {field: {'source': 'simulated using bluesky.examples',
+                        'dtype': 'number',
+                        'shape': [],
+                        'precision': 2}
+                for field in self._read_fields}
+
+    def read_configuration(self):
+        """
+        Like `read`, but providing slow-changing configuration readings.
+        """
+        return {field: {'value': func(), 'timestamp': ttime.time()}
+                        for field, func in self._conf_fields.items()}
+
+    def describe_configuration(self):
+        return {field: {'source': 'simulated using bluesky.examples',
+                        'dtype': 'number',
+                        'shape': [],
+                        'precision': 2}
+                for field in self._conf_fields}
+
+    def configure(self, *args, **kwargs):
+        old_conf = self.read_configuration()
+        # Update configuration here.
+        new_conf = self.read_configuration()
+        return old_conf, new_conf
+
+
+class Mover(Reader):
+    """
+
+    Parameters
+    ----------
+    name : string
+    read_fields : dict
+        Mapping field names to functions that return simulated data. The
+        function will be passed the last set of argument given to ``set()``.
+    conf_fields : dict, optional
+        Like `read_fields`, but providing slow-changing configuration data.
+        If `None`, the configuration will simply be an empty dict.
+    initial_set : dict
+        passed to ``set`` as ``set(**initial_set)`` to initialize readings
+    fake_sleep : float
+        simulate moving time
+
+    Example
+    -------
+    A motor that simply goes where it is set.
+    >>> motor = Positioner('motor', {'readback': lambda x: x},
+    ...                              'setpoint': lambda x: x})
+
+    A motor that adds jitter.
+    >>> import numpy as np
+    >>> motor = Positioner('motor', {'readback': lambda x: x + np.random.randn()},
+    ...                              'setpoint': lambda x: x})
+    """
+    def __init__(self, name, read_fields, initial_set, conf_fields=None, *,
+                 fake_sleep=0):
+        super().__init__(name, read_fields, conf_fields)
+        # Do initial set without any fake sleep.
+        self._fake_sleep = 0
+        self.set(**initial_set)
+        self._fake_sleep = fake_sleep
+
+    def set(self, *args, **kwargs):
+        """
+        Pass the arguments to the functions to create the next reading.
+        """
+        self._state = {field: {'value': func(*args, **kwargs),
+                               'timestamp': ttime.time()}
+                       for field, func in self._read_fields.items()}
         if self._fake_sleep:
-            ttime.sleep(self._fake_sleep)  # simulate moving time
-        if isinstance(val, dict):
-            for k, v in val.items():
-                self._data[k] = v + self._fake_jitter * np.random.randn()
-        else:
-            self._data = {f: {'value': (val +
-                                        self._fake_jitter * np.random.randn()),
-                              'timestamp': ttime.time()}
-                          for f in self._fields}
-        self.ready = True
-        return self
+            ttime.sleep(self._fake_sleep)
+        return NullStatus()
+
+    def read(self):
+        return self._state
 
     @property
     def position(self):
-        return self._data[self._fields[0]]['value']
-
-    def settle(self):
-        pass
+        "A heuristic that picks a single scalar out of the `read` dict."
+        return self.read()[list(self._read_fields)[0]]['value']
 
     def stop(self):
         pass
-
-    def trigger(self):
-        return self
 
 
 class SynGauss(Reader):
@@ -199,43 +186,30 @@ class SynGauss(Reader):
 
     Example
     -------
-    motor = Mover('motor', ['motor'])
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
-    _klass = 'reader'
-
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
                  noise=None, noise_multiplier=1, exposure_time=0):
-        super(SynGauss, self).__init__(name, [name, ])
-        self.ready = True
-        self._motor = motor
-        self._motor_field = motor_field
-        self.center = center
-        self.Imax = Imax
-        self.sigma = sigma
-        self.noise = noise
-        self.noise_multiplier = noise_multiplier
-        self._data = {self.name: {'value': 0, 'timestamp': ttime.time()}}
-        self.exposure_time = exposure_time
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
+        self.exposure_time = exposure_time
 
-    def trigger(self, *, group=True):
-        self.ready = False
-        m = self._motor.read()[self._motor_field]['value']
-        v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        if self.noise == 'poisson':
-            v = int(np.random.poisson(np.round(v), 1))
-        elif self.noise == 'uniform':
-            v += np.random.uniform(-1, 1) * self.noise_multiplier
-        self._data = {self.name: {'value': v, 'timestamp': ttime.time()}}
+        def func():
+            m = motor.read()[motor_field]['value']
+            v = Imax * np.exp(-(m - center)**2 / (2 * sigma**2))
+            if noise == 'poisson':
+                v = int(np.random.poisson(np.round(v), 1))
+            elif noise == 'uniform':
+                v += np.random.uniform(-1, 1) * noise_multiplier
+            return v
+
+        super().__init__(name, {name: func})
+
+    def trigger(self):
         if self.exposure_time:
-            ttime.sleep(self.exposure_time)  # simulate exposure time
-        self.ready = True
-        return self
-
-    def read(self):
-        return self._data
+            ttime.sleep(self.exposure_time)
+        return super().trigger()
 
 
 class Syn2DGauss(Reader):
@@ -276,50 +250,61 @@ class Syn2DGauss(Reader):
     motor = Mover('motor', ['motor'])
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
-    _klass = 'reader'
-
     def __init__(self, name, motor0, motor_field0, motor1, motor_field1,
-                 center=(0,0), Imax=1, sigma=1,
-                 noise=None, noise_multiplier=1):
-        super().__init__(name, [name, ])
-        self.ready = True
-        self._motor = motor0
-        self._motor_field0 = motor_field0
-        self._motor1 = motor1
-        self._motor_field1 = motor_field1
-        self.center = np.asarray(center)
-        self.Imax = Imax
-        self.sigma = sigma
-        self.noise = noise
-        self.noise_multiplier = noise_multiplier
-        self._data = {self.name: {'value': None, 'timestamp': None}}
+                 center, Imax, sigma=1, noise=None, noise_multiplier=1,
+                 exposure_time=0):
+
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
+        self.exposure_time = exposure_time
 
-    def trigger(self, *, group=True):
-        self.ready = False
-        x = self._motor.read()[self._motor_field0]['value']
-        y = self._motor1.read()[self._motor_field1]['value']
-        m = np.array([x, y])
-        v = self.Imax * np.exp(
-            -np.sum((m - self.center)**2) / (2 * self.sigma**2))
-        if self.noise == 'poisson':
-            v = int(np.random.poisson(np.round(v), 1))
-        elif self.noise == 'uniform':
-            v += np.random.uniform(-1, 1) * self.noise_multiplier
-        self._data = {self.name: {'value': v, 'timestamp': ttime.time()}}
-        ttime.sleep(0.05)  # simulate exposure time
-        self.ready = True
-        return self
+        def func():
+            x = motor.read()[motor_field0]['value']
+            y = motor1.read()[motor_field1]['value']
+            m = np.array([x, y])
+            v = Imax * np.exp(-np.sum((m - center)**2) / (2 * sigma**2))
+            if noise == 'poisson':
+                v = int(np.random.poisson(np.round(v), 1))
+            elif noise == 'uniform':
+                v += np.random.uniform(-1, 1) * noise_multiplier
+            return v
 
-    def read(self):
-        return self._data
+        super().__init__(name, {name: func})
+
+    def trigger(self):
+        if self.exposure_time:
+            ttime.sleep(self.exposure_time)
+        return super().trigger()
+
+
+class Flyer:
+    """Flyer that complies to the API but returns empty data."""
+    def kickoff(self):
+        return NullStatus()
+
+    def describe_collect(self):
+        return {'stream_name': {}}
+
+    def complete(self):
+        return NullStatus()
+
+    def collect(self):
+        for i in range(100):
+            yield {'data': {}, 'timestamps': {}, 'time': i, 'seq_num': i}
+
+    def stop(self):
+        pass
 
 
 class MockFlyer:
     """
     Class for mocking a flyscan API implemented with stepper motors.
 
+    warning::
+    
+        This is old and should be not used as a reference for current good
+        practice. Specifically, it is its own status object, which is
+        confusing.
     """
     def __init__(self, detector, motor, loop):
         self._mot = motor
@@ -425,12 +410,22 @@ class MockFlyer:
             self._cb()
             self._cb = None
 
+    def stop(self):
+        pass
 
-class FlyMagic(Base):
-    _klass = 'flyer'
 
+class FlyMagic:
+    """
+    Another old flyer example
+
+    warning::
+    
+        This is old and should be not used as a reference for current good
+        practice. Specifically, it is its own status object, which is
+        confusing.
+    """
     def __init__(self, name, motor, det, det2, scan_points=15):
-        super(FlyMagic, self).__init__(name, [motor, det, det2])
+        self.name = name
         self._motor = motor
         self._det = det
         self._det2 = det2
@@ -489,14 +484,17 @@ class FlyMagic(Base):
             ttime.sleep(0.01)
         self._time = None
 
+    def complete(self):
+        return NullStatus()
+
     def stop(self):
         pass
 
 
-motor = Mover('motor', ['motor'])
-motor1 = Mover('motor1', ['motor1'])
-motor2 = Mover('motor2', ['motor2'])
-motor3 = Mover('motor3', ['motor3'])
+motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
+motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
+motor3 = Mover('motor3', {'motor3': lambda x: x}, {'x': 0})
 noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
                      noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)

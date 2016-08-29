@@ -335,10 +335,9 @@ def _get_spiral_data(start_x, start_y):
 
 
 def test_absolute_spiral(fresh_RE):
-    motor = Mover('motor', ['motor'])
-    motor.set(0)
-    motor1 = Mover('motor1', ['motor1'])
-    motor2 = Mover('motor2', ['motor2'])
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
+    motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
 
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     motor1.set(1.0)
@@ -353,10 +352,9 @@ def test_absolute_spiral(fresh_RE):
 
 
 def test_relative_spiral(fresh_RE):
-    motor = Mover('motor', ['motor'])
-    motor.set(0)
-    motor1 = Mover('motor1', ['motor1'])
-    motor2 = Mover('motor2', ['motor2'])
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
+    motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 
     start_x = 1.0
@@ -411,10 +409,9 @@ def _get_fermat_data(x_start, y_start):
 
 
 def test_absolute_fermat_spiral(fresh_RE):
-    motor = Mover('motor', ['motor'])
-    motor.set(0)
-    motor1 = Mover('motor1', ['motor1'])
-    motor2 = Mover('motor2', ['motor2'])
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
+    motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
 
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 
@@ -435,10 +432,9 @@ def test_relative_fermat_spiral(fresh_RE):
     start_x = 1.0
     start_y = 1.0
 
-    motor = Mover('motor', ['motor'])
-    motor.set(0)
-    motor1 = Mover('motor1', ['motor1'])
-    motor2 = Mover('motor2', ['motor2'])
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
+    motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
 
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 

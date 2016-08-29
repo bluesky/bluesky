@@ -111,8 +111,8 @@ validate_movable = method_validator_factory('Movable',
                                             ['read', 'describe', 'trigger',
                                              'set', 'stop'])
 validate_flyable = method_validator_factory('Flyable',
-                                            ['kickoff', 'collect', 'stop',
-                                             'describe'])
+                                            ['kickoff', 'collect', 'complete',
+                                             'describe_collect', 'stop'])
 
 
 class GlobalState(HasTraits):
