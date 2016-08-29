@@ -17,8 +17,11 @@ class SynGauss2D(Reader):
     """
     def __init__(self, name, motor, motor_field, center, Imax=1000, sigma=1,
                  nx=250, ny=250, img_sigma=50):
+        dims = (nx, ny)
+        self.dims = dims
+        self.name = name
+
         def func():
-            dims = (nx, ny)
             m = motor.read()[motor_field]['value']
             v = Imax * np.exp(-(m - center)**2 / (2 * sigma**2))
             arr = self.gauss(dims, img_sigma) * v + np.random.random(dims) * .01
