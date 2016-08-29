@@ -259,7 +259,7 @@ class Syn2DGauss(Reader):
         self.exposure_time = exposure_time
 
         def func():
-            x = motor.read()[motor_field0]['value']
+            x = motor0.read()[motor_field0]['value']
             y = motor1.read()[motor_field1]['value']
             m = np.array([x, y])
             v = Imax * np.exp(-np.sum((m - center)**2) / (2 * sigma**2))
@@ -495,6 +495,12 @@ motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
 motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
 motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
 motor3 = Mover('motor3', {'motor3': lambda x: x}, {'x': 0})
+jittery_motor1 = ('jittery_motor1',
+                  {'jiterry_motor1': lambda x: x + np.random.randn()},
+                  {'x': 0})
+jittery_motor2 = ('jittery_motor2',
+                  {'jiterry_motor2': lambda x: x + np.random.randn()},
+                  {'x': 0})
 noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
                      noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
@@ -503,6 +509,8 @@ det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
 det3 = SynGauss('det3', motor3, 'motor3', center=-1, Imax=2, sigma=1)
 det4 = Syn2DGauss('det4', motor1, 'motor1', motor2, 'motor2',
                   center=(0, 0), Imax=1)
+det5 = Syn2DGauss('det4', jittery_motor1, 'jittery_motor1', jittery_motor2,
+                  'jittery_motor2', center=(0, 0), Imax=1)
 
 
 def simple_scan(motor):
