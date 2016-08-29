@@ -38,7 +38,7 @@ Enhancements
   through global state.
 * Make PeakStats configurable through global state.
 * Add an experimental utility for passing documents over a network and
-  processing them on a separate process or host, using 0MZ.
+  processing them on a separate process or host, using 0MQ.
 * Add ``monitor_during_wrapper`` and corresponding decorator.
 * Add ``stage_wrapper`` and corresponding decorator.
 * Built-in plans return the run uid that they generated.
