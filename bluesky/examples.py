@@ -47,15 +47,15 @@ class Reader:
         Like `read_fields`, but providing slow-changing configuration data.
         If `None`, the configuration will simply be an empty dict.
 
-    Example
-    -------
+    Examples
+    --------
     A detector that always returns 5.
-    >>> det = Detector('det', {'intensity': lambda: 5})
+    >>> det = Readable('det', {'intensity': lambda: 5})
 
     A detector that is coupled to a motor, such that measured insensity
     varies with motor position.
-    >>> motor = Motor('motor')
-    >>> det = Detector('det',
+    >>> motor = Mover('motor')
+    >>> det = Readable('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
     def __init__(self, name, read_fields, conf_fields=None):
@@ -130,8 +130,8 @@ class Mover(Reader):
     fake_sleep : float
         simulate moving time
 
-    Example
-    -------
+    Examples
+    --------
     A motor with one field.
     >>> motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
 

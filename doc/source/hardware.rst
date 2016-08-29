@@ -75,7 +75,7 @@ Readable Device
 
 The interface of a readable device:
 
-.. class:: ReadableDevice(name=None)
+.. class:: ReadableDevice
 
     .. attribute:: name
 
