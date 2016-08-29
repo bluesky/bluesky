@@ -517,7 +517,7 @@ det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
 det3 = SynGauss('det3', motor3, 'motor3', center=-1, Imax=2, sigma=1)
 det4 = Syn2DGauss('det4', motor1, 'motor1', motor2, 'motor2',
                   center=(0, 0), Imax=1)
-det5 = Syn2DGauss('det4', jittery_motor1, 'jittery_motor1', jittery_motor2,
+det5 = Syn2DGauss('det5', jittery_motor1, 'jittery_motor1', jittery_motor2,
                   'jittery_motor2', center=(0, 0), Imax=1)
 
 
