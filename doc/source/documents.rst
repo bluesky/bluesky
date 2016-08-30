@@ -192,7 +192,7 @@ metadata about the data keys and the configuration of the devices involved.
     example, the data keys are ``['temperature', 'x_setpoint', 'x_readback']``
 
 Data Keys
-+++++++++
+^^^^^^^^^
 
 First, the descriptor provides metadata about each data key.
 
@@ -231,7 +231,7 @@ The RunEngine obtains this information from each device it sees by calling
              'precision': 2}},
 
 Object Keys
-+++++++++++
+^^^^^^^^^^^
 
 The ``object_keys`` provide an association between each device and its data keys.
 
@@ -249,7 +249,7 @@ came from the same device, a motor named ``'x'``.
 Specifically, it maps ``device.name`` to ``list(device.describe())``.
 
 Configuration
-+++++++++++++
+^^^^^^^^^^^^^
 
 Complex devices often have many parameters that do not need to be read anew
 with every data point. They are "configuration," by which we mean they don't
@@ -291,7 +291,7 @@ happens to provide no configuration information.
              'data_keys': {}}}
 
 Complete Sample
-+++++++++++++++
+^^^^^^^^^^^^^^^
 
 Taken together, our example 'descriptor' document looks like this.
 
