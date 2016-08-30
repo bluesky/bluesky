@@ -7,7 +7,7 @@ Key Components
 --------------
 
 A *plan* is bluesky's concept of an experimental procedure, a sequence of
-instructions to execute. Some common examples follow; many more are in
+instructions to execute. Some common examples follow; many more are in a
 :doc:`later section <plans>`. In Python jargon, a plan can be any iterable. It
 could be a simple list or a generator, a concept which is addressed in detail
 below.
