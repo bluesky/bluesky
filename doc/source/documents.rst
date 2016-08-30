@@ -3,18 +3,16 @@
 Documents
 =========
 
-The RunEngine coordinates I/O while executing a plan. It provides a live stream
-of data and metadata *documents* to outside functions that can visualize,
-process, or store them. A :doc:`later section <callbacks>` describes how to
-subscribe functions to this live stream. This section provides an outline of
-documents themselves, aiming to give a sense of the structure and familiarity
-with useful components.
-
-When a plan instructs the RunEngine to read a detector, the RunEngine records
+when a plan instructs the RunEngine to read a detector, the RunEngine records
 that reading in a Python dictionary that relates the measurement to associated
 metadata. We dub this dictionary, which is organized in a
 `formally specified <https://github.com/NSLS-II/event-model>`_ way, a
 *document*.
+
+A :doc:`later section` describes how outside functions can "subscribe" to a
+live stream of these documents, visualizing, processing, or storing them. This
+section provides an outline of documents themselves, aiming to give a sense of
+the structure and familiarity with useful components.
 
 .. _run_overview::
 
