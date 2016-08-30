@@ -255,7 +255,7 @@ beginnging of each scan, is stored in ``RE.md['scan_id']``.
     unique forever.
 
 Persistence Between Sessions
-============================
+----------------------------
 
 We provide way to persist the contents of the metadata stash ``RE.md`` between
 sessions (e.g., exiting and re-opening IPython).
@@ -290,7 +290,7 @@ See also the
 `historydict documentation <https://github.com/Nikea/historydict#historydict>`_.
 
 Allowed Data Types
-==================
+------------------
 
 Custom metadata keywords can be mapped to:
 
@@ -301,7 +301,7 @@ Custom metadata keywords can be mapped to:
 
 
 Special Fields
-==============
+--------------
 
 Arbitrary custom fields are allowed --- you can invent any names that are
 useful to you.
@@ -334,7 +334,7 @@ The fields:
 are reserved by the document model and cannot be set by the user.
 
 Required Fields
-===============
+---------------
 
 In current versions of bluesky, **no fields are universally required by bluesky
 itself**. It is possible specify your own required fields in local
@@ -344,7 +344,7 @@ requirements coming soon.)
 .. _md_validator:
 
 Metadata Validator
-==================
+------------------
 
 Additional, customized metadata validation can be added to the RunEngine.
 For example, to ensure that a run will not be executed unless the parameter
