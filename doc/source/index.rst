@@ -42,6 +42,7 @@ Index
    plans
    callbacks
    state-machine
+   async
    debugging
    hardware
    msg
