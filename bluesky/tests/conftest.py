@@ -17,7 +17,7 @@ RE = fresh_RE
 
 @pytest.fixture(scope='function')
 def motor_det(request):
-    motor = Mover('motor', ['motor'])
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
     det = SynGauss('det', motor, 'motor', center=0, Imax=1,
                    sigma=1, exposure_time=0)
     return motor, det

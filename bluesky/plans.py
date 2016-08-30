@@ -12,7 +12,7 @@ from boltons.iterutils import chunked
 
 from . import plan_patterns
 
-from .utils import (Struct, Subs, normalize_subs_input,
+from .utils import (Struct, Subs, normalize_subs_input, root_ancestor,
                     separate_devices, apply_sub_factories, update_sub_lists,
                     all_safe_rewind, Msg, ensure_generator, single_gen,
                     short_uid as _short_uid, RampFail)
@@ -1313,8 +1313,7 @@ def lazily_stage_wrapper(plan):
     This is a preprocessor that inserts 'stage' messages and appends 'unstage'.
 
     The first time an object is seen in `plan`, it is staged. To avoid
-    redundant staging we actually stage the object's ultimate parent, pointed
-    to be its `root` property.
+    redundant staging we actually stage the object's ultimate parent.
 
     At the end, in a `finally` block, an 'unstage' Message issued for every
     'stage' Message.
@@ -1340,7 +1339,7 @@ def lazily_stage_wrapper(plan):
 
     def inner(msg):
         if msg.command in COMMANDS and msg.obj not in devices_staged:
-            root = msg.obj.root
+            root = root_ancestor(msg.obj)
 
             def new_gen():
                 # Here we insert a 'stage' message
@@ -1382,7 +1381,7 @@ def stage_context(plan_stack, devices):
     :func:`bluesky.plans.lazily_stage`
     """
     # Resolve unique devices, avoiding redundant staging.
-    devices = separate_devices(device.root for device in devices)
+    devices = separate_devices(root_ancestor(device) for device in devices)
 
     def stage():
         # stage devices explicitly passed to 'devices' argument
@@ -1419,7 +1418,7 @@ def stage_wrapper(plan, devices):
     :func:`bluesky.plans.stage`
     :func:`bluesky.plans.unstage`
     """
-    devices = separate_devices(device.root for device in devices)
+    devices = separate_devices(root_ancestor(device) for device in devices)
 
     def stage_devices():
         for d in devices:

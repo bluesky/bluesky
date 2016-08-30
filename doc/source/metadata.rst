@@ -93,12 +93,13 @@ For each run, the RunEngine automatically records:
 * 'plan_name' --- the function or class name of ``plan`` (e.g., 'count')
 * 'plan_type'--- e.g., the Python type of ``plan`` (e.g., 'generator')
 
-The last two can be overridden by any of the methods above. The first two are
-not user-overridable.
+The last two can be overridden by any of the methods above. The first two
+cannot be overridden by the user.
 
 .. note::
 
-    The RunEngine gets 'plan_name' and 'plan_type' from ``plan`` as follows:
+    *A technical point:* The RunEngine gets 'plan_name' and 'plan_type' from
+    ``plan`` as follows:
 
     .. code-block:: python
 
@@ -106,7 +107,7 @@ not user-overridable.
         plan_type = getattr(plan, '__name__', '')
 
     These can be more or less informative depending on what ``plan`` is. They
-    are just heurisitcs to provide *some* information by default if the plan
+    are just heuristics to provide *some* information by default if the plan
     itself and the user do not provide it.
 
 Persistently
@@ -217,8 +218,8 @@ The fields:
 * **group**
 * **project**
   
-are optional but, to facilite searchability, if they are not blank they must be
-strings. A non-string, like ``owner=5`` will produce an error that will
+are optional but, to facilitate searchability, if they are not blank they must
+be strings. A non-string, like ``owner=5`` will produce an error that will
 interrupt scan execution immediately after it starts.
 
 Similarly, the keyword **sample** has special significance. It must be either a
@@ -238,12 +239,10 @@ are reserved by the document model and cannot be set by the user.
 Required Fields
 ===============
 
-In current versions of bluesky, **no fields are universally required**. It is
-possible specify your own required fields in local configuration. See
-:ref:`md_validator`.
-
-In versions v0.4.3 and below, the keys ``owner``, ``group``, and
-``beamline_id`` were required.
+In current versions of bluesky, **no fields are universally required by bluesky
+itself**. It is possible specify your own required fields in local
+configuration. See :ref:`md_validator`. (At NSLS-II, there are facility-wide
+requirements coming soon.)
 
 .. _md_validator:
 

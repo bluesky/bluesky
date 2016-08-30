@@ -48,6 +48,8 @@ The documents in each run are:
     - time --- a timestamp for this group of readings
     - data --- a dictionary of readings like
       ``{'temperature': 5.0, 'position': 3.0}``
+    - timestamps --- a dictionary of individual timestamps for each reading,
+      from the hardware
 
 - Event Descriptor documents, with metadata about the measurements in the
   events (units, precision, etc.) and about the configuration of the hardware
@@ -115,7 +117,7 @@ The command:
     from bluesky.examples import det, motor  # simulated detector, motor
 
     RE(scan([det], motor, -3, 3, 16), purpose='calibration',
-       sample='krypotonite')
+       sample='kryptonite')
 
 generates a 'start' document like this:
 

@@ -537,6 +537,22 @@ def ancestry(obj):
         ancestor = ancestor.parent
 
 
+def root_ancestor(obj):
+    """
+    Traverse ancestry to obtain root ancestor.
+
+    Parameters
+    ----------
+    obj : object
+        must have a `parent` attribute
+
+    Returns
+    -------
+    root : object
+    """
+    return ancestry(obj)[-1]
+
+
 def share_ancestor(obj1, obj2):
     """
     Check whether obj1 and obj2 have a common ancestor.

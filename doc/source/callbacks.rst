@@ -312,33 +312,29 @@ Example:
 .. code-block:: python
 
     from bluesky.plans import outer_product_scan
-    from bluesky.examples import det4, motor1, motor2
+    from bluesky.examples import det5, jittery_motor1, jittery_motor2
     from bluesky.callbacks import LiveMesh
 
-    # We'll introduce some simulated "jitter" in the simulated motors.
-    # Now, they won't go exactly where they are told to go.
-    motor1._fake_jitter = 0.2
-    motor2._fake_jitter = 0.2
+    # The 'jittery' example motors won't go exactly where they are told to go.
 
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveMesh('motor1', 'motor2', 'det4', xlim=(-3, 3), ylim=(-5, 5)))
+    RE(outer_product_scan([det5],
+                          jittery_motor1, -3, 3, 6,
+                          jittery_motor2, -5, 5, 10, False),
+       LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+                xlim=(-3, 3), ylim=(-5, 5)))
 
 .. plot::
 
     from bluesky import RunEngine
     from bluesky.plans import outer_product_scan
-    from bluesky.examples import det4, motor1, motor2
+    from bluesky.examples import det5, jittery_motor1, jittery_motor2
     from bluesky.callbacks import LiveMesh
-    motor1._fake_sleep = 0
-    motor2._fake_sleep = 0
-    motor1._fake_jitter = 0.2
-    motor2._fake_jitter = 0.2
     RE = RunEngine({})
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveMesh('motor1', 'motor2', 'det4', xlim=(-3, 3), ylim=(-5, 5)))
-    # Take the jitter back out for later reuse of these motors.
-    motor1._fake_jitter = 0
-    motor2._fake_jitter = 0
+    RE(outer_product_scan([det5],
+                          jittery_motor1, -3, 3, 6,
+                          jittery_motor2, -5, 5, 10, False),
+       LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+                xlim=(-3, 3), ylim=(-5, 5)))
 
 .. autoclass:: bluesky.callbacks.LiveMesh
 

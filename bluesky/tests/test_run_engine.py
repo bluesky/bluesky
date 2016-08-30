@@ -103,8 +103,8 @@ def test_stop_motors_and_log_any_errors(fresh_RE):
             stopped[self.name] = True
             raise Exception
 
-    motor = MoverWithFlag('a', ['a'])
-    broken_motor = BrokenMoverWithFlag('b', ['b'])
+    motor = MoverWithFlag('a', {'a': lambda x: x}, {'x': 0})
+    broken_motor = BrokenMoverWithFlag('b', {'b': lambda x: x}, {'x': 0})
 
     fresh_RE([Msg('set', broken_motor, 1), Msg('set', motor, 1), Msg('pause')])
     assert 'a' in stopped
@@ -151,17 +151,25 @@ def test_unstage_and_log_errors(fresh_RE):
     unstaged = {}
 
     class MoverWithFlag(Mover):
+
+        def stage(self):
+            return [self]
+
         def unstage(self):
             unstaged[self.name] = True
             return [self]
 
     class BrokenMoverWithFlag(Mover):
+
+        def stage(self):
+            return [self]
+
         def unstage(self):
             unstaged[self.name] = True
             return [self]
 
-    a = MoverWithFlag('a', ['a'])
-    b = BrokenMoverWithFlag('b', ['b'])
+    a = MoverWithFlag('a', {'a': lambda x: x}, {'x': 0})
+    b = BrokenMoverWithFlag('b', {'b': lambda x: x}, {'x': 0})
 
     unstaged.clear()
     fresh_RE([Msg('stage', a), Msg('stage', b)])
@@ -356,7 +364,7 @@ def _make_unrewindable_marker():
         def pause(self):
             raise NoReplayAllowed()
 
-    motor = Mover('motor', ['motor'])
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
 
     def test_plan(motor, det):
         yield Msg('set', motor, 0)
@@ -398,7 +406,7 @@ def _make_unrewindable_suspender_marker():
         def pause(self):
             raise NoReplayAllowed()
 
-    motor = Mover('motor', ['motor'])
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
 
     def test_plan(motor, det):
         yield Msg('set', motor, 0)

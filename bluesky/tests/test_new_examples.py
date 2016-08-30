@@ -329,7 +329,7 @@ def test_finalize_runs_after_error(fresh_RE):
 
 
 def test_reset_positions(fresh_RE):
-    motor = Mover('a', ['a'])
+    motor = Mover('a', {'a': lambda x: x}, {'x': 0})
     motor.set(5)
 
     msgs = []
@@ -378,7 +378,7 @@ def test_reset_positions_no_position_attr(fresh_RE):
 
 
 def test_relative_set(fresh_RE):
-    motor = Mover('a', ['a'])
+    motor = Mover('a', {'a': lambda x: x}, {'x': 0})
     motor.set(5)
 
     msgs = []

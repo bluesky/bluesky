@@ -12,40 +12,25 @@ class SynGauss2D(Reader):
 
     Example
     -------
-    motor = Mover('motor', ['motor'])
-    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    det = SynGauss2D('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
-    _klass = 'reader'
-
     def __init__(self, name, motor, motor_field, center, Imax=1000, sigma=1,
                  nx=250, ny=250, img_sigma=50):
-        super(SynGauss2D, self).__init__(name, [name, ])
-        self.ready = True
-        self._motor = motor
-        self._motor_field = motor_field
-        self.center = center
-        self.Imax = Imax
-        self.sigma = sigma
-        self.dims = (nx, ny)
-        self.img_sigma = img_sigma
-        # stash these things in a temp directory. This might cause an
+        dims = (nx, ny)
+        self.dims = dims
+        self.name = name
+
+        def func():
+            m = motor.read()[motor_field]['value']
+            v = Imax * np.exp(-(m - center)**2 / (2 * sigma**2))
+            arr = self.gauss(dims, img_sigma) * v + np.random.random(dims) * .01
+            fs_uid = save_ndarray(arr, self.output_dir)
+            return fs_uid
+
         # exception to be raised if/when the file system cleans its temp files
         self.output_dir = tempfile.gettempdir()
-
-    def trigger(self, *, group=True):
-        self.ready = False
-        m = self._motor._data[self._motor_field]['value']
-        v = self.Imax * np.exp(-(m - self.center)**2 / (2 * self.sigma**2))
-        arr = self.gauss(self.dims, self.img_sigma) * v + np.random.random(
-            self.dims) * .01
-        fs_uid = save_ndarray(arr, self.output_dir)
-        self._data = {self.name: {'value': fs_uid, 'timestamp': ttime.time()}}
-        ttime.sleep(0.05)  # simulate exposure time
-        self.ready = True
-        return self
-
-    def read(self):
-        return self._data
+        super().__init__(name, {name: func})
 
     def _dist(self, dims):
         """
