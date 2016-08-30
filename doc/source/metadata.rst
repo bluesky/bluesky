@@ -226,7 +226,8 @@ delete a key you want to stop using,
 
     del RE.md['project']   # delete a key
 
-or use any of the standard methods that apply to dictionaries in Python.
+or use any of the standard methods that apply to
+`dictionaries in Python <https://docs.python.org/3/library/stdtypes.html#typesmapping>`_.
 
 The ``scan_id``, an integer that the RunEngine automatically increments at the
 beginnging of each scan, is stored in ``RE.md['scan_id']``.
