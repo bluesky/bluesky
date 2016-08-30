@@ -17,8 +17,8 @@ Before each message ``msg`` in the plan is processed by the RunEngine,
 significantly slow down plan execution, so it should only be used for
 debugging.
 
-Using ``print`` is easiest, but in generalfunction can be used. For example, to
-write to a file:
+Using ``print`` is easiest, but in general any function can be used. For
+example, to write to a file:
 
 .. code-block:: python
 
