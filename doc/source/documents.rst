@@ -262,8 +262,9 @@ considered configuration; ``device.read_configuration()`` returns the readings
 that are considered configuration.
 
 The first time during a run that the RunEngine is told to read a device, it
-reads the device's configuration also. The output of ``device.describe()`` is
-recorded in ``configuration[device.name]['data_keys']``. The output of
+reads the device's configuration also. The return value of
+``device.describe_configuration()`` is recorded in
+``configuration[device.name]['data_keys']``. The return value of
 ``device.read_configuration()`` is collated into
 ``configuration[device.name]['data']`` and
 ``configuration[device.name]['timestamps']``.
