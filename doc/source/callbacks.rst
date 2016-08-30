@@ -382,35 +382,31 @@ Export
 Exporting Image Data as TIFF Files
 ++++++++++++++++++++++++++++++++++
 
-First, compose a filename template. This is a simple working example.
+First, compose a filename template. The template can include metadata or event
+data from the scan.
 
 .. code-block:: python
 
+    # a template that includes the scan ID and sequence number in each filename
     template = "output_dir/{start.scan_id}_{event.seq_num}.tiff"
 
-The template can include metadata or event data from the scan.
+    # a template that sorts files into directories based user and scan ID
+    template = "output_dir/{start.user}/{start.scan_id}/{event.seq_num}.tiff"
 
-.. code-block:: python
-
+    # a more complex template includes actual measurements in the filenames
     template = ("output_dir/{start.scan_id}_{start.sample_name}_"
                 "{event.data.temperature}_{event.seq_num}.tiff")
 
-It can be handy to use the metadata to sort the images into directories.
-
-.. code-block:: python
-
-    template = "{start.user}/{start.scan_id}/{event.seq_num}.tiff"
-
 If each image data point is actually a stack of 2D image planes, the template
-must also include ``{i}``, which will count through the iamge planes in the
+must also include ``{i}``, which will count through the image planes in the
 stack.
 
-(Most metadata comes from the "start" document, hence ``start.scan_id`` above.
-See
-`here <https://nsls-ii.github.io/architecture-overview.html>`_ for a more
-comprehensive explanation of what is in the different documents.)
+.. note::
 
-Next, create an exporter.
+    Most metadata comes from the "start" document, hence ``start.scan_id``
+    above.  Review the :doc:`<documents>` section for details.
+
+Create a callback that exports TIFFs using your template.
 
 .. code-block:: python
 
@@ -466,6 +462,37 @@ Working example:
         suitcase.export(header, filename)
 
     RE.subscribe('stop', suitcase_as_callback)
+
+Export Metadata to the Olog
++++++++++++++++++++++++++++
+
+The `Olog <http://olog.github.io/2.2.7-SNAPSHOT/>`_ ("operational log") is an
+electronic logbook. We can use a callback to automatically generate log entries
+at the beginning of a run. The Python interface to Olog is not straightforward,
+so there is some boilerplate:
+
+.. code-block:: python
+
+    from functools import partial
+    from pyOlog import SimpleOlogClient
+    from bluesky.callbacks.olog import logbook_cb_factory
+
+    # Set up the logbook. This configures bluesky's summaries of
+    # data acquisition (scan type, ID, etc.).
+
+    LOGBOOKS = ['Data Acquisition']  # list of logbook names to publish to
+    simple_olog_client = SimpleOlogClient()
+    generic_logbook_func = simple_olog_client.log
+    configured_logbook_func = partial(generic_logbook_func, logbooks=LOGBOOKS)
+
+    cb = logbook_cb_factory(configured_logbook_func)
+    RE.subscribe('start', cb)
+
+The module ``bluesky.callbacks.olog`` includes some templates that format the
+data from the 'start' document into a readable log entry. You can also write
+customize tempaltes and pass them to ``logbook_cb_factory``.
+
+.. autofunction:: bluesky.callbacks.olog.logbook_cb_factory
 
 Verify Data Has Been Saved
 --------------------------
