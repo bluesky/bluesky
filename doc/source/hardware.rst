@@ -186,6 +186,16 @@ The interface of a readable device:
         It should return a list of devices including itself and any other
         devices that are unstaged as a result of unstaging this one.
 
+    .. method:: pause()
+
+        An optional hook to do some device-specific work when the RunEngine
+        pauses.
+
+    .. method:: resume()
+
+        An optional hook to do some device-specific work when the RunEngine
+        resumes after a pause.
+
 
 Settable (Movable) Device
 +++++++++++++++++++++++++
@@ -264,10 +274,18 @@ or settable device, though there is some overlap.
 
         same as for a readable device
 
-    .. attribute:: stage()
+    .. method:: stage()
 
         optional, same as for a readable device
 
-    .. attribute:: unstage()
+    .. method:: unstage()
+
+        optional, same as for a readable device
+
+    .. method:: pause()
+
+        optional, same as for a readable device
+
+    .. method:: resume()
 
         optional, same as for a readable device
