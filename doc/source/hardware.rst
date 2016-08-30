@@ -23,17 +23,19 @@ Real Hardware
 
 The `ophyd
 <https://nsls-ii.github.io/ophyd>`_ package implements this interface for
-*real* hardware, communicating via `EPICS <http://www.aps.anl.gov/epics/>`_.
-Other control systems (Tango, LabView, etc.) could be integrated with bluesky
-in the future by implementing this same interface.
+a wide variety of hardware, communicating via `EPICS
+<http://www.aps.anl.gov/epics/>`_.  Other control systems (Tango, LabView,
+etc.) could be integrated with bluesky in the future by implementing this same
+interface.
 
 Simulated Hardware
 ++++++++++++++++++
 
 A toy "test" implementation the interface is included in the
-``bluesky.examples`` module. These implementations act as "simulated hardware,"
-and we use them extensively in examples, demos, and the test suite. Their API
-documentation is below.
+``bluesky.examples`` module. These implementations act as simulated hardware,
+and we use them extensively in examples, demos, and the test suite. They can
+also be useful for exercising analysis workflows before running a real
+experiment. API documentation is below.
 
 .. autoclass:: bluesky.examples.Reader
 .. autoclass:: bluesky.examples.Mover
@@ -45,7 +47,7 @@ Status object
 +++++++++++++
 
 The interface of a "status" object, which the ``RunEngine`` uses to
-asynchronously monitor the competition of having triggered or set a device.
+asynchronously monitor the compeletion of having triggered or set a device.
 
 .. class:: Status:
 
@@ -100,7 +102,7 @@ The interface of a readable device:
         .. code-block:: python
 
             OrderedDict(('channel1',
-                         {'value': 5, 'timestamp': 1472493713.271991})
+                         {'value': 5, 'timestamp': 1472493713.271991}),
                          ('channel2',
                          {'value': 16, 'timestamp': 1472493713.539238}))
 
@@ -117,7 +119,7 @@ The interface of a readable device:
             OrderedDict(('channel1',
                          {'source': 'XF23-ID:SOME_PV_NAME',
                           'dtype': 'number',
-                          'shape': []})
+                          'shape': []}),
                         ('channel2',
                          {'source': 'XF23-ID:SOME_PV_NAME',
                           'dtype': 'number',
@@ -127,10 +129,10 @@ The interface of a readable device:
 
         * source (a descriptive string --- e.g., an EPICS Process Variable)
         * dtype: one of the JSON data types: {'number', 'string', 'array'}
-        * shape: ``None`` or a list of dimensions --- e.g., [5, 5] for a 5x5
-          array
+        * shape: ``None`` or a list of dimensions --- e.g., ``[5, 5]`` for a
+          5x5 array
 
-        Optinal additional fields (precision, units, etc.) are allowed.
+        Optional additional fields (precision, units, etc.) are allowed.
         The optional field ``external`` should be used to provide information
         about references to externally-stored data, such as large image arrays.
 
@@ -202,7 +204,7 @@ with the following additional methods and attributes:
         Return a ``Status`` that is marked done when the device is done
         moving.
 
-    .. attribute :: position
+    .. attribute:: position
 
         a heuristic that describes the current position of a device as a
         single scalar, as opposed to the potentially multi-valued description

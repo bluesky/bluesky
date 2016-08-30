@@ -4,15 +4,15 @@ Basic Usage & Intro to Plans
 ============================
 
 A *plan* is bluesky's concept of an experimental procedure. Each granular
-instruction in a plan is dubbed a *message*.  In Python jargon, a plan can be
+instruction in a plan is dubbed a *message*. In Python jargon, a plan can be
 any iterable. It could be a simple list or a generator, a concept which is
 addressed in detail below. The :ref:`details of the messages themselves <msg>`
 are not important for understanding what follows.
 
-The *RunEngine* is an kind of interpreter for plans. It executes the
-intructions in the plan while monitoring for interruptions, collating metadata
-and data, coordinating I/O, and ensuring that the hardware is left in a safe
-state at exit time.
+The *RunEngine* is a kind of interpreter for plans. It executes the messages
+in the plan while monitoring for interruptions, collating metadata and data,
+coordinating I/O, and ensuring that the hardware is left in a safe state at
+exit time.
 
 .. note::
 
