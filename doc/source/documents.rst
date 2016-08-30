@@ -16,6 +16,8 @@ metadata. We dub this dictionary, which is organized in a
 `formally specified <https://github.com/NSLS-II/event-model>`_ way, a
 *document*.
 
+.. _run_overview::
+
 Overview of a "Run"
 -------------------
 

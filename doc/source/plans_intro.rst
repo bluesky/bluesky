@@ -98,7 +98,7 @@ the *execution* of the plan --- ``RE(count([det]))`` --- lets us inspect
 the plan before running it. It also let us modify a plan on the fly, as we'll
 see :ref:`later below <preprocessors>`.
 
-Bluesky provides a nice functions for summarizing the action of a plan,
+Bluesky provides a simple function for summarizing the action of a plan,
 ``print_summary``. Here, we see that the plan :func:`count` opens a "run" (i.e.,
 dataset), takes a reading, and marks the end of that run.
 
