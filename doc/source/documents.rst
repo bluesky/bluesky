@@ -233,16 +233,17 @@ The RunEngine obtains this information from each device it sees by calling
 Object Keys
 +++++++++++
 
-Reading a given device can produce multiple data keys. For example, reading the
-x motor in this example gave a readback value (``x_readback``) and a setpoint
-value (``x_setpoint``). The ``object_keys`` provide an association between a
-device and its data keys.
+The ``object_keys`` provide an association between each device and its data keys.
+
+This is needed because a given device can produce multiple data keys. For
+example, suppose the ``x_readback`` and ``x_setpoint`` data keys in our example
+came from the same device, a motor named ``'x'``.
 
 .. code-block:: python
 
     # excerpt of a 'descriptor' document
     'object_keys':
-       {'motor': ['x_setpoint', 'x_readback'],
+       {'x': ['x_setpoint', 'x_readback'],
         'temp_ctrl': ['temperature']},
 
 Specifically, it maps ``device.name`` to ``list(device.describe())``.
@@ -262,18 +263,19 @@ that are considered configuration.
 
 The first time during a run that the RunEngine is told to read a device, it
 reads the device's configuration also. The output of ``device.describe()`` is
-recorded in ``configuration['data_keys']``. The output of
-``device.read_configuration()`` is collated into ``configuration['data']`` and
-``configuration['timestamps']``.
+recorded in ``configuration[device.name]['data_keys']``. The output of
+``device.read_configuration()`` is collated into
+``configuration[device.name]['data']`` and
+``configuration[device.name]['timestamps']``.
 
-In this example, ``motor`` has one configuration data key, and ``temp_ctrl``
+In this example, ``x`` has one configuration data key, and ``temp_ctrl``
 happens to provide no configuration information.
 
 .. code-block:: python
 
     # excerpt of a 'descriptor' document
     'configuration':
-        {'motor':
+        {'x':
            {'data': {'offset': 0.1},
             'timestamps': {'offset': 1442521007.534918},
             'data_keys':
@@ -317,11 +319,11 @@ Taken together, our example 'descriptor' document looks like this.
              'precision': 2}},
 
      'object_keys':
-        {'motor': ['x_setpoint', 'x_readback'],
+        {'x': ['x_setpoint', 'x_readback'],
          'temp_ctrl': ['temperature']},
 
      'configuration':
-         {'motor':
+         {'x':
             {'data': {'offset': 0.1},
              'timestamps': {'offset': 1442521007.534918},
              'data_keys':
