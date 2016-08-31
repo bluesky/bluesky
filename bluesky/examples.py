@@ -26,7 +26,6 @@ class SimpleStatus:
         with self._lock:
             self.success = success
             self.done = True
-            self._settled()
 
             if self._cb is not None:
                 self._cb()
@@ -428,14 +427,14 @@ class MockFlyer:
         # that is immediately done, and return that, indicated that
         # the 'kickoff' step is done.
         self._future = self.loop.run_in_executor(None, self._scan)
-        self._completion_status = SimpleStatus()
-        self._future.add_done_callback(
-            lambda x: self._completion_status._finished())
+        st = SimpleStatus()
+        self._completion_status = st
+        self._future.add_done_callback(lambda x: st._finished())
 
         return NullStatus()
 
     def collect(self):
-        if not self._completion_status is not None:
+        if self._completion_status is not None:
             raise RuntimeError("No reading until done!")
 
         yield from self._data
