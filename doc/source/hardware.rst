@@ -23,10 +23,11 @@ Real Hardware
 
 The `ophyd
 <https://nsls-ii.github.io/ophyd>`_ package implements this interface for
-a wide variety of hardware, communicating via `EPICS
-<http://www.aps.anl.gov/epics/>`_.  Other control systems (Tango, LabView,
-etc.) could be integrated with bluesky in the future by implementing this same
-interface.
+a wide variety of hardware, communicating using
+`EPICS <http://www.aps.anl.gov/epics/>`_ via the Python bindings
+`pyepics <http://cars9.uchicago.edu/software/python/pyepics3/>`_.Other control
+systems (Tango, LabView, etc.) could be integrated with bluesky in the future
+by implementing this same interface.
 
 Simulated Hardware
 ++++++++++++++++++
