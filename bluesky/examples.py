@@ -6,18 +6,6 @@ import numpy as np
 from .run_engine import Msg
 
 
-class MockSignal:
-    "hotfix for 2016 winter cycle -- build out more thoroughly later"
-    def __init__(self, field):
-        self._field = field
-
-    def read(self):
-        return {self._field: (0, 0)}
-
-    def describe(self):
-        return {self._field: (0, 0)}
-
-
 class SimpleStatus:
     """
     This provides a single-slot callback for when the operation has finished.
