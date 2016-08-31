@@ -584,3 +584,8 @@ def test_no_rewind_device():
     det.rewindable = FakeSig()
 
     assert not all_safe_rewind([det])
+
+
+def test_monitor(fresh_RE):
+    RE = fresh_RE
+    RE(monitor_during_wrapper(count([det], 5), det1))

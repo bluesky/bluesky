@@ -250,7 +250,7 @@ def test_simple_fly(fresh_RE):
     RE = fresh_RE
     mm = MockFlyer('wheeeeee', det, motor, RE.loop)
     RE(fly_gen(mm, -1, 1, 15))
-    assert mm._completion_status is None
+    assert mm._future.done()
 
 
 def test_list_of_msgs(fresh_RE):

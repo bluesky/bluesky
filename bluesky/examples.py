@@ -90,6 +90,12 @@ class Reader:
     conf_fields : dict, optional
         Like `read_fields`, but providing slow-changing configuration data.
         If `None`, the configuration will simply be an empty dict.
+    monitor_intervals : list, optional
+        iterable of numbers, specifying the spacing in time of updates from the
+        device (this applies only if the ``subscribe`` method is used)
+    loop : asyncio.EventLoop, optional
+        used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
+        unspecified
 
     Examples
     --------
@@ -102,13 +108,23 @@ class Reader:
     >>> det = Readable('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
-    def __init__(self, name, read_fields, conf_fields=None):
+    def __init__(self, name, read_fields, conf_fields=None,
+                 monitor_intervals=None, loop=None):
         self.name = name
         self.parent = None
         self._read_fields = read_fields
         if conf_fields is None:
             conf_fields = {}
         self._conf_fields = conf_fields
+
+        # All this is used only by monitoring (subscribe/unsubscribe).
+        self._futures = []
+        if monitor_intervals is None:
+            monitor_intervals = []
+        self._monitor_intervals = monitor_intervals
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        self.loop = loop
 
     def trigger(self):
         "No-op: returns a status object immediately marked 'done'."
@@ -155,6 +171,18 @@ class Reader:
         # Update configuration here.
         new_conf = self.read_configuration()
         return old_conf, new_conf
+
+    def subscribe(self, function):
+        "Simulate monitoring updates from a device."
+        def sim_monitor():
+            for interval in self.monitor_intervals:
+                ttime.sleep(interval)
+                function()
+
+        self._futures[function] = self.loop.run_in_executor(None, sim_monitor)
+
+    def unsubscribe(self, function):
+        self._futures.pop(function).cancel()
 
 
 class Mover(Reader):
@@ -364,7 +392,7 @@ class MockFlyer:
         practice. Specifically, it is its own status object, which is
         confusing.
     """
-    def __init__(self, name, detector, motor, loop):
+    def __init__(self, name, detector, motor, loop=None):
         self.name = name
         self.parent = None
         self._mot = motor
@@ -372,6 +400,8 @@ class MockFlyer:
         self._steps = None
         self._data = deque()
         self._completion_status = None
+        if loop is None:
+            loop = asyncio.get_event_loop()
         self.loop = loop
 
     def read_configuration(self):
@@ -387,7 +417,7 @@ class MockFlyer:
         return {'stream_name': dd}
 
     def complete(self):
-        return NullStatus()
+        return self._completion_status
 
     def kickoff(self, start, stop, steps):
         self._steps = np.linspace(start, stop, steps)
