@@ -71,7 +71,7 @@ def test_spec_plans(fresh_RE, pln, name, args, kwargs):
 def test_flyers(fresh_RE):
     from bluesky.global_state import gs
     RE = fresh_RE
-    flyer = FlyMagic('wheee', motor, det1, det2)
+    flyer = MockFlyer('wheee', det1, motor, RE.loop)
     gs.FLYERS = [flyer]
     RE(ct())
 

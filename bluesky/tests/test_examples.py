@@ -248,9 +248,9 @@ def validate_dict_cb_opposite(key):
 
 def test_simple_fly(fresh_RE):
     RE = fresh_RE
-    mm = MockFlyer(det, motor, RE.loop)
+    mm = MockFlyer('wheeeeee', det, motor, RE.loop)
     RE(fly_gen(mm, -1, 1, 15))
-    assert mm._future.done()
+    assert mm._completion_status is None
 
 
 def test_list_of_msgs(fresh_RE):
