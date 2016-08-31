@@ -121,6 +121,7 @@ class GlobalState(HasTraits):
     DETS = ReadableList()
     BASELINE_DEVICES = ReadableList()
     FLYERS = FlyableList()
+    MONITORS = ReadableList()
     MASTER_DET = Readable()
     MASTER_DET_FIELD = Unicode()
     TH_MOTOR = Movable()
