@@ -186,6 +186,13 @@ The interface of a readable device:
         It should return a list of devices including itself and any other
         devices that are unstaged as a result of unstaging this one.
 
+    .. method:: subscribe(function)
+
+        Optional, needed only if the device will be :doc:`monitored <async>`.
+
+        When the device has a new value ready, it should call ``function``
+        asynchronously in a separate thread.
+
     .. method:: pause()
 
         An optional hook to do some device-specific work when the RunEngine
