@@ -1235,6 +1235,9 @@ Attribute               Purpose
 ``gs.BASELINE_DEVICES`` devices to read once before and after all plans
 ======================= =======
 
+For more context about what "flyers" and "monitors" mean, see the section on
+:doc:`async`.
+
 Subscription Factories
 ++++++++++++++++++++++
 
