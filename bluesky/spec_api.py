@@ -27,7 +27,8 @@ from bluesky.plans import (count, scan, relative_scan,
                            relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
                            tweak, configure_count_time_decorator,
-                           baseline_decorator, subs_decorator)
+                           baseline_decorator, subs_decorator,
+                           fly_during_decorator, monitor_during_decorator)
 import itertools
 from itertools import chain
 from collections import ChainMap
@@ -234,6 +235,8 @@ def inner_spec_decorator(plan_name, time, motors, **subs_kwargs):
 
         @subs_decorator(subs)
         @configure_count_time_decorator(time)
+        @fly_during_decorator(list(gs.FLYERS))
+        @monitor_during_decorator(list(gs.MONITORS))
         @baseline_decorator(list(gs.BASELINE_DEVICES) + motors)
         def inner_spec_plan(*args, md=None, **kwargs):
             # inject the plan name + time into the metadata
