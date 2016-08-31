@@ -53,7 +53,8 @@ In bluesky's view, there are three steps to "flying" a device during a scan.
    the RunEngine and processed like any other data.
 
 To "fly" one or more "flyable" devices during a plan, bluesky provides a
-preprocessor. It is available as a wrapper, :func:`fly_during_wrapper`
+`preprocessor <preprocessors>`. It is available as a wrapper,
+:func:`fly_during_wrapper`
 
 .. code-block:: python
 
@@ -74,10 +75,23 @@ and as a decorator, :func:`fly_during_wrapper`.
 
     RE(fly_and_count([det]))
 
+Alternatively, if you are using the `SPEC-like Plan API <spec_api>`, simply add
+flyers to the global state:
+
+.. code-block:: python
+
+    from bluesky.global_state import gs
+    from bluesky.examples import flyer1, flyer2
+
+    gs.FLYERS = [flyer1, flyer2]
+
+They will be included with all plans until removed.
+
 Monitoring
 ----------
 
-To monitor some device during a plan, bluesky provides a preprocessor. It
+To monitor some device during a plan, bluesky provides a
+`preprocessor <preprcoessors>`. It
 is available as a wrapper, :func:`monitor_during_wrapper`
 
 .. code-block:: python
@@ -98,3 +112,15 @@ and as a decorator, :func:`fly_during_wrapper`.
     monitor_and_count = monitor_during_decorator(signal)(count)
 
     RE(monitor_and_count([det]))
+
+Alternatively, if you are using the `SPEC-like Plan API <spec_api>`, simply add
+devices to be monitored to the global state:
+
+.. code-block:: python
+
+    from bluesky.global_state import gs
+    # TODO from bluesky.examples import ...
+
+    gs.MONITORS =  TO DO
+
+They will be included with all plans until removed.

@@ -1145,6 +1145,8 @@ which ``Plan`` uses to auto-generate an ``__init__`` at class definition time.
 If that is a little too "magical" for your taste, feel free to skip it and just
 write out the ``__init__`` method, as we did in the example above.
 
+.. _spec_api:
+
 SPEC-like API with Global State
 -------------------------------
 
@@ -1229,6 +1231,7 @@ Attribute               Purpose
 ``gs.PLOT_Y``           field name to plot as y axis of ``LivePlot``
 ``gs.OVERPLOT``         True or False; whether to replot to same axes
 ``gs.FLYERS``           "flyable" devices to fly-scan during all plans
+``gs.MONITORS``         devices to monitor asynchronously during all plans
 ``gs.BASELINE_DEVICES`` devices to read once before and after all plans
 ======================= =======
 
