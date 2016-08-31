@@ -88,7 +88,10 @@ could be presented together as one row in a table.
      'timestamps':
         {'temperature': 1442521007.9258342,
          'x_setpoint': 1442521007.5029348,
-         'x_readback': 1442521007.5029348}
+         'x_readback': 1442521007.5029348},
+     'time': 1442521007.3438923,
+     'uid': '<randomly-generated unique ID>',
+     'descriptor': '<reference to a descriptor document>'}
 
 The separate times of the individual readings are not thrown away (they are
 recorded in 'timestamps') but the overall event 'time' is more often used.
@@ -151,7 +154,7 @@ The most commonly useful fields here are 'time' and 'exit_status'.
 
     # 'stop' document
     {'exit_status': 'success',  # or 'fail' or 'abort'
-     'reason': '',  # can describe reason for failure
+     'reason': '',  # can provide reason for failure
      'time': 1442521012.1021606,
      'uid': '<randomly-generated unique ID>',
      'start': '<reference to the start document>'
@@ -175,7 +178,7 @@ Recall our example 'event' document.
      'timestamps':
         {'temperature': 1442521007.9258342,
          'x_setpoint': 1442521007.5029348,
-         'x_readback': 1442521007.5029348}
+         'x_readback': 1442521007.5029348},
      'time': 1442521007.3438923,
      'uid': '<randomly-generated unique ID>', 
      'descriptor': '<reference to a descriptor document>'}
@@ -229,6 +232,7 @@ The RunEngine obtains this information from each device it sees by calling
              'shape': [],
              'units': 'mm',
              'precision': 2}},
+     ...}
 
 Object Keys
 ^^^^^^^^^^^
@@ -242,9 +246,10 @@ came from the same device, a motor named ``'x'``.
 .. code-block:: python
 
     # excerpt of a 'descriptor' document
-    'object_keys':
-       {'x': ['x_setpoint', 'x_readback'],
-        'temp_ctrl': ['temperature']},
+    {'object_keys':
+        {'x': ['x_setpoint', 'x_readback'],
+         'temp_ctrl': ['temperature']},
+     ...}
 
 Specifically, it maps ``device.name`` to ``list(device.describe())``.
 
@@ -275,7 +280,7 @@ happens to provide no configuration information.
 .. code-block:: python
 
     # excerpt of a 'descriptor' document
-    'configuration':
+    {'configuration':
         {'x':
            {'data': {'offset': 0.1},
             'timestamps': {'offset': 1442521007.534918},
@@ -290,6 +295,7 @@ happens to provide no configuration information.
             {'data': {},
              'timestamps': {}
              'data_keys': {}}}
+     ...}
 
 Complete Sample
 ^^^^^^^^^^^^^^^
