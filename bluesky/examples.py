@@ -117,7 +117,7 @@ class Reader:
         self._conf_fields = conf_fields
 
         # All this is used only by monitoring (subscribe/unsubscribe).
-        self._futures = []
+        self._futures = {}
         if monitor_intervals is None:
             monitor_intervals = []
         self._monitor_intervals = monitor_intervals
@@ -180,7 +180,7 @@ class Reader:
 
         self._futures[function] = self.loop.run_in_executor(None, sim_monitor)
 
-    def unsubscribe(self, function):
+    def clear_sub(self, function):
         self._futures.pop(function).cancel()
 
 

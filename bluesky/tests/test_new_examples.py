@@ -588,4 +588,4 @@ def test_no_rewind_device():
 
 def test_monitor(fresh_RE):
     RE = fresh_RE
-    RE(monitor_during_wrapper(count([det], 5), det1))
+    RE(monitor_during_wrapper(count([det], 5), [det1]))

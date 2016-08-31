@@ -193,6 +193,10 @@ The interface of a readable device:
         When the device has a new value ready, it should call ``function``
         asynchronously in a separate thread.
 
+    .. method:: clear_sub(function)
+
+        Remove a subscription. (See ``subscribe``, above.)
+
     .. method:: pause()
 
         An optional hook to do some device-specific work when the RunEngine
