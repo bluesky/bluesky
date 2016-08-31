@@ -73,23 +73,25 @@ Documents in Detail
 Event
 +++++
 
-An 'event' is a data point with an associated time. One event might contain
-more than one reading, but it is presumed that these readings took place at
-roughly the same time --- that, for the purposes of later analysis, the
-measurements in an can usually be treated as synchronous. For example, they
+An 'event' records one or more measurements with an associated time. The
+measurements may not have taken place at precisely the same moment, but they
+are grouped together in time for purposes of later analysis. For example, they
 could be presented together as one row in a table.
 
 .. code-block:: python
 
     # 'event' document
-    {'data': {'temperature': 5.0, 'position': 3.0},
-     'timestamps': {'temperature': 1442521007.9258342, 'position': 1442521007.5029348}
-     'time': 1442521007.3438923,
-     'uid': '<randomly-generated unique ID>', 
-     'descriptor': '<reference to a descriptor>'}
+    {'data':
+        {'temperature': 5.0,
+          'x_setpoint': 3.0,
+          'x_readback': 3.05},
+     'timestamps':
+        {'temperature': 1442521007.9258342,
+         'x_setpoint': 1442521007.5029348,
+         'x_readback': 1442521007.5029348}
 
-The separate times of the individual readings are not thrown away (they are in
-'timestamps') but the overall event 'time' is more often used.
+The separate times of the individual readings are not thrown away (they are
+recorded in 'timestamps') but the overall event 'time' is more often used.
 
 .. note::
 
@@ -101,14 +103,10 @@ Run Start
 
 A 'start' document marks the beginning of the run. It comprises everything we
 know before we start taking data, including all metadata provided by the user
-and the plan.
+and the plan. (More on this in the :doc:`next section <metadata>`.)
 
 All the built-in plans provide some automatic metadata like the names of the
 detector(s) and motor(s) used, which can be very useful in searching for data.
-
-The RunEngine guarantees that an entry for ``'plan_name'`` (and
-somewhat-less-useful ``plan_type``) will be present, as well as ``'time'``,
-``'uid'``, and ``'scan_id'``.
 
 The command:
 
@@ -147,6 +145,8 @@ Run Stop
 A 'stop' document marks the end of the run. It contains metadata that is not
 known until the run completes.
 
+The most commonly useful fields here are 'time' and 'exit_status'.
+
 .. code-block:: python
 
     # 'stop' document
@@ -160,4 +160,187 @@ known until the run completes.
 Event Descriptor
 ++++++++++++++++
 
-TO DO
+**The Event Descriptor captures metadata about the measurements in an Event. On
+a first reading, that is probably all you need to know about this section.**
+
+Recall our example 'event' document.
+
+.. code-block:: python
+
+    # 'event' document (same as above, shown again for reference)
+    {'data':
+        {'temperature': 5.0,
+          'x_setpoint': 3.0,
+          'x_readback': 3.05},
+     'timestamps':
+        {'temperature': 1442521007.9258342,
+         'x_setpoint': 1442521007.5029348,
+         'x_readback': 1442521007.5029348}
+     'time': 1442521007.3438923,
+     'uid': '<randomly-generated unique ID>', 
+     'descriptor': '<reference to a descriptor document>'}
+
+Typically, an experiment generates multiple event documents with the same data
+keys. For example, there might be ten sequential readings, generating ten event
+documents like the one above --- with different readings and timestamps but
+identical data keys. All these events refer back to a 'descriptor' with
+metadata about the data keys and the configuration of the devices involved.
+
+.. note:: 
+
+    We got the term "data keys" from ``event['data'].keys()``. Again, in our
+    example, the data keys are ``['temperature', 'x_setpoint', 'x_readback']``
+
+Data Keys
++++++++++
+
+First, the descriptor provides metadata about each data key.
+
+* dtype --- 'number', 'string', 'array', or 'object' (dict)
+* shape --- ``None`` or a list of dimensions like ``[5, 5]`` for a 5x5 array
+* source --- a description of the hardware that uniquely identifies it, such as
+  an EPICS Process Variable
+* (optional) external --- a string specifying where external data, such as a
+  large image array, is stored
+
+Arbitrary additional fields are allowed, such as precision or units.
+The RunEngine obtains this information from each device it sees by calling
+``device.describe()``.
+
+.. code-block:: python
+
+    # excerpt of a 'descriptor' document
+    {'data_keys':
+        {'temperature':
+            {'dtype': 'number',
+             'source': '<descriptive string>',
+             'shape': [],
+             'units': 'K',
+             'precision': 3},
+         'x_setpoint':
+            {'dtype': 'number',
+             'source': '<descriptive string>',
+             'shape': [],
+             'units': 'mm',
+             'precision': 2},
+         'x_readback':
+            {'dtype': 'number',
+             'source': '<descriptive string>',
+             'shape': [],
+             'units': 'mm',
+             'precision': 2}},
+
+Object Keys
++++++++++++
+
+The ``object_keys`` provide an association between each device and its data keys.
+
+This is needed because a given device can produce multiple data keys. For
+example, suppose the ``x_readback`` and ``x_setpoint`` data keys in our example
+came from the same device, a motor named ``'x'``.
+
+.. code-block:: python
+
+    # excerpt of a 'descriptor' document
+    'object_keys':
+       {'x': ['x_setpoint', 'x_readback'],
+        'temp_ctrl': ['temperature']},
+
+Specifically, it maps ``device.name`` to ``list(device.describe())``.
+
+Configuration
++++++++++++++
+
+Complex devices often have many parameters that do not need to be read anew
+with every data point. They are "configuration," by which we mean they don't
+typcially change in the middle of a run. A detector's exposure time is usually
+(but not always) in this category.
+
+Devices delinate between the two by providing two different methods that the
+RunEngine can call: ``device.read()`` returns normals readings that are *not*
+considered configuration; ``device.read_configuration()`` returns the readings
+that are considered configuration.
+
+The first time during a run that the RunEngine is told to read a device, it
+reads the device's configuration also. The output of ``device.describe()`` is
+recorded in ``configuration[device.name]['data_keys']``. The output of
+``device.read_configuration()`` is collated into
+``configuration[device.name]['data']`` and
+``configuration[device.name]['timestamps']``.
+
+In this example, ``x`` has one configuration data key, and ``temp_ctrl``
+happens to provide no configuration information.
+
+.. code-block:: python
+
+    # excerpt of a 'descriptor' document
+    'configuration':
+        {'x':
+           {'data': {'offset': 0.1},
+            'timestamps': {'offset': 1442521007.534918},
+            'data_keys':
+               {'offset':
+                   {'dtype': 'number',
+                    'source': '<descriptive string>',
+                    'shape': [],
+                    'units': 'mm',
+                    'precision': 2}}},
+         'temp_ctrl':
+            {'data': {},
+             'timestamps': {}
+             'data_keys': {}}}
+
+Complete Sample
++++++++++++++++
+
+Taken together, our example 'descriptor' document looks like this.
+
+.. code-block:: python
+
+    # complete 'descriptor' document
+    {'data_keys':
+        {'temperature':
+            {'dtype': 'number',
+             'source': '<descriptive string>',
+             'shape': [],
+             'units': 'K',
+             'precision': 3},
+         'x_setpoint':
+            {'dtype': 'number',
+             'source': '<descriptive string>',
+             'shape': [],
+             'units': 'mm',
+             'precision': 2}},
+         'x_readback':
+            {'dtype': 'number',
+             'source': '<descriptive string>',
+             'shape': [],
+             'units': 'mm',
+             'precision': 2}},
+
+     'object_keys':
+        {'x': ['x_setpoint', 'x_readback'],
+         'temp_ctrl': ['temperature']},
+
+     'configuration':
+         {'x':
+            {'data': {'offset': 0.1},
+             'timestamps': {'offset': 1442521007.534918},
+             'data_keys':
+                {'offset':
+                    {'dtype': 'number',
+                     'source': '<descriptive string>',
+                     'shape': [],
+                     'units': 'mm',
+                     'precision': 2}
+          'temp_ctrl':
+            {'data': {},
+             'timestamps': {}
+             'data_keys': {}}}
+         }
+
+
+     'time': 1442521007.3438923,
+     'uid': '<randomly-generated unique ID>', 
+     'run_start': '<reference to the start document>'}
+
