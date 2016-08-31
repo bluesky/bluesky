@@ -61,6 +61,7 @@ class FlyableList(TraitType):
                 validate_flyable(flyable)
             except TypeError:
                 self.error(obj, value)
+        return value
 
 
 class ReadableList(TraitType):
