@@ -356,7 +356,7 @@ class Syn2DGauss(Reader):
         return super().trigger()
 
 
-class Flyer:
+class TrivialFlyer:
     """Trivial flyer that complies to the API but returns empty data."""
     def kickoff(self):
         return NullStatus()
@@ -384,19 +384,13 @@ class Flyer:
 class MockFlyer:
     """
     Class for mocking a flyscan API implemented with stepper motors.
-
-    warning::
-    
-        This is old and should be not used as a reference for current good
-        practice. Specifically, it is its own status object, which is
-        confusing.
     """
-    def __init__(self, name, detector, motor, loop=None):
+    def __init__(self, name, detector, motor, start, stop, num, loop=None):
         self.name = name
         self.parent = None
         self._mot = motor
         self._detector = detector
-        self._steps = None
+        self._steps = np.linspace(start, stop, num)
         self._data = deque()
         self._completion_status = None
         if loop is None:
@@ -418,8 +412,7 @@ class MockFlyer:
     def complete(self):
         return self._completion_status
 
-    def kickoff(self, start, stop, steps):
-        self._steps = np.linspace(start, stop, steps)
+    def kickoff(self):
         self._data = deque()
 
         # Setup a status object that will be returned by
@@ -644,14 +637,14 @@ def cautious_stepscan(det, motor):
     yield Msg('close_run')
 
 
-def fly_gen(flyer, start, stop, step):
+def fly_gen(flyer):
     yield Msg('open_run')
-    yield Msg('kickoff', flyer, start, stop, step, group='fly-kickoff')
+    yield Msg('kickoff', flyer, group='fly-kickoff')
     yield Msg('wait', None, group='fly-kickoff')
     yield Msg('complete', flyer, group='fly-complete')
     yield Msg('wait', None, group='fly-complete')
     yield Msg('collect', flyer)
-    yield Msg('kickoff', flyer, start, stop, step, group='fly-kickoff2')
+    yield Msg('kickoff', flyer, group='fly-kickoff2')
     yield Msg('wait', None, group='fly-kickoff2')
     yield Msg('complete', flyer, group='fly-complete2')
     yield Msg('wait', None, group='fly-complete2')

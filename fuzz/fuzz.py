@@ -28,7 +28,7 @@ def get_flyer():
     det1 = get_1d_det()
     motor = det1._motor
     flyname = 'mock_flyer_' + unique_name()
-    flymagic = MockFlyer(flyname, motor, det1)
+    flymagic = MockFlyer(flyname, motor, det1, -1, 1, 15)
     all_objects.add(flymagic)
     return flymagic
 
@@ -42,7 +42,7 @@ def get_flyer():
     MockFlyer object
     """
     det = get_1d_det()
-    flyer = MockFlyer('wheee', det, det._motor, asyncio.get_event_loop())
+    flyer = MockFlyer('wheee', det, det._motor, -1, 1, 15)
     all_objects.add(flyer)
     return flyer
 

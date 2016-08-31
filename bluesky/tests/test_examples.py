@@ -248,8 +248,8 @@ def validate_dict_cb_opposite(key):
 
 def test_simple_fly(fresh_RE):
     RE = fresh_RE
-    mm = MockFlyer('wheeeeee', det, motor, RE.loop)
-    RE(fly_gen(mm, -1, 1, 15))
+    mm = MockFlyer('wheeeeee', det, motor, -1, 1, 15, RE.loop)
+    RE(fly_gen(mm))
     assert mm._future.done()
 
 

@@ -7,7 +7,7 @@ from bluesky.run_engine import (RunEngineStateMachine,
                                 NoReplayAllowed)
 from bluesky import Msg
 from functools import partial
-from bluesky.examples import det, Mover, Flyer, SynGauss
+from bluesky.examples import det, Mover, TrivialFlyer, SynGauss
 from bluesky.plans import trigger_and_read
 import bluesky.plans as bp
 from bluesky.tests.utils import _print_redirect, MsgCollector
@@ -121,7 +121,7 @@ def test_collect_uncollected_and_log_any_errors(fresh_RE):
     # test that if stopping one motor raises an error, we can carry on
     collected = {}
 
-    class DummyFlyerWithFlag(Flyer):
+    class DummyFlyerWithFlag(TrivialFlyer):
         def collect(self):
             collected[self.name] = True
             super().collect()
@@ -240,7 +240,7 @@ def test_redundant_monitors_are_illegal(fresh_RE):
 
 def test_flying_outside_a_run_is_illegal(fresh_RE):
 
-    flyer = Flyer()
+    flyer = TrivialFlyer()
 
     # This is normal, legal usage.
     fresh_RE([Msg('open_run'), Msg('kickoff', flyer), Msg('collect', flyer),
