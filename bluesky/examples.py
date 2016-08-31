@@ -23,15 +23,6 @@ class SimpleStatus:
     This provides a single-slot callback for when the operation has finished.
 
     It is "simple" because it does not support a timeout or a settling time.
-
-    Parameters
-    ----------
-    timeout : float, optional
-        The default timeout to use for a blocking wait, and the amount of time
-        to wait to mark the operation as failed
-    settle_time : float, optional
-        The amount of time to wait between the caller specifying that the
-        status has completed to running callbacks
     """
     def __init__(self, *, done=False, success=False):
         super().__init__()
@@ -414,7 +405,7 @@ class MockFlyer:
         self._steps = np.linspace(start, stop, steps)
         self._data = deque()
 
-        # Setup a the status object that will be returned by
+        # Setup a status object that will be returned by
         # self.complete(). Separately, make dummy status object
         # that is immediately done, and return that, indicated that
         # the 'kickoff' step is done.
