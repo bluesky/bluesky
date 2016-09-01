@@ -182,7 +182,7 @@ class Reader:
     def subscribe(self, function):
         "Simulate monitoring updates from a device."
         def sim_monitor():
-            for interval in self.monitor_intervals:
+            for interval in self._monitor_intervals:
                 ttime.sleep(interval)
                 function()
 
