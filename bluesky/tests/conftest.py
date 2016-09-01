@@ -38,4 +38,4 @@ def db(request):
 
     request.addfinalizer(delete_tmpdir)
 
-    return Broker(MDS({'directory': td}), None)
+    return Broker(MDS({'directory': td, 'timezone': 'US/Eastern'}), None)
