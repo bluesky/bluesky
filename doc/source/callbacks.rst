@@ -17,8 +17,8 @@ As the RunEngine executes a plan, it organizes metadata and data into
 *Documents,* Python dictionaries organized in a `specified but flexible
 <http://nsls-ii.github.io/architecture-overview.html>`__ way. 
 Each time a new Document is created, the RunEngine passes it to a list of
-functions. These functions can do anyting: store the data to disk, print a
-line of text to the scren, add a point to a plot, or even transfer the data to
+functions. These functions can do anything: store the data to disk, print a
+line of text to the screen, add a point to a plot, or even transfer the data to
 a cluster for immediate processing. These functions are called "callbacks."
 
 We "subscribe" callbacks to the live stream of Documents coming from the
@@ -66,7 +66,7 @@ A working example:
     RE(scan(dets, motor, 1, 5, 5), LiveTable(dets))
 
 A *list* of callbacks --- ``[cb1, cb2]`` --- is also accepted; see
-:ref:`filtering`, below, for addtional options.
+:ref:`filtering`, below, for additional options.
 
 Persistently
 ++++++++++++
@@ -352,7 +352,7 @@ Compute statistics of peak-like data. Example:
     ps = PeakStats('motor', 'det')
     RE(scan([det], motor, -5, 5, 10), ps)
 
-Now attributes of ps, documented below, contain various peak statistics.
+Now attributes of ``ps``, documented below, contain various peak statistics.
 There is also a convenience function for plotting:
 
 .. code-block:: python
@@ -433,7 +433,7 @@ experiment may not be acceptable.
 
     RE.subscribe('all', exporter)
 
-There are more configuration options avaiable, as given in detail below. It is
+There are more configuration options available, as given in detail below. It is
 recommended to use these expensive callbacks in a separate process.
 
 .. autoclass:: bluesky.callbacks.broker.LiveTiffExporter
@@ -490,7 +490,7 @@ so there is some boilerplate:
 
 The module ``bluesky.callbacks.olog`` includes some templates that format the
 data from the 'start' document into a readable log entry. You can also write
-customize tempaltes and pass them to ``logbook_cb_factory``.
+customize templates and pass them to ``logbook_cb_factory``.
 
 .. autofunction:: bluesky.callbacks.olog.logbook_cb_factory
 
@@ -592,7 +592,7 @@ We are setting up a *subscription*.
 
     RE(count([det]), {'event': print_data})
 
-Each time the RunEngine generates a new Event Doucment (i.e., data point)
+Each time the RunEngine generates a new Event Document (i.e., data point)
 ``print_data`` is called.
 
 There are five kinds of subscriptions matching the four kinds of Documents plus

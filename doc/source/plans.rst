@@ -134,7 +134,7 @@ Or, again, to save some typing for repeated use,
 Multi-dimensional scans
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Again, the "dimesions" may be a mixture of physical positions, temperatures, or
+Again, the "dimensions" may be a mixture of physical positions, temperatures, or
 pseudo-axes.
 
 We introduce jargon for two different kinds of a multi-motor scan: the case
@@ -497,7 +497,7 @@ name.
 .. note::
 
     The built-in Python data structure ``ChainMap`` is a sequence of
-    dictionaries (a "chain of mappings"). It gives prioity to a the first
+    dictionaries (a "chain of mappings"). It gives priority to the first
     mapping that defines a given key.
     
     .. ipython:: python :suppress:

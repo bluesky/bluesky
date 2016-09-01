@@ -127,9 +127,9 @@ From a paused state:
 Stop
 ^^^^
 
-``RE.stop()`` is functionally identifical to ``RE.abort()``. The only
+``RE.stop()`` is functionally identical to ``RE.abort()``. The only
 difference is that aborted runs are marked with ``exit_status: 'abort'``
-instead of ``exit_status: 'success'``. This distiction may be a useful
+instead of ``exit_status: 'success'``. This distinction may be a useful
 distinction during analysis`.
 
 Halt
@@ -255,7 +255,7 @@ back to the last checkpoint and re-took the second data point cleanly.
 
 See the API documentation (follow the links in the table below) for other
 suspender types and options, including a waiting period and cleanup
-procuredures to run pre-suspend and pre-resume.
+procedures to run pre-suspend and pre-resume.
 
 Built-in Suspenders
 -------------------

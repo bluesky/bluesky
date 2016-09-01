@@ -51,7 +51,7 @@ a convenient attribute for configuring logging quickly.
 
 With this configuration, executing a plan prints log messages to the screen.
 
-The logger issues INFO-level messages whenever the the RunEngine changes state
+The logger issues INFO-level messages whenever the RunEngine changes state
 (idle -> running, running -> paused, etc.) and DEBUG-level messages whenever a
 new Document is created and emitted to the subscriptions. Demo:
 

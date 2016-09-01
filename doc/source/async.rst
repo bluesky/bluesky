@@ -91,7 +91,7 @@ Monitoring
 ----------
 
 To monitor some device during a plan, bluesky provides a
-`preprocessor <preprcoessors>`. It
+`preprocessor <preprocessors>`. It
 is available as a wrapper, :func:`monitor_during_wrapper`
 
 .. code-block:: python
