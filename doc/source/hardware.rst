@@ -187,6 +187,17 @@ The interface of a readable device:
         It should return a list of devices including itself and any other
         devices that are unstaged as a result of unstaging this one.
 
+    .. method:: subscribe(function)
+
+        Optional, needed only if the device will be :doc:`monitored <async>`.
+
+        When the device has a new value ready, it should call ``function``
+        asynchronously in a separate thread.
+
+    .. method:: clear_sub(function)
+
+        Remove a subscription. (See ``subscribe``, above.)
+
     .. method:: pause()
 
         An optional hook to do some device-specific work when the RunEngine
@@ -224,7 +235,7 @@ with the following additional methods and attributes:
 "Flyer" Interface
 +++++++++++++++++
 
-*Refer to the section of asynchronous "fly scanning" (TO DO).*
+*For context on what we mean by "flyer", refer to the section on :doc:`async`.*
 
 The interace of a "flyable" device is separate from the interface of a readable
 or settable device, though there is some overlap.

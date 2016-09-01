@@ -1,20 +1,63 @@
 import asyncio
 import time as ttime
 from collections import deque, OrderedDict
+from threading import RLock
 import numpy as np
 from .run_engine import Msg
 
 
-class MockSignal:
-    "hotfix for 2016 winter cycle -- build out more thoroughly later"
-    def __init__(self, field):
-        self._field = field
+class SimpleStatus:
+    """
+    This provides a single-slot callback for when the operation has finished.
 
-    def read(self):
-        return {self._field: (0, 0)}
+    It is "simple" because it does not support a timeout or a settling time.
+    """
+    def __init__(self, *, done=False, success=False):
+        super().__init__()
+        self._lock = RLock()
+        self._cb = None
+        self.done = done
+        self.success = success
 
-    def describe(self):
-        return {self._field: (0, 0)}
+    def _finished(self, success=True, **kwargs):
+        if self.done:
+            return
+
+        with self._lock:
+            self.success = success
+            self.done = True
+
+            if self._cb is not None:
+                self._cb()
+                self._cb = None
+
+    @property
+    def finished_cb(self):
+        """
+        Callback to be run when the status is marked as finished
+
+        The call back has no arguments
+        """
+        return self._cb
+
+    @finished_cb.setter
+    def finished_cb(self, cb):
+        with self._lock:
+            if self._cb is not None:
+                raise RuntimeError("Cannot change the call back")
+            if self.done:
+                cb()
+            else:
+                self._cb = cb
+
+    def __str__(self):
+        return ('{0}(done={1.done}, '
+                'success={1.success})'
+                ''.format(self.__class__.__name__, self)
+                )
+
+    __repr__ = __str__
+
 
 
 class NullStatus:
@@ -46,6 +89,12 @@ class Reader:
     conf_fields : dict, optional
         Like `read_fields`, but providing slow-changing configuration data.
         If `None`, the configuration will simply be an empty dict.
+    monitor_intervals : list, optional
+        iterable of numbers, specifying the spacing in time of updates from the
+        device (this applies only if the ``subscribe`` method is used)
+    loop : asyncio.EventLoop, optional
+        used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
+        unspecified
 
     Examples
     --------
@@ -58,13 +107,31 @@ class Reader:
     >>> det = Readable('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
-    def __init__(self, name, read_fields, conf_fields=None):
+    def __init__(self, name, read_fields, conf_fields=None,
+                 monitor_intervals=None, loop=None):
         self.name = name
         self.parent = None
         self._read_fields = read_fields
         if conf_fields is None:
             conf_fields = {}
         self._conf_fields = conf_fields
+
+        # All this is used only by monitoring (subscribe/unsubscribe).
+        self._futures = {}
+        if monitor_intervals is None:
+            monitor_intervals = []
+        self._monitor_intervals = monitor_intervals
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        self.loop = loop
+
+    def __str__(self):
+        # Show just name for readability, as in the cycler example in the docs.
+        return ('{0}(name={1.name})'
+                ''.format(self.__class__.__name__, self)
+                )
+
+    __repr__ = __str__
 
     def trigger(self):
         "No-op: returns a status object immediately marked 'done'."
@@ -111,6 +178,18 @@ class Reader:
         # Update configuration here.
         new_conf = self.read_configuration()
         return old_conf, new_conf
+
+    def subscribe(self, function):
+        "Simulate monitoring updates from a device."
+        def sim_monitor():
+            for interval in self._monitor_intervals:
+                ttime.sleep(interval)
+                function()
+
+        self._futures[function] = self.loop.run_in_executor(None, sim_monitor)
+
+    def clear_sub(self, function):
+        self._futures.pop(function).cancel()
 
 
 class Mover(Reader):
@@ -285,13 +364,19 @@ class Syn2DGauss(Reader):
         return super().trigger()
 
 
-class Flyer:
-    """Flyer that complies to the API but returns empty data."""
+class TrivialFlyer:
+    """Trivial flyer that complies to the API but returns empty data."""
     def kickoff(self):
         return NullStatus()
 
     def describe_collect(self):
         return {'stream_name': {}}
+
+    def read_configuration(self):
+        return OrderedDict()
+
+    def describe_configuration(self):
+        return OrderedDict()
 
     def complete(self):
         return NullStatus()
@@ -307,27 +392,18 @@ class Flyer:
 class MockFlyer:
     """
     Class for mocking a flyscan API implemented with stepper motors.
-
-    warning::
-    
-        This is old and should be not used as a reference for current good
-        practice. Specifically, it is its own status object, which is
-        confusing.
     """
-    def __init__(self, detector, motor, loop):
+    def __init__(self, name, detector, motor, start, stop, num, loop=None):
+        self.name = name
+        self.parent = None
         self._mot = motor
         self._detector = detector
-        self._steps = None
-        self._future = None
+        self._steps = np.linspace(start, stop, num)
         self._data = deque()
-        self._cb = None
-        self.ready = False
-        self.success = True
+        self._completion_status = None
+        if loop is None:
+            loop = asyncio.get_event_loop()
         self.loop = loop
-
-    @property
-    def done(self):
-        return self.ready
 
     def read_configuration(self):
         return OrderedDict()
@@ -342,32 +418,32 @@ class MockFlyer:
         return {'stream_name': dd}
 
     def complete(self):
-        self.success = True
-        self.ready = False
-        return self
+        return self._completion_status
 
-    def kickoff(self, start, stop, steps):
-        self._steps = np.linspace(start, stop, steps)
+    def kickoff(self):
+        if self._completion_status is not None:
+            raise RuntimeError("Already kicked off.")
         self._data = deque()
 
-        # setup the status object (self) that will be returned by
+        # Setup a status object that will be returned by
         # self.complete(). Separately, make dummy status object
         # that is immediately done, and return that, indicated that
         # the 'kickoff' step is done.
         self._future = self.loop.run_in_executor(None, self._scan)
-        self._future.add_done_callback(lambda x: self._finish())
+        st = SimpleStatus()
+        self._completion_status = st
+        self._future.add_done_callback(lambda x: st._finished())
 
         return NullStatus()
 
     def collect(self):
-        if not self.ready:
+        if self._completion_status is not None:
             raise RuntimeError("No reading until done!")
 
         yield from self._data
-        self._thread = None
 
     def _scan(self):
-        # this is needed because these objects are very dumb
+        "This will be run on a separate thread, started in self.kickoff()"
         ttime.sleep(.1)
         for p in self._steps:
             stat = self._mot.set(p)
@@ -391,109 +467,8 @@ class MockFlyer:
                     event['data'][k] = v['value']
                     event['timestamps'][k] = v['timestamp']
             self._data.append(event)
-        self._finish()
-
-    @property
-    def finished_cb(self):
-        """
-        Callback to be run when the status is marked as finished
-
-        The call back has no arguments
-        """
-        return self._cb
-
-    @finished_cb.setter
-    def finished_cb(self, cb):
-        if self._cb is not None:
-            raise RuntimeError("Can not change the call back")
-        if self.done:
-            cb()
-        else:
-            self._cb = cb
-
-    def _finish(self):
-        print('finish fired')
-        self.ready = True
-        if self._cb is not None:
-            self._cb()
-            self._cb = None
-
-    def stop(self):
-        pass
-
-
-class FlyMagic:
-    """
-    Another old flyer example
-
-    warning::
-    
-        This is old and should be not used as a reference for current good
-        practice. Specifically, it is its own status object, which is
-        confusing.
-    """
-    def __init__(self, name, motor, det, det2, scan_points=15):
-        self.name = name
-        self._motor = motor
-        self._det = det
-        self._det2 = det2
-        self._scan_points = scan_points
-        self._time = None
-        self._fly_count = 0
-        self.ready = False
-
-    def read_configuration(self):
-        return OrderedDict()
-
-    def describe_configuration(self):
-        return OrderedDict()
-
-    def reset(self):
-        self._fly_count = 0
-
-    def kickoff(self):
-        self.ready = False
-        self._time = ttime.time()
-        self._fly_count += 1
-        self.ready = True
-        return self
-
-    def describe_collect(self):
-        return {'stream1': {k: {'source': self.name, 'dtype': 'number'}
-                 for k in [self._motor, self._det]},
-                'stream2':
-                {self._det2: {'source': self.name, 'dtype': 'number'}}}
-
-    def collect(self):
-        if self._time is None or not self.ready:
-            raise RuntimeError("Must kick off flyscan before you collect")
-
-        dtheta = (np.pi / 10) * self._fly_count
-        X = np.linspace(0, 2*np.pi, self._scan_points)
-        Y = np.sin(X + dtheta)
-        dt = (ttime.time() - self._time) / self._scan_points
-        T = dt * np.arange(self._scan_points) + self._time
-
-        for j, (t, x, y) in enumerate(zip(T, X, Y)):
-            ev = {'time': t,
-                  'data': {self._motor: x,
-                           self._det: y},
-                  'timestamps': {self._motor: t,
-                                 self._det: t}
-                  }
-
-            yield ev
-            ttime.sleep(0.01)
-            ev = {'time': t + .1,
-                  'data': {self._det2: -y},
-                  'timestamps': {self._det2: t + 0.1}
-                  }
-            yield ev
-            ttime.sleep(0.01)
-        self._time = None
-
-    def complete(self):
-        return NullStatus()
+        self._completion_status._finished()
+        self._completion_status = None
 
     def stop(self):
         pass
@@ -519,6 +494,9 @@ det4 = Syn2DGauss('det4', motor1, 'motor1', motor2, 'motor2',
                   center=(0, 0), Imax=1)
 det5 = Syn2DGauss('det5', jittery_motor1, 'jittery_motor1', jittery_motor2,
                   'jittery_motor2', center=(0, 0), Imax=1)
+
+flyer1 = MockFlyer('flyer1', det, motor, 1, 5, 20)
+flyer2 = MockFlyer('flyer2', det, motor, 1, 5, 10)
 
 
 def simple_scan(motor):
@@ -672,14 +650,14 @@ def cautious_stepscan(det, motor):
     yield Msg('close_run')
 
 
-def fly_gen(flyer, start, stop, step):
+def fly_gen(flyer):
     yield Msg('open_run')
-    yield Msg('kickoff', flyer, start, stop, step, group='fly-kickoff')
+    yield Msg('kickoff', flyer, group='fly-kickoff')
     yield Msg('wait', None, group='fly-kickoff')
     yield Msg('complete', flyer, group='fly-complete')
     yield Msg('wait', None, group='fly-complete')
     yield Msg('collect', flyer)
-    yield Msg('kickoff', flyer, start, stop, step, group='fly-kickoff2')
+    yield Msg('kickoff', flyer, group='fly-kickoff2')
     yield Msg('wait', None, group='fly-kickoff2')
     yield Msg('complete', flyer, group='fly-complete2')
     yield Msg('wait', None, group='fly-complete2')

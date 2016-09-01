@@ -134,7 +134,7 @@ Or, again, to save some typing for repeated use,
 Multi-dimensional scans
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Again, the "dimesions" may be a mixture of physical positions, temperatures, or
+Again, the "dimensions" may be a mixture of physical positions, temperatures, or
 pseudo-axes.
 
 We introduce jargon for two different kinds of a multi-motor scan: the case
@@ -497,7 +497,7 @@ name.
 .. note::
 
     The built-in Python data structure ``ChainMap`` is a sequence of
-    dictionaries (a "chain of mappings"). It gives prioity to a the first
+    dictionaries (a "chain of mappings"). It gives priority to the first
     mapping that defines a given key.
     
     .. ipython:: python :suppress:
@@ -1017,7 +1017,8 @@ see :ref:`msg`.
 Asynchronous plans: "fly scans" and "monitoring"
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-TO DO
+See the section on :doc:`async` for some context on these terms and, near the
+end of the section, some example plans.
 
 .. _plan_utils:
 
@@ -1145,6 +1146,8 @@ which ``Plan`` uses to auto-generate an ``__init__`` at class definition time.
 If that is a little too "magical" for your taste, feel free to skip it and just
 write out the ``__init__`` method, as we did in the example above.
 
+.. _spec_api:
+
 SPEC-like API with Global State
 -------------------------------
 
@@ -1229,8 +1232,12 @@ Attribute               Purpose
 ``gs.PLOT_Y``           field name to plot as y axis of ``LivePlot``
 ``gs.OVERPLOT``         True or False; whether to replot to same axes
 ``gs.FLYERS``           "flyable" devices to fly-scan during all plans
+``gs.MONITORS``         devices to monitor asynchronously during all plans
 ``gs.BASELINE_DEVICES`` devices to read once before and after all plans
 ======================= =======
+
+For more context about what "flyers" and "monitors" mean, see the section on
+:doc:`async`.
 
 Subscription Factories
 ++++++++++++++++++++++

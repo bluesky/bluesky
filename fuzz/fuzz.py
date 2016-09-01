@@ -1,3 +1,4 @@
+import asyncio
 import os
 import random
 import signal
@@ -20,18 +21,14 @@ def unique_name():
 # create objects
 all_objects = set()
 # create functions to get objects
-def get_magic_flyer():
+def get_flyer():
     """Get a new magic flyer. Magic flyers require no additional arguments in
     their message: Msg('kickoff', get_magic_flyer())
     """
     det1 = get_1d_det()
     motor = det1._motor
-    det2 = get_1d_det()
-    det2._motor = motor
-    det2._motor_field = motor.name
-    scan_points = random.choice(range(15))
-    flyname = 'flymagic_' + unique_name()
-    flymagic = FlyMagic(flyname, motor, det1, det2, scan_points=scan_points)
+    flyname = 'mock_flyer_' + unique_name()
+    flymagic = MockFlyer(flyname, motor, det1, -1, 1, 15)
     all_objects.add(flymagic)
     return flymagic
 
@@ -45,7 +42,7 @@ def get_flyer():
     MockFlyer object
     """
     det = get_1d_det()
-    flyer = MockFlyer(det, det._motor)
+    flyer = MockFlyer('wheee', det, det._motor, -1, 1, 15)
     all_objects.add(flyer)
     return flyer
 

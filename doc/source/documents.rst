@@ -3,7 +3,7 @@
 Documents
 =========
 
-when a plan instructs the RunEngine to read a detector, the RunEngine stashes
+When a plan instructs the RunEngine to read a detector, the RunEngine stashes
 that reading and bundles it with associated metadata in a Python dictionary. We
 dub this dictionary, which is organized in a
 `formally specified <https://github.com/NSLS-II/event-model>`_ way, an *Event
@@ -62,10 +62,10 @@ The documents in each run are:
     - exit_status --- "success", "abort", or "fail"
 
 Every document has a ``time`` (its creation time) and a separate ``uid`` to
-idenify it. The Event documents also have a ``descriptor`` field referring back
-to the Event Descriptor with their metadata. And the Event Descriptor and Run
-Stop documents have a ``run_start`` field referring back to their Run Start.
-Thus, all the doucments in a run are linked back to the Run Start.
+identify it. The Event documents also have a ``descriptor`` field referring
+back to the Event Descriptor with their metadata. And the Event Descriptor and
+Run Stop documents have a ``run_start`` field referring back to their Run
+Start.  Thus, all the documents in a run are linked back to the Run Start.
 
 Documents in Detail
 -------------------
@@ -258,10 +258,10 @@ Configuration
 
 Complex devices often have many parameters that do not need to be read anew
 with every data point. They are "configuration," by which we mean they don't
-typcially change in the middle of a run. A detector's exposure time is usually
+typically change in the middle of a run. A detector's exposure time is usually
 (but not always) in this category.
 
-Devices delinate between the two by providing two different methods that the
+Devices delineate between the two by providing two different methods that the
 RunEngine can call: ``device.read()`` returns normals readings that are *not*
 considered configuration; ``device.read_configuration()`` returns the readings
 that are considered configuration.

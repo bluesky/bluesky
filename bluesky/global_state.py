@@ -61,6 +61,7 @@ class FlyableList(TraitType):
                 validate_flyable(flyable)
             except TypeError:
                 self.error(obj, value)
+        return value
 
 
 class ReadableList(TraitType):
@@ -121,6 +122,7 @@ class GlobalState(HasTraits):
     DETS = ReadableList()
     BASELINE_DEVICES = ReadableList()
     FLYERS = FlyableList()
+    MONITORS = ReadableList()
     MASTER_DET = Readable()
     MASTER_DET_FIELD = Unicode()
     TH_MOTOR = Movable()

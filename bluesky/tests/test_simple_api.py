@@ -1,6 +1,6 @@
 import bson
 from traitlets import TraitError
-from bluesky.examples import motor, motor1, motor2, det, det1, det2, FlyMagic
+from bluesky.examples import motor, motor1, motor2, det, det1, det2, MockFlyer
 import pytest
 from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan,
                               d2scan, d3scan, mesh, th2th, afermat,
@@ -71,7 +71,7 @@ def test_spec_plans(fresh_RE, pln, name, args, kwargs):
 def test_flyers(fresh_RE):
     from bluesky.global_state import gs
     RE = fresh_RE
-    flyer = FlyMagic('wheee', motor, det1, det2)
+    flyer = MockFlyer('wheee', det1, motor, -1, 1, 15, RE.loop)
     gs.FLYERS = [flyer]
     RE(ct())
 

@@ -85,9 +85,9 @@ we can pass different metadata for each run. Every
 .. code-block:: python
 
     def plan():
-        yield from count([det], md={purpose: 'calibration'})
-        yield from scan([det], motor, 1, 5, 5, md={'purpose': 'good data'})
-        yield from count([det], md={'purpose': 'sanity check'})
+        yield from count([det], md={purpose: 'calibration'})  # one
+        yield from scan([det], motor, 1, 5, 5, md={'purpose': 'good data'})  # two
+        yield from count([det], md={'purpose': 'sanity check'})  # three
 
 The metadata passed into ``RE`` is combined with the metadata passed in to each
 plan. Thus, calling
@@ -162,14 +162,14 @@ For more on injecting metadata via plans, refer to :ref:`customizing_metadata`.
         ...
         'plan_pattern': 'linspace',
         'plan_pattern_module': 'numpy',
-        'plan_pattern_args': dict(start=start, stop=stop, numnum)
+        'plan_pattern_args': dict(start=start, stop=stop, num=num)
         ...
 
     Thus, one can re-create the "pattern" (trajectory) like so:
 
     .. code-block:: python
 
-        numpy.linspace(**dict(start=start, stop=stop, numnum))
+        numpy.linspace(**dict(start=start, stop=stop, num=num))
 
 3. Automatically
 ----------------
@@ -230,7 +230,7 @@ or use any of the standard methods that apply to
 `dictionaries in Python <https://docs.python.org/3/library/stdtypes.html#typesmapping>`_.
 
 The ``scan_id``, an integer that the RunEngine automatically increments at the
-beginnging of each scan, is stored in ``RE.md['scan_id']``.
+beginning of each scan, is stored in ``RE.md['scan_id']``.
 
 .. warning::
 
