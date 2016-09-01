@@ -58,8 +58,7 @@ To "fly" one or more "flyable" devices during a plan, bluesky provides a
 
 .. code-block:: python
 
-    from bluesky.examples import det
-    # TODO import flyers
+    from bluesky.examples import det, flyer1, flyer2  # simulated hardware
     from bluesky.plans import count, fly_during_wrapper
 
     RE(fly_during_wrapper(count([det], num=5), [flyer1, flyer2]))
@@ -68,7 +67,8 @@ and as a decorator, :func:`fly_during_wrapper`.
 
 .. code-block:: python
 
-    from bluesky.plans import fly_during_decorator
+    from bluesky.examples import det, flyer1, flyer2  # simulated hardware
+    from bluesky.plans import count, fly_during_decorator
 
     # Define a new plan for future use.
     fly_and_count = fly_during_decorator([flyer1, flyer2])(count)
@@ -96,20 +96,21 @@ is available as a wrapper, :func:`monitor_during_wrapper`
 
 .. code-block:: python
 
-    from bluesky.examples import det
-    # TODO import signal
+    from bluesky.examples import det, det1
     from bluesky.plans import count, monitor_during_wrapper
 
-    RE(monitor_during_wrapper(count([det], num=5), signal))
+    # Record any updates from det1 while 'counting' det 5 times.
+    RE(monitor_during_wrapper(count([det], num=5), [det1]))
 
 and as a decorator, :func:`fly_during_wrapper`.
 
 .. code-block:: python
 
-    from bluesky.plans import monitor_during_decorator
+    from bluesky.examples import det, det1
+    from bluesky.plans import count, monitor_during_decorator
 
     # Define a new plan for future use.
-    monitor_and_count = monitor_during_decorator(signal)(count)
+    monitor_and_count = monitor_during_decorator([det1])(count)
 
     RE(monitor_and_count([det]))
 
@@ -119,8 +120,8 @@ devices to be monitored to the global state:
 .. code-block:: python
 
     from bluesky.global_state import gs
-    # TODO from bluesky.examples import ...
+    from bluesky.examples import det1
 
-    gs.MONITORS =  TO DO
+    gs.MONITORS = [det1]
 
 They will be included with all plans until removed.

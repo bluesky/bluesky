@@ -485,6 +485,9 @@ det4 = Syn2DGauss('det4', motor1, 'motor1', motor2, 'motor2',
 det5 = Syn2DGauss('det5', jittery_motor1, 'jittery_motor1', jittery_motor2,
                   'jittery_motor2', center=(0, 0), Imax=1)
 
+flyer1 = MockFlyer('flyer1', det, motor, 1, 5, 20)
+flyer2 = MockFlyer('flyer2', det, motor, 1, 5, 10)
+
 
 def simple_scan(motor):
     yield Msg('open_run')
