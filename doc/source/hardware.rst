@@ -39,7 +39,6 @@ experiment. API documentation is below.
 
 .. autoclass:: bluesky.examples.Reader
 .. autoclass:: bluesky.examples.Mover
-.. autoclass:: bluesky.examples.Flyer
 
 Specification
 -------------
