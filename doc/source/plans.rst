@@ -1017,7 +1017,8 @@ see :ref:`msg`.
 Asynchronous plans: "fly scans" and "monitoring"
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-TO DO
+See the section on :doc:`async` for some context on these terms and, near the
+end of the section, some example plans.
 
 .. _plan_utils:
 
