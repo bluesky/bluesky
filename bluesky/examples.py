@@ -413,6 +413,8 @@ class MockFlyer:
         return self._completion_status
 
     def kickoff(self):
+        if self._completion_status is not None:
+            raise RuntimeError("Already kicked off.")
         self._data = deque()
 
         # Setup a status object that will be returned by
