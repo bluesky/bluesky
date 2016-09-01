@@ -125,6 +125,14 @@ class Reader:
             loop = asyncio.get_event_loop()
         self.loop = loop
 
+    def __str__(self):
+        # Show just name for readability, as in the cycler example in the docs.
+        return ('{0}(name={1.name})'
+                ''.format(self.__class__.__name__, self)
+                )
+
+    __repr__ = __str__
+
     def trigger(self):
         "No-op: returns a status object immediately marked 'done'."
         return NullStatus()
