@@ -404,7 +404,7 @@ stack.
 .. note::
 
     Most metadata comes from the "start" document, hence ``start.scan_id``
-    above.  Review the :doc:`<documents>` section for details.
+    above.  Review the :doc:`documents` section for details.
 
 Create a callback that exports TIFFs using your template.
 
