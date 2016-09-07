@@ -1,8 +1,8 @@
 Release Notes
 =============
 
-v0.6.4 (dev)
-------------
+v0.6.4
+------
 
 Enhancements
 ^^^^^^^^^^^^
@@ -13,6 +13,7 @@ Enhancements
   notebook while the RunEngine is running.
 * Simulated hardware devices ``Reader`` and ``Mover`` can be easily customized
   to mock a wider range of behaviors, for testing and demos.
+* Integrate the SPEC API with mew global state attribute ``gs.MONITORS``.
 
 Bug Fixes
 ^^^^^^^^^
@@ -22,12 +23,16 @@ Bug Fixes
 * The "infinite count" (``ct`` with ``num=None``) should spawn a LivePlot.
 * ``finalize_decorator`` accepts a callable (e.g., generator function)
   and does not accept an iterable (e.g., generator instance)
+* Restore ``gs.FLYERS`` integration to the SPEC API (accidentally removed).
 
 API Changes
 ^^^^^^^^^^^
 
 * The API for the simulated hardware example devices ``Reader`` and ``Mover``
   has been changed to make them more general.
+* Remove ``register_mds`` metadatastore integration.
+* Callbacks that use the databroker accept an optional ``Broker`` instance
+  as an argument.
 
 v0.6.3
 ------
