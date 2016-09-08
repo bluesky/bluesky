@@ -133,6 +133,20 @@ class Reader:
 
     __repr__ = __str__
 
+    def __setstate__(self, val):
+        name, read_fields, conf_fields, monitor_intervals = val
+        self.name = name
+        self.parent = None
+        self._read_fields = read_fields
+        self._conf_fields = conf_fields
+        self._futures = {}
+        self._monitor_intervals = monitor_intervals
+        self.loop = asyncio.get_event_loop()
+
+    def __getstate__(self):
+        return (self.name, self._read_fields, self._conf_fields,
+                self._monitor_intervals)
+
     def trigger(self):
         "No-op: returns a status object immediately marked 'done'."
         return NullStatus()
@@ -233,6 +247,22 @@ class Mover(Reader):
         self.set(**initial_set)
         self._fake_sleep = fake_sleep
 
+    def __setstate__(self, val):
+        name, read_fields, conf_fields, monitor_intervals, state, fk_slp = val
+        self.name = name
+        self.parent = None
+        self._read_fields = read_fields
+        self._conf_fields = conf_fields
+        self._futures = {}
+        self._monitor_intervals = monitor_intervals
+        self.loop = asyncio.get_event_loop()
+        self._state = state
+        self._fake_sleep = fk_slp
+
+    def __getstate__(self):
+        return (self.name, self._read_fields, self._conf_fields,
+                self._monitor_intervals, self._state, self._fake_sleep)
+
     def set(self, *args, **kwargs):
         """
         Pass the arguments to the functions to create the next reading.
@@ -290,6 +320,13 @@ class SynGauss(Reader):
             return v
 
         super().__init__(name, {name: func})
+
+    def __setstate__(self, val):
+        self.exposure_time = val[-1]
+        super().__setstate__(val[:-1])
+
+    def __getstate__(self):
+        return super().__getstate__() + (self.exposure_time,)
 
     def trigger(self):
         # TODO Do this asynchronously and return a status object immediately.
@@ -404,6 +441,19 @@ class MockFlyer:
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop
+
+    def __setstate__(self, val):
+        name, detector, motor, steps = val
+        self.name = name
+        self.parent = None
+        self._mot = motor
+        self._detector = detector
+        self._steps = steps
+        self._completion_status = None
+        self.loop = asyncio.get_event_loop()
+
+    def __getstate__(self):
+        return (self.name, self._detector, self._mot, self._steps)
 
     def read_configuration(self):
         return OrderedDict()

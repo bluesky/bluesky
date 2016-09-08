@@ -3,8 +3,9 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               wait_multiple, motor1, motor2, conditional_pause,
                               checkpoint_forever, simple_scan_saving,
                               stepscan, MockFlyer, fly_gen,
-                              conditional_break, SynGauss
+                              conditional_break, SynGauss, flyer1
                               )
+from bluesky.plans import scan, fly_during_wrapper
 from bluesky.callbacks import LivePlot
 from bluesky import (RunEngine, Msg, IllegalMessageSequence,
                      RunEngineInterrupted, FailedStatus)
@@ -630,3 +631,16 @@ def test_rewindable_by_default(fresh_RE):
 
     RE(plan())  # cannot pause
     assert RE.state == 'idle'
+
+
+def test_pickling_examples(fresh_RE):
+    try:
+        import dill
+    except ImportError:
+        raise pytest.skip('requires dill')
+    _det = dill.loads(dill.dumps(det))
+    _motor = dill.loads(dill.dumps(motor))
+    _flyer1 = dill.loads(dill.dumps(flyer1))
+
+    # Make sure these objects aren't missing anything required.
+    fresh_RE(fly_during_wrapper(scan([_det], _motor, 1, 5, 5), [_flyer1]))
