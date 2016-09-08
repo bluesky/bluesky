@@ -3,7 +3,7 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               wait_multiple, motor1, motor2, conditional_pause,
                               checkpoint_forever, simple_scan_saving,
                               stepscan, MockFlyer, fly_gen,
-                              conditional_break, SynGauss
+                              conditional_break, SynGauss, flyer1
                               )
 from bluesky.callbacks import LivePlot
 from bluesky import (RunEngine, Msg, IllegalMessageSequence,
@@ -630,3 +630,13 @@ def test_rewindable_by_default(fresh_RE):
 
     RE(plan())  # cannot pause
     assert RE.state == 'idle'
+
+
+def test_pickling_examples():
+    try:
+        import dill
+    except ImportError:
+        raise pytest.skip('requires dill')
+    dill.loads(dill.dumps(det))
+    dill.loads(dill.dumps(motor))
+    dill.loads(dill.dumps(flyer1))
