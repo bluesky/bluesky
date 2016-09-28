@@ -316,6 +316,18 @@ syntax we commonly use to combine plans.
         yield from f()
         yield from f()
 
+The above is equivalent to:
+
+.. ipython:: python
+
+    def double_f():
+        for val in f():
+            yield val
+        for val in f():
+            yield val
+
+The ``yield from`` syntax is just more succinct.
+
 .. ipython:: python
 
     list(double_f())
