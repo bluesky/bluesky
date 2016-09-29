@@ -364,6 +364,99 @@ class Syn2DGauss(Reader):
         return super().trigger()
 
 
+class Syn2DGaussArea(Reader):
+    """
+    Evaluate a point on a Gaussian based on the value of a motor.
+
+    Parameters
+    ----------
+    name : str
+        The name of the detector
+    motor0 : `Mover`
+        The 'x' coordinate of the 2-D gaussian blob
+    motor_field0 : str
+        The name field of the motor. Should be the key in motor0.describe()
+    motor1 : `Mover`
+        The 'y' coordinate of the 2-D gaussian blob
+    motor_field1 : str
+        The name field of the motor. Should be the key in motor1.describe()
+    center : iterable, optional
+        The center of the gaussian blob
+        Defaults to (0,0)
+    Imax : float, optional
+        The intensity at `center`
+        Defaults to 1
+    sigma : float, optional
+        Standard deviation for gaussian blob
+        Defaults to 1
+    noise : {'poisson', 'uniform', None}
+        Add noise to the gaussian peak..
+        Defaults to None
+    noise_multiplier : float, optional
+        Only relevant for 'uniform' noise. Multiply the random amount of
+        noise by 'noise_multiplier'
+        Defaults to 1
+
+    Example
+    -------
+    motor = Mover('motor', ['motor'])
+    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+    """
+    def __init__(self, name, motor0, motor_field0, motor1, motor_field1,
+                 center, Imax, sigma=1, noise=None, noise_multiplier=1,
+                 exposure_time=0):
+
+        if noise not in ('poisson', 'uniform', None):
+            raise ValueError("noise must be one of 'poisson', 'uniform', None")
+        self.exposure_time = exposure_time
+        X, Y = np.ogrid[-5:5:11j, -6:6:13j]
+
+        def func():
+            x = motor0.read()[motor_field0]['value']
+            y = motor1.read()[motor_field1]['value']
+            v = Imax * np.exp(-np.hypot(X - (x - center[0]),
+                                        Y - (y - center[1]))
+                              / (2 * sigma**2))
+            if noise == 'poisson':
+                v = np.random.poisson(np.round(v))
+            elif noise == 'uniform':
+                v += np.random.uniform(-1, 1) * noise_multiplier
+            return v
+
+        super().__init__(name, {name: func})
+
+    def trigger(self):
+        # TODO Do this asynchronously and return a status object immediately.
+        if self.exposure_time:
+            ttime.sleep(self.exposure_time)
+        return super().trigger()
+
+    def read(self):
+        from filestore.file_writers import save_ndarray
+
+        ret = super().read()
+
+        def write_npy(v):
+            if hasattr(v['value'], 'shape'):
+                v['value'] = save_ndarray(v['value'])
+            return v
+
+        return {k: write_npy(v) for k, v in ret.items()}
+
+    def describe(self):
+        """
+        Provide metadata for each of the fields returned by `read`.
+
+        In this simple example, the metadata is hard-coded: we assume all
+        readings are numeric and scalar.
+        """
+        return {field: {'source': 'simulated using bluesky.examples',
+                        'dtype': 'array',
+                        'shape': [11, 13],
+                        'external': 'FILESTORE:'}
+                for field in self._read_fields}
+
+
 class TrivialFlyer:
     """Trivial flyer that complies to the API but returns empty data."""
     def kickoff(self):
@@ -494,6 +587,8 @@ det4 = Syn2DGauss('det4', motor1, 'motor1', motor2, 'motor2',
                   center=(0, 0), Imax=1)
 det5 = Syn2DGauss('det5', jittery_motor1, 'jittery_motor1', jittery_motor2,
                   'jittery_motor2', center=(0, 0), Imax=1)
+det6 = Syn2DGaussArea('det6', motor1, 'motor1', motor2, 'motor2',
+                      center=(0, 0), Imax=1)
 
 flyer1 = MockFlyer('flyer1', det, motor, 1, 5, 20)
 flyer2 = MockFlyer('flyer2', det, motor, 1, 5, 10)
