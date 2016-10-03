@@ -418,6 +418,60 @@ class Syn2DGauss(Reader):
         super().__init__(name, {name: func})
 
 
+class ReaderWithFileStore(Reader):
+    """
+
+    Parameters
+    ----------
+    name : string
+    read_fields : dict
+        Mapping field names to functions that return simulated data. The
+        function will be passed no arguments.
+    conf_fields : dict, optional
+        Like `read_fields`, but providing slow-changing configuration data.
+        If `None`, the configuration will simply be an empty dict.
+    monitor_intervals : list, optional
+        iterable of numbers, specifying the spacing in time of updates from the
+        device (this applies only if the ``subscribe`` method is used)
+    loop : asyncio.EventLoop, optional
+        used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
+        unspecified
+    fs :FileStore
+        FileStore object that supports inserting resource and datum documents
+
+    Examples
+    --------
+    A detector that always returns 5.
+    >>> det = Readable('det', {'intensity': lambda: 5})
+
+    A detector that is coupled to a motor, such that measured insensity
+    varies with motor position.
+    >>> motor = Mover('motor')
+    >>> det = Readable('det',
+    ...                {'intensity': lambda: 2 * motor.read()['value']})
+    """
+    def __init__(self, *args, fs, save_path, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fs = fs
+        self._resource_id = None
+        self.save_path = save_path
+
+    def stage(self):
+        self._resource_id = self.fs.insert_resource('npy', )
+
+    def read(self):
+        result = {}
+        for name, val in super().read().items():
+            np.save(self.save_path, val)
+            datum_id = str(uuid4())
+            self.fs.insert_datum(self._resource_id, datum_id)
+            result[name] = datum_id
+        return result
+
+    def unstage(self):
+        self._resource_id = None
+
+
 class TrivialFlyer:
     """Trivial flyer that complies to the API but returns empty data."""
     def kickoff(self):
