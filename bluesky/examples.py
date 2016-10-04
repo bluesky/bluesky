@@ -253,7 +253,7 @@ class Mover(Reader):
         "A heuristic that picks a single scalar out of the `read` dict."
         return self.read()[list(self._read_fields)[0]]['value']
 
-    def stop(self):
+    def stop(self, *, success=False):
         pass
 
 
@@ -385,7 +385,7 @@ class TrivialFlyer:
         for i in range(100):
             yield {'data': {}, 'timestamps': {}, 'time': i, 'seq_num': i}
 
-    def stop(self):
+    def stop(self, *, success=False):
         pass
 
 
@@ -470,7 +470,7 @@ class MockFlyer:
         self._completion_status._finished()
         self._completion_status = None
 
-    def stop(self):
+    def stop(self, *, success=False):
         pass
 
 
