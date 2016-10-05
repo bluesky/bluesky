@@ -4,25 +4,56 @@ Plans
 =====
 
 A *plan* is bluesky's concept of an experimental procedure. A
-:doc:`previous section <plans_intro>` introduced the commonly-used plans like
+:doc:`previous section <plans_intro>` introduced some built-in plans like
 :func:`count`, :func:`scan`, and :func:`relative_scan`. This section covers all
 of the plans and plan-related tools in bluesky with examples showing how to
 combine and customize them.
 
-Built-in Plans
---------------
-
 A variety of pre-assembled plans are provided. Like sandwiches on a deli menu,
 you can use our pre-assembled plans or assemble your own from the same
-ingredients, catalogued in :ref:`stub_plans` below.
+ingredients, catalogued under the heading :ref:`stub_plans` below.
 
-Notice that their names are links. Follow the links for usage details and more
-examples.
+Built-in Plans
+--------------
 
 .. _preassembled_plans:
 
 Pre-assembled Plans
 +++++++++++++++++++
+
+Below this summary table, we break the down the plans by category and show
+examples with figures.
+
+Summary
+^^^^^^^
+
+Notice that the names in the left column are links to detailed API
+documentation.
+
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
+   count
+   scan
+   relative_scan
+   list_scan
+   relative_list_scan
+   log_scan
+   relative_log_scan
+   inner_product_scan
+   outer_product_scan
+   relative_inner_product_scan
+   relative_outer_product_scan
+   scan_nd
+   spiral
+   spiral_fermat
+   relative_spiral
+   relative_spiral_fermat
+   adaptive_scan
+   relative_adaptive_scan
+   tweak
+   fly
 
 Time series ("count")
 ^^^^^^^^^^^^^^^^^^^^^
@@ -49,7 +80,8 @@ Examples:
     # Take readings forever, until interrupted (e.g., with Ctrl+C)
     RE(count([det], num=None))
 
-With a plot:
+We can use ``LivePlot`` to visualize this data. It is documented in the
+:ref:`next section <liveplot>`.
 
 .. code-block:: python
 
@@ -60,9 +92,6 @@ With a plot:
 
     RE(count([noisy_det], num=5), LivePlot('noisy_det'))
 
-Or, to save some typing for repeated use,
-:ref:`define a custom plan with the plot incorporated <subs_decorator>`.
-(LivePlot itself is documented :ref:`here <liveplot>`.)
 
 .. plot::
 
@@ -99,7 +128,8 @@ pseudo-axis. It's all the same to the plans. Examples:
     # scan a motor through a list of user-specified positions
     RE(list_scan([det], motor, [1, 1, 2, 3, 5, 8]))
 
-With a plot:
+Again, we can use ``LivePlot`` to visualize this data. It is documented in the
+:ref:`next section <liveplot>`.
 
 .. code-block:: python
 
@@ -134,34 +164,87 @@ Or, again, to save some typing for repeated use,
 Multi-dimensional scans
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Again, the "dimensions" may be a mixture of physical positions, temperatures, or
-pseudo-axes.
+Here, "dimensions" are things independently scanned. They may be physical
+position (stepping motor), temperature, etc.
 
-We introduce jargon for two different kinds of a multi-motor scan: the case
-whether the motors move together in a joint trajectory ("inner product scan")
-and the case where they move separately, exploring every combination ("outer
-product scan"). Mixtures of these are also supported.
+We introduce jargon for two different kinds of a multi-motor scan. Moving
+motors together in a joint trajectory is an "inner product scan." This is like
+moving an object along a diagonal by moving the x and y motors simultaneously.
 
 .. code-block:: python
 
     from bluesky.examples import det, motor1, motor2
+    from bluesky.plans import inner_product_scan
 
     # Inner product: move motors together.
     # Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
     RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50))
 
+Demo:
+
+.. ipython:: python
+    :suppress:
+
+    from bluesky.examples import det, motor1, motor2
+    from bluesky.callbacks import LiveTable
+    from bluesky import RunEngine
+    from bluesky.plans import outer_product_scan, inner_product_scan
+    RE = RunEngine({})
+
+.. ipython:: python
+
+    RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50),
+       LiveTable(['det', 'motor1', 'motor2']))
+
+Moving motors separately, exploring every combination, is an "outer product
+scan". This is like moving x and y to draw a mesh. Multi-motor combinations of
+these two cases are also supported.
+
+.. code-block:: python
+
+    from bluesky.examples import det, motor1, motor2
+    from bluesky.plans import outer_product_scan
+
     # Outer product: move motors in a mesh.
     # Move motor1 from 1-3 in 3 steps and motor2 from 10-50 in 5 steps.
     RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
 
+Demo:
+
+.. ipython:: python
+
+    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
+       LiveTable(['det', 'motor1', 'motor2']))
+
 The final parameter designates whether motor2 should "snake" back and forth
 along motor1's trajectory (``True``) or retread its positions in the same
-direction each time (``False``).
+direction each time (``False``), as illustrated.
+
+.. plot::
+
+    from bluesky.plan_tools import plot_raster_path
+    from bluesky.examples import motor1, motor2, det
+    from bluesky.plans import outer_product_scan
+    import matplotlib.pyplot as plt
+
+    true_plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
+    false_plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, False)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+    plot_raster_path(true_plan, 'motor1', 'motor2', probe_size=.3, ax=ax1)
+    plot_raster_path(false_plan, 'motor1', 'motor2', probe_size=.3, ax=ax2)
+    ax1.set_title('True')
+    ax2.set_title('False')
+    ax1.set_xlim(-6, 6)
+    ax2.set_xlim(-6, 6)
 
 Both :func:`inner_product_scan` and :func:`outer_product_scan` support an
 unlimited number of motors/dimensions.
 
-With a plot:
+To visualize this data, we can use ``LiveRaster``, which is documented
+in :ref:`in the next section <liveraster>`. In previous examples we used
+``LivePlot`` visualize readings as a function of one variable; ``LiveRaster``
+is appropriate for functions of two variables.
 
 .. code-block:: python
 
@@ -172,10 +255,6 @@ With a plot:
 
     RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveRaster((6, 10), 'det4'))
-
-Or, again, to save some typing for repeated use,
-:ref:`define a custom plan with the plot incorporated <subs_decorator>`.
-(LiveRaster itself is documented :ref:`here <liveraster>`.)
 
 .. plot::
 

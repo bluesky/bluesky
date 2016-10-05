@@ -42,6 +42,7 @@ Index
    plans
    callbacks
    state-machine
+   event_descriptors
    async
    debugging
    hardware
