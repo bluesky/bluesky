@@ -167,9 +167,10 @@ Multi-dimensional scans
 Here, "dimensions" are things independently scanned. They may be physical
 position (stepping motor), temperature, etc.
 
-We introduce jargon for two different kinds of a multi-motor scan. Moving
-motors together in a joint trajectory is an "inner product scan." This is like
-moving an object along a diagonal by moving the x and y motors simultaneously.
+We introduce jargon for two different kinds of a multi-dimensional
+(multi-"motor") scan. Moving motors together in a joint trajectory is an "inner
+product scan." This is like moving an object along a diagonal by moving the x
+and y motors simultaneously.
 
 .. code-block:: python
 
@@ -196,9 +197,22 @@ Demo:
     RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50),
        LiveTable(['det', 'motor1', 'motor2']))
 
+.. plot::
+
+    from bluesky.plan_tools import plot_raster_path
+    from bluesky.examples import motor1, motor2, det
+    from bluesky.plans import inner_product_scan
+    import matplotlib.pyplot as plt
+
+    plan = inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50)
+    plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
+
+Notice that, in an inner product scan, each motor moves the same number
+of steps (in the example above, 5).
+
 Moving motors separately, exploring every combination, is an "outer product
-scan". This is like moving x and y to draw a mesh. Multi-motor combinations of
-these two cases are also supported.
+scan". This is like moving x and y to draw a mesh. The mesh does not have to be
+square: each motor can move a different number of steps.
 
 .. code-block:: python
 
@@ -241,10 +255,10 @@ direction each time (``False``), as illustrated.
 Both :func:`inner_product_scan` and :func:`outer_product_scan` support an
 unlimited number of motors/dimensions.
 
-To visualize this data, we can use ``LiveRaster``, which is documented
+To visualize 2-dimensional data, we can use ``LiveRaster``, which is documented
 in :ref:`in the next section <liveraster>`. In previous examples we used
-``LivePlot`` visualize readings as a function of one variable; ``LiveRaster``
-is appropriate for functions of two variables.
+``LivePlot`` to visualize readings as a function of one variable;
+``LiveRaster`` is appropriate for functions of two variables.
 
 .. code-block:: python
 
@@ -269,7 +283,7 @@ is appropriate for functions of two variables.
        LiveRaster((6, 10), 'det4'))
 
 The general case, moving some motors together in an "inner product" against
-another (or motors) in an "outer product" can be addressed using a ``cycler``.
+another (or motors) in an "outer product," can be addressed using a ``cycler``.
 Notice what happens when we add or multiply ``cycler`` objects.
 
 .. ipython:: python
@@ -279,17 +293,27 @@ Notice what happens when we add or multiply ``cycler`` objects.
 
     traj1 = cycler(motor1, [1, 2, 3])
     traj2 = cycler(motor2, [10, 20, 30])
-    list(traj1 + traj2)  # "inner product"
+    list(traj1)  # a trajectory for motor1
+    list(traj1 + traj2)  # an "inner product" trajectory
+    list(traj1 * traj2)  # an "outer product" trajectory
+
+We have reproduced inner product and outer product. The real power comes in
+when we combine them, like so. Here, motor1 and motor2 together in a mesh
+against motor3.
+
+.. ipython:: python
+
     traj3 = cycler(motor3, [100, 200, 300])
-    list((traj1 + traj2) * traj3)  # "outer product" with traj3
+    list((traj1 + traj2) * traj3)
 
 For more on cycler, we refer you to the
 `cycler documentation <http://matplotlib.org/cycler/>`_. To build a plan
-incorporating these trajectories, use :func:`scan_nd`.
+incorporating these trajectories, use our general N-dimensional scan plan,
+:func:`scan_nd`.
 
 .. code-block:: python
 
-    RE(scan_nd((traj1 + traj2) * traj3))
+    RE(scan_nd([det], (traj1 + traj2) * traj3))
 
 .. autosummary::
    :toctree:
@@ -304,7 +328,7 @@ incorporating these trajectories, use :func:`scan_nd`.
 Spiral trajectories
 ^^^^^^^^^^^^^^^^^^^
 
-Two-dimensional scans that trace out spiral trajectories.
+We provide two-dimensional scans that trace out spiral trajectories.
 
 A simple spiral:
 
@@ -348,7 +372,8 @@ Adaptive scans
 
 These are one-dimension scans with an adaptive step size tuned to move quickly
 over flat regions can concentrate readings in areas of high variation by
-computing the local slope aiming for a target delta between points.
+computing the local slope aiming for a target delta y between consecutive
+points.
 
 This is a basic example of the power of adaptive plan logic.
 
@@ -460,7 +485,7 @@ Simple Custom Plans
 Loops
 +++++
 
-Produce several runs, changing a parmeter each time.
+Produce several runs, changing a parameter each time.
 
 .. code-block:: python
 
@@ -538,9 +563,9 @@ which makes it easy for a user-defined plan to pass in extra metadata.
         # ... insert code here to open shutter ...
         yield from count([det], md={'is_dark_frame': False})
 
-By default, the :func:`count` plan records the ``plan_name`` count. To customize
-the ``plan_name`` --- say, to differentiate separate *reasons* running a count
---- you can override the metadata.
+By default, the :func:`count` plan records {'plan_name': 'count'}``. To
+customize the ``plan_name`` --- say, to differentiate separate *reasons* for
+running a count --- you can override this behavior.
 
 .. code-block:: python
 
@@ -549,8 +574,9 @@ the ``plan_name`` --- say, to differentiate separate *reasons* running a count
         md = {'plan_name': 'calib_count'}
         yield from count(dets, num=num, md=md)
 
-To enable users to pass in metadata that combines with and potentially
-overrides the hard-coded metadata, use the following pattern:
+The above records the plan name ``'calib_count'``.  To enable users to pass in
+metadata that combines with and potentially overrides the hard-coded metadata,
+use the following pattern:
 
 .. code-block:: python
 
