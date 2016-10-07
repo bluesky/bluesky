@@ -179,7 +179,7 @@ class Reader:
                         'dtype': 'number',
                         'shape': [],
                         'precision': 2}
-                for field in self._fields if field in self.read_attrs}
+                for field in self.read_attrs}
 
     def read_configuration(self):
         """
@@ -194,7 +194,7 @@ class Reader:
                         'dtype': 'number',
                         'shape': [],
                         'precision': 2}
-                for field in self._fields if field in self.conf_attrs}
+                for field in self.conf_attrs}
 
     def configure(self, *args, **kwargs):
         old_conf = self.read_configuration()
