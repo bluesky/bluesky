@@ -106,7 +106,7 @@ class Reader:
 
     A detector that is coupled to a motor, such that measured insensity
     varies with motor position.
-    >>> motor = Mover('motor')
+    >>> motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
     >>> det = Readable('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
