@@ -95,11 +95,11 @@ def test_stop_motors_and_log_any_errors(fresh_RE):
     stopped = {}
 
     class MoverWithFlag(Mover):
-        def stop(self):
+        def stop(self, *, success=False):
             stopped[self.name] = True
 
     class BrokenMoverWithFlag(Mover):
-        def stop(self):
+        def stop(self, *, success=False):
             stopped[self.name] = True
             raise Exception
 

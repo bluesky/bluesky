@@ -416,7 +416,7 @@ class RunEngine:
             obj.clear_sub(cb)
         # During pause, all motors should be stopped. Call stop() on every
         # object we ever set().
-        self._stop_movable_objects()
+        self._stop_movable_objects(success=True)
         # Notify Devices of the pause in case they want to clean up.
         for obj in self._objs_seen:
             if hasattr(obj, 'pause'):
@@ -674,7 +674,7 @@ class RunEngine:
                 obj.clear_sub(cb)
             # During suspend, all motors should be stopped. Call stop() on
             # every object we ever set().
-            self._stop_movable_objects()
+            self._stop_movable_objects(success=True)
             # Notify Devices of the pause in case they want to clean up.
             for obj in self._objs_seen:
                 if hasattr(obj, 'pause'):
@@ -748,7 +748,7 @@ class RunEngine:
         if self.state == 'paused':
             self._resume_event_loop()
 
-    def _stop_movable_objects(self):
+    def _stop_movable_objects(self, *, success=True):
         "Call obj.stop() for all objects we have moved. Log any exceptions."
         for obj in self._movable_objs_touched:
             try:
@@ -757,7 +757,7 @@ class RunEngine:
                 self.log.debug("No 'stop' method available on %r", obj)
             else:
                 try:
-                    stop()
+                    stop(success=success)
                 except Exception as exc:
                     self.log.error("Failed to stop %r. Error: %r", obj, exc)
 
@@ -922,7 +922,7 @@ class RunEngine:
             raise err
         finally:
             # call stop() on every movable object we ever set()
-            self._stop_movable_objects()
+            self._stop_movable_objects(success=True)
             # Try to collect any flyers that were kicked off but not finished.
             # Some might not support partial collection. We swallow errors.
             for obj in list(self._uncollected):

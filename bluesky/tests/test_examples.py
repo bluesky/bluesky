@@ -596,7 +596,7 @@ def test_failed_status_object(fresh_RE):
             fresh_RE.loop.call_later(1, lambda: st._finished(success=False))
             return st
 
-        def stop(self):
+        def stop(self, *, success=False):
             pass
 
     ff = failer()
