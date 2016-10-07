@@ -71,6 +71,9 @@ def test_outer_product_ascan():
         {'motor2': 20.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 10.0, 'det': 1.0, 'motor1': 3.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 3.0}]
+    for d in expected_data:
+        d.update({'motor1_setpoint': d['motor1']})
+        d.update({'motor2_setpoint': d['motor2']})
     multi_traj_checker(scan, expected_data)
 
 
@@ -86,6 +89,9 @@ def test_outer_product_ascan_snaked():
         {'motor2': 10.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 10.0, 'det': 1.0, 'motor1': 3.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 3.0}]
+    for d in expected_data:
+        d.update({'motor1_setpoint': d['motor1']})
+        d.update({'motor2_setpoint': d['motor2']})
     multi_traj_checker(scan, expected_data)
 
 
@@ -98,6 +104,9 @@ def test_inner_product_ascan():
         {'motor2': 10.0, 'det': 1.0, 'motor1': 1.0},
         {'motor2': 20.0, 'det': 1.0, 'motor1': 2.0},
         {'motor2': 30.0, 'det': 1.0, 'motor1': 3.0}]
+    for d in expected_data:
+        d.update({'motor1_setpoint': d['motor1']})
+        d.update({'motor2_setpoint': d['motor2']})
     multi_traj_checker(scan, expected_data)
 
 
@@ -116,6 +125,9 @@ def test_outer_product_dscan():
         {'motor2': 28.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 18.0, 'det': 1.0, 'motor1': 8.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 8.0}]
+    for d in expected_data:
+        d.update({'motor1_setpoint': d['motor1']})
+        d.update({'motor2_setpoint': d['motor2']})
     multi_traj_checker(scan, expected_data)
 
 
@@ -134,6 +146,9 @@ def test_outer_product_dscan_snaked():
         {'motor2': 18.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 18.0, 'det': 1.0, 'motor1': 8.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 8.0}]
+    for d in expected_data:
+        d.update({'motor1_setpoint': d['motor1']})
+        d.update({'motor2_setpoint': d['motor2']})
     multi_traj_checker(scan, expected_data)
 
 
@@ -148,6 +163,9 @@ def test_inner_product_dscan():
         {'motor2': 18.0, 'det': 1.0, 'motor1': 6.0},
         {'motor2': 28.0, 'det': 1.0, 'motor1': 7.0},
         {'motor2': 38.0, 'det': 1.0, 'motor1': 8.0}]
+    for d in expected_data:
+        d.update({'motor1_setpoint': d['motor1']})
+        d.update({'motor2_setpoint': d['motor2']})
     multi_traj_checker(scan, expected_data)
 
 

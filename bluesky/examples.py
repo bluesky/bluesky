@@ -83,12 +83,15 @@ class Reader:
     Parameters
     ----------
     name : string
-    read_fields : dict
+    fields : dict
         Mapping field names to functions that return simulated data. The
         function will be passed no arguments.
-    conf_fields : dict, optional
-        Like `read_fields`, but providing slow-changing configuration data.
-        If `None`, the configuration will simply be an empty dict.
+    read_attrs : list, optional
+        List of field names to include in ``read()`` . By default, all fields.
+    conf_attrs : list, optional
+        List of field names to include in ``read_configuration()``. By default,
+        no fields. Any field nmaes specified here are then not included in
+        ``read_attrs`` by default.
     monitor_intervals : list, optional
         iterable of numbers, specifying the spacing in time of updates from the
         device (this applies only if the ``subscribe`` method is used)
@@ -103,18 +106,22 @@ class Reader:
 
     A detector that is coupled to a motor, such that measured insensity
     varies with motor position.
-    >>> motor = Mover('motor')
+    >>> motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
     >>> det = Readable('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
-    def __init__(self, name, read_fields, conf_fields=None,
-                 monitor_intervals=None, loop=None):
+    def __init__(self, name, fields, *,
+                 read_attrs=None, conf_attrs=None, monitor_intervals=None,
+                 loop=None):
         self.name = name
         self.parent = None
-        self._read_fields = read_fields
-        if conf_fields is None:
-            conf_fields = {}
-        self._conf_fields = conf_fields
+        self._fields = fields
+        if conf_attrs is None:
+            conf_attrs = []
+        if read_attrs is None:
+            read_attrs = list(set(fields) - set(conf_attrs))
+        self.conf_attrs = conf_attrs
+        self.read_attrs = read_attrs
 
         # All this is used only by monitoring (subscribe/unsubscribe).
         self._futures = {}
@@ -134,16 +141,17 @@ class Reader:
     __repr__ = __str__
 
     def __setstate__(self, val):
-        name, read_fields, conf_fields, monitor_intervals = val
+        name, fields, read_attrs, conf_attrs, monitor_intervals = val
         self.name = name
-        self._read_fields = read_fields
-        self._conf_fields = conf_fields
+        self._fields = fields
+        self.read_attrs = read_attrs
+        self.conf_attrs = conf_attrs
         self._futures = {}
         self._monitor_intervals = monitor_intervals
         self.loop = asyncio.get_event_loop()
 
     def __getstate__(self):
-        return (self.name, self._read_fields, self._conf_fields,
+        return (self.name, self._fields, self.read_attrs, self.conf_attrs,
                 self._monitor_intervals)
 
     def trigger(self):
@@ -157,7 +165,8 @@ class Reader:
         The readings are collated with timestamps.
         """
         return {field: {'value': func(), 'timestamp': ttime.time()}
-                        for field, func in self._read_fields.items()}
+                        for field, func in self._fields.items()
+                        if field in self.read_attrs}
 
     def describe(self):
         """
@@ -170,21 +179,22 @@ class Reader:
                         'dtype': 'number',
                         'shape': [],
                         'precision': 2}
-                for field in self._read_fields}
+                for field in self.read_attrs}
 
     def read_configuration(self):
         """
         Like `read`, but providing slow-changing configuration readings.
         """
         return {field: {'value': func(), 'timestamp': ttime.time()}
-                        for field, func in self._conf_fields.items()}
+                        for field, func in self._fields.items()
+                        if field in self.conf_attrs}
 
     def describe_configuration(self):
         return {field: {'source': 'simulated using bluesky.examples',
                         'dtype': 'number',
                         'shape': [],
                         'precision': 2}
-                for field in self._conf_fields}
+                for field in self.conf_attrs}
 
     def configure(self, *args, **kwargs):
         old_conf = self.read_configuration()
@@ -211,16 +221,25 @@ class Mover(Reader):
     Parameters
     ----------
     name : string
-    read_fields : dict
+    fields : dict
         Mapping field names to functions that return simulated data. The
-        function will be passed the last set of argument given to ``set()``.
-    conf_fields : dict, optional
-        Like `read_fields`, but providing slow-changing configuration data.
-        If `None`, the configuration will simply be an empty dict.
+        function will be passed no arguments.
     initial_set : dict
         passed to ``set`` as ``set(**initial_set)`` to initialize readings
-    fake_sleep : float
+    fake_sleep : float, optional
         simulate moving time
+    read_attrs : list, optional
+        List of field names to include in ``read()`` . By default, all fields.
+    conf_attrs : list, optional
+        List of field names to include in ``read_configuration()``. By default,
+        no fields. Any field nmaes specified here are then not included in
+        ``read_attrs`` by default.
+    monitor_intervals : list, optional
+        iterable of numbers, specifying the spacing in time of updates from the
+        device (this applies only if the ``subscribe`` method is used)
+    loop : asyncio.EventLoop, optional
+        used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
+        unspecified
 
     Examples
     --------
@@ -228,29 +247,37 @@ class Mover(Reader):
     >>> motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
 
     A motor that simply goes where it is set.
-    >>> motor = Mover('motor', {'readback': lambda x: x},
-    ...                         'setpoint': lambda x: x},
+    >>> motor = Mover('motor',
+    ...               OrderedDict([('motor', lambda x: x),
+    ...                            ('motor_setpoint', lambda x: x)]),
     ...               {'x': 0})
 
     A motor that adds jitter.
     >>> import numpy as np
-    >>> motor = Mover('motor', {'readback': lambda x: x + np.random.randn()},
-    ...                         'setpoint': lambda x: x},
+    >>> motor = Mover('motor',
+    ...               OrderedDict([('motor', lambda x: x + np.random.randn()),
+    ...                            ('motor_setpoint', lambda x: x)]),
     ...               {'x': 0})
     """
-    def __init__(self, name, read_fields, initial_set, conf_fields=None, *,
-                 fake_sleep=0):
-        super().__init__(name, read_fields, conf_fields)
+    def __init__(self, name, fields, initial_set, *, read_attrs=None,
+                 conf_attrs=None, fake_sleep=0, monitor_intervals=None,
+                 loop=None):
+        super().__init__(name, fields, read_attrs=read_attrs,
+                         conf_attrs=conf_attrs,
+                         monitor_intervals=monitor_intervals,
+                         loop=loop)
         # Do initial set without any fake sleep.
         self._fake_sleep = 0
         self.set(**initial_set)
         self._fake_sleep = fake_sleep
 
     def __setstate__(self, val):
-        name, read_fields, conf_fields, monitor_intervals, state, fk_slp = val
+        (name, fields, read_attrs, conf_attrs,
+         monitor_intervals, state, fk_slp) = val
         self.name = name
-        self._read_fields = read_fields
-        self._conf_fields = conf_fields
+        self._fields = fields
+        self.read_attrs = read_attrs
+        self.conf_attrs = conf_attrs
         self._futures = {}
         self._monitor_intervals = monitor_intervals
         self.loop = asyncio.get_event_loop()
@@ -258,7 +285,7 @@ class Mover(Reader):
         self._fake_sleep = fk_slp
 
     def __getstate__(self):
-        return (self.name, self._read_fields, self._conf_fields,
+        return (self.name, self._fields, self.read_attrs, self.conf_attrs,
                 self._monitor_intervals, self._state, self._fake_sleep)
 
 
@@ -268,7 +295,7 @@ class Mover(Reader):
         """
         self._state = {field: {'value': func(*args, **kwargs),
                                'timestamp': ttime.time()}
-                       for field, func in self._read_fields.items()}
+                       for field, func in self._fields.items()}
         # TODO Do this asynchronously and return a status object immediately.
         if self._fake_sleep:
             ttime.sleep(self._fake_sleep)
@@ -280,7 +307,7 @@ class Mover(Reader):
     @property
     def position(self):
         "A heuristic that picks a single scalar out of the `read` dict."
-        return self.read()[list(self._read_fields)[0]]['value']
+        return self.read()[list(self._fields)[0]]['value']
 
     def stop(self, *, success=False):
         pass
@@ -516,16 +543,28 @@ class MockFlyer:
         pass
 
 
-motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
-motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
-motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
-motor3 = Mover('motor3', {'motor3': lambda x: x}, {'x': 0})
+motor = Mover('motor', OrderedDict([('motor', lambda x: x),
+                                    ('motor_setpoint', lambda x: x)]),
+              {'x': 0})
+motor1 = Mover('motor1', OrderedDict([('motor1', lambda x: x),
+                                      ('motor1_setpoint', lambda x: x)]),
+               {'x': 0})
+motor2 = Mover('motor2', OrderedDict([('motor2', lambda x: x),
+                                      ('motor2_setpoint', lambda x: x)]),
+               {'x': 0})
+motor3 = Mover('motor3', OrderedDict([('motor3', lambda x: x),
+                                      ('motor3_setpoint', lambda x: x)]),
+               {'x': 0})
 jittery_motor1 = Mover('jittery_motor1',
-                  {'jittery_motor1': lambda x: x + np.random.randn()},
-                  {'x': 0})
+                       OrderedDict([('jittery_motor1',
+                                     lambda x: x + np.random.randn()),
+                                    ('jittery_motor1_setpoint', lambda x: x)]),
+                       {'x': 0})
 jittery_motor2 = Mover('jittery_motor2',
-                  {'jittery_motor2': lambda x: x + np.random.randn()},
-                  {'x': 0})
+                       OrderedDict([('jittery_motor2',
+                                     lambda x: x + np.random.randn()),
+                                    ('jittery_motor2_setpoint', lambda x: x)]),
+                       {'x': 0})
 noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
                      noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
