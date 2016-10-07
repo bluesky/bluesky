@@ -247,14 +247,16 @@ class Mover(Reader):
     >>> motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
 
     A motor that simply goes where it is set.
-    >>> motor = Mover('motor', {'readback': lambda x: x},
-    ...                         'setpoint': lambda x: x},
+    >>> motor = Mover('motor',
+    ...               OrderedDict([('motor', lambda x: x),
+    ...                            ('motor_setpoint', lambda x: x)]),
     ...               {'x': 0})
 
     A motor that adds jitter.
     >>> import numpy as np
-    >>> motor = Mover('motor', {'readback': lambda x: x + np.random.randn()},
-    ...                         'setpoint': lambda x: x},
+    >>> motor = Mover('motor',
+    ...               OrderedDict([('motor', lambda x: x + np.random.randn()),
+    ...                            ('motor_setpoint', lambda x: x)]),
     ...               {'x': 0})
     """
     def __init__(self, name, fields, initial_set, *, read_attrs=None,
@@ -541,16 +543,28 @@ class MockFlyer:
         pass
 
 
-motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
-motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
-motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
-motor3 = Mover('motor3', {'motor3': lambda x: x}, {'x': 0})
+motor = Mover('motor', OrderedDict([('motor', lambda x: x),
+                                    ('motor_setpoint', lambda x: x)]),
+              {'x': 0})
+motor1 = Mover('motor1', OrderedDict([('motor1', lambda x: x),
+                                      ('motor1_setpoint', lambda x: x)]),
+               {'x': 0})
+motor2 = Mover('motor2', OrderedDict([('motor2', lambda x: x),
+                                      ('motor2_setpoint', lambda x: x)]),
+               {'x': 0})
+motor3 = Mover('motor3', OrderedDict([('motor3', lambda x: x),
+                                      ('motor3_setpoint', lambda x: x)]),
+               {'x': 0})
 jittery_motor1 = Mover('jittery_motor1',
-                  {'jittery_motor1': lambda x: x + np.random.randn()},
-                  {'x': 0})
+                       OrderedDict([('jittery_motor1',
+                                     lambda x: x + np.random.randn()),
+                                    ('jittery_motor1_setpoint', lambda x: x)]),
+                       {'x': 0})
 jittery_motor2 = Mover('jittery_motor2',
-                  {'jittery_motor2': lambda x: x + np.random.randn()},
-                  {'x': 0})
+                       OrderedDict([('jittery_motor2',
+                                     lambda x: x + np.random.randn()),
+                                    ('jittery_motor2_setpoint', lambda x: x)]),
+                       {'x': 0})
 noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
                      noise='uniform', sigma=1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
