@@ -7,7 +7,7 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
                            collect, configure, stage, unstage, subscribe,
-                           unsubscribe, open_run, close_run, wait_for,
+                           unsubscribe, open_run, close_run, wait_for, mv,
                            subs_context, run_context, event_context,
                            baseline_context, monitor_context,
                            stage_context, planify, finalize_wrapper,
@@ -96,6 +96,17 @@ def cb(name, doc):
     ])
 def test_stub_plans(plan, plan_args, plan_kwargs, msgs):
     assert list(plan(*plan_args, **plan_kwargs)) == msgs
+
+
+def test_mv():
+    # special-case mv because the group is not configurable
+    actual = list(mv(det1, 1, det2, 2))
+    expected = [Msg('set', det1, 1, group=None),
+                Msg('set', det2, 2, group=None),
+                Msg('wait', None, group=None)]
+    strip_group(actual)
+    strip_group(expected)
+    assert actual == expected
 
 
 @pytest.mark.parametrize(

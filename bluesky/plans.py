@@ -402,6 +402,7 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     --------
     :func:`bluesky.plans.rel_set`
     :func:`bluesky.plans.wait`
+    :func:`bluesky.plans.mv`
     """
     if wait and group is None:
         group = str(uuid.uuid4())
@@ -439,6 +440,34 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     """
     return (yield from relative_set_wrapper(
         abs_set(obj, *args, group=group, wait=wait, **kwargs)))
+
+
+def mv(*args):
+    """
+    Move one or more devices to a setpoint and wait for all to complete.
+
+    If more than one device is specifed, the movements are done in parallel.
+
+    Parameters
+    ----------
+    args :
+        device1, value1, device2, value2, ...
+
+    Yields
+    ------
+    msg : Msg
+
+    See Also
+    --------
+    :func:`bluesky.plans.abs_set`
+    """
+    group = str(uuid.uuid4())
+    status_objects = []
+    for obj, val in chunked(args, 2):
+        ret = yield Msg('set', obj, val, group=group)
+        status_objects.append(ret)
+    yield Msg('wait', None, group=group)
+    return tuple(status_objects)
 
 
 def trigger(obj, *, group=None, wait=False):
