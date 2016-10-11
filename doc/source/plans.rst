@@ -117,7 +117,7 @@ pseudo-axis. It's all the same to the plans. Examples:
 .. code-block:: python
 
     from bluesky.examples import det, motor
-    from bluesky.plans import scan 
+    from bluesky.plans import scan, relative_scan, list_scan
 
     # scan a motor from 1 to 5, taking 5 equally-spaced readings of 'det'
     RE(scan([det], motor, 1, 5, 5))
