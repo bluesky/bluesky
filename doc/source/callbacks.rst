@@ -165,11 +165,15 @@ In the demo above, we passed in a list of *device(s)*, like so:
     LiveTable([motor])
 
 Internally, ``LiveTable`` obtains the name(s) of the field(s) produced by
-reading ``motor``. (You can do this yourself too:
-``list(motor.describe().keys())``.) In this simple case, there is only one
-field and it is also named ``'motor'``. But in the general case, a device can
-produce tens or even hundreds of separate readings, and it can be useful to
-spell out specific fields rather than a whole device.
+reading ``motor``. You can do this yourself too:
+
+.. ipython:: python
+
+    list(motor.describe().keys())
+
+In the general case, a device can produce tens or even hundreds of separate
+readings, and it can be useful to spell out specific fields rather than a whole
+device.
 
 .. code-block:: python
 
