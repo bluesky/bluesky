@@ -63,7 +63,7 @@ To "fly" one or more "flyable" devices during a plan, bluesky provides a
 
     RE(fly_during_wrapper(count([det], num=5), [flyer1, flyer2]))
 
-and as a decorator, :func:`fly_during_wrapper`.
+and as a decorator, :func:`fly_during_decorator`.
 
 .. code-block:: python
 
@@ -102,7 +102,7 @@ is available as a wrapper, :func:`monitor_during_wrapper`
     # Record any updates from det1 while 'counting' det 5 times.
     RE(monitor_during_wrapper(count([det], num=5), [det1]))
 
-and as a decorator, :func:`fly_during_wrapper`.
+and as a decorator, :func:`monitor_during_decorator`.
 
 .. code-block:: python
 

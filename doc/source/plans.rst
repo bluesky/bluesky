@@ -161,6 +161,8 @@ Or, again, to save some typing for repeated use,
    log_scan
    relative_log_scan
 
+.. _multi-dimensional_scans:
+
 Multi-dimensional scans
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -480,11 +482,11 @@ We also provide :ref:`wrapper and decorator functions <preprocessors>` and
 :ref:`utility functions <plan_utils>`, documented below, that make building
 these easier.
 
-Simple Custom Plans
--------------------
+Examples
+--------
 
-Loops
-+++++
+Changing a Parameter Between Runs
++++++++++++++++++++++++++++++++++
 
 Produce several runs, changing a parameter each time.
 
@@ -499,7 +501,10 @@ Produce several runs, changing a parameter each time.
             # With each iteration, take more densely-spaced readings.
             yield from scan([det1, det2], motor, 1, 5, num)
 
-Here we introduce :func:`abs_set`, which sets a motor a position (or a
+Setting Devices to a Set Point
+++++++++++++++++++++++++++++++
+
+Next, we introduce :func:`abs_set`, which sets a motor to a position (or a
 temperature controller to a temperature, etc.). See also :func:`rel_set`, which
 sets *relative* to the current value.
 
@@ -510,41 +515,144 @@ sets *relative* to the current value.
 
     def master_plan():
         "Move a motor into place, then take a reading from detectors."
-        yield from abs_set(motor, 3)
+        yield from abs_set(motor, 3, wait=True)
         yield from count([det1, det2])
 
-This more complex example loops through a list of "samples." It changes the
-plan parameters depending on the sample.
+The argument ``wait=True`` blocks progress until the device reports that it is
+ready (e.g., done moving or done triggering). Alternatively, use a :func:`wait`
+plan, which is more flexible. Here, we move two motors at once and wait for
+them both to finish.
 
 .. code-block:: python
 
-    from bluesky.plans import abs_set
-    from bluesky.examples import det1, det2, motor1, motor2
-    sample_plate = motor1
+    from bluesky.plans import abs_set, wait
+    from bluesky.examples import motor1, motor2
 
-    sample_list = ['a', 'b', 'c']  # list of sample names
+    def wait_multiple():
+        "Set, trigger, read"
+        yield from abs_set(motor1, 5, group='A')  # Start moving motor1.
+        yield from abs_set(motor2, 5, group='A')  # Start moving motor2.
+        yield from wait('A')  # Now wait for both to finish.
 
-    # mapping each sample name to a range of interest
-    sample_ranges = {'a': {'start': -5, 'stop': -1},
-                     'b': {'start': -1, 'stop': 1},
-                     'c': {'start': 1, 'stop': 5}}
+The ``group`` is just temporary label that we can use to refer to groups of
+devices that we want to move or trigger simulataneously and then wait for them
+as a group.  This plan will continue once both motors have reported that they
+have finished moving successfully.
 
-    def sample_plan(sample_list, sample_ranges):
-        "Loop over sample_list, and scan each one based on sample_ranges."
-        for sample in sample_list:
-            # Move the sample into place.
-            yield from abs_set(sample_plate, sample)
+We could have written this some logic with a loop:
 
-            # Look up the range of interest for this sample.
-            s_range = sample_ranges[sample]
+.. code-block:: python
 
-            # Run a scan over that range.
-            yield from scan([det1, det2], motor, num=10, **s_range)
+    def wait_multiple(motors):
+        "Set all motors moving; then wait for all motors to finish."
+        for motor in motors:
+            yield from abs_set(motor, 5, group='A')
+        yield from wait('A')
+
+Two convenient shortcuts are available for common cases. As shown at the
+beginning of this section, if you are setting one motor at a time, use the
+``wait`` keyword argument.
+
+.. code-block:: python
+
+    def wait_one():
+        yield from abs_set(motor1, wait=True)
+        # `wait=True` implicitly adds a group and `wait` plan to match.
+
+The same works for :func:`rel_set` and :func:`trigger`. Also, if you are only
+dealing with one group at a time, you do not actually need to label the group:
+
+.. code-block:: python
+
+    def wait_multiple(motors):
+        "Set all motors moving; then wait for all motors to finish."
+        for motor in motors:
+            yield from abs_set(motor, 5)
+        yield from wait()
+
+But by using labels you can express complex logic, waiting for different groups
+at different points in the plan:
+
+.. code-block:: python
+
+    def staggered_wait(det, fast_motors, slow_motor):
+        # Start all the motors, fast and slow, moving at once.
+        # Put all the fast_motors in one group...
+        for motor in slow_motors:
+            yield from abs_set(motor, 5, group='A')
+        # ...but put the slow motor is separate group.
+        yield from set(slow_motor, 5, group='B')
+
+        # Wait for all the fast motors.
+        yield from wait('A')
+
+        # Do some stuff that doesn't require the slow motor to be finished.
+
+        # Then wait for the slow motor.
+        yield from wait('B')
+
+Before writing a custom plan to coordinate the motion of multiple devices,
+consider whether your use case could be addressed with one of the built-in
+:ref:`multi-dimensional_scans`.
+
+Sleeping
+++++++++
+
+A "sleep" is a timed delay.
+
+.. code-block:: python
+
+    from bluesky.plans import sleep, abs_set
+    from bluesky.examples import motor
+
+    def sleepy():
+        "Set motor; sleep for a fixed time; set it to a new position."
+        yield from abs_set(motor, 5)
+        yield from sleep(2)  # units: seconds
+        yield from abs_set(motor, 10)
+
+The :func:`sleep` plan is not the same as Python's built-in sleep function,
+``time.sleep(...)``. Never use ``time.sleep(...)`` in a plan; use ``yield from
+sleep(...)`` instead. It allows other tasks --- such as watching for Ctrl+C,
+updating plots --- to be executed while the clock runs.
+
+.. _planned_pauses:
+
+Planned Pauses
+++++++++++++++
+
+Pausing is typically done :ref:`interactively <pausing_interactively>` (Ctrl+C)
+but it can also be incorporated into a plan. The plan can pause the RunEngine,
+requiring the user to type ``RE.resume()`` to continue or ``RE.stop()`` to
+clean up and stop.
+
+Pauses can be interspersed using :func:`chain`. Demo:
+
+.. ipython:: python
+
+    from bluesky.plans import pchain, count, pause
+    from bluesky.examples import det
+    RE(pchain(count([det]), pause(), count([det])))
+    RE.state  # optional -- just doing this to show that we are paused
+    RE.resume()  # or, alternatively, RE.stop()
+
+Or pauses can be incorporated in a plan like so:
+
+.. code-block:: python
+
+    from bluesky.plans import pause, checkpoint
+
+    def pausing_plan():
+        while True:
+            yield from some_plan(...)
+            print("Type RE.resume() to go again or RE.stop() to stop.")
+            yield from checkpoint()  # marking where to resume from
+            yield from pause()
 
 .. _customizing_metadata:
 
 Customizing metadata
-++++++++++++++++++++
+--------------------
 
 Metadata can be loaded from a persistent file, specified by the user
 interactively at execution time, or incorporated in a plan.
@@ -564,7 +672,7 @@ which makes it easy for a user-defined plan to pass in extra metadata.
         # ... insert code here to open shutter ...
         yield from count([det], md={'is_dark_frame': False})
 
-By default, the :func:`count` plan records {'plan_name': 'count'}``. To
+By default, the :func:`count` plan records ``{'plan_name': 'count'}``. To
 customize the ``plan_name`` --- say, to differentiate separate *reasons* for
 running a count --- you can override this behavior.
 
@@ -575,9 +683,9 @@ running a count --- you can override this behavior.
         md = {'plan_name': 'calib_count'}
         yield from count(dets, num=num, md=md)
 
-The above records the plan name ``'calib_count'``.  To enable users to pass in
-metadata that combines with and potentially overrides the hard-coded metadata,
-use the following pattern:
+The above records the ``{'plan_name': 'calib_count'}``.  To enable users to
+pass in metadata that combines with and potentially overrides the hard-coded
+metadata, use the following pattern:
 
 .. code-block:: python
 
@@ -622,136 +730,6 @@ name.
 
     See the `relevant section of the Python documentation <https://docs.python.org/3/library/collections.html#collections.ChainMap>`_
     for more.
-
-.. _planned_pauses:
-
-Sleeping
-++++++++
-
-A "sleep" is a timed delay.
-
-.. code-block:: python
-
-    from bluesky.plans import sleep, abs_set
-    from bluesky.examples import motor
-
-    def sleepy():
-        "Set motor; sleep for a fixed time; set it to a new position."
-        yield from abs_set(motor, 5)
-        yield from sleep(2)  # units: seconds
-        yield from abs_set(motor, 10)
-
-The :func:`sleep` plan is not the same as Python's built-in sleep function,
-``time.sleep(...)``. Never use ``time.sleep(...)`` in a plan; use ``yield from
-sleep(...)`` instead. It allows other tasks --- such as watching for Ctrl+C,
-updating plots --- to be executed while the clock runs.
-
-Waiting
-+++++++
-
-Use the :func:`wait` plan to block progress until a device reports that it is
-ready. For example, wait for a motor to finish moving or a detector to finish
-triggering.
-
-Here, we move two motors at once and wait for them both to finish.
-
-.. code-block:: python
-
-    from bluesky.plans import abs_set, wait
-    from bluesky.examples import motor1, motor2
-
-    def wait_multiple():
-        "Set, trigger, read"
-        yield from abs_set(motor1, 5, group='A')  # Start moving motor1.
-        yield from abs_set(motor2, 5, group='A')  # Start moving motor2.
-        yield from wait('A')  # Now wait for both to finish.
-
-The ``group`` is just temporary label that we can use to refer to groups of
-devices that we want to move or trigger simulataneously and then wait for them
-as a group.  This plan will continue once both motors have reported that they
-have finished moving successfully.
-
-We could have written this some logic with a loop:
-
-.. code-block:: python
-
-    def wait_multiple(motors):
-        "Set all motors moving; then wait for all motors to finish."
-        for motor in motors:
-            yield from abs_set(motor, 5, group='A')
-        yield from wait('A')
-
-Two convenient shortcuts are available for common cases. If you are setting one
-motor at a time, use the ``wait`` keyword argument.
-
-.. code-block:: python
-
-    def wait_one():
-        yield from abs_set(motor1, wait=True)
-        # `wait=True` implicitly adds a group and `wait` plan to match.
-
-The same works for :func:`rel_set` and :func:`trigger`. Also, if you are only
-dealing with one group at a time, you do not actually need to label the group:
-
-.. code-block:: python
-
-    def wait_multiple(motors):
-        "Set all motors moving; then wait for all motors to finish."
-        for motor in motors:
-            yield from abs_set(motor, 5)
-        yield from wait()
-
-But by using labels you can express complex logic, waiting for different groups
-at different points in the plan:
-
-.. code-block:: python
-
-    def staggered_wait(det, fast_motors, slow_motor):
-        # Start all the motors, fast and slow, moving at once.
-        # Put all the fast_motors in one group...
-        for motor in slow_motors:
-            yield from abs_set(motor, 5, group='A')
-        # ...but put the slow motor is separate group.
-        yield from set(slow_motor, 5, group='B')
-
-        # Wait for all the fast motors.
-        yield from wait('A')
-
-        # Do some stuff that doesn't require the slow motor to be finished.
-
-        # Then wait for the slow motor.
-        yield from wait('B')
-
-Planned Pauses
-++++++++++++++
-
-Pausing is typically done :ref:`interactively <pausing_interactively>` (Ctrl+C)
-but it can also be incorporated into a plan. The plan can pause the RunEngine,
-requiring the user to type ``RE.resume()`` to continue or ``RE.stop()`` to
-clean up and stop.
-
-Pauses can be interspersed using :func:`chain`. Demo:
-
-.. ipython:: python
-
-    from bluesky.plans import pchain, count, pause
-    from bluesky.examples import det
-    RE(pchain(count([det]), pause(), count([det])))
-    RE.state  # optional -- just doing this to show that we are paused
-    RE.resume()  # or, alternatively, RE.stop()
-
-Or pauses can be incorporated in a plan like so:
-
-.. code-block:: python
-
-    from bluesky.plans import pause, checkpoint
-
-    def pausing_plan():
-        while True:
-            yield from some_plan(...)
-            print("Type RE.resume() to go again or RE.stop() to stop.")
-            yield from checkpoint()  # marking where to resume from
-            yield from pause()
 
 .. _preprocessors:
 
@@ -866,6 +844,9 @@ If an exception is raised, the RunEngine gives the plan the opportunity to
 catch the exception and either handle it or merely yield some "clean up"
 messsages before re-raising the exception and killing plan execution.
 
+The exception in question may originate from the plan itself or from the
+RunEngine when it attempts to execute a given command.
+
 .. code-block:: python
 
     # This example is illustrative, but it is not completely correct.
@@ -884,17 +865,27 @@ way of applying this general pattern.
 
 .. code-block:: python
 
+    from bluesky.plans import finalize_wrapper
+
     def plan_with_cleanup():
         yield from finalize_wrapper(main_plan(), cleanup_plan())
 
-The exception in question may originate from the plan itself or from the
-RunEngine when it attempts to execute a given command.
+Or, at your preference, the same logic is available as a decorator:
 
-Advanced Custom Plans
----------------------
+.. code-block:: python
 
-The ``per_step`` hook
-+++++++++++++++++++++
+    from bluesky.plans import finalize_decorator
+
+    plan_with_cleanup = finalize_decorator(cleanup_plan)(main_plan)
+
+    # or, equivalently:
+
+    @finalize_decorator(cleanup_plan)
+    def plan_with_cleanup():
+        yield from main_plan()
+
+Customize Step Scans with ``per_step``
+--------------------------------------
 
 The one-dimensional and multi-dimensional plans are composed (1) setup,
 (2) a loop over a plan to perform at each position, (3) cleanup.
@@ -975,21 +966,17 @@ Likewise, a custom function with the same signature may be passed into the
 
 .. _reimplementing_count:
 
-Reimplementing ``count`` from scratch
-+++++++++++++++++++++++++++++++++++++
+Controlling the Scope of a "Run"
+--------------------------------
 
-In this section we will build a custom plan out of the stub plans above.
+By default, the :func:`count` plan generates one "run" (i.e., dataset)
+with one "event" (i.e., one bundle of readings from the detectors, one row in
+a table of the data).
 
 .. code-block:: python
 
     from bluesky.examples import det1, det2
     from bluesky.plans import count
-
-The basic usage of the :func:`count` plan generates one "run" (i.e., dataset)
-with one "event" (i.e., one bundle of readings from the detectors, one row in
-a table of the data).
-
-.. code-block:: python
 
     dets = [det1, det2]
     RE(count(dets))
@@ -1012,8 +999,9 @@ A tempting --- but wrong! --- possibility is to loop over calls to
     for _ in range(3):
         RE(count(dets))
 
-As stated above, this ruins error-recovery and interruption recovery. It's much
-better to do the loop inside a custom plan, which we'll dub ``multicount``.
+As stated earlier, this ruins error-recovery and interruption recovery. It's
+much better to do the loop inside a custom plan, which we'll dub
+``multicount``.
 
 .. code-block:: python
 
@@ -1062,8 +1050,8 @@ Starting from the middle and explaining outward:
   effect at all. But for others, it ensures that the device is put into a
   ready, triggerable state and then restored to standby at the end of the plan.
 
-Plans with adaptive logic
-+++++++++++++++++++++++++
+Plans with Adaptive Logic
+-------------------------
 
 Two-way communication is possible between the generator and the RunEngine.
 For example, the 'read' command responds with its reading. We can use it to
@@ -1120,8 +1108,8 @@ The response, ``reading``, is formatted like:
 For a detailed technical description of the messages and their responses,
 see :ref:`msg`.
 
-Asynchronous plans: "fly scans" and "monitoring"
-++++++++++++++++++++++++++++++++++++++++++++++++
+Asynchronous Plans: "Fly Scans" and "Monitoring"
+------------------------------------------------
 
 See the section on :doc:`async` for some context on these terms and, near the
 end of the section, some example plans.
