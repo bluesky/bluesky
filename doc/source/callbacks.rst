@@ -517,21 +517,22 @@ false alarm.
 
 .. _debugging_callbacks:
 
-Debugging Callbacks
--------------------
+Ignoring Callback Exceptions
+----------------------------
 
-If a callback raises an exception, the RunEngine catches that exception and
-merely prints a warning. This behavior is intended to prevent some problem in
-the callbacks from aborting the plan. Often, users to prefer to let data
-collection complete and "pick up the pieces" later.
+If an exception is raised while processing a callback, the error can interrupt
+data collection. Usually, this is good: if, for example, the callback that is
+saving your data encounters an error, you want to know immediately.
 
-But this is not always desirable, especially when trying to debug problems with
-callbacks. To stop the RunEngine from catching exceptions from the callbacks,
-set
+But if a "flaky" callback is causing errors, it is possible to convert errors
+to warnings like so.
 
 .. code-block:: python
 
     RE.ignore_callback_exceptions = False
+
+This is ``False`` by default. In bluesky version 0.6.4 (September 2016) and
+earlier, this was ``True`` by default.
 
 .. _filtering:
 
