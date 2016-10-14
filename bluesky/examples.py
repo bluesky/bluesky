@@ -155,17 +155,12 @@ class Reader:
 
     def trigger(self, *, delay_time=1):
         if delay_time:
-            print('delaying')
             if self.loop.is_running():
-                print('asyncronously')
                 st = SimpleStatus()
                 self.loop.call_later(delay_time, st._finished)
-                print('asyncronously')
                 return st
             else:
-                print('syncronously')
                 ttime.sleep(delay_time)
-                print('syncronously')
         return NullStatus()
 
     def read(self):
