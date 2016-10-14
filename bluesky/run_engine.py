@@ -981,7 +981,7 @@ class RunEngine:
 
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
-        if self.state.is_running:
+        if self.state.is_running and (not self._interrupted):
             count = self._sigint_handler.count
             if count > self._num_sigints_processed:
                 self._num_sigints_processed = count
@@ -1007,12 +1007,12 @@ class RunEngine:
                     self.log.debug("RunEngine detected a second SIGINT -- "
                                    "waiting 0.5 seconds for a third.")
                     for i in range(10):
-                        ttime.sleep(0.05)
                         if self._sigint_handler.count > 2:
                             self.log.debug("RunEngine detected a third "
                                            "SIGINT -- aborting.")
                             self.loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
                             break
+                        ttime.sleep(0.05)
                     else:
                         self.log.debug("RunEngine detected two SIGINTs. "
                                        "A hard pause will be requested.")
