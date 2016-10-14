@@ -242,6 +242,7 @@ def test_zmq(fresh_RE):
 
     def forwarder():
         import zmq
+
         def main(frontend_port, backend_port):
             print('Starting forwarder device...')
             try:
@@ -249,9 +250,9 @@ def test_zmq(fresh_RE):
                 # Socket facing clients
                 frontend = context.socket(zmq.SUB)
                 frontend.bind("tcp://*:%d" % frontend_port)
-                
+
                 frontend.setsockopt_string(zmq.SUBSCRIBE, "")
-                
+
                 # Socket facing services
                 backend = context.socket(zmq.PUB)
                 backend.bind("tcp://*:%d" % backend_port)
@@ -272,7 +273,7 @@ def test_zmq(fresh_RE):
     forwarder_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
 
-    # COMPONENT 2 
+    # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
 
     RE = fresh_RE
@@ -305,12 +306,12 @@ def test_zmq(fresh_RE):
     # the queue, where we can verify that they round-tripped.
 
     local_accumulator = []
+
     def local_cb(name, doc):
         local_accumulator.append((name, doc))
 
     RE([Msg('open_run'), Msg('close_run')], local_cb)
     time.sleep(1)
-
 
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []

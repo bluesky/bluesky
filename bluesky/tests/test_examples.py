@@ -657,7 +657,7 @@ def test_sync_trigger_delay(motor_det):
     det.exposure_time = .5
 
     _time_test(motor.set, .5, 1)
-    _time_test(motor.trigger, .5)
+    _time_test(det.trigger, .5)
 
 
 def test_async_trigger_delay(motor_det, fresh_RE):

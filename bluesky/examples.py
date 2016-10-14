@@ -153,7 +153,7 @@ class Reader:
         return (self.name, self._fields, self.read_attrs, self.conf_attrs,
                 self._monitor_intervals)
 
-    def trigger(self, *, delay_time=1):
+    def trigger(self, *, delay_time=0):
         if delay_time:
             if self.loop.is_running():
                 st = SimpleStatus()
