@@ -329,6 +329,8 @@ class RunEngine:
 
         Lossless subscriptions are not unsubscribed.
         """
+        if self.state != 'idle':
+            self.halt()
         self._clear_run_cache()
         self._clear_call_cache()
         self.dispatcher.unsubscribe_all()

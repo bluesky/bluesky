@@ -10,6 +10,15 @@ def fresh_RE(request):
     loop.set_debug(True)
     RE = RunEngine({}, loop=loop)
     RE.ignore_callback_exceptions = False
+
+    def clean_al():
+        if RE.state != 'idle':
+            RE.halt()
+        ev = asyncio.Event(loop=loop)
+        ev.set()
+        loop.run_until_complete(ev.wait())
+
+    request.addfinalizer(clean_al)
     return RE
 
 RE = fresh_RE
