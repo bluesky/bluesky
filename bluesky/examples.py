@@ -3,7 +3,7 @@ import time as ttime
 from collections import deque, OrderedDict
 from threading import RLock
 import numpy as np
-from .run_engine import Msg
+from bluesky.utils import Msg
 
 
 class SimpleStatus:
@@ -57,7 +57,6 @@ class SimpleStatus:
                 )
 
     __repr__ = __str__
-
 
 
 class NullStatus:
@@ -154,8 +153,19 @@ class Reader:
         return (self.name, self._fields, self.read_attrs, self.conf_attrs,
                 self._monitor_intervals)
 
-    def trigger(self):
-        "No-op: returns a status object immediately marked 'done'."
+    def trigger(self, *, delay_time=1):
+        if delay_time:
+            print('delaying')
+            if self.loop.is_running():
+                print('asyncronously')
+                st = SimpleStatus()
+                self.loop.call_later(delay_time, st._finished)
+                print('asyncronously')
+                return st
+            else:
+                print('syncronously')
+                ttime.sleep(delay_time)
+                print('syncronously')
         return NullStatus()
 
     def read(self):
@@ -288,7 +298,6 @@ class Mover(Reader):
         return (self.name, self._fields, self.read_attrs, self.conf_attrs,
                 self._monitor_intervals, self._state, self._fake_sleep)
 
-
     def set(self, *args, **kwargs):
         """
         Pass the arguments to the functions to create the next reading.
@@ -296,9 +305,14 @@ class Mover(Reader):
         self._state = {field: {'value': func(*args, **kwargs),
                                'timestamp': ttime.time()}
                        for field, func in self._fields.items()}
-        # TODO Do this asynchronously and return a status object immediately.
+
         if self._fake_sleep:
-            ttime.sleep(self._fake_sleep)
+            if self.loop.is_running():
+                st = SimpleStatus()
+                self.loop.call_later(self._fake_sleep, st._finished)
+                return st
+            else:
+                ttime.sleep(self._fake_sleep)
         return NullStatus()
 
     def read(self):
@@ -331,7 +345,7 @@ class SynGauss(Reader):
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
-                 noise=None, noise_multiplier=1, exposure_time=0):
+                 noise=None, noise_multiplier=1, exposure_time=0, **kwargs):
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
         self.exposure_time = exposure_time
@@ -345,13 +359,10 @@ class SynGauss(Reader):
                 v += np.random.uniform(-1, 1) * noise_multiplier
             return v
 
-        super().__init__(name, {name: func})
+        super().__init__(name, {name: func}, **kwargs)
 
     def trigger(self):
-        # TODO Do this asynchronously and return a status object immediately.
-        if self.exposure_time:
-            ttime.sleep(self.exposure_time)
-        return super().trigger()
+        return super().trigger(delay_time=self.exposure_time)
 
 
 class Syn2DGauss(Reader):
@@ -414,10 +425,7 @@ class Syn2DGauss(Reader):
         super().__init__(name, {name: func})
 
     def trigger(self):
-        # TODO Do this asynchronously and return a status object immediately.
-        if self.exposure_time:
-            ttime.sleep(self.exposure_time)
-        return super().trigger()
+        return super().trigger(delay_time=self.exposure_time)
 
 
 class TrivialFlyer:

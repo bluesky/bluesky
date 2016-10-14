@@ -6,8 +6,9 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               conditional_break, SynGauss, flyer1
                               )
 from bluesky.callbacks import LivePlot
-from bluesky import (RunEngine, Msg, IllegalMessageSequence,
+from bluesky import (Msg, IllegalMessageSequence,
                      RunEngineInterrupted, FailedStatus)
+import bluesky.plans as bp
 import os
 import signal
 import asyncio
@@ -640,3 +641,39 @@ def test_pickling_examples():
     dill.loads(dill.dumps(det))
     dill.loads(dill.dumps(motor))
     dill.loads(dill.dumps(flyer1))
+
+
+def test_sync_trigger_delay(motor_det):
+    motor, det = motor_det
+
+    def _time_test(f, t, *args, **kwargs):
+        start = ttime.time()
+        f(*args, **kwargs)
+        end = ttime.time()
+        assert (end - start) > t
+
+    motor._fake_sleep = .5
+    det.exposure_time = .5
+
+    _time_test(motor.set, .5, 1)
+    _time_test(motor.trigger, .5)
+
+
+def test_async_trigger_delay(motor_det, fresh_RE):
+    RE = fresh_RE
+
+    motor, det = motor_det
+    motor.loop = RE.loop
+    det.loop = RE.loop
+
+    def _time_test(f, t, *args, **kwargs):
+        start = ttime.time()
+        RE(f(*args, **kwargs))
+        end = ttime.time()
+        assert (end - start) > t
+
+    motor._fake_sleep = .5
+    det.exposure_time = .5
+
+    _time_test(bp.trigger, .5, det, wait=True)
+    _time_test(bp.abs_set, .5, motor, 1, wait=True)
