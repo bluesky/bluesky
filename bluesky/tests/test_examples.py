@@ -349,9 +349,9 @@ def test_pause_abort(fresh_RE):
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(1, sim_kill)
-    RE.loop.call_later(1.1, sim_kill)
-    RE.loop.call_later(2, done)
+    RE.loop.call_later(.1, sim_kill)
+    RE.loop.call_later(.2, sim_kill)
+    RE.loop.call_later(1, done)
 
     RE(scan)
     assert RE.state == 'paused'
@@ -360,8 +360,9 @@ def test_pause_abort(fresh_RE):
     assert RE.state == 'idle'
     stop = ttime.time()
 
-    assert mid - start > 1
-    assert stop - start < 2
+    RE.loop.run_until_complete(ev.wait())
+    assert mid - start > .1
+    assert stop - start < 1
 
 
 def test_abort(fresh_RE):
@@ -380,16 +381,16 @@ def test_abort(fresh_RE):
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(1, sim_kill)
-    RE.loop.call_later(1.1, sim_kill)
-    RE.loop.call_later(1.1, sim_kill)
-    RE.loop.call_later(2, done)
-
+    RE.loop.call_later(.1, sim_kill)
+    RE.loop.call_later(.2, sim_kill)
+    RE.loop.call_later(.2, sim_kill)
+    RE.loop.call_later(.3, done)
     RE(scan)
-    assert RE.state == 'idle'
     stop = ttime.time()
 
-    assert stop - start < 2
+    RE.loop.run_until_complete(ev.wait())
+    assert RE.state == 'idle'
+    assert stop - start < .3
 
 
 def test_rogue_sigint(fresh_RE):
