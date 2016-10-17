@@ -9,6 +9,7 @@ import uuid
 from tempfile import mkdtemp
 import os
 from bluesky.utils import new_uid, short_uid
+from filestore.handlers_base import HandlerBase
 
 
 class SimpleStatus:
@@ -461,7 +462,7 @@ class ReaderWithFileStore(Reader):
             self.save_path = mkdtemp()
         else:
             self.save_path = save_path
-        self.filestore_spec = 'RWFS_TIFF'  # spec name stored in resource doc
+        self.filestore_spec = 'RWFS_NPY'  # spec name stored in resource doc
 
         self._file_stem = None
         self._path_stem = None
@@ -615,6 +616,16 @@ class MockFlyer:
 
     def stop(self, *, success=False):
         pass
+
+
+class ReaderWithFSHandler(HandlerBase):
+    specs = {'RWFS_NPY'} | HandlerBase.specs
+
+    def __init__(self, filename):
+        self._name = filename
+
+    def __call__(self, index):
+        return np.load('{}_{}.npy'.format(self._name, index))
 
 
 motor = Mover('motor', OrderedDict([('motor', lambda x: x),
