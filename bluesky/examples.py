@@ -4,6 +4,19 @@ from collections import deque, OrderedDict
 from threading import RLock
 import numpy as np
 from bluesky.utils import Msg
+from uuid import uuid4
+import uuid
+from tempfile import mkdtemp
+import os
+
+def new_uid():
+    "uuid4 as a string"
+    return str(uuid.uuid4())
+
+
+def new_short_uid():
+    "uuid4, skipping the last stanza because of AD length restrictions."
+    return '-'.join(new_uid().split('-')[:-1])
 
 
 class SimpleStatus:
@@ -12,6 +25,7 @@ class SimpleStatus:
 
     It is "simple" because it does not support a timeout or a settling time.
     """
+
     def __init__(self, *, done=False, success=False):
         super().__init__()
         self._lock = RLock()
@@ -61,6 +75,7 @@ class SimpleStatus:
 
 class NullStatus:
     "a simple Status object that is always immediately done"
+
     def __init__(self):
         self._cb = None
         self.done = True
@@ -111,6 +126,7 @@ class Reader:
     >>> det = Readable('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
+
     def __init__(self, name, fields, *,
                  read_attrs=None, conf_attrs=None, monitor_intervals=None,
                  loop=None, exposure_time=0):
@@ -213,6 +229,7 @@ class Reader:
 
     def subscribe(self, function):
         "Simulate monitoring updates from a device."
+
         def sim_monitor():
             for interval in self._monitor_intervals:
                 ttime.sleep(interval)
@@ -268,6 +285,7 @@ class Mover(Reader):
     ...                            ('motor_setpoint', lambda x: x)]),
     ...               {'x': 0})
     """
+
     def __init__(self, name, fields, initial_set, *, read_attrs=None,
                  conf_attrs=None, fake_sleep=0, monitor_intervals=None,
                  loop=None):
@@ -343,6 +361,7 @@ class SynGauss(Reader):
     motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
+
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
                  noise=None, noise_multiplier=1, **kwargs):
         if noise not in ('poisson', 'uniform', None):
@@ -350,7 +369,7 @@ class SynGauss(Reader):
 
         def func():
             m = motor.read()[motor_field]['value']
-            v = Imax * np.exp(-(m - center)**2 / (2 * sigma**2))
+            v = Imax * np.exp(-(m - center) ** 2 / (2 * sigma ** 2))
             if noise == 'poisson':
                 v = int(np.random.poisson(np.round(v), 1))
             elif noise == 'uniform':
@@ -398,6 +417,7 @@ class Syn2DGauss(Reader):
     motor = Mover('motor', ['motor'])
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
+
     def __init__(self, name, motor0, motor_field0, motor1, motor_field1,
                  center, Imax, sigma=1, noise=None, noise_multiplier=1):
 
@@ -408,7 +428,7 @@ class Syn2DGauss(Reader):
             x = motor0.read()[motor_field0]['value']
             y = motor1.read()[motor_field1]['value']
             m = np.array([x, y])
-            v = Imax * np.exp(-np.sum((m - center)**2) / (2 * sigma**2))
+            v = Imax * np.exp(-np.sum((m - center) ** 2) / (2 * sigma ** 2))
             if noise == 'poisson':
                 v = int(np.random.poisson(np.round(v), 1))
             elif noise == 'uniform':
@@ -450,23 +470,37 @@ class ReaderWithFileStore(Reader):
     >>> det = Readable('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
-    def __init__(self, *args, fs, save_path, **kwargs):
+
+    def __init__(self, *args, fs, save_path=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fs = fs
         self._resource_id = None
-        self.save_path = save_path
+        if save_path is None:
+            self.save_path = mkdtemp()
+        else:
+            self.save_path = save_path
+        self.filestore_spec = 'RWFS_TIFF'  # spec name stored in resource doc
+
+        self.file_stem = new_short_uid()
+        self.path_stem = os.path.join(self.save_path, self.file_stem)
+        self.result = None
 
     def stage(self):
-        self._resource_id = self.fs.insert_resource('npy', )
+        self._resource_id = self.fs.insert_resource(self.filestore_spec,
+                                                    self.path_stem, {})
+
+    def trigger(self):
+        # save file stash file name
+        self.result = {}
+        for idx, name, val in enumerate(super().read().items()):
+            np.save('{}_{}.{}'.format(self.path_stem, idx, '.tif'), val)
+            datum_id = str(uuid4())
+            self.fs.insert_datum(self._resource_id, datum_id,
+                                 dict(index=idx))
+            self.result[name] = datum_id
 
     def read(self):
-        result = {}
-        for name, val in super().read().items():
-            np.save(self.save_path, val)
-            datum_id = str(uuid4())
-            self.fs.insert_datum(self._resource_id, datum_id)
-            result[name] = datum_id
-        return result
+        return self.result
 
     def unstage(self):
         self._resource_id = None
@@ -474,6 +508,7 @@ class ReaderWithFileStore(Reader):
 
 class TrivialFlyer:
     """Trivial flyer that complies to the API but returns empty data."""
+
     def kickoff(self):
         return NullStatus()
 
@@ -501,6 +536,7 @@ class MockFlyer:
     """
     Class for mocking a flyscan API implemented with stepper motors.
     """
+
     def __init__(self, name, detector, motor, start, stop, num, loop=None):
         self.name = name
         self.parent = None
@@ -690,7 +726,8 @@ def wait_one(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')
     yield Msg('set', motor, 5, group='A')  # Add to group 'A'.
-    yield Msg('wait', None, group='A')  # Wait for everything in group 'A' to finish.
+    yield Msg('wait', None,
+              group='A')  # Wait for everything in group 'A' to finish.
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('close_run')
@@ -806,7 +843,7 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
         yield Msg('read', temp_controller)
         yield Msg('save')
 
-    peak_centers = [-1+3*n for n in range(len((sample_names)))]
+    peak_centers = [-1 + 3 * n for n in range(len((sample_names)))]
     detector.noise = True
 
     for idx, temp in enumerate(np.arange(tstart, tstop, tstep)):
