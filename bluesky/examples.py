@@ -8,15 +8,7 @@ from uuid import uuid4
 import uuid
 from tempfile import mkdtemp
 import os
-
-def new_uid():
-    "uuid4 as a string"
-    return str(uuid.uuid4())
-
-
-def new_short_uid():
-    "uuid4, skipping the last stanza because of AD length restrictions."
-    return '-'.join(new_uid().split('-')[:-1])
+from bluesky.utils import new_uid, short_uid
 
 
 class SimpleStatus:
@@ -456,19 +448,9 @@ class ReaderWithFileStore(Reader):
     loop : asyncio.EventLoop, optional
         used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
         unspecified
-    fs :FileStore
+    fs : FileStore
         FileStore object that supports inserting resource and datum documents
 
-    Examples
-    --------
-    A detector that always returns 5.
-    >>> det = Readable('det', {'intensity': lambda: 5})
-
-    A detector that is coupled to a motor, such that measured insensity
-    varies with motor position.
-    >>> motor = Mover('motor')
-    >>> det = Readable('det',
-    ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
 
     def __init__(self, *args, fs, save_path=None, **kwargs):
@@ -481,29 +463,33 @@ class ReaderWithFileStore(Reader):
             self.save_path = save_path
         self.filestore_spec = 'RWFS_TIFF'  # spec name stored in resource doc
 
-        self.file_stem = new_short_uid()
-        self.path_stem = os.path.join(self.save_path, self.file_stem)
-        self.result = None
+        self._file_stem = None
+        self._path_stem = None
+        self._result = None
 
     def stage(self):
+        self._file_stem = short_uid()
+        self._path_stem = os.path.join(self.save_path, self._file_stem)
         self._resource_id = self.fs.insert_resource(self.filestore_spec,
-                                                    self.path_stem, {})
+                                                    self._path_stem, {})
 
     def trigger(self):
         # save file stash file name
-        self.result = {}
-        for idx, name, val in enumerate(super().read().items()):
-            np.save('{}_{}.{}'.format(self.path_stem, idx, '.tif'), val)
+        self._result = {}
+        for idx, (name, val) in enumerate(super().read().items()):
+            np.save('{}_{}.npy'.format(self._path_stem, idx), val)
             datum_id = str(uuid4())
             self.fs.insert_datum(self._resource_id, datum_id,
                                  dict(index=idx))
-            self.result[name] = datum_id
+            self._result[name] = datum_id
 
     def read(self):
-        return self.result
+        return self._result
 
     def unstage(self):
         self._resource_id = None
+        self._file_stem = None
+        self._path_stem = None
 
 
 class TrivialFlyer:
