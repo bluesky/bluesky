@@ -3,7 +3,8 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               wait_multiple, motor1, motor2, conditional_pause,
                               checkpoint_forever, simple_scan_saving,
                               stepscan, MockFlyer, fly_gen,
-                              conditional_break, SynGauss, flyer1
+                              conditional_break, SynGauss, flyer1,
+                              ReaderWithFileStore, ReaderWithFSHandler
                               )
 from bluesky.callbacks import LivePlot
 from bluesky import (Msg, IllegalMessageSequence,
@@ -13,6 +14,8 @@ import os
 import signal
 import asyncio
 import time as ttime
+import numpy as np
+from numpy.testing import assert_array_equal
 
 
 def test_msgs(fresh_RE):
@@ -678,3 +681,19 @@ def test_async_trigger_delay(motor_det, fresh_RE):
 
     _time_test(bp.trigger, .5, det, wait=True)
     _time_test(bp.abs_set, .5, motor, 1, wait=True)
+
+
+def test_fs_reader(fs_v1, fresh_RE):
+    fs = fs_v1
+    fs.register_handler(ReaderWithFSHandler)
+    RE = fresh_RE
+    det = ReaderWithFileStore({'img': lambda: np.array(np.ones(10, 10))},
+                              fs=fs)
+    det.stage()
+    det.trigger()
+    val = det.read()
+    det.unstage()
+    datum_id = val['img']['value']
+    arr = fs.retrieve(datum_id)
+    assert_array_equal(np.ones((10, 10)), arr)
+    RE(count[det])
