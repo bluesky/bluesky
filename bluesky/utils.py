@@ -852,6 +852,9 @@ def expiring_function(func, loop, *args, **kwargs):
     return dummy
 
 
-def short_uid(label, truncate=6):
+def short_uid(label=None, truncate=6):
     "Return a readable but unique id like 'label-fjfi5a'"
-    return '-'.join([label, new_uid()[:truncate]])
+    if label:
+        return '-'.join([label, new_uid()[:truncate]])
+    else:
+        return new_uid()[:truncate]
