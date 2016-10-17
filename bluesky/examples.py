@@ -97,6 +97,8 @@ class Reader:
     loop : asyncio.EventLoop, optional
         used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
         unspecified
+    exposure_time : float, optional
+       Simulated exposure time is seconds.  Defaults to 0
 
     Examples
     --------
@@ -111,7 +113,8 @@ class Reader:
     """
     def __init__(self, name, fields, *,
                  read_attrs=None, conf_attrs=None, monitor_intervals=None,
-                 loop=None):
+                 loop=None, exposure_time=0):
+        self.exposure_time = exposure_time
         self.name = name
         self.parent = None
         self._fields = fields
@@ -153,7 +156,8 @@ class Reader:
         return (self.name, self._fields, self.read_attrs, self.conf_attrs,
                 self._monitor_intervals)
 
-    def trigger(self, *, delay_time=0):
+    def trigger(self):
+        delay_time = self.exposure_time
         if delay_time:
             if self.loop.is_running():
                 st = SimpleStatus()
@@ -340,10 +344,9 @@ class SynGauss(Reader):
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
-                 noise=None, noise_multiplier=1, exposure_time=0, **kwargs):
+                 noise=None, noise_multiplier=1, **kwargs):
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
-        self.exposure_time = exposure_time
 
         def func():
             m = motor.read()[motor_field]['value']
@@ -355,9 +358,6 @@ class SynGauss(Reader):
             return v
 
         super().__init__(name, {name: func}, **kwargs)
-
-    def trigger(self):
-        return super().trigger(delay_time=self.exposure_time)
 
 
 class Syn2DGauss(Reader):
@@ -399,12 +399,10 @@ class Syn2DGauss(Reader):
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
     def __init__(self, name, motor0, motor_field0, motor1, motor_field1,
-                 center, Imax, sigma=1, noise=None, noise_multiplier=1,
-                 exposure_time=0):
+                 center, Imax, sigma=1, noise=None, noise_multiplier=1):
 
         if noise not in ('poisson', 'uniform', None):
             raise ValueError("noise must be one of 'poisson', 'uniform', None")
-        self.exposure_time = exposure_time
 
         def func():
             x = motor0.read()[motor_field0]['value']
@@ -418,9 +416,6 @@ class Syn2DGauss(Reader):
             return v
 
         super().__init__(name, {name: func})
-
-    def trigger(self):
-        return super().trigger(delay_time=self.exposure_time)
 
 
 class TrivialFlyer:
