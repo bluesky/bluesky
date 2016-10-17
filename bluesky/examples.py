@@ -9,7 +9,6 @@ import uuid
 from tempfile import mkdtemp
 import os
 from bluesky.utils import new_uid, short_uid
-from filestore.handlers_base import HandlerBase
 
 
 class SimpleStatus:
@@ -451,6 +450,8 @@ class ReaderWithFileStore(Reader):
         unspecified
     fs : FileStore
         FileStore object that supports inserting resource and datum documents
+    save_path : str, optional
+        Path to save files to, if None make a temp dir, defaults to None.
 
     """
 
@@ -466,7 +467,7 @@ class ReaderWithFileStore(Reader):
 
         self._file_stem = None
         self._path_stem = None
-        self._result = None
+        self._result = {}
 
     def stage(self):
         self._file_stem = short_uid()
@@ -476,10 +477,10 @@ class ReaderWithFileStore(Reader):
 
     def trigger(self):
         # save file stash file name
-        self._result = {}
+        self._result.clear()
         for idx, (name, val) in enumerate(super().read().items()):
             np.save('{}_{}.npy'.format(self._path_stem, idx), val)
-            datum_id = str(uuid4())
+            datum_id = new_uid()
             self.fs.insert_datum(self._resource_id, datum_id,
                                  dict(index=idx))
             self._result[name] = datum_id
@@ -491,6 +492,7 @@ class ReaderWithFileStore(Reader):
         self._resource_id = None
         self._file_stem = None
         self._path_stem = None
+        self._result.clear()
 
 
 class TrivialFlyer:
@@ -638,6 +640,15 @@ class GeneralReaderWithFileStore(Reader):
         unspecified
     fs : FileStore
         FileStore object that supports inserting resource and datum documents
+    save_path : str, optional
+        Path to save files to, if None make a temp dir, defaults to None.
+    save_func : function, optional
+        The function to save the data, function signature must be:
+        `func(file_path, array)`, defaults to np.save
+    save_spec : str, optional
+        The filestore spec for the save function, defaults to 'RWFS_NPY'
+    save_ext : str, optional
+        The extention to add to the file name, defaults to '.npy'
 
     """
 
@@ -657,7 +668,7 @@ class GeneralReaderWithFileStore(Reader):
 
         self._file_stem = None
         self._path_stem = None
-        self._result = None
+        self._result = {}
 
     def stage(self):
         self._file_stem = short_uid()
@@ -667,11 +678,11 @@ class GeneralReaderWithFileStore(Reader):
 
     def trigger(self):
         # save file stash file name
-        self._result = {}
+        self._result.clear()
         for idx, (name, val) in enumerate(super().read().items()):
             self.save_func('{}_{}.{}'.format(self._path_stem, idx,
                                              self.save_ext), val)
-            datum_id = str(uuid4())
+            datum_id = new_uid()
             self.fs.insert_datum(self._resource_id, datum_id,
                                  dict(index=idx))
             self._result[name] = datum_id
@@ -683,10 +694,11 @@ class GeneralReaderWithFileStore(Reader):
         self._resource_id = None
         self._file_stem = None
         self._path_stem = None
+        self._result.clear()
 
 
-class ReaderWithFSHandler(HandlerBase):
-    specs = {'RWFS_NPY'} | HandlerBase.specs
+class ReaderWithFSHandler:
+    specs = {'RWFS_NPY'}
 
     def __init__(self, filename):
         self._name = filename
