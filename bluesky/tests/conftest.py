@@ -2,8 +2,7 @@ import asyncio
 from bluesky.run_engine import RunEngine
 from bluesky.examples import Mover, SynGauss
 import pytest
-from filestore.utils import install_sentinels
-import filestore.fs
+
 
 @pytest.fixture(scope='function')
 def fresh_RE(request):
@@ -38,6 +37,8 @@ def db(request):
     """Return a data broker
     """
     from portable_mds.sqlite.mds import MDS
+    from filestore.utils import install_sentinels
+    import filestore.fs
     from databroker import Broker
     import tempfile
     import shutil
