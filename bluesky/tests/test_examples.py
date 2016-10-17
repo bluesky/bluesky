@@ -683,10 +683,9 @@ def test_async_trigger_delay(motor_det, fresh_RE):
     _time_test(bp.abs_set, .5, motor, 1, wait=True)
 
 
-def test_fs_reader(fs_v1, fresh_RE):
-    fs = fs_v1
+def test_fs_reader(db):
+    fs = db.fs
     fs.register_handler(ReaderWithFSHandler)
-    RE = fresh_RE
     det = ReaderWithFileStore({'img': lambda: np.array(np.ones(10, 10))},
                               fs=fs)
     det.stage()
@@ -696,4 +695,3 @@ def test_fs_reader(fs_v1, fresh_RE):
     datum_id = val['img']['value']
     arr = fs.retrieve(datum_id)
     assert_array_equal(np.ones((10, 10)), arr)
-    RE(count[det])

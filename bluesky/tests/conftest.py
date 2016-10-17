@@ -42,9 +42,9 @@ def db(request):
     from databroker import Broker
     import tempfile
     import shutil
-    import uuid.uuid4
+    from uuid import uuid4
     td = tempfile.mkdtemp()
-    db_name = "fs_testing_v1_disposable_{}".format(str(uuid.uuid4()))
+    db_name = "fs_testing_v1_disposable_{}".format(str(uuid4()))
     test_conf = dict(database=db_name, host='localhost',
                      port=27017)
     install_sentinels(test_conf, 1)
