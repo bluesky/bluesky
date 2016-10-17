@@ -19,16 +19,6 @@ def exception_raiser(name, doc):
     raise Exception("it's an exception that better not kill the scan!!")
 
 
-def test_main_thread_callback_exceptions():
-
-    RE(stepscan(det, motor), subs={'start': exception_raiser,
-                                   'stop': exception_raiser,
-                                   'event': exception_raiser,
-                                   'descriptor': exception_raiser,
-                                   'all': exception_raiser},
-       beamline_id='testing', owner='tester')
-
-
 def test_all():
     c = CallbackCounter()
     RE(stepscan(det, motor), subs={'all': c})
