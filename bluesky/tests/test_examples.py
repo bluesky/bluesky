@@ -691,12 +691,8 @@ def test_fs_reader(db):
                               fs=fs)
     det.stage()
     det.trigger()
-    val = det.read().copy()
+    reading = det.read().copy()
     det.unstage()
-    datum_id = val['img']
+    datum_id = reading['img']['value']
     arr = fs.retrieve(datum_id)
-    print(arr)
-    print(type(arr))
-    print(arr.squeeze())
-    print(arr['value'])
     assert_array_equal(np.ones((10, 10)), arr)
