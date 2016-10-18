@@ -478,12 +478,17 @@ class ReaderWithFileStore(Reader):
     def trigger(self):
         # save file stash file name
         self._result.clear()
-        for idx, (name, val) in enumerate(super().read().items()):
-            np.save('{}_{}.npy'.format(self._path_stem, idx), val)
+        for idx, (name, reading) in enumerate(super().read().items()):
+            # Save the actual reading['value'] to disk and create a record
+            # in FileStore.
+            np.save('{}_{}.npy'.format(self._path_stem, idx), reading['value'])
             datum_id = new_uid()
             self.fs.insert_datum(self._resource_id, datum_id,
                                  dict(index=idx))
-            self._result[name] = datum_id
+            # And now change the reading in place, replacing the value with
+            # a reference to FileStore.
+            reading['value'] = datum_id
+            self._result[name] = reading
 
     def read(self):
         return self._result
@@ -679,13 +684,18 @@ class GeneralReaderWithFileStore(Reader):
     def trigger(self):
         # save file stash file name
         self._result.clear()
-        for idx, (name, val) in enumerate(super().read().items()):
+        for idx, (name, reading) in enumerate(super().read().items()):
+            # Save the actual reading['value'] to disk and create a record
+            # in FileStore.
             self.save_func('{}_{}.{}'.format(self._path_stem, idx,
-                                             self.save_ext), val)
+                                             self.save_ext), reading['value'])
             datum_id = new_uid()
             self.fs.insert_datum(self._resource_id, datum_id,
                                  dict(index=idx))
-            self._result[name] = datum_id
+            # And now change the reading in place, replacing the value with
+            # a reference to FileStore.
+            reading['value'] = datum_id
+            self._result[name] = reading
 
     def read(self):
         return self._result
