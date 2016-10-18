@@ -4,6 +4,11 @@ from collections import deque, OrderedDict
 from threading import RLock
 import numpy as np
 from bluesky.utils import Msg
+from uuid import uuid4
+import uuid
+from tempfile import mkdtemp
+import os
+from bluesky.utils import new_uid, short_uid
 
 
 class SimpleStatus:
@@ -12,6 +17,7 @@ class SimpleStatus:
 
     It is "simple" because it does not support a timeout or a settling time.
     """
+
     def __init__(self, *, done=False, success=False):
         super().__init__()
         self._lock = RLock()
@@ -61,6 +67,7 @@ class SimpleStatus:
 
 class NullStatus:
     "a simple Status object that is always immediately done"
+
     def __init__(self):
         self._cb = None
         self.done = True
@@ -111,6 +118,7 @@ class Reader:
     >>> det = Readable('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
+
     def __init__(self, name, fields, *,
                  read_attrs=None, conf_attrs=None, monitor_intervals=None,
                  loop=None, exposure_time=0):
@@ -213,6 +221,7 @@ class Reader:
 
     def subscribe(self, function):
         "Simulate monitoring updates from a device."
+
         def sim_monitor():
             for interval in self._monitor_intervals:
                 ttime.sleep(interval)
@@ -268,6 +277,7 @@ class Mover(Reader):
     ...                            ('motor_setpoint', lambda x: x)]),
     ...               {'x': 0})
     """
+
     def __init__(self, name, fields, initial_set, *, read_attrs=None,
                  conf_attrs=None, fake_sleep=0, monitor_intervals=None,
                  loop=None):
@@ -343,6 +353,7 @@ class SynGauss(Reader):
     motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
+
     def __init__(self, name, motor, motor_field, center, Imax, sigma=1,
                  noise=None, noise_multiplier=1, **kwargs):
         if noise not in ('poisson', 'uniform', None):
@@ -350,7 +361,7 @@ class SynGauss(Reader):
 
         def func():
             m = motor.read()[motor_field]['value']
-            v = Imax * np.exp(-(m - center)**2 / (2 * sigma**2))
+            v = Imax * np.exp(-(m - center) ** 2 / (2 * sigma ** 2))
             if noise == 'poisson':
                 v = int(np.random.poisson(np.round(v), 1))
             elif noise == 'uniform':
@@ -398,6 +409,7 @@ class Syn2DGauss(Reader):
     motor = Mover('motor', ['motor'])
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     """
+
     def __init__(self, name, motor0, motor_field0, motor1, motor_field1,
                  center, Imax, sigma=1, noise=None, noise_multiplier=1):
 
@@ -408,7 +420,7 @@ class Syn2DGauss(Reader):
             x = motor0.read()[motor_field0]['value']
             y = motor1.read()[motor_field1]['value']
             m = np.array([x, y])
-            v = Imax * np.exp(-np.sum((m - center)**2) / (2 * sigma**2))
+            v = Imax * np.exp(-np.sum((m - center) ** 2) / (2 * sigma ** 2))
             if noise == 'poisson':
                 v = int(np.random.poisson(np.round(v), 1))
             elif noise == 'uniform':
@@ -418,8 +430,79 @@ class Syn2DGauss(Reader):
         super().__init__(name, {name: func})
 
 
+class ReaderWithFileStore(Reader):
+    """
+
+    Parameters
+    ----------
+    name : string
+    read_fields : dict
+        Mapping field names to functions that return simulated data. The
+        function will be passed no arguments.
+    conf_fields : dict, optional
+        Like `read_fields`, but providing slow-changing configuration data.
+        If `None`, the configuration will simply be an empty dict.
+    monitor_intervals : list, optional
+        iterable of numbers, specifying the spacing in time of updates from the
+        device (this applies only if the ``subscribe`` method is used)
+    loop : asyncio.EventLoop, optional
+        used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
+        unspecified
+    fs : FileStore
+        FileStore object that supports inserting resource and datum documents
+    save_path : str, optional
+        Path to save files to, if None make a temp dir, defaults to None.
+
+    """
+
+    def __init__(self, *args, fs, save_path=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fs = fs
+        self._resource_id = None
+        if save_path is None:
+            self.save_path = mkdtemp()
+        else:
+            self.save_path = save_path
+        self.filestore_spec = 'RWFS_NPY'  # spec name stored in resource doc
+
+        self._file_stem = None
+        self._path_stem = None
+        self._result = {}
+
+    def stage(self):
+        self._file_stem = short_uid()
+        self._path_stem = os.path.join(self.save_path, self._file_stem)
+        self._resource_id = self.fs.insert_resource(self.filestore_spec,
+                                                    self._path_stem, {})
+
+    def trigger(self):
+        # save file stash file name
+        self._result.clear()
+        for idx, (name, reading) in enumerate(super().read().items()):
+            # Save the actual reading['value'] to disk and create a record
+            # in FileStore.
+            np.save('{}_{}.npy'.format(self._path_stem, idx), reading['value'])
+            datum_id = new_uid()
+            self.fs.insert_datum(self._resource_id, datum_id,
+                                 dict(index=idx))
+            # And now change the reading in place, replacing the value with
+            # a reference to FileStore.
+            reading['value'] = datum_id
+            self._result[name] = reading
+
+    def read(self):
+        return self._result
+
+    def unstage(self):
+        self._resource_id = None
+        self._file_stem = None
+        self._path_stem = None
+        self._result.clear()
+
+
 class TrivialFlyer:
     """Trivial flyer that complies to the API but returns empty data."""
+
     def kickoff(self):
         return NullStatus()
 
@@ -447,6 +530,7 @@ class MockFlyer:
     """
     Class for mocking a flyscan API implemented with stepper motors.
     """
+
     def __init__(self, name, detector, motor, start, stop, num, loop=None):
         self.name = name
         self.parent = None
@@ -539,6 +623,98 @@ class MockFlyer:
 
     def stop(self, *, success=False):
         pass
+
+
+class GeneralReaderWithFileStore(Reader):
+    """
+
+    Parameters
+    ----------
+    name : string
+    read_fields : dict
+        Mapping field names to functions that return simulated data. The
+        function will be passed no arguments.
+    conf_fields : dict, optional
+        Like `read_fields`, but providing slow-changing configuration data.
+        If `None`, the configuration will simply be an empty dict.
+    monitor_intervals : list, optional
+        iterable of numbers, specifying the spacing in time of updates from the
+        device (this applies only if the ``subscribe`` method is used)
+    loop : asyncio.EventLoop, optional
+        used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
+        unspecified
+    fs : FileStore
+        FileStore object that supports inserting resource and datum documents
+    save_path : str, optional
+        Path to save files to, if None make a temp dir, defaults to None.
+    save_func : function, optional
+        The function to save the data, function signature must be:
+        `func(file_path, array)`, defaults to np.save
+    save_spec : str, optional
+        The filestore spec for the save function, defaults to 'RWFS_NPY'
+    save_ext : str, optional
+        The extention to add to the file name, defaults to '.npy'
+
+    """
+
+    def __init__(self, *args, fs, save_path=None, save_func=np.save,
+                 save_spec='RWFS_NPY', save_ext='.npy',
+                 **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fs = fs
+        self.save_func = save_func
+        self.save_ext = save_ext
+        self._resource_id = None
+        if save_path is None:
+            self.save_path = mkdtemp()
+        else:
+            self.save_path = save_path
+        self.filestore_spec = save_spec  # spec name stored in resource doc
+
+        self._file_stem = None
+        self._path_stem = None
+        self._result = {}
+
+    def stage(self):
+        self._file_stem = short_uid()
+        self._path_stem = os.path.join(self.save_path, self._file_stem)
+        self._resource_id = self.fs.insert_resource(self.filestore_spec,
+                                                    self._path_stem, {})
+
+    def trigger(self):
+        # save file stash file name
+        self._result.clear()
+        for idx, (name, reading) in enumerate(super().read().items()):
+            # Save the actual reading['value'] to disk and create a record
+            # in FileStore.
+            self.save_func('{}_{}.{}'.format(self._path_stem, idx,
+                                             self.save_ext), reading['value'])
+            datum_id = new_uid()
+            self.fs.insert_datum(self._resource_id, datum_id,
+                                 dict(index=idx))
+            # And now change the reading in place, replacing the value with
+            # a reference to FileStore.
+            reading['value'] = datum_id
+            self._result[name] = reading
+
+    def read(self):
+        return self._result
+
+    def unstage(self):
+        self._resource_id = None
+        self._file_stem = None
+        self._path_stem = None
+        self._result.clear()
+
+
+class ReaderWithFSHandler:
+    specs = {'RWFS_NPY'}
+
+    def __init__(self, filename):
+        self._name = filename
+
+    def __call__(self, index):
+        return np.load('{}_{}.npy'.format(self._name, index))
 
 
 motor = Mover('motor', OrderedDict([('motor', lambda x: x),
@@ -636,7 +812,8 @@ def wait_one(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')
     yield Msg('set', motor, 5, group='A')  # Add to group 'A'.
-    yield Msg('wait', None, group='A')  # Wait for everything in group 'A' to finish.
+    yield Msg('wait', None,
+              group='A')  # Wait for everything in group 'A' to finish.
     yield Msg('trigger', det)
     yield Msg('read', det)
     yield Msg('close_run')
@@ -752,7 +929,7 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
         yield Msg('read', temp_controller)
         yield Msg('save')
 
-    peak_centers = [-1+3*n for n in range(len((sample_names)))]
+    peak_centers = [-1 + 3 * n for n in range(len((sample_names)))]
     detector.noise = True
 
     for idx, temp in enumerate(np.arange(tstart, tstop, tstep)):
