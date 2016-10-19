@@ -2,7 +2,7 @@ from collections import deque, defaultdict
 import pytest
 from bluesky import Msg
 from bluesky.examples import (det, det1, det2, Mover, NullStatus, motor,
-                              SynGauss)
+                              SynGauss, Reader)
 from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
@@ -191,6 +191,34 @@ def test_monitor_during_wrapper():
     processed_plan = list(monitor_during_decorator([det])(plan)())
     strip_group(processed_plan)
     assert processed_plan == expected
+
+
+def test_descriptor_layout_from_monitor(fresh_RE):
+    collector = []
+    det = Reader('det', {k: lambda: i for i, k in enumerate('abcd')},
+                 read_attrs=list('ab'), conf_attrs=list('cd'))
+
+    def collect(name, doc):
+        if name == 'descriptor':
+            collector.append(doc)
+
+    fresh_RE([Msg('open_run'),
+              Msg('monitor', det, name=det.name),
+              Msg('unmonitor', det),
+              Msg('close_run')], collect)
+
+    descriptor, = collector
+    assert descriptor['object_keys'] == {det.name: list(det.describe().keys())}
+    assert descriptor['data_keys'] == det.describe()
+    conf = descriptor['configuration'][det.name]
+    assert conf['data_keys'] == det.describe_configuration()
+    vals = {key: val['value'] for key, val in det.read_configuration().items()}
+    timestamps = {key: val['timestamp']
+                  for key, val in det.read_configuration().items()}
+    assert conf['data'] == vals
+    assert conf['timestamps'].keys() == timestamps.keys()
+    for val in conf['timestamps'].values():
+        assert type(val) is float  # can't check actual value; time has passed
 
 
 def test_fly_during():
