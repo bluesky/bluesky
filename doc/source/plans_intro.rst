@@ -179,72 +179,11 @@ coverage of the sample.
     plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
     plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
 
-Combining Plans
----------------
-
-You might be tempted to write a script like this:
-
-.. code-block:: python
-
-    from bluesky.plans import scan
-    from bluesky.examples import motor, det
-
-    # Don't do this!
-    for j in [1, 2, 3]:
-        print(j, 'steps')
-        RE(scan([det], motor, 5, 10, j)))
-
-Or a function like this:
-
-.. code-block:: python
-
-    # Don't do this!
-    def my_function():
-        for j in [1, 2, 3]:
-            print(j, 'steps')
-            RE(scan([det], motor, 5, 10, j)))
-
-
-But, instead, you should do this:
-
-.. code-block:: python
-
-    from bluesky.plans import scan
-    from bluesky.examples import motor, det
-
-    def my_plan():
-        for j in [1, 2, 3]:
-            print(j, 'steps')
-            yield from scan([det], motor, 5, 10, j)
-
-    RE(my_plan())
-
-Why? Calling ``RE(...)`` inside a script or function means that you can not use
-any of the introspection tools on it. Also, in the event of an error or
-interruption, repeated calls to ``RE`` break the RunEngine's ability to
-smoothly recover, and they can easily result in unintended behavior. To avoid
-these problems, always express a multi-step procedure as a single plan (as
-above) and pass the whole thing to ``RE``.
-
-A convenient way to run multiple plans in sequence is :func:`pchain` (for "plan
-chain"):
-
-.. code-block:: python
-
-    from bluesky.examples import motor, det
-    from bluesky.plans import scan, sleep, pchain
-
-    RE(pchain(scan([det], motor, 1, 5, 3),
-              sleep(1),
-              scan([det], motor, 5, 10, 2)))
-
-Many more examples of built-in and custom plans follow in the section on
-:doc:`plans`.
-
-An Aside on ``yield`` and ``yield from``
+A Primer on ``yield`` and ``yield from``
 ----------------------------------------
 
-This is a very brief primer on the Python syntax ``yield`` and ``yield from``.
+This is a very brief primer on the Python syntax ``yield`` and ``yield from``,
+a feature of the core language that we will use extensively.
 
 A Python *function* returns once:
 
@@ -331,3 +270,65 @@ The ``yield from`` syntax is just more succinct.
 .. ipython:: python
 
     list(double_f())
+
+Combining Plans
+---------------
+
+You might be tempted to write a script like this:
+
+.. code-block:: python
+
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+
+    # Don't do this!
+    for j in [1, 2, 3]:
+        print(j, 'steps')
+        RE(scan([det], motor, 5, 10, j)))
+
+Or a function like this:
+
+.. code-block:: python
+
+    # Don't do this!
+    def my_function():
+        for j in [1, 2, 3]:
+            print(j, 'steps')
+            RE(scan([det], motor, 5, 10, j)))
+
+
+But, instead, you should do this:
+
+.. code-block:: python
+
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+
+    def my_plan():
+        for j in [1, 2, 3]:
+            print(j, 'steps')
+            yield from scan([det], motor, 5, 10, j)
+
+    RE(my_plan())
+
+Why? Calling ``RE(...)`` inside a script or function means that you can not use
+any of the introspection tools on it. Also, in the event of an error or
+interruption, repeated calls to ``RE`` break the RunEngine's ability to
+smoothly recover, and they can easily result in unintended behavior. To avoid
+these problems, always express a multi-step procedure as a single plan (as
+above) and pass the whole thing to ``RE``.
+
+A convenient way to run multiple plans in sequence is :func:`pchain` (for "plan
+chain"):
+
+.. code-block:: python
+
+    from bluesky.examples import motor, det
+    from bluesky.plans import scan, sleep, pchain
+
+    RE(pchain(scan([det], motor, 1, 5, 3),
+              sleep(1),
+              scan([det], motor, 5, 10, 2)))
+
+Many more examples of built-in and custom plans follow in the section on
+:doc:`plans`.
