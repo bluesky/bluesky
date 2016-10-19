@@ -493,13 +493,14 @@ Produce several runs, changing a parameter each time.
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import det1, det2, motor
+    from bluesky.examples import det, motor
 
-    def master_plan():
+    def scan_varying_density():
         "Run a scan several times, changing the step size each time."
         for num in range(5, 10):
-            # With each iteration, take more densely-spaced readings.
-            yield from scan([det1, det2], motor, 1, 5, num)
+            # Scan motor from -1 to 1, sampling more densely in each
+            # iteration.
+            yield from scan([det], motor, -1, 1, num)
 
 Setting Devices to a Set Point
 ++++++++++++++++++++++++++++++
@@ -511,12 +512,12 @@ sets *relative* to the current value.
 .. code-block:: python
 
     from bluesky.plans import count, abs_set
-    from bluesky.examples import det1, det2, motor
+    from bluesky.examples import det, motor
 
-    def master_plan():
+    def move_and_count():
         "Move a motor into place, then take a reading from detectors."
         yield from abs_set(motor, 3, wait=True)
-        yield from count([det1, det2])
+        yield from count([det])
 
 The argument ``wait=True`` blocks progress until the device reports that it is
 ready (e.g., done moving or done triggering). Alternatively, use a :func:`wait`
@@ -528,7 +529,7 @@ them both to finish.
     from bluesky.plans import abs_set, wait
     from bluesky.examples import motor1, motor2
 
-    def wait_multiple():
+    def set_two_motors():
         "Set, trigger, read"
         yield from abs_set(motor1, 5, group='A')  # Start moving motor1.
         yield from abs_set(motor2, 5, group='A')  # Start moving motor2.
@@ -543,7 +544,7 @@ We could have written this some logic with a loop:
 
 .. code-block:: python
 
-    def wait_multiple(motors):
+    def set_multiple_motors(motors):
         "Set all motors moving; then wait for all motors to finish."
         for motor in motors:
             yield from abs_set(motor, 5, group='A')
@@ -555,7 +556,7 @@ beginning of this section, if you are setting one motor at a time, use the
 
 .. code-block:: python
 
-    def wait_one():
+    def set_one_motor():
         yield from abs_set(motor1, wait=True)
         # `wait=True` implicitly adds a group and `wait` plan to match.
 
@@ -564,7 +565,7 @@ dealing with one group at a time, you do not actually need to label the group:
 
 .. code-block:: python
 
-    def wait_multiple(motors):
+    def set_multiple_motors(motors):
         "Set all motors moving; then wait for all motors to finish."
         for motor in motors:
             yield from abs_set(motor, 5)
@@ -578,7 +579,7 @@ at different points in the plan:
     def staggered_wait(det, fast_motors, slow_motor):
         # Start all the motors, fast and slow, moving at once.
         # Put all the fast_motors in one group...
-        for motor in slow_motors:
+        for motor in fast_motors:
             yield from abs_set(motor, 5, group='A')
         # ...but put the slow motor is separate group.
         yield from set(slow_motor, 5, group='B')
