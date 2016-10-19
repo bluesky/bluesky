@@ -113,6 +113,11 @@ def test_pre_suspend_plan(fresh_RE, pre_plan, post_plan, expected_list):
     RE(scan)
     assert susp.RE is None
 
+    RE.install_suspender(susp)
+    RE.clear_suspenders()
+    assert susp.RE is None
+    assert not RE.suspenders
+
 
 def test_pause_from_suspend(fresh_RE):
     'Tests what happens when a pause is requested from a suspended state'
