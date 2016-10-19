@@ -620,6 +620,7 @@ class RunEngine:
         See Also
         --------
         `RunEngine.remove_suspender`
+        `RunEngine.clear_suspenders`
         """
         self._suspenders.add(suspender)
         suspender.install(self)
@@ -635,10 +636,23 @@ class RunEngine:
         See Also
         --------
         `RunEngine.install_suspender`
+        `RunEngine.clear_suspenders`
         """
         if suspender in self._suspenders:
             suspender.remove()
         self._suspenders.discard(suspender)
+
+    def clear_suspenders(self):
+        """
+        Uninstall all suspenders.
+
+        See Also
+        --------
+        `RunEngine.install_suspender`
+        `RunEngine.remove_suspender`
+        """
+        for sus in self.suspenders:
+            self.remove_suspender(sus)
 
     def request_suspend(self, fut, *, pre_plan=None, post_plan=None,
                         justification=None):
