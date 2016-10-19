@@ -443,40 +443,60 @@ These are the aforementioned "ingredients" for remixing, the pieces from which
 the pre-assembled plans above were made. The next section provides many
 examples.
 
+Plans for interacting with hardware:
+
 .. autosummary::
    :nosignatures:
    :toctree:
 
     abs_set
+    rel_set
+    mv
+    trigger
+    read
+    stage
+    unstage
+    configure
+
+Plans for asynchronous acquisition:
+
+.. autosummary::
+   :nosignatures:
+   :toctree:
+
+    monitor
+    unmonitor
+    kickoff
+    complete
+    collect
+
+Plans that control the RunEngine:
+
+.. autosummary::
+   :nosignatures:
+   :toctree:
+
+    open_run
+    close_run
+    create
+    save
+    pause
+    deferred_pause
     checkpoint
     clear_checkpoint
-    close_run
-    collect
-    complete
-    configure
-    create
-    deferred_pause
-    kickoff
-    monitor
-    mv
-    null
-    one_1d_step
-    one_nd_step
-    open_run
-    pause
-    read
-    rel_set
-    save
     sleep
-    stage
     subscribe
-    trigger
-    trigger_and_read
-    unmonitor
-    unstage
     unsubscribe
     wait
     wait_for
+    null
+
+Combinations of the above that are often convenient:
+
+.. autosummary::
+    trigger_and_read
+    one_1d_step
+    one_nd_step
 
 We also provide :ref:`wrapper and decorator functions <preprocessors>` and
 :ref:`utility functions <plan_utils>`, documented below, that make building
