@@ -211,6 +211,9 @@ def test_redundant_monitors_are_illegal(fresh_RE):
         def read_configuration(self):
             return {}
 
+        def describe_configuration(self):
+            return {}
+
         def describe(self):
             return {}
 
