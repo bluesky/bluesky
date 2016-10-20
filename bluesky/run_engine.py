@@ -1260,7 +1260,7 @@ class RunEngine:
         data_keys = obj.describe()
         config = {obj.name: {'data': {}, 'timestamps': {}}}
         config[obj.name]['data_keys'] = obj.describe_configuration()
-        for key, val in list(obj.read_configuration().items()):
+        for key, val in obj.read_configuration().items():
             config[obj.name]['data'][key] = sanitize_np(val['value'])
             config[obj.name]['timestamps'][key] = val['timestamp']
         object_keys = {obj.name: list(data_keys)}
