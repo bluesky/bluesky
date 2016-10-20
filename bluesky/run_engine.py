@@ -1430,9 +1430,10 @@ class RunEngine:
                                          "run is open.")
         _, obj, args, kwargs = msg
         self._uncollected.add(obj)
-        group = msg.kwargs.pop('group', None)
+        kwargs = dict(msg.kwargs)
+        group = kwargs.pop('group', None)
 
-        ret = obj.kickoff(*msg.args, **msg.kwargs)
+        ret = obj.kickoff(*msg.args, **kwargs)
 
         p_event = asyncio.Event(loop=self.loop)
 
@@ -1465,8 +1466,9 @@ class RunEngine:
 
         where <GROUP> is a hashable identifier.
         """
-        group = msg.kwargs.pop('group', None)
-        ret = msg.obj.complete(*msg.args, **msg.kwargs)
+        kwargs = dict(msg.kwargs)
+        group = kwargs.pop('group', None)
+        ret = msg.obj.complete(*msg.args, **kwargs)
 
         p_event = asyncio.Event(loop=self.loop)
 
@@ -1531,7 +1533,7 @@ class RunEngine:
 
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'bulk_events' subscription once.
-        stream = msg.kwargs.pop('stream', False)
+        stream = msg.kwargs.get('stream', False)
         for ev in obj.collect():
             objs_read = frozenset(ev['data'])
             seq_num = next(self._sequence_counters[objs_read])
@@ -1610,8 +1612,9 @@ class RunEngine:
 
             Msg('trigger', obj)
         """
-        group = msg.kwargs.pop('group', None)
-        ret = msg.obj.trigger(*msg.args, **msg.kwargs)
+        kwargs = dict(msg.kwargs)
+        group = kwargs.pop('group', None)
+        ret = msg.obj.trigger(*msg.args, **kwargs)
 
         p_event = asyncio.Event(loop=self.loop)
 
