@@ -1,5 +1,4 @@
 from bluesky.examples import *
-from bluesky.broker_examples import *
 from bluesky.callbacks.broker import LiveImage
 from bluesky.tests.utils import setup_test_run_engine
 from matplotlib import pyplot as plt
