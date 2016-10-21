@@ -113,7 +113,7 @@ class LivePlot(CallbackBase):
     >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
     >>> RE(my_scan, my_plotter)
     """
-    def __init__(self, y, x=None, legend_keys=None, xlim=None, ylim=None,
+    def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, fig=None, **kwargs):
         super().__init__()
         if fig is not None:
