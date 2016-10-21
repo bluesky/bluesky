@@ -124,7 +124,7 @@ class LivePlot(CallbackBase):
                           "deprecated and will be removed in the future. "
                           "Instead, use the new keyword argument `ax` to "
                           "provide specific Axes to plot on.")
-            self.ax = fig.gca()
+            ax = fig.gca()
         if ax is None:
             fig, ax = plt.subplots()
         self.ax = ax
