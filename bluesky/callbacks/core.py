@@ -286,6 +286,7 @@ class LiveMesh(CallbackBase):
                  clim=None, cmap='viridis', ax=None):
         if ax is None:
             fig, ax = plt.subplots()
+        ax.cla()
         self.x = x
         self.y = y
         self.I = I
@@ -372,6 +373,7 @@ class LiveRaster(CallbackBase):
                  ax=None):
         if ax is None:
             fig, ax = plt.subplots()
+        ax.cla()
         self.I = I
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
