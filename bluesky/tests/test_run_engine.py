@@ -923,3 +923,18 @@ def test_empty_cache_pause(fresh_RE):
            Msg('close_run')]
     RE(pln)
     RE.resume()
+
+
+def test_sleep_with_progress_bar(fresh_RE):
+    fresh_RE(Msg('sleep', None, 0.1, progress=True))
+
+
+def test_wait_with_progress_bar(fresh_RE):
+    motor1 = Mover('motor1', ['motor1'])
+    motor2 = Mover('motor2', ['motor2'])
+    fresh_RE([Msg('set', motor1, 5, group='foo'),
+              Msg('wait', group='foo', progress=True)])
+
+    fresh_RE([Msg('set', motor1, 5, group='foo'),
+              Msg('set', motor2, 5, group='foo'),
+              Msg('wait', group='foo', progress=True)])
