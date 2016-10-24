@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+v0.7.0 (dev)
+------------
+
+API Changes
+^^^^^^^^^^^
+
+* The plan ``complete``, related to fly scans, previously had ``wait=True`` by
+  default, although its documentation indicated that ``False`` was the default.
+  The code has been changed to match the documentation. Any calls to
+  ``complete`` that are expected to be blocking should be updated with the
+  keyword ``wait=True``.
+
 v0.6.4
 ------
 
