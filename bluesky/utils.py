@@ -868,7 +868,7 @@ def async_status_progress_bar(*status_objects, loop):
     for st in status_objects:
         pbar = tqdm()
         if hasattr(st, 'device'):
-            initial = status.device.position
+            initial = st.device.position
             if hasattr(st, 'target'):
                 dx = abs(st.target - initial)
                 pbar.total = dx / 10**(int(floor(log10(dx))) + (1 - N))
