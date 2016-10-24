@@ -101,8 +101,3 @@ change the log level to skip DEBUG-level messages:
     For back-compatibility with old versions of bluesky, there is also an
     ``RE.verbose`` attribute. ``RE.verbose`` is a synonym for
     ``not RE.log.disabled``.
-
-Debugging Callbacks
--------------------
-
-    See :ref:`debugging_callbacks`.

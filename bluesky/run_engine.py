@@ -114,7 +114,7 @@ class RunEngine:
         md
             direct access to the dict-like persistent storage described above
         ignore_callback_exceptions
-            Boolean, True by default
+            Boolean, False by default
 
         msg_hook
             callable that receives all messages before they are processed
@@ -236,7 +236,7 @@ class RunEngine:
         # The Dispatcher's public methods are exposed through the
         # RunEngine for user convenience.
         self.dispatcher = Dispatcher()
-        self.ignore_callback_exceptions = True
+        self.ignore_callback_exceptions = False
         self.subscribe = self.dispatcher.subscribe
         self.unsubscribe = self.dispatcher.unsubscribe
 
