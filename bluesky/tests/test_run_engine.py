@@ -923,3 +923,20 @@ def test_empty_cache_pause(fresh_RE):
            Msg('close_run')]
     RE(pln)
     RE.resume()
+
+
+def test_state_hook(fresh_RE):
+    RE = fresh_RE
+    states = []
+
+    def log_state(new, old):
+        states.append((new, old))
+
+    RE.state_hook = log_state
+    RE([Msg('open_run'), Msg('pause'), Msg('close_run')])
+    RE.resume()
+    expected = [('running', 'idle'),
+                ('paused', 'running'),
+                ('running', 'paused'),
+                ('idle', 'running')]
+    assert states == expected
