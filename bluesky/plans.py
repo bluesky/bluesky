@@ -649,7 +649,7 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     return ret
 
 
-def complete(obj, *, group=None, wait=True, **kwargs):
+def complete(obj, *, group=None, wait=False, **kwargs):
     """
     Tell a flyer, 'stop collecting, whenver you are ready'.
 
