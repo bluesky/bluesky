@@ -1591,9 +1591,10 @@ class RunEngine:
 
         where arguments are passed through to `obj.set(*args, **kwargs)`.
         """
-        group = msg.kwargs.pop('group', None)
+        kwargs = dict(msg.kwargs)
+        group = kwargs.pop('group', None)
         self._movable_objs_touched.add(msg.obj)
-        ret = msg.obj.set(*msg.args, **msg.kwargs)
+        ret = msg.obj.set(*msg.args, **kwargs)
         p_event = asyncio.Event(loop=self.loop)
 
         def done_callback():
