@@ -85,7 +85,7 @@ we can pass different metadata for each run. Every
 .. code-block:: python
 
     def plan():
-        yield from count([det], md={purpose: 'calibration'})  # one
+        yield from count([det], md={'purpose': 'calibration'})  # one
         yield from scan([det], motor, 1, 5, 5, md={'purpose': 'good data'})  # two
         yield from count([det], md={'purpose': 'sanity check'})  # three
 

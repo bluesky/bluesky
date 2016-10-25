@@ -602,7 +602,7 @@ at different points in the plan:
         for motor in fast_motors:
             yield from abs_set(motor, 5, group='A')
         # ...but put the slow motor is separate group.
-        yield from set(slow_motor, 5, group='B')
+        yield from abs_set(slow_motor, 5, group='B')
 
         # Wait for all the fast motors.
         yield from wait('A')
