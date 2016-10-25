@@ -476,7 +476,7 @@ def test_cleanup_after_pause(fresh_RE, unpause_func, motor_det):
 
 def test_sigint_manyhits(fresh_RE, motor_det):
     motor, det = motor_det
-    motor._fake_sleep = .2
+    motor._fake_sleep = 0.3
     RE = fresh_RE
 
     pid = os.getpid()
@@ -495,8 +495,10 @@ def test_sigint_manyhits(fresh_RE, motor_det):
     RE(bp.finalize_wrapper(bp.abs_set(motor, 1, wait=True),
                            bp.abs_set(motor, 0, wait=True)))
     end_time = ttime.time()
-    assert end_time - start_time < 0.2
-    RE.abort()  # cleanup
+    assert end_time - start_time < 0.2  # not enough time for motor to cleanup
+    RE.abort()  # now cleanup
+    done_cleanup_time = ttime.time()
+    assert done_cleanup_time - end_time > 0.3
 
 
 def _make_plan_marker():
