@@ -386,14 +386,15 @@ def test_abort(fresh_RE):
     start = ttime.time()
     RE.loop.call_later(.1, sim_kill)
     RE.loop.call_later(.2, sim_kill)
-    RE.loop.call_later(.2, sim_kill)
     RE.loop.call_later(.3, done)
     RE(scan)
     stop = ttime.time()
 
     RE.loop.run_until_complete(ev.wait())
-    assert RE.state == 'idle'
+    assert RE.state == 'paused'
     assert stop - start < .3
+    RE.abort()
+    assert RE.state == 'idle'
 
 
 def test_rogue_sigint(fresh_RE):

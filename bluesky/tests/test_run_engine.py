@@ -495,9 +495,8 @@ def test_sigint_manyhits(fresh_RE, motor_det):
     RE(bp.finalize_wrapper(bp.abs_set(motor, 1, wait=True),
                            bp.abs_set(motor, 0, wait=True)))
     end_time = ttime.time()
-    # 0.2 wait time on clean up, in practice will 0.3 <
-    # due to wait time in _check_for_signals needing to fire
-    assert .2 < end_time - start_time < .4
+    assert end_time - start_time < 0.2
+    RE.abort()  # cleanup
 
 
 def _make_plan_marker():
