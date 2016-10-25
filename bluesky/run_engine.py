@@ -1285,7 +1285,7 @@ class RunEngine:
         self.log.debug("Emitted Event Descriptor with name %r containing "
                        "data keys %r (uid=%r)", name, data_keys.keys(),
                        descriptor_uid)
-        seq_num_counter = count()
+        seq_num_counter = count(1)
 
         def emit_event(*args, **kwargs):
             # Ignore the inputs. Use this call as a signal to call read on the
