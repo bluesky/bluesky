@@ -64,7 +64,9 @@ class RunEngineStateMachine(StateMachine):
 
 
 class LoggingPropertyMachine(PropertyMachine):
-    "expects object to have a `log` attribute"
+    """expects object to have a `log` attribute
+    and a `state_hook` attribute that is ``None`` or a callable with signature
+    ``f(value, old_value)``"""
     def __init__(self, machine_type):
         super().__init__(machine_type)
 
@@ -74,6 +76,8 @@ class LoggingPropertyMachine(PropertyMachine):
         value = self.__get__(obj)
         obj.log.info("Change state on %r from %r -> %r",
                      obj, old_value, value)
+        if obj.state_hook is not None:
+            obj.state_hook(value, old_value)
 
 
 class RunEngine:
@@ -122,6 +126,11 @@ class RunEngine:
             signature is ``f(msg)`` where ``msg`` is a ``bluesky.Msg``, a
             kind of namedtuple; default is None
 
+        state_hook
+            callable with signature ``f(new_state, old_state)`` that will be
+            called whenever the RunEngine's state attribute is updated; default
+            is None
+
         suspenders
             read-only collection of `bluesky.suspenders.SuspenderBase` objects
             which can suspend and resume execution; see related methods.
@@ -160,6 +169,7 @@ class RunEngine:
         self.md_validator = md_validator
 
         self.msg_hook = None
+        self.state_hook = None
         self.record_interruptions = False
 
         # The RunEngine keeps track of a *lot* of state.
