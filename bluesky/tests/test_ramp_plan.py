@@ -22,15 +22,15 @@ def test_ramp(RE, db):
 
     def kickoff():
         yield Msg('null')
-        for j, v in enumerate(np.linspace(-5, 5, 25)):
-            RE.loop.call_later(.05 * j, lambda v=v: tt.set(v))
-        RE.loop.call_later(.05 * 30, st._finished)
+        for j, v in enumerate(np.linspace(-5, 5, 10)):
+            RE.loop.call_later(.1 * j, lambda v=v: tt.set(v))
+        RE.loop.call_later(1.2, st._finished)
         return st
 
     def inner_plan():
         yield from trigger_and_read([dd])
 
-    g = ramp_plan(kickoff(), tt, inner_plan, period=0.04)
+    g = ramp_plan(kickoff(), tt, inner_plan, period=0.08)
     RE.subscribe('all', db.mds.insert)
     RE.msg_hook = MsgCollector()
     rs_uid, = RE(g)
@@ -42,10 +42,10 @@ def test_ramp(RE, db):
         set(['primary', 'mot-monitor'])
 
     primary_events = list(db.get_events(hdr, stream_name='primary'))
-    assert len(primary_events) > 27
+    assert len(primary_events) > 11
 
     monitor_events = list(db.get_events(hdr, stream_name='mot-monitor'))
-    assert len(monitor_events) == 25
+    assert len(monitor_events) == 10
 
 
 @requires_ophyd
@@ -60,7 +60,7 @@ def test_timeout(RE):
 
     def kickoff():
         yield Msg('null')
-        for j in range(20):
+        for j in range(5):
             RE.loop.call_later(.05 * j, lambda j=j: mot.set(j))
 
         return StatusBase()
@@ -68,7 +68,7 @@ def test_timeout(RE):
     def inner_plan():
         yield from trigger_and_read([det])
 
-    g = ramp_plan(kickoff(), mot, inner_plan, period=.1, timeout=1)
+    g = ramp_plan(kickoff(), mot, inner_plan, period=.01, timeout=.1)
 
     start = time.time()
     with pytest.raises(RampFail):
@@ -76,4 +76,4 @@ def test_timeout(RE):
     stop = time.time()
     elapsed = stop - start
 
-    assert 1 < elapsed < 1.2
+    assert .1 < elapsed < .2
