@@ -34,6 +34,20 @@ To restore default behavior, set the hook back to ``None``:
 
     RE.msg_hook = None
 
+State Hook
+----------
+
+The RunEngine can be in one of three states:
+
+* 'idle' (ready to accept a new plan)
+* 'running' (running the event loop and processing a plan)
+* 'paused' (not running the event loop, but holding onto state in preparation
+  for possibly resuming)
+
+The state is exposed through the RunEngine's ``state`` attribute. To monitor
+changes in state, use the ``state_hook`` attribute. Like ``msg_hook`` above, it
+can be set to ``None`` (default) or a function. In this case, the function
+should accept two arguments: the new state and the previous state.
 
 Logging
 -------
