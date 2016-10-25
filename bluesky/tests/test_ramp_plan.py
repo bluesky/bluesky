@@ -30,7 +30,7 @@ def test_ramp(RE, db):
     def inner_plan():
         yield from trigger_and_read([dd])
 
-    g = ramp_plan(kickoff(), tt, inner_plan, period=0.1)
+    g = ramp_plan(kickoff(), tt, inner_plan, period=0.08)
     RE.subscribe('all', db.mds.insert)
     RE.msg_hook = MsgCollector()
     rs_uid, = RE(g)
