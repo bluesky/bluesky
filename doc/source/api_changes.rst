@@ -7,6 +7,9 @@ v0.7.0 (dev)
 API Changes
 ^^^^^^^^^^^
 
+* The plans ``sleep`` and ``input`` have been renamed ``nap`` and
+  ``async_input``, respectively, to avoid ambiguity with the Python built-ins.
+  The old names are deprecated and will be removed in a future release.
 * The plan ``complete``, related to fly scans, previously had ``wait=True`` by
   default, although its documentation indicated that ``False`` was the default.
   The code has been changed to match the documentation. Any calls to
