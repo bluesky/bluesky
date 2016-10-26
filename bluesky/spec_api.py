@@ -67,13 +67,13 @@ def setup_plot(*, motors, gs):
     y_key = gs.PLOT_Y
     if motors:
         x_key = first_key_heuristic(list(motors)[0])
-        fig_name = _figure_name('BlueSky {} v {}'.format(y_key, x_key))
-        fig = plt.figure(fig_name)
-        return LivePlot(y_key, x_key, fig=fig)
+        fig_name = _figure_name('BlueSky: {} v {}'.format(y_key, x_key))
+        ax = plt.figure(fig_name).gca()
+        return LivePlot(y_key, x_key, ax=ax)
     else:
         fig_name = _figure_name('BlueSky: {} v sequence number'.format(y_key))
-        fig = plt.figure(fig_name)
-        return LivePlot(y_key, fig=fig)
+        ax = plt.figure(fig_name).gca()
+        return LivePlot(y_key, ax=ax)
 
 
 def setup_ct_plot(*, num, motors, gs):

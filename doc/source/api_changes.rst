@@ -12,6 +12,12 @@ API Changes
   The code has been changed to match the documentation. Any calls to
   ``complete`` that are expected to be blocking should be updated with the
   keyword ``wait=True``.
+* The optional, undocumented ``fig`` argument to ``LivePlot`` has been
+  deprecated and will be removed in a future release.  An ``ax`` argument has
+  been added. Additionally, the axes used by ``LiveRaster`` and ``LiveMesh`` is
+  configurable through a new, optional ``ax`` argument.
+* The "shortcut" where mashing Ctrl+C three times quickly ran ``RE.abort()``
+  has been removed.
 
 v0.6.4
 ------
