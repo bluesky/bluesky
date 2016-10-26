@@ -962,7 +962,9 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
         a generator, list, or similar containing `Msg` objects or a callable
         that reurns one; attempted to be run no matter what happens in the
         first plan
-
+    pause_for_debug : bool, optional
+        If the plan should pause before running the clean final_plan in
+        the case of an Exception.  This is intended as a debugging tool only.
     Yields
     ------
     msg : Msg

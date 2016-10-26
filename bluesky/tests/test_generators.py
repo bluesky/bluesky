@@ -168,6 +168,31 @@ def test_finialize_fail():
                     kwargs_sq=[{}]*total)
 
 
+def test_finialize_pause():
+    fail_cmd = 'fail_next'
+
+    def erroring_plan():
+        yield Msg(fail_cmd, None)
+        raise RuntimeError('saw this coming')
+
+    num = 5
+    cmd = 'echo'
+    plan = finalize_wrapper(erroring_plan(),
+                            echo_plan(command=cmd, num=num),
+                            pause_for_debug=True)
+    msgs = list()
+    try:
+        EchoRE(plan, msg_list=msgs)
+    except RuntimeError:
+        pass
+
+    total = num + 2
+    _verify_msg_seq(msgs, m_len=total,
+                    cmd_sq=[fail_cmd, 'pause'] + [cmd]*num,
+                    args_sq=[()]*total,
+                    kwargs_sq=[{}, {'defer': False}] + [{}]*num)
+
+
 def test_finialize_success():
     suc_cmd = 'it_works'
 
@@ -175,6 +200,7 @@ def test_finialize_success():
     cmd = 'echo'
     plan = finalize_wrapper(single_message_gen(Msg(suc_cmd, None)),
                             echo_plan(command=cmd, num=num))
+
     msgs = list()
     try:
         EchoRE(plan, msg_list=msgs)
