@@ -3,7 +3,7 @@ import pytest
 from bluesky import Msg
 from bluesky.examples import (det, det1, det2, Mover, NullStatus, motor,
                               SynGauss, Reader)
-from bluesky.plans import (create, save, read, monitor, unmonitor, null,
+from bluesky.plans import (create, save, read, monitor, unmonitor, null, nap,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
                            collect, configure, stage, unstage, subscribe,
