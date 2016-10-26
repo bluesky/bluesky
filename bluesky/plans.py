@@ -1,3 +1,4 @@
+import warnings
 import uuid
 import sys
 from functools import wraps
@@ -493,12 +494,12 @@ def trigger(obj, *, group=None, wait=False):
     return ret
 
 
-def sleep(time):
+def nap(time):
     """
-    Tell the RunEngine to sleep, while asynchronously doing other processing.
+    Tell the RunEngine to delay for a timed interval.
 
     This is not the same as ``import time; time.sleep()`` because it allows
-    other actions, like interruptions, to be processed during the sleep.
+    other actions, like interruptions, to be processed during the interval.
 
     Parameters
     ----------
@@ -508,9 +509,19 @@ def sleep(time):
     Yields
     ------
     msg : Msg
-        Msg('sleep', None, time)
+        Msg('nap', None, time)
     """
-    return (yield Msg('sleep', None, time))
+    return (yield Msg('nap', None, time))
+
+
+def sleep(time):
+    """
+    DEPRECATED: Use :func:`nap` instead.
+    """
+    warnings.warn("The plan `sleep` has been renamed `nap` to avoid "
+                  "ambiguity with `time.sleep`. The old name is deprecated "
+                  "and will be removed in future versions of bluesky.")
+    return (yield from nap(time))
 
 
 def wait(group=None):
@@ -599,7 +610,7 @@ def deferred_pause():
     return (yield Msg('pause', None, defer=True))
 
 
-def input(prompt=''):
+def async_input(prompt=''):
     """
     Prompt the user for text input.
 
@@ -611,9 +622,20 @@ def input(prompt=''):
     Yields
     ------
     msg : Msg
-        Msg('input', prompt=prompt)
+        Msg('async_input', prompt=prompt)
     """
-    return (yield Msg('input', prompt=prompt))
+    return (yield Msg('async_input', prompt=prompt))
+
+
+def input(prompt=''):
+    """
+    DEPRECATED: Use async_input instead.
+    """
+    warnings.warn("The plan `input` has been renamed `async_input` to avoid "
+                  "ambiguity with Python's built-in function of the same "
+                  "name. The old name is deprecated and will be removed in "
+                  "future versions of bluesky.")
+    return (yield from async_input(prompt))
 
 
 def kickoff(obj, *, group=None, wait=False, **kwargs):
@@ -1923,7 +1945,7 @@ def count(detectors, num=1, delay=None, *, md=None):
                     raise ValueError("num=%r but delays only provides %r "
                                      "entries" % (num, i))
             if d is not None:
-                yield Msg('sleep', None, d)
+                yield Msg('nap', None, d)
 
     @stage_decorator(detectors)
     @run_decorator(md=md)
@@ -1936,7 +1958,7 @@ def count(detectors, num=1, delay=None, *, md=None):
             except StopIteration:
                 break
             if d is not None:
-                yield Msg('sleep', None, d)
+                yield Msg('nap', None, d)
 
     if num is None:
         return (yield from infinite_plan())
@@ -2729,7 +2751,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
             yield Msg('save')
             prompt = prompt_str.format(motor.name, float(pos),
                                        float(val), step)
-            new_step = yield Msg('input', prompt=prompt)
+            new_step = yield Msg('async_input', prompt=prompt)
             if new_step:
                 try:
                     step = float(new_step)
