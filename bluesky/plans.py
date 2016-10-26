@@ -470,6 +470,21 @@ def mv(*args):
     return tuple(status_objects)
 
 
+def stop(obj):
+    """
+    Stop a device.
+
+    Parameters
+    ----------
+    obj : Device
+
+    Yields
+    ------
+    msg : Msg
+    """
+    return (yield Msg('stop', obj))
+
+
 def trigger(obj, *, group=None, wait=False):
     """
     Trigger and acquisition. Optionally, wait for it to complete.

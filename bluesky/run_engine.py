@@ -220,6 +220,7 @@ class RunEngine:
             'monitor': self._monitor,
             'unmonitor': self._unmonitor,
             'null': self._null,
+            'stop': self._stop,
             'set': self._set,
             'trigger': self._trigger,
             'sleep': self._sleep,
@@ -1821,6 +1822,17 @@ class RunEngine:
         self._staged.discard(obj)
         yield from self._reset_checkpoint_state_coro()
         return result
+
+    @asyncio.coroutine
+    def _stop(self, msg):
+        """
+        Stop a device.
+
+        Expected message object is:
+
+            Msg('stop', obj)
+        """
+        return msg.obj.stop()  # nominally, this returns None
 
     @asyncio.coroutine
     def _subscribe(self, msg):

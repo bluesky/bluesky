@@ -457,6 +457,7 @@ Plans for interacting with hardware:
     stage
     unstage
     configure
+    stop
 
 Plans for asynchronous acquisition:
 
