@@ -962,7 +962,7 @@ def wait_for(futures, **kwargs):
     return (yield Msg('wait_for', None, futures, **kwargs))
 
 
-def finalize_wrapper(plan, final_plan):
+def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
     '''try...finally helper
 
     Run the first plan and then the second.  If any of the messages
@@ -977,7 +977,9 @@ def finalize_wrapper(plan, final_plan):
         a generator, list, or similar containing `Msg` objects or a callable
         that reurns one; attempted to be run no matter what happens in the
         first plan
-
+    pause_for_debug : bool, optional
+        If the plan should pause before running the clean final_plan in
+        the case of an Exception.  This is intended as a debugging tool only.
     Yields
     ------
     msg : Msg
@@ -995,6 +997,10 @@ def finalize_wrapper(plan, final_plan):
         ret = yield from plan
     except GeneratorExit:
         cleanup = False
+        raise
+    except:
+        if pause_for_debug:
+            yield from pause()
         raise
     finally:
         # if the exception raised in `GeneratorExit` that means
