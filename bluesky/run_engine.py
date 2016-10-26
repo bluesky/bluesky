@@ -223,7 +223,8 @@ class RunEngine:
             'stop': self._stop,
             'set': self._set,
             'trigger': self._trigger,
-            'sleep': self._sleep,
+            'nap': self._sleep,
+            'sleep': self._sleep,  # for back-compat
             'wait': self._wait,
             'checkpoint': self._checkpoint,
             'clear_checkpoint': self._clear_checkpoint,
@@ -240,7 +241,8 @@ class RunEngine:
             'open_run': self._open_run,
             'close_run': self._close_run,
             'wait_for': self._wait_for,
-            'input': self._input,
+            'async_input': self._input,
+            'input': self._input,  # for back-compat
         }
 
         # public dispatcher for callbacks

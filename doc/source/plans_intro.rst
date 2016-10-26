@@ -324,10 +324,10 @@ chain"):
 .. code-block:: python
 
     from bluesky.examples import motor, det
-    from bluesky.plans import scan, sleep, pchain
+    from bluesky.plans import scan, nap, pchain
 
     RE(pchain(scan([det], motor, 1, 5, 3),
-              sleep(1),
+              nap(1),  # delay for 1 second
               scan([det], motor, 5, 10, 2)))
 
 Many more examples of built-in and custom plans follow in the section on

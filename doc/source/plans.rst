@@ -485,11 +485,12 @@ Plans that control the RunEngine:
     deferred_pause
     checkpoint
     clear_checkpoint
-    sleep
+    nap
     subscribe
     unsubscribe
     wait
     wait_for
+    async_input
     null
 
 Combinations of the above that are often convenient:
@@ -617,26 +618,29 @@ Before writing a custom plan to coordinate the motion of multiple devices,
 consider whether your use case could be addressed with one of the built-in
 :ref:`multi-dimensional_scans`.
 
-Sleeping
-++++++++
+Timed Delay ("nap")
++++++++++++++++++++
 
-A "sleep" is a timed delay.
+A "nap" is a timed delay.
 
 .. code-block:: python
 
-    from bluesky.plans import sleep, abs_set
+    from bluesky.plans import nap, abs_set
     from bluesky.examples import motor
 
     def sleepy():
-        "Set motor; sleep for a fixed time; set it to a new position."
+        "Set motor; 'nap' for a fixed time; set it to a new position."
         yield from abs_set(motor, 5)
-        yield from sleep(2)  # units: seconds
+        yield from nap(2)  # units: seconds
         yield from abs_set(motor, 10)
 
-The :func:`sleep` plan is not the same as Python's built-in sleep function,
-``time.sleep(...)``. Never use ``time.sleep(...)`` in a plan; use ``yield from
-sleep(...)`` instead. It allows other tasks --- such as watching for Ctrl+C,
-updating plots --- to be executed while the clock runs.
+
+The :func:`nap` plan is not the same as Python's built-in sleep function,
+``time.sleep(...)``, and it is consciously named differently to avoid
+ambiguity.  Never use ``time.sleep(...)`` in a plan; use
+``yield from nap(...)`` instead. It allows other tasks --- such as watching
+for Ctrl+C, processing errors from the hardware, updating plots --- to be
+executed while the clock runs.
 
 .. _planned_pauses:
 

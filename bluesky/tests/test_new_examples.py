@@ -3,7 +3,7 @@ import pytest
 from bluesky import Msg
 from bluesky.examples import (det, det1, det2, Mover, NullStatus, motor,
                               SynGauss, Reader)
-from bluesky.plans import (create, save, read, monitor, unmonitor, null,
+from bluesky.plans import (create, save, read, monitor, unmonitor, null, nap,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
                            collect, configure, stage, unstage, subscribe,
@@ -73,7 +73,8 @@ def cb(name, doc):
        Msg('wait', None, group='A')]),
      (trigger, (det,), {}, [Msg('trigger', det, group=None)]),
      (trigger, (det,), {'group': 'A'}, [Msg('trigger', det, group='A')]),
-     (sleep, (2,), {}, [Msg('sleep', None, 2)]),
+     (sleep, (2,), {}, [Msg('nap', None, 2)]),
+     (nap, (2,), {}, [Msg('nap', None, 2)]),
      (wait, (), {}, [Msg('wait', None, group=None)]),
      (wait, ('A',), {}, [Msg('wait', None, group='A')]),
      (checkpoint, (), {}, [Msg('checkpoint')]),
