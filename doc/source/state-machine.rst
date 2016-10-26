@@ -114,16 +114,6 @@ From a paused state:
     Aborting...
     Out[3]: ['8ef9388c-75d3-498c-a800-3b0bd24b88ed']
 
-.. note::
-
-    It is common to go through the steps
-
-    * Ctrl+C
-    * Ctrl+C
-    * RE.abort()
-
-    Ctrl+C *three times fast* is a convenient shortcut for this.
-
 Stop
 ^^^^
 
@@ -156,7 +146,6 @@ Command                 Outcome
 ======================= ===========
 Ctrl+C                  Pause soon.
 Ctrl+C twice            Pause now.
-Ctrl+C three times fast (Shortcut) Pause now and abort.
 ======================= ===========
     
 From a paused state

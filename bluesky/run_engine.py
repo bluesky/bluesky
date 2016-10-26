@@ -1022,26 +1022,10 @@ class RunEngine:
                               "next 10 seconds.")
                 elif count > 1:
                     # - Ctrl-C twice within 10 seconds -> hard pause
-                    # - Ctrl-C twice with 10 seconds and then again within
-                    #       0.5 seconds -> abort
-                    #
-                    # We know we will either pause or abort, so we can
-                    # hold up the scan now. Wait until 0.5 seconds pass or
-                    # we catch a second SIGINT, whichever happens first.
-                    self.log.debug("RunEngine detected a second SIGINT -- "
-                                   "waiting 0.5 seconds for a third.")
-                    for i in range(10):
-                        if self._sigint_handler.count > 2:
-                            self.log.debug("RunEngine detected a third "
-                                           "SIGINT -- aborting.")
-                            self.loop.call_soon(self.abort, "SIGINT (Ctrl+C)")
-                            break
-                        ttime.sleep(0.05)
-                    else:
-                        self.log.debug("RunEngine detected two SIGINTs. "
-                                       "A hard pause will be requested.")
-                        self.loop.call_soon(self.request_pause, False)
-                        print(PAUSE_MSG)
+                    self.log.debug("RunEngine detected two SIGINTs. "
+                                    "A hard pause will be requested.")
+                    self.loop.call_soon(self.request_pause, False)
+                    print(PAUSE_MSG)
             else:
                 # No new SIGINTs to process.
                 if self._num_sigints_processed > 0:
@@ -2006,13 +1990,10 @@ PAUSE_MSG = """
 Your RunEngine is entering a paused state. These are your options for changing
 the state of the RunEngine:
 
-resume()  --> will resume the scan
- abort()  --> will kill the scan with an 'aborted' state to indicate
-              the scan was interrupted
-  stop()  --> will kill the scan with a 'finished' state to indicate
-              the scan stopped normally
-
-Pro Tip: Next time, if you want to abort, tap Ctrl+C three times quickly.
+RE.resume()    Resume the plan.
+RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
+RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 """
 
 
