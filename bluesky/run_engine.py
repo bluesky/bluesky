@@ -8,6 +8,7 @@ from collections import deque, defaultdict, ChainMap
 import signal
 from enum import Enum
 import functools
+import inspect
 
 
 import jsonschema
@@ -168,6 +169,7 @@ class RunEngine:
             md_validator = _default_md_validator
         self.md_validator = md_validator
 
+        self.max_depth = None
         self.msg_hook = None
         self.state_hook = None
         self.record_interruptions = False
@@ -501,7 +503,14 @@ class RunEngine:
         ...
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
-        # First thing's first: if we are in the wrong state, raise.
+        # Check that the RE is not being called from inside a function.
+        if self.max_depth is not None:
+            frame = inspect.currentframe()
+            depth = len(inspect.getouterframes(frame))
+            if depth > self.max_depth:
+                raise RuntimeError(MAX_DEPTH_EXCEEDED_ERROR_TEXT)
+
+        # If we are in the wrong state, raise.
         if not self.state.is_idle:
             raise RuntimeError("The RunEngine is in a %s state" % self.state)
 
@@ -2006,6 +2015,15 @@ RE.resume()    Resume the plan.
 RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
 RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
 RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
+"""
+
+
+MAX_DEPTH_EXCEEDED_ERROR_TEXT = """The RunEngine should not be called from
+inside another function. Doing so breaks introspection tools and can result in
+unexpected behavior in the event of an interruption. See documentation for more
+information and what to do instead:
+
+http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 """
 
 
