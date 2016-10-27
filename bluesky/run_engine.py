@@ -124,6 +124,8 @@ class RunEngine:
             Maximum stack depth; set this to prevent users from calling the
             RunEngine inside a function (which can result in unexpected
             behavior and breaks introspection tools). Default is None.
+            For built-in Python interpreter, set to 2. For IPython, set to 11
+            (tested on IPython 5.1.0; other versions may vary).
 
         md
             Direct access to the dict-like persistent storage described above
@@ -521,7 +523,8 @@ class RunEngine:
             frame = inspect.currentframe()
             depth = len(inspect.getouterframes(frame))
             if depth > self.max_depth:
-                raise RuntimeError(MAX_DEPTH_EXCEEDED_ERROR_TEXT)
+                text = MAX_DEPTH_EXCEEDED_ERR_MSG.format(self.max_depth, depth)
+                raise RuntimeError(text)
 
         # If we are in the wrong state, raise.
         if not self.state.is_idle:
@@ -2031,10 +2034,13 @@ RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 """
 
 
-MAX_DEPTH_EXCEEDED_ERROR_TEXT = """The RunEngine should not be called from
-inside another function. Doing so breaks introspection tools and can result in
-unexpected behavior in the event of an interruption. See documentation for more
-information and what to do instead:
+MAX_DEPTH_EXCEEDED_ERR_MSG = """
+RunEngine.max_depth is set to {}; depth of {} was detected.
+
+The RunEngine should not be called from inside another function. Doing so
+breaks introspection tools and can result in unexpected behavior in the event
+of an interruption. See documentation for more information and what to do
+instead:
 
 http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 """
