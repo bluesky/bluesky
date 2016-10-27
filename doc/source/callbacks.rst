@@ -392,14 +392,18 @@ data from the scan.
 .. code-block:: python
 
     # a template that includes the scan ID and sequence number in each filename
-    template = "output_dir/{start.scan_id}_{event.seq_num}.tiff"
+    template = "output_dir/{start[scan_id]}_{event[seq_num]}.tiff"
 
     # a template that sorts files into directories based user and scan ID
-    template = "output_dir/{start.user}/{start.scan_id}/{event.seq_num}.tiff"
+    template = "output_dir/{start[user]}/{start[scan_id]}/{event[seq_num]}.tiff"
 
     # a more complex template includes actual measurements in the filenames
-    template = ("output_dir/{start.scan_id}_{start.sample_name}_"
-                "{event.data.temperature}_{event.seq_num}.tiff")
+    template = ("output_dir/{start[scan_id]}_{start[sample_name]}_"
+                "{event[data][temperature]}_{event[seq_num]}.tiff")
+
+Above, we using a Python language feature called format strings. Notice that
+inside the curly brackets use don't use quotes are the key names; it's
+``{event[seq_num]}`` not ``{event['seq_num']}``.
 
 If each image data point is actually a stack of 2D image planes, the template
 must also include ``{i}``, which will count through the image planes in the
