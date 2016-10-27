@@ -8,6 +8,7 @@ from collections import deque, defaultdict, ChainMap
 import signal
 from enum import Enum
 import functools
+import inspect
 
 
 import jsonschema
@@ -113,28 +114,43 @@ class RunEngine:
 
         Attributes
         ----------
-        state
-            {'idle', 'running', 'paused'}
-        md
-            direct access to the dict-like persistent storage described above
         ignore_callback_exceptions
-            Boolean, False by default
+            Boolean, False by default.
+
+        loop : asyncio event loop
+            e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
+
+        max_depth
+            Maximum stack depth; set this to prevent users from calling the
+            RunEngine inside a function (which can result in unexpected
+            behavior and breaks introspection tools). Default is None.
+            For built-in Python interpreter, set to 2. For IPython, set to 11
+            (tested on IPython 5.1.0; other versions may vary).
+
+        md
+            Direct access to the dict-like persistent storage described above
 
         msg_hook
-            callable that receives all messages before they are processed
+            Callable that receives all messages before they are processed
             (useful for logging or other development purposes); expected
             signature is ``f(msg)`` where ``msg`` is a ``bluesky.Msg``, a
-            kind of namedtuple; default is None
+            kind of namedtuple; default is None.
+
+        record_interruptions
+            False by default. Set to True to generate an extra event stream
+            that records any interruptions (pauses, suspensions).
+
+        state
+            {'idle', 'running', 'paused'}
 
         state_hook
-            callable with signature ``f(new_state, old_state)`` that will be
+            Callable with signature ``f(new_state, old_state)`` that will be
             called whenever the RunEngine's state attribute is updated; default
             is None
 
         suspenders
-            read-only collection of `bluesky.suspenders.SuspenderBase` objects
+            Read-only collection of `bluesky.suspenders.SuspenderBase` objects
             which can suspend and resume execution; see related methods.
-
 
         Methods
         -------
@@ -168,6 +184,7 @@ class RunEngine:
             md_validator = _default_md_validator
         self.md_validator = md_validator
 
+        self.max_depth = None
         self.msg_hook = None
         self.state_hook = None
         self.record_interruptions = False
@@ -501,7 +518,15 @@ class RunEngine:
         ...
         >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
         """
-        # First thing's first: if we are in the wrong state, raise.
+        # Check that the RE is not being called from inside a function.
+        if self.max_depth is not None:
+            frame = inspect.currentframe()
+            depth = len(inspect.getouterframes(frame))
+            if depth > self.max_depth:
+                text = MAX_DEPTH_EXCEEDED_ERR_MSG.format(self.max_depth, depth)
+                raise RuntimeError(text)
+
+        # If we are in the wrong state, raise.
         if not self.state.is_idle:
             raise RuntimeError("The RunEngine is in a %s state" % self.state)
 
@@ -2006,6 +2031,18 @@ RE.resume()    Resume the plan.
 RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
 RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
 RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
+"""
+
+
+MAX_DEPTH_EXCEEDED_ERR_MSG = """
+RunEngine.max_depth is set to {}; depth of {} was detected.
+
+The RunEngine should not be called from inside another function. Doing so
+breaks introspection tools and can result in unexpected behavior in the event
+of an interruption. See documentation for more information and what to do
+instead:
+
+http://nsls-ii.github.io/bluesky/plans_intro.html#combining-plans
 """
 
 
