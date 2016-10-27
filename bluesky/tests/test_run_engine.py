@@ -941,3 +941,18 @@ def test_state_hook(fresh_RE):
                 ('running', 'paused'),
                 ('idle', 'running')]
     assert states == expected
+
+
+def test_max_depth(fresh_RE):
+    RE = fresh_RE
+
+    RE.max_depth is None
+    RE([])  # should not raise
+
+    # assume test framework needs less than 100 stacks... haha
+    RE.max_depth = 100
+    RE([])  # should not raise
+
+    RE.max_depth = 0
+    with pytest.raises(RuntimeError):
+        RE([])
