@@ -114,28 +114,41 @@ class RunEngine:
 
         Attributes
         ----------
-        state
-            {'idle', 'running', 'paused'}
-        md
-            direct access to the dict-like persistent storage described above
         ignore_callback_exceptions
-            Boolean, False by default
+            Boolean, False by default.
+
+        loop : asyncio event loop
+            e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
+
+        max_depth
+            Maximum stack depth; set this to prevent users from calling the
+            RunEngine inside a function (which can result in unexpected
+            behavior and breaks introspection tools). Default is None.
+
+        md
+            Direct access to the dict-like persistent storage described above
 
         msg_hook
-            callable that receives all messages before they are processed
+            Callable that receives all messages before they are processed
             (useful for logging or other development purposes); expected
             signature is ``f(msg)`` where ``msg`` is a ``bluesky.Msg``, a
-            kind of namedtuple; default is None
+            kind of namedtuple; default is None.
+
+        record_interruptions
+            False by default. Set to True to generate an extra event stream
+            that records any interruptions (pauses, suspensions).
+
+        state
+            {'idle', 'running', 'paused'}
 
         state_hook
-            callable with signature ``f(new_state, old_state)`` that will be
+            Callable with signature ``f(new_state, old_state)`` that will be
             called whenever the RunEngine's state attribute is updated; default
             is None
 
         suspenders
-            read-only collection of `bluesky.suspenders.SuspenderBase` objects
+            Read-only collection of `bluesky.suspenders.SuspenderBase` objects
             which can suspend and resume execution; see related methods.
-
 
         Methods
         -------
