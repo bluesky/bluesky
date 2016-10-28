@@ -858,3 +858,13 @@ def short_uid(label=None, truncate=6):
         return '-'.join([label, new_uid()[:truncate]])
     else:
         return new_uid()[:truncate]
+
+
+def ensure_uid(doc_or_uid):
+    """
+    Accept a uid or a dict with a 'uid' key. Return the uid.
+    """
+    try:
+        return doc_or_uid['uid']
+    except TypeError:
+        return doc_or_uid
