@@ -14,7 +14,7 @@ class LiveImage(CallbackBase):
     field : string
         name of data field in an Event
     """
-    def __init__(self, field):
+    def __init__(self, field, *, fs=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
         super().__init__()
@@ -22,11 +22,17 @@ class LiveImage(CallbackBase):
         fig = plt.figure()
         self.cs = CrossSection(fig)
         self.cs._fig.show()
+        if fs is None:
+            import filestore.api as fs
+        self.fs = fs
 
     def event(self, doc):
-        import filestore.api as fsapi
         uid = doc['data'][self.field]
-        data = fsapi.retrieve(uid)
+        data = self.fs.retrieve(uid)
+        self.update(data)
+        super().event(doc)
+
+    def update(self, data):
         self.cs.update_image(data)
         self.cs._fig.canvas.draw_idle()
 
@@ -159,7 +165,7 @@ class LiveTiffExporter(CallbackBase):
         A templated file path, where curly brackets will be filled in with
         the attributes of 'start', 'event', and (for image stacks) 'i',
         a sequential number.
-        e.g., "dir/scan{start.scan_id}_by_{start.experimenter}_{i}.tiff"
+        e.g., "dir/scan{start[scan_id]}_by_{start[experimenter]}_{i}.tiff"
     dryrun : bool
         default to False; if True, do not write any files
     overwrite : bool
@@ -212,6 +218,7 @@ class LiveTiffExporter(CallbackBase):
         # Convert doc from dict into dottable dict, more convenient
         # in Python format strings: doc.key == doc['key']
         self._start = doct.Document('start', doc)
+        super().start(doc)
 
     def event(self, doc):
         # Convert doc from dict into dottable dict, more convenient
@@ -229,10 +236,9 @@ class LiveTiffExporter(CallbackBase):
                 filename = self.template.format(i=i, start=self._start,
                                                 event=doc)
                 self._save_image(plane, filename)
-        # RunEngine will ignore this return value, but it
-        # might be handy for interactive use.
-        return filename
+        super().event(doc)
 
     def stop(self, doc):
         self._start = None
         self.filenames = []
+        super().stop(doc)
