@@ -11,6 +11,7 @@ import matplotlib.colors as mcolors
 from datetime import datetime
 import numpy as np
 import logging
+from ..utils import ensure_uid
 logger = logging.getLogger(__name__)
 
 
@@ -581,7 +582,7 @@ class LiveTable(CallbackBase):
 
     def event(self, doc):
         # shallow copy so we can mutate
-        if doc['descriptor'] not in self._descriptors:
+        if ensure_uid(doc['descriptor']) not in self._descriptors:
             return
         data = dict(doc['data'])
         self._count += 1
@@ -599,7 +600,7 @@ class LiveTable(CallbackBase):
         super().event(doc)
 
     def stop(self, doc):
-        if doc['run_start'] != self._start['uid']:
+        if ensure_uid(doc['run_start']) != self._start['uid']:
             return
 
         # This sleep is just cosmetic. It improves the odds that the bottom

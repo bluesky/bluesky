@@ -1,6 +1,7 @@
 import os
 import time as ttime
 from .core import CallbackBase
+from ..utils import ensure_uid
 import numpy as np
 import doct
 
@@ -37,7 +38,7 @@ class LiveImage(CallbackBase):
         self.cs._fig.canvas.draw_idle()
 
 
-def post_run(callback, db=None):
+def post_run(callback, db=None, fill=False):
     """Trigger a callback to process all the Documents from a run at the end.
 
     This function does not receive the Document stream during collection.
@@ -56,20 +57,23 @@ def post_run(callback, db=None):
         The databroker instance to use, if not provided use databroker
         singleton
 
+    fill : boolean, optional
+        Whether to deference externally-stored data in the documents.
+        False by default.
+
     Returns
     -------
     func : function
-        a function that acepts a RunStop Document
+        a function that accepts a RunStop Document
 
     Examples
     --------
     Print a table with full (lossless) result set at the end of a run.
 
-    >>> s = AbsScanPlan(motor, [det1], [1,2,3])
-    >>> table = LiveTable(['det1', 'motor'])
-    >>> RE(s, {'stop': post_run(table)})
+    >>> table = LiveTable(['det', 'motor'])
+    >>> RE(scan(motor, [det], [1,2,3]), {'stop': post_run(table)})
     +------------+-------------------+----------------+----------------+
-    |   seq_num  |             time  |          det1  |         motor  |
+    |   seq_num  |             time  |           det  |         motor  |
     +------------+-------------------+----------------+----------------+
     |         3  |  14:02:32.218348  |          5.00  |          3.00  |
     |         2  |  14:02:32.158503  |          5.00  |          2.00  |
@@ -81,11 +85,21 @@ def post_run(callback, db=None):
     if db is None:
         from databroker import DataBroker as db
 
-    def f(name, stop_doc):
+    def f(name, doc):
         if name != 'stop':
             return
-        uid = stop_doc['run_start']
-        return db.process(db[uid], callback)
+        uid = ensure_uid(doc['run_start'])
+        header = db[uid]
+        callback('start', header['start'])
+        for descriptor in header['descriptors']:
+            callback('descriptor', descriptor)
+        for event in db.get_events(header, fill=fill):
+            callback('event', event)
+        # Depending on the order that this callback and the
+        # databroker-insertion callback were called in, the databroker might
+        # not yet have the 'stop' document that we currently have, so we'll
+        # use our copy instead of expecting the header to include one.
+        callback('stop', doc)
     return f
 
 
@@ -131,12 +145,12 @@ def verify_files_saved(name, doc, db=None):
     if db is None:
         from databroker import DataBroker as db
 
-    ttime.sleep(0.1)  # Wati for data to be saved.
+    ttime.sleep(0.1)  # Wait for data to be saved.
     if name != 'stop':
         return
     print("  Verifying that all the run's Documents were saved...")
     try:
-        header = db[doc['run_start']]
+        header = db[ensure_uid(doc['run_start'])]
     except Exception as e:
         print("  Verification Failed! Error: {0}".format(e))
         return
@@ -221,9 +235,6 @@ class LiveTiffExporter(CallbackBase):
         super().start(doc)
 
     def event(self, doc):
-        # Convert doc from dict into dottable dict, more convenient
-        # in Python format strings: doc.key == doc['key']
-        doc = doct.Document('event', doc)
         if self.field not in doc['data']:
             return
         self.db.fill_event(doc)  # modifies in place
