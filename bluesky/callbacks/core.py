@@ -157,9 +157,10 @@ class LivePlot(CallbackBase):
         self.current_line, = self.ax.plot([], [], label=label, **self.kwargs)
         self.lines.append(self.current_line)
         self.legend = self.ax.legend(loc=0, title=self.legend_title).draggable()
+        super().start(doc)
 
     def event(self, doc):
-        "Update line with data from this Event."
+        "Unpack data from the event and call self.update()."
         try:
             if self.x is not None:
                 # this try/except block is needed because multiple event streams
@@ -172,8 +173,12 @@ class LivePlot(CallbackBase):
         except KeyError:
             # wrong event stream, skip it
             return
-        self.y_data.append(new_y)
-        self.x_data.append(new_x)
+        self.update(new_x, new_y)
+        super().event(doc)
+
+    def update(self, x, y):
+        self.y_data.append(y)
+        self.x_data.append(x)
         self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
         self.ax.relim(visible_only=True)
@@ -190,6 +195,7 @@ class LivePlot(CallbackBase):
         if len(self.y_data) != len(self.x_data):
             print('LivePlot has a different number of elements for x ({}) and'
                   'y ({})'.format(len(self.x_data), len(self.y_data)))
+        super().stop(doc)
 
 
 def format_num(x, max_len=11, pre=5, post=5):
@@ -232,16 +238,20 @@ class CollectThenCompute(CallbackBase):
 
     def start(self, doc):
         self._start_doc = doc
+        super().start(doc)
 
     def descriptor(self, doc):
         self._descriptors.append(doc)
+        super().descriptor(doc)
 
     def event(self, doc):
         self._events.append(doc)
+        super().event(doc)
 
     def stop(self, doc):
         self._stop_doc = doc
         self.compute()
+        super().stop(doc)
 
     def reset(self):
         self._start_doc = None
@@ -308,18 +318,27 @@ class LiveMesh(CallbackBase):
         self.cmap = cmap
 
     def start(self, doc):
-        self._xdata, self._ydata, self._Idata = [], [], []
+        self._xdata.clear()
+        self._ydata.clear()
+        self._Idata.clear()
         sc = self.ax.scatter(self._xdata, self._ydata, c=self._Idata,
                              norm=self._norm, cmap=self.cmap, edgecolor='face',
                              s=50)
         self._sc.append(sc)
         self.sc = sc
+        super().start(doc)
 
     def event(self, doc):
-        self._xdata.append(doc['data'][self.x])
-        self._ydata.append(doc['data'][self.y])
-        self._Idata.append(doc['data'][self.I])
+        x = doc['data'][self.x]
+        y = doc['data'][self.y]
+        I = doc['data'][self.I]
+        self.update(x, y, I)
+        super().event(doc)
 
+    def update(self, x, y, I):
+        self._xdata.append(x)
+        self._ydata.append(y)
+        self._Idata.append(I)
         offsets = np.vstack([self._xdata, self._ydata]).T
         self.sc.set_offsets(offsets)
         self.sc.set_array(np.asarray(self._Idata))
@@ -405,6 +424,7 @@ class LiveRaster(CallbackBase):
 
         cb = self.ax.figure.colorbar(im)
         cb.set_label(self.I)
+        super().start(doc)
 
     def event(self, doc):
         if self.I not in doc['data']:
@@ -415,7 +435,12 @@ class LiveRaster(CallbackBase):
         if self.snaking[1] and (pos[0] % 2):
             pos[1] = self.raster_shape[1] - pos[1] - 1
         pos = tuple(pos)
-        self._Idata[pos] = doc['data'][self.I]
+        I = doc['data'][self.I]
+        self.update(pos, I)
+        super().event(doc)
+
+    def update(self, pos, I):
+        self._Idata[pos] = I
         if self.clim is None:
             self.im.set_clim(np.nanmin(self._Idata), np.nanmax(self._Idata))
 
@@ -552,6 +577,7 @@ class LiveTable(CallbackBase):
         self._print(self._sep_format)
         self._print(self._header)
         self._print(self._sep_format)
+        super().descriptor(doc)
 
     def event(self, doc):
         # shallow copy so we can mutate
@@ -570,6 +596,7 @@ class LiveTable(CallbackBase):
                 if k in data else ' ' * self._format_info[k].width
                 for k, f in self._data_formats.items()]
         self._print('|' + '|'.join(cols) + '|')
+        super().event(doc)
 
     def stop(self, doc):
         if doc['run_start'] != self._start['uid']:
@@ -593,12 +620,14 @@ class LiveTable(CallbackBase):
         print(wm)
         if self.logbook:
             self.logbook('\n'.join([wm] + self._rows))
+        super().stop(doc)
 
     def start(self, doc):
         self._rows = []
         self._start = doc
         self._stop = None
         self._sep_format = None
+        super().start(doc)
 
     def _print(self, out_str):
         self._rows.append(out_str)
