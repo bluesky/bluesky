@@ -88,7 +88,8 @@ class RunEngine:
                              'unstage', 'monitor', 'unmonitor', 'open_run',
                              'close_run']
 
-    def __init__(self, md=None, *, loop=None, md_validator=None):
+    def __init__(self, md=None, *, loop=None, preprocessors=None,
+                 md_validator=None):
         """The Run Engine execute messages and emits Documents.
 
         Parameters
@@ -103,6 +104,13 @@ class RunEngine:
 
         loop : asyncio event loop
             e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
+
+        preprocessors : list
+            Generator functions that take in a plan (generator instance) and
+            modify its messages on the way out. Suitable examples include
+            the functions in the module ``bluesky.plans`` with names ending in
+            'wrapper'.  Functions are composed in order: the preprocessors
+            ``[f, g]`` are applied like ``f(g(plan))``.
 
         md_validator : callable, optional
             a function that raises and prevents starting a run if it deems
@@ -180,6 +188,9 @@ class RunEngine:
         if md is None:
             md = {}
         self.md = md
+        if preprocessors is None:
+            preprocessors = []
+        self.preprocessors = preprocessors
         if md_validator is None:
             md_validator = _default_md_validator
         self.md_validator = md_validator
@@ -257,8 +268,7 @@ class RunEngine:
             'open_run': self._open_run,
             'close_run': self._close_run,
             'wait_for': self._wait_for,
-            'input': self._input,
-        }
+            'input': self._input, }
 
         # public dispatcher for callbacks
         # The Dispatcher's public methods are exposed through the
@@ -555,10 +565,12 @@ class RunEngine:
             for func in funcs:
                 self._temp_callback_ids.add(self.subscribe(name, func))
 
-        self._plan = plan
+        self._plan = plan  # this ref is just used for metadata introspection
         self._metadata_per_call.update(metadata_kw)
 
         gen = ensure_generator(plan)
+        for wrapper_func in self.preprocessors:
+            gen = wrapper_func(gen)
 
         self._plan_stack.append(gen)
         self._response_stack.append(None)
@@ -625,8 +637,8 @@ class RunEngine:
             self._sequence_counters.clear()
             self._sequence_counters.update(self._teed_sequence_counters)
             # This is needed to 'cancel' an open bundling (e.g. create) if
-            # the pause happens after a 'checkpoint', after a 'create', but before
-            # the paired 'save'.
+            # the pause happens after a 'checkpoint', after a 'create', but
+            # before the paired 'save'.
             self._bundling = False
         return new_plan
 
@@ -1049,7 +1061,7 @@ class RunEngine:
                 elif count > 1:
                     # - Ctrl-C twice within 10 seconds -> hard pause
                     self.log.debug("RunEngine detected two SIGINTs. "
-                                    "A hard pause will be requested.")
+                                   "A hard pause will be requested.")
                     self.loop.call_soon(self.request_pause, False)
                     print(PAUSE_MSG)
             else:
