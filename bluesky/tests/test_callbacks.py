@@ -359,5 +359,3 @@ def test_live_fit_plot():
     expected = {'A': 1, 'sigma': 1, 'x0': 0}
     for k, v in expected.items():
         assert np.allclose(livefit.result.values[k], v, atol=1e-6)
-
-    plt.savefig('/Users/dallan/Desktop/livefitplot.png')
