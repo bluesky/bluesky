@@ -731,7 +731,8 @@ class LiveFit(CallbackBase):
         if len(self.__ydata) < N:
             raise RuntimeError("cannot update fit until there are least {} "
                                "data points".format(N))
-        self.result = self.model.fit(self.__ydata,
-                                     **self.__independent_vars_data,
-                                     **self.init_guess)
+        kwargs = {}
+        kwargs.update(self.__independent_vars_data)
+        kwargs.update(self.init_guess)
+        self.result = self.model.fit(self.__ydata, **kwargs)
         self.__stale = False
