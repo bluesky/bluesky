@@ -636,6 +636,10 @@ class LiveTable(CallbackBase):
 
 class LiveFit(CallbackBase):
     """
+    Fit a model to data using nonlinear least-squares minimization.
+
+    Parameters
+    ----------
     model : lmfit.Model
     y : string
         name of the field in the Event document that is the dependent variable
