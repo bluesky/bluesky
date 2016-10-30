@@ -1,7 +1,8 @@
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan)
 from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan, scan
-from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit)
+from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
+                               LiveFitPlot, LivePlot)
 from bluesky.callbacks.zmqpub import Publisher
 from bluesky.callbacks.zmqsub import RemoteDispatcher
 from bluesky.tests.utils import setup_test_run_engine
@@ -10,6 +11,7 @@ import multiprocessing
 import time
 import pytest
 import numpy as np
+import matplotlib.pyplot as plt
 RE = setup_test_run_engine()
 
 
@@ -334,3 +336,28 @@ def test_live_fit():
     expected = {'A': 1, 'sigma': 1, 'x0': 0}
     for k, v in expected.items():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
+
+
+def test_live_fit_plot():
+    try:
+        import lmfit
+    except ImportError:
+        raise pytest.skip('requires lmfit')
+
+    def gaussian(x, A, sigma, x0):
+        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2}
+    livefit = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lfplot = LiveFitPlot(livefit, color='r')
+    lplot = LivePlot('det', 'motor', ax=plt.gca(), marker='o', ls='none')
+    RE(scan([det], motor, -1, 1, 50), [lplot, lfplot])
+
+    expected = {'A': 1, 'sigma': 1, 'x0': 0}
+    for k, v in expected.items():
+        assert np.allclose(livefit.result.values[k], v, atol=1e-6)
+
+    plt.savefig('/Users/dallan/Desktop/livefitplot.png')

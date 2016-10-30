@@ -174,12 +174,15 @@ class LivePlot(CallbackBase):
         except KeyError:
             # wrong event stream, skip it
             return
-        self.update(new_x, new_y)
+        self.update_caches(new_x, new_y)
+        self.update_plot()
         super().event(doc)
 
-    def update(self, x, y):
+    def update_caches(self, x, y):
         self.y_data.append(y)
         self.x_data.append(x)
+
+    def update_plot(self):
         self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
         self.ax.relim(visible_only=True)
@@ -659,9 +662,10 @@ class LiveFit(CallbackBase):
     """
     def __init__(self, model, y, independent_vars, init_guess=None, *,
                  update_every=1):
-        self.__ydata = []
-        self.__independent_vars_data = {}
+        self.ydata = []
+        self.independent_vars_data = {}
         self.__stale = False
+        self.result = None
         self._model = model
         self.y = y
         self.independent_vars = independent_vars
@@ -669,7 +673,6 @@ class LiveFit(CallbackBase):
             init_guess = {}
         self.init_guess = init_guess
         self.update_every = update_every
-        self.result = None
 
     @property
     def model(self):
@@ -687,16 +690,24 @@ class LiveFit(CallbackBase):
                              "the model: "
                              "{}".format(self.model.independent_vars))
         self._independent_vars = val
-        self.__independent_vars_data.clear()
-        self.__independent_vars_data.update({k: [] for k in val})
+        self.independent_vars_data.clear()
+        self.independent_vars_data.update({k: [] for k in val})
+        self._reset()
+
+    def _reset(self):
+        self.result = None
+        self.__stale = False
+        self.ydata.clear()
+        for v in self.independent_vars_data.values():
+            v.clear()
 
     def start(self, doc):
-        self.__ydata.clear()
-        for v in self.__independent_vars_data.values():
-            v.clear()
+        self._reset()
         super().start(doc)
 
     def event(self, doc):
+        if self.y not in doc['data']:
+            return
         y = doc['data'][self.y]
         kwargs = {k: doc['data'][v] for k, v in self.independent_vars.items()}
 
@@ -722,17 +733,55 @@ class LiveFit(CallbackBase):
         super().stop(doc)
 
     def update_caches(self, y, **kwargs):
-        self.__ydata.append(y)
-        for k, v in self.__independent_vars_data.items():
+        self.ydata.append(y)
+        for k, v in self.independent_vars_data.items():
             v.append(kwargs[k])
 
     def update_fit(self):
         N = len(self.model.param_names)
-        if len(self.__ydata) < N:
+        if len(self.ydata) < N:
             raise RuntimeError("cannot update fit until there are least {} "
                                "data points".format(N))
         kwargs = {}
-        kwargs.update(self.__independent_vars_data)
+        kwargs.update(self.independent_vars_data)
         kwargs.update(self.init_guess)
-        self.result = self.model.fit(self.__ydata, **kwargs)
+        self.result = self.model.fit(self.ydata, **kwargs)
         self.__stale = False
+
+
+class LiveFitPlot(LivePlot):
+    def __init__(self, livefit, *, legend_keys=None, xlim=None, ylim=None,
+                 ax=None, **kwargs):
+        if len(livefit.independent_vars) != 1:
+            raise NotImplementedError("LiveFitPlot supports models with one "
+                                      "independent variable only.")
+        self.__x_key, = livefit.independent_vars.keys()  # this never changes
+        x, = livefit.independent_vars.values()  # this may change
+        super().__init__(livefit.y, x, legend_keys=legend_keys,
+                         xlim=xlim, ylim=xlim, ax=ax, **kwargs)
+        self._livefit = livefit
+
+    @property
+    def livefit(self):
+        return self._livefit
+
+    def start(self, doc):
+        self.livefit.start(doc)
+        self.x, = self.livefit.independent_vars.keys()  # in case it changed
+        super().start(doc)
+
+    def event(self, doc):
+        self.livefit.event(doc)
+        if self.livefit.result is not None:
+            self.y_data = self.livefit.result.best_fit
+            self.x_data = self.livefit.independent_vars_data[self.__x_key]
+            self.update_plot()
+        # Intentionally override LivePlot.event. Do not call super().
+
+    def descriptor(self, doc):
+        self.livefit.descriptor(doc)
+        super().descriptor(doc)
+
+    def stop(self, doc):
+        self.livefit.stop(doc)
+        # Intentionally override LivePlot.stop. Do not call super().
