@@ -371,7 +371,7 @@ in the case of 'sigma' above, to specify constraints.
 
 To integrate with the bluesky we need to provide:
 
-* the field with the independent variable (in this example, ``'det'``)
+* the field with the dependent variable (in this example, ``'det'``)
 * a mapping between the name(s) of independent variable(s) in
   the function (``'x'``) to the corresponding field(s) in the data
   (``'motor'``)
