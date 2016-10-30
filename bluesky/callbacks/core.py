@@ -192,7 +192,7 @@ class LivePlot(CallbackBase):
                   'x axis. {}'.format(self.x))
         if not self.y_data:
             print('LivePlot did not get any data that corresponds to the '
-                    'y axis. {}'.format(self.y))
+                  'y axis. {}'.format(self.y))
         if len(self.y_data) != len(self.x_data):
             print('LivePlot has a different number of elements for x ({}) and'
                   'y ({})'.format(len(self.x_data), len(self.y_data)))
@@ -206,7 +206,6 @@ def format_num(x, max_len=11, pre=5, post=5):
         x = '%{}.{}f'.format(pre, post) % x
 
     return x
-
 
 
 def _get_obj_fields(fields):
@@ -633,3 +632,102 @@ class LiveTable(CallbackBase):
     def _print(self, out_str):
         self._rows.append(out_str)
         print(out_str)
+
+
+class LiveFit(CallbackBase):
+    """
+    model : lmfit.Model
+    y : string
+        name of the field in the Event document that is the dependent variable
+    independent_vars : dict
+        map the independent variable name(s) in the model to the field(s)
+        in the Event document; e.g., ``{'x': 'motor'}``
+    init_guess : dict, optional
+        initial guesses for other values, if expected by model;
+        e.g., ``{'sigma': 1}``
+    update_every : int or None, optional
+        How often to recompute the fit. If `None`, do not compute until the
+        end. Default is 1 (recompute after each new point).
+
+    Attributes
+    ----------
+    result : lmfit.ModelResult
+    """
+    def __init__(self, model, y, independent_vars, init_guess=None, *,
+                 update_every=1):
+        self.__ydata = []
+        self.__independent_vars_data = {}
+        self.__stale = False
+        self._model = model
+        self.y = y
+        self.independent_vars = independent_vars
+        if init_guess is None:
+            init_guess = {}
+        self.init_guess = init_guess
+        self.update_every = update_every
+        self.result = None
+
+    @property
+    def model(self):
+        # Make this a property so it can't be updated.
+        return self._model
+
+    @property
+    def independent_vars(self):
+        return self._independent_vars
+
+    @independent_vars.setter
+    def independent_vars(self, val):
+        if list(val) != self.model.independent_vars:
+            raise ValueError("keys must match the independent variables in "
+                             "the model: "
+                             "{}".format(self.model.independent_vars))
+        self._independent_vars = val
+        self.__independent_vars_data.clear()
+        self.__independent_vars_data.update({k: [] for k in val})
+
+    def start(self, doc):
+        self.__ydata.clear()
+        for v in self.__independent_vars_data.values():
+            v.clear()
+        super().start(doc)
+
+    def event(self, doc):
+        y = doc['data'][self.y]
+        kwargs = {k: doc['data'][v] for k, v in self.independent_vars.items()}
+
+        # Always stash the data for the next time the fit is updated.
+        self.update_caches(y, **kwargs)
+        self.__stale = True
+
+        # Maybe update the fit or maybe wait.
+        if self.update_every is not None:
+            i = doc['seq_num']
+            N = len(self.model.param_names)
+            if i < N:
+                # not enough points to fit yet
+                pass
+            elif (i == N) or ((i - 1) % self.update_every == 0):
+                self.update_fit()
+        super().event(doc)
+
+    def stop(self, doc):
+        # Update the fit if it was not updated by the last event.
+        if self.__stale:
+            self.update_fit()
+        super().stop(doc)
+
+    def update_caches(self, y, **kwargs):
+        self.__ydata.append(y)
+        for k, v in self.__independent_vars_data.items():
+            v.append(kwargs[k])
+
+    def update_fit(self):
+        N = len(self.model.param_names)
+        if len(self.__ydata) < N:
+            raise RuntimeError("cannot update fit until there are least {} "
+                               "data points".format(N))
+        self.result = self.model.fit(self.__ydata,
+                                     **self.__independent_vars_data,
+                                     **self.init_guess)
+        self.__stale = False

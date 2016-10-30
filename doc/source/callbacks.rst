@@ -132,8 +132,8 @@ For example, to define a variant of ``scan`` that includes a table by default:
 
         yield from inner()
 
-Text and Visualization
-----------------------
+Callbacks for Visualization & Fitting
+-------------------------------------
 
 .. _livetable:
 
@@ -342,6 +342,64 @@ Example:
 
 .. autoclass:: bluesky.callbacks.LiveMesh
 
+LiveFit
++++++++
+
+Perform a nonlinear least squared best fit to the data with a user-defined
+model function. The function can depend on any number of independent variables.
+We use package `lmfit <https://lmfit.github.io/lmfit-py/model.html>`_.
+
+In this example, we fit a Gaussian to detector readings as a function of motor
+position. First, define a Gaussian function, create an ``lmfit.Model`` from it,
+and provide initial guesses for the parameters.
+
+.. code-block:: python
+
+    import numpy as np
+    import lmfit
+
+    def gaussian(x, A, sigma, x0):
+        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2}
+
+The guesses can be given as plain numbers or as ``lmfit.Parameter`` objects, as
+in the case of 'sigma' above, to specify constraints.
+
+To integrate with the bluesky we need to provide:
+
+* the field with the independent variable (in this example, ``'det'``)
+* a mapping between the name(s) of independent variable(s) in
+  the function (``'x'``) to the corresponding field(s) in the data
+  (``'motor'``)
+* any initial guesses expected by the model (defined above)
+
+.. code-block:: python
+
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+    from bluesky.callbacks import LiveFit
+
+    cb = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+
+    RE(scan([det], motor, -1, 1, 100), cb)
+    # best-fit values for 'A', 'sigma' and 'x0' are in cb.result.values
+
+The fit results are accessible in the ``result`` attribute of the callback.
+See in particular ``result.values``. Refer the
+`lmfit documentation <https://lmfit.github.io/lmfit-py/model.html#the-modelresult-class>`_
+for more.
+
+By default, the fit is recomputed every time a new data point is available. See
+the API documentation below for other options. Fitting does not commence until
+the number of accumulated data points is equal to the number of free parameters
+in the model.
+
+.. autoclass:: bluesky.callbacks.LiveFit
+
 PeakStats 
 ++++++++++
 
@@ -380,8 +438,8 @@ There is also a convenience function for plotting:
 .. autoclass:: bluesky.callbacks.scientific.PeakStats
 .. autofunction:: bluesky.callbacks.scientific.plot_peak_stats
 
-Export
-------
+Callback for Export
+-------------------
 
 Exporting Image Data as TIFF Files
 ++++++++++++++++++++++++++++++++++
@@ -401,8 +459,8 @@ data from the scan.
     template = ("output_dir/{start[scan_id]}_{start[sample_name]}_"
                 "{event[data][temperature]}_{event[seq_num]}.tiff")
 
-Above, we using a Python language feature called format strings. Notice that
-inside the curly brackets use don't use quotes are the key names; it's
+Above, we are using a Python language feature called format strings. Notice
+that inside the curly brackets we don't use quotes around the key names; it's
 ``{event[seq_num]}`` not ``{event['seq_num']}``.
 
 If each image data point is actually a stack of 2D image planes, the template
