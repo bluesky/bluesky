@@ -956,3 +956,28 @@ def test_max_depth(fresh_RE):
     RE.max_depth = 0
     with pytest.raises(RuntimeError):
         RE([])
+
+
+def test_preprocessors(fresh_RE):
+    RE = fresh_RE
+
+    def custom_cleanup(plan):
+        yield from plan
+        yield Msg('null', 'cleanup')  # just a sentinel
+
+    def my_sub(name, doc):
+        pass
+
+    def custom_subs(plan):
+        yield from bp.subs_wrapper(plan, my_sub)
+
+    RE.preprocessors = [custom_cleanup, custom_subs]
+    actual = []
+    RE.msg_hook = lambda msg: actual.append(msg)
+    RE([Msg('null')])
+    print(actual)
+    expected = [Msg('subscribe', None, 'all', my_sub),
+                Msg('null'),
+                Msg('null', 'cleanup'),
+                Msg('unsubscribe', None, token=0)]
+    assert actual == expected
