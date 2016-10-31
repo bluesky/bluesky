@@ -1,17 +1,17 @@
 from bluesky.run_engine import Msg
-import asyncio
 from bluesky.examples import (motor, det, stepscan)
-from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan
-from bluesky.callbacks import (CallbackCounter, LiveTable)
+from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan, scan
+from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
+                               LiveFitPlot, LivePlot)
 from bluesky.callbacks.zmqpub import Publisher
 from bluesky.callbacks.zmqsub import RemoteDispatcher
-from bluesky.spec_api import mesh
 from bluesky.tests.utils import setup_test_run_engine
 from bluesky.tests.utils import _print_redirect
 import multiprocessing
 import time
 import pytest
-# import numpy as numpy
+import numpy as np
+import matplotlib.pyplot as plt
 RE = setup_test_run_engine()
 
 
@@ -39,6 +39,7 @@ def _raising_callbacks_helper(stream_name, callback):
 def test_raising_ignored_or_not():
     RE.ignore_callback_exceptions = True
     assert RE.ignore_callback_exceptions
+
     def cb(name, doc):
         raise Exception
     # by default (with ignore... = True) it warns
@@ -72,11 +73,14 @@ def test_subs_input():
     # Test input normalization on OO plans
     obj_ascan = AbsScanPlan([det], motor, 1, 5, 4)
     obj_ascan.subs = cb1
-    assert obj_ascan.subs == {'all': [cb1], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
+    assert obj_ascan.subs == {'all': [cb1], 'start': [], 'stop': [],
+                              'descriptor': [], 'event': []}
     obj_ascan.subs.update({'start': [cb2]})
-    assert obj_ascan.subs == {'all': [cb1], 'start': [cb2], 'stop': [], 'descriptor': [], 'event': []}
+    assert obj_ascan.subs == {'all': [cb1], 'start': [cb2], 'stop': [],
+                              'descriptor': [], 'event': []}
     obj_ascan.subs = [cb2, cb3]
-    assert obj_ascan.subs == {'all': [cb2, cb3], 'start': [], 'stop': [], 'descriptor': [], 'event': []}
+    assert obj_ascan.subs == {'all': [cb2, cb3], 'start': [], 'stop': [],
+                              'descriptor': [], 'event': []}
 
 
 def test_subscribe_msg():
@@ -112,7 +116,7 @@ def test_table_warns():
     table('start', {})
     with pytest.warns(UserWarning):
         table('descriptor', {'uid': 'asdf', 'name': 'primary',
-                            'data_keys': {'field': {'dtype': 'array'}}})
+                             'data_keys': {'field': {'dtype': 'array'}}})
 
 
 def test_table():
@@ -267,7 +271,7 @@ def test_zmq(fresh_RE):
     # Run a Publisher and a RunEngine in this main process.
 
     RE = fresh_RE
-    p = Publisher(RE, '127.0.0.1', 5567)
+    p = Publisher(RE, '127.0.0.1', 5567)  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
@@ -310,3 +314,48 @@ def test_zmq(fresh_RE):
     forwarder_proc.terminate()
     dispatcher_proc.terminate()
     assert remote_accumulator == local_accumulator
+
+
+def test_live_fit():
+    try:
+        import lmfit
+    except ImportError:
+        raise pytest.skip('requires lmfit')
+
+    def gaussian(x, A, sigma, x0):
+        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2}
+    cb = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    RE(scan([det], motor, -1, 1, 100), cb)
+    # results are in cb.result.values
+
+    expected = {'A': 1, 'sigma': 1, 'x0': 0}
+    for k, v in expected.items():
+        assert np.allclose(cb.result.values[k], v, atol=1e-6)
+
+
+def test_live_fit_plot():
+    try:
+        import lmfit
+    except ImportError:
+        raise pytest.skip('requires lmfit')
+
+    def gaussian(x, A, sigma, x0):
+        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2}
+    livefit = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lfplot = LiveFitPlot(livefit, color='r')
+    lplot = LivePlot('det', 'motor', ax=plt.gca(), marker='o', ls='none')
+    RE(scan([det], motor, -1, 1, 50), [lplot, lfplot])
+
+    expected = {'A': 1, 'sigma': 1, 'x0': 0}
+    for k, v in expected.items():
+        assert np.allclose(livefit.result.values[k], v, atol=1e-6)
