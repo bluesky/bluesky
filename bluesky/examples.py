@@ -110,12 +110,12 @@ class Reader:
     Examples
     --------
     A detector that always returns 5.
-    >>> det = Readable('det', {'intensity': lambda: 5})
+    >>> det = Reader('det', {'intensity': lambda: 5})
 
     A detector that is coupled to a motor, such that measured insensity
     varies with motor position.
     >>> motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
-    >>> det = Readable('det',
+    >>> det = Reader('det',
     ...                {'intensity': lambda: 2 * motor.read()['value']})
     """
 
