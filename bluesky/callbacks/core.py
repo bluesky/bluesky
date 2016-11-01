@@ -157,16 +157,17 @@ class LivePlot(CallbackBase):
             [str(doc.get(name, ' ')) for name in self.legend_keys])
         self.current_line, = self.ax.plot([], [], label=label, **self.kwargs)
         self.lines.append(self.current_line)
-        self.legend = self.ax.legend(loc=0, title=self.legend_title).draggable()
+        self.legend = self.ax.legend(
+            loc=0, title=self.legend_title).draggable()
         super().start(doc)
 
     def event(self, doc):
         "Unpack data from the event and call self.update()."
         try:
             if self.x is not None:
-                # this try/except block is needed because multiple event streams
-                # will be emitted by the RunEngine and not all event streams will
-                # have the keys we want
+                # this try/except block is needed because multiple event
+                # streams will be emitted by the RunEngine and not all event
+                # streams will have the keys we want
                 new_x = doc['data'][self.x]
             else:
                 new_x = doc['seq_num']
