@@ -752,6 +752,28 @@ class LiveFit(CallbackBase):
 
 
 class LiveFitPlot(LivePlot):
+    """
+    Add a plot to an instance of LiveFit.
+
+    Note: If your figure blocks the main thread when you are trying to
+    scan with this callback, call `plt.ion()` in your IPython session.
+
+    Parameters
+    ----------
+    livefit : LiveFit
+        an instance of ``LiveFit``
+    legend_keys : list, optional
+        The list of keys to extract from the RunStart document and format
+        in the legend of the plot. The legend will always show the
+        scan_id followed by a colon ("1: ").  Each
+    xlim : tuple, optional
+        passed to Axes.set_xlim
+    ylim : tuple, optional
+        passed to Axes.set_ylim
+    ax : Axes, optional
+        matplotib Axes; if none specified, new figure and axes are made.
+    All additional keyword arguments are passed through to ``Axes.plot``.
+    """
     def __init__(self, livefit, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, **kwargs):
         if len(livefit.independent_vars) != 1:
