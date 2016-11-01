@@ -686,10 +686,11 @@ class LiveFit(CallbackBase):
 
     @independent_vars.setter
     def independent_vars(self, val):
-        if list(val) != self.model.independent_vars:
-            raise ValueError("keys must match the independent variables in "
-                             "the model: "
-                             "{}".format(self.model.independent_vars))
+        if set(val) != set(self.model.independent_vars):
+            raise ValueError("keys {} must match the independent variables in "
+                             "the model "
+                             "{}".format(set(val),
+                                         set(self.model.independent_vars)))
         self._independent_vars = val
         self.independent_vars_data.clear()
         self.independent_vars_data.update({k: [] for k in val})
