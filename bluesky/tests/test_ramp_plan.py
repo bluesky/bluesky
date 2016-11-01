@@ -39,12 +39,12 @@ def test_ramp(RE, db):
     assert len(hdr.descriptors) == 2
 
     assert set([d['name'] for d in hdr.descriptors]) == \
-        set(['primary', 'mot-monitor'])
+        set(['primary', 'mot_monitor'])
 
     primary_events = list(db.get_events(hdr, stream_name='primary'))
     assert len(primary_events) > 11
 
-    monitor_events = list(db.get_events(hdr, stream_name='mot-monitor'))
+    monitor_events = list(db.get_events(hdr, stream_name='mot_monitor'))
     assert len(monitor_events) == 10
 
 
