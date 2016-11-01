@@ -711,10 +711,10 @@ class LiveFit(CallbackBase):
         if self.y not in doc['data']:
             return
         y = doc['data'][self.y]
-        kwargs = {k: doc['data'][v] for k, v in self.independent_vars.items()}
+        idv = {k: doc['data'][v] for k, v in self.independent_vars.items()}
 
         # Always stash the data for the next time the fit is updated.
-        self.update_caches(y, **kwargs)
+        self.update_caches(y, idv)
         self.__stale = True
 
         # Maybe update the fit or maybe wait.
@@ -734,10 +734,10 @@ class LiveFit(CallbackBase):
             self.update_fit()
         super().stop(doc)
 
-    def update_caches(self, y, **kwargs):
+    def update_caches(self, y, independent_vars):
         self.ydata.append(y)
         for k, v in self.independent_vars_data.items():
-            v.append(kwargs[k])
+            v.append(independent_vars[k])
 
     def update_fit(self):
         N = len(self.model.param_names)
