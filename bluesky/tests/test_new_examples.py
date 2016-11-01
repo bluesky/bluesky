@@ -181,7 +181,7 @@ def test_monitor_during_wrapper():
     processed_plan = list(monitor_during_wrapper(plan(), [det]))
     expected = 2 * [Msg('open_run'),
                     # inserted
-                    Msg('monitor', det, name=(det.name + '-monitor')),
+                    Msg('monitor', det, name=(det.name + '_monitor')),
                     Msg('null'),
                     Msg('unmonitor', det),  # inserted
                     Msg('close_run')]
