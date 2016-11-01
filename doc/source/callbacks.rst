@@ -502,8 +502,8 @@ Notice that they can styled independently.
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots()  # explitly create figure, axes to use below
-    lfp = LiveFitPlot(lf, color='r', ax=ax)
-    lp = LivePlot('det', 'motor', ax=ax)
+    lfp = LiveFitPlot(lf, ax=ax, color='r')
+    lp = LivePlot('det', 'motor', ax=ax, marker='o', linestyle='none')
 
     RE(scan([det], motor, -1, 1, 100), [lp, lfp])
 
