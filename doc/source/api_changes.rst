@@ -1,23 +1,62 @@
 Release Notes
 =============
 
-v0.7.0 (dev)
-------------
+v0.7.0
+------
+
+Enhancements
+^^^^^^^^^^^^
+
+* Nonlinear least-squares minimzation callback ``LiveFit`` with ``LiveFitPlot``
+* Added ``RunEngine.clear_suspenders()`` convenience method.
+* New ``RunEngine.preprocessors`` list that modifies all plans passed to the
+  RunEngine.
+* Added ``RunEngine.state_hook`` to monitor state changes, akin to ``msg_hook``.
+* Added ``pause_for_debug`` options to ``finalize_wrapper`` which allows pauses
+  the RunEngine before performing any cleanup, making it easier to debug.
+* Added many more examples and make it easier to create simulated devices that
+  generate interesting simulated data. They have an interface closer to the
+  real devices implemented in ophyd.
+* Added ``mv``, a convenient plan for moving multiple devices in parallel.
+* Added optional ``RunEngine.max_depth`` to raise an error if the RunEngine
+  thinks it is being called from inside a function.
+
+Bug Fixes
+^^^^^^^^^
+
+* The 'monitor' functionality was completely broken, packing configuration
+  into the wrong structure and starting seq_num from 0 instead of 1, which is
+  the (regrettable) standard we have settled on.
+* The RunEngine coroutines no longer mutate the messages they receive.
+* Fix race condition in ``post_run`` callback.
+* Fix bugs in several callbacks that caused them not to work on saved documents
+  from the databroker. Also, make them call ``super()`` to play better with
+  multiple inheritance in user code.
+
 
 API Changes
 ^^^^^^^^^^^
 
+* The flag ``RunEngine.ignore_callback_exceptions`` now defaults to False.
 * The plan ``complete``, related to fly scans, previously had ``wait=True`` by
   default, although its documentation indicated that ``False`` was the default.
   The code has been changed to match the documentation. Any calls to
   ``complete`` that are expected to be blocking should be updated with the
   keyword ``wait=True``.
+* Completely change the API of ``Reader`` and ``Mover``, the classes for
+  definding simulated devices.
+* The bluesky interface now expects the ``stop`` method on a device to accept
+  an optional ``success`` argument.
 * The optional, undocumented ``fig`` argument to ``LivePlot`` has been
   deprecated and will be removed in a future release.  An ``ax`` argument has
   been added. Additionally, the axes used by ``LiveRaster`` and ``LiveMesh`` is
   configurable through a new, optional ``ax`` argument.
 * The "shortcut" where mashing Ctrl+C three times quickly ran ``RE.abort()``
   has been removed.
+* Change the default stream name for monitors to ``<signal_name>_monitor`` from
+  ``signal_name>-monitor`` (underscore vs. dash). The impact of this change is
+  minimal because, as noted above, the monitor functionality was completely
+  broken in previous releases.
 
 v0.6.4
 ------
