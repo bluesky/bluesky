@@ -1,6 +1,7 @@
 from bluesky.run_engine import Msg
-from bluesky.examples import (motor, det, stepscan)
-from bluesky.plans import AdaptiveAbsScanPlan, AbsScanPlan, scan
+from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4)
+from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
+                           outer_product_scan)
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot)
 from bluesky.callbacks.zmqpub import Publisher
@@ -334,6 +335,32 @@ def test_live_fit():
     # results are in cb.result.values
 
     expected = {'A': 1, 'sigma': 1, 'x0': 0}
+    for k, v in expected.items():
+        assert np.allclose(cb.result.values[k], v, atol=1e-6)
+
+
+def test_live_fit_multidim():
+    try:
+        import lmfit
+    except ImportError:
+        raise pytest.skip('requires lmfit')
+
+    motor1._fake_sleep = 0
+    motor2._fake_sleep = 0
+
+    def gaussian(x, y, A, sigma, x0, y0):
+        return A*np.exp(-((x - x0)**2 + (y - y0)**2)/(2 * sigma**2))
+
+    model = lmfit.Model(gaussian, ['x', 'y'])
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2,
+                  'y0': 0.3}
+    cb = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess)
+    RE(outer_product_scan([det4], motor1, -1, 1, 20, motor2, -1, 1, 20, False),
+       cb)
+
+    expected = {'A': 1, 'sigma': 1, 'x0': 0, 'y0': 0}
     for k, v in expected.items():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
 

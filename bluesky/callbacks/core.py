@@ -157,16 +157,17 @@ class LivePlot(CallbackBase):
             [str(doc.get(name, ' ')) for name in self.legend_keys])
         self.current_line, = self.ax.plot([], [], label=label, **self.kwargs)
         self.lines.append(self.current_line)
-        self.legend = self.ax.legend(loc=0, title=self.legend_title).draggable()
+        self.legend = self.ax.legend(
+            loc=0, title=self.legend_title).draggable()
         super().start(doc)
 
     def event(self, doc):
         "Unpack data from the event and call self.update()."
         try:
             if self.x is not None:
-                # this try/except block is needed because multiple event streams
-                # will be emitted by the RunEngine and not all event streams will
-                # have the keys we want
+                # this try/except block is needed because multiple event
+                # streams will be emitted by the RunEngine and not all event
+                # streams will have the keys we want
                 new_x = doc['data'][self.x]
             else:
                 new_x = doc['seq_num']
@@ -685,10 +686,11 @@ class LiveFit(CallbackBase):
 
     @independent_vars.setter
     def independent_vars(self, val):
-        if list(val) != self.model.independent_vars:
-            raise ValueError("keys must match the independent variables in "
-                             "the model: "
-                             "{}".format(self.model.independent_vars))
+        if set(val) != set(self.model.independent_vars):
+            raise ValueError("keys {} must match the independent variables in "
+                             "the model "
+                             "{}".format(set(val),
+                                         set(self.model.independent_vars)))
         self._independent_vars = val
         self.independent_vars_data.clear()
         self.independent_vars_data.update({k: [] for k in val})
@@ -709,10 +711,10 @@ class LiveFit(CallbackBase):
         if self.y not in doc['data']:
             return
         y = doc['data'][self.y]
-        kwargs = {k: doc['data'][v] for k, v in self.independent_vars.items()}
+        idv = {k: doc['data'][v] for k, v in self.independent_vars.items()}
 
         # Always stash the data for the next time the fit is updated.
-        self.update_caches(y, **kwargs)
+        self.update_caches(y, idv)
         self.__stale = True
 
         # Maybe update the fit or maybe wait.
@@ -732,10 +734,10 @@ class LiveFit(CallbackBase):
             self.update_fit()
         super().stop(doc)
 
-    def update_caches(self, y, **kwargs):
+    def update_caches(self, y, independent_vars):
         self.ydata.append(y)
         for k, v in self.independent_vars_data.items():
-            v.append(kwargs[k])
+            v.append(independent_vars[k])
 
     def update_fit(self):
         N = len(self.model.param_names)
@@ -750,6 +752,28 @@ class LiveFit(CallbackBase):
 
 
 class LiveFitPlot(LivePlot):
+    """
+    Add a plot to an instance of LiveFit.
+
+    Note: If your figure blocks the main thread when you are trying to
+    scan with this callback, call `plt.ion()` in your IPython session.
+
+    Parameters
+    ----------
+    livefit : LiveFit
+        an instance of ``LiveFit``
+    legend_keys : list, optional
+        The list of keys to extract from the RunStart document and format
+        in the legend of the plot. The legend will always show the
+        scan_id followed by a colon ("1: ").  Each
+    xlim : tuple, optional
+        passed to Axes.set_xlim
+    ylim : tuple, optional
+        passed to Axes.set_ylim
+    ax : Axes, optional
+        matplotib Axes; if none specified, new figure and axes are made.
+    All additional keyword arguments are passed through to ``Axes.plot``.
+    """
     def __init__(self, livefit, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, **kwargs):
         if len(livefit.independent_vars) != 1:

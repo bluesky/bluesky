@@ -1,5 +1,5 @@
-Live Visualization and Export
-*****************************
+Live Visualization and Processing
+*********************************
 
 .. ipython:: python
    :suppress:
@@ -347,7 +347,9 @@ LiveFit
 
 Perform a nonlinear least squared best fit to the data with a user-defined
 model function. The function can depend on any number of independent variables.
-We use package `lmfit <https://lmfit.github.io/lmfit-py/model.html>`_.
+We integrate with the package
+`lmfit <https://lmfit.github.io/lmfit-py/model.html>`_, which provides a nice
+interface for NLS minimization.
 
 In this example, we fit a Gaussian to detector readings as a function of motor
 position. First, define a Gaussian function, create an ``lmfit.Model`` from it,
@@ -383,15 +385,44 @@ To integrate with the bluesky we need to provide:
     from bluesky.examples import motor, det
     from bluesky.callbacks import LiveFit
 
-    cb = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lf = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
 
-    RE(scan([det], motor, -1, 1, 100), cb)
-    # best-fit values for 'A', 'sigma' and 'x0' are in cb.result.values
+    RE(scan([det], motor, -1, 1, 100), lf)
+    # best-fit values for 'A', 'sigma' and 'x0' are in lf.result.values
 
 The fit results are accessible in the ``result`` attribute of the callback.
-See in particular ``result.values``. Refer the
+For example, the center of the Gaussian is ``lf.result.values['x0']``. This
+could be used in a next step, like so:
+
+.. code-block:: python
+
+    x0 = lf.result.values['x0']
+    RE(scan([det], x0 - 1, x0 + 1, 100))
+
+Refer the
 `lmfit documentation <https://lmfit.github.io/lmfit-py/model.html#the-modelresult-class>`_
-for more.
+for more about ``result``.
+
+This example uses a model with two independent variables, x and y.
+
+.. code-block:: python
+
+    def gaussian(x, y, A, sigma, x0, y0):
+        return A*np.exp(-((x - x0)**2 + (y - y0)**2)/(2 * sigma**2))
+
+    # Specify the names of the independent variables to Model.
+    model = lmfit.Model(gaussian, ['x', 'y'])
+
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2,
+                  'y0': 0.3}
+
+    lf = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess)
+
+    # Scan a 2D mesh.
+    RE(outer_product_scan([det4], motor1, -1, 1, 20, motor2, -1, 1, 20, False),
+       lf)
 
 By default, the fit is recomputed every time a new data point is available. See
 the API documentation below for other options. Fitting does not commence until
@@ -399,6 +430,112 @@ the number of accumulated data points is equal to the number of free parameters
 in the model.
 
 .. autoclass:: bluesky.callbacks.LiveFit
+
+LiveFitPlot
++++++++++++
+
+This is a variation on ``LivePlot`` that plots the best fit curve from
+``LiveFit``. It applies to 1D model functions only.
+
+Repeating the example from ``LiveFit`` above, adding a plot:
+
+.. code-block:: python
+
+    # same as above...
+
+    import numpy as np
+    import lmfit
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+    from bluesky.callbacks import LiveFit
+
+    def gaussian(x, A, sigma, x0):
+        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2}
+
+    lf = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+
+    # now add the plot...
+
+    from bluesky.callbacks import LiveFitPlot
+    lpf = LiveFitPlot(lf, color='r')
+
+    RE(scan([det], motor, -1, 1, 100), lfp)
+
+    # Notice that we did'nt need to subscribe lf directly, just lfp.
+    # But, as before, the results are in lf.result.
+
+.. plot::
+
+    import numpy as np
+    import lmfit
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+    from bluesky.callbacks import LiveFit, LiveFitPlot
+    from bluesky import RunEngine
+
+    RE = RunEngine({})
+
+    def gaussian(x, A, sigma, x0):
+        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2}
+
+    lf = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lfp = LiveFitPlot(lf, color='r')
+
+    RE(scan([det], motor, -1, 1, 100), lfp)
+
+We can use the standard ``LivePlot`` to show the data on the same axes.
+Notice that they can styled independently.
+
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()  # explitly create figure, axes to use below
+    lfp = LiveFitPlot(lf, ax=ax, color='r')
+    lp = LivePlot('det', 'motor', ax=ax, marker='o', linestyle='none')
+
+    RE(scan([det], motor, -1, 1, 100), [lp, lfp])
+
+.. plot::
+
+    import numpy as np
+    import lmfit
+    from bluesky.plans import scan
+    from bluesky.examples import motor, det
+    from bluesky.callbacks import LiveFit, LivePlot, LiveFitPlot
+    from bluesky import RunEngine
+
+    RE = RunEngine({})
+
+    def gaussian(x, A, sigma, x0):
+        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+
+    model = lmfit.Model(gaussian)
+    init_guess = {'A': 2,
+                  'sigma': lmfit.Parameter('sigma', 3, min=0),
+                  'x0': -0.2}
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    lf = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lfp = LiveFitPlot(lf, ax=ax, color='r')
+    lp = LivePlot('det', 'motor', ax=ax, marker='o', linestyle='none')
+
+    RE(scan([det], motor, -1, 1, 50), [lfp, lp])
+    plt.draw()
+
+.. autoclass:: bluesky.callbacks.LiveFitPlot
 
 PeakStats 
 ++++++++++
