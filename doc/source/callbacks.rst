@@ -373,7 +373,7 @@ in the case of 'sigma' above, to specify constraints.
 
 To integrate with the bluesky we need to provide:
 
-* the field with the dependent variable (in this example, ``'det'``)
+* the field with the dependent variable (in this example, ``'noisy_det'``)
 * a mapping between the name(s) of independent variable(s) in
   the function (``'x'``) to the corresponding field(s) in the data
   (``'motor'``)
@@ -382,12 +382,12 @@ To integrate with the bluesky we need to provide:
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from bluesky.examples import motor, noisy_det
     from bluesky.callbacks import LiveFit
 
-    lf = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lf = LiveFit(model, 'noisy_det', {'x': 'motor'}, init_guess)
 
-    RE(scan([det], motor, -1, 1, 100), lf)
+    RE(scan([noisy_det], motor, -1, 1, 100), lf)
     # best-fit values for 'A', 'sigma' and 'x0' are in lf.result.values
 
 The fit results are accessible in the ``result`` attribute of the callback.
@@ -397,7 +397,7 @@ could be used in a next step, like so:
 .. code-block:: python
 
     x0 = lf.result.values['x0']
-    RE(scan([det], x0 - 1, x0 + 1, 100))
+    RE(scan([noisy_det], x0 - 1, x0 + 1, 100))
 
 Refer the
 `lmfit documentation <https://lmfit.github.io/lmfit-py/model.html#the-modelresult-class>`_
@@ -406,6 +406,8 @@ for more about ``result``.
 This example uses a model with two independent variables, x and y.
 
 .. code-block:: python
+
+    from bluesky.examples import motor1, motor2, det4
 
     def gaussian(x, y, A, sigma, x0, y0):
         return A*np.exp(-((x - x0)**2 + (y - y0)**2)/(2 * sigma**2))
@@ -446,7 +448,7 @@ Repeating the example from ``LiveFit`` above, adding a plot:
     import numpy as np
     import lmfit
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from bluesky.examples import motor, noisy_det
     from bluesky.callbacks import LiveFit
 
     def gaussian(x, A, sigma, x0):
@@ -457,14 +459,14 @@ Repeating the example from ``LiveFit`` above, adding a plot:
                   'sigma': lmfit.Parameter('sigma', 3, min=0),
                   'x0': -0.2}
 
-    lf = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lf = LiveFit(model, 'noisy_det', {'x': 'motor'}, init_guess)
 
     # now add the plot...
 
     from bluesky.callbacks import LiveFitPlot
     lpf = LiveFitPlot(lf, color='r')
 
-    RE(scan([det], motor, -1, 1, 100), lfp)
+    RE(scan([noisy_det], motor, -1, 1, 100), lfp)
 
     # Notice that we did'nt need to subscribe lf directly, just lfp.
     # But, as before, the results are in lf.result.
@@ -474,7 +476,7 @@ Repeating the example from ``LiveFit`` above, adding a plot:
     import numpy as np
     import lmfit
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from bluesky.examples import motor, noisy_det
     from bluesky.callbacks import LiveFit, LiveFitPlot
     from bluesky import RunEngine
 
@@ -488,14 +490,13 @@ Repeating the example from ``LiveFit`` above, adding a plot:
                   'sigma': lmfit.Parameter('sigma', 3, min=0),
                   'x0': -0.2}
 
-    lf = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lf = LiveFit(model, 'noisy_det', {'x': 'motor'}, init_guess)
     lfp = LiveFitPlot(lf, color='r')
 
-    RE(scan([det], motor, -1, 1, 100), lfp)
+    RE(scan([noisy_det], motor, -1, 1, 100), lfp)
 
 We can use the standard ``LivePlot`` to show the data on the same axes.
 Notice that they can styled independently.
-
 
 .. code-block:: python
 
@@ -503,16 +504,16 @@ Notice that they can styled independently.
 
     fig, ax = plt.subplots()  # explitly create figure, axes to use below
     lfp = LiveFitPlot(lf, ax=ax, color='r')
-    lp = LivePlot('det', 'motor', ax=ax, marker='o', linestyle='none')
+    lp = LivePlot('noisy_det', 'motor', ax=ax, marker='o', linestyle='none')
 
-    RE(scan([det], motor, -1, 1, 100), [lp, lfp])
+    RE(scan([noisy_det], motor, -1, 1, 100), [lp, lfp])
 
 .. plot::
 
     import numpy as np
     import lmfit
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from bluesky.examples import motor, noisy_det
     from bluesky.callbacks import LiveFit, LivePlot, LiveFitPlot
     from bluesky import RunEngine
 
@@ -528,11 +529,11 @@ Notice that they can styled independently.
 
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots()
-    lf = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    lf = LiveFit(model, 'noisy_det', {'x': 'motor'}, init_guess)
     lfp = LiveFitPlot(lf, ax=ax, color='r')
-    lp = LivePlot('det', 'motor', ax=ax, marker='o', linestyle='none')
+    lp = LivePlot('noisy_det', 'motor', ax=ax, marker='o', linestyle='none')
 
-    RE(scan([det], motor, -1, 1, 50), [lfp, lp])
+    RE(scan([noisy_det], motor, -1, 1, 50), [lfp, lp])
     plt.draw()
 
 .. autoclass:: bluesky.callbacks.LiveFitPlot
