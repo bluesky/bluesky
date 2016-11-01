@@ -1,5 +1,5 @@
-Live Visualization and Export
-*****************************
+Live Visualization and Processing
+*********************************
 
 .. ipython:: python
    :suppress:
