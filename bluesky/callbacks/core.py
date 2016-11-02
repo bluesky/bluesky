@@ -762,6 +762,8 @@ class LiveFitPlot(LivePlot):
     ----------
     livefit : LiveFit
         an instance of ``LiveFit``
+    num_points : int, optional
+        number of points to sample when evaluating the model; default 100
     legend_keys : list, optional
         The list of keys to extract from the RunStart document and format
         in the legend of the plot. The legend will always show the
@@ -775,7 +777,7 @@ class LiveFitPlot(LivePlot):
     All additional keyword arguments are passed through to ``Axes.plot``.
     """
     def __init__(self, livefit, *, legend_keys=None, xlim=None, ylim=None,
-                 ax=None, **kwargs):
+                 num_points=100, ax=None, **kwargs):
         if len(livefit.independent_vars) != 1:
             raise NotImplementedError("LiveFitPlot supports models with one "
                                       "independent variable only.")
@@ -783,7 +785,9 @@ class LiveFitPlot(LivePlot):
         x, = livefit.independent_vars.values()  # this may change
         super().__init__(livefit.y, x, legend_keys=legend_keys,
                          xlim=xlim, ylim=xlim, ax=ax, **kwargs)
+        self.num_points = num_points
         self._livefit = livefit
+        self._xlim = xlim
 
     @property
     def livefit(self):
@@ -797,8 +801,19 @@ class LiveFitPlot(LivePlot):
     def event(self, doc):
         self.livefit.event(doc)
         if self.livefit.result is not None:
-            self.y_data = self.livefit.result.best_fit
-            self.x_data = self.livefit.independent_vars_data[self.__x_key]
+            # Evaluate the model function at equally-spaced points.
+            # To determine the domain of x, use xlim if availabe. Otherwise,
+            # use the range of x points measured up to this point.
+            if self._xlim is None:
+                x_data = self.livefit.independent_vars_data[self.__x_key]
+                xmin, xmax = np.min(x_data), np.max(x_data)
+            else:
+                xmin, xmax = self._xlim
+            x_points = np.linspace(xmin, xmax, self.num_points)
+            kwargs = {self.__x_key: x_points}
+            kwargs.update(self.livefit.result.values)
+            self.y_data = self.livefit.result.model.eval(**kwargs)
+            self.x_data = x_points
             self.update_plot()
         # Intentionally override LivePlot.event. Do not call super().
 
