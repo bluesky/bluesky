@@ -797,6 +797,8 @@ class LiveFitPlot(LivePlot):
         self.livefit.start(doc)
         self.x, = self.livefit.independent_vars.keys()  # in case it changed
         super().start(doc)
+        # Put fit above other lines (default 2) but below text (default 3).
+        self.current_line.set_zorder(2.5)
 
     def event(self, doc):
         self.livefit.event(doc)
