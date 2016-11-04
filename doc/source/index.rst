@@ -34,6 +34,7 @@ Index
 -----
 
 .. toctree::
+   :caption: User Documentation
    :maxdepth: 1
 
    plans_intro
@@ -45,6 +46,12 @@ Index
    event_descriptors
    async
    debugging
+   cookbook/index
+
+.. toctree::
+   :caption: Developer Documentation
+   :maxdepth: 1
+
    hardware
    msg
    run_engine
