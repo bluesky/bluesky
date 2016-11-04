@@ -703,9 +703,16 @@ class GeneralReaderWithFileStore(Reader):
             # a reference to FileStore.
             reading['value'] = datum_id
             self._result[name] = reading
+        return NullStatus()
 
     def read(self):
         return self._result
+
+    def describe(self):
+        res = super().describe()
+        for key in res:
+            res[key]['external'] = "FILESTORE"
+        return res
 
     def unstage(self):
         self._resource_id = None
