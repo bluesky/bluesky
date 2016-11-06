@@ -754,7 +754,7 @@ jittery_motor2 = Mover('jittery_motor2',
                                     ('jittery_motor2_setpoint', lambda x: x)]),
                        {'x': 0})
 noisy_det = SynGauss('noisy_det', motor, 'motor', center=0, Imax=1,
-                     noise='uniform', sigma=1)
+                     noise='uniform', sigma=1, noise_multiplier=0.1)
 det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
 det1 = SynGauss('det1', motor1, 'motor1', center=0, Imax=5, sigma=0.5)
 det2 = SynGauss('det2', motor2, 'motor2', center=1, Imax=2, sigma=2)
