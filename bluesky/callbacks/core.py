@@ -776,8 +776,8 @@ class LiveFitPlot(LivePlot):
         matplotib Axes; if none specified, new figure and axes are made.
     All additional keyword arguments are passed through to ``Axes.plot``.
     """
-    def __init__(self, livefit, *, legend_keys=None, xlim=None, ylim=None,
-                 num_points=100, ax=None, **kwargs):
+    def __init__(self, livefit, *, num_points=100, legend_keys=None, xlim=None,
+                 ylim=None, ax=None, **kwargs):
         if len(livefit.independent_vars) != 1:
             raise NotImplementedError("LiveFitPlot supports models with one "
                                       "independent variable only.")
