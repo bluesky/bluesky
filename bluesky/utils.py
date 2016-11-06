@@ -141,6 +141,10 @@ class SignalHandler:
             if self.log is not None:
                 self.log.debug('SignalHandler caught SIGINT; count is %r',
                                self.count)
+            if self.count > 10:
+                orig_func = self.original_handler
+                self.release()
+                orig_func(signum, frame)
 
         signal.signal(self.sig, handler)
         return self
