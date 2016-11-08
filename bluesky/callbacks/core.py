@@ -3,7 +3,7 @@ Useful callbacks for the Run Engine
 """
 from itertools import count
 import warnings
-from collections import deque, namedtuple, OrderedDict
+from collections import deque, namedtuple, OrderedDict, ChainMap
 import time as ttime
 
 import matplotlib.pyplot as plt
@@ -155,7 +155,8 @@ class LivePlot(CallbackBase):
         self.x_data, self.y_data = [], []
         label = " :: ".join(
             [str(doc.get(name, name)) for name in self.legend_keys])
-        self.current_line, = self.ax.plot([], [], label=label, **self.kwargs)
+        kwargs = ChainMap(self.kwargs, {'label': label})
+        self.current_line, = self.ax.plot([], [], **kwargs)
         self.lines.append(self.current_line)
         self.legend = self.ax.legend(
             loc=0, title=self.legend_title).draggable()
