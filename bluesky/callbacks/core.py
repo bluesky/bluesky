@@ -154,7 +154,7 @@ class LivePlot(CallbackBase):
         # The doc is not used; we just use the singal that a new run began.
         self.x_data, self.y_data = [], []
         label = " :: ".join(
-            [str(doc.get(name, ' ')) for name in self.legend_keys])
+            [str(doc.get(name, name)) for name in self.legend_keys])
         self.current_line, = self.ax.plot([], [], label=label, **self.kwargs)
         self.lines.append(self.current_line)
         self.legend = self.ax.legend(
