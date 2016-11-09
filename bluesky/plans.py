@@ -2737,12 +2737,11 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
         while True:
             yield Msg('create', None, name='primary')
-            try:
-                pos = motor.position
-            except AttributeError:
-                ret_mot = yield Msg('read', motor)
-                key = list(ret_mot.keys())[0]
-                pos = ret_mot[key]['value']
+            ret_mot = yield Msg('read', motor)
+            if ret_mot is None:
+                return
+            key = list(ret_mot.keys())[0]
+            pos = ret_mot[key]['value']
             yield Msg('trigger', d, group='A')
             yield Msg('wait', None, 'A')
             reading = yield Msg('read', d)
