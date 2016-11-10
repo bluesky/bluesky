@@ -503,6 +503,9 @@ We also provide :ref:`wrapper and decorator functions <preprocessors>` and
 :ref:`utility functions <plan_utils>`, documented below, that make building
 these easier.
 
+
+.. _plan_examples1:
+
 Examples
 --------
 
@@ -858,6 +861,8 @@ messages into the plan or removing messages).
 It's easiest to learn this by example, studying the implementations of the built-in
 processors (catalogued above) in the
 `the source of the plans module <https://github.com/NSLS-II/bluesky/blob/master/bluesky/plans.py>`_.
+
+.. _exception_handling:
 
 How Plans Handle Exceptions
 ---------------------------
