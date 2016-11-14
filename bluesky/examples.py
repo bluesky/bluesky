@@ -687,7 +687,7 @@ class GeneralReaderWithFileStore(Reader):
         self._file_stem = short_uid()
         self._path_stem = os.path.join(self.save_path, self._file_stem)
         self._resource_id = self.fs.insert_resource(self.filestore_spec,
-                                                    self._path_stem, {},
+                                                    self._file_stem, {},
                                                     root=self.save_path)
 
     def trigger(self):
