@@ -732,6 +732,11 @@ class ReaderWithFSHandler:
     def __call__(self, index):
         return np.load('{}_{}.npy'.format(self._name, index))
 
+    def get_file_list(self, datum_kwarg_gen):
+        "This method is optional. It is not needed for access, but for export."
+        return ['{name}_{index}.npy'.format(name=self._name, **kwargs)
+                for kwargs in datum_kwarg_gen]
+
 
 motor = Mover('motor', OrderedDict([('motor', lambda x: x),
                                     ('motor_setpoint', lambda x: x)]),
