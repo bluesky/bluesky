@@ -473,7 +473,7 @@ class ReaderWithFileStore(Reader):
         self._file_stem = short_uid()
         self._path_stem = os.path.join(self.save_path, self._file_stem)
         self._resource_id = self.fs.insert_resource(self.filestore_spec,
-                                                    self._path_stem, {},
+                                                    self._file_stem, {},
                                                     root=self.save_path)
 
     def trigger(self):
@@ -726,8 +726,8 @@ class GeneralReaderWithFileStore(Reader):
 class ReaderWithFSHandler:
     specs = {'RWFS_NPY'}
 
-    def __init__(self, filename):
-        self._name = filename
+    def __init__(self, filename, root=''):
+        self._name = os.path.join(root, filename)
 
     def __call__(self, index):
         return np.load('{}_{}.npy'.format(self._name, index))
