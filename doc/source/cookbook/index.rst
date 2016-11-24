@@ -17,3 +17,4 @@ grow in the coming weeks.
 .. toctree::
 
     scan_gaussian
+    grid_in_grid
