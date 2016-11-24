@@ -5,9 +5,6 @@ from bluesky.plans import (subs_decorator, abs_set, trigger_and_read,
                            run_decorator, stage_decorator)
 from bluesky.callbacks import LiveFit, LiveFitPlot, LivePlot
 from bluesky.examples import motor, noisy_det
-from bluesky import RunEngine
-
-RE = RunEngine({})
 
 
 def errorbar(lmfit_result, param_name):
@@ -31,7 +28,7 @@ def scan_gaussian(detectors, motor, start, stop, num):
     main_detector = detectors[0]
     main_motor_field, *_ = motor.describe()
     lf = LiveFit(model, main_detector.name, {'x': main_motor_field}, guess)
-    lfp = LiveFitPlot(lf, color='r', ax=fig.gca())
+    lfp = LiveFitPlot(lf, color='r', ax=plt.gca())
     lp = LivePlot(main_detector, main_motor_field,
                   linestyle='none', marker='o', ax=plt.gca())
 
@@ -48,5 +45,8 @@ def scan_gaussian(detectors, motor, start, stop, num):
                 break
 
     yield from plan()
+
+
+# Example usage:
 
 RE(scan_gaussian([noisy_det], motor, -1, 1, 200))
