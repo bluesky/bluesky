@@ -57,7 +57,7 @@ install:
   - conda install -n testenv nose jsonschema traitlets pytest coverage pip databroker ophyd historydict boltons doct pyepics super_state_machine xray-vision lmfit jinja2 icu pyzmq mongoquery dill -c lightsource2 -c conda-forge -c soft-matter
   - source activate testenv
   - 'pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model'
-  - conda remove metadatastore databroker filestore --yes
+  - conda remove metadatastore databroker filestore
   - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
   - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
   - 'pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore'
@@ -77,7 +77,7 @@ script:
   - coverage report -m
   - |
     if [ $BUILD_DOCS == true ]; then
-      conda install -y --no-deps -c conda-forge/label/rc matplotlib  # mpl 2.x
+      conda install --no-deps -c conda-forge/label/rc matplotlib  # mpl 2.x
       source ~/ci_scripts/make-docs.sh
     fi
 
