@@ -31,7 +31,6 @@ from bluesky.plans import (count, scan, relative_scan,
                            fly_during_decorator, monitor_during_decorator)
 import itertools
 from itertools import chain
-from collections import ChainMap
 from inspect import signature, Parameter
 import warnings
 
@@ -240,12 +239,10 @@ def inner_spec_decorator(plan_name, time, motors, **subs_kwargs):
         @baseline_decorator(list(gs.BASELINE_DEVICES) + motors)
         def inner_spec_plan(*args, md=None, **kwargs):
             # inject the plan name + time into the metadata
-            if md is None:
-                md = {}
-            md = ChainMap(md, {'plan_name': plan_name,
-                               gs.MD_TIME_KEY: time})
-
-            return (yield from func(*args, md=md, **kwargs))
+            _md = {'plan_name': plan_name,
+                   gs.MD_TIME_KEY: time}
+            _md.update(md or {})
+            return (yield from func(*args, md=_md, **kwargs))
         return inner_spec_plan
     return outer
 
@@ -418,10 +415,9 @@ gs.SUB_FACTORIES['a2scan'] = [setup_livetable,
 
 # This implementation works for *all* dimensions, but we follow SPEC naming.
 def a3scan(*args, time=None, md=None):
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'a3scan'})
-    return (yield from a2scan(*args, time=time, md=md))
+    _md = {'plan_name': 'a3scan'}
+    _md.update(md or {})
+    return (yield from a2scan(*args, time=time, md=_md))
 a3scan.__doc__ = a2scan.__doc__
 gs.SUB_FACTORIES['a3scan'] = gs.SUB_FACTORIES['a2scan']
 
@@ -463,10 +459,9 @@ gs.SUB_FACTORIES['d2scan'] = [setup_livetable,
 
 # This implementation works for *all* dimensions, but we follow SPEC naming.
 def d3scan(*args, time=None, md=None):
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'd3scan'})
-    return (yield from d2scan(*args, time=time, md=md))
+    _md = {'plan_name': 'd3scan'}
+    _md.update(md or {})
+    return (yield from d2scan(*args, time=time, md=_md))
 d3scan.__doc__ = d2scan.__doc__
 gs.SUB_FACTORIES['d3scan'] = gs.SUB_FACTORIES['d2scan']
 
@@ -493,12 +488,11 @@ def th2th(start, finish, intervals, time=None, *, md=None):
     md : dict, optional
         metadata
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'th2th'})
+    _md = {'plan_name': 'th2th'}
+    _md.update(md or {})
     plan = d2scan(gs.TTH_MOTOR, start, finish,
                   gs.TH_MOTOR, start/2, finish/2,
-                  intervals, time=time, md=md)
+                  intervals, time=time, md=_md)
     return (yield from plan)
 gs.SUB_FACTORIES['th2th'] = gs.SUB_FACTORIES['d2scan']
 
@@ -609,12 +603,11 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
     `bluesky.spec_api.aspiral`
     `bluesky.spec_api.spiral`
     '''
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'fermat'})
+    _md = {'plan_name': 'fermat'}
+    _md.update(md or {})
     plan = afermat(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, factor, time=time, tilt=tilt,
-                   per_step=per_step, md=md)
+                   per_step=per_step, md=_md)
     plan = plans.reset_positions_wrapper(plan)  # return motors to starting pos
     return (yield from plan)
 gs.SUB_FACTORIES['fermat'] = gs.SUB_FACTORIES['afermat']
@@ -701,12 +694,11 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
     `bluesky.spec_api.afermat`
     `bluesky.spec_api.aspiral`
     '''
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'spiral'})
+    _md = {'plan_name': 'spiral'}
+    _md.update(md or {})
     plan = aspiral(x_motor, y_motor, x_motor.position, y_motor.position,
                    x_range, y_range, dr, nth, time=time, tilt=tilt,
-                   per_step=per_step, md=md)
+                   per_step=per_step, md=_md)
     plan = plans.reset_positions_wrapper(plan)  # return to starting pos
     return (yield from plan)
 gs.SUB_FACTORIES['spiral'] = gs.SUB_FACTORIES['aspiral']

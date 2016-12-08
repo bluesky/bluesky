@@ -948,9 +948,7 @@ def open_run(md=None):
     --------
     :func:`bluesky.plans.close_run`
     """
-    if md is None:
-        md = {}
-    return (yield Msg('open_run', **md))
+    return (yield Msg('open_run', **(md or {})))
 
 
 def close_run():
@@ -1165,10 +1163,7 @@ def run_context(plan_stack, *, md=None):
     md : dict, optional
         metadata to be passed into the 'open_run' message
     """
-    if md is None:
-        md = dict()
-    md = dict(md)
-    plan_stack.append(single_gen(Msg('open_run', None, **md)))
+    plan_stack.append(single_gen(Msg('open_run', None, **dict(md or {}))))
     yield plan_stack
     plan_stack.append(single_gen(Msg('close_run')))
 
@@ -1950,14 +1945,11 @@ def count(detectors, num=1, delay=None, *, md=None):
     If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
     the plan will raise a ``ValueError`` during iteration.
     """
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'detectors': [det.name for det in detectors],
-         'num_steps': num,
-         'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
-         'plan_name': 'count'})
+    _md = {'detectors': [det.name for det in detectors],
+           'num_steps': num,
+           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
+           'plan_name': 'count'}
+    _md.update(md or {})
 
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
     if not isinstance(delay, Iterable):
@@ -1966,7 +1958,7 @@ def count(detectors, num=1, delay=None, *, md=None):
         delay = iter(delay)
 
     @stage_decorator(detectors)
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def finite_plan():
         for i in range(num):
             yield Msg('checkpoint')
@@ -1984,7 +1976,7 @@ def count(detectors, num=1, delay=None, *, md=None):
                 yield Msg('sleep', None, d)
 
     @stage_decorator(detectors)
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def infinite_plan():
         while True:
             yield Msg('checkpoint')
@@ -2041,28 +2033,23 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     --------
     :func:`bluesky.plans.relative_list_scan`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'detectors': [det.name for det in detectors],
-         'motors': [motor.name],
-         'num_steps': len(steps),
-         'plan_args': {'detectors': list(map(repr, detectors)),
-                       'motor': repr(motor), 'steps': steps,
-                       'per_step': repr(per_step)},
-         'plan_name': 'list_scan',
-         'plan_pattern': 'array',
-         'plan_pattern_module': 'numpy',
-         }
-    )
-
-    md['plan_pattern_args'] = dict(object=steps)
+    _md = {'detectors': [det.name for det in detectors],
+           'motors': [motor.name],
+           'num_steps': len(steps),
+           'plan_args': {'detectors': list(map(repr, detectors)),
+                           'motor': repr(motor), 'steps': steps,
+                           'per_step': repr(per_step)},
+           'plan_name': 'list_scan',
+           'plan_pattern': 'array',
+           'plan_pattern_module': 'numpy',
+           'plan_pattern_args': dict(object=steps),
+          }
+    _md.update(md or {})
     if per_step is None:
         per_step = one_1d_step
 
     @stage_decorator(list(detectors) + [motor])
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def inner_list_scan():
         for step in steps:
             yield from per_step(detectors, motor, step)
@@ -2093,15 +2080,14 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     :func:`bluesky.plans.list_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'relative_list_scan'})
+    _md = {'plan_name': 'relative_list_scan'}
+    _md.update(md or {})
 
     @reset_positions_decorator([motor])
     @relative_set_decorator([motor])
     def inner_relative_list_scan():
         return (yield from list_scan(detectors, motor, steps,
-                                     per_step=per_step, md=md))
+                                     per_step=per_step, md=_md))
     return (yield from inner_relative_list_scan())
 
 
@@ -2131,30 +2117,27 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     --------
     :func:`bluesky.plans.relative_scan`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'detectors': [det.name for det in detectors],
-         'motors': [motor.name],
-         'num_steps': num,
-         'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
-                       'motor': repr(motor),
-                       'start': start, 'stop': stop,
-                       'per_step': repr(per_step)},
-         'plan_name': 'scan',
-         'plan_pattern': 'linspace',
-         'plan_pattern_module': 'numpy',
-         })
+    _md = {'detectors': [det.name for det in detectors],
+          'motors': [motor.name],
+          'num_steps': num,
+          'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
+                        'motor': repr(motor),
+                        'start': start, 'stop': stop,
+                        'per_step': repr(per_step)},
+          'plan_name': 'scan',
+          'plan_pattern': 'linspace',
+          'plan_pattern_module': 'numpy',
+          'plan_pattern_args': dict(start=start, stop=stop, num=num),
+         }
+    _md.update(md or {})
 
     if per_step is None:
         per_step = one_1d_step
 
-    md['plan_pattern_args'] = dict(start=start, stop=stop, num=num)
-    steps = np.linspace(**md['plan_pattern_args'])
+    steps = np.linspace(**_md['plan_pattern_args'])
 
     @stage_decorator(list(detectors) + [motor])
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def inner_scan():
         for step in steps:
             yield from per_step(detectors, motor, step)
@@ -2189,16 +2172,15 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     --------
     :func:`bluesky.plans.scan`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'relative_scan'})
+    _md = {'plan_name': 'relative_scan'}
+    _md.update(md or {})
     # TODO read initial positions (redundantly) so they can be put in md here
 
     @reset_positions_decorator([motor])
     @relative_set_decorator([motor])
     def inner_relative_scan():
         return (yield from scan(detectors, motor, start, stop,
-                                num, per_step=per_step, md=md))
+                                num, per_step=per_step, md=_md))
 
     return (yield from inner_relative_scan())
 
@@ -2229,29 +2211,26 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     --------
     :func:`bluesky.plans.relative_log_scan`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'detectors': [det.name for det in detectors],
-         'motors': [motor.name],
-         'num_steps': num,
-         'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
-                       'start': start, 'stop': stop, 'motor': repr(motor),
-                       'per_step': repr(per_step)},
-         'plan_name': 'log_scan',
-         'plan_pattern': 'logspace',
-         'plan_pattern_module': 'numpy',
-         })
+    _md = {'detectors': [det.name for det in detectors],
+           'motors': [motor.name],
+           'num_steps': num,
+           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
+                         'start': start, 'stop': stop, 'motor': repr(motor),
+                         'per_step': repr(per_step)},
+           'plan_name': 'log_scan',
+           'plan_pattern': 'logspace',
+           'plan_pattern_module': 'numpy',
+           'plan_pattern_args': dict(start=start, stop=stop, num=num),
+          }
+    _md.update(md or {})
 
     if per_step is None:
         per_step = one_1d_step
 
-    md['plan_pattern_args'] = dict(start=start, stop=stop, num=num)
-    steps = np.logspace(**md['plan_pattern_args'])
+    steps = np.logspace(**_md['plan_pattern_args'])
 
     @stage_decorator(list(detectors) + [motor])
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def inner_log_scan():
         for step in steps:
             yield from per_step(detectors, motor, step)
@@ -2287,15 +2266,14 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     :func:`bluesky.plans.log_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'relative_log_scan'})
+    _md = {'plan_name': 'relative_log_scan'}
+    _md.update(md or {})
 
     @reset_positions_decorator([motor])
     @relative_set_decorator([motor])
     def inner_relative_log_scan():
         return (yield from log_scan(detectors, motor, start, stop, num,
-                                    per_step=per_step, md=md))
+                                    per_step=per_step, md=_md))
 
     return (yield from inner_relative_log_scan())
 
@@ -2335,26 +2313,23 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     --------
     :func:`bluesky.plans.relative_adaptive_scan`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'detectors': [det.name for det in detectors],
-         'motors': [motor.name],
-         # 'num_steps': 'adaptive',
-         'plan_args': {'detectors': list(map(repr, detectors)),
-                       'motor': repr(motor),
-                       'start': start,
-                       'stop': stop,
-                       'min_step': min_step,
-                       'max_step': max_step,
-                       'target_delta': target_delta,
-                       'backstep': backstep,
-                       'threshold': threshold},
-         'plan_name': 'adaptive_scan'})
+    _md = {'detectors': [det.name for det in detectors],
+           'motors': [motor.name],
+           'plan_args': {'detectors': list(map(repr, detectors)),
+                         'motor': repr(motor),
+                         'start': start,
+                         'stop': stop,
+                         'min_step': min_step,
+                         'max_step': max_step,
+                         'target_delta': target_delta,
+                         'backstep': backstep,
+                         'threshold': threshold},
+           'plan_name': 'adaptive_scan',
+          }
+    _md.update(md or {})
 
     @stage_decorator(list(detectors) + [motor])
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def adaptive_core():
         next_pos = start
         step = (max_step - min_step) / 2
@@ -2436,9 +2411,8 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
     --------
     :func:`bluesky.plans.adaptive_scan`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'adaptive_relative_scan'})
+    _md = {'plan_name': 'adaptive_relative_scan'}
+    _md.update(md or {})
 
     @reset_positions_decorator([motor])
     @relative_set_decorator([motor])
@@ -2446,7 +2420,7 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
         return (yield from adaptive_scan(detectors, target_field,
                                          motor, start, stop, min_step,
                                          max_step, target_delta,
-                                         backstep, threshold, md=md))
+                                         backstep, threshold, md=_md))
 
     return (yield from inner_relative_adaptive_scan())
 
@@ -2503,17 +2477,15 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.outer_product_scan`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'detectors': [det.name for det in detectors],
-         'motors': [motor.name for motor in cycler.keys],
-         'num_steps': len(cycler),
-         'plan_args': {'detectors': list(map(repr, detectors)),
-                       'cycler': repr(cycler),
-                       'per_step': repr(per_step)},
-         'plan_name': 'scan_nd'})
+    _md = {'detectors': [det.name for det in detectors],
+           'motors': [motor.name for motor in cycler.keys],
+           'num_steps': len(cycler),
+           'plan_args': {'detectors': list(map(repr, detectors)),
+                         'cycler': repr(cycler),
+                         'per_step': repr(per_step)},
+           'plan_name': 'scan_nd'
+          }
+    _md.update(md or {})
 
     if per_step is None:
         per_step = one_nd_step
@@ -2521,7 +2493,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     motors = list(cycler.keys)
 
     @stage_decorator(list(detectors) + motors)
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def inner_scan_nd():
         for step in list(cycler):
             yield from per_step(detectors, step, pos_cache)
@@ -2555,28 +2527,23 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     :func:`bluesky.plans.outer_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    if md is None:
-        md = {}
-
     md_args = list(chain(*((repr(motor), start, stop)
                            for motor, start, stop in chunked(args, 3))))
 
-    md = ChainMap(
-        md,
-        {'plan_args': {'detectors': list(map(repr, detectors)),
-                       'num': num, 'args': md_args,
-                       'per_step': repr(per_step)},
-         'plan_name': 'inner_product_scan',
-         'plan_pattern': 'inner_product',
-         'plan_pattern_module': plan_patterns.__name__,
-         }
-    )
+    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
+                         'num': num, 'args': md_args,
+                         'per_step': repr(per_step)},
+           'plan_name': 'inner_product_scan',
+           'plan_pattern': 'inner_product',
+           'plan_pattern_module': plan_patterns.__name__,
+           'plan_pattern_args': dict(num=num, args=md_args),
+           }
+    _md.update(md or {})
 
-    md['plan_pattern_args'] = dict(num=num, args=md_args)
     full_cycler = plan_patterns.inner_product(num=num, args=args)
 
     return (yield from scan_nd(detectors, full_cycler,
-                               per_step=per_step, md=md))
+                               per_step=per_step, md=_md))
 
 
 def outer_product_scan(detectors, *args, per_step=None, md=None):
@@ -2610,9 +2577,6 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    if md is None:
-        md = {}
-
     full_cycler = plan_patterns.outer_product(args=list(args))
 
     chunk_args = list(plan_patterns.chunk_outer_product_args(args))
@@ -2624,26 +2588,25 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
             # snake argument only shows up after the first motor
             md_args.append(snake)
 
-    md['plan_pattern_args'] = dict(args=md_args)
-
-    md = ChainMap(
-        md,
-        {'shape': tuple(num for motor, start, stop, num, snake
-                        in chunk_args),
-         'extents': tuple([start, stop] for motor, start, stop, num, snake
+    _md = {'shape': tuple(num for motor, start, stop, num, snake
                           in chunk_args),
-         'snaking': tuple(snake for motor, start, stop, num, snake
-                          in chunk_args),
-         # 'num_steps': inserted by scan_nd
-         'plan_args': {'detectors': list(map(repr, detectors)),
-                       'args': md_args,
-                       'per_step': repr(per_step)},
-         'plan_name': 'outer_product_scan',
-         'plan_pattern': 'outer_product',
-         'plan_pattern_module': plan_patterns.__name__})
+           'extents': tuple([start, stop] for motor, start, stop, num, snake
+                            in chunk_args),
+           'snaking': tuple(snake for motor, start, stop, num, snake
+                            in chunk_args),
+           # 'num_steps': inserted by scan_nd
+           'plan_args': {'detectors': list(map(repr, detectors)),
+                         'args': md_args,
+                         'per_step': repr(per_step)},
+           'plan_name': 'outer_product_scan',
+           'plan_pattern': 'outer_product',
+           'plan_pattern_args': dict(args=md_args),
+           'plan_pattern_module': plan_patterns.__name__,
+          }
+    _md.update(md or {})
 
     return (yield from scan_nd(detectors, full_cycler,
-                               per_step=per_step, md=md))
+                               per_step=per_step, md=_md))
 
 
 def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
@@ -2675,9 +2638,8 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.outer_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'relative_outer_product_scan'})
+    _md = {'plan_name': 'relative_outer_product_scan'}
+    _md.update(md or {})
     motors = [m[0] for m in
               plan_patterns.chunk_outer_product_args(args)]
 
@@ -2685,7 +2647,7 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     @relative_set_decorator(motors)
     def inner_relative_outer_product_scan():
         return (yield from outer_product_scan(detectors, *args,
-                                              per_step=per_step, md=md))
+                                              per_step=per_step, md=_md))
 
     return (yield from inner_relative_outer_product_scan())
 
@@ -2716,16 +2678,15 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'relative_inner_product_scan'})
+    _md = {'plan_name': 'relative_inner_product_scan'}
+    _md.update(md or {})
     motors = [motor for motor, start, stop in chunked(args, 3)]
 
     @reset_positions_decorator(motors)
     @relative_set_decorator(motors)
     def inner_relative_inner_product_scan():
         return (yield from inner_product_scan(detectors, num, *args,
-                                              per_step=per_step, md=md))
+                                              per_step=per_step, md=_md))
 
     return (yield from inner_relative_inner_product_scan())
 
@@ -2747,18 +2708,15 @@ def tweak(detector, target_field, motor, step, *, md=None):
     """
     prompt_str = '{0}, {1:.3}, {2:.3}, ({3}) '
 
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'detectors': [detector.name],
-         'motors': [motor.name],
-         # 'num_steps': 'adaptive',
-         'plan_args': {'detector': repr(detector),
-                       'target_field': target_field,
-                       'motor': repr(motor),
-                       'step': step},
-         'plan_name': 'tweak'})
+    _md = {'detectors': [detector.name],
+           'motors': [motor.name],
+           'plan_args': {'detector': repr(detector),
+                         'target_field': target_field,
+                         'motor': repr(motor),
+                         'step': step},
+           'plan_name': 'tweak',
+          }
+    _md.update(md or {})
     d = detector
     try:
         from IPython.display import clear_output
@@ -2768,7 +2726,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
             pass
 
     @stage_decorator([detector, motor])
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def tweak_core():
         nonlocal step
 
@@ -2842,31 +2800,28 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     :func:`bluesky.plans.relative_spiral`
     :func:`bluesky.plans.relative_spiral_fermat`
     '''
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'plan_args': {'detectors': list(map(repr, detectors)),
-                       'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
-                       'x_start': x_start, 'y_start': y_start,
-                       'x_range': x_range, 'y_range': y_range,
-                       'dr': dr, 'factor': factor, 'tilt': tilt,
-                       'per_step': repr(per_step)},
-         'plan_name': 'spiral_fermat',
-         'plan_pattern': 'spiral_fermat',
-         'plan_pattern_module': plan_patterns.__name__,
-         })
-
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
                         dr=dr, factor=factor, tilt=tilt)
-
     cyc = plan_patterns.spiral_fermat(**pattern_args)
 
+    # Before including pattern_args in metadata, replace objects with reprs.
     pattern_args['x_motor'] = repr(x_motor)
     pattern_args['y_motor'] = repr(y_motor)
-    md['plan_pattern_args'] = pattern_args
-    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=md))
+    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
+                         'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
+                         'x_start': x_start, 'y_start': y_start,
+                         'x_range': x_range, 'y_range': y_range,
+                         'dr': dr, 'factor': factor, 'tilt': tilt,
+                         'per_step': repr(per_step)},
+           'plan_name': 'spiral_fermat',
+           'plan_pattern': 'spiral_fermat',
+           'plan_pattern_module': plan_patterns.__name__,
+           'plan_pattern_args': pattern_args,
+          }
+    _md.update(md or {})
+
+    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
 def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
@@ -2904,14 +2859,13 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     :func:`bluesky.plans.relative_spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'relative_spiral_fermat'})
+    _md = {'plan_name': 'relative_spiral_fermat'}
+    _md.update(md or {})
     return (yield from spiral_fermat(detectors, x_motor, y_motor,
                                      x_motor.position,
                                      y_motor.position, x_range,
                                      y_range, dr, factor, tilt=tilt,
-                                     per_step=per_step, md=md))
+                                     per_step=per_step, md=_md))
 
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
@@ -2951,31 +2905,28 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     :func:`bluesky.plans.spiral_fermat`
     :func:`bluesky.plans.relative_spiral_fermat`
     '''
-    if md is None:
-        md = {}
-    md = ChainMap(
-        md,
-        {'plan_args': {'detectors': list(map(repr, detectors)),
-                       'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
-                       'x_start': x_start, 'y_start': y_start,
-                       'x_range': x_range, 'y_range': y_range,
-                       'dr': dr, 'nth': nth, 'tilt': tilt,
-                       'per_step': repr(per_step)},
-         'plan_name': 'spiral',
-         'plan_pattern': 'spiral',
-         'plan_pattern_module': plan_patterns.__name__,
-         })
-
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
                         dr=dr, nth=nth, tilt=tilt)
-
     cyc = plan_patterns.spiral(**pattern_args)
 
+    # Before including pattern_args in metadata, replace objects with reprs.
     pattern_args['x_motor'] = repr(x_motor)
     pattern_args['y_motor'] = repr(y_motor)
-    md['plan_pattern_args'] = pattern_args
-    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=md))
+    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
+                         'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
+                         'x_start': x_start, 'y_start': y_start,
+                         'x_range': x_range, 'y_range': y_range,
+                         'dr': dr, 'nth': nth, 'tilt': tilt,
+                         'per_step': repr(per_step)},
+           'plan_name': 'spiral',
+           'plan_pattern': 'spiral',
+           'plan_pattern_args': pattern_args,
+           'plan_pattern_module': plan_patterns.__name__,
+          }
+    _md.update(md or {})
+
+    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
 def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
@@ -3014,13 +2965,12 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
-    if md is None:
-        md = {}
-    md = ChainMap(md, {'plan_name': 'relative_spiral_fermat'})
+    _md = {'plan_name': 'relative_spiral_fermat'}
+    _md.update(md or {})
     return (yield from spiral(detectors, x_motor, y_motor,
                               x_motor.position, y_motor.position,
                               x_range, y_range, dr, nth, tilt=tilt,
-                              per_step=per_step, md=md))
+                              per_step=per_step, md=_md))
 
 
 def ramp_plan(go_plan,
@@ -3070,11 +3020,11 @@ def ramp_plan(go_plan,
 
         In seconds.
     '''
-    if md is None:
-        md = {}
+    _md = {'plan_name': 'ramp_plan'}
+    _md.update(md or {})
 
     @monitor_during_decorator((monitor_sig,))
-    @run_decorator(md=md)
+    @run_decorator(md=_md)
     def polling_plan():
         fail_time = None
         if timeout is not None:
