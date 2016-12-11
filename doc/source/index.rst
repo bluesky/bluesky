@@ -46,7 +46,6 @@ Index
    event_descriptors
    async
    debugging
-   cookbook/index
 
 .. toctree::
    :caption: Developer Documentation
