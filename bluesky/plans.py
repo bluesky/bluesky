@@ -896,7 +896,11 @@ def subs_wrapper(plan, subs):
         for token in tokens:
             yield Msg('unsubscribe', None, token=token)
 
-    return (yield from finalize_wrapper(pchain(_subscribe(), plan),
+    def _inner_plan():
+        yield from _subscribe()
+        return (yield from plan)
+
+    return (yield from finalize_wrapper(_inner_plan(),
                                         _unsubscribe()))
 
 
