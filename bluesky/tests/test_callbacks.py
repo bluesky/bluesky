@@ -317,7 +317,9 @@ def test_zmq(fresh_RE):
     assert remote_accumulator == local_accumulator
 
 
-def test_live_fit():
+def test_live_fit(fresh_RE, motor_det):
+    RE = fresh_RE
+    motor, det = motor_det
     try:
         import lmfit
     except ImportError:
@@ -339,7 +341,8 @@ def test_live_fit():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
 
 
-def test_live_fit_multidim():
+def test_live_fit_multidim(fresh_RE):
+    RE = fresh_RE
     try:
         import lmfit
     except ImportError:
@@ -365,7 +368,8 @@ def test_live_fit_multidim():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
 
 
-def test_live_fit_plot():
+def test_live_fit_plot(fresh_RE):
+    RE = fresh_RE
     try:
         import lmfit
     except ImportError:
