@@ -1696,11 +1696,18 @@ def baseline_wrapper(plan, devices, name='baseline'):
     """
     def insert_baseline(msg):
         if msg.command == 'open_run':
-            return (single_gen(msg),
-                    trigger_and_read(devices, name=name))
+            def pre_baseline():
+                ret = yield msg
+                yield from trigger_and_read(devices, name=name)
+                return ret
+            return pre_baseline(), None
+
         elif msg.command == 'close_run':
-            return (trigger_and_read(devices, name=name),
-                    single_gen(msg))
+            def post_baseline():
+                yield from trigger_and_read(devices, name=name)
+                return (yield msg)
+
+            return post_baseline(), None
 
         return None, None
 
