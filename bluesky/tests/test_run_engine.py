@@ -11,7 +11,7 @@ from bluesky import Msg
 from functools import partial
 from bluesky.examples import det, Mover, TrivialFlyer, SynGauss
 import bluesky.plans as bp
-from bluesky.tests.utils import _print_redirect, MsgCollector
+from bluesky.tests.utils import MsgCollector
 
 
 def test_states():
@@ -565,7 +565,7 @@ def test_finalizer_closeable():
     plan.close()
 
 
-def test_invalid_generator(fresh_RE, motor_det):
+def test_invalid_generator(fresh_RE, motor_det, capsys):
 
     RE = fresh_RE
     motor, det = motor_det
@@ -588,22 +588,21 @@ def test_invalid_generator(fresh_RE, motor_det):
 
     def pre_suspend_plan():
         yield Msg('set', motor, 5)
-        raise GeneratorExit()
+        raise GeneratorExit('this one')
 
     def make_plan():
         return patho_finalize_wrapper(base_plan(motor),
                                       post_plan(motor))
 
-    with _print_redirect() as fout:
-        RE(make_plan())
-        RE.request_suspend(None, pre_plan=pre_suspend_plan())
-        try:
-            RE.resume()
-        except GeneratorExit:
-            pass
+    RE(make_plan())
+    RE.request_suspend(None, pre_plan=pre_suspend_plan())
+    capsys.readouterr()
+    try:
+        RE.resume()
+    except GeneratorExit as sf:
+        assert sf.args[0] == 'this one'
 
-    fout.seek(0)
-    actual_err = list(fout)[-1]
+    actual_err, _ = capsys.readouterr()
     expected_prefix = 'The plan '
     expected_postfix = (' tried to yield a value on close.  '
                         'Please fix your plan.\n')[::-1]
