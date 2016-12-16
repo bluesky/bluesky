@@ -581,12 +581,20 @@ class RunEngine:
         # Intercept ^C.
         with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
             self._task = self.loop.create_task(self._run())
-            self.loop.run_forever()
+            try:
+                self.loop.run_forever()
+            finally:
+                if self._task.done():
+                    # get exceptions from the main task
+                    try:
+                        exc = self._task.exception()
+                    except asyncio.CancelledError:
+                        exc = None
+                    # if the main task exception is not None, re-raise
+                    # it (unless it is a canceled error)
+                    if exc is not None:
+                        raise exc
 
-            if self._task.done() and not self._task.cancelled():
-                exc = self._task.exception()
-                if exc is not None:
-                    raise exc
             if raise_if_interrupted and self._interrupted:
                 raise RunEngineInterrupted("RunEngine was interrupted.")
 
@@ -651,11 +659,19 @@ class RunEngine:
         with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
             if self._task.done():
                 return
-            self.loop.run_forever()
-            if self._task.done() and not self._task.cancelled():
-                exc = self._task.exception()
-                if exc is not None:
-                    raise exc
+            try:
+                self.loop.run_forever()
+            finally:
+                if self._task.done():
+                    # get exceptions from the main task
+                    try:
+                        exc = self._task.exception()
+                    except asyncio.CancelledError:
+                        exc = None
+                    # if the main task exception is not None, re-raise
+                    # it (unless it is a canceled error)
+                    if exc is not None:
+                        raise exc
 
     def install_suspender(self, suspender):
         """
@@ -1018,23 +1034,28 @@ class RunEngine:
                 except Exception as exc:
                     self.log.error("Failed to close run %r. Error: %r",
                                    self._run_start_uid, exc)
-                    # Exceptions from the callbacks should be re-raised.
-                    # Close the loop first.
-                    self._clear_run_cache()
-                    for task in asyncio.Task.all_tasks(self.loop):
-                        task.cancel()
-                    self.loop.stop()
-                    self.state = 'idle'
-                    raise
 
-            for task in asyncio.Task.all_tasks(self.loop):
-                task.cancel()
             for p in self._plan_stack:
                 try:
                     p.close()
                 except RuntimeError as e:
                     print('The plan {!r} tried to yield a value on close.  '
                           'Please fix your plan.'.format(p))
+            # cancel the rest of the tasks
+            for task in asyncio.Task.all_tasks(self.loop):
+                if task is self._task:
+                    continue
+                task.cancel()
+                try:
+                    texc = task.exception()
+                except (asyncio.CancelledError,
+                        asyncio.InvalidStateError):
+                    pass
+                else:
+                    # TODO, merge this with main task exception?
+                    if texc is not None:
+                        print(texc)
+
             self.loop.stop()
             self.state = 'idle'
         # if the task was cancelled
