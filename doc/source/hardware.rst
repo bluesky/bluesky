@@ -15,32 +15,6 @@ methods with certain established names. We have taken pains to make this
 interface as slim as possible, while still being general enough to address
 every kind of hardware we have encountered.
 
-Implementations
----------------
-
-Real Hardware
-+++++++++++++
-
-The `ophyd
-<https://nsls-ii.github.io/ophyd>`_ package implements this interface for
-a wide variety of hardware, communicating using
-`EPICS <http://www.aps.anl.gov/epics/>`_ via the Python bindings
-`pyepics <http://cars9.uchicago.edu/software/python/pyepics3/>`_.Other control
-systems (Tango, LabView, etc.) could be integrated with bluesky in the future
-by implementing this same interface.
-
-Simulated Hardware
-++++++++++++++++++
-
-A toy "test" implementation the interface is included in the
-``bluesky.examples`` module. These implementations act as simulated hardware,
-and we use them extensively in examples, demos, and the test suite. They can
-also be useful for exercising analysis workflows before running a real
-experiment. API documentation is below.
-
-.. autoclass:: bluesky.examples.Reader
-.. autoclass:: bluesky.examples.Mover
-
 Specification
 -------------
 
@@ -249,7 +223,7 @@ or settable device, though there is some overlap.
 
     .. method:: complete()
 
-       Return a ``Status`` and mark it done when acquisition has completed. 
+       Return a ``Status`` and mark it done when acquisition has completed.
 
     .. method:: collect()
 
@@ -301,3 +275,29 @@ or settable device, though there is some overlap.
     .. method:: resume()
 
         optional, same as for a readable device
+
+Implementations
+---------------
+
+Real Hardware
++++++++++++++
+
+The `ophyd
+<https://nsls-ii.github.io/ophyd>`_ package implements this interface for
+a wide variety of hardware, communicating using
+`EPICS <http://www.aps.anl.gov/epics/>`_ via the Python bindings
+`pyepics <http://cars9.uchicago.edu/software/python/pyepics3/>`_.Other control
+systems (Tango, LabView, etc.) could be integrated with bluesky in the future
+by implementing this same interface.
+
+Simulated Hardware
+++++++++++++++++++
+
+A toy "test" implementation the interface is included in the
+``bluesky.examples`` module. These implementations act as simulated hardware,
+and we use them extensively in examples, demos, and the test suite. They can
+also be useful for exercising analysis workflows before running a real
+experiment. API documentation is below.
+
+.. autoclass:: bluesky.examples.Reader
+.. autoclass:: bluesky.examples.Mover
