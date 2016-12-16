@@ -796,6 +796,8 @@ class RunEngine:
         self._interrupted = True
         self._exception = RequestStop()
         self._task.cancel()
+        for task in self._failed_status_tasks:
+            task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
 
@@ -809,6 +811,8 @@ class RunEngine:
         self._interrupted = True
         self._exception = PlanHalt()
         self._task.cancel()
+        for task in self._failed_status_tasks:
+            task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
 
@@ -1021,12 +1025,16 @@ class RunEngine:
                     # Exceptions from the callbacks should be re-raised.
                     # Close the loop first.
                     self._clear_run_cache()
+                    for task in self._failed_status_tasks:
+                        task.cancel()
                     for task in asyncio.Task.all_tasks(self.loop):
                         task.cancel()
                     self.loop.stop()
                     self.state = 'idle'
                     raise
 
+            for task in self._failed_status_tasks:
+                task.cancel()
             for task in asyncio.Task.all_tasks(self.loop):
                 task.cancel()
             for p in self._plan_stack:
