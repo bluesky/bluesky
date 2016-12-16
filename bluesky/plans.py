@@ -112,6 +112,8 @@ def plan_mutator(plan, msg_proc):
     tail_cache = dict()
     tail_result_cache = dict()
 
+    parent_plan = plan
+    ret_value = None
     # seed initial conditions
     plan_stack.append(plan)
     result_stack.append(None)
@@ -124,10 +126,12 @@ def plan_mutator(plan, msg_proc):
             # stack this may raise StopIteration
             msg = plan_stack[-1].send(ret)
 
-        except StopIteration:
+        except StopIteration as e:
             # discard the exhausted generator
-            # TODO capture gen.close()?
             exhausted_gen = plan_stack.pop()
+            # if this is the parent plan, capture it's return value
+            if exhausted_gen is parent_plan:
+                ret_value = e.value
             # if we just came out of a 'tail' generator, discard its
             # return value and replace it with the cached one (from the last
             # message in its paired 'new_gen')
@@ -148,7 +152,7 @@ def plan_mutator(plan, msg_proc):
             if plan_stack:
                 continue
             else:
-                return plan.close()
+                return ret_value
         except Exception as ex:
             # we are here because an exception came out of the send
             # this may be due to
@@ -236,9 +240,8 @@ def msg_mutator(plan, msg_proc):
                 ret = None
                 continue
             ret = yield msg
-        except StopIteration:
-            break
-    return plan.close()
+        except StopIteration as e:
+            return e.value
 
 
 def pchain(*args):
