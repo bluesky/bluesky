@@ -320,4 +320,44 @@ def test_exception_in_pre_with_tail():
         yield Msg('a', None)
 
     plan = plan_mutator(testing_plan(), test_mutator)
-    EchoRE(plan, debug=True)
+    msgs = EchoRE(plan, debug=True)
+    _verify_msg_seq(msgs, m_len=5,
+                    cmd_sq=['a', 'b', 'pre_bad', 'b', 'a'],
+                    args_sq=[()]*5,
+                    kwargs_sq=[{}]*5)
+
+
+def test_plan_mutator_returns():
+
+    def testing_plan():
+        yield Msg('a', None)
+        yield Msg('TARGET', None)
+        yield Msg('b', None)
+
+        return 'foobar'
+
+    def outer_plan(pln):
+        ret = (yield from pln)
+        assert ret == 'foobar'
+        return ret
+
+    def tail_plan():
+        yield Msg('A', None)
+        return 'baz'
+
+    def test_mutator(msg):
+        def pre_plan():
+            yield Msg('pre', None)
+            yield msg
+
+        if msg.command == 'TARGET':
+            return pre_plan(), tail_plan()
+
+        return None, None
+
+    plan = plan_mutator(testing_plan(), test_mutator)
+    msgs = EchoRE(plan)
+    _verify_msg_seq(msgs, m_len=5,
+                    cmd_sq=['a', 'pre', 'TARGET', 'A', 'b'],
+                    args_sq=[()]*5,
+                    kwargs_sq=[{}]*5)
