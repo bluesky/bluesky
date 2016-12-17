@@ -284,9 +284,40 @@ def test_plan_mutator_exception_propogation():
             _mut_active = False
 
             return (pchain(echo_plan(num=2, command=cmd2),
-                            single_message_gen(msg)),
+                           single_message_gen(msg)),
                     bad_tail())
         return None, None
 
     plan = plan_mutator(sarfing_plan(), test_mutator)
+    EchoRE(plan, debug=True)
+
+
+def test_exception_in_pre_with_tail():
+    class SnowFlake(Exception):
+        ...
+
+    def bad_pre():
+        yield Msg('pre_bad', None)
+        raise SnowFlake('this one')
+
+    def good_post():
+        yield Msg('good_post', None)
+
+    def test_mutator(msg):
+        if msg.command == 'TARGET':
+            return bad_pre(), good_post()
+
+        return None, None
+
+    def testing_plan():
+        yield Msg('a', None)
+        yield Msg('b', None)
+        try:
+            yield Msg('TARGET', None)
+        except SnowFlake:
+            pass
+        yield Msg('b', None)
+        yield Msg('a', None)
+
+    plan = plan_mutator(testing_plan(), test_mutator)
     EchoRE(plan, debug=True)

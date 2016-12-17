@@ -135,6 +135,8 @@ def plan_mutator(plan, msg_proc):
                     continue
                 else:
                     raise
+            else:
+                exception = None
         else:
             ret = result_stack.pop()
             try:
