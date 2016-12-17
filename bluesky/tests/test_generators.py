@@ -361,3 +361,41 @@ def test_plan_mutator_returns():
                     cmd_sq=['a', 'pre', 'TARGET', 'A', 'b'],
                     args_sq=[()]*5,
                     kwargs_sq=[{}]*5)
+
+
+def test_base_excetpion():
+    class SnowFlake(Exception):
+        ...
+
+    def null_mutator(msg):
+        return None, None
+
+    def test_plan():
+        yield Msg('a', None)
+        raise SnowFlake('this one')
+
+    pln = plan_mutator(test_plan(), null_mutator)
+
+    try:
+        EchoRE(pln)
+    except SnowFlake as ex:
+        assert ex.args[0] == 'this one'
+
+
+def test_msg_mutator_skip():
+    def skipper(msg):
+        if msg.command == 'SKIP':
+            return None
+        return msg
+
+    def skip_plan():
+        for c in 'abcd':
+            yield Msg(c, None)
+            yield Msg('SKIP', None)
+
+    pln = msg_mutator(skip_plan(), skipper)
+    msgs = EchoRE(pln)
+    _verify_msg_seq(msgs, m_len=4,
+                    cmd_sq='abcd',
+                    args_sq=[()]*4,
+                    kwargs_sq=[{}]*4)
