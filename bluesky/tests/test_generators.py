@@ -1,4 +1,5 @@
 import uuid
+import pytest
 from collections import deque
 from itertools import zip_longest
 
@@ -8,6 +9,10 @@ from bluesky.plans import (msg_mutator, plan_mutator, pchain,
                            single_gen as single_message_gen, finalize_wrapper)
 
 from bluesky.utils import ensure_generator
+
+
+class EchoException(Exception):
+    ...
 
 
 def EchoRE(plan, *, debug=False, msg_list=None):
@@ -43,6 +48,8 @@ def EchoRE(plan, *, debug=False, msg_list=None):
             if debug:
                 print(msg)
             msg_list.append(msg)
+            if msg.command == 'FAIL':
+                plan.throw(EchoException(msg))
             ret = msg
         except StopIteration:
             break
@@ -58,6 +65,43 @@ def echo_plan(*, command='echo', num=4):
         sent = '{}_{}'.format(seed, ch)
         ret = yield Msg(command, sent)
         assert ret.obj == sent
+
+
+def test_mutator_exceptions():
+    handled = False
+
+    def base_plan():
+        yield Msg('foo')
+        yield Msg('bar')
+
+    def failing_plan():
+        nonlocal handled
+        handled = False
+        yield Msg('pre')
+        try:
+            yield Msg('FAIL')
+        except EchoException:
+            handled = True
+            raise
+
+    def test_mutator(msg):
+        if msg.command == 'bar':
+            return (
+                failing_plan(),
+                single_message_gen(Msg('foo'))
+            )
+        return None, None
+
+    # check generator exit behavior
+    plan = plan_mutator(base_plan(), test_mutator)
+    next(plan)
+    plan.close()
+
+    # check exception fall through
+    plan = plan_mutator(base_plan(), test_mutator)
+    with pytest.raises(EchoException):
+        EchoRE(plan, debug=True)
+    assert handled
 
 
 def _verify_msg_seq(msgs, *,
@@ -125,7 +169,7 @@ def test_simple_mutator():
             _mut_active = False
 
             return (pchain(echo_plan(num=pre_count, command=pre_cmd),
-                            single_message_gen(msg)),
+                           single_message_gen(msg)),
                     echo_plan(num=post_count, command=post_cmd))
         return None, None
 
@@ -240,9 +284,118 @@ def test_plan_mutator_exception_propogation():
             _mut_active = False
 
             return (pchain(echo_plan(num=2, command=cmd2),
-                            single_message_gen(msg)),
+                           single_message_gen(msg)),
                     bad_tail())
         return None, None
 
     plan = plan_mutator(sarfing_plan(), test_mutator)
     EchoRE(plan, debug=True)
+
+
+def test_exception_in_pre_with_tail():
+    class SnowFlake(Exception):
+        ...
+
+    def bad_pre():
+        yield Msg('pre_bad', None)
+        raise SnowFlake('this one')
+
+    def good_post():
+        yield Msg('good_post', None)
+
+    def test_mutator(msg):
+        if msg.command == 'TARGET':
+            return bad_pre(), good_post()
+
+        return None, None
+
+    def testing_plan():
+        yield Msg('a', None)
+        yield Msg('b', None)
+        try:
+            yield Msg('TARGET', None)
+        except SnowFlake:
+            pass
+        yield Msg('b', None)
+        yield Msg('a', None)
+
+    plan = plan_mutator(testing_plan(), test_mutator)
+    msgs = EchoRE(plan, debug=True)
+    _verify_msg_seq(msgs, m_len=5,
+                    cmd_sq=['a', 'b', 'pre_bad', 'b', 'a'],
+                    args_sq=[()]*5,
+                    kwargs_sq=[{}]*5)
+
+
+def test_plan_mutator_returns():
+
+    def testing_plan():
+        yield Msg('a', None)
+        yield Msg('TARGET', None)
+        yield Msg('b', None)
+
+        return 'foobar'
+
+    def outer_plan(pln):
+        ret = (yield from pln)
+        assert ret == 'foobar'
+        return ret
+
+    def tail_plan():
+        yield Msg('A', None)
+        return 'baz'
+
+    def test_mutator(msg):
+        def pre_plan():
+            yield Msg('pre', None)
+            yield msg
+
+        if msg.command == 'TARGET':
+            return pre_plan(), tail_plan()
+
+        return None, None
+
+    plan = plan_mutator(testing_plan(), test_mutator)
+    msgs = EchoRE(plan)
+    _verify_msg_seq(msgs, m_len=5,
+                    cmd_sq=['a', 'pre', 'TARGET', 'A', 'b'],
+                    args_sq=[()]*5,
+                    kwargs_sq=[{}]*5)
+
+
+def test_base_excetpion():
+    class SnowFlake(Exception):
+        ...
+
+    def null_mutator(msg):
+        return None, None
+
+    def test_plan():
+        yield Msg('a', None)
+        raise SnowFlake('this one')
+
+    pln = plan_mutator(test_plan(), null_mutator)
+
+    try:
+        EchoRE(pln)
+    except SnowFlake as ex:
+        assert ex.args[0] == 'this one'
+
+
+def test_msg_mutator_skip():
+    def skipper(msg):
+        if msg.command == 'SKIP':
+            return None
+        return msg
+
+    def skip_plan():
+        for c in 'abcd':
+            yield Msg(c, None)
+            yield Msg('SKIP', None)
+
+    pln = msg_mutator(skip_plan(), skipper)
+    msgs = EchoRE(pln)
+    _verify_msg_seq(msgs, m_len=4,
+                    cmd_sq='abcd',
+                    args_sq=[()]*4,
+                    kwargs_sq=[{}]*4)

@@ -229,7 +229,6 @@ KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 
 
 def test_zmq(fresh_RE):
-
     # COMPONENT 1
     # Run a forwarder device on a separate process.
     # This is a variant of the code in bluesky/examples/forwarder_device.py,
@@ -312,12 +311,17 @@ def test_zmq(fresh_RE):
     remote_accumulator = []
     for i in range(2):
         remote_accumulator.append(queue.get(timeout=2))
+    p.close()
     forwarder_proc.terminate()
     dispatcher_proc.terminate()
+    forwarder_proc.join()
+    dispatcher_proc.join()
     assert remote_accumulator == local_accumulator
 
 
-def test_live_fit():
+def test_live_fit(fresh_RE, motor_det):
+    RE = fresh_RE
+    motor, det = motor_det
     try:
         import lmfit
     except ImportError:
@@ -330,8 +334,9 @@ def test_live_fit():
     init_guess = {'A': 2,
                   'sigma': lmfit.Parameter('sigma', 3, min=0),
                   'x0': -0.2}
-    cb = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
-    RE(scan([det], motor, -1, 1, 100), cb)
+    cb = LiveFit(model, 'det', {'x': 'motor'}, init_guess,
+                 update_every=50)
+    RE(scan([det], motor, -1, 1, 50), cb)
     # results are in cb.result.values
 
     expected = {'A': 1, 'sigma': 1, 'x0': 0}
@@ -339,7 +344,9 @@ def test_live_fit():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
 
 
-def test_live_fit_multidim():
+def test_live_fit_multidim(fresh_RE):
+    RE = fresh_RE
+
     try:
         import lmfit
     except ImportError:
@@ -347,6 +354,7 @@ def test_live_fit_multidim():
 
     motor1._fake_sleep = 0
     motor2._fake_sleep = 0
+    det4.exposure_time = 0
 
     def gaussian(x, y, A, sigma, x0, y0):
         return A*np.exp(-((x - x0)**2 + (y - y0)**2)/(2 * sigma**2))
@@ -356,8 +364,9 @@ def test_live_fit_multidim():
                   'sigma': lmfit.Parameter('sigma', 3, min=0),
                   'x0': -0.2,
                   'y0': 0.3}
-    cb = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess)
-    RE(outer_product_scan([det4], motor1, -1, 1, 20, motor2, -1, 1, 20, False),
+    cb = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess,
+                 update_every=50)
+    RE(outer_product_scan([det4], motor1, -1, 1, 10, motor2, -1, 1, 10, False),
        cb)
 
     expected = {'A': 1, 'sigma': 1, 'x0': 0, 'y0': 0}
@@ -365,7 +374,8 @@ def test_live_fit_multidim():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
 
 
-def test_live_fit_plot():
+def test_live_fit_plot(fresh_RE):
+    RE = fresh_RE
     try:
         import lmfit
     except ImportError:
@@ -378,7 +388,8 @@ def test_live_fit_plot():
     init_guess = {'A': 2,
                   'sigma': lmfit.Parameter('sigma', 3, min=0),
                   'x0': -0.2}
-    livefit = LiveFit(model, 'det', {'x': 'motor'}, init_guess)
+    livefit = LiveFit(model, 'det', {'x': 'motor'}, init_guess,
+                      update_every=50)
     lfplot = LiveFitPlot(livefit, color='r')
     lplot = LivePlot('det', 'motor', ax=plt.gca(), marker='o', ls='none')
     RE(scan([det], motor, -1, 1, 50), [lplot, lfplot])
