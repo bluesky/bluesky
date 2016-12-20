@@ -62,3 +62,22 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
          "bluesky.simulators instead.")
     return _bs.plot_raster_path(plan, x_motor, y_motor, ax=ax,
                                 probe_size=probe_size, lw=lw)
+
+
+def to_nested(plan):
+    ret = []
+    container_stack = [ret]
+
+    for msg in plan:
+        if msg.command in {'open_run', 'create'}:
+            new_ret = []
+            container_stack[-1].append({msg.command: new_ret})
+
+            container_stack.append(new_ret)
+            container_stack[-1].append(msg)
+        elif msg.command in {'close_run', 'save'}:
+            container_stack.pop()
+        else:
+            container_stack[-1].append(msg)
+
+    return ret
