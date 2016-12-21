@@ -1004,6 +1004,10 @@ class RunEngine:
             self.log.error("%r", err)
             raise err
         finally:
+            # Some done_callbacks may still be alive in other threads. Mutate
+            # this dict to block them from creating new 'failed status' tasks
+            # on the loop.
+            self._pardon_failures['state'] = True
             # call stop() on every movable object we ever set()
             self._stop_movable_objects(success=True)
             # Try to collect any flyers that were kicked off but not finished.
@@ -1044,10 +1048,6 @@ class RunEngine:
                 except RuntimeError as e:
                     print('The plan {!r} tried to yield a value on close.  '
                           'Please fix your plan.'.format(p))
-            # Some done_callbacks may still be alive in other threads. Mutate
-            # this dict to block them from creating new 'failed status' tasks
-            # on the loop.
-            self._pardon_failures['state'] = True
             # cancel the rest of the tasks
             for task in asyncio.Task.all_tasks(self.loop):
                 if task is self._task:
