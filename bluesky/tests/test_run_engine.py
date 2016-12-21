@@ -9,7 +9,7 @@ from bluesky.run_engine import (RunEngineStateMachine,
                                 NoReplayAllowed)
 from bluesky import Msg
 from functools import partial
-from bluesky.examples import det, Mover, TrivialFlyer, SynGauss
+from bluesky.examples import det, Mover, TrivialFlyer, SynGauss, SimpleStatus
 import bluesky.plans as bp
 from bluesky.tests.utils import MsgCollector
 
@@ -980,3 +980,19 @@ def test_preprocessors(fresh_RE):
                 Msg('null', 'cleanup'),
                 Msg('unsubscribe', None, token=0)]
     assert actual == expected
+
+
+def test_pardon_failures(fresh_RE):
+    RE = fresh_RE
+    st = SimpleStatus()
+
+    class Dummy:
+        name = 'dummy'
+        def set(self, val):
+            return st
+
+    dummy = Dummy()
+
+    RE([Msg('set', dummy, 1)])
+    st._finished(success=False)
+    RE([Msg('null')])
