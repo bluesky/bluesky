@@ -6,7 +6,7 @@ import time as ttime
 import pytest
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
-                                NoReplayAllowed)
+                                NoReplayAllowed, FailedStatus)
 from bluesky import Msg
 from functools import partial
 from bluesky.examples import det, Mover, TrivialFlyer, SynGauss, SimpleStatus
@@ -996,3 +996,20 @@ def test_pardon_failures(fresh_RE):
     RE([Msg('set', dummy, 1)])
     st._finished(success=False)
     RE([Msg('null')])
+
+
+def test_failures_kill_run(fresh_RE):
+    # just to make sure that 'pardon_failures' does not block *real* failures
+    RE = fresh_RE
+
+    class Dummy:
+        name = 'dummy'
+        def set(self, val):
+            st = SimpleStatus()
+            st._finished(success=False)
+            return st
+
+    dummy = Dummy()
+
+    with pytest.raises(FailedStatus):
+        RE([Msg('set', dummy, 1)])
