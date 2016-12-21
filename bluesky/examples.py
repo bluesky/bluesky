@@ -186,17 +186,22 @@ class Reader:
                         if field in self.read_attrs}
 
     def describe(self):
-        """
-        Provide metadata for each of the fields returned by `read`.
-
-        In this simple example, the metadata is hard-coded: we assume all
-        readings are numeric and scalar.
-        """
-        return {field: {'source': 'simulated using bluesky.examples',
-                        'dtype': 'number',
-                        'shape': [],
-                        'precision': 2}
-                for field in self.read_attrs}
+        ret = {}
+        d = {field: {'value': func(), 'timestamp': ttime.time()}
+             for field, func in self._fields.items()
+             if field in self.read_attrs}
+        for k, v in d.items():
+            v = v['value']
+            try:
+                shape = v.shape
+            except AttributeError:
+                shape = []
+            dtype = 'array' if len(shape) else 'number'
+            ret[k] = {'source': 'simulated using bluesky.examples',
+                      'dtype': dtype,
+                      'shape': shape,
+                      'precision': 2}
+        return ret
 
     def read_configuration(self):
         """
@@ -326,6 +331,21 @@ class Mover(Reader):
 
     def read(self):
         return self._state
+
+    def describe(self):
+        ret = {}
+        for k, v in self._state.items():
+            v = v['value']
+            try:
+                shape = v.shape
+            except AttributeError:
+                shape = []
+            dtype = 'array' if len(shape) else 'number'
+            ret[k] = {'source': 'simulated using bluesky.examples',
+                      'dtype': dtype,
+                      'shape': shape,
+                      'precision': 2}
+        return ret
 
     @property
     def position(self):
