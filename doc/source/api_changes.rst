@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+v0.7.1 (dev)
+------------
+
+Bug Fixes
+^^^^^^^^^
+
+* Fix bug in ``plan_mutator`` so that it properly handles return values. One
+  effect of this fix is that ``baseline_wrapper`` properly passed run uids
+  through.
+* Fix bug in ``LiveFit`` that broke multivariate fits.
+
 v0.7.0
 ------
 
