@@ -510,6 +510,16 @@ class ReaderWithFileStore(Reader):
             # a reference to FileStore.
             reading['value'] = datum_id
             self._result[name] = reading
+
+        delay_time = self.exposure_time
+        if delay_time:
+            if self.loop.is_running():
+                st = SimpleStatus()
+                self.loop.call_later(delay_time, st._finished)
+                return st
+            else:
+                ttime.sleep(delay_time)
+
         return NullStatus()
 
     def read(self):
