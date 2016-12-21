@@ -714,15 +714,11 @@ metadata, use the following pattern:
 
 .. code-block:: python
 
-    from collections import ChainMap
-
     def calib_count(dets, num=3, *, md=None):
         "A count whose data will be designated 'calibration'."
-        if md is None:
-            md = {}
-        md = ChainMap(md,
-                      {'plan_name': 'calib_count'})
-        yield from count(dets, num=num, md=md)
+        _md = {'plan_name': 'calib_count'}  # default
+        _md.update(md or {})  # supplemented/overridden by argument passed in
+        yield from count(dets, num=num, md=_md)
 
 For example, if the plan is called with the arguments:
 
@@ -732,29 +728,6 @@ For example, if the plan is called with the arguments:
 
 then ``'watermelon'`` will override ``'calib_count'`` as the recorded plan
 name.
-
-.. note::
-
-    The built-in Python data structure ``ChainMap`` is a sequence of
-    dictionaries (a "chain of mappings"). It gives priority to the first
-    mapping that defines a given key.
-
-    .. ipython:: python :suppress:
-
-        from collections import ChainMap
-
-    .. ipython:: python
-
-        m = ChainMap({'a': 1}, {'a': 2, 'b': 3})
-        m['a']
-        m['b']
-
-    Thus, ``a=1`` takes precedence of ``a=2``. We use it to give user-provided
-    metadata precedence over a plan's hard-coded metadata in the event of a
-    key collision.
-
-    See the `relevant section of the Python documentation <https://docs.python.org/3/library/collections.html#collections.ChainMap>`_
-    for more.
 
 .. _preprocessors:
 
