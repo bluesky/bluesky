@@ -240,6 +240,7 @@ class RunEngine:
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
         self._failed_status_tasks = deque()  # Tasks from self._failed_status
+        self._pardon_failures = {'state': False}  # to block failed status
         self._plan = None  # the scan plan instance from __call__
         self._command_registry = {
             'create': self._create,
@@ -351,6 +352,8 @@ class RunEngine:
         self._reason = ''
         self._task = None
         self._failed_status_tasks.clear()
+        # Old callbacks will (correctly) refer to old copy of this dict:
+        self._pardon_failures = {'state': False}
         self._plan = None
         self._interrupted = False
         self._last_sigint_time = None
@@ -1041,6 +1044,10 @@ class RunEngine:
                 except RuntimeError as e:
                     print('The plan {!r} tried to yield a value on close.  '
                           'Please fix your plan.'.format(p))
+            # Some done_callbacks may still be alive in other threads. Mutate
+            # this dict to block them from creating new 'failed status' tasks
+            # on the loop.
+            self._pardon_failures['state'] = True
             # cancel the rest of the tasks
             for task in asyncio.Task.all_tasks(self.loop):
                 if task is self._task:
@@ -1489,9 +1496,10 @@ class RunEngine:
         ret = obj.kickoff(*msg.args, **kwargs)
 
         p_event = asyncio.Event(loop=self.loop)
+        pardon_failures = self._pardon_failures
 
         def done_callback():
-            if not ret.success:
+            if not ret.success and not pardon_failures['state']:
                 task = self.loop.call_soon_threadsafe(self._failed_status,
                                                       ret)
                 self._failed_status_tasks.append(task)
@@ -1524,9 +1532,10 @@ class RunEngine:
         ret = msg.obj.complete(*msg.args, **kwargs)
 
         p_event = asyncio.Event(loop=self.loop)
+        pardon_failures = self._pardon_failures
 
         def done_callback():
-            if not ret.success:
+            if not ret.success and not pardon_failures['state']:
                 task = self.loop.call_soon_threadsafe(self._failed_status,
                                                       ret)
                 self._failed_status_tasks.append(task)
@@ -1639,6 +1648,7 @@ class RunEngine:
         self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.set(*msg.args, **kwargs)
         p_event = asyncio.Event(loop=self.loop)
+        pardon_failures = self._pardon_failures
 
         def done_callback():
 
@@ -1646,7 +1656,7 @@ class RunEngine:
                            "with status %r",
                            msg.obj, ret.success)
 
-            if not ret.success:
+            if not ret.success and not pardon_failures['state']:
                 task = self.loop.call_soon_threadsafe(self._failed_status,
                                                       ret)
                 self._failed_status_tasks.append(task)
@@ -1669,15 +1679,15 @@ class RunEngine:
         kwargs = dict(msg.kwargs)
         group = kwargs.pop('group', None)
         ret = msg.obj.trigger(*msg.args, **kwargs)
-
         p_event = asyncio.Event(loop=self.loop)
+        pardon_failures = self._pardon_failures
 
         def done_callback():
             self.log.debug("The object %r reports trigger is "
                            "done with status %r.",
                            msg.obj, ret.success)
 
-            if not ret.success:
+            if not ret.success and not pardon_failures['state']:
                 task = self.loop.call_soon_threadsafe(self._failed_status,
                                                       ret)
                 self._failed_status_tasks.append(task)
