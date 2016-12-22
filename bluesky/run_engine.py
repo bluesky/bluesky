@@ -1497,15 +1497,12 @@ class RunEngine:
         pardon_failures = self._pardon_failures
 
         def done_callback():
-            if not ret.success and not pardon_failures.is_set():
-                task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                      ret)
-                self._failed_status_tasks.append(task)
-            self.loop.call_soon_threadsafe(p_event.set)
+            self.log.debug("The object %r reports 'kickoff' is done "
+                           "with status %r", msg.obj, ret.success)
+            return self._status_object_completed(ret, p_event, pardon_failures)
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
-
         return ret
 
     @asyncio.coroutine
@@ -1533,15 +1530,12 @@ class RunEngine:
         pardon_failures = self._pardon_failures
 
         def done_callback():
-            if not ret.success and not pardon_failures.is_set():
-                task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                      ret)
-                self._failed_status_tasks.append(task)
-            self.loop.call_soon_threadsafe(p_event.set)
+            self.log.debug("The object %r reports 'complete' is done "
+                           "with status %r", msg.obj, ret.success)
+            return self._status_object_completed(ret, p_event, pardon_failures)
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
-
         return ret
 
     @asyncio.coroutine
@@ -1649,16 +1643,9 @@ class RunEngine:
         pardon_failures = self._pardon_failures
 
         def done_callback():
-
             self.log.debug("The object %r reports set is done "
-                           "with status %r",
-                           msg.obj, ret.success)
-
-            if not ret.success and not pardon_failures.is_set():
-                task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                      ret)
-                self._failed_status_tasks.append(task)
-            self.loop.call_soon_threadsafe(p_event.set)
+                           "with status %r", msg.obj, ret.success)
+            self._status_object_completed(ret, p_event, pardon_failures)
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
@@ -1682,15 +1669,8 @@ class RunEngine:
 
         def done_callback():
             self.log.debug("The object %r reports trigger is "
-                           "done with status %r.",
-                           msg.obj, ret.success)
-
-            if not ret.success and not pardon_failures.is_set():
-                task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                      ret)
-                self._failed_status_tasks.append(task)
-
-            self.loop.call_soon_threadsafe(p_event.set)
+                           "done with status %r.", msg.obj, ret.success)
+            self._status_object_completed(ret, p_event, pardon_failures)
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
@@ -1716,7 +1696,15 @@ class RunEngine:
         if futs:
             yield from self._wait_for(Msg('wait_for', None, futs))
 
-    def _failed_status(self, ret):
+    def _status_object_completed(self, ret, p_event, pardon_failures):
+        if not ret.success:
+            task = self.loop.call_soon_threadsafe(self._failed_status,
+                                                  ret, pardon_failures)
+            self._failed_status_tasks.append(task)
+        self.loop.call_soon_threadsafe(p_event.set)
+
+
+    def _failed_status(self, ret, pardon_failures):
         """
         This is called a status object finishes but has failed.
 
@@ -1728,9 +1716,12 @@ class RunEngine:
         ----------
         ret : StatusBase
             a status object that has failed
+        pardon_failures : asyncio.Event
+            tells us whether the __call__ this status object is over
         """
-        self._exception = FailedStatus(ret)
-        self._task.cancel()
+        if not pardon_failures.is_set():
+            self._exception = FailedStatus(ret)
+            self._task.cancel()
 
     @asyncio.coroutine
     def _sleep(self, msg):
