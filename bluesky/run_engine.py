@@ -239,7 +239,8 @@ class RunEngine:
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
-        self._failed_status_tasks = deque()  # Tasks from self._failed_status
+        self._status_tasks = deque()  # from self._status_object_completed
+        self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the scan plan instance from __call__
         self._command_registry = {
             'create': self._create,
@@ -350,7 +351,8 @@ class RunEngine:
         self._exit_status = 'success'
         self._reason = ''
         self._task = None
-        self._failed_status_tasks.clear()
+        self._status_tasks.clear()
+        self._pardon_failures = asyncio.Event(loop=self.loop)
         self._plan = None
         self._interrupted = False
         self._last_sigint_time = None
@@ -444,7 +446,7 @@ class RunEngine:
                   "exit_status as 'abort'...")
             self._exception = FailedPause()
             self._task.cancel()
-            for task in self._failed_status_tasks:
+            for task in self._status_tasks:
                 task.cancel()
             return
         # stop accepting new tasks in the event loop (existing tasks will
@@ -796,7 +798,7 @@ class RunEngine:
         self._reason = reason
         self._exception = RequestAbort()
         self._task.cancel()
-        for task in self._failed_status_tasks:
+        for task in self._status_tasks:
             task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
@@ -1001,6 +1003,9 @@ class RunEngine:
             self.log.error("%r", err)
             raise err
         finally:
+            # Some done_callbacks may still be alive in other threads.
+            # Block them from creating new 'failed status' tasks on the loop.
+            self._pardon_failures.set()
             # call stop() on every movable object we ever set()
             self._stop_movable_objects(success=True)
             # Try to collect any flyers that were kicked off but not finished.
@@ -1489,17 +1494,17 @@ class RunEngine:
         ret = obj.kickoff(*msg.args, **kwargs)
 
         p_event = asyncio.Event(loop=self.loop)
+        pardon_failures = self._pardon_failures
 
         def done_callback():
-            if not ret.success:
-                task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                      ret)
-                self._failed_status_tasks.append(task)
-            self.loop.call_soon_threadsafe(p_event.set)
+            self.log.debug("The object %r reports 'kickoff' is done "
+                           "with status %r", msg.obj, ret.success)
+            task = self._loop.call_soon_threadsafe(
+                self._status_object_completed, ret, p_event, pardon_failures)
+            self._status_tasks.append(task)
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
-
         return ret
 
     @asyncio.coroutine
@@ -1524,17 +1529,17 @@ class RunEngine:
         ret = msg.obj.complete(*msg.args, **kwargs)
 
         p_event = asyncio.Event(loop=self.loop)
+        pardon_failures = self._pardon_failures
 
         def done_callback():
-            if not ret.success:
-                task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                      ret)
-                self._failed_status_tasks.append(task)
-            self.loop.call_soon_threadsafe(p_event.set)
+            self.log.debug("The object %r reports 'complete' is done "
+                           "with status %r", msg.obj, ret.success)
+            task = self._loop.call_soon_threadsafe(
+                self._status_object_completed, ret, p_event, pardon_failures)
+            self._status_tasks.append(task)
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
-
         return ret
 
     @asyncio.coroutine
@@ -1639,18 +1644,14 @@ class RunEngine:
         self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.set(*msg.args, **kwargs)
         p_event = asyncio.Event(loop=self.loop)
+        pardon_failures = self._pardon_failures
 
         def done_callback():
-
             self.log.debug("The object %r reports set is done "
-                           "with status %r",
-                           msg.obj, ret.success)
-
-            if not ret.success:
-                task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                      ret)
-                self._failed_status_tasks.append(task)
-            self.loop.call_soon_threadsafe(p_event.set)
+                           "with status %r", msg.obj, ret.success)
+            task = self._loop.call_soon_threadsafe(
+                self._status_object_completed, ret, p_event, pardon_failures)
+            self._status_tasks.append(task)
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
@@ -1669,20 +1670,15 @@ class RunEngine:
         kwargs = dict(msg.kwargs)
         group = kwargs.pop('group', None)
         ret = msg.obj.trigger(*msg.args, **kwargs)
-
         p_event = asyncio.Event(loop=self.loop)
+        pardon_failures = self._pardon_failures
 
         def done_callback():
             self.log.debug("The object %r reports trigger is "
-                           "done with status %r.",
-                           msg.obj, ret.success)
-
-            if not ret.success:
-                task = self.loop.call_soon_threadsafe(self._failed_status,
-                                                      ret)
-                self._failed_status_tasks.append(task)
-
-            self.loop.call_soon_threadsafe(p_event.set)
+                           "done with status %r.", msg.obj, ret.success)
+            task = self._loop.call_soon_threadsafe(
+                self._status_object_completed, ret, p_event, pardon_failures)
+            self._status_tasks.append(task)
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
@@ -1708,21 +1704,22 @@ class RunEngine:
         if futs:
             yield from self._wait_for(Msg('wait_for', None, futs))
 
-    def _failed_status(self, ret):
+    def _status_object_completed(self, ret, p_event, pardon_failures):
         """
-        This is called a status object finishes but has failed.
-
-        This will interrupt the run the next time the _run coroutine
-        gets control of the event loop. The argument `ret` is included
-        in the error message.
+        Created as a task on the loop when a status object is finished
 
         Parameters
         ----------
-        ret : StatusBase
-            a status object that has failed
+        ret : status object
+        p_event : asyncio.Event
+            held in the RunEngine's self._groups cache for waiting
+        pardon_failuers : asyncio.Event
+            tells us whether the __call__ this status object is over
         """
-        self._exception = FailedStatus(ret)
-        self._task.cancel()
+        if not ret.success and not pardon_failures.is_set():
+            self._exception = FailedStatus(ret)
+            self._task.cancel()
+        p_event.set()
 
     @asyncio.coroutine
     def _sleep(self, msg):
