@@ -240,7 +240,7 @@ class RunEngine:
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
         self._failed_status_tasks = deque()  # Tasks from self._failed_status
-        self._pardon_failures = {'state': False}  # to block failed status
+        self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the scan plan instance from __call__
         self._command_registry = {
             'create': self._create,
@@ -352,8 +352,7 @@ class RunEngine:
         self._reason = ''
         self._task = None
         self._failed_status_tasks.clear()
-        # Old callbacks will (correctly) refer to old copy of this dict:
-        self._pardon_failures = {'state': False}
+        self._pardon_failures = asyncio.Event(loop=self.loop)
         self._plan = None
         self._interrupted = False
         self._last_sigint_time = None
@@ -1004,10 +1003,9 @@ class RunEngine:
             self.log.error("%r", err)
             raise err
         finally:
-            # Some done_callbacks may still be alive in other threads. Mutate
-            # this dict to block them from creating new 'failed status' tasks
-            # on the loop.
-            self._pardon_failures['state'] = True
+            # Some done_callbacks may still be alive in other threads.
+            # Block them from creating new 'failed status' tasks on the loop.
+            self._pardon_failures.set()
             # call stop() on every movable object we ever set()
             self._stop_movable_objects(success=True)
             # Try to collect any flyers that were kicked off but not finished.
@@ -1499,7 +1497,7 @@ class RunEngine:
         pardon_failures = self._pardon_failures
 
         def done_callback():
-            if not ret.success and not pardon_failures['state']:
+            if not ret.success and not pardon_failures.is_set():
                 task = self.loop.call_soon_threadsafe(self._failed_status,
                                                       ret)
                 self._failed_status_tasks.append(task)
@@ -1535,7 +1533,7 @@ class RunEngine:
         pardon_failures = self._pardon_failures
 
         def done_callback():
-            if not ret.success and not pardon_failures['state']:
+            if not ret.success and not pardon_failures.is_set():
                 task = self.loop.call_soon_threadsafe(self._failed_status,
                                                       ret)
                 self._failed_status_tasks.append(task)
@@ -1656,7 +1654,7 @@ class RunEngine:
                            "with status %r",
                            msg.obj, ret.success)
 
-            if not ret.success and not pardon_failures['state']:
+            if not ret.success and not pardon_failures.is_set():
                 task = self.loop.call_soon_threadsafe(self._failed_status,
                                                       ret)
                 self._failed_status_tasks.append(task)
@@ -1687,7 +1685,7 @@ class RunEngine:
                            "done with status %r.",
                            msg.obj, ret.success)
 
-            if not ret.success and not pardon_failures['state']:
+            if not ret.success and not pardon_failures.is_set():
                 task = self.loop.call_soon_threadsafe(self._failed_status,
                                                       ret)
                 self._failed_status_tasks.append(task)
