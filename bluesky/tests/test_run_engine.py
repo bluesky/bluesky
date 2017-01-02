@@ -523,6 +523,26 @@ def test_sigint_many_hits(fresh_RE):
     RE(hanging_plan())
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
+    # The KeyboardInterrupt will have been converted to a hard pause.
+    assert RE.state == 'paused'
+    RE.abort()
+
+    def infinite_plan():
+        while True:
+            yield Msg('null')
+
+    def hanging_callback(name, doc):
+        ttime.sleep(10)
+
+    start_time = ttime.time()
+    timer = threading.Timer(0.2, sim_kill, (11,))
+    timer.start()
+    RE(infinite_plan())
+    # Check that hammering SIGINT escaped from that 10-second sleep.
+    assert ttime.time() - start_time < 2
+    # The KeyboardInterrupt will have been converted to a hard pause.
+    assert RE.state == 'paused'
+    RE.abort()
 
 
 def _make_plan_marker():
