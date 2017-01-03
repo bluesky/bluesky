@@ -508,7 +508,7 @@ def test_sigint_many_hits_pln(fresh_RE):
 
     def sim_kill(n=1):
         for j in range(n):
-            print('KILL')
+            print('KILL', j)
             ttime.sleep(0.05)
             os.kill(pid, signal.SIGINT)
 
