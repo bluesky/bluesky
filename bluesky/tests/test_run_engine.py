@@ -502,7 +502,7 @@ def test_sigint_three_hits(fresh_RE, motor_det):
     assert done_cleanup_time - end_time > 0.3
 
 
-def test_sigint_many_hits(fresh_RE):
+def test_sigint_many_hits_pln(fresh_RE):
     RE = fresh_RE
     pid = os.getpid()
 
@@ -527,6 +527,18 @@ def test_sigint_many_hits(fresh_RE):
     assert RE.state == 'paused'
     RE.abort()
 
+
+def test_sigint_many_hits_cb(fresh_RE):
+    RE = fresh_RE
+    pid = os.getpid()
+
+    def sim_kill(n=1):
+        for j in range(n):
+            print('KILL')
+            ttime.sleep(0.05)
+            os.kill(pid, signal.SIGINT)
+
+    @bp.run_decorator()
     def infinite_plan():
         while True:
             yield Msg('null')
@@ -537,12 +549,14 @@ def test_sigint_many_hits(fresh_RE):
     start_time = ttime.time()
     timer = threading.Timer(0.2, sim_kill, (11,))
     timer.start()
-    RE(infinite_plan())
+    RE(infinite_plan(), hanging_callback)
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
     assert RE.state == 'paused'
     RE.abort()
+    # Check that hammering SIGINT escaped from that 10-second sleep.
+    assert ttime.time() - start_time < 2
 
 
 def _make_plan_marker():
