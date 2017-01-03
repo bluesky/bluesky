@@ -1,16 +1,32 @@
 Release Notes
 =============
 
-v0.7.1 (dev)
-------------
+v0.7.1
+------
+
+Enhancements
+^^^^^^^^^^^^
+
+* If some plan or callback has hung the RunEngine and blocked its normal
+  ability to respond to Ctrl+C by pausing, it is not possible to trigger a
+  "halt" (emergency stop) by hammering Ctrl+C more than ten times.
 
 Bug Fixes
 ^^^^^^^^^
 
+* Fix bug where failed or canceled movements could cause future executions of
+  the RunEngine to error.
 * Fix bug in ``plan_mutator`` so that it properly handles return values. One
   effect of this fix is that ``baseline_wrapper`` properly passed run uids
   through.
 * Fix bug in ``LiveFit`` that broke multivariate fits.
+* Minor fixes to example detectors.
+
+API Changes
+^^^^^^^^^^^
+
+* A ``KeyboardInterrupt`` exception captured during a run used to cause the
+  RunEngine to pause. Now it halts instead.
 
 v0.7.0
 ------
