@@ -549,7 +549,7 @@ def test_sigint_many_hits_cb(fresh_RE):
     start_time = ttime.time()
     timer = threading.Timer(0.2, sim_kill, (11,))
     timer.start()
-    RE(infinite_plan(), hanging_callback)
+    RE(infinite_plan(), {'start': hanging_callback})
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
