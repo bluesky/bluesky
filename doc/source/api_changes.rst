@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-v0.7.1
+v0.8.0
 ------
 
 Enhancements
