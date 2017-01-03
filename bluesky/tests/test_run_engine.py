@@ -2,6 +2,7 @@ import asyncio
 import threading
 import os
 import signal
+import sys
 from collections import defaultdict
 import time as ttime
 import pytest
@@ -502,6 +503,8 @@ def test_sigint_three_hits(fresh_RE, motor_det):
     assert done_cleanup_time - end_time > 0.3
 
 
+@pytest.mark.skipif(sys.version_info < (3, 5),
+                    reason="requires python3.5")
 def test_sigint_many_hits_pln(fresh_RE):
     RE = fresh_RE
     pid = os.getpid()
@@ -527,6 +530,8 @@ def test_sigint_many_hits_pln(fresh_RE):
     assert RE.state == 'idle'
 
 
+@pytest.mark.skipif(sys.version_info < (3, 5),
+                    reason="requires python3.5")
 def test_sigint_many_hits_cb(fresh_RE):
     RE = fresh_RE
     pid = os.getpid()
