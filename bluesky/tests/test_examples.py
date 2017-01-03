@@ -406,8 +406,7 @@ def test_rogue_sigint(fresh_RE):
         raise KeyboardInterrupt()
 
     RE(bad_scan())
-    assert RE.state == 'paused'
-    RE.abort()
+    assert RE.state == 'idle'
 
 
 def test_seqnum_nonrepeated(fresh_RE):

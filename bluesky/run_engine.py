@@ -972,8 +972,8 @@ class RunEngine:
                     # See https://github.com/NSLS-II/bluesky/pull/242
                     print("An unknown external library has improperly raised "
                           "KeyboardInterrupt. Intercepting and triggering "
-                          "a hard pause instead.")
-                    self.loop.call_soon(self.request_pause, False)
+                          "a HALT.")
+                    self.loop.call_soon(self.halt)
                     print(PAUSE_MSG)
                 except asyncio.CancelledError as e:
                     # if we are handling this twice, raise and leave the plans
