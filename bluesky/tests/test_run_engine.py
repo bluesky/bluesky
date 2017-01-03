@@ -524,8 +524,7 @@ def test_sigint_many_hits_pln(fresh_RE):
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
-    assert RE.state == 'paused'
-    RE.abort()
+    assert RE.state == 'idle'
 
 
 def test_sigint_many_hits_cb(fresh_RE):
@@ -553,8 +552,7 @@ def test_sigint_many_hits_cb(fresh_RE):
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
-    assert RE.state == 'paused'
-    RE.abort()
+    assert RE.state == 'idle'
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
 
