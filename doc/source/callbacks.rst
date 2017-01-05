@@ -696,6 +696,50 @@ The module ``bluesky.callbacks.olog`` includes some templates that format the
 data from the 'start' document into a readable log entry. You can also write
 customize templates and pass them to ``logbook_cb_factory``.
 
+You may specify a custom template. Here is a very simple example; see the
+`source code < https://github.com/NSLS-II/bluesky/blob/master/bluesky/callbacks/olog.py>`_
+for a more complex example (the default template).
+
+.. code-block:: python
+
+    CUSTOM_TEMPLATE = """
+    My Log Entry
+
+    {{ start.plan_name }}
+    Detectors: {{ start.detectors }}
+    """
+
+    # Do same boilerplate above to set up configured_logbook_func. Then:
+    cb = logbook_cb_factory(configured_logbook_func,
+                            desc_template=CUSTOM_TEMPLATE)
+
+You may also specify a variety of different templates that are suitable for
+different kinds of plans. The callback will use the ``'plan_name'`` field to
+determine which template to use.
+
+.. code-block:: python
+
+    # a template for a 'count' plan (which has no motors)
+    COUNT_TEMPLATE = """
+    Plan Name: {{ start.plan_name }}
+    Detectors: {{ start.detectors }}
+    """
+
+    # a template for any plan with motors
+    SCAN_TEMPLATE = """
+    Plan Name: {{ start.plan_name }}
+    Detectors: {{ start.detectors }}
+    Motor(s): {{ start.motors }}
+    """
+
+    templates = {'count': COUNT_TEMPLATE,
+                 'scan': SCAN_TEMPLATE,
+                 'relative_scan': SCAN_TEMPLATE}
+
+    # Do same boilerplate above to set up configured_logbook_func. Then:
+    cb = logbook_cb_factory(configured_logbook_func,
+                            desc_dispatch=templates)
+
 .. autofunction:: bluesky.callbacks.olog.logbook_cb_factory
 
 Verify Data Has Been Saved
