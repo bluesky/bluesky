@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta
 from abc import ABCMeta, abstractmethod, abstractproperty
 import operator
 from threading import Lock
@@ -41,6 +42,15 @@ class SuspenderBase(metaclass=ABCMeta):
         self._sig = signal
         self._pre_plan = pre_plan
         self._post_plan = post_plan
+
+    def __repr__(self):
+        return ("{}({!r}, sleep={}, pre_plan={}, post_plan={},"
+                "tripped_message={})".format(type(self).__name__,
+                                             self._sig,
+                                             self._sleep,
+                                             self._pre_plan,
+                                             self._post_plan,
+                                             self._tripped_message))
 
     def install(self, RE, *, event_type=None):
         '''Install callback on signal
@@ -148,6 +158,11 @@ class SuspenderBase(metaclass=ABCMeta):
                 loop = self.RE._loop
 
                 def local():
+                    ts = ((datetime.now() + timedelta(seconds=sleep))
+                           .strftime('%Y-%m-%d %H:%M:%S'))
+                    print("Suspender {!r} reports a return to nominal "
+                          "conditions. Will sleep for {} seconds and then "
+                          "release suspension at {}.".format(self, sleep, ts))
                     loop.call_later(sleep, ev.set)
                 loop.call_soon_threadsafe(local)
         # clear that we have an event
