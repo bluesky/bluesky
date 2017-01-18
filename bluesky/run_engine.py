@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import time as ttime
 import sys
 import logging
@@ -748,6 +749,8 @@ class RunEngine:
             self._task.cancel()
         else:
             print("Suspending....To get prompt hit Ctrl-C twice to pause.")
+            ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print("Suspension occurred at {}.".format(ts))
             if justification is not None:
                 print("Justification for this suspension:\n%s" % justification)
             self._record_interruption('suspend')
