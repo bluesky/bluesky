@@ -15,6 +15,7 @@ import sys
 import numpy as np
 from cycler import cycler
 import logging
+import datetime
 logger = logging.getLogger(__name__)
 
 
@@ -872,3 +873,13 @@ def ensure_uid(doc_or_uid):
         return doc_or_uid['uid']
     except TypeError:
         return doc_or_uid
+
+
+def ts_msg_hook(msg):
+    t = '{:%H:%m:%S}'.format(datetime.datetime.now())
+    msg_fmt = '{: <17s} -> {!s: <15s} args: {}, kwargs: {}'.format(
+        msg.command,
+        msg.obj.name if hasattr(msg.obj, 'name') else msg.obj,
+        msg.args,
+        msg.kwargs)
+    print('{} {}'.format(t, msg_fmt))
