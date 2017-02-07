@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QTreeWidgetItem, QMainWindow, QTreeWidget
-from PyQt5 import QtWidgets
+from matplotlib.backends.qt_compat import QtWidgets
+from matplotlib.backends.qt_compat.QtWidgets import QTreeWidgetItem, QMainWindow, QTreeWidget
 from bluesky import Msg
 import pprint
 from bluesky.plan_tools import to_nested
