@@ -2338,8 +2338,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         cur_det = {}
         while next_pos < stop:
             yield Msg('checkpoint')
-            yield Msg('set', motor, next_pos)
-            yield Msg('wait', None, 'A')
+            yield from mv(motor, next_pos)
             yield Msg('create', None, name='primary')
             for det in detectors:
                 yield Msg('trigger', det, group='B')
