@@ -1379,3 +1379,35 @@ Built-in Subscription Factories
     spec_api.setup_livetable
     spec_api.setup_peakstats
     spec_api.setup_liveraster
+
+
+Count Time
+++++++++++
+
+The SPEC api by convention takes a ``time`` kwarg which is used to set
+the optional ``count_time`` signal on each device.  Ex
+
+.. code-block:: python
+
+    from ophyd import (Device, Signal, Component as Cpt, EpicsSignal)
+
+    class DetectorWithCountTime(Device):
+        count_time = Cpt(Signal)
+        exposure_time = Cpt(EpicsSignal, 'ExposureTime-SP')
+
+        def stage(self):
+            if self.count_time.get() is not None:
+                actual_exposure_time = (self.count_time.get() - 0.1)
+                self.stage_sigs[self.exposure_time] = actual_exposure_time
+            super().stage()
+
+    det = DetectorWithCountTime('prefix:', name='det')
+    gs.DETS.append(det)
+    RE(dscan(mtr, 0, 1, 5, time=5.0))
+    # count_time would be set to 5.0 here, prior to the scan starting
+
+
+Using the approach of a soft Signal on detectors allows ``stage`` to process
+the value that comes directly from the user.  A slightly less flexible
+alternative would be to define ``count_time`` just as the ``EpicsSignal``
+``exposure_time`` below it, if those values should always be the same.

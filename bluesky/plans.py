@@ -15,39 +15,7 @@ from . import plan_patterns
 from .utils import (Struct, Subs, normalize_subs_input, root_ancestor,
                     separate_devices, apply_sub_factories, update_sub_lists,
                     all_safe_rewind, Msg, ensure_generator, single_gen,
-                    short_uid as _short_uid, RampFail)
-
-
-def make_decorator(wrapper):
-    """
-    Turn a generator instance wrapper into a generator function decorator.
-
-    The functions named <something>_wrapper accept a generator instance and
-    return a mutated generator instance.
-
-    Example of a 'wrapper':
-    >>> plan = count([det])  # returns a generator instance
-    >>> revised_plan = some_wrapper(plan)  # returns a new instance
-
-    Example of a decorator:
-    >>> some_decorator = make_decorator(some_wrapper)  # returns decorator
-    >>> customized_count = some_decorator(count)  # returns generator func
-    >>> plan = customized_count([det])  # returns a generator instance
-
-    This turns a 'wrapper' into a decorator, which accepts a generator
-    function and returns a generator function.
-    """
-    @wraps(wrapper)
-    def dec_outer(*args, **kwargs):
-        def dec(gen_func):
-            @wraps(gen_func)
-            def dec_inner(*inner_args, **inner_kwargs):
-                plan = gen_func(*inner_args, **inner_kwargs)
-                plan = wrapper(plan, *args, **kwargs)
-                return (yield from plan)
-            return dec_inner
-        return dec
-    return dec_outer
+                    short_uid as _short_uid, RampFail, make_decorator)
 
 
 def planify(func):
@@ -1618,57 +1586,6 @@ def reset_positions_wrapper(plan, devices=None):
                                         reset()))
 
 
-def configure_count_time_wrapper(plan, time):
-    """
-    Preprocessor that sets all devices with a `count_time` to the same time.
-
-    The original setting is stashed and restored at the end.
-
-    Parameters
-    ----------
-    plan : iterable or iterator
-        a generator, list, or similar containing `Msg` objects
-    time : float or None
-        If None, the plan passes through unchanged.
-
-    Yields
-    ------
-    msg : Msg
-        messages from plan, with 'set' messages inserted
-    """
-    devices_seen = set()
-    original_times = {}
-
-    def insert_set(msg):
-        obj = msg.obj
-        if obj is not None and obj not in devices_seen:
-            devices_seen.add(obj)
-            if hasattr(obj, 'count_time'):
-                # TODO Do this with a 'read' Msg once reads can be
-                # marked as belonging to a different event stream (or no
-                # event stream.
-                original_times[obj] = obj.count_time.get()
-                grp = _short_uid('set-count-time')
-                return pchain(single_gen(Msg('set', obj.count_time, time,
-                                             group=grp)),
-                              single_gen(Msg('wait', None, group=grp)),
-                              single_gen(msg)), None
-        return None, None
-
-    def reset():
-        for obj, time in original_times.items():
-            grp = _short_uid('reset-count-time')
-            yield Msg('set', obj.count_time, time, group=grp)
-            yield Msg('wait', None, group=grp)
-
-    if time is None:
-        # no-op
-        return (yield from plan)
-    else:
-        return (yield from finalize_wrapper(plan_mutator(plan, insert_set),
-                                            reset()))
-
-
 def baseline_wrapper(plan, devices, name='baseline'):
     """
     Preprocessor that records a baseline of all `devices` after `open_run`
@@ -1920,7 +1837,6 @@ fly_during_decorator = make_decorator(fly_during_wrapper)
 monitor_during_decorator = make_decorator(monitor_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
 run_decorator = make_decorator(run_wrapper)
-configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
 
 
 def count(detectors, num=1, delay=None, *, md=None):

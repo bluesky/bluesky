@@ -1,6 +1,17 @@
 Release Notes
 =============
 
+v0.9.0
+------
+
+API Changes
+^^^^^^^^^^^
+
+Moved ``configure_count_time_wrapper`` and
+``configure_count_time_detector`` to ``bluesky.spec_api`` from
+``bluesky.plans``.
+
+
 v0.8.0
 ------
 

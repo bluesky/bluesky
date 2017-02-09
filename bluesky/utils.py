@@ -16,6 +16,7 @@ import numpy as np
 from cycler import cycler
 import logging
 import datetime
+from functools import wraps
 logger = logging.getLogger(__name__)
 
 
@@ -381,8 +382,8 @@ class _BoundMethodProxy:
 class StructMeta(type):
     def __new__(cls, name, bases, clsdict):
         clsobj = super().__new__(cls, name, bases, clsdict)
-        args_params  = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
-                        for name in clsobj._fields]
+        args_params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
+                       for name in clsobj._fields]
         kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None)
                          for name in ['md']]
         sig = Signature(args_params + kwargs_params)
@@ -442,8 +443,8 @@ def normalize_subs_input(subs):
         for func in funcs:
             if not callable(func):
                 raise ValueError("subs values must be functions or lists "
-                                "of functions. The offending entry is\n "
-                                "{0}".format(func))
+                                 "of functions. The offending entry is\n "
+                                 "{0}".format(func))
     return normalized
 
 
@@ -737,6 +738,7 @@ def install_nb_kicker(loop=None):
     global _NB_KICKER_INSTALLED
     if loop in _NB_KICKER_INSTALLED:
         return
+
     def _nbagg_kicker():
         # This is more brute-force variant of the _qt_kicker function used
         # inside install_qt_kicker.
@@ -883,3 +885,35 @@ def ts_msg_hook(msg):
         msg.args,
         msg.kwargs)
     print('{} {}'.format(t, msg_fmt))
+
+
+def make_decorator(wrapper):
+    """
+    Turn a generator instance wrapper into a generator function decorator.
+
+    The functions named <something>_wrapper accept a generator instance and
+    return a mutated generator instance.
+
+    Example of a 'wrapper':
+    >>> plan = count([det])  # returns a generator instance
+    >>> revised_plan = some_wrapper(plan)  # returns a new instance
+
+    Example of a decorator:
+    >>> some_decorator = make_decorator(some_wrapper)  # returns decorator
+    >>> customized_count = some_decorator(count)  # returns generator func
+    >>> plan = customized_count([det])  # returns a generator instance
+
+    This turns a 'wrapper' into a decorator, which accepts a generator
+    function and returns a generator function.
+    """
+    @wraps(wrapper)
+    def dec_outer(*args, **kwargs):
+        def dec(gen_func):
+            @wraps(gen_func)
+            def dec_inner(*inner_args, **inner_kwargs):
+                plan = gen_func(*inner_args, **inner_kwargs)
+                plan = wrapper(plan, *args, **kwargs)
+                return (yield from plan)
+            return dec_inner
+        return dec
+    return dec_outer
