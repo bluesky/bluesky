@@ -29,6 +29,9 @@ matrix:
       env: BUILD_DOCS=false
     - python: 3.5
       env: BUILD_DOCS=true
+    - python: 3.6
+      env: BUILD_DOCS=false
+    
 
 before_install:
   - git clone https://github.com/NSLS-II/nsls2-ci --branch master --single-branch ~/ci_scripts
