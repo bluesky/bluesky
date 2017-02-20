@@ -48,11 +48,12 @@ Standard acronyms to start the commit message with are:
 API: an (incompatible) API change
 BLD: change related to building numpy
 BUG: bug fix
+CI : continuous integration
 DEP: deprecate something, or remove a deprecated object
 DEV: development tool or utility
 DOC: documentation
 ENH: enhancement
-MAINT: maintenance commit (refactoring, typos, etc.)
+MNT: maintenance commit (refactoring, typos, etc.)
 REV: revert an earlier commit
 STY: style fix (whitespace, PEP8)
 TST: addition or modification of tests
