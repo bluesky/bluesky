@@ -402,7 +402,12 @@ def test_live_fit_plot(fresh_RE):
         assert np.allclose(livefit.result.values[k], v, atol=1e-6)
 
 
-def test_intreupted_with_callbacks(fresh_RE):
+@pytest.mark.parametrize('int_meth, stop_num, msg_num',
+                         [('stop', 1, 5),
+                          ('abort', 1, 5),
+                          ('halt', 1, 3)])
+def test_intreupted_with_callbacks(fresh_RE, int_meth,
+                                   stop_num, msg_num):
     RE = fresh_RE
 
     docs = defaultdict(list)
@@ -414,9 +419,10 @@ def test_intreupted_with_callbacks(fresh_RE):
     RE.msg_hook = MsgCollector()
     RE(subs_wrapper(run_wrapper(pause()),
                     {'all': collector_cb}))
-    RE.stop()
+    getattr(RE, int_meth)()
 
-    assert len(docs['stop']) == 1
     assert len(docs['start']) == 1
     assert len(docs['event']) == 0
     assert len(docs['descriptor']) == 0
+    assert len(docs['stop']) == stop_num
+    assert len(RE.msg_hook.msgs) == msg_num
