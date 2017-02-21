@@ -1,12 +1,14 @@
+from collections import defaultdict
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4)
 from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
-                           outer_product_scan)
+                           outer_product_scan, run_wrapper, pause,
+                           subs_wrapper)
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot)
 from bluesky.callbacks.zmqpub import Publisher
 from bluesky.callbacks.zmqsub import RemoteDispatcher
-from bluesky.tests.utils import _print_redirect
+from bluesky.tests.utils import _print_redirect, MsgCollector
 import multiprocessing
 import time
 import pytest
@@ -398,3 +400,23 @@ def test_live_fit_plot(fresh_RE):
     expected = {'A': 1, 'sigma': 1, 'x0': 0}
     for k, v in expected.items():
         assert np.allclose(livefit.result.values[k], v, atol=1e-6)
+
+
+def test_intreupted_with_callbacks(fresh_RE):
+    RE = fresh_RE
+
+    docs = defaultdict(list)
+
+    def collector_cb(name, doc):
+        nonlocal docs
+        docs[name].append(doc)
+
+    RE.msg_hook = MsgCollector()
+    RE(subs_wrapper(run_wrapper(pause()),
+                    {'all': collector_cb}))
+    RE.stop()
+
+    assert len(docs['stop']) == 1
+    assert len(docs['start']) == 1
+    assert len(docs['event']) == 0
+    assert len(docs['descriptor']) == 0
