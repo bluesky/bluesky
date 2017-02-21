@@ -869,9 +869,9 @@ def run_wrapper(plan, *, md=None):
     md : dict, optional
         metadata to be passed into the 'open_run' message
     """
-    yield from open_run(md)
-    yield from plan
-    rs_uid = yield from close_run()
+    rs_uid = yield from open_run(md)
+    yield from finalize_wrapper(plan,
+                                close_run())
     return rs_uid
 
 
