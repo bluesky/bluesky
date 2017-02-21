@@ -6,21 +6,20 @@ from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot)
 from bluesky.callbacks.zmqpub import Publisher
 from bluesky.callbacks.zmqsub import RemoteDispatcher
-from bluesky.tests.utils import setup_test_run_engine
 from bluesky.tests.utils import _print_redirect
 import multiprocessing
 import time
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
-RE = setup_test_run_engine()
 
 
 def exception_raiser(name, doc):
     raise Exception("it's an exception that better not kill the scan!!")
 
 
-def test_all():
+def test_all(fresh_RE):
+    RE = fresh_RE
     c = CallbackCounter()
     RE(stepscan(det, motor), subs={'all': c})
     assert c.value == 10 + 1 + 2  # events, descriptor, start and stop
@@ -32,12 +31,8 @@ def test_all():
     assert c.value == 10 + 1 + 2
 
 
-def _raising_callbacks_helper(stream_name, callback):
-    with pytest.raises(Exception):
-        RE(stepscan(det, motor), subs={stream_name: callback})
-
-
-def test_raising_ignored_or_not():
+def test_raising_ignored_or_not(fresh_RE):
+    RE = fresh_RE
     RE.ignore_callback_exceptions = True
     assert RE.ignore_callback_exceptions
 
@@ -48,7 +43,8 @@ def test_raising_ignored_or_not():
         RE(stepscan(det, motor), subs=cb)
 
     RE.ignore_callback_exceptions = False
-    _raising_callbacks_helper('all', cb)
+    with pytest.raises(Exception):
+        RE(stepscan(det, motor), subs={'all': cb})
 
 
 def test_subs_input():
@@ -84,7 +80,8 @@ def test_subs_input():
                               'descriptor': [], 'event': []}
 
 
-def test_subscribe_msg():
+def test_subscribe_msg(fresh_RE):
+    RE = fresh_RE
     assert RE.state == 'idle'
     c = CallbackCounter()
 
@@ -100,7 +97,9 @@ def test_subscribe_msg():
     assert c.value == 2
 
 
-def test_unknown_cb_raises():
+def test_unknown_cb_raises(fresh_RE):
+    RE = fresh_RE
+
     def f(name, doc):
         pass
     with pytest.raises(KeyError):
@@ -120,7 +119,9 @@ def test_table_warns():
                              'data_keys': {'field': {'dtype': 'array'}}})
 
 
-def test_table():
+def test_table(fresh_RE):
+    RE = fresh_RE
+
     with _print_redirect() as fout:
         det.precision = 2
         motor.precision = 2
