@@ -1,5 +1,5 @@
 from matplotlib.backends.qt_compat import QtWidgets
-from matplotlib.backends.qt_compat.QtWidgets import QTreeWidgetItem, QMainWindow, QTreeWidget
+
 from bluesky import Msg
 import pprint
 from bluesky.plan_tools import to_nested
@@ -9,10 +9,10 @@ def make_row(msg):
     kwarg_str = '{!r}'.format(msg.kwargs)
     if len(kwarg_str) > 50:
         kwarg_str = '{...}'
-    child = QTreeWidgetItem([msg.command,
-                             msg.obj.name if msg.obj is not None else '',
-                             '{}'.format(msg.args),
-                             kwarg_str])
+    child = QtWidgets.QTreeWidgetItem([msg.command,
+                                       msg.obj.name if msg.obj is not None else '',
+                                       '{}'.format(msg.args),
+                                       kwarg_str])
     child.setToolTip(3, pprint.pformat(msg.kwargs))
     return child
 
@@ -39,13 +39,13 @@ def fill_widget(widget, value):
 
 
 def plan_writer():
-    window = QMainWindow()
+    window = QtWidgets.QMainWindow()
     mw = QtWidgets.QWidget()
     ed_pannel = QtWidgets.QWidget()
     ed_layout = QtWidgets.QVBoxLayout()
     ed_pannel.setLayout(ed_layout)
 
-    w = QTreeWidget()
+    w = QtWidgets.QTreeWidget()
     w.setColumnCount(4)
     w.setHeaderLabels(Msg._fields)
     w.setAlternatingRowColors(True)
@@ -68,7 +68,7 @@ def plan_writer():
             exec(ed.toPlainText(), globals(), lcls)
             ret = to_nested(lcls['target'])
         except Exception as e:
-            pass
+            print(e)
         else:
             fill_widget(w, ret)
             w.resizeColumnToContents(0)
