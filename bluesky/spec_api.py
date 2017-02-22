@@ -108,7 +108,7 @@ def setup_liveraster(*, motors, gs, shape, extent):
         return None
     ylab, xlab = [first_key_heuristic(m) for m in motors]
     raster = LiveRaster(shape, gs.MASTER_DET_FIELD, xlabel=xlab,
-                        ylabel=ylab, extent=extent, clim=[0, 1])
+                        ylabel=ylab, extent=extent)
     return raster
 
 
