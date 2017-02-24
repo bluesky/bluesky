@@ -418,9 +418,15 @@ class LiveRaster(CallbackBase):
         if self.im is not None:
             raise RuntimeError("Can not re-use LiveRaster")
         self._Idata = np.ones(self.raster_shape) * np.nan
+        origin = None
+        extent = self.extent
+        if extent is not None:
+            if extent[2] < extent[3]:
+                origin = 'lower'
         im = self.ax.imshow(self._Idata, norm=self._norm,
                             cmap=self.cmap, interpolation='none',
-                            extent=self.extent, aspect=self.aspect)
+                            extent=extent, aspect=self.aspect,
+                            origin=origin)
 
         self.im = im
         self.ax.set_title('scan {uid} [{sid}]'.format(sid=doc['scan_id'],
