@@ -26,13 +26,66 @@ from bluesky.utils import (first_key_heuristic, normalize_subs_input,
 from bluesky.plans import (count, scan, relative_scan,
                            relative_inner_product_scan,
                            outer_product_scan, inner_product_scan,
-                           tweak, configure_count_time_decorator,
-                           baseline_decorator, subs_decorator,
-                           fly_during_decorator, monitor_during_decorator)
+                           tweak, baseline_decorator, subs_decorator,
+                           fly_during_decorator,
+                           monitor_during_decorator, pchain,
+                           finalize_wrapper, plan_mutator, mv, single_gen)
+from bluesky.utils import make_decorator
 import itertools
 from itertools import chain
 from inspect import signature, Parameter
 import warnings
+
+
+def configure_count_time_wrapper(plan, time):
+    """
+    Preprocessor that sets all devices with a `count_time` to the same time.
+
+    The original setting is stashed and restored at the end.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    time : float or None
+        If None, the plan passes through unchanged.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'set' messages inserted
+    """
+    devices_seen = set()
+    original_times = {}
+
+    def insert_set(msg):
+        obj = msg.obj
+        if obj is not None and obj not in devices_seen:
+            devices_seen.add(obj)
+            if hasattr(obj, 'count_time'):
+                # TODO Do this with a 'read' Msg once reads can be
+                # marked as belonging to a different event stream (or no
+                # event stream.
+                original_times[obj] = obj.count_time.get()
+                # TODO do this with configure
+                return pchain(mv(obj.count_time, time),
+                              single_gen(msg)), None
+        return None, None
+
+    def reset():
+        for obj, time in original_times.items():
+            yield from mv(obj.count_time, time)
+
+    if time is None:
+        # no-op
+        return (yield from plan)
+    else:
+        return (yield from finalize_wrapper(plan_mutator(plan, insert_set),
+                                            reset()))
+
+
+configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
+
 
 # ## Factory functions for generating callbacks
 

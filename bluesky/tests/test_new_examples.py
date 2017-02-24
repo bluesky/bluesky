@@ -14,12 +14,13 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            fly_during_wrapper, reset_positions_wrapper,
                            monitor_during_wrapper,
                            lazily_stage_wrapper, relative_set_wrapper,
-                           configure_count_time_wrapper,
                            subs_wrapper, trigger_and_read, stop,
                            repeater, caching_repeater, count, Count, Scan,
                            fly_during_decorator, subs_decorator,
                            monitor_during_decorator,
                            inject_md_wrapper, finalize_decorator)
+from bluesky.spec_api import configure_count_time_wrapper
+
 from bluesky.utils import all_safe_rewind
 
 
