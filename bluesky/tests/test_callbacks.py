@@ -1,26 +1,27 @@
+from collections import defaultdict
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4)
 from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
-                           outer_product_scan)
+                           outer_product_scan, run_wrapper, pause,
+                           subs_wrapper)
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot)
 from bluesky.callbacks.zmqpub import Publisher
 from bluesky.callbacks.zmqsub import RemoteDispatcher
-from bluesky.tests.utils import setup_test_run_engine
-from bluesky.tests.utils import _print_redirect
+from bluesky.tests.utils import _print_redirect, MsgCollector
 import multiprocessing
 import time
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
-RE = setup_test_run_engine()
 
 
 def exception_raiser(name, doc):
     raise Exception("it's an exception that better not kill the scan!!")
 
 
-def test_all():
+def test_all(fresh_RE):
+    RE = fresh_RE
     c = CallbackCounter()
     RE(stepscan(det, motor), subs={'all': c})
     assert c.value == 10 + 1 + 2  # events, descriptor, start and stop
@@ -32,12 +33,8 @@ def test_all():
     assert c.value == 10 + 1 + 2
 
 
-def _raising_callbacks_helper(stream_name, callback):
-    with pytest.raises(Exception):
-        RE(stepscan(det, motor), subs={stream_name: callback})
-
-
-def test_raising_ignored_or_not():
+def test_raising_ignored_or_not(fresh_RE):
+    RE = fresh_RE
     RE.ignore_callback_exceptions = True
     assert RE.ignore_callback_exceptions
 
@@ -48,7 +45,8 @@ def test_raising_ignored_or_not():
         RE(stepscan(det, motor), subs=cb)
 
     RE.ignore_callback_exceptions = False
-    _raising_callbacks_helper('all', cb)
+    with pytest.raises(Exception):
+        RE(stepscan(det, motor), subs={'all': cb})
 
 
 def test_subs_input():
@@ -84,7 +82,8 @@ def test_subs_input():
                               'descriptor': [], 'event': []}
 
 
-def test_subscribe_msg():
+def test_subscribe_msg(fresh_RE):
+    RE = fresh_RE
     assert RE.state == 'idle'
     c = CallbackCounter()
 
@@ -100,7 +99,9 @@ def test_subscribe_msg():
     assert c.value == 2
 
 
-def test_unknown_cb_raises():
+def test_unknown_cb_raises(fresh_RE):
+    RE = fresh_RE
+
     def f(name, doc):
         pass
     with pytest.raises(KeyError):
@@ -120,7 +121,9 @@ def test_table_warns():
                              'data_keys': {'field': {'dtype': 'array'}}})
 
 
-def test_table():
+def test_table(fresh_RE):
+    RE = fresh_RE
+
     with _print_redirect() as fout:
         det.precision = 2
         motor.precision = 2
@@ -397,3 +400,29 @@ def test_live_fit_plot(fresh_RE):
     expected = {'A': 1, 'sigma': 1, 'x0': 0}
     for k, v in expected.items():
         assert np.allclose(livefit.result.values[k], v, atol=1e-6)
+
+
+@pytest.mark.parametrize('int_meth, stop_num, msg_num',
+                         [('stop', 1, 5),
+                          ('abort', 1, 5),
+                          ('halt', 1, 3)])
+def test_intreupted_with_callbacks(fresh_RE, int_meth,
+                                   stop_num, msg_num):
+    RE = fresh_RE
+
+    docs = defaultdict(list)
+
+    def collector_cb(name, doc):
+        nonlocal docs
+        docs[name].append(doc)
+
+    RE.msg_hook = MsgCollector()
+    RE(subs_wrapper(run_wrapper(pause()),
+                    {'all': collector_cb}))
+    getattr(RE, int_meth)()
+
+    assert len(docs['start']) == 1
+    assert len(docs['event']) == 0
+    assert len(docs['descriptor']) == 0
+    assert len(docs['stop']) == stop_num
+    assert len(RE.msg_hook.msgs) == msg_num
