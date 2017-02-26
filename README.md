@@ -7,6 +7,8 @@ a Python data collection interface for experimental science
 
 See [documentation](http://nsls-ii.github.io/bluesky).
 
+[Report an issue with bluesky](https://github.com/NSLS-II/bluesky/issues/new)
+
 ## Conda Recipes
 
 Install the most recent tagged build: `conda install bluesky -c lightsource2-tag`
