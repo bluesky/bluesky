@@ -85,7 +85,7 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
     y_num : float (must be even if x_num is even and must be odd if x_num is odd, if not it is increased by 1 to ensure this)
         number of y axis points
    
-   Returns
+    Returns
     -------
     cyc : cycler
     '''
@@ -114,13 +114,10 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
     y_min=y_centre - delta_y * (y_num-1)/2
     
     for n,i_ring in enumerate(range(num_st, num_ring+1,2)):
-        #print ('x_centre: '+str(x_centre)+', delta_x: '+str(delta_x))
-        #print ('y_centre: '+str(y_centre)+', delta_y: '+str(delta_y))
         x_ring_max=x_centre + delta_x * (n+offset)
         y_ring_max=y_centre + delta_y * (n+offset)
         x_ring_min=x_centre - delta_x * (n+offset)
-        y_ring_min=y_centre - delta_y * (n+offset)
-        #print('i_ring = '+str(i_ring)+', x_ring_min= '+str(x_ring_min)+', y_ring_min= '+str(y_ring_min)  ) 
+        y_ring_min=y_centre - delta_y * (n+offset) 
 
         for n in range(1, i_ring):
             x = x_ring_min+delta_x*(n-1)
