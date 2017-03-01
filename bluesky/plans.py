@@ -2890,6 +2890,7 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
 def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
                   y_range, x_num, y_num, *, per_step=None, md=None):
     '''Absolute square spiral scan, centered around (x_centre, y_centre)
+    
     Parameters
     ----------
     detectors : list
