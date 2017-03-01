@@ -65,6 +65,7 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
         
 def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range, x_num,y_num):
     '''Square spiral scan, centered around (x_start, y_start)
+    
     Parameters
     ----------
     x_motor : object, optional
@@ -82,52 +83,36 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
     x_num : float
         number of x axis points
     y_num : float (must be even if x_num is even and must be odd if x_num is odd, if not it is increased by 1 to ensure this)
-        number of y axis points 
-    Returns
+        number of y axis points
+   
+   Returns
     -------
     cyc : cycler
     '''
-
-
     x_points, y_points = [], []
 
     if x_num%2==0:
         num_st= 2
         if y_num%2==1:
            y_num+=1
-
         offset=0.5
-        
     else:
         num_st=1
         if y_num%2==0:
             y_num+=1
-
         offset=0
         
         x_points.append(x_centre)
         y_points.append(y_centre)
-        
-    #print( 'x_range = '+str(x_range)+', x_num = '+str(x_num)  )
-    #print( 'y_range = '+str(y_range)+', y_num = '+str(y_num)  )
-     
+
     delta_x = x_range/(x_num-1)
     delta_y = y_range/(y_num-1)
-
-
-    
     num_ring = max(x_num,y_num)
-
     x_max=x_centre + delta_x * (x_num-1)/2
     x_min=x_centre - delta_x * (x_num-1)/2
-
     y_max=y_centre + delta_y * (y_num-1)/2
     y_min=y_centre - delta_y * (y_num-1)/2
     
-
-
-    
-    #print ( 'num_ring = '+str(num_ring)  )
     for n,i_ring in enumerate(range(num_st, num_ring+1,2)):
         #print ('x_centre: '+str(x_centre)+', delta_x: '+str(delta_x))
         #print ('y_centre: '+str(y_centre)+', delta_y: '+str(delta_y))
@@ -152,8 +137,7 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
             if ( (x <= x_max) and (x>= x_min) and (y<=y_max) and (y>=y_min)     ):
                 x_points.append(x)
                 y_points.append(y)
-
-            
+       
         for n in range(1, i_ring):
             x = x_ring_max-delta_x*(n-1)
             y = y_ring_max
@@ -169,8 +153,6 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
             if ( (x <= x_max) and (x>= x_min) and (y<=y_max) and (y>=y_min)     ):
                 x_points.append(x)
                 y_points.append(y)
-
-
 
     cyc = cycler(x_motor, x_points)
     cyc += cycler(y_motor, y_points)
