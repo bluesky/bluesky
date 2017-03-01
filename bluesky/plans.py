@@ -2887,7 +2887,65 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
                               x_range, y_range, dr, nth, tilt=tilt,
                               per_step=per_step, md=_md))
 
+def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
+                  y_range, x_num, y_num, *, per_step=None, md=None):
+    '''Absolute square spiral scan, centered around (x_centre, y_centre)
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_centre : float
+        x center
+    y_centre : float
+        y center
+    x_range : float
+        x width of spiral
+    y_range : float
+        y width of spiral
+    x_num : float
+        number of x axis points
+    y_num : float (must be even if x_num is even and must be odd if x_num is odd, if not it is increased by 1 to ensure this)
+        number of y axis points 
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+    See Also
+    --------
+    :func:`bluesky.plans.spiral`
+    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.spiral_fermat`
+    :func:`bluesky.plans.relative_spiral_fermat`
+    '''
+    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_centre=x_centre,
+                        y_centre=y_centre, x_range=x_range, y_range=y_range,
+                        x_num = x_num, y_num = y_num)
+    cyc = spiral_square_pattern(**pattern_args)
 
+    # Before including pattern_args in metadata, replace objects with reprs.
+    pattern_args['x_motor'] = repr(x_motor)
+    pattern_args['y_motor'] = repr(y_motor)
+    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
+                         'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
+                         'x_centre': x_centre, 'y_centre': y_centre,
+                         'x_range': x_range, 'y_range': y_range,
+                         'x_num': x_num, 'y_num': y_num,
+                         'per_step': repr(per_step)},
+           'plan_name': 'spiral_square',
+           'plan_pattern': 'spiral_square',
+          }
+    _md.update(md or {})
+
+    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
+  
+  
+  
 def ramp_plan(go_plan,
               monitor_sig,
               inner_plan_func,
