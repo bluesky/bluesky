@@ -1877,7 +1877,7 @@ def count(detectors, num=1, delay=None, *, md=None):
     @run_decorator(md=_md)
     def finite_plan():
         for i in range(num):
-            now = time.time() # placed here to intercept the flow in its earliest moment..
+            now = time.time() # Intercept the flow in its earliest moment.
             yield Msg('checkpoint')
             yield from trigger_and_read(detectors)
             try:
@@ -1891,7 +1891,7 @@ def count(detectors, num=1, delay=None, *, md=None):
                                      "entries" % (num, i))
             if d is not None:
                 d = d - (time.time() - now)
-                if d > 0 # sleep if and only if time is left to do it..
+                if d > 0:  # Sleep if and only if time is left to do it.
                     yield Msg('sleep', None, d)
 
     @stage_decorator(detectors)
