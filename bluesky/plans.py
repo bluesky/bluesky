@@ -1868,13 +1868,6 @@ def count(detectors, num=1, delay=None, *, md=None):
     _md.update(md or {})
 
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
-    
-    # I would anyway repeat the set of delays enough to cover num-1.
-    # For example it is conceivable to provide a subset of delays like [1,2,3] to be used
-    # multiple times over for example num = 30, for statistical purposes and to remove higher order effects.
-    # Probably a declaration of the delay array generation should be provided as a warning at the beginning of the scan
-    # a general question: are messages like the proposed above intercepted in the metadata?
-    
     if not isinstance(delay, Iterable):
         delay = itertools.repeat(delay)
     else:
