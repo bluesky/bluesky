@@ -1871,6 +1871,15 @@ def count(detectors, num=1, delay=None, *, md=None):
     if not isinstance(delay, Iterable):
         delay = itertools.repeat(delay)
     else:
+        try:
+            num_delays = len(delay)
+        except TypeError:
+            # No way to tell in advance if we have enough delays.
+            pass
+        else:
+            if num - 1 > num_delays:
+                raise ValueError("num=%r but delays only provides %r "
+                                 "entries" % (num, num_delays))
         delay = iter(delay)
 
     @stage_decorator(detectors)
