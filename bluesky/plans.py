@@ -1868,6 +1868,13 @@ def count(detectors, num=1, delay=None, *, md=None):
     _md.update(md or {})
 
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
+    
+    # I would anyway repeat the set of delays enough to cover num-1.
+    # For example it is conceivable to provide a subset of delays like [1,2,3] to be used
+    # multiple times over for example num = 30, for statistical purposes and to remove higher order effects.
+    # Probably a declaration of the delay array generation should be provided as a warning at the beginning of the scan
+    # a general question: are messages like the proposed above intercepted in the metadata?
+    
     if not isinstance(delay, Iterable):
         delay = itertools.repeat(delay)
     else:
@@ -1877,6 +1884,7 @@ def count(detectors, num=1, delay=None, *, md=None):
     @run_decorator(md=_md)
     def finite_plan():
         for i in range(num):
+            now = time.time() # placed here to intercept the flow in its earliest moment..
             yield Msg('checkpoint')
             yield from trigger_and_read(detectors)
             try:
@@ -1889,7 +1897,9 @@ def count(detectors, num=1, delay=None, *, md=None):
                     raise ValueError("num=%r but delays only provides %r "
                                      "entries" % (num, i))
             if d is not None:
-                yield Msg('sleep', None, d)
+                d = d - (time.time() - now)
+                if d > 0 # sleep if and only if time is left to do it..
+                    yield Msg('sleep', None, d)
 
     @stage_decorator(detectors)
     @run_decorator(md=_md)
