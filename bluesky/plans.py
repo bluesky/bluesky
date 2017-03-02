@@ -1224,7 +1224,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
 
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
-           nth, *, tilt=0.0, per_step=None, md=None):
+           nth, *, dr_y=None, tilt=0.0, per_step=None, md=None):
     '''Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -1242,7 +1242,10 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     y_range : float
         y width of spiral
     dr : float
-        Delta radius
+        Delta radius along the minor axis of the ellipse. 
+    dr_y : float, optional
+        Delta radius along the major axis of the ellipse. If None, defaults to
+        dr.
     nth : float
         Number of theta steps
     tilt : float, optional
@@ -1262,7 +1265,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
-                        dr=dr, nth=nth, tilt=tilt)
+                        dr=dr, nth=nth, dr_y=dr_y, tilt=tilt)
     cyc = plan_patterns.spiral(**pattern_args)
 
     # Before including pattern_args in metadata, replace objects with reprs.
@@ -1272,7 +1275,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
                          'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                          'x_start': x_start, 'y_start': y_start,
                          'x_range': x_range, 'y_range': y_range,
-                         'dr': dr, 'nth': nth, 'tilt': tilt,
+                         'dr': dr, 'dr_y': dr_y, 'nth': nth, 'tilt': tilt,
                          'per_step': repr(per_step)},
            'extents': tuple([[x_start - x_range, x_start + x_range],
                              [y_start - y_range, y_start + y_range]]),
@@ -1295,7 +1298,8 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 
 
 def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
-               *, tilt=0.0, per_step=None, md=None):
+               *, dr_y=None, tilt=0.0, per_step=None, md=None):
+
     '''Relative spiral scan
 
     Parameters
@@ -1313,7 +1317,10 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     y_range : float
         y width of spiral
     dr : float
-        Delta radius
+        Delta radius along the minor axis of the ellipse. 
+    dr_y : float, optional
+        Delta radius along the major axis of the ellipse. If None, it
+        defaults to dr.
     nth : float
         Number of theta steps
     tilt : float, optional
@@ -1338,7 +1345,8 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     def inner_relative_spiral():
         return (yield from spiral(detectors, x_motor, y_motor,
                                   0, 0,
-                                  x_range, y_range, dr, nth, tilt=tilt,
+                                  x_range, y_range, dr, nth,
+                                  dr_y=dr_y, tilt=tilt,
                                   per_step=per_step, md=_md))
 
     return (yield from inner_relative_spiral())
