@@ -1891,7 +1891,7 @@ def count(detectors, num=1, delay=None, *, md=None):
                                      "entries" % (num, i))
             if d is not None:
                 d = d - (time.time() - now)
-                if d > 0 # sleep if and only if time is left to do it..
+                if d > 0: # sleep if and only if time is left to do it..
                     yield Msg('sleep', None, d)
 
     @stage_decorator(detectors)
