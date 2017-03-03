@@ -54,7 +54,7 @@ before_install:
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
   - conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py -c conda-forge -c defaults --override-channels
-  - conda install -n testenv nose jsonschema traitlets pytest coverage pip databroker ophyd historydict boltons doct pyepics super_state_machine xray-vision lmfit jinja2 icu pyzmq mongoquery dill -c lightsource2 -c conda-forge -c soft-matter
+  - conda install -n testenv nose jsonschema traitlets pytest coverage pip databroker ophyd historydict boltons doct pyepics super_state_machine xray-vision lmfit jinja2 icu pyzmq mongoquery dill attr -c lightsource2 -c conda-forge -c soft-matter
   - source activate testenv
   - 'pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model'
   - conda remove metadatastore databroker filestore
