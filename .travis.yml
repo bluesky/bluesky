@@ -25,6 +25,8 @@ addons:
 
 matrix:
   include:
+    - python: 3.6
+      env: BUILD_DOCS=false
     - python: 3.5
       env: BUILD_DOCS=true
 
