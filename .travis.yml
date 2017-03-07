@@ -34,7 +34,7 @@ before_install:
   - git clone https://github.com/NSLS-II/nsls2-ci --branch master --single-branch ~/ci_scripts
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16"
   - "export DISPLAY=:99.0"
-  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then wget http://repo.continuum.io/miniconda/Miniconda-3.5.5-Linux-x86_64.sh -O miniconda.sh; else wget http://repo.continuum.io/miniconda/Miniconda3-3.5.5-Linux-x86_64.sh -O miniconda.sh; fi
+  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b -p /home/travis/mc
   - export PATH=/home/travis/mc/bin:$PATH
@@ -54,7 +54,7 @@ before_install:
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
   - conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py -c conda-forge -c defaults --override-channels
-  - conda install -n testenv nose jsonschema traitlets pytest coverage pip databroker ophyd historydict boltons doct pyepics super_state_machine xray-vision lmfit jinja2 icu pyzmq mongoquery dill -c lightsource2 -c conda-forge -c soft-matter
+  - conda install -n testenv nose jsonschema traitlets pytest coverage pip databroker ophyd historydict boltons doct pyepics super_state_machine xray-vision lmfit jinja2 icu pyzmq mongoquery dill -c lightsource2-tag -c conda-forge -c soft-matter
   - source activate testenv
   - 'pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model'
   - conda remove metadatastore databroker filestore
