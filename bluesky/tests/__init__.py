@@ -11,8 +11,12 @@ except ImportError as ie:
     ophyd = None
     reason = str(ie)
 else:
-    setup_ophyd()
-    # define the classes only if ophyd is available
+    try:
+        setup_ophyd()
+        # define the classes only if ophyd is available
+    except Exception as E:
+        ophyd = None
+        reason = str(E)
 
 # define a skip condition based on if ophyd is available or not
 requires_ophyd = pytest.mark.skipif(ophyd is None, reason=reason)
