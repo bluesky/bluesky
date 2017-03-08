@@ -75,7 +75,6 @@ install:
        pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds
 
     fi
-      -
   - pip install codecov
   - python setup.py install
   # Need to clean the python build directory (and other cruft) or pytest is
