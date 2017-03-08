@@ -57,6 +57,7 @@ install:
   - conda install -n testenv pip doct xray-vision lmfit pyzmq -c lightsource2-tag -c conda-forge -c soft-matter
   - source activate testenv
   - pip install pyepics super_state_machine nose jsonschema traitlets pytest coverage jinja2 mongquery attrs boltons
+  - pip install pyepics super_state_machine nose jsonschema traitlets pytest coverage jinja2 mongoquery attrs boltons
   - pip install https://github.com/Nikea/historydict/zipball/master#egg=historydict
   - 'pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model'
   - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
