@@ -29,17 +29,22 @@ matrix:
       env: BUILD_DOCS=false
     - python: 3.5
       env: BUILD_DOCS=true
+    - python: 3.5
+      env: BUILD_DOCS=false CONDA_ENV=1
 
 before_install:
   - git clone https://github.com/NSLS-II/nsls2-ci --branch master --single-branch ~/ci_scripts
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16"
   - "export DISPLAY=:99.0"
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p /home/travis/mc
-  - export PATH=/home/travis/mc/bin:$PATH
-  - conda config --set show_channel_urls True
-  - conda config --set always_yes True
+  - |
+    if [ $CONDA_ENV ]; then
+       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+       chmod +x miniconda.sh
+       ./miniconda.sh -b -p /home/travis/mc
+       export PATH=/home/travis/mc/bin:$PATH
+       conda config --set show_channel_urls True
+       conda config --set always_yes True
+    fi
   - export MDS_HOST=localhost
   - export MDS_DATABASE=test
   - export MDS_TIMEZONE=US/Eastern
@@ -53,18 +58,24 @@ before_install:
 
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
-  - conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py -c conda-forge -c defaults --override-channels
-  - conda install -n testenv pip doct xray-vision lmfit pyzmq -c lightsource2-tag -c conda-forge -c soft-matter
-  - source activate testenv
-  - pip install pyepics super_state_machine nose jsonschema traitlets pytest coverage jinja2 mongoquery attrs boltons
-  - pip install https://github.com/Nikea/historydict/zipball/master#egg=historydict
-  - 'pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model'
-  - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
-  - 'pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore'
-  - 'pip install https://github.com/NSLS-II/ophyd/zipball/master#egg=ophyd'
-  - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
-  - 'pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds'
-  - pip install attrs
+  - |
+    if [ $CONDA_ENV ]; then
+       conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py -c conda-forge -c defaults --override-channels
+       conda install -n testenv portable_mds portable_fs traitlets jsonschema databroker pip doct xray-vision lmfit pyzmq -c lightsource2-tag -c conda-forge -c soft-matter
+       source activate testenv
+    else
+       pip install matplotlib numpy h5py scipy zmq pyepics super_state_machine nose pytest coverage jinja2 mongoquery attrs boltons networkx ipython
+       pip install https://github.com/Nikea/historydict/zipball/master#egg=historydict
+       pip install https://github.com/NSLS-II/doct/zipball/master#egg=doct
+       pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model
+       pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore
+       pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore
+       pip install https://github.com/NSLS-II/ophyd/zipball/master#egg=ophyd
+       pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker
+       pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds
+
+    fi
+  -
   - pip install codecov
   - python setup.py install
   # Need to clean the python build directory (and other cruft) or pytest is
