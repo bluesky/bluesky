@@ -61,10 +61,11 @@ install:
   - |
     if [ $CONDA_ENV ]; then
        conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py -c conda-forge -c defaults --override-channels
-       conda install -n testenv portable_mds portable_fs traitlets jsonschema databroker pip doct xray-vision lmfit pyzmq ophyd filestore -c lightsource2-tag -c conda-forge -c soft-matter
+       conda install -n testenv traitlets jsonschema databroker pip doct xray-vision lmfit pyzmq ophyd filestore -c lightsource2-tag -c conda-forge -c soft-matter
        source activate testenv
+       pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds
     else
-       pip install matplotlib numpy h5py scipy zmq pyepics super_state_machine nose pytest coverage jinja2 mongoquery attrs boltons networkx ipython requests lmfit pandas
+       pip install matplotlib numpy h5py scipy zmq pyepics super_state_machine nose pytest coverage jinja2 mongoquery attrs boltons networkx ipython requests lmfit pandas pyyaml
        pip install https://github.com/Nikea/historydict/zipball/master#egg=historydict
        pip install https://github.com/NSLS-II/doct/zipball/master#egg=doct
        pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model
