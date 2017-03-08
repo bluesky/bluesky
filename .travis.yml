@@ -54,15 +54,15 @@ before_install:
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
   - conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py -c conda-forge -c defaults --override-channels
-  - conda install -n testenv pip ophyd doct xray-vision lmfit pyzmq dill -c lightsource2-tag -c conda-forge -c soft-matter
+  - conda install -n testenv pip doct xray-vision lmfit pyzmq -c lightsource2-tag -c conda-forge -c soft-matter
   - source activate testenv
   - pip install pyepics super_state_machine nose jsonschema traitlets pytest coverage jinja2 mongquery attrs boltons
   - pip install https://github.com/Nikea/historydict/zipball/master#egg=historydict
   - 'pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model'
-  - conda remove metadatastore databroker filestore
-  - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
   - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
   - 'pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore'
+  - 'pip install https://github.com/NSLS-II/ophyd/zipball/master#egg=ophyd'
+  - 'pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker'
   - 'pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds'
   - pip install attrs
   - pip install codecov
