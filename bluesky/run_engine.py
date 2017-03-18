@@ -1049,20 +1049,6 @@ class RunEngine:
                 except RuntimeError as e:
                     print('The plan {!r} tried to yield a value on close.  '
                           'Please fix your plan.'.format(p))
-            # cancel the rest of the tasks
-            for task in asyncio.Task.all_tasks(self.loop):
-                if task is self._task:
-                    continue
-                task.cancel()
-                try:
-                    texc = task.exception()
-                except (asyncio.CancelledError,
-                        asyncio.InvalidStateError):
-                    pass
-                else:
-                    # TODO, merge this with main task exception?
-                    if texc is not None:
-                        print(texc)
 
             self.loop.stop()
             self.state = 'idle'
