@@ -1074,3 +1074,30 @@ def test_failures_kill_run(fresh_RE):
 
     with pytest.raises(FailedStatus):
         RE([Msg('set', dummy, 1)])
+
+
+def test_colliding_streams(fresh_RE):
+    RE = fresh_RE
+
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
+
+    collector = {'primary': [], 'baseline': []}
+    descs = {}
+
+    def local_cb(name, doc):
+        if name == 'descriptor':
+            descs[doc['uid']] = doc['name']
+        elif name == 'event':
+            collector[descs[doc['descriptor']]].append(doc)
+    RE(bp.baseline_wrapper(bp.outer_product_scan([motor],
+                                                 motor, -1, 1, 5,
+                                                 motor1, -5, 5, 7, True),
+                           [motor, motor1]),
+       local_cb)
+
+    assert len(collector['primary']) == 35
+    assert len(collector['baseline']) == 2
+
+    assert list(range(1, 36)) == [e['seq_num'] for e in collector['primary']]
+    assert list(range(1, 3)) == [e['seq_num'] for e in collector['baseline']]

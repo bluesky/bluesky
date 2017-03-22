@@ -1438,16 +1438,17 @@ class RunEngine:
         else:
             descriptor_uid = self._descriptors[(self._bundle_name, objs_read)]
         # This is a separate check because it can be reset on resume.
-        if objs_read not in self._sequence_counters:
+        seq_num_key = (self._bundle_name, objs_read)
+        if seq_num_key not in self._sequence_counters:
             counter = count(1)
             counter_copy1, counter_copy2 = tee(counter)
-            self._sequence_counters[objs_read] = counter_copy1
-            self._teed_sequence_counters[objs_read] = counter_copy2
+            self._sequence_counters[seq_num_key] = counter_copy1
+            self._teed_sequence_counters[seq_num_key] = counter_copy2
         self._bundling = False
         self._bundle_name = None
 
         # Events
-        seq_num = next(self._sequence_counters[objs_read])
+        seq_num = next(self._sequence_counters[seq_num_key])
         event_uid = new_uid()
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
@@ -1573,7 +1574,8 @@ class RunEngine:
         local_descriptors = {}  # hashed on obj_read, not (name, objs_read)
         for stream_name, data_keys in named_data_keys.items():
             objs_read = frozenset(data_keys)
-            if (stream_name, objs_read) not in self._descriptors:
+            key = (stream_name, objs_read)
+            if key not in self._descriptors:
                 # We don't not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
@@ -1583,12 +1585,12 @@ class RunEngine:
                 self.log.debug("Emitted Event Descriptor with name %r "
                                "containing data keys %r (uid=%r)", stream_name,
                                data_keys.keys(), descriptor_uid)
-                self._descriptors[(stream_name, objs_read)] = descriptor_uid
-                self._sequence_counters[objs_read] = count(1)
+                self._descriptors[key] = descriptor_uid
+                self._sequence_counters[key] = count(1)
             else:
                 descriptor_uid = self._descriptors[(stream_name, objs_read)]
 
-            local_descriptors[objs_read] = descriptor_uid
+            local_descriptors[objs_read] = (stream_name, descriptor_uid)
 
             bulk_data[descriptor_uid] = []
 
@@ -1597,8 +1599,9 @@ class RunEngine:
         stream = msg.kwargs.get('stream', False)
         for ev in obj.collect():
             objs_read = frozenset(ev['data'])
-            seq_num = next(self._sequence_counters[objs_read])
-            descriptor_uid = local_descriptors[objs_read]
+            stream_name, descriptor_uid = local_descriptors[objs_read]
+            seq_num = next(self._sequence_counters[(stream_name, objs_read)])
+
             event_uid = new_uid()
 
             reading = ev['data']
