@@ -778,6 +778,9 @@ class RunEngine:
             # queue up the cached messages
             self._plan_stack.append(new_plan)
             self._response_stack.append(None)
+            self._plan_stack.append(single_gen(
+                Msg('rewindable', None, self.rewindable)))
+            self._response_stack.append(None)
             # if there is a post plan add it between the wait
             # and the cached messages
             if post_plan is not None:
@@ -795,6 +798,9 @@ class RunEngine:
                 self._plan_stack.append(ensure_generator(pre_plan))
                 self._response_stack.append(None)
 
+            self._plan_stack.append(single_gen(
+                Msg('rewindable', None, False)))
+            self._response_stack.append(None)
             # The event loop is still running. The pre_plan will be processed,
             # and then the RunEngine will be hung up on processing the
             # 'wait_for' message until `fut` is set.
