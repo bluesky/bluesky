@@ -25,8 +25,6 @@ addons:
 
 matrix:
   include:
-    - python: 3.4
-      env: BUILD_DOCS=false
     - python: 3.5
       env: BUILD_DOCS=true
 
@@ -62,6 +60,7 @@ install:
   - 'pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore'
   - 'pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore'
   - 'pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds'
+  - pip install attrs
   - pip install codecov
   - python setup.py install
   # Need to clean the python build directory (and other cruft) or pytest is
