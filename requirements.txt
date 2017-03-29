@@ -1,0 +1,11 @@
+boltons
+cycler
+doct
+event-model
+historydict
+jsonschema
+matplotlib
+numpy
+super_state_machine
+toolz
+traitlets
