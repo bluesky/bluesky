@@ -29,10 +29,11 @@ matrix:
       env: BUILD_DOCS=true
     - python: 3.5
       env: BUILD_DOCS=false CONDA_ENV=1
-    - python: 3.6
-      env: BUILD_DOCS=false CONDA_ENV=1
     - python: 3.5
       env: BUILD_DOCS=false CONDA_ENV=1 EXTRA_C_CHAN='-c lightsource2-dev'
+  allow_failures:
+    - python: 3.6
+      env: BUILD_DOCS=false CONDA_ENV=1
 
 before_install:
   - git clone https://github.com/NSLS-II/nsls2-ci --branch master --single-branch ~/ci_scripts
