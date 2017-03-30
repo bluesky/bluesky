@@ -4,8 +4,7 @@ from collections import deque, OrderedDict
 from threading import RLock
 import numpy as np
 from bluesky.utils import Msg
-from uuid import uuid4
-import uuid
+
 from tempfile import mkdtemp
 import os
 from bluesky.utils import new_uid, short_uid
@@ -91,13 +90,9 @@ class Reader:
     name : string
     fields : dict
         Mapping field names to functions that return simulated data. The
-        function will be passed no arguments.
-    read_attrs : list, optional
-        List of field names to include in ``read()`` . By default, all fields.
-    conf_attrs : list, optional
-        List of field names to include in ``read_configuration()``. By default,
-        no fields. Any field nmaes specified here are then not included in
-        ``read_attrs`` by default.
+        function will be passed no arguments.  These will be returned by `read`
+    conf : dict, optional
+        Dict of initial values to be returned by ``read_configuration()``.
     monitor_intervals : list, optional
         iterable of numbers, specifying the spacing in time of updates from the
         device (this applies only if the ``subscribe`` method is used)
@@ -120,18 +115,16 @@ class Reader:
     """
 
     def __init__(self, name, fields, *,
-                 read_attrs=None, conf_attrs=None, monitor_intervals=None,
+                 conf=None, monitor_intervals=None,
                  loop=None, exposure_time=0):
         self.exposure_time = exposure_time
         self.name = name
         self.parent = None
         self._fields = fields
-        if conf_attrs is None:
-            conf_attrs = []
-        if read_attrs is None:
-            read_attrs = list(set(fields) - set(conf_attrs))
-        self.conf_attrs = conf_attrs
-        self.read_attrs = read_attrs
+
+        if conf is None:
+            conf = {}
+        self._conf_state = conf
 
         # All this is used only by monitoring (subscribe/unsubscribe).
         self._futures = {}
@@ -142,6 +135,14 @@ class Reader:
             loop = asyncio.get_event_loop()
         self.loop = loop
 
+    @property
+    def conf_attrs(self):
+        return list(self._conf_state)
+
+    @property
+    def read_attrs(self):
+        return list(self._fields)
+
     def __str__(self):
         # Show just name for readability, as in the cycler example in the docs.
         return ('{0}(name={1.name})'
@@ -151,17 +152,15 @@ class Reader:
     __repr__ = __str__
 
     def __setstate__(self, val):
-        name, fields, read_attrs, conf_attrs, monitor_intervals = val
+        name, fields, _conf_state, monitor_intervals = val
         self.name = name
-        self._fields = fields
-        self.read_attrs = read_attrs
-        self.conf_attrs = conf_attrs
+        self._conf_state = _conf_state
         self._futures = {}
         self._monitor_intervals = monitor_intervals
         self.loop = asyncio.get_event_loop()
 
     def __getstate__(self):
-        return (self.name, self._fields, self.read_attrs, self.conf_attrs,
+        return (self.name, self._fields, self._conf_state,
                 self._monitor_intervals)
 
     def trigger(self):
@@ -182,8 +181,7 @@ class Reader:
         The readings are collated with timestamps.
         """
         return {field: {'value': func(), 'timestamp': ttime.time()}
-                        for field, func in self._fields.items()
-                        if field in self.read_attrs}
+                for field, func in self._fields.items()}
 
     def describe(self):
         ret = {}
@@ -207,9 +205,8 @@ class Reader:
         """
         Like `read`, but providing slow-changing configuration readings.
         """
-        return {field: {'value': func(), 'timestamp': ttime.time()}
-                        for field, func in self._fields.items()
-                        if field in self.conf_attrs}
+        return {k: {'value': v, 'timestamp': ttime.time()}
+                for k, v in self._conf_state.items()}
 
     def describe_configuration(self):
         return {field: {'source': 'simulated using bluesky.examples',
@@ -218,9 +215,11 @@ class Reader:
                         'precision': 2}
                 for field in self.conf_attrs}
 
-    def configure(self, *args, **kwargs):
+    def configure(self, d):
+        if not all(k in self.conf_attrs for k in d):
+            raise ValueError
         old_conf = self.read_configuration()
-        # Update configuration here.
+        self._conf_state.update(d)
         new_conf = self.read_configuration()
         return old_conf, new_conf
 
@@ -283,11 +282,11 @@ class Mover(Reader):
     ...               {'x': 0})
     """
 
-    def __init__(self, name, fields, initial_set, *, read_attrs=None,
-                 conf_attrs=None, fake_sleep=0, monitor_intervals=None,
+    def __init__(self, name, fields, initial_set, *,
+                 conf=None, fake_sleep=0, monitor_intervals=None,
                  loop=None):
-        super().__init__(name, fields, read_attrs=read_attrs,
-                         conf_attrs=conf_attrs,
+        super().__init__(name, fields,
+                         conf=conf,
                          monitor_intervals=monitor_intervals,
                          loop=loop)
         # Do initial set without any fake sleep.
@@ -296,41 +295,44 @@ class Mover(Reader):
         self._fake_sleep = fake_sleep
 
     def __setstate__(self, val):
-        (name, fields, read_attrs, conf_attrs,
-         monitor_intervals, state, fk_slp) = val
+        name, fields, _conf_state, monitor_intervals, state, fk_slp = val
         self.name = name
-        self._fields = fields
-        self.read_attrs = read_attrs
-        self.conf_attrs = conf_attrs
+        self._conf_state = _conf_state
         self._futures = {}
         self._monitor_intervals = monitor_intervals
-        self.loop = asyncio.get_event_loop()
         self._state = state
         self._fake_sleep = fk_slp
+        self.loop = asyncio.get_event_loop()
 
     def __getstate__(self):
-        return (self.name, self._fields, self.read_attrs, self.conf_attrs,
+        return (self.name, self._fields, self._conf_state,
                 self._monitor_intervals, self._state, self._fake_sleep)
 
     def set(self, *args, **kwargs):
         """
         Pass the arguments to the functions to create the next reading.
         """
-        self._state = {field: {'value': func(*args, **kwargs),
+        new_state = {field: {'value': func(*args, **kwargs),
                                'timestamp': ttime.time()}
                        for field, func in self._fields.items()}
 
         if self._fake_sleep:
             if self.loop.is_running():
                 st = SimpleStatus()
+                def cb():
+                    self._state = new_state
+                    st._finished()
                 self.loop.call_later(self._fake_sleep, st._finished)
                 return st
             else:
                 ttime.sleep(self._fake_sleep)
+
+        self._state = new_state
         return NullStatus()
 
     def read(self):
-        return self._state
+        return {k: dict(v) for k, v in
+                self._state.items()}
 
     def describe(self):
         ret = {}

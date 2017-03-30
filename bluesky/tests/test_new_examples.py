@@ -197,8 +197,8 @@ def test_monitor_during_wrapper():
 
 def test_descriptor_layout_from_monitor(fresh_RE):
     collector = []
-    det = Reader('det', {k: lambda: i for i, k in enumerate('abcd')},
-                 read_attrs=list('ab'), conf_attrs=list('cd'))
+    det = Reader('det', {'a': lambda: 0, 'b': lambda: 1},
+                 conf={'c': 2, 'd': 3})
 
     def collect(name, doc):
         if name == 'descriptor':
