@@ -1,4 +1,3 @@
-boltons
 cycler
 doct
 event-model

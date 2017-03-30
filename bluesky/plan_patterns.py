@@ -3,7 +3,11 @@ import operator
 
 import numpy as np
 from cycler import cycler
-from boltons.iterutils import chunked
+try:
+    # cytools is a drop-in replacement for toolz, implemented in Cython
+    from cytools import partition
+except ImportError:
+    from toolz import partition
 
 from .utils import snake_cyclers
 
@@ -136,7 +140,7 @@ def inner_product(num, args):
         raise ValueError("wrong number of positional arguments")
 
     cyclers = []
-    for motor, start, stop, in chunked(args, 3):
+    for motor, start, stop, in partition(3, args):
         steps = np.linspace(start, stop, num=num, endpoint=True)
         c = cycler(motor, steps)
         cyclers.append(c)
@@ -174,7 +178,7 @@ def chunk_outer_product_args(args):
     if len(args) % 5 != 0:
         raise ValueError("wrong number of positional arguments")
 
-    yield from chunked(args, 5)
+    yield from partition(5, args)
 
 
 def outer_product(args):
