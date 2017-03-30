@@ -320,6 +320,7 @@ class LiveMesh(CallbackBase):
             ax.set_ylim(ylim)
         if clim is not None:
             self._norm.vmin, self._norm.vmax = clim
+        self.clim = clim
         self.cmap = cmap
 
     def start(self, doc):
@@ -331,6 +332,8 @@ class LiveMesh(CallbackBase):
                              s=50)
         self._sc.append(sc)
         self.sc = sc
+        cb = self.ax.figure.colorbar(sc)
+        cb.set_label(self.I)
         super().start(doc)
 
     def event(self, doc):
@@ -347,6 +350,9 @@ class LiveMesh(CallbackBase):
         offsets = np.vstack([self._xdata, self._ydata]).T
         self.sc.set_offsets(offsets)
         self.sc.set_array(np.asarray(self._Idata))
+        if self.clim is None:
+            clim = np.nanmin(self._Idata), np.nanmax(self._Idata)
+            self._norm.vmin, self._norm.vmax = clim
 
 
 class LiveRaster(CallbackBase):
@@ -418,6 +424,7 @@ class LiveRaster(CallbackBase):
         if self.im is not None:
             raise RuntimeError("Can not re-use LiveRaster")
         self._Idata = np.ones(self.raster_shape) * np.nan
+        # The user can control origin by specific 'extent'.
         origin = None
         extent = self.extent
         if extent is not None:
