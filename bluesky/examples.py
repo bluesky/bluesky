@@ -295,20 +295,17 @@ class Mover(Reader):
         self._fake_sleep = fake_sleep
 
     def __setstate__(self, val):
-        (name, fields, read_attrs, conf_attrs,
-         monitor_intervals, state, fk_slp) = val
+        name, fields, _conf_state, monitor_intervals, state, fk_slp = val
         self.name = name
-        self._fields = fields
-        self.read_attrs = read_attrs
-        self.conf_attrs = conf_attrs
+        self._conf_state = _conf_state
         self._futures = {}
         self._monitor_intervals = monitor_intervals
-        self.loop = asyncio.get_event_loop()
         self._state = state
         self._fake_sleep = fk_slp
+        self.loop = asyncio.get_event_loop()
 
     def __getstate__(self):
-        return (self.name, self._fields, self.read_attrs, self.conf_attrs,
+        return (self.name, self._fields, self._conf_state,
                 self._monitor_intervals, self._state, self._fake_sleep)
 
     def set(self, *args, **kwargs):
