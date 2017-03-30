@@ -278,7 +278,7 @@ Live Image
 
 .. _liveraster:
 
-LiveRaster (gridded heat map)
+LiveGrid (gridded heat map)
 +++++++++++++++++++++++++++++
 
 Plot a scalar value as a function of two variables on a regular grid. Example:
@@ -287,44 +287,44 @@ Plot a scalar value as a function of two variables on a regular grid. Example:
 
     from bluesky.plans import outer_product_scan
     from bluesky.examples import det4, motor1, motor2
-    from bluesky.callbacks import LiveRaster
+    from bluesky.callbacks import LiveGrid
 
     RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveRaster((6, 10), 'det4'))
+       LiveGrid((6, 10), 'det4'))
 
 .. plot::
 
     from bluesky import RunEngine
     from bluesky.plans import outer_product_scan
     from bluesky.examples import det4, motor1, motor2
-    from bluesky.callbacks import LiveRaster
+    from bluesky.callbacks import LiveGrid
     motor1._fake_sleep = 0
     motor2._fake_sleep = 0
     RE = RunEngine({})
     RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveRaster((6, 10), 'det4'))
+       LiveGrid((6, 10), 'det4'))
 
-.. autoclass:: bluesky.callbacks.LiveRaster
+.. autoclass:: bluesky.callbacks.LiveGrid
 
-LiveMesh (scattered heat map)
+LiveScatter (scattered heat map)
 +++++++++++++++++++++++++++++
 
 Plot a scalar value as a function of two variables. Unlike
-:class:`bluesky.callbacks.LiveRaster`, this does not assume a regular grid.
+:class:`bluesky.callbacks.LiveGrid`, this does not assume a regular grid.
 Example:
 
 .. code-block:: python
 
     from bluesky.plans import outer_product_scan
     from bluesky.examples import det5, jittery_motor1, jittery_motor2
-    from bluesky.callbacks import LiveMesh
+    from bluesky.callbacks import LiveScatter
 
     # The 'jittery' example motors won't go exactly where they are told to go.
 
     RE(outer_product_scan([det5],
                           jittery_motor1, -3, 3, 6,
                           jittery_motor2, -5, 5, 10, False),
-       LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+       LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
                 xlim=(-3, 3), ylim=(-5, 5)))
 
 .. plot::
@@ -332,15 +332,15 @@ Example:
     from bluesky import RunEngine
     from bluesky.plans import outer_product_scan
     from bluesky.examples import det5, jittery_motor1, jittery_motor2
-    from bluesky.callbacks import LiveMesh
+    from bluesky.callbacks import LiveScatter
     RE = RunEngine({})
     RE(outer_product_scan([det5],
                           jittery_motor1, -3, 3, 6,
                           jittery_motor2, -5, 5, 10, False),
-       LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+       LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
                 xlim=(-3, 3), ylim=(-5, 5)))
 
-.. autoclass:: bluesky.callbacks.LiveMesh
+.. autoclass:: bluesky.callbacks.LiveScatter
 
 LiveFit
 +++++++

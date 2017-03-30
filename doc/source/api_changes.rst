@@ -87,7 +87,7 @@ API Changes
   an optional ``success`` argument.
 * The optional, undocumented ``fig`` argument to ``LivePlot`` has been
   deprecated and will be removed in a future release.  An ``ax`` argument has
-  been added. Additionally, the axes used by ``LiveRaster`` and ``LiveMesh`` is
+  been added. Additionally, the axes used by ``LiveGrid`` and ``LiveScatter`` is
   configurable through a new, optional ``ax`` argument.
 * The "shortcut" where mashing Ctrl+C three times quickly ran ``RE.abort()``
   has been removed.
@@ -103,7 +103,7 @@ Enhancements
 ^^^^^^^^^^^^
 
 * Much-expanded and overhauled documentation.
-* Add ``aspect`` argument to ``LiveRaster``.
+* Add ``aspect`` argument to ``LiveGrid``.
 * Add ``install_nb_kicker`` to get live-updating matplotlib figures in the
   notebook while the RunEngine is running.
 * Simulated hardware devices ``Reader`` and ``Mover`` can be easily customized
