@@ -66,10 +66,10 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     cyc += cycler(y_motor, y_points)
     return cyc
 
-        
+
 def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range, x_num,y_num):
     '''Square spiral scan, centered around (x_start, y_start)
-    
+
     Parameters
     ----------
     x_motor : object, optional
@@ -88,7 +88,7 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
         number of x axis points
     y_num : float (must be even if x_num is even and must be odd if x_num is odd, if not it is increased by 1 to ensure this)
         number of y axis points
-   
+
     Returns
     -------
     cyc : cycler
@@ -105,7 +105,7 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
         if y_num%2==0:
             y_num+=1
         offset=0
-        
+
         x_points.append(x_centre)
         y_points.append(y_centre)
 
@@ -116,12 +116,12 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
     x_min=x_centre - delta_x * (x_num-1)/2
     y_max=y_centre + delta_y * (y_num-1)/2
     y_min=y_centre - delta_y * (y_num-1)/2
-    
+
     for n,i_ring in enumerate(range(num_st, num_ring+1,2)):
         x_ring_max=x_centre + delta_x * (n+offset)
         y_ring_max=y_centre + delta_y * (n+offset)
         x_ring_min=x_centre - delta_x * (n+offset)
-        y_ring_min=y_centre - delta_y * (n+offset) 
+        y_ring_min=y_centre - delta_y * (n+offset)
 
         for n in range(1, i_ring):
             x = x_ring_min+delta_x*(n-1)
@@ -130,7 +130,7 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
             if ( (x <= x_max) and (x>= x_min) and (y<=y_max) and (y>=y_min)     ):
                 x_points.append(x)
                 y_points.append(y)
-            
+
         for n in range(1, i_ring):
             y = y_ring_min+delta_y*(n-1)
             x = x_ring_max
@@ -138,7 +138,7 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
             if ( (x <= x_max) and (x>= x_min) and (y<=y_max) and (y>=y_min)     ):
                 x_points.append(x)
                 y_points.append(y)
-       
+
         for n in range(1, i_ring):
             x = x_ring_max-delta_x*(n-1)
             y = y_ring_max
