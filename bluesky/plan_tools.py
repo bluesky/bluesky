@@ -67,6 +67,25 @@ def print_summary(plan):
     plan : iterable
         Must yield `Msg` objects
     """
+    for msg in print_summary_wrapper(plan):
+        ...
+
+
+def print_summary_wrapper(plan):
+    """Print summary of plan as it goes by
+
+    Prints a minimal version of the plan, showing only moves and
+    where events are created.  Yields the `Msg` unchanged.
+
+    Parameters
+    ----------
+    plan : iterable
+        Must yield `Msg` objects
+
+    Yields
+    ------
+    msg : `Msg`
+    """
 
     read_cache = []
     for msg in plan:
@@ -85,3 +104,4 @@ def print_summary(plan):
         elif cmd == 'save':
             print('  Read {}'.format(read_cache))
             read_cache = []
+        yield msg
