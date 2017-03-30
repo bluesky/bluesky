@@ -7,6 +7,7 @@ from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
                            subs_wrapper)
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
+from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
 from bluesky.callbacks.zmqpub import Publisher
 from bluesky.callbacks.zmqsub import RemoteDispatcher
 from bluesky.tests.utils import _print_redirect, MsgCollector
@@ -436,6 +437,10 @@ def test_live_grid(fresh_RE):
     RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
+    # Test the deprecated name.
+    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+       LiveRaster((6, 10), 'det4'))
+
 
 def test_live_scatter(fresh_RE):
     RE = fresh_RE
@@ -443,4 +448,11 @@ def test_live_scatter(fresh_RE):
                           jittery_motor1, -3, 3, 6,
                           jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
+                xlim=(-3, 3), ylim=(-5, 5)))
+
+    # Test the deprecated name.
+    RE(outer_product_scan([det5],
+                          jittery_motor1, -3, 3, 6,
+                          jittery_motor2, -5, 5, 10, False),
+       LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
                 xlim=(-3, 3), ylim=(-5, 5)))

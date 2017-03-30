@@ -362,7 +362,7 @@ class LiveScatter(CallbackBase):
 class LiveMesh(LiveScatter):
     __doc__ = LiveScatter.__doc__
 
-    def __init__(*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         warnings.warn("LiveMesh has been renamed to LiveScatter. The name "
                       "LiveMesh will eventually be removed. Use LiveScatter.")
         super().__init__(*args, **kwargs)
@@ -481,7 +481,7 @@ class LiveGrid(CallbackBase):
 class LiveRaster(LiveGrid):
     __doc__ = LiveGrid.__doc__
 
-    def __init__(*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         warnings.warn("LiveRaster has been renamed to LiveGrid. The name "
                       "LiveRaster will eventually be removed. Use LiveGrid.")
         super().__init__(*args, **kwargs)
