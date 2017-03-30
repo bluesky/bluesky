@@ -1,11 +1,12 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg
-from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4)
+from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4, det5,
+                              jittery_motor1, jittery_motor2)
 from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
                            outer_product_scan, run_wrapper, pause,
                            subs_wrapper)
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
-                               LiveFitPlot, LivePlot)
+                               LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
 from bluesky.callbacks.zmqpub import Publisher
 from bluesky.callbacks.zmqsub import RemoteDispatcher
 from bluesky.tests.utils import _print_redirect, MsgCollector
@@ -426,3 +427,20 @@ def test_intreupted_with_callbacks(fresh_RE, int_meth,
     assert len(docs['descriptor']) == 0
     assert len(docs['stop']) == stop_num
     assert len(RE.msg_hook.msgs) == msg_num
+
+
+def test_live_grid(fresh_RE):
+    RE = fresh_RE
+    motor1._fake_sleep = 0
+    motor2._fake_sleep = 0
+    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+       LiveGrid((6, 10), 'det4'))
+
+
+def test_live_scatter(fresh_RE):
+    RE = fresh_RE
+    RE(outer_product_scan([det5],
+                          jittery_motor1, -3, 3, 6,
+                          jittery_motor2, -5, 5, 10, False),
+       LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
+                xlim=(-3, 3), ylim=(-5, 5)))
