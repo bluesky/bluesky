@@ -293,12 +293,14 @@ class LiveScatter(CallbackBase):
     ax : Axes, optional
         matplotib Axes; if none specified, new figure and axes are made.
 
+    All additional keyword arguments are passed through to ``Axes.scatter``.
+
     See Also
     --------
     :class:`bluesky.callbacks.LiveGrid`.
     """
     def __init__(self, x, y, I, *, xlim=None, ylim=None,
-                 clim=None, cmap='viridis', ax=None):
+                 clim=None, cmap='viridis', ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots()
         ax.cla()
@@ -322,14 +324,16 @@ class LiveScatter(CallbackBase):
             self._norm.vmin, self._norm.vmax = clim
         self.clim = clim
         self.cmap = cmap
+        self.kwargs = kwargs
+        self.kwargs.setdefault('edgecolor', 'face')
+        self.kwargs.setdefault('s', 50)
 
     def start(self, doc):
         self._xdata.clear()
         self._ydata.clear()
         self._Idata.clear()
         sc = self.ax.scatter(self._xdata, self._ydata, c=self._Idata,
-                             norm=self._norm, cmap=self.cmap, edgecolor='face',
-                             s=50)
+                             norm=self._norm, cmap=self.cmap, **self.kwargs)
         self._sc.append(sc)
         self.sc = sc
         cb = self.ax.figure.colorbar(sc)
