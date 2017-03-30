@@ -69,17 +69,8 @@ install:
        pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model
        source activate testenv
     else
-       pip install matplotlib numpy h5py scipy zmq pyepics super_state_machine nose pytest coverage jinja2 mongoquery attrs boltons networkx ipython requests lmfit pims pyyaml pandas cytoolz dill
-       pip install tifffile
-       pip install https://github.com/Nikea/historydict/zipball/master#egg=historydict
-       pip install https://github.com/NSLS-II/doct/zipball/master#egg=doct
-       pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model
-       pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore
-       pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore
-       pip install https://github.com/NSLS-II/ophyd/zipball/master#egg=ophyd
-       pip install https://github.com/NSLS-II/databroker/zipball/master#egg=databroker
-       pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds
-
+       pip install -r requirements.txt
+       pip install -r test-requirements.txt
     fi
   - pip install codecov
   - python setup.py install
