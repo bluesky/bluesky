@@ -31,7 +31,6 @@ matrix:
       env: BUILD_DOCS=false CONDA_ENV=1
     - python: 3.5
       env: BUILD_DOCS=false CONDA_ENV=1 EXTRA_C_CHAN='-c lightsource2-dev'
-  allow_failures:
     - python: 3.6
       env: BUILD_DOCS=false CONDA_ENV=1
 
