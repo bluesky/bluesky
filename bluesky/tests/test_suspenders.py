@@ -79,14 +79,14 @@ def test_pretripped(fresh_RE):
 
 @pytest.mark.parametrize('pre_plan,post_plan,expected_list',
                          [([Msg('null')], None,
-                           ['checkpoint', 'sleep', 'null',
-                            'wait_for', 'sleep']),
+                           ['checkpoint', 'sleep', 'rewindable', 'null',
+                            'wait_for', 'rewindable', 'sleep']),
                           (None, [Msg('null')],
-                           ['checkpoint', 'sleep',
-                            'wait_for', 'null', 'sleep']),
+                           ['checkpoint', 'sleep', 'rewindable',
+                            'wait_for', 'null', 'rewindable', 'sleep']),
                           ([Msg('null')], [Msg('null')],
-                           ['checkpoint', 'sleep', 'null',
-                            'wait_for', 'null', 'sleep'])])
+                           ['checkpoint', 'sleep', 'rewindable', 'null',
+                            'wait_for', 'null', 'rewindable', 'sleep'])])
 def test_pre_suspend_plan(fresh_RE, pre_plan, post_plan, expected_list):
     RE = fresh_RE
     sig = ophyd.Signal()
