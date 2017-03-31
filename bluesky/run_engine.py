@@ -235,7 +235,8 @@ class RunEngine:
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
-        self._plan_stack = deque()  # stack of generators to work off of
+        self.__plan_stack = deque()  # stack of generators to work off of
+        self._plan_append_stack = deque()  # stack of generators to work off of
         self._response_stack = deque([None])  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
@@ -344,7 +345,8 @@ class RunEngine:
         self._objs_seen.clear()
         self._movable_objs_touched.clear()
         self._deferred_pause_requested = False
-        self._plan_stack = deque()
+        self.__plan_stack = deque()
+        self._plan_append_stack = deque()
         self._msg_cache = deque()
         self._response_stack = deque([None])
         self._exception = None
@@ -575,10 +577,10 @@ class RunEngine:
         for wrapper_func in self.preprocessors:
             gen = wrapper_func(gen)
 
-        self._plan_stack.append(gen)
+        self.__plan_stack.append(gen)
         self._response_stack.append(None)
         if futs:
-            self._plan_stack.append(single_gen(Msg('wait_for', None, futs)))
+            self.__plan_stack.append(single_gen(Msg('wait_for', None, futs)))
             self._response_stack.append(None)
 
         # Intercept ^C.
@@ -620,8 +622,8 @@ class RunEngine:
         self._interrupted = False
         self._record_interruption('resume')
         new_plan = self._rewind()
-        self._plan_stack.append(new_plan)
-        self._response_stack.append(None)
+        self._plan_append_stack.append(new_plan)
+        print(self._plan_append_stack)
         # Re-instate monitoring callbacks.
         for obj, (cb, kwargs) in self._monitor_params.items():
             obj.subscribe(cb, **kwargs)
@@ -771,23 +773,88 @@ class RunEngine:
             # rewind to the last checkpoint
             new_plan = self._rewind()
             # queue up the cached messages
-            self._plan_stack.append(new_plan)
-            self._response_stack.append(None)
+            self._plan_append_stack.append(new_plan)
             # if there is a post plan add it between the wait
             # and the cached messages
             if post_plan is not None:
-                self._plan_stack.append(ensure_generator(post_plan))
-                self._response_stack.append(None)
+                self._plan_append_stack.append(ensure_generator(post_plan))
             # add the wait on the future to the stack
-            self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
+            self._plan_append_stack.append(
+                single_gen(Msg('wait_for', None, [fut, ])))
             self._response_stack.append(None)
             # if there is a pre plan add on top of the wait
+
             if pre_plan is not None:
-                self._plan_stack.append(ensure_generator(pre_plan))
-                self._response_stack.append(None)
-            # The event loop is still running. The pre_plan will be processed,
-            # and then the RunEngine will be hung up on processing the
-            # 'wait_for' message until `fut` is set.
+                fut = asyncio.run_coroutine_threadsafe(
+                    self._simple_run(ensure_generator(pre_plan),
+                                     whitelist=('set', 'wait',
+                                                'stop', 'null')),
+                    self.loop)
+                self._plan_append_stack.append(
+                    single_gen(Msg('wait_for', None, [fut])))
+
+    @asyncio.coroutine
+    def _simple_run(self, plan, whitelist=None, blacklist=None):
+        print('running simple')
+        ret = None
+        expt = None
+        if whitelist is not None:
+            whitelist = set(whitelist)
+        while True:
+            try:
+                yield from asyncio.sleep(0, loop=self.loop)
+                if expt is not None:
+                    print('throw')
+                    msg = plan.throw(expt)
+                else:
+                    msg = plan.send(ret)
+
+                # if we have a message hook, call it
+                if self.msg_hook is not None:
+                    self.msg_hook(msg)
+
+                if whitelist is not None and msg.command not in whitelist:
+                    raise Exception("{!r} not one of blessed "
+                                    "commands {}".format(msg.command,
+                                                         whitelist))
+                if blacklist is not None and msg.command in blacklist:
+                    raise Exception('{!r} is in banned list of '
+                                    'commands {}'.format(msg.command,
+                                                         blacklist))
+
+                self._objs_seen.add(msg.obj)
+                # try to look up the coroutine to execute the command
+                try:
+                    coro = self._command_registry[msg.command]
+                    # replace KeyError with a local sub-class and go
+                    # to top of the loop
+                except KeyError:
+                    expt = InvalidCommand(msg.command)
+                    continue
+
+                # try to finally run the command the user asked for
+                try:
+                    # this is one of two places that 'async'
+                    # exceptions (coming in via throw) can be
+                    # raised
+                    response = yield from coro(msg)
+                    # special case `CancelledError` and let the outer
+                    # exception block deal with it.
+                except asyncio.CancelledError:
+                    raise
+                # any other exception, stash it and go to the top of loop
+                except Exception as e:
+                    expt = e
+                    continue
+                # normal use, if it runs cleanly, stash the response and
+                # go to the top of the loop
+                else:
+                    ret = response
+                    continue
+            except StopIteration:
+                break
+            finally:
+                print('BAILED')
 
     def abort(self, reason=''):
         """
@@ -862,6 +929,7 @@ class RunEngine:
         try:
             self.state = 'running'
             while True:
+                print('top of loop')
                 try:
                     # This 'yield from' must be here to ensure that
                     # this coroutine breaks out of its current behavior
@@ -880,14 +948,14 @@ class RunEngine:
                     if self._exception is not None:
                         # throw the exception at the current plan
                         try:
-                            msg = self._plan_stack[-1].throw(
+                            msg = self.__plan_stack[-1].throw(
                                 self._exception)
                         except Exception as e:
                             # The current plan did not handle it,
                             # maybe the next plan (if any) would like
                             # to try
-                            self._plan_stack.pop()
-                            if len(self._plan_stack):
+                            self.__plan_stack.pop()
+                            if len(self.__plan_stack):
                                 self._exception = e
                                 continue
                             # no plans left and still an unhandled exception
@@ -900,14 +968,24 @@ class RunEngine:
                             self._exception = None
                     # The normal case of clean operation
                     else:
+                        # ingest any 'inserted' plans
+                        while len(self._plan_append_stack):
+                            print('--')
+                            print(self._plan_append_stack)
+                            print(self.__plan_stack)
+
+                            self.__plan_stack.append(
+                                self._plan_append_stack.popleft())
+                            self._response_stack.append(None)
+
                         resp = self._response_stack.pop()
                         try:
-                            msg = self._plan_stack[-1].send(resp)
+                            msg = self.__plan_stack[-1].send(resp)
                         # We have exhausted the top generator
                         except StopIteration:
                             # pop the dead generator go back to the top
-                            self._plan_stack.pop()
-                            if len(self._plan_stack):
+                            self.__plan_stack.pop()
+                            if len(self.__plan_stack):
                                 continue
                             # or reraise to get out of the infinite loop
                             else:
@@ -916,8 +994,8 @@ class RunEngine:
                         except Exception as e:
                             # pop the dead plan, stash the exception and
                             # go to the top of the loop
-                            self._plan_stack.pop()
-                            if len(self._plan_stack):
+                            self.__plan_stack.pop()
+                            if len(self.__plan_stack):
                                 self._exception = e
                                 continue
                             # or reraise to get out of the infinite loop
@@ -1043,7 +1121,7 @@ class RunEngine:
                     self.log.error("Failed to close run %r. Error: %r",
                                    self._run_start_uid, exc)
 
-            for p in self._plan_stack:
+            for p in self.__plan_stack:
                 try:
                     p.close()
                 except RuntimeError as e:
@@ -1111,7 +1189,16 @@ class RunEngine:
         for ``asyncio.await``
         """
         futs, = msg.args
-        yield from asyncio.wait(futs, loop=self.loop, **msg.kwargs)
+        for f in futs:
+            if hasattr(f, 'exception'):
+                ex = f.exception()
+                if ex:
+                    raise ex
+
+        futs = set(filter(lambda x: not (hasattr(x, 'done') and x.done()),
+                          futs))
+        if futs:
+            yield from asyncio.wait(futs, loop=self.loop, **msg.kwargs)
 
     @asyncio.coroutine
     def _open_run(self, msg):
