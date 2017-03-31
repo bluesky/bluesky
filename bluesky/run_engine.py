@@ -723,8 +723,7 @@ class RunEngine:
 
     def request_suspend(self, fut, *, pre_plan=None, post_plan=None,
                         justification=None):
-        """
-        Request that the run suspend itself until the future is finished.
+        """Request that the run suspend itself until the future is finished.
 
         The two plans will be run before and after waiting for the future.
         This enable doing things like opening and closing shutters and
@@ -733,12 +732,18 @@ class RunEngine:
         Parameters
         ----------
         fut : asyncio.Future
-        pre_plan : iterable, optional
-            Plan to execute just before suspending
-        post_plan : iterable, optional
-            Plan to execute just before resuming
+
+        pre_plan : iterable or callable, optional
+           Plan to execute just before suspending. If callable, must
+           take no arguments.
+
+        post_plan : iterable or callable, optional
+            Plan to execute just before resuming. If callable, must
+            take no arguments.
+
         justification : str, optional
             explanation of why the suspension has been requested
+
         """
         if not self.resumable:
             print("No checkpoint; cannot suspend.")
@@ -773,9 +778,14 @@ class RunEngine:
             # queue up the cached messages
             self._plan_stack.append(new_plan)
             self._response_stack.append(None)
+            self._plan_stack.append(single_gen(
+                Msg('rewindable', None, self.rewindable)))
+            self._response_stack.append(None)
             # if there is a post plan add it between the wait
             # and the cached messages
             if post_plan is not None:
+                if callable(post_plan):
+                    post_plan = post_plan()
                 self._plan_stack.append(ensure_generator(post_plan))
                 self._response_stack.append(None)
             # add the wait on the future to the stack
@@ -783,8 +793,14 @@ class RunEngine:
             self._response_stack.append(None)
             # if there is a pre plan add on top of the wait
             if pre_plan is not None:
+                if callable(pre_plan):
+                    pre_plan = pre_plan()
                 self._plan_stack.append(ensure_generator(pre_plan))
                 self._response_stack.append(None)
+
+            self._plan_stack.append(single_gen(
+                Msg('rewindable', None, False)))
+            self._response_stack.append(None)
             # The event loop is still running. The pre_plan will be processed,
             # and then the RunEngine will be hung up on processing the
             # 'wait_for' message until `fut` is set.
