@@ -1865,8 +1865,13 @@ def count(detectors, num=1, delay=None, *, md=None):
     If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
     the plan will raise a ``ValueError`` during iteration.
     """
+    if num is None:
+        num_intervals = None
+    else:
+        num_intervals = num - 1
     _md = {'detectors': [det.name for det in detectors],
-           'num_steps': num,
+           'num_points': num,
+           'num_intervals': num_intervals,
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
            'plan_name': 'count'}
     _md.update(md or {})
@@ -1967,7 +1972,8 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
-           'num_steps': len(steps),
+           'num_points': len(steps),
+           'num_intervals': len(steps) - 1,
            'plan_args': {'detectors': list(map(repr, detectors)),
                            'motor': repr(motor), 'steps': steps,
                            'per_step': repr(per_step)},
@@ -2051,7 +2057,8 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     _md = {'detectors': [det.name for det in detectors],
           'motors': [motor.name],
-          'num_steps': num,
+          'num_points': num,
+          'num_intervals': num - 1,
           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
                         'motor': repr(motor),
                         'start': start, 'stop': stop,
@@ -2145,7 +2152,8 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
-           'num_steps': num,
+           'num_points': num,
+           'num_intervals': num - 1,
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
                          'start': start, 'stop': stop, 'motor': repr(motor),
                          'per_step': repr(per_step)},
@@ -2410,7 +2418,8 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name for motor in cycler.keys],
-           'num_steps': len(cycler),
+           'num_points': len(cycler),
+           'num_intervals': len(cycler) - 1,
            'plan_args': {'detectors': list(map(repr, detectors)),
                          'cycler': repr(cycler),
                          'per_step': repr(per_step)},
@@ -2525,7 +2534,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
                             in chunk_args),
            'snaking': tuple(snake for motor, start, stop, num, snake
                             in chunk_args),
-           # 'num_steps': inserted by scan_nd
+           # 'num_points': inserted by scan_nd
            'plan_args': {'detectors': list(map(repr, detectors)),
                          'args': md_args,
                          'per_step': repr(per_step)},
