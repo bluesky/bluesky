@@ -21,7 +21,7 @@ try:
 except ImportError:
     from toolz import partition
 from bluesky import plans
-from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
+from bluesky.callbacks import LiveTable, LivePlot, LiveGrid
 from bluesky.callbacks.scientific import PeakStats
 from bluesky.global_state import gs
 from bluesky.utils import (first_key_heuristic, normalize_subs_input,
@@ -164,7 +164,7 @@ def setup_liveraster(*, motors, gs, shape, extent):
     if len(motors) != 2:
         return None
     ylab, xlab = [first_key_heuristic(m) for m in motors]
-    raster = LiveRaster(shape, gs.MASTER_DET_FIELD, xlabel=xlab,
+    raster = LiveGrid(shape, gs.MASTER_DET_FIELD, xlabel=xlab,
                         ylabel=ylab, extent=extent)
     return raster
 

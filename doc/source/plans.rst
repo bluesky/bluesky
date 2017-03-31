@@ -257,32 +257,32 @@ direction each time (``False``), as illustrated.
 Both :func:`inner_product_scan` and :func:`outer_product_scan` support an
 unlimited number of motors/dimensions.
 
-To visualize 2-dimensional data, we can use ``LiveRaster``, which is documented
+To visualize 2-dimensional data, we can use ``LiveGrid``, which is documented
 in :ref:`in the next section <liveraster>`. In previous examples we used
 ``LivePlot`` to visualize readings as a function of one variable;
-``LiveRaster`` is appropriate for functions of two variables.
+``LiveGrid`` is appropriate for functions of two variables.
 
 .. code-block:: python
 
-    from bluesky.callbacks import LiveRaster
+    from bluesky.callbacks import LiveGrid
 
     # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
     from bluesky.examples import det4
 
     RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveRaster((6, 10), 'det4'))
+       LiveGrid((6, 10), 'det4'))
 
 .. plot::
 
     from bluesky import RunEngine
     from bluesky.plans import outer_product_scan
     from bluesky.examples import det4, motor1, motor2
-    from bluesky.callbacks import LiveRaster
+    from bluesky.callbacks import LiveGrid
     motor1._fake_sleep = 0
     motor2._fake_sleep = 0
     RE = RunEngine({})
     RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveRaster((6, 10), 'det4'))
+       LiveGrid((6, 10), 'det4'))
 
 The general case, moving some motors together in an "inner product" against
 another (or motors) in an "outer product," can be addressed using a ``cycler``.
