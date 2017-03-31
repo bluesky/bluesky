@@ -8,7 +8,11 @@ from collections import OrderedDict, Iterable, defaultdict, deque, ChainMap
 import time
 
 import numpy as np
-from boltons.iterutils import chunked
+try:
+    # cytools is a drop-in replacement for toolz, implemented in Cython
+    from cytools import partition
+except ImportError:
+    from toolz import partition
 
 from . import plan_patterns
 
@@ -457,7 +461,7 @@ def mv(*args):
     """
     group = str(uuid.uuid4())
     status_objects = []
-    for obj, val in chunked(args, 2):
+    for obj, val in partition(2, args):
         ret = yield Msg('set', obj, val, group=group)
         status_objects.append(ret)
     yield Msg('wait', None, group=group)
@@ -2455,7 +2459,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     :func:`bluesky.plans.scan_nd`
     """
     md_args = list(chain(*((repr(motor), start, stop)
-                           for motor, start, stop in chunked(args, 3))))
+                           for motor, start, stop in partition(3, args))))
 
     _md = {'plan_args': {'detectors': list(map(repr, detectors)),
                          'num': num, 'args': md_args,
@@ -2607,7 +2611,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     _md = {'plan_name': 'relative_inner_product_scan'}
     _md.update(md or {})
-    motors = [motor for motor, start, stop in chunked(args, 3)]
+    motors = [motor for motor, start, stop in partition(3, args)]
 
     @reset_positions_decorator(motors)
     @relative_set_decorator(motors)

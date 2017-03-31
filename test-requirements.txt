@@ -1,10 +1,11 @@
 attrs
-boltons
 coverage
 dill
+doct
 ipython
 jinja2
 lmfit
+matplotlib
 mongoquery
 networkx
 nose

@@ -15,10 +15,14 @@ http://www.certif.com/downloads/css_docs/spec_man.pdf
 from collections import OrderedDict, namedtuple
 
 import matplotlib.pyplot as plt
+try:
+    # cytools is a drop-in replacement for toolz, implemented in Cython
+    from cytools import partition
+except ImportError:
+    from toolz import partition
 from bluesky import plans
 from bluesky.callbacks import LiveTable, LivePlot, LiveRaster
 from bluesky.callbacks.scientific import PeakStats
-from boltons.iterutils import chunked
 from bluesky.global_state import gs
 from bluesky.utils import (first_key_heuristic, normalize_subs_input,
                            update_sub_lists)
@@ -409,13 +413,13 @@ def mesh(*args, time=None, md=None):
     motors = []
     shape = []
     extents = []
-    for motor, start, stop, num, in chunked(args, 4):
+    for motor, start, stop, num, in partition(4, args):
         motors.append(motor)
         shape.append(num)
         extents.append([start, stop])
 
     # outer_product_scan expects a 'snake' param for all but fist motor
-    chunked_args = iter(chunked(args, 4))
+    chunked_args = iter(partition(4, args))
     new_args = list(next(chunked_args))
     for chunk in chunked_args:
         new_args.extend(list(chunk) + [False])
@@ -450,7 +454,7 @@ def a2scan(*args, time=None, md=None):
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
     motors = []
-    for motor, start, stop, in chunked(args[:-1], 3):
+    for motor, start, stop, in partition(3, args[:-1]):
         motors.append(motor)
 
     intervals = list(args)[-1]
@@ -494,7 +498,7 @@ def d2scan(*args, time=None, md=None):
     if len(args) % 3 != 1:
         raise ValueError("wrong number of positional arguments")
     motors = []
-    for motor, start, stop, in chunked(args[:-1], 3):
+    for motor, start, stop, in partition(3, args[:-1]):
         motors.append(motor)
 
     intervals = list(args)[-1]
