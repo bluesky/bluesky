@@ -356,7 +356,7 @@ class LiveScatter(CallbackBase):
         self.sc.set_array(np.asarray(self._Idata))
         if self.clim is None:
             clim = np.nanmin(self._Idata), np.nanmax(self._Idata)
-            self._norm.vmin, self._norm.vmax = clim
+            self.sc.set_clim(*clim)
 
 
 class LiveMesh(LiveScatter):
