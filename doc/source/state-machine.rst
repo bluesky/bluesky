@@ -161,6 +161,8 @@ RE.halt()      Do not perform cleanup --- just stop.
 RE.state       Check if 'paused' or 'idle'.
 ============== ===========
 
+.. _suspenders:
+
 Automated Suspension
 ====================
 

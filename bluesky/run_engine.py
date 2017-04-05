@@ -83,6 +83,84 @@ class LoggingPropertyMachine(PropertyMachine):
 
 
 class RunEngine:
+    """The Run Engine execute messages and emits Documents.
+
+    Parameters
+    ----------
+    md : dict-like, optional
+        The default is a standard Python dictionary, but fancier
+        objects can be used to store long-term history and persist
+        it between sessions. The standard configuration
+        instantiates a Run Engine with historydict.HistoryDict, a
+        simple interface to a sqlite file. Any object supporting
+        `__getitem__`, `__setitem__`, and `clear` will work.
+
+    loop : asyncio event loop
+        e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
+
+    preprocessors : list
+        Generator functions that take in a plan (generator instance) and
+        modify its messages on the way out. Suitable examples include
+        the functions in the module ``bluesky.plans`` with names ending in
+        'wrapper'.  Functions are composed in order: the preprocessors
+        ``[f, g]`` are applied like ``f(g(plan))``.
+
+    md_validator : callable, optional
+        a function that raises and prevents starting a run if it deems
+        the metadata to be invalid or incomplete
+        Expected signature: f(md)
+        Function should raise if md is invalid. What that means is
+        completely up to the user. The function's return value is
+        ignored.
+
+    Attributes
+    ----------
+    md
+        Direct access to the dict-like persistent storage described above
+
+    record_interruptions
+        False by default. Set to True to generate an extra event stream
+        that records any interruptions (pauses, suspensions).
+
+    state
+        {'idle', 'running', 'paused'}
+
+    suspenders
+        Read-only collection of `bluesky.suspenders.SuspenderBase` objects
+        which can suspend and resume execution; see related methods.
+
+    preprocessors : list
+        Generator functions that take in a plan (generator instance) and
+        modify its messages on the way out. Suitable examples include
+        the functions in the module ``bluesky.plans`` with names ending in
+        'wrapper'.  Functions are composed in order: the preprocessors
+        ``[f, g]`` are applied like ``f(g(plan))``.
+
+    msg_hook
+        Callable that receives all messages before they are processed
+        (useful for logging or other development purposes); expected
+        signature is ``f(msg)`` where ``msg`` is a ``bluesky.Msg``, a
+        kind of namedtuple; default is None.
+
+    state_hook
+        Callable with signature ``f(new_state, old_state)`` that will be
+        called whenever the RunEngine's state attribute is updated; default
+        is None
+
+    ignore_callback_exceptions
+        Boolean, False by default.
+
+    loop : asyncio event loop
+        e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
+
+    max_depth
+        Maximum stack depth; set this to prevent users from calling the
+        RunEngine inside a function (which can result in unexpected
+        behavior and breaks introspection tools). Default is None.
+        For built-in Python interpreter, set to 2. For IPython, set to 11
+        (tested on IPython 5.1.0; other versions may vary).
+
+    """
 
     state = LoggingPropertyMachine(RunEngineStateMachine)
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage',
@@ -91,90 +169,6 @@ class RunEngine:
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  md_validator=None):
-        """The Run Engine execute messages and emits Documents.
-
-        Parameters
-        ----------
-        md : dict-like, optional
-            The default is a standard Python dictionary, but fancier
-            objects can be used to store long-term history and persist
-            it between sessions. The standard configuration
-            instantiates a Run Engine with historydict.HistoryDict, a
-            simple interface to a sqlite file. Any object supporting
-            `__getitem__`, `__setitem__`, and `clear` will work.
-
-        loop : asyncio event loop
-            e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
-
-        preprocessors : list
-            Generator functions that take in a plan (generator instance) and
-            modify its messages on the way out. Suitable examples include
-            the functions in the module ``bluesky.plans`` with names ending in
-            'wrapper'.  Functions are composed in order: the preprocessors
-            ``[f, g]`` are applied like ``f(g(plan))``.
-
-        md_validator : callable, optional
-            a function that raises and prevents starting a run if it deems
-            the metadata to be invalid or incomplete
-            Expected signature: f(md)
-            Function should raise if md is invalid. What that means is
-            completely up to the user. The function's return value is
-            ignored.
-
-        Attributes
-        ----------
-        ignore_callback_exceptions
-            Boolean, False by default.
-
-        loop : asyncio event loop
-            e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
-
-        max_depth
-            Maximum stack depth; set this to prevent users from calling the
-            RunEngine inside a function (which can result in unexpected
-            behavior and breaks introspection tools). Default is None.
-            For built-in Python interpreter, set to 2. For IPython, set to 11
-            (tested on IPython 5.1.0; other versions may vary).
-
-        md
-            Direct access to the dict-like persistent storage described above
-
-        msg_hook
-            Callable that receives all messages before they are processed
-            (useful for logging or other development purposes); expected
-            signature is ``f(msg)`` where ``msg`` is a ``bluesky.Msg``, a
-            kind of namedtuple; default is None.
-
-        record_interruptions
-            False by default. Set to True to generate an extra event stream
-            that records any interruptions (pauses, suspensions).
-
-        state
-            {'idle', 'running', 'paused'}
-
-        state_hook
-            Callable with signature ``f(new_state, old_state)`` that will be
-            called whenever the RunEngine's state attribute is updated; default
-            is None
-
-        suspenders
-            Read-only collection of `bluesky.suspenders.SuspenderBase` objects
-            which can suspend and resume execution; see related methods.
-
-        Methods
-        -------
-        request_pause
-            Pause the Run Engine at the next checkpoint.
-        resume
-            Start from the last checkpoint after a pause.
-        abort
-            Move from 'paused' to 'idle', stopping the run permanently.
-        register_command
-            Teach the Run Engine a new Message command.
-        unregister_command
-            Undo register_command.
-
-        """
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
@@ -242,7 +236,7 @@ class RunEngine:
         self._task = None  # asyncio.Task associated with call to self._run
         self._status_tasks = deque()  # from self._status_object_completed
         self._pardon_failures = None  # will hold an asyncio.Event
-        self._plan = None  # the scan plan instance from __call__
+        self._plan = None  # the plan instance from __call__
         self._command_registry = {
             'create': self._create,
             'save': self._save,
@@ -277,8 +271,6 @@ class RunEngine:
         # RunEngine for user convenience.
         self.dispatcher = Dispatcher()
         self.ignore_callback_exceptions = False
-        self.subscribe = self.dispatcher.subscribe
-        self.unsubscribe = self.dispatcher.unsubscribe
 
         # aliases for back-compatibility
         self.subscribe_lossless = self.dispatcher.subscribe
@@ -287,6 +279,55 @@ class RunEngine:
         self._unsubscribe_lossless = self.dispatcher.unsubscribe
 
         self.loop.call_soon(self._check_for_signals)
+
+    def subscribe(self, func, name='all'):
+        """
+        Register a callback function to consume documents.
+
+        .. versionchanged :: 0.10.0
+            The order of the arguments was swapped and the ``name``
+            argument has been given a default value, ``'all'``. Because the
+            meaning of the arguments is unambigious (they must be a callable
+            and a string, respectively) the old order will be supported
+            indefeinitely, with a warning.
+
+        Parameters
+        ----------
+        func: callable
+            expecting signature like ``f(name, document)``
+            where name is a string and document is a dict
+        name: string
+            one of {'start', 'descriptor', 'event', 'stop', 'all'}
+
+        Returns
+        -------
+        token : int
+            an integer ID that can be used to unsubscribe
+
+        See Also
+        --------
+        :meth:`RunEngine.unsubscribe`
+        """
+        # pass through to the Dispatcher, spelled out verbosely here to make
+        # sphinx happy -- tricks with __doc__ aren't enough to fool it
+        return self.dispatcher.subscribe(func, name)
+
+    def unsubscribe(self, token):
+        """
+        Unregister a callback function its integer ID.
+
+        Parameters
+        ----------
+        token : int
+            the integer ID issued by :meth:`RunEngine.subscribe`
+
+        See Also
+        --------
+        :meth:`RunEngine.subscribe`
+        """
+        # pass through to the Dispatcher, spelled out verbosely here to make
+        # sphinx happy -- tricks with __doc__ aren't enough to fool it
+        return self.dispatcher.unsubscribe(token)
 
     @property
     def rewindable(self):
@@ -398,6 +439,10 @@ class RunEngine:
         name : str
         func : callable
             This can be a function or a method. The signature is `f(msg)`.
+
+        See Also
+        --------
+        :meth:`RunEngine.unregister_command`
         """
         self._command_registry[name] = func
 
@@ -408,6 +453,10 @@ class RunEngine:
         Parameters
         ----------
         name : str
+
+        See Also
+        --------
+        :meth:`RunEngine.register_command`
         """
         del self._command_registry[name]
 
@@ -441,7 +490,7 @@ class RunEngine:
         self.state = 'paused'
         self._record_interruption('pause')
         if not self.resumable:
-            # cannot resume, so we cannot pause.  Abort the scan
+            # cannot resume, so we cannot pause.  Abort the plan.
             print("No checkpoint; cannot pause.")
             print("Aborting: running cleanup and marking "
                   "exit_status as 'abort'...")
@@ -487,7 +536,7 @@ class RunEngine:
 
     def __call__(self, plan, subs=None, *, raise_if_interrupted=False,
                  **metadata_kw):
-        """Run the scan defined by ``plan``
+        """Execute a plan.
 
         Any keyword arguments other than those listed below will be interpreted
         as metadata and recorded with the run.
@@ -515,21 +564,7 @@ class RunEngine:
         Returns
         -------
         uids : list
-            list of Header uids (a.k.a RunStart uids) of run(s)
-
-        Examples
-        --------
-        # Simplest example:
-        >>> RE(my_scan)
-        # Examples using subscriptions (a.k.a. callbacks):
-        >>> def print_data(doc):
-        ...     print("Measured: %s" % doc['data'])
-        ...
-        >>> def celebrate(doc):
-        ...     # Do nothing with the input.
-        ...     print("The run is finished!!!")
-        ...
-        >>> RE(my_generator, subs={'event': print_data, 'stop': celebrate})
+            list of uids (i.e. RunStart Document uids) of run(s)
         """
         # Check that the RE is not being called from inside a function.
         if self.max_depth is not None:
@@ -686,8 +721,8 @@ class RunEngine:
 
         See Also
         --------
-        `RunEngine.remove_suspender`
-        `RunEngine.clear_suspenders`
+        :meth:`RunEngine.remove_suspender`
+        :meth:`RunEngine.clear_suspenders`
         """
         self._suspenders.add(suspender)
         suspender.install(self)
@@ -702,8 +737,8 @@ class RunEngine:
 
         See Also
         --------
-        `RunEngine.install_suspender`
-        `RunEngine.clear_suspenders`
+        :meth:`RunEngine.install_suspender`
+        :meth:`RunEngine.clear_suspenders`
         """
         if suspender in self._suspenders:
             suspender.remove()
@@ -715,8 +750,8 @@ class RunEngine:
 
         See Also
         --------
-        `RunEngine.install_suspender`
-        `RunEngine.remove_suspender`
+        :meth:`RunEngine.install_suspender`
+        :meth:`RunEngine.remove_suspender`
         """
         for sus in self.suspenders:
             self.remove_suspender(sus)
@@ -808,6 +843,11 @@ class RunEngine:
     def abort(self, reason=''):
         """
         Stop a running or paused plan and mark it as aborted.
+
+        See Also
+        --------
+        :meth:`RunEngine.halt`
+        :meth:`RunEngine.stop`
         """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
@@ -825,6 +865,11 @@ class RunEngine:
     def stop(self):
         """
         Stop a running or paused plan, but mark it as successful (not aborted).
+
+        See Also
+        --------
+        :meth:`RunEngine.abort`
+        :meth:`RunEngine.halt`
         """
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
@@ -837,7 +882,13 @@ class RunEngine:
             self._resume_event_loop()
 
     def halt(self):
-        '''Stop the running plan and do not allow the plan a chance to clean up
+        '''
+        Stop the running plan and do not allow the plan a chance to clean up.
+
+        See Also
+        --------
+        :meth:`RunEngine.abort`
+        :meth:`RunEngine.stop`
         '''
         if self.state.is_idle:
             raise TransitionError("RunEngine is already idle.")
@@ -1983,6 +2034,15 @@ class Dispatcher:
         self._token_mapping = dict()
 
     def process(self, name, doc):
+        """
+        Dispatch document ``doc`` of type ``name`` to the callback registry.
+
+        Parameters
+        ---------
+        name : string
+            one of {'start', 'descriptor', 'event', 'stop', 'all'}
+        doc : dict
+        """
         exceptions = self.cb_registry.process(name, name.name, doc)
         for exc, traceback in exceptions:
             warn("A %r was raised during the processing of a %s "
@@ -1994,10 +2054,6 @@ class Dispatcher:
     def subscribe(self, func, name='all'):
         """
         Register a callback function to consume documents.
-
-        The Run Engine can execute callback functions at the start and end
-        of a scan, and after the insertion of new Event Descriptors
-        and Events.
 
         .. versionchanged :: 0.10.0
             The order of the arguments was swapped and the ``name``
@@ -2011,13 +2067,17 @@ class Dispatcher:
         func: callable
             expecting signature like ``f(name, document)``
             where name is a string and document is a dict
-        name: {'start', 'descriptor', 'event', 'stop', 'all'}, optional
-            Defaults to 'all'
+        name: string
+            one of {'start', 'descriptor', 'event', 'stop', 'all'}
 
         Returns
         -------
         token : int
-            an integer token that can be used to unsubscribe
+            an integer ID that can be used to unsubscribe
+
+        See Also
+        --------
+        :meth:`Dispatcher.unsubscribe`
         """
         if callable(name) and isinstance(func, str):
             name, func = func, name
@@ -2049,13 +2109,17 @@ class Dispatcher:
         Parameters
         ----------
         token : int
-            the integer token issued by `subscribe`
+            the integer ID issued by :meth:`Dispatcher.subscribe`
+
+        See Also
+        --------
+        :meth:`Dispatcher.subscribe`
         """
         for private_token in self._token_mapping[token]:
             self.cb_registry.disconnect(private_token)
 
     def unsubscribe_all(self):
-        """Unregister ALL callbacks from the dispatcher
+        """Unregister all callbacks from the dispatcher
         """
         for public_token in self._token_mapping.keys():
             self.unsubscribe(public_token)
