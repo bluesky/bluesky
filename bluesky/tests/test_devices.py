@@ -8,7 +8,11 @@ from bluesky.tests import requires_ophyd, ophyd
 
 if ophyd:
     from ophyd import Component as Cpt, Device, Signal
-    ophyd.setup_ophyd()
+    import epics
+    try:
+        ophyd.setup_ophyd()
+    except epics.ca.ChannelAccessException:
+        pass
 
     class A(Device):
         s1 = Cpt(Signal, value=0)
