@@ -2469,7 +2469,8 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     md_args = list(chain(*((repr(motor), start, stop)
                            for motor, start, stop in partition(3, args))))
-
+    motor_names = tuple(motor.name for motor, start, stop
+                        in partition(3, args))
     _md = {'plan_args': {'detectors': list(map(repr, detectors)),
                          'num': num, 'args': md_args,
                          'per_step': repr(per_step)},
@@ -2477,6 +2478,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
            'plan_pattern': 'inner_product',
            'plan_pattern_module': plan_patterns.__name__,
            'plan_pattern_args': dict(num=num, args=md_args),
+           'motors': motor_names
            }
     _md.update(md or {})
 
@@ -2522,11 +2524,13 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     chunk_args = list(plan_patterns.chunk_outer_product_args(args))
 
     md_args = []
+    motor_names = []
     for i, (motor, start, stop, num, snake) in enumerate(chunk_args):
         md_args.extend([repr(motor), start, stop, num])
         if i > 0:
             # snake argument only shows up after the first motor
             md_args.append(snake)
+        motor_names.append(motor.name)
 
     _md = {'shape': tuple(num for motor, start, stop, num, snake
                           in chunk_args),
@@ -2542,6 +2546,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
            'plan_pattern': 'outer_product',
            'plan_pattern_args': dict(args=md_args),
            'plan_pattern_module': plan_patterns.__name__,
+           'motors': tuple(motor_names)
           }
     _md.update(md or {})
 

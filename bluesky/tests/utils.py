@@ -35,3 +35,22 @@ class MsgCollector:
         self.msgs.append(msg)
         if self.msg_hook:
             self.msg_hook(msg)
+
+
+class DocCollector:
+    def __init__(self):
+        self.start = []
+        self.stop = {}
+        self.descriptor = {}
+        self.event = {}
+
+    def insert(self, name, doc):
+        if name == 'start':
+            self.start.append(doc)
+        elif name == 'stop':
+            self.stop[doc['run_start']] = doc
+        elif name == 'descriptor':
+            self.descriptor[doc['run_start']] = doc
+            self.event[doc['uid']] = []
+        else:
+            self.event[doc['descriptor']].append(doc)
