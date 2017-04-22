@@ -13,7 +13,7 @@ from .utils import snake_cyclers
 
 
 def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
-           tilt=0.0):
+           asym=1, tilt=0.0):
     '''Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -32,6 +32,8 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
         y width of spiral
     dr : float
         Delta radius
+    asym : float
+        asymetry of the scan, giving a y axis 'radius' (dr) = asym*dr while keeping the x axis 'radius' (dr) = dr 
     nth : float
         Number of theta steps
     tilt : float, optional
@@ -42,9 +44,9 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     cyc : cycler
     '''
     half_x = x_range / 2
-    half_y = y_range / 2
+    half_y = y_range / (2*asym)
 
-    r_max = np.sqrt(half_x ** 2 + half_y ** 2)
+    r_max = np.sqrt(half_x ** 2 + half_y** 2)
     num_ring = 1 + int(r_max / dr)
     tilt_tan = np.tan(tilt + np.pi / 2.)
 
@@ -57,8 +59,8 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
         for i_angle in range(int(i_ring * nth)):
             angle = i_angle * angle_step
             x = radius * np.cos(angle)
-            y = radius * np.sin(angle)
-            if ((abs(x - y / tilt_tan) <= half_x) and (abs(y) <= half_y)):
+            y = radius * np.sin(angle)*asym
+            if ((abs(x - (y/asym) / tilt_tan) <= half_x) and (abs(y/asym) <= half_y)):
                 x_points.append(x_start + x)
                 y_points.append(y_start + y)
 
@@ -68,7 +70,7 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
 
 
 def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
-                  factor, *, tilt=0.0):
+                  factor, *, asym=1,tilt=0.0):
     '''Absolute fermat spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -99,7 +101,7 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     phi = 137.508 * np.pi / 180.
 
     half_x = x_range / 2
-    half_y = y_range / 2
+    half_y = y_range / (2*asym)
     tilt_tan = np.tan(tilt + np.pi / 2.)
 
     x_points, y_points = [], []
@@ -110,9 +112,9 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         radius = np.sqrt(i_ring) * dr / factor
         angle = phi * i_ring
         x = radius * np.cos(angle)
-        y = radius * np.sin(angle)
+        y = radius * np.sin(angle)*asym
 
-        if ((abs(x - y / tilt_tan) <= half_x) and (abs(y) <= half_y)):
+        if ((abs(x - (y/asym) / tilt_tan) <= half_x) and (abs(y) <= half_y)):
             x_points.append(x_start + x)
             y_points.append(y_start + y)
 
