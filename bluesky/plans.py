@@ -2814,7 +2814,7 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
 
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
-           nth, *, tilt=0.0, per_step=None, md=None):
+           nth, *, asym=1, tilt=0.0, per_step=None, md=None):
     '''Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -2835,6 +2835,8 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         Delta radius
     nth : float
         Number of theta steps
+    asym : float
+        asymetry of the scan, giving a y axis 'radius' (dr) = asym*dr while keeping the x axis 'radius' (dr) = dr 
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
@@ -2852,7 +2854,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
-                        dr=dr, nth=nth, tilt=tilt)
+                        dr=dr, nth=nth, asym=asym,tilt=tilt)
     cyc = plan_patterns.spiral(**pattern_args)
 
     # Before including pattern_args in metadata, replace objects with reprs.
@@ -2875,7 +2877,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 
 
 def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
-                    *, tilt=0.0, per_step=None, md=None):
+                    *, asym=1, tilt=0.0, per_step=None, md=None):
     '''Relative spiral scan
 
     Parameters
@@ -2896,6 +2898,8 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
         Delta radius
     nth : float
         Number of theta steps
+    asym : float
+        asymetry of the scan, giving a y axis 'radius' (dr) = asym*dr while keeping the x axis 'radius' (dr) = dr 
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
