@@ -1,6 +1,7 @@
 """
 Useful callbacks for the Run Engine
 """
+from enum import Enum
 from itertools import count
 import warnings
 from collections import deque, namedtuple, OrderedDict, ChainMap
@@ -45,6 +46,12 @@ class CallbackCounter:
 
     def __call__(self, name, doc):
         self.value = next(self.counter)
+
+
+class ExogenousVars(Enum):
+    # used by LivePlot and others
+    seq_num = 'seq_num'
+    time = 'time'
 
 
 def print_metadata(name, doc):
@@ -133,10 +140,12 @@ class LivePlot(CallbackBase):
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
-        if x is not None:
+        if x is None:
+            x = ExogenousVars.seq_num
+        if isinstance(x, str):
             self.x, *others = _get_obj_fields([x])
         else:
-            self.x = None
+            self.x = x
         self.y, *others = _get_obj_fields([y])
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
@@ -165,13 +174,15 @@ class LivePlot(CallbackBase):
     def event(self, doc):
         "Unpack data from the event and call self.update()."
         try:
-            if self.x is not None:
+            if isinstance(self.x, str):
                 # this try/except block is needed because multiple event
                 # streams will be emitted by the RunEngine and not all event
                 # streams will have the keys we want
                 new_x = doc['data'][self.x]
-            else:
+            elif self.x is ExogenousVars.seq_num:
                 new_x = doc['seq_num']
+            elif self.x is ExogenousVars.time:
+                new_x = doc['time']
             new_y = doc['data'][self.y]
         except KeyError:
             # wrong event stream, skip it
