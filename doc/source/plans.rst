@@ -803,6 +803,8 @@ a generator instance. The corresponding functions named
 
     baseline_decorator
     baseline_wrapper
+    configure_count_time_decorator
+    configure_count_time_wrapper
     finalize_decorator
     finalize_wrapper
     fly_during_decorator
