@@ -1,7 +1,8 @@
 """
 Useful callbacks for the Run Engine
 """
-from itertools import count
+from enum import Enum
+import itertools
 import warnings
 from collections import deque, namedtuple, OrderedDict, ChainMap
 import time as ttime
@@ -40,11 +41,17 @@ class CallbackCounter:
     "As simple as it sounds: count how many times a callback is called."
     # Wrap itertools.count in something we can use as a callback.
     def __init__(self):
-        self.counter = count()
+        self.counter = itertools.count()
         self(None, {})  # Pass a fake doc to prime the counter (start at 1).
 
     def __call__(self, name, doc):
         self.value = next(self.counter)
+
+
+class ExogenousVars(Enum):
+    # used by LivePlot and others
+    seq_num = 'seq_num'
+    time = 'time'
 
 
 def print_metadata(name, doc):
@@ -133,10 +140,12 @@ class LivePlot(CallbackBase):
         if legend_keys is None:
             legend_keys = []
         self.legend_keys = ['scan_id'] + legend_keys
-        if x is not None:
+        if x is None:
+            x = ExogenousVars.seq_num
+        if isinstance(x, str):
             self.x, *others = _get_obj_fields([x])
         else:
-            self.x = None
+            self.x = x
         self.y, *others = _get_obj_fields([y])
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
@@ -165,13 +174,15 @@ class LivePlot(CallbackBase):
     def event(self, doc):
         "Unpack data from the event and call self.update()."
         try:
-            if self.x is not None:
+            if isinstance(self.x, str):
                 # this try/except block is needed because multiple event
                 # streams will be emitted by the RunEngine and not all event
                 # streams will have the keys we want
                 new_x = doc['data'][self.x]
-            else:
+            elif self.x is ExogenousVars.seq_num:
                 new_x = doc['seq_num']
+            elif self.x is ExogenousVars.time:
+                new_x = doc['time']
             new_y = doc['data'][self.y]
         except KeyError:
             # wrong event stream, skip it
@@ -862,3 +873,166 @@ class LiveFitPlot(LivePlot):
     def stop(self, doc):
         self.livefit.stop(doc)
         # Intentionally override LivePlot.stop. Do not call super().
+
+
+
+
+class SmartDispatcher(CallbackBase):
+    """
+    A callback that tries to guess useful callbacks and fan out documents.
+
+    .. attribute:: muted
+        Set to ``True`` to temporarily turn this off.
+
+    .. attribute:: x
+        Field name (such as 'theta') or ``ExogenousVars.seq_num`` or
+        ``ExogenousVars.time``
+
+    .. attribute:: ys
+        List of field names to plot against x
+
+    .. attribute:: overplot
+        Set to ``False`` to generate a new figure even when axes labels are
+        identical to those on a figure that is already open.
+
+    .. attribute :: cols
+        List of field names to include in table. (Event time and sequence
+        number are always included.)
+    """
+    def __init__(self):
+        self.active_cbs = []
+        self.muted = False
+
+        # plot settings
+        self.ys = []
+        self.x = None
+        self.overplot = False
+
+        # table settings
+        self.cols = []
+
+        # peak stats
+        self.ps = None
+        self.ps_field = None
+        self.ps_config = None
+
+        self.__sniff_dim = None
+        self.__start_doc = None
+
+    def _figure_name(self, base_name):
+        """Helper to compute figure name
+
+        This takes in a base name an return the name of the figure to use.
+
+        If self.overplot, then this is a no-op.
+        If not self.overplot then append '(N)' to the end of the string until a
+        non-existing figure is found
+        """
+        if not self.overplot:
+            if not plt.fignum_exists(base_name):
+                pass
+            else:
+                for j in itertools.count(1):
+                    numbered_template = '{} ({})'.format(base_name, j)
+                    if not plt.fignum_exists(numbered_template):
+                        base_name = numbered_template
+                        break
+        return base_name
+
+    def clean(self):
+        self.active_cbs.clear()
+        self.__sniff_dim = None
+        self.__start_doc = None
+        self.ps = None
+
+    def start(self, doc):
+        # Inspect the start document and try to guess what some useful
+        # callbacks will be.
+
+        self.clean()
+        self.__start_doc = doc
+        if self.muted:
+            return
+
+        # We can always set up some table.
+        motors = doc.get('motors', [])
+        table = LiveTable(list(motors) + list(self.ys) + list(self.cols))
+        self.active_cbs.append(table)
+
+        # Try to guess dimensionality. This could be made smarter.
+        sniff_dim = len(doc.get('motors', []))
+        # Special case: if plan is named 'count' and 'ct'
+        if doc['plan_name'] in ('count', 'ct'):
+            num = doc.get('num_points')
+            if num is None or num > 1:
+                sniff_dim = 1
+        self.__sniff_dim = sniff_dim
+
+        if self.__sniff_dim == 1 and self.x is not None:
+            for y_key in self.ys:
+                fig_name = self._figure_name(
+                    'BlueSky: {} v {}'.format(y_key, self.x))
+                ax = plt.figure(fig_name).gca()
+                self.active_cbs.append(LivePlot(y=y_key, x=self.x, ax=ax))
+        # If self.x is None, we need the descriptor before we can plot.
+
+        for cb in self.active_cbs:
+            cb('start', doc)
+
+    def descriptor(self, doc):
+        # Use object_keys to guess which field to plot against.
+        if doc.get('name') == 'primary':
+            if self.__sniff_dim == 1 and self.x is None:
+                for y_key in self.ys:
+                    motors = self.__start_doc.get('motors')
+                    if motors:
+                        x_key = list(doc['object_keys'][motors[0]])[0]
+                    else:
+                        x_key = ExogenousVars.seq_num
+                    fig_name = self._figure_name(
+                        'BlueSky: {} v {}'.format(y_key, x_key))
+                    ax = plt.figure(fig_name).gca()
+                    plot = LivePlot(y=y_key, x=x_key, ax=ax)
+                    plot('start', self.__start_doc)
+                    self.active_cbs.append(plot)
+            elif self.__sniff_dim == 2 and 'shape' in self.__start_doc:
+                motors = self.__start_doc.get('motors')
+                if motors:
+                    ylab = list(doc['object_keys'][motors[0]])[0]
+                    xlab = list(doc['object_keys'][motors[1]])[0]
+                    shape = self.__start_doc['shape']
+                    extent = self.__start_doc.get('extent')
+                    for y_key in self.ys:
+                        raster = LiveGrid(shape, y_key, xlabel=xlab,
+                                          ylabel=ylab, extent=extent)
+                        raster('start', self.__start_doc)
+                        self.active_cbs.append(raster)
+
+            if (self.ps_field is not None) and ('motors' in self.__start_doc):
+                from .scientific import PeakStats
+                motors = self.__start_doc['motors']
+                if self.x is None:
+                    x_key = list(doc['object_keys'][motors[0]])[0]
+                else:
+                    x_key = self.x
+                ps = PeakStats(x_key, self.ps_field, **(self.ps_config or {}))
+                ps('start', self.__start_doc)
+                self.active_cbs.append(ps)
+                self.ps = ps  # stash in state to give user access
+
+        for cb in self.active_cbs:
+            cb('descriptor', doc)
+
+    def event(self, doc):
+        for cb in self.active_cbs:
+            cb('event', doc)
+
+    def stop(self, doc):
+        for cb in self.active_cbs:
+            cb('stop', doc)
+        # Don't self.clean() yet because user may want to access state
+        # accumulated in callbacks.
+
+    # alias these here for user convenience
+    seq_num = ExogenousVars.seq_num
+    time = ExogenousVars.time

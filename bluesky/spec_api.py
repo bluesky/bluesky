@@ -33,7 +33,9 @@ from bluesky.plans import (count, scan, relative_scan,
                            tweak, baseline_decorator, subs_decorator,
                            fly_during_decorator,
                            monitor_during_decorator, pchain,
-                           finalize_wrapper, plan_mutator, mv, single_gen)
+                           finalize_wrapper, plan_mutator, mv, single_gen,
+                           configure_count_time_wrapper,
+                           configure_count_time_decorator)
 from bluesky.utils import make_decorator
 import itertools
 from itertools import chain
@@ -41,255 +43,12 @@ from inspect import signature, Parameter
 import warnings
 
 
-def configure_count_time_wrapper(plan, time):
-    """
-    Preprocessor that sets all devices with a `count_time` to the same time.
-
-    The original setting is stashed and restored at the end.
-
-    Parameters
-    ----------
-    plan : iterable or iterator
-        a generator, list, or similar containing `Msg` objects
-    time : float or None
-        If None, the plan passes through unchanged.
-
-    Yields
-    ------
-    msg : Msg
-        messages from plan, with 'set' messages inserted
-    """
-    devices_seen = set()
-    original_times = {}
-
-    def insert_set(msg):
-        obj = msg.obj
-        if obj is not None and obj not in devices_seen:
-            devices_seen.add(obj)
-            if hasattr(obj, 'count_time'):
-                # TODO Do this with a 'read' Msg once reads can be
-                # marked as belonging to a different event stream (or no
-                # event stream.
-                original_times[obj] = obj.count_time.get()
-                # TODO do this with configure
-                return pchain(mv(obj.count_time, time),
-                              single_gen(msg)), None
-        return None, None
-
-    def reset():
-        for obj, time in original_times.items():
-            yield from mv(obj.count_time, time)
-
-    if time is None:
-        # no-op
-        return (yield from plan)
-    else:
-        return (yield from finalize_wrapper(plan_mutator(plan, insert_set),
-                                            reset()))
-
-
-configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
-
-
-# ## Factory functions for generating callbacks
-
-
-def _figure_name(base_name):
-    """Helper to compute figure name
-
-    This takes in a base name an return the name of the figure to use.
-
-    If gs.OVERPLOT, then this is a no-op.  If not gs.OVERPLOT then append '(N)'
-    to the end of the string until a non-existing figure is found
-
-    """
-    if not gs.OVERPLOT:
-        if not plt.fignum_exists(base_name):
-            pass
-        else:
-            for j in itertools.count(1):
-                numbered_template = '{} ({})'.format(base_name, j)
-                if not plt.fignum_exists(numbered_template):
-                    base_name = numbered_template
-                    break
-    return base_name
-
-
-def setup_plot(*, motors, gs):
-    """Setup a LivePlot by inspecting motors and gs.
-
-    If motors is empty, use sequence number.
-    """
-    y_key = gs.PLOT_Y
-    if motors:
-        x_key = first_key_heuristic(list(motors)[0])
-        fig_name = _figure_name('BlueSky: {} v {}'.format(y_key, x_key))
-        ax = plt.figure(fig_name).gca()
-        return LivePlot(y_key, x_key, ax=ax)
-    else:
-        fig_name = _figure_name('BlueSky: {} v sequence number'.format(y_key))
-        ax = plt.figure(fig_name).gca()
-        return LivePlot(y_key, ax=ax)
-
-
-def setup_ct_plot(*, num, motors, gs):
-    """
-    Setup a plot only if there could be more than one point.
-    """
-    # If num is None, count runs until interrupted.
-    if num is None or num > 1:
-        return setup_plot(motors=motors, gs=gs)
-    return None
-
-
-def setup_peakstats(*, motors, gs):
-    "Set up peakstats"
-    motor = list(motors)[0]
-    key = first_key_heuristic(motor)
-    ps = PeakStats(key, gs.MASTER_DET_FIELD, **gs.PS_CONFIG)
-    gs.PS = ps
-    ps.motor = motor
-    return ps
-
-
-def setup_livetable(*, motors,  gs):
-    """Setup a LiveTable by inspecting motors and gs.
-    """
-    return LiveTable(motors + [gs.PLOT_Y] + gs.TABLE_COLS)
-
-
-def setup_liveraster(*, motors, gs, shape, extent):
-    """Setup a LiveTable by inspecting motors, shape, extent, and gs.
-    """
-    if len(motors) != 2:
-        return None
-    ylab, xlab = [first_key_heuristic(m) for m in motors]
-    raster = LiveGrid(shape, gs.MASTER_DET_FIELD, xlabel=xlab,
-                        ylabel=ylab, extent=extent)
-    return raster
-
-
-def construct_subs(plan_name, **kwargs):
-    '''Construct the subscriptions functions from factories.
-
-
-    This is a small dependency injection tool to construct subscriptions
-    based on `plan_name` by consulting `gs.SUB_FACTORIES` and combining
-    `'common'` and `plan_name` lists.
-
-    The values in `**kwargs` are injected into the factories as needed
-    by consulting the signature.
-
-    Parameters
-    ----------
-    plan_name : str
-        The key used to get the subscription factories
-
-    Returns
-    -------
-    subs : dict
-       A dictionary suitable for handing to the RE or to the sub_wrapper
-       plan.
-    '''
-    factories = gs.SUB_FACTORIES.get('common', [])
-    factories.extend(gs.SUB_FACTORIES.get(plan_name, []))
-
-    kwargs.setdefault('gs', gs)
-    ret = normalize_subs_input(None)
-    for factory in factories:
-        try:
-            inp = get_factory_input(factory)
-        except InvalidFactory as e:
-            warnings.warn('factory {fn} could not be run due to {e!r}'.format(
-                fn=factory.__name__, e=e))
-        else:
-            fact_kwargs = {}
-            missing_kwargs = set()
-            for k in inp.req:
-                try:
-                    fact_kwargs[k] = kwargs[k]
-                except KeyError:
-                    missing_kwargs.add(k)
-            if missing_kwargs:
-                warnings.warn('The factory {fn} could not be run due to '
-                              'missing '
-                              'required input: {missing!r}'.format(
-                                  fn=factory.__name__, missing=missing_kwargs))
-                continue
-            for k in inp.opt:
-                try:
-                    fact_kwargs[k] = kwargs[k]
-                except KeyError:
-                    pass
-
-            update_sub_lists(ret,
-                             normalize_subs_input(factory(**fact_kwargs)))
-
-    return ret
-
-
-# TODO rename this
-def plan_sub_factory_input(plan_name):
-    '''Helper function for introspecting sub_factories
-
-    Assume this will be re-written, do not program against.
-    '''
-    factories = gs.SUB_FACTORIES.get('common', [])
-    factories.extend(gs.SUB_FACTORIES.get(plan_name, []))
-    opt = set()
-    req = set()
-    by_fac = OrderedDict()
-    for fac in factories:
-        try:
-            ret = get_factory_input(fac)
-        except InvalidFactory as e:
-            by_fac[fac.__name__] = e
-        else:
-            opt.update(ret.opt)
-            req.update(ret.req)
-            by_fac[fac.__name__] = ret
-
-    return FactoryInput(req, opt), by_fac
-
-
-class InvalidFactory(TypeError):
-    ...
-
-FactoryInput = namedtuple('FactoryInput', ('req', 'opt'))
-
-
-# TODO rename this
-def get_factory_input(factory):
-    '''Helper function to re-organize signature information
-
-    Assume this will be re-written, do not program against.
-    '''
-    sig = signature(factory)
-    req = set()
-    optional = set()
-    failed = set()
-    for k, v in sig.parameters.items():
-        if v.kind is Parameter.POSITIONAL_ONLY:
-            # TODO: make the injection system smarter to deal with
-            # these
-            failed.add(k)
-        elif v.default is Parameter.empty:
-            req.add(k)
-        else:
-            optional.add(k)
-    if failed:
-        raise InvalidFactory("")
-    return FactoryInput(req, optional)
-
-
 def inner_spec_decorator(plan_name, time, motors, **subs_kwargs):
-    subs = construct_subs(plan_name, motors=motors, **subs_kwargs)
 
     # create the paramterized decorator
     def outer(func):
         # create the decorated function to return
 
-        @subs_decorator(subs)
         @configure_count_time_decorator(time)
         @fly_during_decorator(list(gs.FLYERS))
         @monitor_during_decorator(list(gs.MONITORS))
@@ -327,7 +86,6 @@ def ct(num=1, delay=None, time=None, *, md=None):
     inner = inner_spec_decorator('ct', time, [], num=num)(count)
 
     return (yield from inner(gs.DETS, num, delay, md=md))
-gs.SUB_FACTORIES['ct'] = [setup_livetable, setup_ct_plot]
 
 
 # ## Motor Scans (p. 146) ###
@@ -357,9 +115,6 @@ def ascan(motor, start, finish, intervals, time=None, *, md=None):
 
     return (yield from inner(gs.DETS, motor, start, finish,
                              1 + intervals, md=md))
-gs.SUB_FACTORIES['ascan'] = [setup_livetable,
-                             setup_plot,
-                             setup_peakstats]
 
 
 def dscan(motor, start, finish, intervals, time=None, *, md=None):
@@ -387,9 +142,6 @@ def dscan(motor, start, finish, intervals, time=None, *, md=None):
 
     return (yield from inner(gs.DETS, motor, start, finish, 1 + intervals,
                              md=md))
-gs.SUB_FACTORIES['dscan'] = [setup_livetable,
-                             setup_plot,
-                             setup_peakstats]
 
 
 def mesh(*args, time=None, md=None):
@@ -432,7 +184,6 @@ def mesh(*args, time=None, md=None):
                                      outer_product_scan)
 
     return (yield from inner(gs.DETS, *new_args, md=md))
-gs.SUB_FACTORIES['mesh'] = [setup_livetable, setup_liveraster]
 
 
 def a2scan(*args, time=None, md=None):
@@ -465,9 +216,6 @@ def a2scan(*args, time=None, md=None):
 
     return (yield from inner(gs.DETS, num, *args[:-1], md=md))
 
-gs.SUB_FACTORIES['a2scan'] = [setup_livetable,
-                              setup_plot,
-                              setup_peakstats]
 
 
 # This implementation works for *all* dimensions, but we follow SPEC naming.
@@ -476,7 +224,6 @@ def a3scan(*args, time=None, md=None):
     _md.update(md or {})
     return (yield from a2scan(*args, time=time, md=_md))
 a3scan.__doc__ = a2scan.__doc__
-gs.SUB_FACTORIES['a3scan'] = gs.SUB_FACTORIES['a2scan']
 
 
 def d2scan(*args, time=None, md=None):
@@ -509,9 +256,6 @@ def d2scan(*args, time=None, md=None):
 
     return (yield from inner(gs.DETS, num, *(args[:-1]), md=md))
 
-gs.SUB_FACTORIES['d2scan'] = [setup_livetable,
-                              setup_plot,
-                              setup_peakstats]
 
 
 # This implementation works for *all* dimensions, but we follow SPEC naming.
@@ -520,7 +264,6 @@ def d3scan(*args, time=None, md=None):
     _md.update(md or {})
     return (yield from d2scan(*args, time=time, md=_md))
 d3scan.__doc__ = d2scan.__doc__
-gs.SUB_FACTORIES['d3scan'] = gs.SUB_FACTORIES['d2scan']
 
 
 def th2th(start, finish, intervals, time=None, *, md=None):
@@ -551,7 +294,6 @@ def th2th(start, finish, intervals, time=None, *, md=None):
                   gs.TH_MOTOR, start/2, finish/2,
                   intervals, time=time, md=_md)
     return (yield from plan)
-gs.SUB_FACTORIES['th2th'] = gs.SUB_FACTORIES['d2scan']
 
 
 def tw(motor, step, time=None, *, md=None):
@@ -622,7 +364,6 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
     return (yield from inner(gs.DETS, x_motor, y_motor, x_start, y_start,
                              x_range, y_range, dr, factor,
                              per_step=per_step, tilt=tilt, md=md))
-gs.SUB_FACTORIES['afermat'] = [setup_livetable]
 
 
 def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
@@ -667,7 +408,6 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
                    per_step=per_step, md=_md)
     plan = plans.reset_positions_wrapper(plan)  # return motors to starting pos
     return (yield from plan)
-gs.SUB_FACTORIES['fermat'] = gs.SUB_FACTORIES['afermat']
 
 
 def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
@@ -713,7 +453,6 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
                              x_range, y_range, dr, nth, per_step=per_step,
                              tilt=tilt,
                              md=md))
-gs.SUB_FACTORIES['aspiral'] = [setup_livetable]
 
 
 def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
@@ -758,4 +497,3 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
                    per_step=per_step, md=_md)
     plan = plans.reset_positions_wrapper(plan)  # return to starting pos
     return (yield from plan)
-gs.SUB_FACTORIES['spiral'] = gs.SUB_FACTORIES['aspiral']

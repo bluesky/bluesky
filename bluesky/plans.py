@@ -902,6 +902,53 @@ def subs_wrapper(plan, subs):
                                         _unsubscribe()))
 
 
+def configure_count_time_wrapper(plan, time):
+    """
+    Preprocessor that sets all devices with a `count_time` to the same time.
+
+    The original setting is stashed and restored at the end.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    time : float or None
+        If None, the plan passes through unchanged.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'set' messages inserted
+    """
+    devices_seen = set()
+    original_times = {}
+
+    def insert_set(msg):
+        obj = msg.obj
+        if obj is not None and obj not in devices_seen:
+            devices_seen.add(obj)
+            if hasattr(obj, 'count_time'):
+                # TODO Do this with a 'read' Msg once reads can be
+                # marked as belonging to a different event stream (or no
+                # event stream.
+                original_times[obj] = obj.count_time.get()
+                # TODO do this with configure
+                return pchain(mv(obj.count_time, time),
+                              single_gen(msg)), None
+        return None, None
+
+    def reset():
+        for obj, time in original_times.items():
+            yield from mv(obj.count_time, time)
+
+    if time is None:
+        # no-op
+        return (yield from plan)
+    else:
+        return (yield from finalize_wrapper(plan_mutator(plan, insert_set),
+                                            reset()))
+
+
 def open_run(md=None):
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.
@@ -1830,6 +1877,7 @@ def caching_repeater(n, plan):
 
 # Make generator function decorator for each generator instance wrapper.
 baseline_decorator = make_decorator(baseline_wrapper)
+configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
 subs_decorator = make_decorator(subs_wrapper)
 relative_set_decorator = make_decorator(relative_set_wrapper)
 reset_positions_decorator = make_decorator(reset_positions_wrapper)
