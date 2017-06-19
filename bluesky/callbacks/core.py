@@ -8,6 +8,7 @@ import time as ttime
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from databroker_browser.qt._cross_section_2d import StackViewer, CrossSection
 from datetime import datetime
 import numpy as np
 import logging
@@ -201,6 +202,73 @@ class LivePlot(CallbackBase):
         if len(self.y_data) != len(self.x_data):
             print('LivePlot has a different number of elements for x ({}) and'
                   'y ({})'.format(len(self.x_data), len(self.y_data)))
+        super().stop(doc)
+
+
+class LiveImagePlot(CallbackBase):
+    """
+    Build a function that updates a plot from a stream of Events.
+
+    Note: If your figure blocks the main thread when you are trying to
+    scan with this callback, call `plt.ion()` in your IPython session.
+
+    Parameters
+    ----------
+    y : str
+        the name of a data field in an Event
+
+    x : str, optional
+        the name of a data field in an Event
+        If None, use the Event's sequence number.
+    legend_keys : list, optional
+        The list of keys to extract from the RunStart document and format
+        in the legend of the plot. The legend will always show the
+        scan_id followed by a colon ("1: ").  Each
+    xlim : tuple, optional
+        passed to Axes.set_xlim
+    ylim : tuple, optional
+        passed to Axes.set_ylim
+    ax : Axes, optional
+        matplotib Axes; if none specified, new figure and axes are made.
+    fig : Figure
+        deprecated: use ax instead
+    All additional keyword arguments are passed through to ``Axes.plot``.
+
+    Examples
+    --------
+    >>> my_plotter = LiveImagePlot('det', )
+    >>> RE(my_scan, my_plotter)
+    """
+    def __init__(self, det, *, ax=None, fig=None, **kwargs):
+        super().__init__()
+        if ax is None:
+            fig, ax = plt.subplots()
+        self.det = det
+        self.ax = ax
+        self.cs = CrossSection(fig)
+        self.sv = None
+
+    def start(self, doc):
+        # The doc is not used; we just use the singal that a new run began.
+        super().start(doc)
+
+    def event(self, doc):
+        "Unpack data from the event and call self.update()."
+        try:
+            new_imgs = doc['data'][self.det]
+        except KeyError:
+            # wrong event stream, skip it
+            return
+        if self.sv is None:
+            self.sv = StackViewer(self.cs, [new_imgs])
+        else:
+            self.sv.images.append(new_imgs)
+        super().event(doc)
+
+    def stop(self, doc):
+        if self.sv is None:
+            print('LiveImagePlot did not get any events with the requested'
+                  'images')
         super().stop(doc)
 
 
