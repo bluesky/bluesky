@@ -4,6 +4,7 @@ from .core import CallbackBase
 from ..utils import ensure_uid
 import numpy as np
 import doct
+import matplotlib.pyplot as plt
 
 
 class LiveImage(CallbackBase):
@@ -15,6 +16,7 @@ class LiveImage(CallbackBase):
     field : string
         name of data field in an Event
     """
+
     def __init__(self, field, *, fs=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
@@ -29,7 +31,9 @@ class LiveImage(CallbackBase):
 
     def event(self, doc):
         uid = doc['data'][self.field]
-        data = self.fs.retrieve(uid)
+        if 'filled' not in doc.keys() or \
+                        doc['filled'].get(self.field, False) is False:
+            data = self.fs.retrieve(uid)
         self.update(data)
         super().event(doc)
 
@@ -100,6 +104,7 @@ def post_run(callback, db=None, fill=False):
         # not yet have the 'stop' document that we currently have, so we'll
         # use our copy instead of expecting the header to include one.
         callback('stop', doc)
+
     return f
 
 
@@ -137,6 +142,7 @@ def make_restreamer(callback, db=None):
 
     def cb(value, **kwargs):
         return process(db[value], callback)
+
     return cb
 
 
@@ -192,6 +198,7 @@ class LiveTiffExporter(CallbackBase):
     ----------
     filenames : list of filenames written in ongoing or most recent run
     """
+
     def __init__(self, field, template, dryrun=False, overwrite=False,
                  db=None):
         try:
