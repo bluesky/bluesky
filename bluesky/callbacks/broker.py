@@ -1,10 +1,12 @@
 import os
 import time as ttime
+
+import doct
+import numpy as np
+
+from bluesky.callbacks.gui import StackViewer
 from .core import CallbackBase
 from ..utils import ensure_uid
-import numpy as np
-import doct
-import matplotlib.pyplot as plt
 
 
 class LiveImage(CallbackBase):
@@ -264,3 +266,44 @@ class LiveTiffExporter(CallbackBase):
         self._start = None
         self.filenames = []
         super().stop(doc)
+
+
+class LiveSliderImage(CallbackBase):
+    """
+    Stream 2D images in a cross-section viewer.
+
+    Parameters
+    ----------
+    field : string
+        name of data field in an Event
+    """
+
+    def __init__(self, field, *, fs=None,
+                 cmap=None, norm=None, limit_func=None, auto_redraw=True,
+                 interpolation=None):
+        from xray_vision.backend.mpl.cross_section_2d import CrossSection
+        import matplotlib.pyplot as plt
+        super().__init__()
+        self.field = field
+        fig = plt.figure()
+        self.cs = CrossSection(fig, cmap, norm,
+                 limit_func, auto_redraw, interpolation)
+        self.sv = StackViewer(self.cs)
+        self.cs._fig.show()
+        if fs is None:
+            import filestore.api as fs
+        self.fs = fs
+
+    def event(self, doc):
+        if 'filled' not in doc.keys() or \
+                        doc['filled'].get(self.field, False) is False:
+            uid = doc['data'][self.field]
+            data = self.fs.retrieve(uid)
+        else:
+            data = doc['data'][self.field]
+        self.update(data)
+        super().event(doc)
+
+    def update(self, data):
+        self.cs.update_image(data)
+        self.cs._fig.canvas.draw_idle()
