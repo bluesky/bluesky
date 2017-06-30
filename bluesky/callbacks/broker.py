@@ -305,5 +305,5 @@ class LiveSliderImage(CallbackBase):
         super().event(doc)
 
     def update(self, data):
-        self.cs.update_image(data)
+        self.sv.add_image(data)
         self.cs._fig.canvas.draw_idle()
