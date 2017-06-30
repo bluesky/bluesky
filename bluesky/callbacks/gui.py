@@ -3,6 +3,28 @@ import numpy as np
 from matplotlib.widgets import Slider
 
 
+def auto_redraw(func):
+    def inner(self, *args, **kwargs):
+        if self._fig.canvas is None:
+            return
+        force_redraw = kwargs.pop('force_redraw', None)
+        if force_redraw is None:
+            force_redraw = self._auto_redraw
+
+        ret = func(self, *args, **kwargs)
+
+        if force_redraw:
+            self._update_artists()
+            self._draw()
+
+        return ret
+
+    inner.__name__ = func.__name__
+    inner.__doc__ = func.__doc__
+
+    return inner
+
+
 class StackViewer(object):
     """
     Parameters
@@ -47,6 +69,7 @@ class StackViewer(object):
         if self.update_upon_add:
             self.update(len(self.images) - 1)
             self.slider.set_val(len(self.images) - 1)
+
 
 class CrossSection(object):
     """
