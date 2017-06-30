@@ -44,10 +44,10 @@ class StackViewer(object):
         self.slider_ax = None
         self.slider = None
         length = len(self.images)
-        fig = self.viewer._fig
+        self.fig = self.viewer._fig
         if length > 0:
             self.create_slider(length)
-        fig.show()
+        self.fig.show()
 
     def update(self, val):
         if not isinstance(val, int):
@@ -58,7 +58,7 @@ class StackViewer(object):
     def create_slider(self, length):
         if self.slider_ax:
             self.slider_ax.remove()
-        self.slider_ax = fig.add_axes([0.1, 0.01, 0.8, 0.02])
+        self.slider_ax = self.fig.add_axes([0.1, 0.01, 0.8, 0.02])
         self.slider = Slider(self.slider_ax, 'Frame', 0, length - 1, 0,
                              valfmt='%d/{}'.format(length - 1))
         self.slider.on_changed(self.update)
