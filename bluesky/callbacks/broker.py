@@ -17,13 +17,15 @@ class LiveImage(CallbackBase):
         name of data field in an Event
     """
 
-    def __init__(self, field, *, fs=None):
+    def __init__(self, field, *, fs=None, cmap=None, norm=None,
+                 limit_func=None, auto_redraw=True, interpolation=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
         super().__init__()
         self.field = field
         fig = plt.figure()
-        self.cs = CrossSection(fig)
+        self.cs = CrossSection(fig, cmap, norm,
+                 limit_func, auto_redraw, interpolation)
         self.cs._fig.show()
         if fs is None:
             import filestore.api as fs
