@@ -1107,6 +1107,7 @@ def test_colliding_streams(fresh_RE):
     assert list(range(1, 3)) == [e['seq_num'] for e in collector['baseline']]
 
 
+<<<<<<< HEAD
 def test_old_subscribe(fresh_RE):
     # Old usage had reversed argument order. It should warn but still work.
     RE = fresh_RE
@@ -1159,3 +1160,35 @@ def test_waiting_hook(fresh_RE):
     assert len(sts) == 2
     assert none is None
     collector.clear()
+
+
+def test_hints(fresh_RE):
+    RE = fresh_RE
+
+    class Detector:
+        def __init__(self, name):
+            self.name = name
+            self.parent = None
+
+        def read(self):
+            return {}
+
+        def describe(self):
+            return {}
+
+        def read_configuration(self):
+            return {}
+
+        def describe_configuration(self):
+            return {}
+
+        def hints(self):
+            return {'vis': 'placeholder'}
+
+    det = Detector('det')
+
+    collector = []
+
+    RE(bp.count([det]), {'descriptor': lambda name, doc: collector.append(doc)})
+    doc = collector.pop()
+    assert doc['hints']['det'] == {'vis': 'placeholder'}
