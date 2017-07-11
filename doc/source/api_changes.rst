@@ -14,6 +14,20 @@ API Changes
   ``subscribe(func, name='all')``. Because the meaning of the arguments is
   unambigious (they must be a callable and a string, respectively) the old
   order will be supported indefeinitely, with a warning.
+* The 0MQ pubsub integration classes ``Publisher`` and ``RemoteDispatcher``
+  have been overhauled. They have been moved from
+  :mod:`bluesky.callbacks.zmqpub` and :mod:`bluesky.callbacks.zmqsub` to
+  :mod:`bluesky.callbacks.zmq` and their signatures have been changed to match
+  similar utilities in the pydata ecosystem. See the Enhancements section for
+  more information.
+
+Enhancements
+^^^^^^^^^^^^
+
+* The 0MQ pubsub integration classes :class:`bluesky.callbacks.zmq.Publisher``
+  and :class:`bluesky.callbacks.zmq.RemoteDispatcher` have been simplified.
+  A new class :class:`bluesky.callbacks.zmq.Proxy` and command-line utility
+  ``bluesky-0MQ-proxy`` has been added to streamline configuration.
 
 v0.9.0
 ------

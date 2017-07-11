@@ -909,119 +909,64 @@ a separate process.
 
 In the main process, where the RunEngine is executing the plan, a ``Publisher``
 is created. It subscribes to the RunEngine. It serializes the documents it
-receives and it sends them over a socket to a 0MQ "forwarder device," which
-rebroadcasts the documents to any number of other processes or machines on the
-network.
+receives and it sends them over a socket to a 0MQ proxy which rebroadcasts the
+documents to any number of other processes or machines on the network.
 
 These other processes or machines set up a ``RemoteDispatcher`` which connects
-to the "forwarder device," receives the documents, and then runs callbacks just
-as they would be run if they were in the local ``RunEngine`` process.
+to the proxy receives the documents, and then runs callbacks just as they would
+be run if they were in the local ``RunEngine`` process.
 
 Multiple Publishers (each with its own RunEngine) can send documents to the
-same forwarder device. RemoteDispatchers can filter the document stream based
-on host, process ID, and/or ``id(RunEngine)``.
+same proxy. RemoteDispatchers can filter the document stream based on host,
+process ID, and/or ``id(RE)`` with ``RE`` is a particular instance of
+``RunEngine``.
 
 Minimal Example
 +++++++++++++++
 
-Look for a forwarder device configuration file at
-``/etc/zmq_forwarder_device.yml`` or
-``~/.config/zmq_forwarder_device/connection.yml``. If there isn't one, create
-one:
-
-.. code-block:: yaml
-
-    #~/.config/zmq_forwarder_device.yml
-    {'frontend_port': 5577
-    'backend_port': 5578
-    'host': 'localhost'}  # optional
-
-In production (e.g., at NSLS-II beamlines) the forwarder device should be
-running in the background as a service. Here is how to start one just for play:
+Start a 0MQ proxy using the CLI packaged with bluesky. It requires two ports as
+arguments.
 
 .. code-block:: bash
 
-    # uses config in /etc/zmq_forwarder_device.yml
-    #  or ~/.config/zmq_forwarder_device/connection.yml
-    $ python bluesky/examples/forwarder_device.py
+    bluesky-0MQ-proxy 5577 5578
 
-Start a callback that will receive documents from the forwarder and, in this
+Alternatively, you can start the proxy using a Python API:
+
+.. code-block:: python
+
+    from bluesky.callbacks.zmq import Proxy
+    proxy = Proxy(5577, 5578)
+    proxy.start()
+
+Start a callback that will receive documents from the proxy and, in this
 simple example, just print them.
 
 .. code-block:: python
 
-    from bluesky.callbacks.zmqsub import RemoteDispatcher
-    d = RemoteDispatcher('localhost', 5578)
+    from bluesky.callbacks.zmq import RemoteDispatcher
+    d = RemoteDispatcher(('localhost', 5578))
     d.subscribe('all', print)
     d.start()  # runs event loop forever
 
-On the machine/process where you want to actually collect data,
-hook up a subscription to publish documents to the forwarder. Finally,
-generate some documents with a simple plan.
+On the machine/process where you want to collect data, hook up a subscription
+to publish documents to the proxy.
 
 .. code-block:: python
 
-    # Assume you have already create a RunEngine, RE.
+    # Create a RunEngine instance (or, of course, use your existing one).
+    from bluesky import RunEngine, Msg
+    RE = RunEngine({})
 
-    from bluesky.callbacks.zmqpub import Publisher
-    Publisher(RE, 'localhost', 5577)
-    RE([Msg('open_run'), Msg('close_run')])
+    from bluesky.callbacks.zmq import Publisher
+    Publisher(RE, ('localhost', 5577))
 
-As a result, the callback prints:
-
-.. code-block:: python
-
-    start
-    stop
-
-The connection between the publisher and the subscriber is lossless. (Messages
-are cached on the publisher side if the subscriber is slow.)
-
-Example: Plotting in separate process
-+++++++++++++++++++++++++++++++++++++
-
-As in the minimal example above, start a forwarder device. Then:
-
-On the plotting machine:
-
-.. code-block:: python
-
-    import matplotlib
-    matplotlib.use('Qt4Agg')
-
-    import matplotlib.pyplot as plt
-    plt.ion()
-
-    from bluesky.utils import install_qt_kicker
-    from bluesky.callbacks import LivePlot
-    from bluesky.callbacks.zmqsub import RemoteDispatcher
-
-    d = RemoteDispatcher('localhost', 5578)
-    install_qt_kicker(d.loop)
-    d.subscribe('all', LivePlot('det', 'motor'))
-    d.start()
-
-On the data collection machine, if there is not already a ``Publisher``
-running, add one.
-
-.. code-block:: python
-
-    # Assume you have already create a RunEngine, RE.
-
-    from bluesky.callbacks.zmqpub import Publisher
-    p = Publisher(RE, 'localhost', 5577)
-
-And now run a demo scan with a simulated motor and detector.
-
-.. code-block:: python
-
-    from bluesky.plans import scan
-    from bluesky.examples import motor, det
-    motor._fake_sleep = 0.5  # makes motor "move" slowly so we can watch it
-    RE(scan([det], motor, 1, 10, 100))
+Finally, execute a plan with the RunEngine. As a result, the callback in the
+RemoteDispatcher should print the documents generated by this plan.
 
 Publisher / RemoteDispatcher API
 ++++++++++++++++++++++++++++++++
 
-.. autoclass:: bluesky.callbacks.zmqpub.Publisher
-.. autoclass:: bluesky.callbacks.zmqsub.RemoteDispatcher
+.. autoclass:: bluesky.callbacks.zmq.Proxy
+.. autoclass:: bluesky.callbacks.zmq.Publisher
+.. autoclass:: bluesky.callbacks.zmq.RemoteDispatcher
