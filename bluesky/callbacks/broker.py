@@ -32,8 +32,7 @@ class LiveImage(CallbackBase):
         self.fs = fs
 
     def event(self, doc):
-        if 'filled' not in doc.keys() or \
-                        doc['filled'].get(self.field, False) is False:
+        if doc.get('filled', {}).get(self.field):
             uid = doc['data'][self.field]
             data = self.fs.retrieve(uid)
         else:
