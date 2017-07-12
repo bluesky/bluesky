@@ -1991,7 +1991,7 @@ class Dispatcher:
                  "set RunEngine.ignore_callback_exceptions = False "
                  "and run again." % (exc, name.name))
 
-    def subscribe(self, name, func):
+    def subscribe(self, func, name='all'):
         """
         Register a callback function to consume documents.
 
@@ -1999,18 +1999,34 @@ class Dispatcher:
         of a scan, and after the insertion of new Event Descriptors
         and Events.
 
+        .. versionchanged :: 0.10.0
+            The order of the arguments was swapped and the ``name``
+            argument has been given a default value, ``'all'``. Because the
+            meaning of the arguments is unambigious (they must be a callable
+            and a string, respectively) the old order will be supported
+            indefeinitely, with a warning.
+
         Parameters
         ----------
-        name: {'start', 'descriptor', 'event', 'stop', 'all'}
         func: callable
             expecting signature like ``f(name, document)``
             where name is a string and document is a dict
+        name: {'start', 'descriptor', 'event', 'stop', 'all'}, optional
+            Defaults to 'all'
 
         Returns
         -------
         token : int
             an integer token that can be used to unsubscribe
         """
+        if callable(name) and isinstance(func, str):
+            name, func = func, name
+            warn("The order of the arguments has been changed. Because the "
+                 "meaning of the arguments is unambiguous, the old usage will "
+                 "continue to work indefinitely, but the new usage is "
+                 "encouraged: call subscribe(func, name) instead of "
+                 "subscribe(name, func). Additionally, the 'name' argument "
+                 "has become optional. Its default value is 'all'.")
         if name == 'all':
             private_tokens = []
             for key in DocumentNames:
