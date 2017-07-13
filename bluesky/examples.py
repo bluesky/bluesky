@@ -501,7 +501,7 @@ class ReaderWithFileStore(Reader):
     def trigger(self):
         # save file stash file name
         self._result.clear()
-        for idx, (name, reading) in enumerate(super().read().items()):
+        for idx, (name, reading) in enumerate(self.read().items()):
             # Save the actual reading['value'] to disk and create a record
             # in FileStore.
             np.save('{}_{}.npy'.format(self._path_stem, idx), reading['value'])
@@ -525,7 +525,7 @@ class ReaderWithFileStore(Reader):
         return NullStatus()
 
     def read(self):
-        return self._result
+        return super().read()
 
     def describe(self):
         res = super().describe()
