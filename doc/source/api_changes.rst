@@ -1,6 +1,20 @@
 Release Notes
 =============
 
+v0.10.0
+-------
+
+API Changes
+^^^^^^^^^^^
+
+* The method :meth:`bluesky.Dispatcher.subscribe` (which is encapsulated into
+  :class:`bluesky.RunEngine` and inherited by
+  :class:`bluesky.callbacks.zmq.RemoteDispatcher`) has a new signature. The
+  former signature was ``subscribe(name, func)``. The new signature is
+  ``subscribe(func, name='all')``. Because the meaning of the arguments is
+  unambigious (they must be a callable and a string, respectively) the old
+  order will be supported indefeinitely, with a warning.
+
 v0.9.0
 ------
 
