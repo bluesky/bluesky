@@ -6,6 +6,7 @@ from itertools import chain
 from contextlib import contextmanager
 from collections import OrderedDict, Iterable, defaultdict, deque, ChainMap
 import time
+from warnings import warn
 
 import numpy as np
 try:
@@ -279,7 +280,6 @@ def create(name='primary'):
     See Also
     --------
     :func:`bluesky.plans.save`
-    :func:`bluesky.plans.event_context`
     """
     return (yield Msg('create', name=name))
 
@@ -296,7 +296,6 @@ def save():
     See Also
     --------
     :func:`bluesky.plans.create`
-    :func:`bluesky.plans.event_context`
     """
     return (yield Msg('save'))
 
@@ -1077,6 +1076,9 @@ def subs_context(plan_stack, subs):
     """
     Subscribe callbacks to the document stream; then unsubscribe on exit.
 
+    .. deprecated:: 0.10.0
+        Use :func:`subs_wrapper` or :func:`subs_decorator` instead.
+
     Parameters
     ----------
     plan_stack : list-like
@@ -1101,6 +1103,7 @@ def subs_context(plan_stack, subs):
          name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
          doc is a dictionary.
     """
+    warn("subs_context is deprecated. Use subs_wrapper or subs_decorator.")
     subs = normalize_subs_input(subs)
     tokens = set()
 
@@ -1128,6 +1131,9 @@ def subs_context(plan_stack, subs):
 def run_context(plan_stack, *, md=None):
     """Enclose in 'open_run' and 'close_run' messages.
 
+    .. deprecated:: 0.10.0
+        Use :func:`run_wrapper` or :func:`run_decorator` instead.
+
     Parameters
     ----------
     plan_stack : list-like
@@ -1135,6 +1141,7 @@ def run_context(plan_stack, *, md=None):
     md : dict, optional
         metadata to be passed into the 'open_run' message
     """
+    warn("run_context is deprecated. Use run_wrapper or run_decorator.")
     plan_stack.append(single_gen(Msg('open_run', None, **dict(md or {}))))
     yield plan_stack
     plan_stack.append(single_gen(Msg('close_run')))
@@ -1146,6 +1153,11 @@ def event_context(plan_stack, name='primary'):
 
     This encloses the contents in 'create' and 'save' messages.
 
+    .. deprecated:: 0.10.0
+        Use the :func:`create` and :func:`save` plans directly. Also,
+        :func:`trigger_and_read` addresses the common case of reading one or
+        more devices into one Event.
+
     Parameters
     ----------
     plan_stack : list-like
@@ -1153,6 +1165,7 @@ def event_context(plan_stack, name='primary'):
     name : string, optional
         name of event stream; default is 'primary'
     """
+    warn("event_context is deprecated. Use create, save, or trigger_and_read.")
     plan_stack.append(single_gen(Msg('create', None, name=name)))
     yield plan_stack
     plan_stack.append(single_gen(Msg('save')))
@@ -1375,10 +1388,6 @@ def lazily_stage_wrapper(plan):
     msg : Msg
         messages from plan with 'stage' messages inserted and 'unstage'
         messages appended
-
-    See Also
-    --------
-    :func:`bluesky.plans.stage_context`
     """
     COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
     # Cache devices in the order they are staged; then unstage in reverse.
@@ -1416,6 +1425,9 @@ def stage_context(plan_stack, devices):
     """
     Stage devices upon entering context and unstage upon exiting.
 
+    .. deprecated:: 0.10.0
+        Use :func:`stage_wrapper` or :func:`stage_decorator`.
+
     Parameters
     ----------
     plan_stack : list-like
@@ -1427,6 +1439,7 @@ def stage_context(plan_stack, devices):
     --------
     :func:`bluesky.plans.lazily_stage`
     """
+    warn("stage_context is deprecated. Use stage_wrapper or stage_decorator.")
     # Resolve unique devices, avoiding redundant staging.
     devices = separate_devices(root_ancestor(device) for device in devices)
 
@@ -1641,6 +1654,9 @@ def baseline_context(plan_stack, devices, name='baseline'):
     """
     Read every device once upon entering and exiting the context.
 
+    .. deprecated:: 0.10.0
+        Use :func:`baseline_wrapper` or :func:`baseline_decorator`.
+
     The readings are designated for a separate event stream named 'baseline'
     by default.
 
@@ -1653,6 +1669,8 @@ def baseline_context(plan_stack, devices, name='baseline'):
     name : string, optional
         name for event stream; by default, 'baseline'
     """
+    warn("baseline_context is deprecated. Use baseline_wrapper or "
+         "baselin_decorator.")
     plan_stack.append(trigger_and_read(devices, name=name))
     yield
     plan_stack.append(trigger_and_read(devices, name=name))
@@ -1662,6 +1680,9 @@ def baseline_context(plan_stack, devices, name='baseline'):
 def monitor_context(plan_stack, signals):
     """
     Asynchronously monitor signals, generating separate event streams.
+
+    .. deprecated:: 0.10.0
+        Use :func:`monitor_wrapper` or :func:`monitor_decorator`.
 
     Upon exiting the context, stop monitoring.
 
@@ -1689,6 +1710,8 @@ def monitor_context(plan_stack, signals):
     >>> with monitor_context(plan_stack, [sig1, sig2]):
             ...
     """
+    warn("monitor_context is deprecated. Use monitor_wrapper or "
+         "monitor_decorator.")
     if hasattr(signals, 'items'):
         # interpret input as dict of signals mapped to event stream names
         pass
@@ -1722,22 +1745,32 @@ def trigger_and_read(devices, name='primary'):
     """
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
-        return []
+        yield from null()
     devices = separate_devices(devices)  # remove redundant entries
     rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
-    grp = _short_uid('trigger')
-    plan_stack = deque()
 
-    for obj in devices:
-        if hasattr(obj, 'trigger'):
-            plan_stack.append(single_gen(Msg('trigger', obj, group=grp)))
-    if plan_stack:
-        plan_stack.append(single_gen(Msg('wait', None, group=grp)))
-    with event_context(plan_stack, name=name):
+    def inner_trigger_and_read():
+        grp = _short_uid('trigger')
+        no_wait = True
         for obj in devices:
-            plan_stack.append(single_gen(Msg('read', obj)))
+            if hasattr(obj, 'trigger'):
+                no_wait = False
+                yield from trigger(obj, group=grp)
+        # Skip 'wait' if none of the devices implemented a trigger method.
+        if not no_wait:
+            yield from wait(group=grp)
+        yield from create(name)
+        ret = {}  # collect and return readings to give plan access to them
+        for obj in devices:
+            reading = (yield from read(obj))
+            if reading is not None:
+                ret.update(reading)
+        yield from save()
+        return ret
 
-    return (yield from rewindable_wrapper(pchain(*plan_stack), rewindable))
+
+    return (yield from rewindable_wrapper(inner_trigger_and_read(),
+                                          rewindable))
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
@@ -3045,24 +3078,21 @@ class Plan(Struct):
                 current_settings[key] = getattr(self, key)
                 setattr(self, key, val)
             try:
-                plan_stack = deque()
-                with stage_context(plan_stack, flyers):
-                    with subs_context(plan_stack, subs):
-                        plan = self._gen()
-                        plan_stack.append(fly_during_wrapper(plan, flyers))
-
-                for gen in plan_stack:
-                    yield from gen
+                plan = self._gen()
+                plan = subs_wrapper(plan, subs)
+                plan = stage_wrapper(plan, flyers)
+                plan = fly_during_wrapper(plan, flyers)
+                return (yield from plan)
             finally:
                 for key, val in current_settings.items():
                     setattr(self, key, val)
-        cls_plan.__name__ = self.__class__.__name__
 
+        cls_plan.__name__ = self.__class__.__name__
         return cls_plan()
 
     def _gen(self):
         "Subclasses override this to provide the main plan content."
-        yield from []
+        yield from ensure_generator([])
 
 
 PlanBase = Plan  # back-compat
