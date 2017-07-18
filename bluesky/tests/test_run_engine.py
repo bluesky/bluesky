@@ -934,7 +934,7 @@ def test_halt_async(fresh_RE):
     start = ttime.time()
     RE(sleeping_plan())
     stop = ttime.time()
-    assert .09 < stop - start < .2
+    assert .09 < stop - start < 5
     assert not except_hit
     assert [m.command for m in m_coll.msgs] == ['sleep']
 
@@ -963,7 +963,7 @@ def test_prompt_stop(fresh_RE, cancel_func):
     stop = ttime.time()
     if RE.state != 'idle':
         RE.abort()
-    assert 0.09 < stop - start < .2
+    assert 0.09 < stop - start < 5
     assert except_hit
     assert [m.command for m in m_coll.msgs] == ['sleep', 'null']
 
