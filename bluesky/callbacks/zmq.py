@@ -4,8 +4,6 @@ import multiprocessing
 import os
 import socket
 import time
-import zmq
-import zmq.asyncio
 from ..run_engine import Dispatcher, DocumentNames
 from ..utils import expiring_function
 
@@ -21,6 +19,9 @@ class Publisher:
     address : string or tuple
         Address of a running 0MQ proxy, given either as a string like
         ``'127.0.0.1:5567'`` or as a tuple like ``('127.0.0.1', 5567)``
+    zmq : object, optional
+        By default, the 'zmq' module is imported and used. Anything else
+        mocking its interface is accepted.
 
     Example
     -------
@@ -30,7 +31,9 @@ class Publisher:
     >>> RE = RunEngine({})
     >>> publisher = Publisher(RE, ('localhost', 5567))
     """
-    def __init__(self, RE, address):
+    def __init__(self, RE, address, *, zmq=None):
+        if zmq is None:
+            import zmq
         if isinstance(address, str):
             address = address.split(':')
         self.address = (address[0], int(address[1]))
@@ -68,6 +71,9 @@ class Proxy:
     out_port : int, optional
         Port that subscribers should subscribe to. If None, a random port is
         used.
+    zmq : object, optional
+        By default, the 'zmq' module is imported and used. Anything else
+        mocking its interface is accepted.
 
     Attributes
     ----------
@@ -100,7 +106,10 @@ class Proxy:
     56505
     >>> proxy.start()  # runs until interrupted
     """
-    def __init__(self, in_port=None, out_port=None):
+    def __init__(self, in_port=None, out_port=None, *, zmq=None):
+        if zmq is None:
+            import zmq
+        self.zmq = zmq
         self.closed = False
         try:
             context = zmq.Context(1)
@@ -144,7 +153,7 @@ class Proxy:
                                "interrupted. Create a fresh instance with "
                                "{}".format(repr(self)))
         try:
-            zmq.device(zmq.FORWARDER, self._frontend, self._backend)
+            self.zmq.device(self.zmq.FORWARDER, self._frontend, self._backend)
         finally:
             self.closed = True
             self._frontend.close()
@@ -173,6 +182,12 @@ class RemoteDispatcher(Dispatcher):
         A filter: only process documents from a RunEngine with this Python id
         (memory address).
     loop : zmq.asyncio.ZMQEventLoop, optional
+    zmq : object, optional
+        By default, the 'zmq' module is imported and used. Anything else
+        mocking its interface is accepted.
+    zmq_asyncio : object, optional
+        By default, the 'zmq.asyncio' module is imported and used. Anything
+        else mocking its interface is accepted.
 
     Example
     -------
@@ -184,7 +199,11 @@ class RemoteDispatcher(Dispatcher):
     >>> d.start()  # runs until interrupted
     """
     def __init__(self, address, *, hostname=None, pid=None, run_engine_id=None,
-                 loop=None):
+                 loop=None, zmq=None, zmq_asyncio=None):
+        if zmq is None:
+            import zmq
+        if zmq_asyncio is None:
+            import zmq.asyncio as zmq_asyncio
         if isinstance(address, str):
             address = address.split(':')
         self.address = (address[0], int(address[1]))
@@ -193,10 +212,10 @@ class RemoteDispatcher(Dispatcher):
         self.run_engine_id = run_engine_id
 
         if loop is None:
-            loop = zmq.asyncio.ZMQEventLoop()
+            loop = zmq_asyncio.ZMQEventLoop()
         self._loop = loop
         asyncio.set_event_loop(self._loop)
-        self._context = zmq.asyncio.Context()
+        self._context = zmq_asyncio.Context()
         self._socket = self._context.socket(zmq.SUB)
         url = "tcp://%s:%d" % self.address
         self._socket.connect(url)
