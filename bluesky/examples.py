@@ -545,6 +545,8 @@ class ReaderWithFileStore(Reader):
 
 class TrivialFlyer:
     """Trivial flyer that complies to the API but returns empty data."""
+    name = 'trivial_flyer'
+    parent = None
 
     def kickoff(self):
         return NullStatus()
