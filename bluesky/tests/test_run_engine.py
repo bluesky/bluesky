@@ -1192,3 +1192,12 @@ def test_hints(fresh_RE):
     RE(bp.count([det]), {'descriptor': lambda name, doc: collector.append(doc)})
     doc = collector.pop()
     assert doc['hints']['det'] == {'vis': 'placeholder'}
+
+
+def test_flyer_descriptor(fresh_RE):
+    RE = fresh_RE
+    flyers = [TrivialFlyer()]
+    collector = []
+    RE(bp.fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
+    descriptor = collector.pop()
+    assert 'object_keys' in descriptor

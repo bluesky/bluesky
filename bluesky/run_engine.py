@@ -1651,12 +1651,14 @@ class RunEngine:
             if key not in self._descriptors:
                 # We don't not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
+                object_keys = {obj.name: list(data_keys)}
                 hints = {}
                 if hasattr(obj, 'hints'):
                     hints.update({obj.name: obj.hints()})
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid,
-                           name=stream_name, hints=hints)
+                           name=stream_name, hints=hints,
+                           object_keys=object_keys)
                 yield from self.emit(DocumentNames.descriptor, doc)
                 self.log.debug("Emitted Event Descriptor with name %r "
                                "containing data keys %r (uid=%r)", stream_name,
