@@ -734,9 +734,23 @@ name.
 Plan Preprocessors
 ------------------
 
-These "preprocessors" take in a plan and modify its contents on the fly.  For
-example, :func:`relative_set_wrapper` rewrites all positions to be relative to
-the initial position.
+Diagnostic Preprocessor
++++++++++++++++++++++++
+
+Plan preprocessors modify a plans contents on the fly. One common use of a
+preprocessor is to take "baseline" readings of a group of devices at the
+beginning and end of each run. It is convenient to apply this to *all* plans
+executed by a RunEngine using the :class:`DiagnosticPreprocessor`.
+
+.. autoclass:: DiagnosticPreprocessor
+    :members:
+
+Preprocessor Wrappers and Decorators
+++++++++++++++++++++++++++++++++++++
+
+Preprocessors can make arbirary modifcations to a plan, and can get quite
+devious. For example, the :func:`relative_set_wrapper` rewrites all positions
+to be relative to the initial position.
 
 .. code-block:: python
 

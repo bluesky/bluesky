@@ -7,6 +7,7 @@ from .utils import IllegalMessageSequence
 from .utils import FailedStatus
 
 from .run_engine import RunEngine
+from .plans import DiagnosticPreprocessor
 
 # for back-compat
 from .plans import PlanBase

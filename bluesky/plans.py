@@ -3031,6 +3031,123 @@ def ramp_plan(go_plan,
     return (yield from polling_plan())
 
 
+class DiagnosticPreprocessor:
+    """
+    A configurable preprocessor for diagnostic measurements
+
+    This is a plan preprocessor. It inserts messages into plans to:
+
+    * take "baseline" readings at the beginning and end of each run for the
+      devices listed in its ``baseline`` atrribute
+    * kick off "flyable" devices listed in its ``flyers`` attribute at the
+      beginning of each run and collect their data at the end
+    * monitor signals in its ``monitors`` attribute for asynchronous
+      updates during each run.
+
+    Internally, it uses the plan preprocessors:
+
+    * :func:`baseline_wrapper`
+    * :func:`monitor_during_wrapper`
+    * :func:`flyer_during_wrapper`
+
+    Parameters
+    ----------
+    baseline : list
+        Devices to be read at the beginning and end of each run
+    monitors : list
+        Signals (not multi-signal Devices) to be monitored during each run,
+        generating readings asynchronously
+    flyers : list
+        "Flyable" Devices to be kicked off before each run and collected
+        at the end of each run
+
+    Examples
+    --------
+    Create a DiagnosticPreprocessor and apply it to a RunEngine.
+
+    >>> D = DiagnosticPreprocessor(baseline=[some_motor, some_detector]),
+    ...                            monitors=[some_signal],
+    ...                            flyers=[some_flyer])
+    >>> RE = RunEngine({})
+    >>> RE.preprocessors.append(D)
+
+    Now all plans executed by RE will be modified to add baseline readings
+    (before and after each run), monitors (during each run), and flyers
+    (kicked off before each run and collected afterward).
+
+    Inspect or update the lists of devices interactively.
+
+    >>> D.baseline
+    [some_motor, some_detector]
+
+    >>> D.baseline.remove(some_motor)
+
+    >>> D.baseline
+    [some_detector]
+
+    >>> D.baseline.append(another_detector)
+
+    >>> D.baseline
+    [some_detector, another_detector]
+
+    Each attribute (``baseline``, ``monitors``, ``flyers``) is an ordinary
+    Python list, support all the standard list methods, such as:
+
+    >>> D.baseline.clear()
+
+    The arguments to DiagnosticPreprocessor are optional. All the lists
+    will empty by default.  As shown above, they can be populated
+    interactively.
+
+    >>> D = DiagnosticPreprocessor()
+    >>> RE = RunEngine({})
+    >>> RE.preprocessors.append(D)
+    >>> D.baseline.append(some_detector)
+    """
+    def __init__(self, *, baseline=None, monitors=None, flyers=None):
+        if baseline is None:
+            baseline = []
+        if monitors is None:
+            monitors = []
+        if flyers is None:
+            flyers = []
+        self.baseline = list(baseline)
+        self.monitors = list(monitors)
+        self.flyers = list(flyers)
+
+
+    def __repr__(self):
+        return ("{cls}(baseline={baseline}, monitors={monitors}, "
+                "flyers={flyers})"
+                "").format(cls=type(self).__name__, **vars(self))
+
+    # I'm not sure why anyone would want to pickle this but it's good manners
+    # to avoid breaking pickling.
+
+    def __setstate__(self, state):
+        baseline, monitors, flyers = state
+        self.baseline = baseline
+        self.monitors = monitors
+        self.flyers = flyers
+
+    def __getstate__(self):
+        return (self.baseline, self.monitors, self.flyers)
+
+    def __call__(self, plan):
+        """
+        Insert messages into a plan.
+
+        Parameters
+        ----------
+        plan : iterable or iterator
+            a generator, list, or similar containing `Msg` objects
+        """
+        plan = baseline_wrapper(plan, self.baseline)
+        plan = monitor_during_wrapper(plan, self.monitors)
+        plan = fly_during_wrapper(plan, self.flyers)
+        return (yield from plan)
+
+
 # The code below adds no new logic, but it wraps the generators above in
 # classes for an alternative interface that is more stateful.
 
