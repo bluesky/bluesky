@@ -296,8 +296,9 @@ class RunEngine:
         func: callable
             expecting signature like ``f(name, document)``
             where name is a string and document is a dict
-        name: string
-            one of {'start', 'descriptor', 'event', 'stop', 'all'}
+        name : {'all', 'start', 'descriptor', 'event', 'stop'}, optional
+            the type of document this function should receive ('all' by
+            default)
 
         Returns
         -------
@@ -2039,8 +2040,7 @@ class Dispatcher:
 
         Parameters
         ---------
-        name : string
-            one of {'start', 'descriptor', 'event', 'stop', 'all'}
+        name : {'start', 'descriptor', 'event', 'stop'}
         doc : dict
         """
         exceptions = self.cb_registry.process(name, name.name, doc)
@@ -2067,8 +2067,9 @@ class Dispatcher:
         func: callable
             expecting signature like ``f(name, document)``
             where name is a string and document is a dict
-        name: string
-            one of {'start', 'descriptor', 'event', 'stop', 'all'}
+        name : {'all', 'start', 'descriptor', 'event', 'stop'}, optional
+            the type of document this function should receive ('all' by
+            default).
 
         Returns
         -------
