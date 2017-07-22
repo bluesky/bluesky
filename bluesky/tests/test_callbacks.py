@@ -8,10 +8,12 @@ from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
-from bluesky.callbacks.zmqpub import Publisher
-from bluesky.callbacks.zmqsub import RemoteDispatcher
+from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.tests.utils import _print_redirect, MsgCollector
 import multiprocessing
+import os
+import signal
+import threading
 import time
 import pytest
 import numpy as np
@@ -235,48 +237,18 @@ KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 
 def test_zmq(fresh_RE):
     # COMPONENT 1
-    # Run a forwarder device on a separate process.
-    # This is a variant of the code in bluesky/examples/forwarder_device.py,
-    # but with hard-coded config.
-
-    def forwarder():
-        import zmq
-
-        def main(frontend_port, backend_port):
-            print('Starting forwarder device...')
-            try:
-                context = zmq.Context(1)
-                # Socket facing clients
-                frontend = context.socket(zmq.SUB)
-                frontend.bind("tcp://*:%d" % frontend_port)
-
-                frontend.setsockopt_string(zmq.SUBSCRIBE, "")
-
-                # Socket facing services
-                backend = context.socket(zmq.PUB)
-                backend.bind("tcp://*:%d" % backend_port)
-
-                print('Receiving on %d; publishing on %d' % (frontend_port,
-                                                             backend_port))
-                zmq.device(zmq.FORWARDER, frontend, backend)
-            except Exception as exc:
-                print('Exception in forwarder device:', exc)
-            finally:
-                print('Closing forwarder device...')
-                frontend.close()
-                backend.close()
-                context.term()
-
-        main(5567, 5568)
-    forwarder_proc = multiprocessing.Process(target=forwarder, daemon=True)
-    forwarder_proc.start()
+    # Run a 0MQ proxy on a separate process.
+    def start_proxy():
+        Proxy(5567, 5568).start()
+    proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
+    proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
 
     RE = fresh_RE
-    p = Publisher(RE, '127.0.0.1', 5567)  # noqa
+    p = Publisher(RE, '127.0.0.1:5567')  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
@@ -287,7 +259,7 @@ def test_zmq(fresh_RE):
         def put_in_queue(name, doc):
             print('putting ', name, 'in queue')
             queue.put((name, doc))
-        d = RemoteDispatcher('127.0.0.1', 5568)
+        d = RemoteDispatcher('127.0.0.1:5568')
         d.subscribe('all', put_in_queue)
         print("REMOTE IS READY TO START")
         d._loop.call_later(9, d.stop)
@@ -299,8 +271,8 @@ def test_zmq(fresh_RE):
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
-    # Generate two documents. The Publisher will send them to the forwarder
-    # device over 5567, and the forwarder will send them to the
+    # Generate two documents. The Publisher will send them to the proxy 
+    # device over 5567, and the proxy will send them to the
     # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
     # the queue, where we can verify that they round-tripped.
 
@@ -317,12 +289,51 @@ def test_zmq(fresh_RE):
     for i in range(2):
         remote_accumulator.append(queue.get(timeout=2))
     p.close()
-    forwarder_proc.terminate()
+    proxy_proc.terminate()
     dispatcher_proc.terminate()
-    forwarder_proc.join()
+    proxy_proc.join()
     dispatcher_proc.join()
     assert remote_accumulator == local_accumulator
 
+
+def test_zmq_components():
+    # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
+    # process, which coverage misses.
+    pid = os.getpid()
+
+    def delayed_sigint(delay):
+        time.sleep(delay)
+        os.kill(os.getpid(), signal.SIGINT)
+
+    proxy = Proxy(5567, 5568)
+    assert not proxy.closed
+    threading.Thread(target=delayed_sigint, args=(5,)).start()
+    try:
+        proxy.start()
+        # delayed_sigint stops the proxy
+    except KeyboardInterrupt:
+        ...
+    assert proxy.closed
+    with pytest.raises(RuntimeError):
+        proxy.start()
+
+    proxy = Proxy()  # random port
+    threading.Thread(target=delayed_sigint, args=(5,)).start()
+    try:
+        proxy.start()
+        # delayed_sigint stops the proxy
+    except KeyboardInterrupt:
+        ...
+
+    repr(proxy)
+
+    # test that two ways of specifying address are equivalent
+    d = RemoteDispatcher('localhost:5555')
+    assert d.address == ('localhost', 5555)
+    d = RemoteDispatcher(('localhost', 5555))
+    assert d.address == ('localhost', 5555)
+
+    repr(d)
 
 def test_live_fit(fresh_RE, motor_det):
     RE = fresh_RE

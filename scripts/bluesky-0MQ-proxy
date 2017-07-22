@@ -1,0 +1,25 @@
+#!/usr/bin/env python3
+import argparse
+
+
+if __name__ == "__main__":
+    DESC = "Start a 0MQ proxy for publishing bluesky documents over a network."
+    parser = argparse.ArgumentParser(description=DESC)
+    parser.add_argument('in_port', type=int, nargs=1,
+                        help='port that RunEngines should broadcast to')
+    parser.add_argument('out_port', type=int, nargs=1,
+                        help='port that subscribers should subscribe to')
+    args = parser.parse_args()
+    in_port = args.in_port[0]
+    out_port = args.out_port[0]
+
+    print("Loading...")
+    from bluesky.callbacks.zmq import Proxy  # this takes a couple seconds
+    print("Connecting...")
+    proxy = Proxy(in_port, out_port)
+    print("Receiving on port %d; publishing to port %d." % (in_port, out_port))
+    print("Use Ctrl+C to exit.")
+    try:
+        proxy.start()
+    except KeyboardInterrupt:
+        print("Interrupted. Exiting...")

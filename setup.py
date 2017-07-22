@@ -1,4 +1,5 @@
 from __future__ import (absolute_import, division, print_function)
+import glob
 import versioneer
 
 import setuptools
@@ -16,6 +17,7 @@ setuptools.setup(
     url="https://github.com/NSLS-II/bluesky",
     packages=setuptools.find_packages(),
     package_data={'bluesky': ['schema/*.json']},
+    scripts=glob.glob('scripts/*'),
     install_requires=requirements,
     classifiers=[
         "Development Status :: 3 - Alpha",
