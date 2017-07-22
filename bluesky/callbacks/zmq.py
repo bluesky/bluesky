@@ -35,7 +35,7 @@ class Publisher:
         if zmq is None:
             import zmq
         if isinstance(address, str):
-            address = address.split(':')
+            address = address.split(':', maxsplit=1)
         self.address = (address[0], int(address[1]))
         self.RE = RE
         self.hostname = socket.gethostname()
@@ -205,7 +205,7 @@ class RemoteDispatcher(Dispatcher):
         if zmq_asyncio is None:
             import zmq.asyncio as zmq_asyncio
         if isinstance(address, str):
-            address = address.split(':')
+            address = address.split(':', maxsplit=1)
         self.address = (address[0], int(address[1]))
         self.hostname = hostname
         self.pid = pid
