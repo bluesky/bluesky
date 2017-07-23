@@ -46,6 +46,7 @@ Index
    event_descriptors
    async
    debugging
+   run_engine_api
 
 .. toctree::
    :caption: Developer Documentation
