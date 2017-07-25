@@ -47,6 +47,7 @@ Index
    async
    debugging
    run_engine_api
+   comparison-with-spec
 
 .. toctree::
    :caption: Developer Documentation
