@@ -442,8 +442,15 @@ def a2scan(*args, time=None, md=None):
     Parameters
     ----------
     *args
-        patterned like (``motor1, start1, stop1,`` ...,
-                        ``motorN, startN, stopN, intervals``)
+        patterned like:
+
+        .. code-block:: python
+
+            motor1, start1, stop1,
+            ...,
+            motorN, startN, stopN,
+            intervals
+
         where 'intervals' in the number of strides (number of points - 1)
         Motors can be any 'setable' object (motor, temp controller, etc.)
     time : float, optional
@@ -486,8 +493,14 @@ def d2scan(*args, time=None, md=None):
     Parameters
     ----------
     *args
-        patterned like (``motor1, start1, stop1,`` ...,
-                        ``motorN, startN, stopN, intervals``)
+        patterned like :
+
+        .. code-block:: python
+
+            motor1, start1, stop1,
+            ...,
+            motorN, startN, stopN, intervals
+
         where 'intervals' in the number of strides (number of points - 1)
         Motors can be any 'setable' object (motor, temp controller, etc.)
     time : float, optional
@@ -610,9 +623,9 @@ def afermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, factor,
 
     See Also
     --------
-    `bluesky.spec_api.fermat`
-    `bluesky.spec_api.aspiral`
-    `bluesky.spec_api.spiral`
+    :func:`fermat`
+    :func:`aspiral`
+    :func:`spiral`
     '''
     motors = [x_motor, y_motor]
 
@@ -656,9 +669,9 @@ def fermat(x_motor, y_motor, x_range, y_range, dr, factor, time=None, *,
 
     See Also
     --------
-    `bluesky.spec_api.afermat`
-    `bluesky.spec_api.aspiral`
-    `bluesky.spec_api.spiral`
+    :func:`afermat`
+    :func:`aspiral`
+    :func:`spiral`
     '''
     _md = {'plan_name': 'fermat'}
     _md.update(md or {})
@@ -689,7 +702,7 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
     nth : float
         Number of theta steps
     time : float, optional
-        applied to any detectors that have a `count_time` setting
+        applied to any detectors that have a ``count_time`` setting
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
@@ -701,9 +714,9 @@ def aspiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth,
 
     See Also
     --------
-    `bluesky.spec_api.fermat`
-    `bluesky.spec_api.afermat`
-    `bluesky.spec_api.spiral`
+    :func:`fermat`
+    :func:`afermat`
+    :func:`spiral`
     '''
     motors = [x_motor, y_motor]
 
@@ -735,7 +748,7 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
     nth : float
         Number of theta steps
     time : float, optional
-        applied to any detectors that have a `count_time` setting
+        applied to any detectors that have a ``count_time`` setting
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
@@ -747,9 +760,9 @@ def spiral(x_motor, y_motor, x_range, y_range, dr, nth, time=None, *,
 
     See Also
     --------
-    `bluesky.spec_api.fermat`
-    `bluesky.spec_api.afermat`
-    `bluesky.spec_api.aspiral`
+    :func:`fermat`
+    :func:`afermat`
+    :func:`aspiral`
     '''
     _md = {'plan_name': 'spiral'}
     _md.update(md or {})

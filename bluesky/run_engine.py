@@ -550,11 +550,13 @@ class RunEngine:
         subs: callable, list, or dict, optional
             Temporary subscriptions (a.k.a. callbacks) to be used on this run.
             For convenience, any of the following are accepted:
-            - a callable, which will be subscribed to 'all'
-            - a list of callables, which again will be subscribed to 'all'
-            - a dictionary, mapping specific subscriptions to callables or
+
+            * a callable, which will be subscribed to 'all'
+            * a list of callables, which again will be subscribed to 'all'
+            * a dictionary, mapping specific subscriptions to callables or
               lists of callables; valid keys are {'all', 'start', 'stop',
               'event', 'descriptor'}
+
         raise_if_interrupted : bool
             If the RunEngine is called from inside a script or a function, it
             can be useful to make it raise an exception to halt further
@@ -2039,7 +2041,7 @@ class Dispatcher:
         Dispatch document ``doc`` of type ``name`` to the callback registry.
 
         Parameters
-        ---------
+        ----------
         name : {'start', 'descriptor', 'event', 'stop'}
         doc : dict
         """
