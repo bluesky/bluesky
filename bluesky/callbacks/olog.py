@@ -49,39 +49,15 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None,
 
     Parameters
     ----------
-
     logbook_func : callable
-        The required signature is ::
+        The required signature should match the API ``SimpleOlogClient.log``.
+        It is:
 
-            def logbok_func(text=None, logbooks=None, tags=None,
-                            properties=None, attachments=None, verify=True,
-                            ensure=False):
-                '''
+        .. code-block:: python
 
-                Parameters
-                ----------
-                text : string
-                    The body of the log entry.
-                logbooks : string or list of strings
-                    The logbooks which to add the log entry to.
-                tags : string or list of strings
-                    The tags to add to the log entry.
-                properties : dict of property dicts
-                    The properties to add to the log entry
-                attachments : list of file like objects
-                    The attachments to add to the log entry
-                verify : bool
-                    Check that properties, tags and logbooks are in the Olog
-                    instance.
-                ensure : bool
-                    If a property, tag or logbook is not in the Olog then
-                    create the property, tag or logbook before making the log
-                    entry. Seting ensure to True will set verify to False.
-
-                '''
-                pass
-
-        This matches the API on `SimpleOlogClient.log`
+            logbook_func(text=None, logbooks=None, tags=None,
+                         properties=None, attachments=None, verify=True,
+                         ensure=False)
 
     desc_template : str, optional
         A jinja2 template to be used for the description line in olog.  This is
@@ -94,7 +70,6 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None,
     desc_dispatch, long_dispatch : mapping, optional
         Mappings between 'plan_name' to jinja2 templates to use for the
         description and attachments respectively.
-
     """
     import jinja2
     env = jinja2.Environment()

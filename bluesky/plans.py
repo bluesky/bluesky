@@ -1894,8 +1894,8 @@ def count(detectors, num=1, delay=None, *, md=None):
     md : dict, optional
         metadata
 
-    Note
-    ----
+    Notes
+    -----
     If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
     the plan will raise a ``ValueError`` during iteration.
     """

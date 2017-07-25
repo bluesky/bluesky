@@ -442,8 +442,15 @@ def a2scan(*args, time=None, md=None):
     Parameters
     ----------
     *args
-        patterned like (``motor1, start1, stop1,`` ...,
-                        ``motorN, startN, stopN, intervals``)
+        patterned like:
+
+        .. code-block:: python
+
+            motor1, start1, stop1,
+            ...,
+            motorN, startN, stopN,
+            intervals
+
         where 'intervals' in the number of strides (number of points - 1)
         Motors can be any 'setable' object (motor, temp controller, etc.)
     time : float, optional
@@ -486,8 +493,14 @@ def d2scan(*args, time=None, md=None):
     Parameters
     ----------
     *args
-        patterned like (``motor1, start1, stop1,`` ...,
-                        ``motorN, startN, stopN, intervals``)
+        patterned like :
+
+        .. code-block:: python
+
+            motor1, start1, stop1,
+            ...,
+            motorN, startN, stopN, intervals
+
         where 'intervals' in the number of strides (number of points - 1)
         Motors can be any 'setable' object (motor, temp controller, etc.)
     time : float, optional
