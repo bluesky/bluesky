@@ -62,12 +62,13 @@ def plan_mutator(plan, msg_proc):
     msg_proc : callable
         Functions that takes in a message and returns replacement messages.
         Signatures:
-        msg -> None, None (no op)
-        msg -> gen, None (mutate and/or insert before current message;
-                          last message in gen must invoke a response compatible
-                          with original msg)
-        msg -> gen, tail (same as above, but insert some messages *after*)
-        msg -> None, tail (illegal -- raises RuntimeError)
+
+        * msg -> None, None (no op)
+        * msg -> gen, None (mutate and/or insert before current message;
+          last message in gen must invoke a response compatible
+          with original msg)
+        * msg -> gen, tail (same as above, but insert some messages *after*)
+        * msg -> None, tail (illegal -- raises RuntimeError)
 
     Yields
     ------
