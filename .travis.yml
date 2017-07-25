@@ -84,13 +84,13 @@ script:
       pip install -r docs-requirements.txt
       pushd doc
       make html
+      popd
       # Install doctr from a custom branch until
       # https://github.com/drdoctr/doctr/pull/190 is merged.
       pip uninstall -y doctr
       pip install git+https://github.com/danielballan/doctr@other-master
       # Publish docs.
       doctr deploy --deploy-repo NSLS-II/NSLS-II.github.io --deploy-branch-name master bluesky
-      popd
     fi
 
 after_success:
