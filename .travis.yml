@@ -2,12 +2,7 @@ language: python
 sudo: false
 env:
   global:
-    BUILD_DOCS_BRANCH: master
-    DOCS_SUBDIR: doc/
-    TARGET_DEV_SUBDIR: bluesky/
-    HTML_SUBDIR: build/html
-    DOCS_CONDA_DEPS: "bluesky"
-    DOCS_PIP_DEPS: "tqdm"
+    - secure: "UC5rEkKAKQHvpCojJAedrx1aVsplZ0xOq5xdFME3UxrKDOsihRIDBYV6YOnpDcWVxzI3iZAJOJG1rNqMZ/4pOnI/DQ5n2nCIbqZlhPh6xPbr//g88Y3dlQifPWbC6pqmh+WJCfde99lYNDI2XauD4AvRARI9MnRP9vGF0gyTbUMeA0ybLdXScawnhL48Gh7nj64R7e0F1SgF1iEXaU0LvWUW2UK9yIg/kqWfL0XKpgpvxcy0n+VGe9gbwiA70F3nd7iZ/aM7K1MRiLeppCbj3xlLwGE4mw6svF5uim6oYZoDp0si70Ux2yw7TNOYpn82dTBIq1KU59jGUyP/rH/nx0erPzCUJFak8YQTSrbhO08u/baRt5Qb0KWfqGJZcHzPknRC66PzI47zO5ol9qvnIo68xfuIrlJZRhTF7ewNWzmJP5MeJ85mgoQSTmZYyCgFTYDcPdoePerhjBepYngvT1EzS9BPTuUXhStH7lRgbriGVreOQ9bDvW5hTb/n9CKmI/XhQBOGy7T1HYAaIP1N+rlQw0lmp2uYIvZ53wGjqoKB+yLBpAAzXPBbK3sjDtuquou/jEqvyJnL9/VEbohPfIK3AlTTC0zIDi5QZq/h4zqMIKOybd3jmvT4P+Pvy8YGolXtlV6P/erA05GAOXijs/pki/BVcGsHNNjr1xRE0qU="
 
 cache:
   directories:
@@ -26,16 +21,14 @@ addons:
 matrix:
   include:
     - python: 3.6
-      env: BUILD_DOCS=false
     - python: 3.5
-      env: BUILD_DOCS=false CONDA_ENV=1
+      env: CONDA_ENV=1
     - python: 3.5
-      env: BUILD_DOCS=false CONDA_ENV=1 EXTRA_C_CHAN='-c lightsource2-dev'
+      env: CONDA_ENV=1 EXTRA_C_CHAN='-c lightsource2-dev'
     - python: 3.6
-      env: BUILD_DOCS=True CONDA_ENV=1
+      env: BUILD_DOCS=1 CONDA_ENV=1
 
 before_install:
-  - git clone https://github.com/NSLS-II/nsls2-ci --branch master --single-branch ~/ci_scripts
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16"
   - "export DISPLAY=:99.0"
   - |
@@ -84,20 +77,21 @@ install:
 script:
   - coverage run run_tests.py
   - coverage report -m
+  - set -e
+  # Build docs.
   - |
-    if [ $BUILD_DOCS == true ]; then
-      conda install --no-deps -c conda-forge/label/rc matplotlib  # mpl 2.x
-      source ~/ci_scripts/make-docs.sh
+    if [ $BUILD_DOCS ]; then
+      pip install -r docs-requirements.txt
+      pushd doc
+      make html
+      # Install doctr from a custom branch until
+      # https://github.com/drdoctr/doctr/pull/190 is merged.
+      pip uninstall -y doctr
+      pip install git+https://github.com/danielballan/doctr@other-master
+      # Publish docs.
+      doctr deploy --deploy-repo NSLS-II/NSLS-II.github.io --deploy-branch-name master bluesky
+      popd
     fi
 
 after_success:
   - codecov
-  - |
-    if [[ $TRAVIS_PULL_REQUEST == false && $TRAVIS_REPO_SLUG == 'NSLS-II/bluesky' && $BUILD_DOCS == true && $TRAVIS_BRANCH == 'master' ]]; then
-      echo "Adding encrypted deployment key for uploading docs"
-      openssl aes-256-cbc -K $encrypted_5e70d93e51c3_key -iv $encrypted_5e70d93e51c3_iv -in bluesky-docs-deploy.enc -out bluesky-docs-deploy -d
-      eval `ssh-agent -s`
-      chmod 600 bluesky-docs-deploy
-      ssh-add bluesky-docs-deploy
-      source ~/ci_scripts/push-docs.sh
-    fi

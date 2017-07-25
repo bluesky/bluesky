@@ -1,0 +1,7 @@
+doctr
+ipython
+ipywidgets
+matplotlib
+numpydoc
+sphinx
+sphinx_rtd_theme
