@@ -36,10 +36,10 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.viewcode',
-    'sphinxcontrib.napoleon',
     'IPython.sphinxext.ipython_directive',
     'IPython.sphinxext.ipython_console_highlighting',
     'matplotlib.sphinxext.plot_directive',
+    'numpydoc',
 ]
 
 # Configuration options for plot_directive. See:
