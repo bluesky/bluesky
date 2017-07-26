@@ -15,6 +15,18 @@ class LiveImage(CallbackBase):
     ----------
     field : string
         name of data field in an Event
+    fs: FileStore instance
+        The FileStore instance to pull the data from
+    cmap : str,  colormap, or None
+        color map to use.  Defaults to gray
+    norm : Normalize or None
+       Normalization function to use
+    limit_func : callable, optional
+        function that takes in the image and returns clim values
+    auto_redraw : bool, optional
+    interpolation : str, optional
+        Interpolation method to use. List of valid options can be found in
+        CrossSection2DView.interpolation
     """
 
     def __init__(self, field, *, fs=None, cmap=None, norm=None,
