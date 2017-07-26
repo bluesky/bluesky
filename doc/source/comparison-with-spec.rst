@@ -15,7 +15,7 @@ bluesky, including:
 * Easy hardware configuration
 * Interruption handling (Ctrl+C)
 * Integration with EPICS (and potentially other instrument control systems)
-* Integration with reciprocal space transformation code
+* "Pseudomotors" and integration with reciprocal space transformation code
 
 Bluesky has also addressed certain limitations of SPEC. In fairness to SPEC, we
 have the benefit of learning from its decades of use, and we are standing on
@@ -47,15 +47,17 @@ Bluesky tries to go further than SPEC in some regards:
   of scans---such as fly scans or asynchronous monitoring---can be
   done, but they are *ad hoc*. Bluesky supports several modalities of data
   acquisition with equal ease.
+* Bluesky can acquire multiple asynchronous, uncoordinated streams of data and
+  represt them in a simple :doc:`event-based data model <documents>`.
 * It is easy to build tools that inspect a procedure before it is run to check
   for safety, estimate time to completion, or visualize its behavior.
 * Bluesky is a library that works well interactively but can also be used
   programmatically in scripts or other libraries.
 * Users can add arbitrary metadata with rich semantics, including large arrays
   (such as masks) or nested mappings.
-* Bluesky is an end-to-end solution. Users can push live streaming data
-  directly into data processing and analysis pipelines and/or export it
-  into a file.
+* Bluesky is a holistic solution for data acquisition and management. Users can
+  push live streaming data directly into their data processing and analysis
+  pipelines and/or export it into a file.
 
 On the other hand, one major advantage of SPEC over bluesky is its maturity.
 SPEC is battle-hardened from decades of use at many facilities, and it has a
