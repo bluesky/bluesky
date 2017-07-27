@@ -30,7 +30,9 @@ the shoulders of the modern open-source community.
   higher-dimensional inputs are integrated naturally.
 * SPEC writes to a custom text-based format (a "SPEC file"). Bluesky can
   write---in real time or *post facto*---to any format.
-* SPEC has a simulation mode; bluesky builds on this.
+* SPEC has a simulation mode. Bluesky allows users to incorporate much richer
+  simulation capabilities (about which more below) but, as of version 0.9.0,
+  provides less than SPEC out of the box.
 
 Using Python, a general-purpose programming language, gives several immediate
 advantages:
@@ -43,14 +45,17 @@ advantages:
 
 Bluesky tries to go further than SPEC in some regards:
 
+* Complex custom procedures are easier to express.
+* Automated "suspension" (pausing and resuming) is consistent and easier to
+  manage.
 * The prevailing model in SPEC is to collect data as a step scan. Other types
   of scans---such as fly scans or asynchronous monitoring---can be
   done, but they are *ad hoc*. Bluesky supports several modalities of data
   acquisition with equal ease.
 * Bluesky can acquire multiple asynchronous, uncoordinated streams of data and
-  represt them in a simple :doc:`event-based data model <documents>`.
-* It is easy to build tools that inspect a procedure before it is run to check
-  for safety, estimate time to completion, or visualize its behavior.
+  represent them in a simple :doc:`event-based data model <documents>`.
+* It is easy to build tools that inspect/simulate a procedure before it is run
+  to check for safety, estimate time to completion, or visualize its behavior.
 * Bluesky is a library that works well interactively but can also be used
   programmatically in scripts or other libraries.
 * Users can add arbitrary metadata with rich semantics, including large arrays
