@@ -4,6 +4,7 @@ from .core import CallbackBase
 from ..utils import ensure_uid
 import numpy as np
 import doct
+import matplotlib.pyplot as plt
 
 
 class LiveImage(CallbackBase):
@@ -14,22 +15,40 @@ class LiveImage(CallbackBase):
     ----------
     field : string
         name of data field in an Event
+    fs: FileStore instance
+        The FileStore instance to pull the data from
+    cmap : str,  colormap, or None
+        color map to use.  Defaults to gray
+    norm : Normalize or None
+       Normalization function to use
+    limit_func : callable, optional
+        function that takes in the image and returns clim values
+    auto_redraw : bool, optional
+    interpolation : str, optional
+        Interpolation method to use. List of valid options can be found in
+        CrossSection2DView.interpolation
     """
-    def __init__(self, field, *, fs=None):
+
+    def __init__(self, field, *, fs=None, cmap=None, norm=None,
+                 limit_func=None, auto_redraw=True, interpolation=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
         super().__init__()
         self.field = field
         fig = plt.figure()
-        self.cs = CrossSection(fig)
+        self.cs = CrossSection(fig, cmap, norm,
+                 limit_func, auto_redraw, interpolation)
         self.cs._fig.show()
         if fs is None:
             import filestore.api as fs
         self.fs = fs
 
     def event(self, doc):
-        uid = doc['data'][self.field]
-        data = self.fs.retrieve(uid)
+        if doc.get('filled', {}).get(self.field) and self.fs is not None:
+            uid = doc['data'][self.field]
+            data = self.fs.retrieve(uid)
+        else:
+            data = doc['data'][self.field]
         self.update(data)
         super().event(doc)
 
@@ -100,6 +119,7 @@ def post_run(callback, db=None, fill=False):
         # not yet have the 'stop' document that we currently have, so we'll
         # use our copy instead of expecting the header to include one.
         callback('stop', doc)
+
     return f
 
 
@@ -137,6 +157,7 @@ def make_restreamer(callback, db=None):
 
     def cb(value, **kwargs):
         return process(db[value], callback)
+
     return cb
 
 
@@ -192,6 +213,7 @@ class LiveTiffExporter(CallbackBase):
     ----------
     filenames : list of filenames written in ongoing or most recent run
     """
+
     def __init__(self, field, template, dryrun=False, overwrite=False,
                  db=None):
         try:
