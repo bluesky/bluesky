@@ -47,6 +47,7 @@ Index
    async
    debugging
    run_engine_api
+   magics
    comparison-with-spec
 
 .. toctree::
