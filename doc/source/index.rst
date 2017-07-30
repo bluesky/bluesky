@@ -47,6 +47,7 @@ Index
    async
    debugging
    run_engine_api
+   magics
 
 .. toctree::
    :caption: Developer Documentation
