@@ -15,7 +15,8 @@ bluesky, including:
 * Easy hardware configuration
 * Interruption handling (Ctrl+C)
 * Integration with EPICS (and potentially other instrument control systems)
-* "Pseudomotors" and integration with reciprocal space transformation code
+* "Pseudomotors" presenting virtual axes
+* Integration with reciprocal space transformation code
 
 Bluesky has also addressed certain limitations of SPEC. In fairness to SPEC, we
 have the benefit of learning from its decades of use, and we are standing on
