@@ -44,11 +44,11 @@ class LiveImage(CallbackBase):
         self.fs = fs
 
     def event(self, doc):
-        if doc.get('filled', {}).get(self.field) and self.fs is not None:
+        if doc.get('filled', {}).get(self.field):
+            data = doc['data'][self.field]
+        else:
             uid = doc['data'][self.field]
             data = self.fs.retrieve(uid)
-        else:
-            data = doc['data'][self.field]
         self.update(data)
         super().event(doc)
 
