@@ -734,6 +734,8 @@ name.
 Plan Preprocessors
 ------------------
 
+.. _diagnostic_preprocessor:
+
 Diagnostic Preprocessor
 +++++++++++++++++++++++
 

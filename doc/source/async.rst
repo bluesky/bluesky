@@ -75,15 +75,16 @@ and as a decorator, :func:`fly_during_decorator`.
 
     RE(fly_and_count([det]))
 
-Alternatively, if you are using the `SPEC-like Plan API <spec_api>`, simply add
-flyers to the global state:
+Alternatively, if you are using the :ref:`diagnostic_preprocessor`, simply
+append to or extend its list of flyers to kick off during every run:
 
 .. code-block:: python
 
-    from bluesky.global_state import gs
     from bluesky.examples import flyer1, flyer2
 
-    gs.FLYERS = [flyer1, flyer2]
+    # Assume D is an instance of the DiagnosticPreprocessor set up as
+    # descripted in the documentation linked above.
+    D.flyers.extend([flyer1, flyer2])
 
 They will be included with all plans until removed.
 
@@ -114,14 +115,15 @@ and as a decorator, :func:`monitor_during_decorator`.
 
     RE(monitor_and_count([det]))
 
-Alternatively, if you are using the `SPEC-like Plan API <spec_api>`, simply add
-devices to be monitored to the global state:
+Alternatively, if you are using the :ref:`diagnostic_preprocessor`, simply
+append to or extend its list of signals to monitor:
 
 .. code-block:: python
 
-    from bluesky.global_state import gs
     from bluesky.examples import det1
 
-    gs.MONITORS = [det1]
+    # Assume D is an instance of the DiagnosticPreprocessor set up as
+    # descripted in the documentation linked above.
+    D.monitors.append(det1)
 
 They will be included with all plans until removed.
