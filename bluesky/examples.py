@@ -350,7 +350,7 @@ class Mover(Reader):
         return ret
 
     def hints(self):
-        return {'axes': [list(self._fields)[0]]}
+        return {'fields': [list(self._fields)[0]]}
 
     @property
     def position(self):

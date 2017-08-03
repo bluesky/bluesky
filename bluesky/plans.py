@@ -1908,14 +1908,8 @@ def count(detectors, num=1, delay=None, *, md=None):
            'num_intervals': num_intervals,
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
            'plan_name': 'count',
-           'hints': {}}
-    if (num is not None) and (num > 1):
-        # Only provide a vis hint if there will be more than one point.
-        _md['hints'].update({'vis': [{'version': 0,
-                                      'data': 'primary',
-                                      'mark': 'point',
-                                      'x': 'time',
-                                      'y': [d.name for d in detectors]}]})
+           'hints': {'dimensions': [('primary', 'time')]}
+          }
     _md.update(md or {})
 
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
@@ -2098,23 +2092,19 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     :func:`bluesky.plans.relative_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
-          'motors': [motor.name],
-          'num_points': num,
-          'num_intervals': num - 1,
-          'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
-                        'motor': repr(motor),
-                        'start': start, 'stop': stop,
-                        'per_step': repr(per_step)},
-          'plan_name': 'scan',
-          'plan_pattern': 'linspace',
-          'plan_pattern_module': 'numpy',
-          'plan_pattern_args': dict(start=start, stop=stop, num=num),
-          'hints': {'vis': [{'version': 0,
-                             'data': 'primary',
-                             'mark': 'point',
-                             'x': motor.name,
-                             'y': [d.name for d in detectors]}]},
-         }
+           'motors': [motor.name],
+           'num_points': num,
+           'num_intervals': num - 1,
+           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
+                         'motor': repr(motor),
+                         'start': start, 'stop': stop,
+                         'per_step': repr(per_step)},
+           'plan_name': 'scan',
+           'plan_pattern': 'linspace',
+           'plan_pattern_module': 'numpy',
+           'plan_pattern_args': dict(start=start, stop=stop, num=num),
+           'hints': {'dimensions': [('primary', motor.hints()['fields'])]},
+          }
     _md.update(md or {})
 
     if per_step is None:
