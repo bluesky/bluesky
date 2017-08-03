@@ -1,13 +1,15 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4, det5,
-                              jittery_motor1, jittery_motor2)
+                              jittery_motor1, jittery_motor2,
+                              ReaderWithFileStore, ReaderWithFSHandler)
 from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
                            outer_product_scan, run_wrapper, pause,
-                           subs_wrapper)
+                           subs_wrapper, count)
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
+from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.tests.utils import _print_redirect, MsgCollector
 import multiprocessing
@@ -44,6 +46,7 @@ def test_raising_ignored_or_not(fresh_RE):
 
     def cb(name, doc):
         raise Exception
+
     # by default (with ignore... = True) it warns
     with pytest.warns(UserWarning):
         RE(stepscan(det, motor), subs=cb)
@@ -66,11 +69,13 @@ def test_subs_input():
     def cb_fact4(scan):
         def cb4(name, doc):
             pass
+
         return cb4
 
     def cb_fact5(scan):
         def cb5(name, doc):
             pass
+
         return cb5
 
     # Test input normalization on OO plans
@@ -108,6 +113,7 @@ def test_unknown_cb_raises(fresh_RE):
 
     def f(name, doc):
         pass
+
     with pytest.raises(KeyError):
         RE.subscribe(f, 'not a thing')
     # back-compat alias for subscribe
@@ -240,6 +246,7 @@ def test_zmq(fresh_RE):
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
         Proxy(5567, 5568).start()
+
     proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
     proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
@@ -377,7 +384,7 @@ def test_zmq_no_RE(fresh_RE):
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
-    # Generate two documents. The Publisher will send them to the proxy 
+    # Generate two documents. The Publisher will send them to the proxy
     # device over 5567, and the proxy will send them to the
     # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
     # the queue, where we can verify that they round-tripped.
@@ -533,7 +540,7 @@ def test_live_scatter(fresh_RE):
                           jittery_motor1, -3, 3, 6,
                           jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
-                xlim=(-3, 3), ylim=(-5, 5)))
+                   xlim=(-3, 3), ylim=(-5, 5)))
 
     # Test the deprecated name.
     with pytest.warns(UserWarning):
@@ -542,3 +549,23 @@ def test_live_scatter(fresh_RE):
                             jittery_motor2, -5, 5, 10, False),
         LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
                     xlim=(-3, 3), ylim=(-5, 5)))
+
+
+def test_broker_base(fresh_RE, db):
+    class BrokerChecker(BrokerCallbackBase):
+        def __init__(self, field, *, fs=None):
+            super().__init__(field, fs=fs)
+
+        def event(self, doc):
+            data = super().event(doc)
+            assert isinstance(data, np.ndarray)
+
+    RE = fresh_RE
+    RE.subscribe(db.insert)
+    bc = BrokerChecker('img', fs=db.fs)
+    db.fs.register_handler('RWFS_NPY', ReaderWithFSHandler)
+    det = ReaderWithFileStore('det',
+                              {'img': lambda: np.array(np.ones((10, 10)))},
+                              fs=db.fs)
+    RE.subscribe(bc)
+    RE(count([det]))
