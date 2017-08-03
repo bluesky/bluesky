@@ -7,7 +7,7 @@ import doct
 import matplotlib.pyplot as plt
 
 
-class BrokerCallbackBase(CallbackBase):
+class BrokerCallbackBase:
     """
     Base class for callbacks which need filled documents
 
@@ -18,19 +18,20 @@ class BrokerCallbackBase(CallbackBase):
     fs: FileStore instance
         The FileStore instance to pull the data from
     """
-    def __init__(self, field, *, fs=None):
+    def __init__(self, fields, *, fs=None):
+        if not isinstance(fields, (tuple, list)):
+            fields = (fields, )
         if fs is None:
             import filestore.api as fs
         self.fs = fs
-        self.field = field
+        self.fields = fields
 
     def event(self, doc):
-        if doc.get('filled', {}).get(self.field):
-            data = doc['data'][self.field]
-        else:
-            uid = doc['data'][self.field]
-            data = self.fs.retrieve(uid)
-        return data
+        for field in self.fields:
+            if doc.get('filled', {}).get(field):
+                pass
+            else:
+                doc['data'].update(self.fs.retrieve(doc['data'][field]))
 
 
 class LiveImage(BrokerCallbackBase):
