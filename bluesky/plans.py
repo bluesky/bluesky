@@ -1907,7 +1907,15 @@ def count(detectors, num=1, delay=None, *, md=None):
            'num_points': num,
            'num_intervals': num_intervals,
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
-           'plan_name': 'count'}
+           'plan_name': 'count',
+           'hints': {}}
+    if (num is not None) and (num > 1):
+        # Only provide a vis hint if there will be more than one point.
+        _md['hints'].update({'vis': [{'version': 0,
+                                      'data': 'primary',
+                                      'mark': 'point',
+                                      'x': 'time',
+                                      'y': [d.name for d in detectors]}]})
     _md.update(md or {})
 
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
@@ -2101,6 +2109,11 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
           'plan_pattern': 'linspace',
           'plan_pattern_module': 'numpy',
           'plan_pattern_args': dict(start=start, stop=stop, num=num),
+          'hints': {'vis': [{'version': 0,
+                             'data': 'primary',
+                             'mark': 'point',
+                             'x': motor.name,
+                             'y': [d.name for d in detectors]}]},
          }
     _md.update(md or {})
 
