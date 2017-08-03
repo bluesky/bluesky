@@ -7,7 +7,33 @@ import doct
 import matplotlib.pyplot as plt
 
 
-class LiveImage(CallbackBase):
+class BrokerCallbackBase(CallbackBase):
+    """
+    Base class for callbacks which need filled documents
+
+    Parameters
+    ----------
+    field: str
+        name of data field in an Event
+    fs: FileStore instance
+        The FileStore instance to pull the data from
+    """
+    def __init__(self, field, *, fs=None):
+        if fs is None:
+            import filestore.api as fs
+        self.fs = fs
+        self.field = field
+
+    def event(self, doc):
+        if doc.get('filled', {}).get(self.field):
+            data = doc['data'][self.field]
+        else:
+            uid = doc['data'][self.field]
+            data = self.fs.retrieve(uid)
+        return data
+
+
+class LiveImage(BrokerCallbackBase):
     """
     Stream 2D images in a cross-section viewer.
 
@@ -33,24 +59,15 @@ class LiveImage(CallbackBase):
                  limit_func=None, auto_redraw=True, interpolation=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
-        super().__init__()
-        self.field = field
+        super().__init__(field, fs=fs)
         fig = plt.figure()
         self.cs = CrossSection(fig, cmap, norm,
                  limit_func, auto_redraw, interpolation)
         self.cs._fig.show()
-        if fs is None:
-            import filestore.api as fs
-        self.fs = fs
 
     def event(self, doc):
-        if doc.get('filled', {}).get(self.field) and self.fs is not None:
-            uid = doc['data'][self.field]
-            data = self.fs.retrieve(uid)
-        else:
-            data = doc['data'][self.field]
+        data = super().event(doc)
         self.update(data)
-        super().event(doc)
 
     def update(self, data):
         self.cs.update_image(data)
@@ -186,7 +203,7 @@ def verify_files_saved(name, doc, db=None):
         print('\x1b[1A\u2713')  # print a checkmark on the previous line
 
 
-class LiveTiffExporter(CallbackBase):
+class LiveTiffExporter(BrokerCallbackBase):
     """
     Save TIFF files.
 
@@ -214,8 +231,7 @@ class LiveTiffExporter(CallbackBase):
     filenames : list of filenames written in ongoing or most recent run
     """
 
-    def __init__(self, field, template, dryrun=False, overwrite=False,
-                 db=None):
+    def __init__(self, field, template, dryrun=False, overwrite=False,):
         try:
             import tifffile
         except ImportError:
@@ -227,11 +243,6 @@ class LiveTiffExporter(CallbackBase):
         else:
             # stash a reference so the module is accessible in self._save_image
             self._tifffile = tifffile
-
-        if db is None:
-            from databroker import DataBroker as db
-
-        self.db = db
 
         self.field = field
         self.template = template
@@ -259,8 +270,8 @@ class LiveTiffExporter(CallbackBase):
     def event(self, doc):
         if self.field not in doc['data']:
             return
-        self.db.fill_event(doc)  # modifies in place
-        image = np.asarray(doc['data'][self.field])
+        data = super().event(doc)
+        image = np.asarray(data)
         if image.ndim == 2:
             filename = self.template.format(start=self._start, event=doc)
             self._save_image(image, filename)
