@@ -349,6 +349,9 @@ class Mover(Reader):
                       'precision': 2}
         return ret
 
+    def hints(self):
+        return {'axes': [list(self._fields)[0]]}
+
     @property
     def position(self):
         "A heuristic that picks a single scalar out of the `read` dict."
