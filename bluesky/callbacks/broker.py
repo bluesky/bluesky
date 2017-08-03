@@ -67,7 +67,7 @@ class LiveImage(BrokerCallbackBase):
         self.cs._fig.show()
 
     def event(self, doc):
-        data = super().event(doc)
+        super().event(doc)
         self.update(data)
 
     def update(self, data):
@@ -254,8 +254,8 @@ class LiveTiffExporter(BrokerCallbackBase):
     def event(self, doc):
         if self.field not in doc['data']:
             return
-        data = super().event(doc)
-        image = np.asarray(data)
+        super().event(doc)
+        image = np.asarray(doc['data'][self.field])
         if image.ndim == 2:
             filename = self.template.format(start=self._start, event=doc)
             self._save_image(image, filename)
