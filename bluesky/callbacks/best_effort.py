@@ -4,6 +4,7 @@ from bluesky.callbacks import CallbackBase, LiveTable, LivePlot
 from bluesky.callbacks.scientific import PeakStats
 import matplotlib.pyplot as plt
 from warnings import warn
+import weakref
 
 
 class BestEffortCallback(CallbackBase):
@@ -104,6 +105,7 @@ class BestEffortCallback(CallbackBase):
             return
         fig_name = ' '.join(sorted(columns))
         fig = plt.figure(fig_name)
+        # fig.suptitle(fig_name)  # wait for matplotlib to fix spacing
         if not fig.axes:
             # This is apparently a fresh figure. Make axes.
             # The complexity here is due to making a shared x axis. This can be
@@ -141,6 +143,11 @@ class BestEffortCallback(CallbackBase):
             # Stash them in state.
             self.live_plots[doc['uid']][y_key] = live_plot
             self.peak_stats[doc['uid']][y_key] = peak_stats
+
+        for ax in axes[:-1]:
+            ax.set_xlabel('')
+
+        fig.tight_layout()
 
     def event(self, doc):
         if self.descriptors[doc['descriptor']].get('name') == 'primary':
@@ -217,7 +224,11 @@ class PeakResults:
         return '\n'.join(lines)
 
 
+
+
 class LivePlotPlusPeaks(LivePlot):
+    axes_labeled = weakref.WeakKeyDictionary()
+
     def __init__(self, *args, peak_results, **kwargs):
         super().__init__(*args, **kwargs)
         self.peak_results = peak_results
@@ -234,25 +245,27 @@ class LivePlotPlusPeaks(LivePlot):
         if self.__visible:
             if self.__arts is None:
                 self.plot_annotations()
-                self.ax.figure.canvas.draw_idle()
             else:
                 for artist in self.__arts:
                     artist.set_visible(True)
-                self.ax.figure.canvas.draw_idle()
         else:
             for artist in self.__arts:
                 artist.set_visible(False)
-            self.ax.figure.canvas.draw_idle()
+        self.ax.legend(loc='best')
+        self.ax.figure.canvas.draw_idle()
 
     def plot_annotations(self):
         styles = iter(cycler('color', 'kr'))
         vlines = []
         for style, attr in zip(styles, ['cen', 'com']):
             val = self.peak_results[attr][self.y]
-            vlines.append(self.ax.axvline(val, label=attr, **style))
-
-        self.ax.legend(loc='best')  # re-render legend to include new labels
-
+            # Only put labels in this legend once per axis.
+            if self.ax in self.axes_labeled:
+                label = '_no_legend_'
+            else:
+                label = attr
+            vlines.append(self.ax.axvline(val, label=label, **style))
+        self.axes_labeled[self.ax] = None
         self.__arts = vlines
 
 
