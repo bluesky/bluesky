@@ -152,9 +152,11 @@ class LivePlot(CallbackBase):
         self.lines = []
         self.legend = None
         self.legend_title = " :: ".join([name for name in self.legend_keys])
+        self._epoch_offset = None  # used if x == 'time'
 
     def start(self, doc):
         # The doc is not used; we just use the singal that a new run began.
+        self._epoch_offset = doc['time']  # used if self.x == 'time'
         self.x_data, self.y_data = [], []
         label = " :: ".join(
             [str(doc.get(name, name)) for name in self.legend_keys])
@@ -185,6 +187,12 @@ class LivePlot(CallbackBase):
         except KeyError:
             # wrong event stream, skip it
             return
+
+        # Special-case 'time' to plot against against experiment epoch, not
+        # UNIX epoch.
+        if self.x == 'time':
+            new_x -= self._epoch_offset
+
         self.update_caches(new_x, new_y)
         self.update_plot()
         super().event(doc)
