@@ -1,4 +1,7 @@
+from cycler import cycler
+from pprint import pformat
 from bluesky.callbacks import CallbackBase, LiveTable, LivePlot
+from bluesky.callbacks.scientific import PeakStats
 import matplotlib.pyplot as plt
 from warnings import warn
 
@@ -9,6 +12,8 @@ class BestEffortCallback(CallbackBase):
         self.table = None
         self.figures = {}  # maps descriptor uid to (fig, axes)
         self.live_plots = {}  # maps descriptor uid to dict which maps data key to LivePlot instance
+        self.peak_stats = {}  # same structure as live_plots
+        self.peaks = PeakResults()
         self.start_doc = None
         self.descriptors = {}
         self._cleanup_motor_heuristic = False
@@ -93,7 +98,7 @@ class BestEffortCallback(CallbackBase):
             self.table('start', self.start_doc)
             self.table('descriptor', doc)
 
-        ### PLOT ###
+        ### PLOT AND PEAK ANALYSIS ###
 
         if stream_name in self.noplot_streams:
             return
@@ -116,15 +121,26 @@ class BestEffortCallback(CallbackBase):
             # Overplot on existing axes.
             axes = fig.axes
         self.live_plots[doc['uid']] = {}
+        self.peak_stats[doc['uid']] = {}
         for y_key, ax in zip(columns, axes):
             # Are we plotting against a motor or against time?
             if len(self.dim_fields) == 1:
                 x_key, = self.dim_fields
             else:
                 x_key = None  # causes LivePlot to plot against time
-            live_plot = LivePlot(y=y_key, x=x_key, ax=ax)
-            live_plot('start', doc)
+
+            # Create an instance of LivePlot and an instance of PeakStats.
+            live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
+                                          peak_results=self.peaks)
+            live_plot('start', self.start_doc)
+            live_plot('descriptor', doc)
+            peak_stats = PeakStats(x=x_key, y=y_key)
+            peak_stats('start', self.start_doc)
+            peak_stats('descriptor', doc)
+
+            # Stash them in state.
             self.live_plots[doc['uid']][y_key] = live_plot
+            self.peak_stats[doc['uid']][y_key] = peak_stats
 
     def event(self, doc):
         if self.descriptors[doc['descriptor']].get('name') == 'primary':
@@ -139,20 +155,105 @@ class BestEffortCallback(CallbackBase):
             live_plot = self.live_plots.get(doc['descriptor'], {}).get(y_key)
             if live_plot is not None:
                 live_plot('event', doc)
+            peak_stats = self.peak_stats.get(doc['descriptor'], {}).get(y_key)
+            if peak_stats is not None:
+                peak_stats('event', doc)
 
     def stop(self, doc):
         if self.table is not None:
             self.table('stop', doc)
+
         for live_plots in self.live_plots.values():
             for live_plot in live_plots.values():
                 live_plot('stop', doc)
+
+        # Compute peak stats and build results container.
+        ps_by_key = {}  # map y_key to PeakStats instance
+        for peak_stats in self.peak_stats.values():
+            for y_key, ps in peak_stats.items():
+                ps('stop', doc)
+                ps_by_key[y_key] = ps
+        self.peaks.update(ps_by_key)
 
     def clear(self):
         self.table = None
         self.descriptors.clear()
         self.live_plots.clear()
+        self.peak_stats.clear()
         self.figures.clear()
         self.start_doc = None
+
+
+class PeakResults:
+    ATTRS = ('com', 'cen', 'max', 'min', 'fwhm', 'nlls')
+
+    def __init__(self):
+        for attr in self.ATTRS:
+            setattr(self, attr, {})
+
+    def clear(self):
+        for attr in self.ATTRS:
+            getattr(self, attr).clear()
+
+    def update(self, ps_dict):
+        for y_key, ps in ps_dict.items():
+            for attr in self.ATTRS:
+                getattr(self, attr)[y_key] = getattr(ps, attr)
+
+    def __getitem__(self, key):
+        if key in self.ATTRS:
+            return getattr(self, key)
+        raise KeyError("Keys are: {}".format(self.ATTRS))
+
+    def __repr__(self):
+        # This is a proper eval-able repr, but with some manually-tweaked
+        # whitespace to make it easier to prase.
+        lines = []
+        for attr in self.ATTRS:
+            lines.append("{" + "'{}':".format(attr))
+            for line in pformat(getattr(self, attr), width=1).split('\n'):
+                lines.append("    {}".format(line))
+            lines.append('}')
+        return '\n'.join(lines)
+
+
+class LivePlotPlusPeaks(LivePlot):
+    def __init__(self, *args, peak_results, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.peak_results = peak_results
+        self.ax.figure.canvas.mpl_connect('key_press_event', self.on_key)
+        self.__arts = None
+        self.__visible = False
+
+    def on_key(self, event):
+        if event.key == 'P':
+            self.toggle_annotations()
+
+    def toggle_annotations(self):
+        self.__visible = ~self.__visible
+        if self.__visible:
+            if self.__arts is None:
+                self.plot_annotations()
+                self.ax.figure.canvas.draw_idle()
+            else:
+                for artist in self.__arts:
+                    artist.set_visible(True)
+                self.ax.figure.canvas.draw_idle()
+        else:
+            for artist in self.__arts:
+                artist.set_visible(False)
+            self.ax.figure.canvas.draw_idle()
+
+    def plot_annotations(self):
+        styles = iter(cycler('color', 'kr'))
+        vlines = []
+        for style, attr in zip(styles, ['cen', 'com']):
+            val = self.peak_results[attr][self.y]
+            vlines.append(self.ax.axvline(val, label=attr, **style))
+
+        self.ax.legend(loc='best')  # re-render legend to include new labels
+
+        self.__arts = vlines
 
 
 def hinted_fields(descriptor):
