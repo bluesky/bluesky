@@ -190,10 +190,20 @@ API Changes
 Enhancements
 ^^^^^^^^^^^^
 
+* LivePlot now accepts ``x='time'`` and produces a plot with t=0 is the start
+  of the experiment. It also accepts ``x='seq_num'``---a synonym for
+  ``x=None``, which remains the default.
 * The 0MQ pubsub integration classes :class:`bluesky.callbacks.zmq.Publisher``
   and :class:`bluesky.callbacks.zmq.RemoteDispatcher` have been simplified.
   A new class :class:`bluesky.callbacks.zmq.Proxy` and command-line utility
   ``bluesky-0MQ-proxy`` has been added to streamline configuration.
+
+Bug Fixes
+^^^^^^^^^
+
+* Using the "fake sleep" feature of simulated Movers (motors) caused them to
+  break.
+* The ``requirements.txt`` failed to declare that bluesky requires matplotlib.
 
 v0.9.0
 ------
