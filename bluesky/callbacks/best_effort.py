@@ -183,12 +183,13 @@ class BestEffortCallback(CallbackBase):
         self.peaks.update(ps_by_key)
 
     def clear(self):
-        self.table = None
-        self.descriptors.clear()
-        self.live_plots.clear()
-        self.peak_stats.clear()
-        self.figures.clear()
         self.start_doc = None
+        self.descriptors.clear()
+        self.table = None
+        self.live_plots.clear()
+        self.figures.clear()
+        self.peak_stats.clear()
+        self.peaks.clear()
 
 
 class PeakResults:
