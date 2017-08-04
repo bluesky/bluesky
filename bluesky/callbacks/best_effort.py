@@ -1,8 +1,10 @@
-from cycler import cycler
-from pprint import pformat
 from bluesky.callbacks import CallbackBase, LiveTable, LivePlot
 from bluesky.callbacks.scientific import PeakStats
+from cycler import cycler
+import itertools
 import matplotlib.pyplot as plt
+import re
+from pprint import pformat
 from warnings import warn
 import weakref
 
@@ -10,13 +12,12 @@ import weakref
 class BestEffortCallback(CallbackBase):
     def __init__(self):
         # internal state
-        self.table = None
-        self.figures = {}  # maps descriptor uid to (fig, axes)
-        self.live_plots = {}  # maps descriptor uid to dict which maps data key to LivePlot instance
-        self.peak_stats = {}  # same structure as live_plots
-        self.peaks = PeakResults()
-        self.start_doc = None
-        self.descriptors = {}
+        self._start_doc = None
+        self._descriptors = {}
+        self._table = None
+        # maps descriptor uid to dict which maps data key to LivePlot instance
+        self._live_plots = {}
+        self._peak_stats = {}  # same structure as live_plots
         self._cleanup_motor_heuristic = False
 
         # public options
@@ -25,6 +26,9 @@ class BestEffortCallback(CallbackBase):
         self.truncate_table = False 
         # TODO custom width
         self.noplot_streams = ['baseline']
+
+        # public data
+        self.peaks = PeakResults()
 
     def enable(self):
         self.enabled = True
@@ -39,12 +43,12 @@ class BestEffortCallback(CallbackBase):
         super().__call__(name, doc)
     
     def start(self, doc):
-        self.start_doc = doc
+        self._start_doc = doc
         self.plan_hints = doc.get('hints', {})
 
         # Prepare a guess about the dimensions (independent variables) in case
         # we need it.
-        motors = self.start_doc.get('motors') or None
+        motors = self._start_doc.get('motors') or None
         if motors is not None:
             GUESS = [('primary', [motor]) for motor in motors]
         else:
@@ -69,7 +73,7 @@ class BestEffortCallback(CallbackBase):
         self.dim_stream, _  = dimensions[0]
     
     def descriptor(self, doc):
-        self.descriptors[doc['uid']] = doc
+        self._descriptors[doc['uid']] = doc
         stream_name = doc.get('name', 'primary')  # fall back for old docs
         columns = hinted_fields(doc)
 
@@ -95,17 +99,35 @@ class BestEffortCallback(CallbackBase):
             # duplicated here.
             columns = [c for c in columns if c not in self.dim_fields]
             
-            self.table = LiveTable(list(self.dim_fields) + columns)
-            self.table('start', self.start_doc)
-            self.table('descriptor', doc)
+            self._table = LiveTable(list(self.dim_fields) + columns)
+            self._table('start', self._start_doc)
+            self._table('descriptor', doc)
 
         ### PLOT AND PEAK ANALYSIS ###
 
         if stream_name in self.noplot_streams:
             return
-        fig_name = ' '.join(sorted(columns))
+
+        # Create a figure or reuse an existing one.
+
+        fig_name = '{} vs {}'.format(' '.join(sorted(columns)),
+                                     ' '.join(sorted(self.dim_fields)))
+        if self.overplot:
+            # If the current figure matches 'figname {number}', use that one.
+            current_fig = plt.gcf()
+            current_label = current_fig.get_label()
+            if re.compile('^' + fig_name + ' \d$').match(current_label):
+                fig_name = current_label
+        else:
+            if plt.fignum_exists(fig_name):
+                # Generate a unique name by appending a number.
+                for number in itertools.count(2):
+                    new_name = '{} {}'.format(fig_name, number)
+                    if not plt.fignum_exists(new_name):
+                        fig_name = new_name
+                        break
         fig = plt.figure(fig_name)
-        # fig.suptitle(fig_name)  # wait for matplotlib to fix spacing
+
         if not fig.axes:
             # This is apparently a fresh figure. Make axes.
             # The complexity here is due to making a shared x axis. This can be
@@ -118,12 +140,11 @@ class BestEffortCallback(CallbackBase):
                     ax = fig.add_subplot(len(columns), 1, 1 + i, sharex=ax)
             fig.subplots_adjust()
             axes = fig.axes
-            self.figures[doc['uid']] = (fig, axes)
         else:
             # Overplot on existing axes.
             axes = fig.axes
-        self.live_plots[doc['uid']] = {}
-        self.peak_stats[doc['uid']] = {}
+        self._live_plots[doc['uid']] = {}
+        self._peak_stats[doc['uid']] = {}
         for y_key, ax in zip(columns, axes):
             # Are we plotting against a motor or against time?
             if len(self.dim_fields) == 1:
@@ -134,15 +155,15 @@ class BestEffortCallback(CallbackBase):
             # Create an instance of LivePlot and an instance of PeakStats.
             live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
                                           peak_results=self.peaks)
-            live_plot('start', self.start_doc)
+            live_plot('start', self._start_doc)
             live_plot('descriptor', doc)
             peak_stats = PeakStats(x=x_key, y=y_key)
-            peak_stats('start', self.start_doc)
+            peak_stats('start', self._start_doc)
             peak_stats('descriptor', doc)
 
             # Stash them in state.
-            self.live_plots[doc['uid']][y_key] = live_plot
-            self.peak_stats[doc['uid']][y_key] = peak_stats
+            self._live_plots[doc['uid']][y_key] = live_plot
+            self._peak_stats[doc['uid']][y_key] = peak_stats
 
         for ax in axes[:-1]:
             ax.set_xlabel('')
@@ -150,45 +171,44 @@ class BestEffortCallback(CallbackBase):
         fig.tight_layout()
 
     def event(self, doc):
-        if self.descriptors[doc['descriptor']].get('name') == 'primary':
-            self.table('event', doc)
+        if self._descriptors[doc['descriptor']].get('name') == 'primary':
+            self._table('event', doc)
 
         # Show the baseline readings.
-        if self.descriptors[doc['descriptor']].get('name') == 'baseline':
+        if self._descriptors[doc['descriptor']].get('name') == 'baseline':
             for k, v in doc['data'].items():
                 print('Baseline', k, ':', v)
 
         for y_key in doc['data']:
-            live_plot = self.live_plots.get(doc['descriptor'], {}).get(y_key)
+            live_plot = self._live_plots.get(doc['descriptor'], {}).get(y_key)
             if live_plot is not None:
                 live_plot('event', doc)
-            peak_stats = self.peak_stats.get(doc['descriptor'], {}).get(y_key)
+            peak_stats = self._peak_stats.get(doc['descriptor'], {}).get(y_key)
             if peak_stats is not None:
                 peak_stats('event', doc)
 
     def stop(self, doc):
-        if self.table is not None:
-            self.table('stop', doc)
+        if self._table is not None:
+            self._table('stop', doc)
 
-        for live_plots in self.live_plots.values():
+        for live_plots in self._live_plots.values():
             for live_plot in live_plots.values():
                 live_plot('stop', doc)
 
         # Compute peak stats and build results container.
         ps_by_key = {}  # map y_key to PeakStats instance
-        for peak_stats in self.peak_stats.values():
+        for peak_stats in self._peak_stats.values():
             for y_key, ps in peak_stats.items():
                 ps('stop', doc)
                 ps_by_key[y_key] = ps
         self.peaks.update(ps_by_key)
 
     def clear(self):
-        self.start_doc = None
-        self.descriptors.clear()
-        self.table = None
-        self.live_plots.clear()
-        self.figures.clear()
-        self.peak_stats.clear()
+        self._start_doc = None
+        self._descriptors.clear()
+        self._table = None
+        self._live_plots.clear()
+        self._peak_stats.clear()
         self.peaks.clear()
 
 
@@ -217,14 +237,14 @@ class PeakResults:
         # This is a proper eval-able repr, but with some manually-tweaked
         # whitespace to make it easier to prase.
         lines = []
+        lines.append('{')
         for attr in self.ATTRS:
-            lines.append("{" + "'{}':".format(attr))
+            lines.append("'{}':".format(attr))
             for line in pformat(getattr(self, attr), width=1).split('\n'):
                 lines.append("    {}".format(line))
-            lines.append('}')
+            lines.append(',')
+        lines.append('}')
         return '\n'.join(lines)
-
-
 
 
 class LivePlotPlusPeaks(LivePlot):

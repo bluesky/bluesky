@@ -1,3 +1,4 @@
+import ast
 from bluesky.examples import motor
 from bluesky.plans import scan
 from bluesky.utils import install_qt_kicker
@@ -49,24 +50,49 @@ class Detector:
 def test_simple(fresh_RE):
     RE = fresh_RE
     det = Detector()
-    BEC = BestEffortCallback()
-    RE.subscribe(BEC)
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
     RE(scan([det], motor, 1, 5, 5))
+
+def test_disable(fresh_RE):
+    RE = fresh_RE
+    det = Detector()
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+    bec.disable()
+    assert not bec.enabled
+
+    RE(scan([det], motor, 1, 5, 5))
+    assert bec._table is None
+
+    bec.enable()
+    assert bec.enabled
+
+    RE(scan([det], motor, 1, 5, 5))
+    assert bec._table is not None
+
+    bec.peaks.com
+    bec.peaks['com']
+    assert ast.literal_eval(repr(bec.peaks)) == vars(bec.peaks)
+
+    bec.clear()
+    assert bec._table is None
 
 
 def test_blank_hints(fresh_RE):
     RE = fresh_RE
     det = Detector()
-    BEC = BestEffortCallback()
-    RE.subscribe(BEC)
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
     RE(scan([det], motor, 1, 5, 5, md={'hints': {}}))
 
 
 def test_with_baseline(fresh_RE):
     RE = fresh_RE
     det = Detector()
-    BEC = BestEffortCallback()
-    RE.subscribe(BEC)
-    D = DiagnosticPreprocessor(baseline=[det3])
-    RE.preprocessors.append(D)
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    diag = DiagnosticPreprocessor(baseline=[det3])
+    RE.preprocessors.append(diag)
     RE(scan([det], motor, 1, 5, 5))
