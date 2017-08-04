@@ -4,9 +4,175 @@ Release Notes
 v0.10.0
 -------
 
+Overview
+^^^^^^^^
+
+* Automatic best-effort visualization and peak-fitting is available for all
+  plans, including user-defined ones.
+* The "SPEC-like" API has been fully removed, and its most useful features have
+  been applied to the library in a self-consistent way. See the next section
+  for detailed instructions on migrating.
+* Improved tooling for streaming documents over a network for live processing
+  and visualization in a different process or on a different machine.
+
 API Changes
 ^^^^^^^^^^^
 
+* The modules implementing what was a dubbed a "SPEC-like" interface
+  (``bluesky.spec_api`` and ``bluesky.global_state``) have been entirely
+  removed. This approach was insufficently similar to SPEC to satisfy SPEC
+  users and confusingly inconsistent with the rest of bluesky.
+
+  The new approach retains the good things about that interface and makes them
+  available for use with *all* plans, including user defined ones. Users who
+  have been fully utilitzing these "SPEC-like" plans will notice four
+  differences.
+
+  1. No ``gs.DETS``. Just use your own variable for detectors.
+
+     .. code-block:: python
+
+         # OLD ALTERNATIVE, NO LONGER SUPPORTED
+         from bluesky.global_state import gs
+         from bluesky.spec_api import ct
+
+         gs.DETS = # a list of some detectors
+         RE(ct())
+
+     do:
+
+     .. code-block:: python
+
+        from bluesky.plans import count
+
+        dets = # a list of some detectors
+        RE(count(dets))
+
+     This means you can keep multiple lists for easy task switching. Instead of
+     continually updating one global list like this:
+
+     .. code-block:: python
+
+         # OLD ALTERNATIVE, NO LONGER SUPPORTED
+
+         gs.DETS = # some list of detectors
+         RE(ct())
+
+         gs.DETS.remove(some_detector)
+         gs.DETS.append(some_other_detector)
+         RE(ct())
+
+     you can define as many lists as you want and call them whatever you want.
+
+     .. code-block:: python
+
+        d1 = # a list of some detectors
+        d2 = # a list of different detectors
+        RE(count(d1))
+        RE(count(d2))
+
+  2. Automatic baseline readings, concurrent monitoring, and "flying"
+     can be set up uniformly for all plans.
+
+     Formerly, "flyers", signals to monitor, and devices to read at the
+     beginning and the end of each run ("baseline" readings) were configured
+     like so:
+
+     .. code-block:: python
+
+        # OLD ALTERNATIVE, NO LONGER SUPPORTED
+
+        from bluesky.spec_api import ct
+
+        gs.MONTIORS = # a list of signals to monitor concurrently
+        gs.FLYERS = # a list of "flyable" devices
+        gs.BASELINE_DEVICES = # a list of devices to read at start and end
+
+        gs.DETS = # a list of detectors
+
+        RE(ct())  # monitoring, flying, and baseline readings are added
+
+     And formerly, these setting only affected the behavior of the "SPEC-like"
+     plans, such as ``ct`` and ``ascan``.
+
+     Now, the :ref:`diagnostic preprocessor <diagnostic_preprocessor>` can be
+     used to globally modify *all* plans, including user-defined ones.
+
+     .. code-block:: python
+
+        from bluesky.plans import count
+
+        # one-time configuration
+        from bluesky import DiagnosticPreprocessor
+        diag = DiagnosticPreprocessor()
+
+        # interactive use
+        diag.monitors = # a list of signals to monitor concurrently
+        diag.flyers = # a list of "flyable" devices
+        diag.baseline = # a list of devices to read at start and end
+
+        dets = # a list of detectors
+        RE(count(dets))  # monitoring, flying, and baseline readings are added
+
+  3. Automatic live visualization and peak analysis can be set up uniformly for
+     all plans.
+
+     Formerly, the "SPEC-like" plans such as ``ct`` and ``ascan`` automatically
+     set up a suitable table and a plot, while their "standard" vanilla
+     counterparts, :func:`bluesky.plans.count` and :func:`bluesky.plans.scan`
+     required explicit, detailed instructions to do so. Now, a best-effort
+     table and plot can be made for *all* plans, including user-defined ones,
+     by invoking this simple configuration:
+
+     .. code-block:: python
+
+        from bluesky.plans import count
+
+        # one-time configuration
+        from bluesky.callbacks.best_effort import BestEffortCallback
+        bec = BestEffortCallback()
+        RE.subscribe(bec)
+
+        # interactive use
+        dets = # a list of detectors
+        RE(count(dets), num=5))  # automatically prints table, shows plot
+
+     Use ``bec.disable()`` and ``bec.enable()`` to temporarily toggle the
+     output off and on.
+
+  4. Peak anallysis, now computed automatically by the BestEffortCallback
+     above, can be viewed with a keyboard shortcut. The peak statistics are
+     accessed differently.
+
+     For each plot, simple peak-fitting is performed in the background. Of
+     course, it may or may not be applicable depending on your data, and it is
+     not shown by default. To view fitting annotations in a plot, click the
+     plot area and press Shift+P. (Lowercase p is a shortcut for
+     "panning" the plot.)
+
+     To access the peak-fit statistics programmatically, use ``bec.peaks``. For
+     convenience, you may alias this like:
+
+     .. code-block:: python
+
+        peaks = bec.peaks
+
+     Access various statistics like:
+
+     .. code-block:: python
+
+        peaks.com
+        peaks.cen
+        peaks.max
+        peaks.min
+
+     Each of these is a dictionary with an entry for each detector fields that
+     was fit. So, an individual reading is accessed as
+     ``peaks.com['ccd_stats1_total']``.
+
+* The plan preprocessors ``configure_count_time_wrapper`` and
+  ``configure_count_time_decorator`` were moved to ``bluesky.plans`` from
+  ``bluesky.spec_api``, reverting a change made in v0.9.0.
 * The method :meth:`bluesky.Dispatcher.subscribe` (which is encapsulated into
   :class:`bluesky.RunEngine` and inherited by
   :class:`bluesky.callbacks.zmq.RemoteDispatcher`) has a new signature. The
