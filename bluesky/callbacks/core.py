@@ -93,8 +93,11 @@ class LivePlot(CallbackBase):
         the name of a data field in an Event
 
     x : str, optional
-        the name of a data field in an Event
+        the name of a data field in an Event, or 'seq_num' or 'time'
         If None, use the Event's sequence number.
+        Special case: If the Event's data includes a key named 'seq_num' or
+        'time', that takes precedence over the standard 'seq_num' and 'time'
+        recorded in every Event.
     legend_keys : list, optional
         The list of keys to extract from the RunStart document and format
         in the legend of the plot. The legend will always show the
@@ -136,7 +139,7 @@ class LivePlot(CallbackBase):
         if x is not None:
             self.x, *others = _get_obj_fields([x])
         else:
-            self.x = None
+            self.x = 'seq_num'
         self.y, *others = _get_obj_fields([y])
         self.ax.set_ylabel(y)
         self.ax.set_xlabel(x or 'sequence #')
@@ -164,14 +167,20 @@ class LivePlot(CallbackBase):
 
     def event(self, doc):
         "Unpack data from the event and call self.update()."
+        # This outer try/except block is needed because multiple event
+        # streams will be emitted by the RunEngine and not all event
+        # streams will have the keys we want.
         try:
-            if self.x is not None:
-                # this try/except block is needed because multiple event
-                # streams will be emitted by the RunEngine and not all event
-                # streams will have the keys we want
+            # This inner try/except block handles seq_num and time, which could
+            # be keys in the data or accessing the standard entries in every
+            # event.
+            try:
                 new_x = doc['data'][self.x]
-            else:
-                new_x = doc['seq_num']
+            except KeyError:
+                if self.x in ('time', 'seq_num'):
+                    new_x = doc[self.x]
+                else:
+                    raise
             new_y = doc['data'][self.y]
         except KeyError:
             # wrong event stream, skip it
