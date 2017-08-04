@@ -557,12 +557,12 @@ def test_broker_base(fresh_RE, db):
             super().__init__(field, fs=fs)
 
         def event(self, doc):
-            data = super().event(doc)
-            assert isinstance(data, np.ndarray)
+            super().event(doc)
+            assert isinstance(doc['data'][self.fields[0]], np.ndarray)
 
     RE = fresh_RE
     RE.subscribe(db.insert)
-    bc = BrokerChecker('img', fs=db.fs)
+    bc = BrokerChecker(('img', ), fs=db.fs)
     db.fs.register_handler('RWFS_NPY', ReaderWithFSHandler)
     det = ReaderWithFileStore('det',
                               {'img': lambda: np.array(np.ones((10, 10)))},

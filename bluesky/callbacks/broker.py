@@ -7,20 +7,18 @@ import doct
 import matplotlib.pyplot as plt
 
 
-class BrokerCallbackBase:
+class BrokerCallbackBase(CallbackBase):
     """
     Base class for callbacks which need filled documents
 
     Parameters
     ----------
-    field: str
-        name of data field in an Event
+    fields: Iterable of str
+        Names of data field in an Event
     fs: FileStore instance
         The FileStore instance to pull the data from
     """
     def __init__(self, fields, *, fs=None):
-        if not isinstance(fields, (tuple, list)):
-            fields = (fields, )
         if fs is None:
             import filestore.api as fs
         self.fs = fs
@@ -31,7 +29,7 @@ class BrokerCallbackBase:
             if doc.get('filled', {}).get(field):
                 pass
             else:
-                doc['data'].update(self.fs.retrieve(doc['data'][field]))
+                doc['data'][field] = self.fs.retrieve(doc['data'][field])
 
 
 class LiveImage(BrokerCallbackBase):
@@ -60,7 +58,7 @@ class LiveImage(BrokerCallbackBase):
                  limit_func=None, auto_redraw=True, interpolation=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
-        super().__init__(field, fs=fs)
+        super().__init__((field,), fs=fs)
         fig = plt.figure()
         self.cs = CrossSection(fig, cmap, norm,
                  limit_func, auto_redraw, interpolation)
@@ -68,6 +66,7 @@ class LiveImage(BrokerCallbackBase):
 
     def event(self, doc):
         super().event(doc)
+        data = doc['data'][self.fields[0]]
         self.update(data)
 
     def update(self, data):
