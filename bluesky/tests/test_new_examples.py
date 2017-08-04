@@ -18,8 +18,8 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            repeater, caching_repeater, count, Count, Scan,
                            fly_during_decorator, subs_decorator,
                            monitor_during_decorator,
-                           inject_md_wrapper, finalize_decorator)
-from bluesky.spec_api import configure_count_time_wrapper
+                           inject_md_wrapper, finalize_decorator,
+                           configure_count_time_wrapper)
 
 from bluesky.utils import all_safe_rewind
 
