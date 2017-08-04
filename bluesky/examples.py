@@ -322,7 +322,7 @@ class Mover(Reader):
                 def cb():
                     self._state = new_state
                     st._finished()
-                self.loop.call_later(self._fake_sleep, st._finished)
+                self.loop.call_later(self._fake_sleep, cb)
                 return st
             else:
                 ttime.sleep(self._fake_sleep)
