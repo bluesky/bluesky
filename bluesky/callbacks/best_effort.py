@@ -110,21 +110,31 @@ class BestEffortCallback(CallbackBase):
             self._table('start', self._start_doc)
             self._table('descriptor', doc)
 
-        ### PLOT AND PEAK ANALYSIS ###
+        ### DECIDE WHICH KIND OF PLOT CAN BE USED ###
 
         if stream_name in self.noplot_streams:
             return
 
+        # This is a heuristic approach until we think of how to hint this in a
+        # generalizable way.
+        if stream_name == self.dim_stream:
+            dim_fields = self.dim_fields
+        else:
+            dim_fields = ['time']  # 'time' once LivePlot can do that
+
         # Create a figure or reuse an existing one.
 
         fig_name = '{} vs {}'.format(' '.join(sorted(columns)),
-                                     ' '.join(sorted(self.dim_fields)))
+                                     ' '.join(sorted(dim_fields)))
         if self.overplot:
-            # If the current figure matches 'figname {number}', use that one.
-            current_fig = plt.gcf()
-            current_label = current_fig.get_label()
-            if re.compile('^' + fig_name + ' \d$').match(current_label):
-                fig_name = current_label
+            # If any open figure matches 'figname {number}', use it. If there
+            # are multiple, the most recently touched one will be used.
+            pat1 = re.compile('^' + fig_name + '$')
+            pat2 = re.compile('^' + fig_name + ' \d+$')
+            for label in plt.get_figlabels():
+                if pat1.match(label) or pat2.match(label):
+                    fig_name = label
+                    break
         else:
             if plt.fignum_exists(fig_name):
                 # Generate a unique name by appending a number.
@@ -134,6 +144,8 @@ class BestEffortCallback(CallbackBase):
                         fig_name = new_name
                         break
         fig = plt.figure(fig_name)
+
+        ### LIVE PLOT AND PEAK ANALYSIS ###
 
         if not fig.axes:
             # This is apparently a fresh figure. Make axes.
@@ -152,13 +164,8 @@ class BestEffortCallback(CallbackBase):
             axes = fig.axes
         self._live_plots[doc['uid']] = {}
         self._peak_stats[doc['uid']] = {}
+        x_key, = dim_fields
         for y_key, ax in zip(columns, axes):
-            # Are we plotting against a motor or against time?
-            if len(self.dim_fields) == 1:
-                x_key, = self.dim_fields
-            else:
-                x_key = None  # causes LivePlot to plot against time
-
             # Create an instance of LivePlot and an instance of PeakStats.
             live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
                                           peak_results=self.peaks)
