@@ -19,6 +19,7 @@ class BestEffortCallback(CallbackBase):
         self._live_plots = {}
         self._peak_stats = {}  # same structure as live_plots
         self._cleanup_motor_heuristic = False
+        self._stream_names = set()
 
         # public options
         self.enabled = True
@@ -43,6 +44,7 @@ class BestEffortCallback(CallbackBase):
         super().__call__(name, doc)
     
     def start(self, doc):
+        self.clear()
         self._start_doc = doc
         self.plan_hints = doc.get('hints', {})
 
@@ -75,6 +77,11 @@ class BestEffortCallback(CallbackBase):
     def descriptor(self, doc):
         self._descriptors[doc['uid']] = doc
         stream_name = doc.get('name', 'primary')  # fall back for old docs
+
+        if stream_name not in self._stream_names:
+            self._stream_names.add(stream_name)
+            print("New stream: {!r}".format(stream_name))
+
         columns = hinted_fields(doc)
 
         ### This deals with old documents. ### 
