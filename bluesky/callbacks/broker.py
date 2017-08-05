@@ -18,9 +18,7 @@ class BrokerCallbackBase(CallbackBase):
     fs: FileStore instance
         The FileStore instance to pull the data from
     """
-    def __init__(self, fields, *, fs=None):
-        if fs is None:
-            import filestore.api as fs
+    def __init__(self, fields, fs):
         self.fs = fs
         self.fields = fields
 
@@ -55,18 +53,22 @@ class LiveImage(BrokerCallbackBase):
     """
 
     def __init__(self, field, *, fs=None, cmap=None, norm=None,
-                 limit_func=None, auto_redraw=True, interpolation=None):
+                 limit_func=None, auto_redraw=True, interpolation=None,
+                 window_title=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
         super().__init__((field,), fs=fs)
         fig = plt.figure()
+        self.field = field
         self.cs = CrossSection(fig, cmap, norm,
                  limit_func, auto_redraw, interpolation)
+        if window_title:
+            self.cs._fig.canvas.set_window_title(window_title)
         self.cs._fig.show()
 
     def event(self, doc):
         super().event(doc)
-        data = doc['data'][self.fields[0]]
+        data = doc['data'][self.field]
         self.update(data)
 
     def update(self, data):
@@ -214,7 +216,7 @@ class LiveTiffExporter(BrokerCallbackBase):
     filenames : list of filenames written in ongoing or most recent run
     """
 
-    def __init__(self, field, template, dryrun=False, overwrite=False,):
+    def __init__(self, field, template, fs, dryrun=False, overwrite=False):
         try:
             import tifffile
         except ImportError:
@@ -228,6 +230,7 @@ class LiveTiffExporter(BrokerCallbackBase):
             self._tifffile = tifffile
 
         self.field = field
+        super().__init__((field,), fs)
         self.template = template
         self.dryrun = dryrun
         self.overwrite = overwrite
@@ -263,7 +266,6 @@ class LiveTiffExporter(BrokerCallbackBase):
                 filename = self.template.format(i=i, start=self._start,
                                                 event=doc)
                 self._save_image(plane, filename)
-        super().event(doc)
 
     def stop(self, doc):
         self._start = None
