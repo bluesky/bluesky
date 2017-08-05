@@ -205,10 +205,6 @@ class BestEffortCallback(CallbackBase):
         if self._table is not None:
             self._table('stop', doc)
 
-        for live_plots in self._live_plots.values():
-            for live_plot in live_plots.values():
-                live_plot('stop', doc)
-
         # Compute peak stats and build results container.
         ps_by_key = {}  # map y_key to PeakStats instance
         for peak_stats in self._peak_stats.values():
@@ -216,6 +212,10 @@ class BestEffortCallback(CallbackBase):
                 ps('stop', doc)
                 ps_by_key[y_key] = ps
         self.peaks.update(ps_by_key)
+
+        for live_plots in self._live_plots.values():
+            for live_plot in live_plots.values():
+                live_plot('stop', doc)
 
     def clear(self):
         self._start_doc = None
@@ -262,30 +262,45 @@ class PeakResults:
 
 
 class LivePlotPlusPeaks(LivePlot):
-    axes_labeled = weakref.WeakKeyDictionary()
+    # Track state of axes, which may share instances of LivePlotPlusPeaks.
+    __labeled = weakref.WeakKeyDictionary()  # map ax to True/False
+    __visible = weakref.WeakKeyDictionary()  # map ax to True/False
+    __instances = weakref.WeakKeyDictionary()  # map ax to list of instances
 
     def __init__(self, *args, peak_results, **kwargs):
         super().__init__(*args, **kwargs)
         self.peak_results = peak_results
-        self.ax.figure.canvas.mpl_connect('key_press_event', self.on_key)
+
+        ax = self.ax  # for brevity
+        if ax not in self.__visible:
+            # This is the first instance of LivePlotPlusPeaks on these axes.
+            # Set up matplotlib event handling.
+
+            self.__visible[ax] = False
+
+            def toggle(event):
+                if event.key == 'P':
+                    self.__visible[ax] = ~self.__visible[ax]
+                    for instance in self.__instances[ax]:
+                        instance.check_visibility()
+
+            ax.figure.canvas.mpl_connect('key_press_event', toggle)
+
+        if ax not in self.__instances:
+            self.__instances[ax] = []
+        self.__instances[ax].append(self)
         self.__arts = None
-        self.__visible = False
 
-    def on_key(self, event):
-        if event.key == 'P':
-            self.toggle_annotations()
-
-    def toggle_annotations(self):
-        self.__visible = ~self.__visible
-        if self.__visible:
+    def check_visibility(self):
+        if self.__visible[self.ax]:
             if self.__arts is None:
                 self.plot_annotations()
             else:
                 for artist in self.__arts:
                     artist.set_visible(True)
-        else:
-            for artist in self.__arts:
-                artist.set_visible(False)
+        elif self.__arts is not None:
+                for artist in self.__arts:
+                    artist.set_visible(False)
         self.ax.legend(loc='best')
         self.ax.figure.canvas.draw_idle()
 
@@ -295,13 +310,17 @@ class LivePlotPlusPeaks(LivePlot):
         for style, attr in zip(styles, ['cen', 'com']):
             val = self.peak_results[attr][self.y]
             # Only put labels in this legend once per axis.
-            if self.ax in self.axes_labeled:
+            if self.ax in self.__labeled:
                 label = '_no_legend_'
             else:
                 label = attr
             vlines.append(self.ax.axvline(val, label=label, **style))
-        self.axes_labeled[self.ax] = None
+        self.__labeled[self.ax] = None
         self.__arts = vlines
+
+    def stop(self, doc):
+        self.check_visibility()
+        super().stop(doc)
 
 
 def hinted_fields(descriptor):
