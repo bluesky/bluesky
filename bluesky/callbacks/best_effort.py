@@ -1,7 +1,8 @@
-from bluesky.callbacks import CallbackBase, LiveTable, LivePlot
+from bluesky.callbacks import CallbackBase, LiveTable, LivePlot, LiveGrid
 from bluesky.callbacks.scientific import PeakStats
 from cycler import cycler
 import itertools
+from itertools import chain
 import matplotlib.pyplot as plt
 import re
 from pprint import pformat
@@ -17,6 +18,7 @@ class BestEffortCallback(CallbackBase):
         self._table = None
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
+        self._live_grids = {}
         self._peak_stats = {}  # same structure as live_plots
         self._cleanup_motor_heuristic = False
         self._stream_names = set()
@@ -145,8 +147,6 @@ class BestEffortCallback(CallbackBase):
                         break
         fig = plt.figure(fig_name)
 
-        ### LIVE PLOT AND PEAK ANALYSIS ###
-
         if not fig.axes:
             # This is apparently a fresh figure. Make axes.
             # The complexity here is due to making a shared x axis. This can be
@@ -158,29 +158,48 @@ class BestEffortCallback(CallbackBase):
                 else:
                     ax = fig.add_subplot(len(columns), 1, 1 + i, sharex=ax)
             fig.subplots_adjust()
-            axes = fig.axes
-        else:
-            # Overplot on existing axes.
-            axes = fig.axes
-        self._live_plots[doc['uid']] = {}
-        self._peak_stats[doc['uid']] = {}
-        x_key, = dim_fields
-        for y_key, ax in zip(columns, axes):
-            # Create an instance of LivePlot and an instance of PeakStats.
-            live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
-                                          peak_results=self.peaks)
-            live_plot('start', self._start_doc)
-            live_plot('descriptor', doc)
-            peak_stats = PeakStats(x=x_key, y=y_key)
-            peak_stats('start', self._start_doc)
-            peak_stats('descriptor', doc)
+        axes = fig.axes
 
-            # Stash them in state.
-            self._live_plots[doc['uid']][y_key] = live_plot
-            self._peak_stats[doc['uid']][y_key] = peak_stats
+        ### LIVE PLOT AND PEAK ANALYSIS ###
 
-        for ax in axes[:-1]:
-            ax.set_xlabel('')
+        if len(dim_fields) == 1:
+            self._live_plots[doc['uid']] = {}
+            self._peak_stats[doc['uid']] = {}
+            x_key, = dim_fields
+            for y_key, ax in zip(columns, axes):
+                # Create an instance of LivePlot and an instance of PeakStats.
+                live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
+                                            peak_results=self.peaks)
+                live_plot('start', self._start_doc)
+                live_plot('descriptor', doc)
+                peak_stats = PeakStats(x=x_key, y=y_key)
+                peak_stats('start', self._start_doc)
+                peak_stats('descriptor', doc)
+
+                # Stash them in state.
+                self._live_plots[doc['uid']][y_key] = live_plot
+                self._peak_stats[doc['uid']][y_key] = peak_stats
+
+            for ax in axes[:-1]:
+                ax.set_xlabel('')
+        elif len(dim_fields) == 2:
+            self._live_grids[doc['uid']] = {}
+            x_key, y_key = dim_fields
+            try:
+                extents = self._start_doc['extents']
+                shape = self._start_doc['shape']
+            except KeyError:
+                warn("Need both 'shape' and 'extents' in plan metadata to "
+                     "create LiveGrid.")
+            else:
+                for I_key, ax in zip(columns, axes):
+                    live_grid = LiveGrid(shape, I_key,
+                                         xlabel=x_key, ylabel=y_key,
+                                         extent=list(chain(*extents[::-1])),
+                                         ax=ax)
+                    live_grid('start', self._start_doc)
+                    live_grid('descriptor', doc)
+                    self._live_grids[doc['uid']][I_key] = live_grid
 
         fig.tight_layout()
 
@@ -197,6 +216,9 @@ class BestEffortCallback(CallbackBase):
             live_plot = self._live_plots.get(doc['descriptor'], {}).get(y_key)
             if live_plot is not None:
                 live_plot('event', doc)
+            live_grid = self._live_grids.get(doc['descriptor'], {}).get(y_key)
+            if live_grid is not None:
+                live_grid('event', doc)
             peak_stats = self._peak_stats.get(doc['descriptor'], {}).get(y_key)
             if peak_stats is not None:
                 peak_stats('event', doc)
@@ -217,12 +239,17 @@ class BestEffortCallback(CallbackBase):
             for live_plot in live_plots.values():
                 live_plot('stop', doc)
 
+        for live_grids in self._live_grids.values():
+            for live_grid in live_grids.values():
+                live_grid('stop', doc)
+
     def clear(self):
         self._start_doc = None
         self._descriptors.clear()
         self._table = None
         self._live_plots.clear()
         self._peak_stats.clear()
+        self._live_grids.clear()
         self.peaks.clear()
 
 
