@@ -6,7 +6,7 @@ from functools import partial
 
 def test_scan_and_get_data(fresh_RE, db):
     RE = fresh_RE
-    RE.subscribe('all', db.mds.insert)
+    RE.subscribe(db.mds.insert)
     uid, = RE(stepscan(det, motor), group='foo', beamline_id='testing',
               config={})
 
@@ -16,7 +16,7 @@ def test_scan_and_get_data(fresh_RE, db):
 
 def test_post_run(fresh_RE, db):
     RE = fresh_RE
-    RE.subscribe('all', db.mds.insert)
+    RE.subscribe(db.mds.insert)
     output = defaultdict(list)
 
     def do_nothing(doctype, doc):
@@ -34,7 +34,7 @@ def test_post_run(fresh_RE, db):
 
 def test_verify_files_saved(fresh_RE, db):
     RE = fresh_RE
-    RE.subscribe('all', db.mds.insert)
+    RE.subscribe(db.mds.insert)
 
     vfs = partial(verify_files_saved, db=db)
     RE(stepscan(det, motor), subs={'stop': vfs})

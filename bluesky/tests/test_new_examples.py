@@ -88,8 +88,9 @@ def cb(name, doc):
      (configure, (det, 1), {'a': 2}, [Msg('configure', det, 1, a=2)]),
      (stage, (det,), {}, [Msg('stage', det)]),
      (unstage, (det,), {}, [Msg('unstage', det)]),
-     (subscribe, ('all', 'func_placeholder'), {}, [Msg('subscribe', None, 'all',
-                                                       'func_placeholder')]),
+     (subscribe, ('all', 'func_placeholder'), {}, [Msg('subscribe', None,
+                                                       'func_placeholder',
+                                                       'all')]),
      (unsubscribe, (1,), {}, [Msg('unsubscribe', None, token=1)]),
      (open_run, (), {}, [Msg('open_run')]),
      (open_run, (), {'md': {'a': 1}}, [Msg('open_run', a=1)]),
@@ -134,7 +135,7 @@ def test_mv():
       [Msg('unstage', det2),
        Msg('unstage', det1)]),
      (subs_context, ({'all': [cb]},), {},
-      [Msg('subscribe', None, 'all', cb)],
+      [Msg('subscribe', None, cb, 'all')],
       [Msg('unsubscribe', None, token=None)]),
      (monitor_context, (['sig'],), {},
       list(monitor('sig')),
@@ -271,7 +272,7 @@ def test_subs():
     processed_plan = list(subs_wrapper(plan('test_arg', test_kwarg='val'),
                                        {'all': cb}))
 
-    expected = [Msg('subscribe', None, 'all', cb),
+    expected = [Msg('subscribe', None, cb, 'all'),
                 Msg('null', None, 'test_arg', test_kwarg='val'),
                 Msg('unsubscribe', token=None)]
 

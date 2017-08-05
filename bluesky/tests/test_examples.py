@@ -167,7 +167,7 @@ def test_calltime_subscription(fresh_RE):
 def test_stateful_subscription(fresh_RE):
     RE = fresh_RE
     assert RE.state == 'idle'
-    token = RE.subscribe('event', print_event_time)
+    token = RE.subscribe(print_event_time, 'event')
     RE(simple_scan_saving(det, motor))
     RE.unsubscribe(token)
     assert RE.state == 'idle'

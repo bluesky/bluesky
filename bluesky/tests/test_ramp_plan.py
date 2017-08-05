@@ -31,7 +31,7 @@ def test_ramp(RE, db):
         yield from trigger_and_read([dd])
 
     g = ramp_plan(kickoff(), tt, inner_plan, period=0.08)
-    RE.subscribe('all', db.mds.insert)
+    RE.subscribe(db.mds.insert)
     RE.msg_hook = MsgCollector()
     rs_uid, = RE(g)
     hdr = db[-1]

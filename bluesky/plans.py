@@ -801,13 +801,13 @@ def subscribe(name, func):
     Yields
     ------
     msg : Msg
-        Msg('subscribe', None, name, func)
+        Msg('subscribe', None, func, name)
 
     See Also
     --------
     :func:`bluesky.plans.unsubscribe`
     """
-    return (yield Msg('subscribe', None, name, func))
+    return (yield Msg('subscribe', None, func, name))
 
 
 def unsubscribe(token):
@@ -887,7 +887,7 @@ def subs_wrapper(plan, subs):
     def _subscribe():
         for name, funcs in subs.items():
             for func in funcs:
-                token = yield Msg('subscribe', None, name, func)
+                token = yield Msg('subscribe', None, func, name)
                 tokens.add(token)
 
     def _unsubscribe():
@@ -1111,7 +1111,7 @@ def subs_context(plan_stack, subs):
     def _subscribe():
         for name, funcs in subs.items():
             for func in funcs:
-                token = yield Msg('subscribe', None, name, func)
+                token = yield Msg('subscribe', None, func, name)
                 tokens.add(token)
 
     def _unsubscribe():
