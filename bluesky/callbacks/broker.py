@@ -18,7 +18,8 @@ class BrokerCallbackBase(CallbackBase):
     fs: FileStore instance
         The FileStore instance to pull the data from
     """
-    def __init__(self, fields, fs):
+
+    def __init__(self, fields, *, fs=None):
         self.fs = fs
         self.fields = fields
 
@@ -27,6 +28,9 @@ class BrokerCallbackBase(CallbackBase):
             if doc.get('filled', {}).get(field):
                 pass
             else:
+                if self.fs is None:
+                    raise RuntimeError('Either the data must be pre-loaded or'
+                                       'a FileStore instance must be provided.')
                 doc['data'][field] = self.fs.retrieve(doc['data'][field])
 
 
@@ -61,7 +65,7 @@ class LiveImage(BrokerCallbackBase):
         fig = plt.figure()
         self.field = field
         self.cs = CrossSection(fig, cmap, norm,
-                 limit_func, auto_redraw, interpolation)
+                               limit_func, auto_redraw, interpolation)
         if window_title:
             self.cs._fig.canvas.set_window_title(window_title)
         self.cs._fig.show()
@@ -216,7 +220,8 @@ class LiveTiffExporter(BrokerCallbackBase):
     filenames : list of filenames written in ongoing or most recent run
     """
 
-    def __init__(self, field, template, fs, dryrun=False, overwrite=False):
+    def __init__(self, field, template, dryrun=False, overwrite=False,
+                 db=None):
         try:
             import tifffile
         except ImportError:
@@ -230,7 +235,7 @@ class LiveTiffExporter(BrokerCallbackBase):
             self._tifffile = tifffile
 
         self.field = field
-        super().__init__((field,), fs)
+        super().__init__((field,), fs=db.fs)
         self.template = template
         self.dryrun = dryrun
         self.overwrite = overwrite
