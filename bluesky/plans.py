@@ -442,7 +442,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
 
 def mv(*args):
     """
-    Move one or more devices to a setpoint and wait for all to complete.
+    Move one or more devices to a setpoint. Wait for all to complete.
 
     If more than one device is specifed, the movements are done in parallel.
 
@@ -458,6 +458,7 @@ def mv(*args):
     See Also
     --------
     :func:`bluesky.plans.abs_set`
+    :func:`bluesky.plans.mvr`
     """
     group = str(uuid.uuid4())
     status_objects = []
@@ -466,6 +467,37 @@ def mv(*args):
         status_objects.append(ret)
     yield Msg('wait', None, group=group)
     return tuple(status_objects)
+
+
+def mvr(*args):
+    """
+    Move one or more devices to a relative setpoint. Wait for all to complete.
+
+    If more than one device is specifed, the movements are done in parallel.
+
+    Parameters
+    ----------
+    args :
+        device1, value1, device2, value2, ...
+
+    Yields
+    ------
+    msg : Msg
+
+    See Also
+    --------
+    :func:`bluesky.plans.rel_set`
+    :func:`bluesky.plans.mv`
+    """
+    objs = []
+    for obj, val in partition(2, args):
+        objs.append(obj)
+
+    @relative_set_decorator(objs)
+    def inner_mvr():
+        return (yield from mv(*args))
+
+    return (yield from inner_mvr())
 
 
 def stop(obj):

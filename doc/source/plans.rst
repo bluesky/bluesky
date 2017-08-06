@@ -452,6 +452,7 @@ Plans for interacting with hardware:
     abs_set
     rel_set
     mv
+    mvr
     trigger
     read
     stage
