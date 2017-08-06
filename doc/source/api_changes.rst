@@ -186,17 +186,28 @@ API Changes
   :mod:`bluesky.callbacks.zmq` and their signatures have been changed to match
   similar utilities in the pydata ecosystem. See the Enhancements section for
   more information.
+* The module ``bluesky.qt_kicker`` has been removed. Its former contents are
+  avaiable in ``bluesky.utils``. The module was originally deprecated in April
+  2016, and it has been issuing warnings about this change since.
 
 Enhancements
 ^^^^^^^^^^^^
 
-* LivePlot now accepts ``x='time'`` and produces a plot with t=0 is the start
-  of the experiment. It also accepts ``x='seq_num'``---a synonym for
-  ``x=None``, which remains the default.
+* ``LivePlot`` now accepts ``x='time'`` and produces a plot with t=0 is the
+  start of the run. It also accepts ``x='seq_num'``---a synonym for ``x=None``,
+  which remains the default.
+* A new plan, :func:`bluesky.plan.mvr`, has been added as a relative counterpart
+  to :func:`bluesky.plan.mv`.
 * The 0MQ pubsub integration classes :class:`bluesky.callbacks.zmq.Publisher``
   and :class:`bluesky.callbacks.zmq.RemoteDispatcher` have been simplified.
   A new class :class:`bluesky.callbacks.zmq.Proxy` and command-line utility
   ``bluesky-0MQ-proxy`` has been added to streamline configuration.
+* Metadata recorded by many built-in plans now includes a new item,
+  ``'hints'``, which is used by the best-effort callback to produce useful
+  visualizations. Its content may change or expand in future releases as this
+  new feature is explored.
+* Some :doc:`IPython magics <magics>` mimicing the SPEC API have been added.
+  These are experimental and may be altered or removed in the future.
 
 Bug Fixes
 ^^^^^^^^^
