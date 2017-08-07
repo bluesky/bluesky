@@ -1,5 +1,5 @@
 from bluesky.plans import scan
-from bluesky.plan_tools import print_summary, print_summary_wrapper
+from bluesky.simulators import print_summary, print_summary_wrapper
 
 
 def test_print_summary(motor_det):

@@ -117,7 +117,7 @@ dataset), takes a reading, and marks the end of that run.
 
 .. ipython:: python
 
-    from bluesky.plan_tools import print_summary
+    from bluesky.simulators import print_summary
     from bluesky.examples import det
     from bluesky.plans import count
     print_summary(count([det]))
@@ -171,7 +171,7 @@ coverage of the sample.
 .. plot::
    :include-source:
 
-    from bluesky.plan_tools import plot_raster_path
+    from bluesky.simulators import plot_raster_path
     from bluesky.examples import motor1, motor2, det
     from bluesky.plans import outer_product_scan
     import matplotlib.pyplot as plt
