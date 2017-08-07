@@ -109,6 +109,7 @@ API Changes
         # one-time configuration
         from bluesky import DiagnosticPreprocessor
         diag = DiagnosticPreprocessor()
+        RE.preprocessors.append(diag)
 
         # interactive use
         diag.monitors = # a list of signals to monitor concurrently

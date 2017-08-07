@@ -3159,11 +3159,11 @@ class DiagnosticPreprocessor:
     --------
     Create a DiagnosticPreprocessor and apply it to a RunEngine.
 
-    >>> D = DiagnosticPreprocessor(baseline=[some_motor, some_detector]),
-    ...                            monitors=[some_signal],
-    ...                            flyers=[some_flyer])
+    >>> diag = DiagnosticPreprocessor(baseline=[some_motor, some_detector]),
+    ...                               monitors=[some_signal],
+    ...                               flyers=[some_flyer])
     >>> RE = RunEngine({})
-    >>> RE.preprocessors.append(D)
+    >>> RE.preprocessors.append(diag)
 
     Now all plans executed by RE will be modified to add baseline readings
     (before and after each run), monitors (during each run), and flyers
@@ -3171,32 +3171,32 @@ class DiagnosticPreprocessor:
 
     Inspect or update the lists of devices interactively.
 
-    >>> D.baseline
+    >>> diag.baseline
     [some_motor, some_detector]
 
-    >>> D.baseline.remove(some_motor)
+    >>> diag.baseline.remove(some_motor)
 
-    >>> D.baseline
+    >>> diag.baseline
     [some_detector]
 
-    >>> D.baseline.append(another_detector)
+    >>> diag.baseline.append(another_detector)
 
-    >>> D.baseline
+    >>> diag.baseline
     [some_detector, another_detector]
 
     Each attribute (``baseline``, ``monitors``, ``flyers``) is an ordinary
     Python list, support all the standard list methods, such as:
 
-    >>> D.baseline.clear()
+    >>> diag.baseline.clear()
 
     The arguments to DiagnosticPreprocessor are optional. All the lists
     will empty by default.  As shown above, they can be populated
     interactively.
 
-    >>> D = DiagnosticPreprocessor()
+    >>> diag = DiagnosticPreprocessor()
     >>> RE = RunEngine({})
-    >>> RE.preprocessors.append(D)
-    >>> D.baseline.append(some_detector)
+    >>> RE.preprocessors.append(diag)
+    >>> diag.baseline.append(some_detector)
     """
     def __init__(self, *, baseline=None, monitors=None, flyers=None):
         if baseline is None:
