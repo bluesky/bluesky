@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
+from warnings import warn
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -105,3 +106,30 @@ def print_summary_wrapper(plan):
             print('  Read {}'.format(read_cache))
             read_cache = []
         yield msg
+
+
+class LimitsExceeded(Exception):
+    ...
+
+
+def check_limits(plan):
+    ignore = []
+    for msg in plan:
+        if msg.command == 'set':
+            if msg.obj in ignore:
+                continue  # we have already warned about this device
+            try:
+                low, high = msg.obj.limits
+            except AttributeError:
+                warn("Limits of {} are unknown and can't be checked.".format(msg.obj.name))
+                ignore.append(msg.obj)
+                continue
+            if low == high:
+                warn("Limits are not set on {}".format(msg.obj.name))
+                ignore.append(msg.obj)
+                continue
+            pos, = msg.args
+            if not (low < pos < high):
+                raise LimitsExceeded("This plan would put {} at {} "
+                                     "which is outside of its limits, {}."
+                                     "".format(msg.obj.name, pos, (low, high)))
