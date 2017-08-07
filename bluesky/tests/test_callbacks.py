@@ -449,8 +449,10 @@ def test_live_grid(fresh_RE):
        LiveGrid((6, 10), 'det4'))
 
     # Test the deprecated name.
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveRaster((6, 10), 'det4'))
+    with pytest.warns(UserWarning):
+        RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10,
+                              False),
+        LiveRaster((6, 10), 'det4'))
 
 
 def test_live_scatter(fresh_RE):
@@ -462,8 +464,9 @@ def test_live_scatter(fresh_RE):
                 xlim=(-3, 3), ylim=(-5, 5)))
 
     # Test the deprecated name.
-    RE(outer_product_scan([det5],
-                          jittery_motor1, -3, 3, 6,
-                          jittery_motor2, -5, 5, 10, False),
-       LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
-                xlim=(-3, 3), ylim=(-5, 5)))
+    with pytest.warns(UserWarning):
+        RE(outer_product_scan([det5],
+                            jittery_motor1, -3, 3, 6,
+                            jittery_motor2, -5, 5, 10, False),
+        LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+                    xlim=(-3, 3), ylim=(-5, 5)))
