@@ -115,3 +115,8 @@ class persistify:
 
     def __iter__(self):
         return (yield from self._f(*self._args, **self._kwargs))
+
+    def __call__(self, **kwargs):
+        return (yield from self._f(*self._args,
+                                   **self._kwargs,
+                                   **kwargs))
