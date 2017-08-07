@@ -18,21 +18,22 @@ Overview
 API Changes
 ^^^^^^^^^^^
 
-* The modules implementing what was a dubbed a "SPEC-like" interface
+* The modules implementing what was loosely dubbed a "SPEC-like" interface
   (``bluesky.spec_api`` and ``bluesky.global_state``) have been entirely
   removed. This approach was insufficently similar to SPEC to satisfy SPEC
   users and confusingly inconsistent with the rest of bluesky.
 
   The new approach retains the good things about that interface and makes them
-  available for use with *all* plans, including user defined ones. Users who
-  have been fully utilitzing these "SPEC-like" plans will notice four
+  available for use with *all* plans consistently, including user defined ones.
+  Users who have been fully utilitzing these "SPEC-like" plans will notice four
   differences.
 
-  1. No ``gs.DETS``. Just use your own variable for detectors.
+  1. No ``gs.DETS``. Just use your own variable for detectors. Instead of:
 
      .. code-block:: python
 
          # OLD ALTERNATIVE, NO LONGER SUPPORTED
+
          from bluesky.global_state import gs
          from bluesky.spec_api import ct
 
@@ -48,8 +49,8 @@ API Changes
         dets = # a list of some detectors
         RE(count(dets))
 
-     This means you can keep multiple lists for easy task switching. Instead of
-     continually updating one global list like this:
+     Notice that you can use multiple lists to enable easy task switching.
+     Instead of continually updating one global list like this:
 
      .. code-block:: python
 
@@ -74,9 +75,9 @@ API Changes
   2. Automatic baseline readings, concurrent monitoring, and "flying"
      can be set up uniformly for all plans.
 
-     Formerly, "flyers", signals to monitor, and devices to read at the
-     beginning and the end of each run ("baseline" readings) were configured
-     like so:
+     Formerly, a list of devices to read at the beginning and the end of each
+     run ("baseline" readings), a list of signals to concurrent monitor, and
+     a list of "flyers" to run concurrently were configured like so:
 
      .. code-block:: python
 
@@ -84,18 +85,21 @@ API Changes
 
         from bluesky.spec_api import ct
 
+        gs.BASELINE_DEVICES = # a list of devices to read at start and end
         gs.MONTIORS = # a list of signals to monitor concurrently
         gs.FLYERS = # a list of "flyable" devices
-        gs.BASELINE_DEVICES = # a list of devices to read at start and end
 
         gs.DETS = # a list of detectors
 
         RE(ct())  # monitoring, flying, and baseline readings are added
 
-     And formerly, these setting only affected the behavior of the "SPEC-like"
-     plans, such as ``ct`` and ``ascan``.
+     And formerly, those settings only affected the behavior of the "SPEC-like"
+     plans, such as ``ct`` and ``ascan``. They were ignored by their
+     counterparts ``count`` and ``scan``, as well as user-defined plans. This
+     was not desirable!
 
-     Now, the :ref:`diagnostic preprocessor <diagnostic_preprocessor>` can be
+     This scheme has been replaced by the
+     :ref:`diagnostic preprocessor <diagnostic_preprocessor>`, which can be
      used to globally modify *all* plans, including user-defined ones.
 
      .. code-block:: python
@@ -141,8 +145,8 @@ API Changes
      output off and on.
 
   4. Peak anallysis, now computed automatically by the BestEffortCallback
-     above, can be viewed with a keyboard shortcut. The peak statistics are
-     accessed differently.
+     above, can be viewed with a keyboard shortcut. The peak statistics,
+     formerly encapsulated in ``gs.PS``, are now organized differently.
 
      For each plot, simple peak-fitting is performed in the background. Of
      course, it may or may not be applicable depending on your data, and it is
@@ -157,7 +161,7 @@ API Changes
 
         peaks = bec.peaks
 
-     Access various statistics like:
+     Inside ``peaks``, access various statistics like:
 
      .. code-block:: python
 
@@ -166,8 +170,9 @@ API Changes
         peaks.max
         peaks.min
 
-     Each of these is a dictionary with an entry for each detector fields that
-     was fit. So, an individual reading is accessed as
+     Each of these is a dictionary with an entry for each field that was fit.
+     For example, the 'center of mass' peak statistics for a field named
+     ``'ccd_stats1_total'`` would be accessed like
      ``peaks.com['ccd_stats1_total']``.
 
 * The plan preprocessors ``configure_count_time_wrapper`` and
