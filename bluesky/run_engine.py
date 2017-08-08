@@ -147,6 +147,12 @@ class RunEngine:
         called whenever the RunEngine's state attribute is updated; default
         is None
 
+    waiting_hook
+        Callable with signature ``f(status_object)`` that will be called
+        whenever the RunEngine is waiting for long-running commands
+        (trigger, set, kickoff, complete) to complete. This hook is useful to
+        incorporate a progress bar.
+
     ignore_callback_exceptions
         Boolean, False by default.
 
@@ -193,6 +199,7 @@ class RunEngine:
         self.max_depth = None
         self.msg_hook = None
         self.state_hook = None
+        self.waiting_hook = None
         self.record_interruptions = False
 
         # The RunEngine keeps track of a *lot* of state.
@@ -225,7 +232,8 @@ class RunEngine:
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo data-points
         self._suspenders = set()  # set holding suspenders
-        self._groups = defaultdict(set)  # sets of objs to wait for
+        self._groups = defaultdict(set)  # sets of Events to wait for
+        self._status_objs = defaultdict(set)  # status objects to wait for
         self._temp_callback_ids = set()  # ids from CallbackRegistry
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
@@ -376,6 +384,7 @@ class RunEngine:
         self._sequence_counters.clear()
         self._teed_sequence_counters.clear()
         self._groups.clear()
+        self._status_objs.clear()
         self._interruptions_desc_uid = None
         self._interruptions_counter = count(1)
 
@@ -1565,6 +1574,7 @@ class RunEngine:
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
+        self._status_objs[group].add(ret)
         return ret
 
     @asyncio.coroutine
@@ -1600,6 +1610,7 @@ class RunEngine:
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
+        self._status_objs[group].add(ret)
         return ret
 
     @asyncio.coroutine
@@ -1717,6 +1728,7 @@ class RunEngine:
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
+        self._status_objs[group].add(ret)
 
         return ret
 
@@ -1744,6 +1756,7 @@ class RunEngine:
 
         ret.finished_cb = done_callback
         self._groups[group].add(p_event.wait())
+        self._status_objs[group].add(ret)
 
         return ret
 
@@ -1764,7 +1777,22 @@ class RunEngine:
             group = msg.kwargs['group']
         futs = list(self._groups.pop(group, []))
         if futs:
-            yield from self._wait_for(Msg('wait_for', None, futs))
+            status_objs = self._status_objs.pop(group)
+            try:
+                if self.waiting_hook is not None:
+                    # Notify the waiting_hook function that the RunEngine is
+                    # waiting for these status_objs to complete. Users can use
+                    # the information these encapsulate to create a progress
+                    # bar.
+                    self.waiting_hook(status_objs)
+                yield from self._wait_for(Msg('wait_for', None, futs))
+            finally:
+                if self.waiting_hook is not None:
+                    # Notify the waiting_hook function that we have moved on by
+                    # sending it `None`. If all goes well, it could have
+                    # inferred this from the status_obj, but there are edge
+                    # cases.
+                    self.waiting_hook(None)
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """

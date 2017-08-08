@@ -1129,3 +1129,33 @@ def test_old_subscribe(fresh_RE):
     assert len(collector) == 3
 
     RE.unsubscribe(1)
+
+
+def test_waiting_hook(fresh_RE):
+    from bluesky.examples import motor, motor1, motor2
+    RE = fresh_RE
+
+    collector = []
+
+    def collect(sts):
+        collector.append(sts)
+
+    RE.waiting_hook = collect
+
+    RE([Msg('set', motor, 5, group='A'), Msg('wait', group='A')])
+
+    sts, none = collector
+    assert isinstance(sts, set)
+    assert len(sts) == 1
+    assert none is None
+    collector.clear()
+
+    RE([Msg('set', motor1, 5, group='A'),
+        Msg('set', motor2, 3, group='A'),
+        Msg('wait', group='A')])
+
+    sts, none = collector
+    assert isinstance(sts, set)
+    assert len(sts) == 2
+    assert none is None
+    collector.clear()
