@@ -452,7 +452,7 @@ class Syn2DGauss(Reader):
         super().__init__(name, {name: func})
 
 
-class ReaderWithFileStore(Reader):
+class ReaderWithRegistry(Reader):
     """
 
     Parameters
@@ -470,8 +470,8 @@ class ReaderWithFileStore(Reader):
     loop : asyncio.EventLoop, optional
         used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
         unspecified
-    fs : FileStore
-        FileStore object that supports inserting resource and datum documents
+    fs : Registry
+        Registry object that supports inserting resource and datum documents
     save_path : str, optional
         Path to save files to, if None make a temp dir, defaults to None.
 
@@ -503,13 +503,13 @@ class ReaderWithFileStore(Reader):
         self._result.clear()
         for idx, (name, reading) in enumerate(self.trigger_read().items()):
             # Save the actual reading['value'] to disk and create a record
-            # in FileStore.
+            # in Registry.
             np.save('{}_{}.npy'.format(self._path_stem, idx), reading['value'])
             datum_id = new_uid()
             self.fs.insert_datum(self._resource_id, datum_id,
                                  dict(index=idx))
             # And now change the reading in place, replacing the value with
-            # a reference to FileStore.
+            # a reference to Registry.
             reading['value'] = datum_id
             self._result[name] = reading
 
@@ -668,7 +668,7 @@ class MockFlyer:
         pass
 
 
-class GeneralReaderWithFileStore(Reader):
+class GeneralReaderWithRegistry(Reader):
     """
 
     Parameters
@@ -686,8 +686,8 @@ class GeneralReaderWithFileStore(Reader):
     loop : asyncio.EventLoop, optional
         used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
         unspecified
-    fs : FileStore
-        FileStore object that supports inserting resource and datum documents
+    fs : Registry
+        Registry object that supports inserting resource and datum documents
     save_path : str, optional
         Path to save files to, if None make a temp dir, defaults to None.
     save_func : function, optional
@@ -730,14 +730,14 @@ class GeneralReaderWithFileStore(Reader):
         self._result.clear()
         for idx, (name, reading) in enumerate(super().read().items()):
             # Save the actual reading['value'] to disk and create a record
-            # in FileStore.
+            # in Registry.
             self.save_func('{}_{}.{}'.format(self._path_stem, idx,
                                              self.save_ext), reading['value'])
             datum_id = new_uid()
             self.fs.insert_datum(self._resource_id, datum_id,
                                  dict(index=idx))
             # And now change the reading in place, replacing the value with
-            # a reference to FileStore.
+            # a reference to Registry.
             reading['value'] = datum_id
             self._result[name] = reading
         return NullStatus()

@@ -4,7 +4,7 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               checkpoint_forever, simple_scan_saving,
                               stepscan, MockFlyer, fly_gen,
                               conditional_break, SynGauss, flyer1,
-                              ReaderWithFileStore, ReaderWithFSHandler
+                              ReaderWithRegistry, ReaderWithFSHandler
                               )
 from bluesky.callbacks import LivePlot
 from bluesky import (Msg, IllegalMessageSequence,
@@ -686,7 +686,7 @@ def test_async_trigger_delay(motor_det, fresh_RE):
 def test_fs_reader(db):
     fs = db.fs
     fs.register_handler('RWFS_NPY', ReaderWithFSHandler)
-    det = ReaderWithFileStore('det',
+    det = ReaderWithRegistry('det',
                               {'img': lambda: np.array(np.ones((10, 10)))},
                               fs=fs)
     det.stage()

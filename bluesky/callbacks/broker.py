@@ -15,8 +15,8 @@ class LiveImage(CallbackBase):
     ----------
     field : string
         name of data field in an Event
-    fs: FileStore instance
-        The FileStore instance to pull the data from
+    fs: Registry instance
+        The Registry instance to pull the data from
     cmap : str,  colormap, or None
         color map to use.  Defaults to gray
     norm : Normalize or None
