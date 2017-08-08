@@ -149,7 +149,7 @@ class OlogCallback(CallbackBase):
     Example
     -------
     # add this callback to the run engine
-    >>> gs.RE.subscribe('start', OlogCallback())
+    >>> gs.RE.subscribe(OlogCallback(), 'start')
     # turn off the default logger
     >>> gs.RE.logbook = None
     """

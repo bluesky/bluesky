@@ -77,7 +77,7 @@ invoked this way. For some callback function ``cb``, the usage is:
 
 .. code-block:: python
 
-    RE.subscribe('all', cb)
+    RE.subscribe(cb)
 
 This step is usually performed in a startup file (i.e., IPython profile).
 
@@ -623,7 +623,7 @@ exporter in ``post_run`` and subscribe.
 
     from bluesky.callbacks.broker import post_run
 
-    RE.subscribe('all', post_run(exporter))
+    RE.subscribe(post_run(exporter))
 
 It also possible to write TIFFs live, hence the name ``LiveTiffExporter``, but
 there is an important disadvantage to doing this subscription in the same
@@ -633,7 +633,7 @@ experiment may not be acceptable.
 
 .. code-block:: python
 
-    RE.subscribe('all', exporter)
+    RE.subscribe(exporter)
 
 There are more configuration options available, as given in detail below. It is
 recommended to use these expensive callbacks in a separate process.
@@ -663,7 +663,7 @@ Working example:
         filename = '{}.h5'.format(run_start_uid)
         suitcase.export(header, filename)
 
-    RE.subscribe('stop', suitcase_as_callback)
+    RE.subscribe(suitcase_as_callback, 'stop')
 
 Export Metadata to the Olog
 +++++++++++++++++++++++++++
@@ -688,7 +688,7 @@ so there is some boilerplate:
     configured_logbook_func = partial(generic_logbook_func, logbooks=LOGBOOKS)
 
     cb = logbook_cb_factory(configured_logbook_func)
-    RE.subscribe('start', cb)
+    RE.subscribe(cb, 'start')
 
 The module ``bluesky.callbacks.olog`` includes some templates that format the
 data from the 'start' document into a readable log entry. You can also write
@@ -755,7 +755,7 @@ false alarm.
 
     from bluesky.callbacks.broker import post_run, verify_files_saved
 
-    RE.subscribe('all', post_run(verify_files_saved))
+    RE.subscribe(post_run(verify_files_saved))
 
 .. _debugging_callbacks:
 
@@ -944,7 +944,7 @@ simple example, just print them.
 
     from bluesky.callbacks.zmq import RemoteDispatcher
     d = RemoteDispatcher(('localhost', 5578))
-    d.subscribe('all', print)
+    d.subscribe(print)
     d.start()  # runs event loop forever
 
 On the machine/process where you want to collect data, hook up a subscription

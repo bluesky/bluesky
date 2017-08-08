@@ -288,7 +288,7 @@ def test_dispatcher_unsubscribe_all(fresh_RE):
     def cb(name, doc):
         pass
 
-    fresh_RE.subscribe('all', cb)
+    fresh_RE.subscribe(cb)
     assert count_callbacks(fresh_RE) == 5
     fresh_RE.dispatcher.unsubscribe_all()
     assert count_callbacks(fresh_RE) == 0
@@ -340,7 +340,7 @@ def test_record_interruptions(fresh_RE):
         docs[name].append(doc)
         print(docs)
 
-    fresh_RE.subscribe('all', collect)
+    fresh_RE.subscribe(collect)
     fresh_RE.ignore_callback_exceptions = False
     fresh_RE.msg_hook = print
 
@@ -1040,7 +1040,7 @@ def test_preprocessors(fresh_RE):
     RE.msg_hook = lambda msg: actual.append(msg)
     RE([Msg('null')])
     print(actual)
-    expected = [Msg('subscribe', None, 'all', my_sub),
+    expected = [Msg('subscribe', None, my_sub, 'all'),
                 Msg('null'),
                 Msg('null', 'cleanup'),
                 Msg('unsubscribe', None, token=0)]
@@ -1105,3 +1105,27 @@ def test_colliding_streams(fresh_RE):
 
     assert list(range(1, 36)) == [e['seq_num'] for e in collector['primary']]
     assert list(range(1, 3)) == [e['seq_num'] for e in collector['baseline']]
+
+
+def test_old_subscribe(fresh_RE):
+    # Old usage had reversed argument order. It should warn but still work.
+    RE = fresh_RE
+    collector = []
+
+    def collect(name, doc):
+        collector.append(doc)
+
+    with pytest.warns(UserWarning):
+        RE.subscribe('all', collect)
+
+    RE([Msg('open_run'), Msg('close_run')])
+    assert len(collector) == 2
+
+    RE.unsubscribe(0)
+    with pytest.warns(UserWarning):
+        RE.subscribe('start', collect)
+
+    RE([Msg('open_run'), Msg('close_run')])
+    assert len(collector) == 3
+
+    RE.unsubscribe(1)

@@ -604,7 +604,7 @@ class RunEngine:
 
         for name, funcs in normalize_subs_input(subs).items():
             for func in funcs:
-                self._temp_callback_ids.add(self.subscribe(name, func))
+                self._temp_callback_ids.add(self.subscribe(func, name))
 
         self._plan = plan  # this ref is just used for metadata introspection
         self._metadata_per_call.update(metadata_kw)
@@ -1962,7 +1962,7 @@ class RunEngine:
 
         Expected message object is:
 
-            Msg('subscribe', None, document_name, callback_function)
+            Msg('subscribe', None, callback_function, document_name)
 
         where `document_name` is one of:
 

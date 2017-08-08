@@ -31,7 +31,7 @@ def test_all(fresh_RE):
     assert c.value == 10 + 1 + 2  # events, descriptor, start and stop
 
     c = CallbackCounter()
-    token = RE.subscribe('all', c)
+    token = RE.subscribe(c)
     RE(stepscan(det, motor))
     RE.unsubscribe(token)
     assert c.value == 10 + 1 + 2
@@ -92,7 +92,7 @@ def test_subscribe_msg(fresh_RE):
     c = CallbackCounter()
 
     def counting_stepscan(det, motor):
-        yield Msg('subscribe', None, 'start', c)
+        yield Msg('subscribe', None, c, 'start')
         yield from stepscan(det, motor)
 
     RE(counting_stepscan(det, motor))  # should advance c
@@ -109,12 +109,12 @@ def test_unknown_cb_raises(fresh_RE):
     def f(name, doc):
         pass
     with pytest.raises(KeyError):
-        RE.subscribe('not a thing', f)
+        RE.subscribe(f, 'not a thing')
     # back-compat alias for subscribe
     with pytest.raises(KeyError):
-        RE.subscribe_lossless('not a thing', f)
+        RE.subscribe_lossless(f, 'not a thing')
     with pytest.raises(KeyError):
-        RE._subscribe_lossless('not a thing', f)
+        RE._subscribe_lossless(f, 'not a thing')
 
 
 def test_table_warns():
@@ -136,7 +136,7 @@ def test_table(fresh_RE):
         ad_scan = AdaptiveAbsScanPlan([det], 'det', motor, -15, 5, .01, 1, .05,
                                       True)
         # use lossless sub here because rows can get dropped
-        token = RE.subscribe_lossless('all', table)
+        token = RE.subscribe_lossless(table)
         RE(ad_scan)
         RE.unsubscribe_lossless(token)
 
@@ -260,7 +260,7 @@ def test_zmq(fresh_RE):
             print('putting ', name, 'in queue')
             queue.put((name, doc))
         d = RemoteDispatcher('127.0.0.1:5568')
-        d.subscribe('all', put_in_queue)
+        d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
         d._loop.call_later(9, d.stop)
         d.start()
@@ -449,8 +449,10 @@ def test_live_grid(fresh_RE):
        LiveGrid((6, 10), 'det4'))
 
     # Test the deprecated name.
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveRaster((6, 10), 'det4'))
+    with pytest.warns(UserWarning):
+        RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10,
+                              False),
+        LiveRaster((6, 10), 'det4'))
 
 
 def test_live_scatter(fresh_RE):
@@ -462,8 +464,9 @@ def test_live_scatter(fresh_RE):
                 xlim=(-3, 3), ylim=(-5, 5)))
 
     # Test the deprecated name.
-    RE(outer_product_scan([det5],
-                          jittery_motor1, -3, 3, 6,
-                          jittery_motor2, -5, 5, 10, False),
-       LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
-                xlim=(-3, 3), ylim=(-5, 5)))
+    with pytest.warns(UserWarning):
+        RE(outer_product_scan([det5],
+                            jittery_motor1, -3, 3, 6,
+                            jittery_motor2, -5, 5, 10, False),
+        LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+                    xlim=(-3, 3), ylim=(-5, 5)))
