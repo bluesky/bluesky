@@ -1107,7 +1107,6 @@ def test_colliding_streams(fresh_RE):
     assert list(range(1, 3)) == [e['seq_num'] for e in collector['baseline']]
 
 
-<<<<<<< HEAD
 def test_old_subscribe(fresh_RE):
     # Old usage had reversed argument order. It should warn but still work.
     RE = fresh_RE

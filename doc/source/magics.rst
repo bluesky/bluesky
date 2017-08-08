@@ -161,45 +161,49 @@ language out of magics. You'll find that there are unexpected corner-cases
 everywhere, and that inventing a language is hard! Stick to Python for writing
 any program logic, and use magics as one-off shortcuts.
 
-The ``%ct`` and ``%mov`` magics were defined by execting this script:
+Built-in Magics
+---------------
+
+The names of these magics, and the order of the parameters they take, are meant
+to feel familiar to users of :doc:`SPEC <comparison-with-spec>`. They encompass
+only a subset of the plans available in bluesky.
+
+These magics expect to find an instance of the RunEngine named ``RE`` and (when 
+applicable) a list of detectors named ``dets`` pre-defined by the user in the
+global namespace.
+
+Again, they must be registered with IPython before they can be used:
 
 .. code-block:: python
 
-    # magics.py
+    from bluesky.magics import SPECMagics
+    get_ipython().register_magics(SPECMagics)
 
-    # This file must be run in the global namespace, not imported as a module.
-    # This can be done using an IPython profile startup directory or with
-    # `%run -i magics.py`.
+.. currentmodule:: bluesky.plans
 
-    import ast
-    from IPython.core.magic import register_line_magic
-    from bluesky.plans import count, mv
+======================================================================= ==============================
+Magic                                                                   Plan Invoked
+======================================================================= ==============================
+``%mov``                                                                :func:`mv`
+``%movr``                                                               :func:`mvr`
+``%ct``                                                                 :func:`count`
+``%ascan motor start stop intervals``                                   :func:`scan`
+``%dscan motor start stop intervals``                                   :func:`relative_scan`
+``%a2scan motor1 start1 stop1 motor2 start2 stop2 intervals``           :func:`inner_product_scan`
+``%d2scan motor1 start1 stop1 motor2 start2 stop2 intervals``           :func:`relative_inner_product_scan`
+``%mesh motor1 start1 stop1 intervals1 motor2 start2 stop2 intervals2`` :func:`outer_product_scan`
+``%wa``                                                                 ("where all") Survey positioners*
+======================================================================= ==============================
 
+\*The magic ``%wa`` differs from the others; it does not execute a plan. It
+also requires some special configuration: it relies on a list of "positioners"
+at ``SPECMagics.positioners`` that must be configured in advance. For example:
 
-    @register_line_magic
-    def ct(line):
-        # %ct --> RE(count(d))
-        # Expect this magic to be defined and executed in a namespace with a
-        # RunEngine instance named RE and a list of detectors named d.
-        global d
-        global RE
-        print('---> RE(count(d))')
-        return RE(count(d))
+.. code-block:: python
 
+    MY_POSITIONERS = [eta,
+                      delta,
+                      gamma,
+                      temperature]
 
-    @register_line_magic
-    def mov(line):
-        # %mov theta 3 --> RE(mv(theta, 3))
-        # Expect this magic to be defined and executed in a namespace with a
-        # RunEngine instance named RE.
-        # Avoid clobbering the name '%mv', the built-in magic for moving files.
-        global RE
-        motor_varname, pos = line.split()
-        motor = globals()[motor_varname]
-        pos = ast.literal_eval(pos)
-        print('---> RE(mv({motor}, {pos}))'.format(motor=motor_varname, pos=pos))
-        return RE(mv(motor, pos))
-
-    # In an interactive session, we need to delete these to avoid
-    # name conflicts for automagic to work.
-    del ct, mov
+    SPECMagics.positioners.extend(MY_POSITIOENRS)

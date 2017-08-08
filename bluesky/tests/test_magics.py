@@ -126,6 +126,18 @@ def test_spec_magics_bad_args(pln, line, magic, fresh_RE):
         getattr(sm, magic)(line)
 
 
+# The %wa magic doesn't use a RunEngine or a plan.
+def test_wa():
+    from bluesky.examples import motor
+    ip = FakeIPython({})
+    sm = SPECMagics(ip)
+    # Test an empty list.
+    sm.wa('')
+
+    sm.positioners.extend([motor])
+    sm.wa('')
+
+
 def test_magics_missing_ns_key(fresh_RE):
     RE = fresh_RE
     ip = FakeIPython({})
