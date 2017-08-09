@@ -1,5 +1,6 @@
 from bluesky.plans import scan
 from bluesky.simulators import (print_summary, print_summary_wrapper,
+                                summarize_plan,
                                 check_limits, LimitsExceeded,
                                 plot_raster_path)
 import pytest
@@ -9,7 +10,8 @@ from bluesky.plans import outer_product_scan
 
 def test_print_summary(motor_det):
     motor, det = motor_det
-    print_summary(scan([det], motor, -1, 1, 10))
+    print_summary(scan([det], motor, -1, 1, 10))  # old name
+    summarize_plan(scan([det], motor, -1, 1, 10))  # new name
     list(print_summary_wrapper(scan([det], motor, -1, 1, 10)))
 
 def test_old_module_name(motor_det):
