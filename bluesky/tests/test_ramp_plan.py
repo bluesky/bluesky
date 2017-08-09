@@ -59,11 +59,11 @@ def test_timeout(RE):
     det = SynGauss('det', mot, 'mot', 0, 3)
 
     def kickoff():
-        # This process should take a total of 0.5 seconds, but it will be
+        # This process should take a total of 5 seconds, but it will be
         # interrupted after 0.1 seconds via the timeout keyword passed to
         # ramp_plan below.
         yield Msg('null')
-        for j in range(10):
+        for j in range(100):
             RE.loop.call_later(.05 * j, lambda j=j: mot.set(j))
 
         return StatusBase()
@@ -79,4 +79,6 @@ def test_timeout(RE):
     stop = time.time()
     elapsed = stop - start
 
-    assert .1 < elapsed < .4
+    # This test has a tendency to randomly fail, so we're giving it plenty of
+    # time to run. 4, though much greater than 0.1, is still less than 5.
+    assert .1 < elapsed < 4
