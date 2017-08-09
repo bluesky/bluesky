@@ -831,6 +831,42 @@ def unsubscribe(token):
     return (yield Msg('unsubscribe', token=token))
 
 
+def print_summary_wrapper(plan):
+    """Print summary of plan as it goes by
+
+    Prints a minimal version of the plan, showing only moves and
+    where events are created.  Yields the `Msg` unchanged.
+
+    Parameters
+    ----------
+    plan : iterable
+        Must yield `Msg` objects
+
+    Yields
+    ------
+    msg : `Msg`
+    """
+
+    read_cache = []
+    for msg in plan:
+        cmd = msg.command
+        if cmd == 'open_run':
+            print('{:=^80}'.format(' Open Run '))
+        elif cmd == 'close_run':
+            print('{:=^80}'.format(' Close Run '))
+        elif cmd == 'set':
+            print('{motor.name} -> {args[0]}'.format(motor=msg.obj,
+                                                     args=msg.args))
+        elif cmd == 'create':
+            pass
+        elif cmd == 'read':
+            read_cache.append(msg.obj.name)
+        elif cmd == 'save':
+            print('  Read {}'.format(read_cache))
+            read_cache = []
+        yield msg
+
+
 def run_wrapper(plan, *, md=None):
     """Enclose in 'open_run' and 'close_run' messages.
 

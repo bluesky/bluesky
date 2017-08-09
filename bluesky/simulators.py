@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib import collections as mcollections
 from matplotlib import patches as mpatches
 from warnings import warn
+from bluesky.plans import print_summary_wrapper
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -58,39 +59,22 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
 
 
 def summarize_plan(plan):
-    """Print summary of plan as it goes by
+    """Print summary of plan
 
     Prints a minimal version of the plan, showing only moves and
-    where events are created.  Yields the `Msg` unchanged.
+    where events are created.
 
     Parameters
     ----------
     plan : iterable
         Must yield `Msg` objects
-
-    Yields
-    ------
-    msg : `Msg`
     """
+    for msg in print_summary_wrapper(plan):
+        ...
 
-    read_cache = []
-    for msg in plan:
-        cmd = msg.command
-        if cmd == 'open_run':
-            print('{:=^80}'.format(' Open Run '))
-        elif cmd == 'close_run':
-            print('{:=^80}'.format(' Close Run '))
-        elif cmd == 'set':
-            print('{motor.name} -> {args[0]}'.format(motor=msg.obj,
-                                                     args=msg.args))
-        elif cmd == 'create':
-            pass
-        elif cmd == 'read':
-            read_cache.append(msg.obj.name)
-        elif cmd == 'save':
-            print('  Read {}'.format(read_cache))
-            read_cache = []
-        yield msg
+
+
+print_summary = summarize_plan  # back-compat
 
 
 class LimitsExceeded(Exception):
@@ -118,8 +102,3 @@ def check_limits(plan):
                 raise LimitsExceeded("This plan would put {} at {} "
                                      "which is outside of its limits, {}."
                                      "".format(msg.obj.name, pos, (low, high)))
-
-
-# back-compat
-print_summary_wrapper = summarize_plan
-print_summary = summarize_plan
