@@ -1403,7 +1403,7 @@ class RunEngine:
         data_keys = obj.describe()
         config = {obj.name: {'data': {}, 'timestamps': {}}}
         config[obj.name]['data_keys'] = obj.describe_configuration()
-        apply_to_dict_recursively(d=obj.read_configuration,
+        apply_to_dict_recursively(d=obj.read_configuration(),
                                   f=sanitize_np)
         for key, val in obj.read_configuration().items():
             # config[obj.name]['data'][key] = sanitize_np(val['value'])
