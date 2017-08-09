@@ -57,22 +57,7 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     return {'path': path, 'events': read_points}
 
 
-def print_summary(plan):
-    """Print summary of plan
-
-    Prints a minimal version of the plan, showing only moves and
-    where events are created.
-
-    Parameters
-    ----------
-    plan : iterable
-        Must yield `Msg` objects
-    """
-    for msg in print_summary_wrapper(plan):
-        ...
-
-
-def print_summary_wrapper(plan):
+def summarize_plan(plan):
     """Print summary of plan as it goes by
 
     Prints a minimal version of the plan, showing only moves and
@@ -133,3 +118,8 @@ def check_limits(plan):
                 raise LimitsExceeded("This plan would put {} at {} "
                                      "which is outside of its limits, {}."
                                      "".format(msg.obj.name, pos, (low, high)))
+
+
+# back-compat
+print_summary_wrapper = summarize_plan
+print_summary = summarize_plan
