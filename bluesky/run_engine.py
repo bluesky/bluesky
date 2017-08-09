@@ -23,7 +23,7 @@ from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     RequestAbort, RequestStop,  RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
-                    single_gen, short_uid)
+                    single_gen, short_uid, apply_to_dict_recursively)
 
 
 class RunEngineStateMachine(StateMachine):
@@ -1359,8 +1359,11 @@ class RunEngine:
         "Read the object's configuration and cache it."
         config_values = {}
         config_ts = {}
+        apply_to_dict_recursively(d=obj.read_configuration(),
+                                  f=sanitize_np)
         for key, val in obj.read_configuration().items():
-            config_values[key] = sanitize_np(val['value'])
+            # config_values[key] = sanitize_np(val['value'])
+            config_values[key] = val['value']
             config_ts[key] = val['timestamp']
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
@@ -1400,14 +1403,18 @@ class RunEngine:
         data_keys = obj.describe()
         config = {obj.name: {'data': {}, 'timestamps': {}}}
         config[obj.name]['data_keys'] = obj.describe_configuration()
+        apply_to_dict_recursively(d=obj.read_configuration,
+                                  f=sanitize_np)
         for key, val in obj.read_configuration().items():
-            config[obj.name]['data'][key] = sanitize_np(val['value'])
+            # config[obj.name]['data'][key] = sanitize_np(val['value'])
+            config[obj.name]['data'][key] = val['value']
             config[obj.name]['timestamps'][key] = val['timestamp']
         object_keys = {obj.name: list(data_keys)}
         desc_doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                         data_keys=data_keys, uid=descriptor_uid,
                         configuration=config, name=name,
                         object_keys=object_keys)
+        apply_to_dict_recursively(d=desc_doc, f=sanitize_np)
         self.log.debug("Emitted Event Descriptor with name %r containing "
                        "data keys %r (uid=%r)", name, data_keys.keys(),
                        descriptor_uid)
@@ -1421,6 +1428,7 @@ class RunEngine:
                        time=ttime.time(), data=data, timestamps=timestamps,
                        seq_num=next(seq_num_counter), uid=new_uid())
             jsonschema.validate(doc, schemas[DocumentNames.event])
+            apply_to_dict_recursively(d=doc, f=sanitize_np)
             self.dispatcher.process(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
@@ -1517,8 +1525,9 @@ class RunEngine:
         event_uid = new_uid()
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
-        for key in readings:
-            readings[key]['value'] = sanitize_np(readings[key]['value'])
+        apply_to_dict_recursively(d=readings, f=sanitize_np)
+        #for key in readings:
+        #    readings[key]['value'] = sanitize_np(readings[key]['value'])
         data, timestamps = _rearrange_into_parallel_dicts(readings)
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
@@ -1648,6 +1657,7 @@ class RunEngine:
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid,
                            name=stream_name)
+                apply_to_dict_recursively(d=doc, f=sanitize_np)
                 yield from self.emit(DocumentNames.descriptor, doc)
                 self.log.debug("Emitted Event Descriptor with name %r "
                                "containing data keys %r (uid=%r)", stream_name,
