@@ -930,5 +930,6 @@ def apply_to_dict_recursively(d, f):
     """
     for key, val in d.items():
         if hasattr(val, 'items'):
-            d[key] = apply_to_dict_recursively(val, f)
-            d[key] = f(val)
+            d[key] = apply_to_dict_recursively(d=val, f=f)
+        d[key] = f(val)
+    return d

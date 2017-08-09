@@ -1230,7 +1230,7 @@ class RunEngine:
         # Use copy for some reasonable (admittedly not total) protection
         # against users mutating the md with their validator.
         self.md_validator(dict(md))
-
+        apply_to_dict_recursively(d=dict(md), f=sanitize_np)
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
         yield from self.emit(DocumentNames.start, doc)
         self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
@@ -2063,6 +2063,7 @@ class RunEngine:
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
+        apply_to_dict_recursively(d=doc, f=sanitize_np)
         self.dispatcher.process(name, doc)
 
 
