@@ -46,7 +46,7 @@ class BlueskyMagics(Magics):
         strs = []
         for motor, pos in partition(2, line.split()):
             args.extend([ns[motor], le(pos)])
-            strs.extend([motor, repr(le(pos))])
+            strs.extend([motor, pos])
         print('---> RE(mv({}))'.format(', '.join(strs)))
         plan = bp.mv(*args)
         return RE(plan)
@@ -62,7 +62,7 @@ class BlueskyMagics(Magics):
         strs = []
         for motor, pos in partition(2, line.split()):
             args.extend([ns[motor], le(pos)])
-            strs.extend([motor, repr(le(pos))])
+            strs.extend([motor, pos])
         print('---> RE(mvr({}))'.format(', '.join(strs)))
         plan = bp.mvr(*args)
         return RE(plan)
@@ -72,7 +72,7 @@ class SPECMagics(Magics):
 
     @line_magic
     def ct(self, line):
-        if line.split():
+        if line.strip():
             raise TypeError("No parameters expected, just %ct")
         print('---> RE(count(dets))')
         ns = Namespace(self.shell.user_ns)
@@ -90,7 +90,8 @@ class SPECMagics(Magics):
         except ValueError:
             raise TypeError("Wrong parameters. Expected: "
                             "%ascan motor start stop intervals")
-        print('---> RE(scan(dets, {}, {}, {}, {} + 1))'.format(*line.split()))
+        print('---> RE(scan(dets, {}, {}, {}, {} + 1))'
+              ''.format(motor, start, stop, intervals))
         ns = Namespace(self.shell.user_ns)
         RE = ns['RE']
         plan = bp.scan(ns['dets'], ns[motor],
@@ -105,7 +106,7 @@ class SPECMagics(Magics):
             raise TypeError("Wrong parameters. Expected: "
                             "%dscan motor start stop intervals")
         print('---> RE(relative_scan(dets, {}, {}, {}, {} + 1))'
-              ''.format(*line.split()))
+              ''.format(motor, start, stop, intervals))
         ns = Namespace(self.shell.user_ns)
         RE = ns['RE']
         plan = bp.relative_scan(ns['dets'], ns[motor],
@@ -181,7 +182,7 @@ class SPECMagics(Magics):
     @line_magic
     def wa(self, line):
         "List positioner info. 'wa' stands for 'where all'."
-        if line.split():
+        if line.strip():
             raise TypeError("No parameters expected, just %wa")
         positioners = sorted(set(self.positioners), key=attrgetter('name'))
         values = []

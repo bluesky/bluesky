@@ -2097,8 +2097,14 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
            'plan_pattern': 'array',
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(object=steps),
-           'hints': {'dimensions': [('primary', motor.hints()['fields'])]},
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
     if per_step is None:
         per_step = one_1d_step
@@ -2184,8 +2190,14 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern': 'linspace',
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
-           'hints': {'dimensions': [('primary', motor.hints()['fields'])]},
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     if per_step is None:
@@ -2279,8 +2291,14 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern': 'logspace',
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
-           'hints': {'dimensions': [('primary', motor.hints()['fields'])]},
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     if per_step is None:
@@ -2384,8 +2402,14 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
                          'backstep': backstep,
                          'threshold': threshold},
            'plan_name': 'adaptive_scan',
-           'hints': {'dimensions': [('primary', motor.hints()['fields'])]},
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     @stage_decorator(list(detectors) + [motor])
@@ -2544,9 +2568,16 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                          'cycler': repr(cycler),
                          'per_step': repr(per_step)},
            'plan_name': 'scan_nd',
-           'hints': {'dimensions': [('primary', motor.hints()['fields'])
-                                    for motor in cycler.keys]},
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])
+                      for motor in cycler.keys]
+    except (AttributeError, KeyError):
+        # Not all motors provide a 'fields' hint, so we have to skip it.
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     if per_step is None:
@@ -2782,8 +2813,14 @@ def tweak(detector, target_field, motor, step, *, md=None):
                          'motor': repr(motor),
                          'step': step},
            'plan_name': 'tweak',
-           'hints': {'dimensions': [('primary', motor.hints()['fields'])]},
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
     d = detector
     try:
@@ -2886,9 +2923,15 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
            'plan_pattern': 'spiral_fermat',
            'plan_pattern_module': plan_patterns.__name__,
            'plan_pattern_args': pattern_args,
-           'hints': {'dimensions': [('primary', x_motor.hints()['fields']),
-                                    ('primary', y_motor.hints()['fields'])]},
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', x_motor.hints()['fields']),
+                      ('primary', y_motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
@@ -2993,9 +3036,15 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            'plan_pattern': 'spiral',
            'plan_pattern_args': pattern_args,
            'plan_pattern_module': plan_patterns.__name__,
-           'hints': {'dimensions': [('primary', x_motor.hints()['fields']),
-                                    ('primary', y_motor.hints()['fields'])]},
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', x_motor.hints()['fields']),
+                      ('primary', y_motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
