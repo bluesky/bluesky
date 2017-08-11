@@ -387,7 +387,7 @@ def test_zmq_no_RE(fresh_RE, db):
 
     for nd_pair in db[-1].stream():
         p(*nd_pair)
-    time.sleep(1)
+    time.sleep(5)
 
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []
