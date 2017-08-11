@@ -1,9 +1,11 @@
 *******************************
-Writing Custom IPython 'Magics'
+IPython 'Magics' [Experimental]
 *******************************
 
-This section is not about bluesky itself; it highlights a feature of
-IPython.
+.. warning::
+
+    This section covers an experimental feature of bluesky. It may be altered
+    or removed in the future.
 
 Bluesky is designed to be usable in an interactive session and also as a
 library for building higher-level tools, such as a Graphical User Interface.
@@ -27,13 +29,8 @@ The IPython documentation documents the
 and, further,
 `how to define custom magics <https://ipython.readthedocs.io/en/stable/config/custommagics.html>`_.
 
-What follows are some examples for defining IPython magics for bluesky and some
-suggestions on using them effectively. We emphasize that these examples are not
-part of the official bluesky interface; they merely illustrate a reasonable
-pattern for user customization.
-
 Suppose you have imported the some plans, defined a RunEngine ``RE``, and
-created a list of detectors ``d``.
+created a list of detectors ``dets``, like so:
 
 .. code-block:: python
 
@@ -42,7 +39,7 @@ created a list of detectors ``d``.
     from bluesky.plans import count, mv
 
     RE = RunEngine({})
-    d = [det1, det2]
+    dets = [det1, det2]
 
 .. ipython:: python
     :suppress:
@@ -50,55 +47,42 @@ created a list of detectors ``d``.
     from bluesky import RunEngine
     RE = RunEngine({})
     from bluesky.examples import det1, det2, motor  # simulated hardware
-    d = [det1, det2]
+    dets = [det1, det2]
     from bluesky.plans import count, mv
-
 
 And suppose that, in typical interactive use, you often take a reading from
 these detectors, move a motor, and repeat.
 
 .. ipython:: python
 
-    RE(count(d))
+    RE(count(dets))
     RE(mv(motor, 3))
 
-We can define IPython magics for these commands (see script below) to create
-shortcuts, such as:
+Bundled with bluesky are some IPython magics for executing these commands more
+succinctly. To use them, register them with IPython:
 
 .. ipython:: python
-    :suppress:
 
-    import ast
-    from IPython.core.magic import register_line_magic
-    import bluesky.plans as bp
-    def ct(line):
-        global d
-        global RE
-        print('---> RE(count(d))')
-        return RE(bp.count(d))
+    from bluesky.magics import SPECMagics
+    get_ipython().register_magics(SPECMagics)
 
-    register_line_magic(ct)
-    def mov(line):
-        global RE
-        motor_varname, pos = line.split()
-        motor = globals()[motor_varname]
-        pos = ast.literal_eval(pos)
-        print('---> RE(mv({motor}, {pos}))'.format(motor=motor_varname, pos=pos))
-        return RE(bp.mv(motor, pos))
-
-    register_line_magic(mov)
-    del ct, mov
+The magics expect to find an instance of the RunEngine named ``RE`` and (when
+applicable) a list of detectors named ``dets`` pre-defined by the user in the
+global namespace. If those expectations are satisfied, ``RE(count(dets))`` can
+be handily invoked like this:
 
 .. ipython:: python
 
     %ct
 
+And ``RE(mv(motor, 3))`` can be run like this:
+
 .. ipython:: python
 
     %mov motor 3
 
-IPython's 'automagic' will even let you drop the ``%`` as long as the meaning
-is unambiguous:
+If IPython’s ‘automagic’ feature is enabled, IPython will even let you drop the
+% as long as the meaning is unambiguous:
 
 .. ipython:: python
 
@@ -108,7 +92,11 @@ is unambiguous:
     # ... but the magic still works.
     %ct
 
-It's still possible to capture the output of execution in a variable:
+For what it’s worth, we recommend disabling 'automagic'. The ``%`` is useful
+for flagging what follows as magical, non-Python code.
+
+Using the magics, it’s still possible to capture the output of execution in a
+variable:
 
 .. ipython:: python
 
@@ -122,8 +110,8 @@ But it's not possible to access the underlying plan with introspection tools:
 
 .. code-block:: python
 
-    print_summary(count(d))  # This works
-    print_summary(%ct)  # This does not!
+    summarize_plan(count(dets))  # This works
+    sumamrize_plan(%ct)  # This does not!
 
 Magics invoking the bluesky RunEngine do not combine well and should not be
 used as building blocks. They should only be run one at a time. **Do not put
@@ -142,7 +130,7 @@ user-defined plans like:
 
     def multi_count(N):
         for i in range(N):
-            yield from count(d)
+            yield from count(dets)
 
 and executing them
 
@@ -150,16 +138,13 @@ and executing them
     
     RE(multi_count(3))
 
-Then, if you wish, define a new magic for invoking your custom plan. Or skip
-it and just use the plan directly, as above. The shortcuts are best for quick,
-simple operations with few parameters and no need for simluation.
+The shortcuts are best for quick, simple operations with few parameters and no
+need for simluation.
 
-Wrting custom plans retains correct interruption behavior and retains your
-ability to simulate the plans for error-checking, time estimation,
-pre-visualization, etc.  Resist the temptation to invent a private macro
-language out of magics. You'll find that there are unexpected corner-cases
-everywhere, and that inventing a language is hard! Stick to Python for writing
-any program logic, and use magics as one-off shortcuts.
+Resist the temptation to invent a private macro language out of magics. You'll
+find that there are unexpected corner-cases everywhere, and that inventing a
+language is hard! Stick to Python for writing any program logic, and use magics
+as one-off shortcuts.
 
 Built-in Magics
 ---------------
@@ -206,4 +191,4 @@ at ``SPECMagics.positioners`` that must be configured in advance. For example:
                       gamma,
                       temperature]
 
-    SPECMagics.positioners.extend(MY_POSITIOENRS)
+    SPECMagics.positioners.extend(MY_POSITIONERS)
