@@ -3363,6 +3363,9 @@ class Plan(Struct):
 
         Any keyword arguments override present settings.
         """
+        warn("This plan and all object-oriented plans have been deprecated "
+             "and will be removed in a future release of bluesky. Instead of "
+             "Count or Scan use count or scan, etc.")
         subs = defaultdict(list)
         update_sub_lists(subs, self.subs)
         update_sub_lists(subs, apply_sub_factories(self.sub_factories, self))
