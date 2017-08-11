@@ -248,7 +248,7 @@ def test_zmq(fresh_RE):
     # Run a Publisher and a RunEngine in this main process.
 
     RE = fresh_RE
-    p = Publisher(RE, '127.0.0.1:5567')  # noqa
+    p = Publisher('127.0.0.1:5567', RE=RE)  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
@@ -334,6 +334,72 @@ def test_zmq_components():
     assert d.address == ('localhost', 5555)
 
     repr(d)
+
+
+def test_zmq_no_RE(fresh_RE, db):
+    # COMPONENT 1
+    # Run a 0MQ proxy on a separate process.
+    def start_proxy():
+        Proxy(5567, 5568).start()
+    proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
+    proxy_proc.start()
+    time.sleep(5)  # Give this plenty of time to start up.
+
+    # COMPONENT 2
+    # Run a Publisher and a RunEngine in this main process.
+
+    RE = fresh_RE
+    RE.subscribe(db.insert)
+    local_accumulator = []
+
+    def local_cb(name, doc):
+        local_accumulator.append((name, doc))
+    RE([Msg('open_run'), Msg('close_run')], local_cb)
+    time.sleep(1)
+
+    p = Publisher('127.0.0.1:5567')  # noqa
+
+    # COMPONENT 3
+    # Run a RemoteDispatcher on another separate process. Pass the documents
+    # it receives over a Queue to this process, so we can count them for our
+    # test.
+
+    def make_and_start_dispatcher(queue):
+        def put_in_queue(name, doc):
+            print('putting ', name, 'in queue')
+            queue.put((name, doc))
+        d = RemoteDispatcher('127.0.0.1:5568')
+        d.subscribe('all', put_in_queue)
+        print("REMOTE IS READY TO START")
+        d._loop.call_later(9, d.stop)
+        d.start()
+
+    queue = multiprocessing.Queue()
+    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher,
+                                              daemon=True, args=(queue,))
+    dispatcher_proc.start()
+    time.sleep(5)  # As above, give this plenty of time to start.
+
+    # Generate two documents. The Publisher will send them to the proxy
+    # device over 5567, and the proxy will send them to the
+    # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
+    # the queue, where we can verify that they round-tripped.
+
+    for nd_pair in db[-1].stream():
+        p(*nd_pair)
+    time.sleep(1)
+
+    # Get the two documents from the queue (or timeout --- test will fail)
+    remote_accumulator = []
+    for i in range(2):
+        remote_accumulator.append(queue.get(timeout=2))
+    p.close()
+    proxy_proc.terminate()
+    dispatcher_proc.terminate()
+    proxy_proc.join()
+    dispatcher_proc.join()
+    assert remote_accumulator == local_accumulator
+
 
 def test_live_fit(fresh_RE, motor_det):
     RE = fresh_RE
