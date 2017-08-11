@@ -201,7 +201,7 @@ Demo:
 
 .. plot::
 
-    from bluesky.plan_tools import plot_raster_path
+    from bluesky.simulators import plot_raster_path
     from bluesky.examples import motor1, motor2, det
     from bluesky.plans import inner_product_scan
     import matplotlib.pyplot as plt
@@ -238,7 +238,7 @@ direction each time (``False``), as illustrated.
 
 .. plot::
 
-    from bluesky.plan_tools import plot_raster_path
+    from bluesky.simulators import plot_raster_path
     from bluesky.examples import motor1, motor2, det
     from bluesky.plans import outer_product_scan
     import matplotlib.pyplot as plt
@@ -337,7 +337,7 @@ A simple spiral:
 .. plot::
    :include-source:
 
-    from bluesky.plan_tools import plot_raster_path
+    from bluesky.simulators import plot_raster_path
     from bluesky.examples import motor1, motor2, det
     from bluesky.plans import spiral
 
@@ -351,7 +351,7 @@ A fermat spiral:
 .. plot::
    :include-source:
 
-    from bluesky.plan_tools import plot_raster_path
+    from bluesky.simulators import plot_raster_path
     from bluesky.examples import motor1, motor2, det
     from bluesky.plans import spiral_fermat
 

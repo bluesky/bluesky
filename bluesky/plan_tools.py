@@ -1,6 +1,41 @@
-import matplotlib.pyplot as plt
-from matplotlib import collections as mcollections
-from matplotlib import patches as mpatches
+import bluesky.simulators as _bs
+from warnings import warn
+
+
+def print_summary(plan):
+    """Print summary of plan
+
+    Prints a minimal version of the plan, showing only moves and
+    where events are created.
+
+    Parameters
+    ----------
+    plan : iterable
+        Must yield `Msg` objects
+    """
+    warn("bluesky.plan_tools.print_summary is deprecated. Use "
+         "bluesky.simulators.summarize_plan instead.")
+    return _bs.summarize_plan(plan)
+
+
+def print_summary_wrapper(plan):
+    """Print summary of plan as it goes by
+
+    Prints a minimal version of the plan, showing only moves and
+    where events are created.  Yields the `Msg` unchanged.
+
+    Parameters
+    ----------
+    plan : iterable
+        Must yield `Msg` objects
+
+    Yields
+    ------
+    msg : `Msg`
+    """
+    warn("The bluesky.plan_tools module is deprecated. Use "
+         "bluesky.simulators instead.")
+    yield from _bs.print_summary_wrapper(plan)
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -23,85 +58,7 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     lw : float, optional
         Width of lines drawn between points
     """
-    if ax is None:
-        ax = plt.subplots()[1]
-    ax.set_aspect('equal')
-
-    cur_x = cur_y = None
-    traj = []
-    for msg in plan:
-        cmd = msg.command
-        if cmd == 'set':
-            if msg.obj.name == x_motor:
-                cur_x = msg.args[0]
-            if msg.obj.name == y_motor:
-                cur_y = msg.args[0]
-        elif cmd == 'save':
-            traj.append((cur_x, cur_y))
-
-    x, y = zip(*traj)
-    path, = ax.plot(x, y, marker='', linestyle='-', lw=lw)
-    ax.set_xlabel(x_motor)
-    ax.set_ylabel(y_motor)
-    if probe_size is None:
-        read_points = ax.scatter(x, y, marker='o', lw=lw)
-    else:
-        circles = [mpatches.Circle((_x, _y), probe_size,
-                                   facecolor='black', alpha=0.5)
-                   for _x, _y in traj]
-
-        read_points = mcollections.PatchCollection(circles,
-                                                   match_original=True)
-        ax.add_collection(read_points)
-    return {'path': path, 'events': read_points}
-
-
-def print_summary(plan):
-    """Print summary of plan
-
-    Prints a minimal version of the plan, showing only moves and
-    where events are created.
-
-    Parameters
-    ----------
-    plan : iterable
-        Must yield `Msg` objects
-    """
-    for msg in print_summary_wrapper(plan):
-        ...
-
-
-def print_summary_wrapper(plan):
-    """Print summary of plan as it goes by
-
-    Prints a minimal version of the plan, showing only moves and
-    where events are created.  Yields the `Msg` unchanged.
-
-    Parameters
-    ----------
-    plan : iterable
-        Must yield `Msg` objects
-
-    Yields
-    ------
-    msg : `Msg`
-    """
-
-    read_cache = []
-    for msg in plan:
-        cmd = msg.command
-        if cmd == 'open_run':
-            print('{:=^80}'.format(' Open Run '))
-        elif cmd == 'close_run':
-            print('{:=^80}'.format(' Close Run '))
-        elif cmd == 'set':
-            print('{motor.name} -> {args[0]}'.format(motor=msg.obj,
-                                                     args=msg.args))
-        elif cmd == 'create':
-            pass
-        elif cmd == 'read':
-            read_cache.append(msg.obj.name)
-        elif cmd == 'save':
-            print('  Read {}'.format(read_cache))
-            read_cache = []
-        yield msg
+    warn("The bluesky.plan_tools module is deprecated. Use "
+         "bluesky.simulators instead.")
+    return plot_raster_path(plan, x_motor, y_motor, ax=ax,
+                            probe_size=probe_size, lw=lw)
