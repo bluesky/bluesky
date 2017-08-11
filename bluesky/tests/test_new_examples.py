@@ -2,12 +2,12 @@ from collections import deque, defaultdict
 import pytest
 from bluesky import Msg
 from bluesky.examples import (det, det1, det2, Mover, NullStatus, motor,
-                              SynGauss, Reader)
+                              SynGauss, Reader, motor1, motor2)
 from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            abs_set, rel_set, trigger, sleep, wait, checkpoint,
                            clear_checkpoint, pause, deferred_pause, kickoff,
                            collect, configure, stage, unstage, subscribe,
-                           unsubscribe, open_run, close_run, wait_for, mv,
+                           unsubscribe, open_run, close_run, wait_for, mv, mvr,
                            subs_context, run_context, event_context,
                            baseline_context, monitor_context,
                            stage_context, planify, finalize_wrapper,
@@ -18,8 +18,8 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            repeater, caching_repeater, count, Count, Scan,
                            fly_during_decorator, subs_decorator,
                            monitor_during_decorator,
-                           inject_md_wrapper, finalize_decorator)
-from bluesky.spec_api import configure_count_time_wrapper
+                           inject_md_wrapper, finalize_decorator,
+                           configure_count_time_wrapper)
 
 from bluesky.utils import all_safe_rewind
 
@@ -103,9 +103,26 @@ def test_stub_plans(plan, plan_args, plan_kwargs, msgs):
 
 def test_mv():
     # special-case mv because the group is not configurable
-    actual = list(mv(det1, 1, det2, 2))
-    expected = [Msg('set', det1, 1, group=None),
-                Msg('set', det2, 2, group=None),
+    # move motors first to ensure that movement is absolute, not relative
+    motor1.set(10)
+    motor2.set(10)
+    actual = list(mv(motor1, 1, motor2, 2))
+    expected = [Msg('set', motor1, 1, group=None),
+                Msg('set', motor2, 2, group=None),
+                Msg('wait', None, group=None)]
+    strip_group(actual)
+    strip_group(expected)
+    assert actual == expected
+
+
+def test_mvr():
+    # special-case mv because the group is not configurable
+    # move motors first to ensure that movement is relative, not absolute
+    motor1.set(10)
+    motor2.set(10)
+    actual = list(mvr(motor1, 1, motor2, 2))
+    expected = [Msg('set', motor1, 11, group=None),
+                Msg('set', motor2, 12, group=None),
                 Msg('wait', None, group=None)]
     strip_group(actual)
     strip_group(expected)

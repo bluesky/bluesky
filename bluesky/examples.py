@@ -322,7 +322,7 @@ class Mover(Reader):
                 def cb():
                     self._state = new_state
                     st._finished()
-                self.loop.call_later(self._fake_sleep, st._finished)
+                self.loop.call_later(self._fake_sleep, cb)
                 return st
             else:
                 ttime.sleep(self._fake_sleep)
@@ -348,6 +348,9 @@ class Mover(Reader):
                       'shape': shape,
                       'precision': 2}
         return ret
+
+    def hints(self):
+        return {'fields': [list(self._fields)[0]]}
 
     @property
     def position(self):
@@ -545,6 +548,8 @@ class ReaderWithRegistry(Reader):
 
 class TrivialFlyer:
     """Trivial flyer that complies to the API but returns empty data."""
+    name = 'trivial_flyer'
+    parent = None
 
     def kickoff(self):
         return NullStatus()

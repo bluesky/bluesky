@@ -1159,3 +1159,44 @@ def test_waiting_hook(fresh_RE):
     assert len(sts) == 2
     assert none is None
     collector.clear()
+
+
+def test_hints(fresh_RE):
+    RE = fresh_RE
+
+    class Detector:
+        def __init__(self, name):
+            self.name = name
+            self.parent = None
+
+        def read(self):
+            return {}
+
+        def describe(self):
+            return {}
+
+        def read_configuration(self):
+            return {}
+
+        def describe_configuration(self):
+            return {}
+
+        def hints(self):
+            return {'vis': 'placeholder'}
+
+    det = Detector('det')
+
+    collector = []
+
+    RE(bp.count([det]), {'descriptor': lambda name, doc: collector.append(doc)})
+    doc = collector.pop()
+    assert doc['hints']['det'] == {'vis': 'placeholder'}
+
+
+def test_flyer_descriptor(fresh_RE):
+    RE = fresh_RE
+    flyers = [TrivialFlyer()]
+    collector = []
+    RE(bp.fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
+    descriptor = collector.pop()
+    assert 'object_keys' in descriptor

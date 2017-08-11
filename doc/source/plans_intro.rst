@@ -271,6 +271,8 @@ The ``yield from`` syntax is just more succinct.
 
     list(double_f())
 
+.. _composing_plans:
+
 Combining Plans
 ---------------
 

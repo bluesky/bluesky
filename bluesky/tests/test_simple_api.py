@@ -1,112 +1,125 @@
-import bson
-from traitlets import TraitError
-from bluesky.examples import motor, motor1, motor2, det, det1, det2, MockFlyer
+from bluesky.examples import (motor, motor1, motor2, det, det1, det2,
+                              MockFlyer, NullStatus)
+                            
 import pytest
-from bluesky.spec_api import (ct, ascan, a2scan, a3scan, dscan,
-                              d2scan, d3scan, mesh, th2th, afermat,
-                              fermat, spiral, aspiral,
-                              get_factory_input,
-                              plan_sub_factory_input, InvalidFactory)
+import bluesky.plans as bp
+from bluesky.callbacks.best_effort import BestEffortCallback
 
 
-@pytest.mark.parametrize('pln,name,args,kwargs', [
-    (ct, 'ct', (), {}),
-    (ct, 'ct', (), {'num': 3}),
-    (ascan, 'ascan', (motor, 1, 2, 2), {}),
-    (a2scan, 'a2scan', (motor, 1, 2, 2), {}),
-    (a3scan, 'a3scan', (motor, 1, 2, 2), {}),
-    (dscan, 'dscan', (motor, 1, 2, 2), {}),
-    (d2scan, 'd2scan', (motor, 1, 2, 2), {}),
-    (d3scan, 'd3scan', (motor, 1, 2, 2), {}),
-    (mesh, 'mesh', (motor1, 1, 2, 2, motor2, 1, 2, 3), {}),
-    (th2th, 'th2th', (1, 2, 2), {}),
-    (aspiral, 'aspiral', (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
-    (spiral, 'spiral', (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {}),
-    (afermat, 'afermat', (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
-    (fermat, 'fermat', (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {}),
-    # with count time specified as keyword arg
-    (ct, 'ct', (), {'time': 0.1}),
-    (ascan, 'ascan', (motor, 1, 2, 2), {'time': 0.1}),
-    (a2scan, 'a2scan', (motor, 1, 2, 2), {'time': 0.1}),
-    (a3scan, 'a3scan', (motor, 1, 2, 2), {'time': 0.1}),
-    (dscan, 'dscan', (motor, 1, 2, 2), {'time': 0.1}),
-    (d2scan, 'd2scan', (motor, 1, 2, 2), {'time': 0.1}),
-    (d3scan, 'd3scan', (motor, 1, 2, 2), {'time': 0.1}),
-    (mesh, 'mesh', (motor1, 1, 2, 2, motor2, 1, 2, 3), {'time': 0.1}),
-    (th2th, 'th2th', (1, 2, 2), {'time': 0.1}),
-    (aspiral, 'aspiral',
-     (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {'time': 0.1}),
-    (spiral, 'spiral', (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {'time': 0.1}),
-    (afermat, 'afermat',
-     (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {'time': 0.1}),
-    (fermat, 'fermat',
-     (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {'time': 0.1})])
-def test_spec_plans(fresh_RE, pln, name, args, kwargs):
-    from bluesky.global_state import gs
+class MotorNoHints:
+    def __init__(self, name):
+        self.name = name
+        self.parent = None
+        self.position = 0
 
-    gs.DETS = [det]
-    gs.TH_MOTOR = motor1
-    gs.TTH_MOTOR = motor2
-    run_start = None
-    gs.MASTER_DET_FIELD = list(det._fields)[0]
-    gs.MD_TIME_KEY = 'exposure_time'
+    def read(self):
+        return {}
 
-    def capture_run_start(name, doc):
-        nonlocal run_start
-        if name == 'start':
-            run_start = doc
-    gs.SUB_FACTORIES[pln.__name__].append(lambda: capture_run_start)
-    fresh_RE(pln(*args, **kwargs))
-    gs.SUB_FACTORIES[pln.__name__].pop()
+    def read_configuration(self):
+        return {}
 
-    assert run_start['plan_name'] == name
-    assert gs.MD_TIME_KEY in run_start
-    if 'time' in kwargs:
-        assert run_start[gs.MD_TIME_KEY] == kwargs['time']
+    def describe(self):
+        return {}
 
-    # Ensure that the runstart document can be stored
-    bson.BSON.encode(run_start)
+    def describe_configuration(self):
+        return {}
+
+    def set(self, val):
+        return NullStatus()
 
 
-def test_flyers(fresh_RE):
-    from bluesky.global_state import gs
-    RE = fresh_RE
-    flyer = MockFlyer('wheee', det1, motor, -1, 1, 15, RE.loop)
-    gs.FLYERS = [flyer]
-    RE(ct())
+class MotorEmptyHints:
+    def __init__(self, name):
+        self.name = name
+        self.parent = None
+        self.position = 0
+
+    def read(self):
+        return {}
+
+    def read_configuration(self):
+        return {}
+
+    def describe(self):
+        return {}
+
+    def describe_configuration(self):
+        return {}
+
+    def set(self, val):
+        return NullStatus()
+
+    def hints(self):
+        return {}
 
 
-def test_gs_validation():
-    from bluesky.global_state import gs
-    with pytest.raises(TraitError):
-        gs.DETS = [det, det]  # no duplicate data keys
+def checker(name, doc):
+    if name == 'start':
+        assert 'hints' in doc
+        assert 'dimensions' in doc['hints']
+        assert 'uid' in doc
 
 
-def test_factory_tools_smoke():
-    from bluesky.global_state import gs
-    from inspect import Signature, Parameter
+@pytest.mark.parametrize('pln,args,kwargs', [
+    # Notice that 'args' does not include [det], which is inserted in the body
+    # of the test function below.
+    (bp.count, (), {}),
+    (bp.count, (), {'num': 3}),
+    (bp.scan, (motor, 1, 2, 2), {}),
+    (bp.inner_product_scan, (2, motor, 1, 2), {}),
+    (bp.relative_inner_product_scan, (2, motor, 1, 2), {}),
+    (bp.outer_product_scan, (motor1, 1, 2, 2, motor2, 1, 2, 3, False), {}),
+    (bp.spiral, (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.relative_spiral, (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.spiral_fermat, (motor1, motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.relative_spiral_fermat, (motor1, motor2, 0.1, 0.1, 0.05, 1.0), {}),
+    ])
+def test_plans(fresh_RE, pln, args, kwargs):
+    bec = BestEffortCallback()
+    fresh_RE.subscribe(bec)
+    fresh_RE.subscribe(checker)
+    fresh_RE(pln([det], *args, **kwargs))
 
-    def failer(*args, **kwargs):
-        ...
 
-    failer.__signature__ = Signature((Parameter('fail',
-                                                Parameter.POSITIONAL_ONLY), ))
-    with pytest.raises(InvalidFactory):
-        get_factory_input(failer)
+_motor = MotorNoHints('motor')
+_motor1 = MotorNoHints('motor1')
+_motor2 = MotorNoHints('motor2')
 
-    for pln in ['ct', 'ascan', 'dscan']:
-        merge, by_fac = plan_sub_factory_input(pln)
-        opt = set()
-        req = set()
-        for k, v in by_fac.items():
-            opt.update(v.opt)
-            req.update(v.req)
 
-        assert opt == merge.opt
-        assert req == merge.req
+@pytest.mark.parametrize('pln,args,kwargs', [
+    # repeat with motor objects that do not have hints()
+    (bp.scan, (_motor, 1, 2, 2), {}),
+    (bp.inner_product_scan, (2, _motor, 1, 2), {}),
+    (bp.relative_inner_product_scan, (2, _motor, 1, 2), {}),
+    (bp.outer_product_scan, (_motor1, 1, 2, 2, _motor2, 1, 2, 3, False), {}),
+    (bp.spiral, (_motor1, _motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.relative_spiral, (_motor1, _motor2, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.spiral_fermat, (_motor1, _motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.relative_spiral_fermat, (_motor1, _motor2, 0.1, 0.1, 0.05, 1.0), {}),
+    ])
+def test_plans_motors_no_hints(fresh_RE, pln, args, kwargs):
+    bec = BestEffortCallback()
+    fresh_RE.subscribe(bec)
+    fresh_RE(pln([det], *args, **kwargs))
 
-    gs.SUB_FACTORIES['TST_DUMMY'] = [failer]
 
-    merge, by_fac = plan_sub_factory_input('TST_DUMMY')
-    for k, v in by_fac.items():
-        assert isinstance(v, InvalidFactory)
+_motor = MotorEmptyHints('motor')
+_motor1 = MotorEmptyHints('motor1')
+_motor2 = MotorEmptyHints('motor2')
+
+
+@pytest.mark.parametrize('pln,args,kwargs', [
+    # repeat with motor objects that do not have hints()
+    (bp.scan, (_motor, 1, 2, 2), {}),
+    (bp.inner_product_scan, (2, _motor, 1, 2), {}),
+    (bp.relative_inner_product_scan, (2, _motor, 1, 2), {}),
+    (bp.outer_product_scan, (_motor1, 1, 2, 2, _motor2, 1, 2, 3, False), {}),
+    (bp.spiral, (_motor1, _motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.relative_spiral, (_motor1, _motor2, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.spiral_fermat, (_motor1, _motor2, 0.0, 0.0, 0.1, 0.1, 0.05, 1.0), {}),
+    (bp.relative_spiral_fermat, (_motor1, _motor2, 0.1, 0.1, 0.05, 1.0), {}),
+    ])
+def test_plans_motor_empty_hints(fresh_RE, pln, args, kwargs):
+    bec = BestEffortCallback()
+    fresh_RE.subscribe(bec)
+    fresh_RE(pln([det], *args, **kwargs))

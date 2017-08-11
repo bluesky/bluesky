@@ -442,7 +442,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
 
 def mv(*args):
     """
-    Move one or more devices to a setpoint and wait for all to complete.
+    Move one or more devices to a setpoint. Wait for all to complete.
 
     If more than one device is specifed, the movements are done in parallel.
 
@@ -458,6 +458,7 @@ def mv(*args):
     See Also
     --------
     :func:`bluesky.plans.abs_set`
+    :func:`bluesky.plans.mvr`
     """
     group = str(uuid.uuid4())
     status_objects = []
@@ -466,6 +467,37 @@ def mv(*args):
         status_objects.append(ret)
     yield Msg('wait', None, group=group)
     return tuple(status_objects)
+
+
+def mvr(*args):
+    """
+    Move one or more devices to a relative setpoint. Wait for all to complete.
+
+    If more than one device is specifed, the movements are done in parallel.
+
+    Parameters
+    ----------
+    args :
+        device1, value1, device2, value2, ...
+
+    Yields
+    ------
+    msg : Msg
+
+    See Also
+    --------
+    :func:`bluesky.plans.rel_set`
+    :func:`bluesky.plans.mv`
+    """
+    objs = []
+    for obj, val in partition(2, args):
+        objs.append(obj)
+
+    @relative_set_decorator(objs)
+    def inner_mvr():
+        return (yield from mv(*args))
+
+    return (yield from inner_mvr())
 
 
 def stop(obj):
@@ -900,6 +932,53 @@ def subs_wrapper(plan, subs):
 
     return (yield from finalize_wrapper(_inner_plan(),
                                         _unsubscribe()))
+
+
+def configure_count_time_wrapper(plan, time):
+    """
+    Preprocessor that sets all devices with a `count_time` to the same time.
+
+    The original setting is stashed and restored at the end.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    time : float or None
+        If None, the plan passes through unchanged.
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'set' messages inserted
+    """
+    devices_seen = set()
+    original_times = {}
+
+    def insert_set(msg):
+        obj = msg.obj
+        if obj is not None and obj not in devices_seen:
+            devices_seen.add(obj)
+            if hasattr(obj, 'count_time'):
+                # TODO Do this with a 'read' Msg once reads can be
+                # marked as belonging to a different event stream (or no
+                # event stream.
+                original_times[obj] = obj.count_time.get()
+                # TODO do this with configure
+                return pchain(mv(obj.count_time, time),
+                              single_gen(msg)), None
+        return None, None
+
+    def reset():
+        for obj, time in original_times.items():
+            yield from mv(obj.count_time, time)
+
+    if time is None:
+        # no-op
+        return (yield from plan)
+    else:
+        return (yield from finalize_wrapper(plan_mutator(plan, insert_set),
+                                            reset()))
 
 
 def open_run(md=None):
@@ -1875,6 +1954,7 @@ fly_during_decorator = make_decorator(fly_during_wrapper)
 monitor_during_decorator = make_decorator(monitor_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
 run_decorator = make_decorator(run_wrapper)
+configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
 
 
 def count(detectors, num=1, delay=None, *, md=None):
@@ -1907,7 +1987,9 @@ def count(detectors, num=1, delay=None, *, md=None):
            'num_points': num,
            'num_intervals': num_intervals,
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
-           'plan_name': 'count'}
+           'plan_name': 'count',
+           'hints': {'dimensions': [('primary', 'time')]}
+          }
     _md.update(md or {})
 
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
@@ -2015,7 +2097,14 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
            'plan_pattern': 'array',
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(object=steps),
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
     if per_step is None:
         per_step = one_1d_step
@@ -2090,18 +2179,25 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     :func:`bluesky.plans.relative_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
-          'motors': [motor.name],
-          'num_points': num,
-          'num_intervals': num - 1,
-          'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
-                        'motor': repr(motor),
-                        'start': start, 'stop': stop,
-                        'per_step': repr(per_step)},
-          'plan_name': 'scan',
-          'plan_pattern': 'linspace',
-          'plan_pattern_module': 'numpy',
-          'plan_pattern_args': dict(start=start, stop=stop, num=num),
-         }
+           'motors': [motor.name],
+           'num_points': num,
+           'num_intervals': num - 1,
+           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
+                         'motor': repr(motor),
+                         'start': start, 'stop': stop,
+                         'per_step': repr(per_step)},
+           'plan_name': 'scan',
+           'plan_pattern': 'linspace',
+           'plan_pattern_module': 'numpy',
+           'plan_pattern_args': dict(start=start, stop=stop, num=num),
+           'hints': {},
+          }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     if per_step is None:
@@ -2195,7 +2291,14 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern': 'logspace',
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     if per_step is None:
@@ -2299,7 +2402,14 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
                          'backstep': backstep,
                          'threshold': threshold},
            'plan_name': 'adaptive_scan',
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     @stage_decorator(list(detectors) + [motor])
@@ -2457,8 +2567,17 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
            'plan_args': {'detectors': list(map(repr, detectors)),
                          'cycler': repr(cycler),
                          'per_step': repr(per_step)},
-           'plan_name': 'scan_nd'
+           'plan_name': 'scan_nd',
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])
+                      for motor in cycler.keys]
+    except (AttributeError, KeyError):
+        # Not all motors provide a 'fields' hint, so we have to skip it.
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     if per_step is None:
@@ -2694,7 +2813,14 @@ def tweak(detector, target_field, motor, step, *, md=None):
                          'motor': repr(motor),
                          'step': step},
            'plan_name': 'tweak',
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
     d = detector
     try:
@@ -2797,7 +2923,15 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
            'plan_pattern': 'spiral_fermat',
            'plan_pattern_module': plan_patterns.__name__,
            'plan_pattern_args': pattern_args,
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', x_motor.hints()['fields']),
+                      ('primary', y_motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
@@ -2902,7 +3036,15 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            'plan_pattern': 'spiral',
            'plan_pattern_args': pattern_args,
            'plan_pattern_module': plan_patterns.__name__,
+           'hints': {},
           }
+    try:
+        dimensions = [('primary', x_motor.hints()['fields']),
+                      ('primary', y_motor.hints()['fields'])]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].update({'dimensions': dimensions})
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
@@ -3066,11 +3208,11 @@ class DiagnosticPreprocessor:
     --------
     Create a DiagnosticPreprocessor and apply it to a RunEngine.
 
-    >>> D = DiagnosticPreprocessor(baseline=[some_motor, some_detector]),
-    ...                            monitors=[some_signal],
-    ...                            flyers=[some_flyer])
+    >>> diag = DiagnosticPreprocessor(baseline=[some_motor, some_detector]),
+    ...                               monitors=[some_signal],
+    ...                               flyers=[some_flyer])
     >>> RE = RunEngine({})
-    >>> RE.preprocessors.append(D)
+    >>> RE.preprocessors.append(diag)
 
     Now all plans executed by RE will be modified to add baseline readings
     (before and after each run), monitors (during each run), and flyers
@@ -3078,32 +3220,32 @@ class DiagnosticPreprocessor:
 
     Inspect or update the lists of devices interactively.
 
-    >>> D.baseline
+    >>> diag.baseline
     [some_motor, some_detector]
 
-    >>> D.baseline.remove(some_motor)
+    >>> diag.baseline.remove(some_motor)
 
-    >>> D.baseline
+    >>> diag.baseline
     [some_detector]
 
-    >>> D.baseline.append(another_detector)
+    >>> diag.baseline.append(another_detector)
 
-    >>> D.baseline
+    >>> diag.baseline
     [some_detector, another_detector]
 
     Each attribute (``baseline``, ``monitors``, ``flyers``) is an ordinary
     Python list, support all the standard list methods, such as:
 
-    >>> D.baseline.clear()
+    >>> diag.baseline.clear()
 
     The arguments to DiagnosticPreprocessor are optional. All the lists
     will empty by default.  As shown above, they can be populated
     interactively.
 
-    >>> D = DiagnosticPreprocessor()
+    >>> diag = DiagnosticPreprocessor()
     >>> RE = RunEngine({})
-    >>> RE.preprocessors.append(D)
-    >>> D.baseline.append(some_detector)
+    >>> RE.preprocessors.append(diag)
+    >>> diag.baseline.append(some_detector)
     """
     def __init__(self, *, baseline=None, monitors=None, flyers=None):
         if baseline is None:

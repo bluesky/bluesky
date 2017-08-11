@@ -1404,9 +1404,12 @@ class RunEngine:
             config[obj.name]['data'][key] = sanitize_np(val['value'])
             config[obj.name]['timestamps'][key] = val['timestamp']
         object_keys = {obj.name: list(data_keys)}
+        hints = {}
+        if hasattr(obj, 'hints'):
+            hints.update({obj.name: obj.hints()})
         desc_doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                         data_keys=data_keys, uid=descriptor_uid,
-                        configuration=config, name=name,
+                        configuration=config, hints=hints, name=name,
                         object_keys=object_keys)
         self.log.debug("Emitted Event Descriptor with name %r containing "
                        "data keys %r (uid=%r)", name, data_keys.keys(),
@@ -1478,6 +1481,7 @@ class RunEngine:
             data_keys = {}
             config = {}
             object_keys = {}
+            hints = {}
             for obj in objs_read:
                 dks = self._describe_cache[obj]
                 name = obj.name
@@ -1490,11 +1494,13 @@ class RunEngine:
                 config[name]['data'] = self._config_values_cache[obj]
                 config[name]['timestamps'] = self._config_ts_cache[obj]
                 config[name]['data_keys'] = self._config_desc_cache[obj]
+                if hasattr(obj, 'hints'):
+                    hints[name] = obj.hints()
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid,
                        configuration=config, name=self._bundle_name,
-                       object_keys=object_keys)
+                       hints=hints, object_keys=object_keys)
             yield from self.emit(DocumentNames.descriptor, doc)
             self.log.debug("Emitted Event Descriptor with name %r containing "
                            "data keys %r (uid=%r)", self._bundle_name,
@@ -1645,9 +1651,14 @@ class RunEngine:
             if key not in self._descriptors:
                 # We don't not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
+                object_keys = {obj.name: list(data_keys)}
+                hints = {}
+                if hasattr(obj, 'hints'):
+                    hints.update({obj.name: obj.hints()})
                 doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                            data_keys=data_keys, uid=descriptor_uid,
-                           name=stream_name)
+                           name=stream_name, hints=hints,
+                           object_keys=object_keys)
                 yield from self.emit(DocumentNames.descriptor, doc)
                 self.log.debug("Emitted Event Descriptor with name %r "
                                "containing data keys %r (uid=%r)", stream_name,
@@ -2092,6 +2103,13 @@ class Dispatcher:
             and a string, respectively) the old order will be supported
             indefeinitely, with a warning.
 
+        .. versionchanged :: 0.10.0
+            The order of the arguments was swapped and the ``name``
+            argument has been given a default value, ``'all'``. Because the
+            meaning of the arguments is unambigious (they must be a callable
+            and a string, respectively) the old order will be supported
+            indefeinitely, with a warning.
+
         Parameters
         ----------
         func: callable
@@ -2109,6 +2127,7 @@ class Dispatcher:
         See Also
         --------
         :meth:`Dispatcher.unsubscribe`
+            an integer token that can be used to unsubscribe
         """
         if callable(name) and isinstance(func, str):
             name, func = func, name

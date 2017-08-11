@@ -2,6 +2,7 @@ cycler
 event-model
 historydict
 jsonschema
+matplotlib
 numpy
 super_state_machine
 toolz
