@@ -105,3 +105,18 @@ def print_summary_wrapper(plan):
             print('  Read {}'.format(read_cache))
             read_cache = []
         yield msg
+
+
+class persistify:
+    def __init__(self, plan_func, *args, **kwargs):
+        self._f = plan_func
+        self._args = args
+        self._kwargs = kwargs
+
+    def __iter__(self):
+        return (yield from self._f(*self._args, **self._kwargs))
+
+    def __call__(self, **kwargs):
+        return (yield from self._f(*self._args,
+                                   **self._kwargs,
+                                   **kwargs))
