@@ -683,16 +683,16 @@ def test_async_trigger_delay(motor_det, fresh_RE):
     _time_test(bp.abs_set, .5, motor, 1, wait=True)
 
 
-def test_fs_reader(db):
-    fs = db.fs
-    fs.register_handler('RWFS_NPY', ReaderWithFSHandler)
+def test_reg_reader(db):
+    reg = db.fs
+    reg.register_handler('RWFS_NPY', ReaderWithFSHandler)
     det = ReaderWithRegistry('det',
                               {'img': lambda: np.array(np.ones((10, 10)))},
-                              fs=fs)
+                              reg=reg)
     det.stage()
     det.trigger()
     reading = det.read().copy()
     det.unstage()
     datum_id = reading['img']['value']
-    arr = fs.retrieve(datum_id)
+    arr = reg.retrieve(datum_id)
     assert_array_equal(np.ones((10, 10)), arr)
