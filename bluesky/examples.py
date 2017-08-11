@@ -452,7 +452,7 @@ class Syn2DGauss(Reader):
         super().__init__(name, {name: func})
 
 
-class ReaderWithFileStore(Reader):
+class ReaderWithRegistry(Reader):
     """
 
     Parameters
@@ -470,22 +470,22 @@ class ReaderWithFileStore(Reader):
     loop : asyncio.EventLoop, optional
         used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
         unspecified
-    fs : FileStore
-        FileStore object that supports inserting resource and datum documents
+    reg : Registry
+        Registry object that supports inserting resource and datum documents
     save_path : str, optional
         Path to save files to, if None make a temp dir, defaults to None.
 
     """
 
-    def __init__(self, *args, fs, save_path=None, **kwargs):
+    def __init__(self, *args, reg, save_path=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fs = fs
+        self.reg = reg
         self._resource_id = None
         if save_path is None:
             self.save_path = mkdtemp()
         else:
             self.save_path = save_path
-        self.filestore_spec = 'RWFS_NPY'  # spec name stored in resource doc
+        self._spec = 'RWFS_NPY'  # spec name stored in resource doc
 
         self._file_stem = None
         self._path_stem = None
@@ -494,22 +494,22 @@ class ReaderWithFileStore(Reader):
     def stage(self):
         self._file_stem = short_uid()
         self._path_stem = os.path.join(self.save_path, self._file_stem)
-        self._resource_id = self.fs.insert_resource(self.filestore_spec,
-                                                    self._file_stem, {},
-                                                    root=self.save_path)
+        self._resource_id = self.reg.insert_resource(self._spec,
+                                                     self._file_stem, {},
+                                                     root=self.save_path)
 
     def trigger(self):
         # save file stash file name
         self._result.clear()
         for idx, (name, reading) in enumerate(self.trigger_read().items()):
             # Save the actual reading['value'] to disk and create a record
-            # in FileStore.
+            # in Registry.
             np.save('{}_{}.npy'.format(self._path_stem, idx), reading['value'])
             datum_id = new_uid()
-            self.fs.insert_datum(self._resource_id, datum_id,
-                                 dict(index=idx))
+            self.reg.insert_datum(self._resource_id, datum_id,
+                                  dict(index=idx))
             # And now change the reading in place, replacing the value with
-            # a reference to FileStore.
+            # a reference to Registry.
             reading['value'] = datum_id
             self._result[name] = reading
 
@@ -668,7 +668,7 @@ class MockFlyer:
         pass
 
 
-class GeneralReaderWithFileStore(Reader):
+class GeneralReaderWithRegistry(Reader):
     """
 
     Parameters
@@ -686,25 +686,25 @@ class GeneralReaderWithFileStore(Reader):
     loop : asyncio.EventLoop, optional
         used for ``subscribe`` updates; uses ``asyncio.get_event_loop()`` if
         unspecified
-    fs : FileStore
-        FileStore object that supports inserting resource and datum documents
+    reg : Registry
+        Registry object that supports inserting resource and datum documents
     save_path : str, optional
         Path to save files to, if None make a temp dir, defaults to None.
     save_func : function, optional
         The function to save the data, function signature must be:
         `func(file_path, array)`, defaults to np.save
     save_spec : str, optional
-        The filestore spec for the save function, defaults to 'RWFS_NPY'
+        The spec for the save function, defaults to 'RWFS_NPY'
     save_ext : str, optional
         The extention to add to the file name, defaults to '.npy'
 
     """
 
-    def __init__(self, *args, fs, save_path=None, save_func=np.save,
+    def __init__(self, *args, reg, save_path=None, save_func=np.save,
                  save_spec='RWFS_NPY', save_ext='.npy',
                  **kwargs):
         super().__init__(*args, **kwargs)
-        self.fs = fs
+        self.reg = reg
         self.save_func = save_func
         self.save_ext = save_ext
         self._resource_id = None
@@ -712,7 +712,7 @@ class GeneralReaderWithFileStore(Reader):
             self.save_path = mkdtemp()
         else:
             self.save_path = save_path
-        self.filestore_spec = save_spec  # spec name stored in resource doc
+        self._spec = save_spec  # spec name stored in resource doc
 
         self._file_stem = None
         self._path_stem = None
@@ -721,23 +721,23 @@ class GeneralReaderWithFileStore(Reader):
     def stage(self):
         self._file_stem = short_uid()
         self._path_stem = os.path.join(self.save_path, self._file_stem)
-        self._resource_id = self.fs.insert_resource(self.filestore_spec,
-                                                    self._file_stem, {},
-                                                    root=self.save_path)
+        self._resource_id = self.reg.insert_resource(self._spec,
+                                                     self._file_stem, {},
+                                                     root=self.save_path)
 
     def trigger(self):
         # save file stash file name
         self._result.clear()
         for idx, (name, reading) in enumerate(super().read().items()):
             # Save the actual reading['value'] to disk and create a record
-            # in FileStore.
+            # in Registry.
             self.save_func('{}_{}.{}'.format(self._path_stem, idx,
                                              self.save_ext), reading['value'])
             datum_id = new_uid()
-            self.fs.insert_datum(self._resource_id, datum_id,
-                                 dict(index=idx))
+            self.reg.insert_datum(self._resource_id, datum_id,
+                                  dict(index=idx))
             # And now change the reading in place, replacing the value with
-            # a reference to FileStore.
+            # a reference to Registry.
             reading['value'] = datum_id
             self._result[name] = reading
         return NullStatus()
