@@ -763,7 +763,7 @@ class GeneralReaderWithRegistry(Reader):
         self._result.clear()
 
 
-class ReaderWithFSHandler:
+class ReaderWithRegistryHandler:
     specs = {'RWFS_NPY'}
 
     def __init__(self, filename, root=''):
