@@ -917,3 +917,22 @@ def make_decorator(wrapper):
             return dec_inner
         return dec
     return dec_outer
+
+
+def apply_to_dict_recursively(d, f):
+    """Recursively apply function to a document
+
+    This modifies the dict in place and returns it.
+
+    Parameters
+    ----------
+    d: dict
+        e.g. event_model Document
+    f: function
+       any func to be performed on d recursively
+    """
+    for key, val in d.items():
+        if hasattr(val, 'items'):
+            d[key] = apply_to_dict_recursively(d=val, f=f)
+        d[key] = f(val)
+    return d
