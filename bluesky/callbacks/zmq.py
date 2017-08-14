@@ -14,11 +14,12 @@ class Publisher:
 
     Parameters
     ----------
-    RE : ``bluesky.RunEngine``
-        RunEngine to which the Publisher will subscribe
     address : string or tuple
         Address of a running 0MQ proxy, given either as a string like
         ``'127.0.0.1:5567'`` or as a tuple like ``('127.0.0.1', 5567)``
+    RE : ``bluesky.RunEngine``, optional
+        RunEngine to which the Publisher will be automatically subscribed
+        (and, more importantly, unsubscribed when it is closed).
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
@@ -26,10 +27,10 @@ class Publisher:
     Example
     -------
 
-    Publish to an existing Proxy at some known address.
+    Publish from a RunEngine to a Proxy running on localhost on port 5567.
 
     >>> RE = RunEngine({})
-    >>> publisher = Publisher(('localhost', 5567), RE)
+    >>> publisher = Publisher('localhost:5567'), RE)
     """
     def __init__(self, address, *, RE=None, zmq=None):
         if zmq is None:
