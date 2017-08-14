@@ -336,7 +336,7 @@ def test_zmq_components():
     repr(d)
 
 
-def test_zmq_no_RE(fresh_RE, db):
+def test_zmq_no_RE(fresh_RE):
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
@@ -349,14 +349,6 @@ def test_zmq_no_RE(fresh_RE, db):
     # Run a Publisher and a RunEngine in this main process.
 
     RE = fresh_RE
-    RE.subscribe(db.insert)
-    local_accumulator = []
-
-    def local_cb(name, doc):
-        local_accumulator.append((name, doc))
-    RE([Msg('open_run'), Msg('close_run')], local_cb)
-    time.sleep(1)
-
     p = Publisher('127.0.0.1:5567')  # noqa
 
     # COMPONENT 3
@@ -369,7 +361,7 @@ def test_zmq_no_RE(fresh_RE, db):
             print('putting ', name, 'in queue')
             queue.put((name, doc))
         d = RemoteDispatcher('127.0.0.1:5568')
-        d.subscribe('all', put_in_queue)
+        d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
         d._loop.call_later(9, d.stop)
         d.start()
@@ -380,14 +372,23 @@ def test_zmq_no_RE(fresh_RE, db):
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
-    # Generate two documents. The Publisher will send them to the proxy
+    # Generate two documents. The Publisher will send them to the proxy 
     # device over 5567, and the proxy will send them to the
     # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
     # the queue, where we can verify that they round-tripped.
 
-    for nd_pair in db[-1].stream():
-        p(*nd_pair)
-    time.sleep(5)
+    local_accumulator = []
+
+    def local_cb(name, doc):
+        local_accumulator.append((name, doc))
+
+    RE([Msg('open_run'), Msg('close_run')], local_cb)
+
+    # This time the Publisher isn't attached to an RE. Send the documents
+    # manually. (The idea is, these might have come from a Broker instead...)
+    for name, doc in local_accumulator:
+        p(name, doc)
+    time.sleep(1)
 
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []
