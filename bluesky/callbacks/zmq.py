@@ -29,9 +29,9 @@ class Publisher:
     Publish to an existing Proxy at some known address.
 
     >>> RE = RunEngine({})
-    >>> publisher = Publisher(RE, ('localhost', 5567))
+    >>> publisher = Publisher(('localhost', 5567), RE)
     """
-    def __init__(self, RE, address, *, zmq=None):
+    def __init__(self, address, *, RE=None, zmq=None):
         if zmq is None:
             import zmq
         if isinstance(address, str):
@@ -48,7 +48,8 @@ class Publisher:
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
         self._socket.connect(url)
-        self._subscription_token = RE.subscribe(self)
+        if RE:
+            self._subscription_token = RE.subscribe(self)
 
     def __call__(self, name, doc):
         apply_to_dict_recursively(doc, sanitize_np)
@@ -56,7 +57,8 @@ class Publisher:
         self._socket.send_string(message)
 
     def close(self):
-        self.RE.unsubscribe(self._subscription_token)
+        if self.RE:
+            self.RE.unsubscribe(self._subscription_token)
         self._context.destroy()  # close Socket(s); terminate Context
 
 
