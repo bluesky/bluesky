@@ -281,7 +281,12 @@ def test_zmq(fresh_RE):
     def local_cb(name, doc):
         local_accumulator.append((name, doc))
 
-    RE([Msg('open_run'), Msg('close_run')], local_cb)
+    # Check that numpy stuff is sanitized by putting some in the start doc.
+    md = {'stuff': {'nested': np.array([1, 2, 3])},
+          'scalar_stuff': np.float64(3),
+          'array_stuff': np.ones((3, 3))}
+
+    RE([Msg('open_run', **md), Msg('close_run')], local_cb)
     time.sleep(1)
 
     # Get the two documents from the queue (or timeout --- test will fail)

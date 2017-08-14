@@ -19,7 +19,7 @@ from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
-                    AsyncInput, new_uid, sanitize_np, NoReplayAllowed,
+                    AsyncInput, new_uid, NoReplayAllowed,
                     RequestAbort, RequestStop,  RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
@@ -1360,7 +1360,7 @@ class RunEngine:
         config_values = {}
         config_ts = {}
         for key, val in obj.read_configuration().items():
-            config_values[key] = sanitize_np(val['value'])
+            config_values[key] = val['value']
             config_ts[key] = val['timestamp']
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
@@ -1401,7 +1401,7 @@ class RunEngine:
         config = {obj.name: {'data': {}, 'timestamps': {}}}
         config[obj.name]['data_keys'] = obj.describe_configuration()
         for key, val in obj.read_configuration().items():
-            config[obj.name]['data'][key] = sanitize_np(val['value'])
+            config[obj.name]['data'][key] = val['value']
             config[obj.name]['timestamps'][key] = val['timestamp']
         object_keys = {obj.name: list(data_keys)}
         hints = {}
@@ -1524,7 +1524,7 @@ class RunEngine:
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
         for key in readings:
-            readings[key]['value'] = sanitize_np(readings[key]['value'])
+            readings[key]['value'] = readings[key]['value']
         data, timestamps = _rearrange_into_parallel_dicts(readings)
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
@@ -1684,7 +1684,7 @@ class RunEngine:
 
             reading = ev['data']
             for key in ev['data']:
-                reading[key] = sanitize_np(reading[key])
+                reading[key] = reading[key]
             ev['data'] = reading
             ev['descriptor'] = descriptor_uid
             ev['seq_num'] = seq_num

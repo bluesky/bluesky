@@ -5,7 +5,7 @@ import os
 import socket
 import time
 from ..run_engine import Dispatcher, DocumentNames
-from ..utils import expiring_function
+from ..utils import apply_to_dict_recursively, sanitize_np
 
 
 class Publisher:
@@ -51,6 +51,7 @@ class Publisher:
         self._subscription_token = RE.subscribe(self)
 
     def __call__(self, name, doc):
+        apply_to_dict_recursively(doc, sanitize_np)
         message = self._fmt_string.format(name=name, doc=doc)
         self._socket.send_string(message)
 
