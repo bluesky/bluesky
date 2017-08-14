@@ -1,5 +1,5 @@
 import pickle
-from bluesky import DiagnosticPreprocessor
+from bluesky import SupplementalData
 from bluesky.plans import count, pchain
 from bluesky.examples import det, det2, det3, TrivialFlyer
 
@@ -10,7 +10,7 @@ flyer2 = TrivialFlyer()
 
 def test_monitors():
     # no-op
-    D = DiagnosticPreprocessor()
+    D = SupplementalData()
     original = list(count([det]))
     processed = list(D(count([det])))
     assert len(processed) == len(original)
@@ -34,7 +34,7 @@ def test_monitors():
 
 def test_flyers():
     # one flyer
-    D = DiagnosticPreprocessor(flyers=[flyer1])
+    D = SupplementalData(flyers=[flyer1])
     original = list(count([det]))
     processed = list(D(count([det])))
     # should add kickoff, wait, complete, wait, collect
@@ -54,7 +54,7 @@ def test_flyers():
 
 def test_baseline():
     # one baseline detector
-    D = DiagnosticPreprocessor(baseline=[det2])
+    D = SupplementalData(baseline=[det2])
     original = list(count([det]))
     processed = list(D(count([det])))
     # should add 2X (trigger, wait, create, read, save)
@@ -73,7 +73,7 @@ def test_baseline():
 
 
 def test_mixture():
-    D = DiagnosticPreprocessor(baseline=[det2], flyers=[flyer1],
+    D = SupplementalData(baseline=[det2], flyers=[flyer1],
                                monitors=[det3])
 
     original = list(count([det]))
@@ -82,14 +82,14 @@ def test_mixture():
 
 
 def test_repr():
-    expected = "DiagnosticPreprocessor(baseline=[], monitors=[], flyers=[])"
-    D = DiagnosticPreprocessor()
+    expected = "SupplementalData(baseline=[], monitors=[], flyers=[])"
+    D = SupplementalData()
     actual = repr(D)
     assert actual == expected
 
 
 def test_pickle():
-    D = DiagnosticPreprocessor(baseline=['placeholder1'],
+    D = SupplementalData(baseline=['placeholder1'],
                                monitors=['placeholder2'],
                                flyers=['placeholder3'])
     D2 = pickle.loads(pickle.dumps(D))

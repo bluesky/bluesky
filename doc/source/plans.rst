@@ -735,17 +735,17 @@ name.
 Plan Preprocessors
 ------------------
 
-.. _diagnostic_preprocessor:
+.. _supplemental_data:
 
-Diagnostic Preprocessor
-+++++++++++++++++++++++
+Supplemental Data
++++++++++++++++++
 
 Plan preprocessors modify a plans contents on the fly. One common use of a
 preprocessor is to take "baseline" readings of a group of devices at the
 beginning and end of each run. It is convenient to apply this to *all* plans
-executed by a RunEngine using the :class:`DiagnosticPreprocessor`.
+executed by a RunEngine using the :class:`SupplementalData`.
 
-.. autoclass:: DiagnosticPreprocessor
+.. autoclass:: SupplementalData
     :members:
 
 Preprocessor Wrappers and Decorators
