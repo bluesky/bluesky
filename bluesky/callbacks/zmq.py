@@ -14,11 +14,12 @@ class Publisher:
 
     Parameters
     ----------
-    RE : ``bluesky.RunEngine``
-        RunEngine to which the Publisher will subscribe
     address : string or tuple
         Address of a running 0MQ proxy, given either as a string like
         ``'127.0.0.1:5567'`` or as a tuple like ``('127.0.0.1', 5567)``
+    RE : ``bluesky.RunEngine``, optional
+        RunEngine to which the Publisher will be automatically subscribed
+        (and, more importantly, unsubscribed when it is closed).
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
@@ -26,12 +27,12 @@ class Publisher:
     Example
     -------
 
-    Publish to an existing Proxy at some known address.
+    Publish from a RunEngine to a Proxy running on localhost on port 5567.
 
     >>> RE = RunEngine({})
-    >>> publisher = Publisher(RE, ('localhost', 5567))
+    >>> publisher = Publisher('localhost:5567'), RE)
     """
-    def __init__(self, RE, address, *, zmq=None):
+    def __init__(self, address, *, RE=None, zmq=None):
         if zmq is None:
             import zmq
         if isinstance(address, str):
@@ -48,7 +49,8 @@ class Publisher:
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
         self._socket.connect(url)
-        self._subscription_token = RE.subscribe(self)
+        if RE:
+            self._subscription_token = RE.subscribe(self)
 
     def __call__(self, name, doc):
         apply_to_dict_recursively(doc, sanitize_np)
@@ -56,7 +58,8 @@ class Publisher:
         self._socket.send_string(message)
 
     def close(self):
-        self.RE.unsubscribe(self._subscription_token)
+        if self.RE:
+            self.RE.unsubscribe(self._subscription_token)
         self._context.destroy()  # close Socket(s); terminate Context
 
 
