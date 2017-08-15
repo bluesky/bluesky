@@ -73,6 +73,7 @@ def post_run(callback, db, fill=False):
                 pass
 
     db : Broker
+        The databroker instance to use
 
     fill : boolean, optional
         Whether to deference externally-stored data in the documents.
@@ -115,7 +116,7 @@ def post_run(callback, db, fill=False):
     return f
 
 
-def make_restreamer(callback, db=None):
+def make_restreamer(callback, db):
     """
     Run a callback whenever a uid is updated.
 
@@ -124,10 +125,8 @@ def make_restreamer(callback, db=None):
     callback : callable
         expected signature is `f(name, doc)`
 
-    db : Broker, optional
-        The databroker instance to use, if not provided use databroker
-        singleton
-
+    db : Broker
+        The databroker instance to use
 
     Example
     -------
@@ -136,28 +135,20 @@ def make_restreamer(callback, db=None):
     >>> def f(name, doc):
     ...     # do stuff
     ...
-    >>> g = make_restreamer(f)
+    >>> g = make_restreamer(f, db)
 
     To use this `ophyd.callbacks.LastUidSignal`:
 
     >>> last_uid_signal.subscribe(g)
     """
-    from databroker import process
-
-    if db is None:
-        from databroker import DataBroker as db
-
     def cb(value, **kwargs):
-        return process(db[value], callback)
+        return db.process(db[value], callback)
 
     return cb
 
 
-def verify_files_saved(name, doc, db=None):
+def verify_files_saved(name, doc, db):
     "This is a brute-force approach. We retrieve all the data."
-    if db is None:
-        from databroker import DataBroker as db
-
     ttime.sleep(0.1)  # Wait for data to be saved.
     if name != 'stop':
         return
@@ -193,21 +184,19 @@ class LiveTiffExporter(CallbackBase):
         the attributes of 'start', 'event', and (for image stacks) 'i',
         a sequential number.
         e.g., "dir/scan{start[scan_id]}_by_{start[experimenter]}_{i}.tiff"
+    db : Broker
+        The databroker instance to use
     dryrun : bool
         default to False; if True, do not write any files
     overwrite : bool
         default to False, raising an OSError if file exists
-    db : Broker, optional
-        The databroker instance to use, if not provided use databroker
-        singleton
 
     Attributes
     ----------
     filenames : list of filenames written in ongoing or most recent run
     """
 
-    def __init__(self, field, template, dryrun=False, overwrite=False,
-                 db=None):
+    def __init__(self, field, template, db, dryrun=False, overwrite=False):
         try:
             import tifffile
         except ImportError:
