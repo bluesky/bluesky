@@ -684,7 +684,7 @@ def test_async_trigger_delay(motor_det, fresh_RE):
 
 
 def test_reg_reader(db):
-    reg = db.fs
+    reg = db.reg
     reg.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
     det = ReaderWithRegistry('det',
                               {'img': lambda: np.array(np.ones((10, 10)))},
