@@ -103,8 +103,14 @@ def post_run(callback, db, fill=False):
             return
         uid = ensure_uid(doc['run_start'])
         header = db[uid]
-        for name, doc in header.documents():
+        for name, doc in header.documents(fill=fill):
             callback(name, doc)
+        # Depending on the order that this callback and the
+        # databroker-insertion callback were called in, the databroker might
+        # not yet have the 'stop' document that we currently have, so we'll
+        # use our copy instead of expecting the header to include one.
+        if name != 'stop':
+            callback('stop', doc)
 
     return f
 
