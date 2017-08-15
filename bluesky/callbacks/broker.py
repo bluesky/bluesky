@@ -57,7 +57,7 @@ class LiveImage(CallbackBase):
         self.cs._fig.canvas.draw_idle()
 
 
-def post_run(callback, db=None, fill=False):
+def post_run(callback, db, fill=False):
     """Trigger a callback to process all the Documents from a run at the end.
 
     This function does not receive the Document stream during collection.
@@ -72,9 +72,7 @@ def post_run(callback, db=None, fill=False):
             def func(doc_name, doc):
                 pass
 
-    db : Broker, optional
-        The databroker instance to use, if not provided use databroker
-        singleton
+    db : Broker
 
     fill : boolean, optional
         Whether to deference externally-stored data in the documents.
