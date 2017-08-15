@@ -6,12 +6,14 @@ import sys
 from collections import defaultdict
 import time as ttime
 import pytest
+import numpy as np
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
                                 NoReplayAllowed, FailedStatus)
 from bluesky import Msg
 from functools import partial
-from bluesky.examples import det, Mover, TrivialFlyer, SynGauss, SimpleStatus
+from bluesky.examples import (det, Mover, TrivialFlyer, SynGauss, SimpleStatus,
+                              ReaderWithRegistry)
 import bluesky.plans as bp
 from bluesky.tests.utils import MsgCollector
 
@@ -20,7 +22,6 @@ def test_states():
     assert RunEngineStateMachine.States.states() == ['idle',
                                                      'running',
                                                      'paused']
-
 
 def test_verbose(fresh_RE):
     fresh_RE.verbose = True
@@ -1200,3 +1201,27 @@ def test_flyer_descriptor(fresh_RE):
     RE(bp.fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
     descriptor = collector.pop()
     assert 'object_keys' in descriptor
+
+
+def test_filled(fresh_RE, db):
+    RE = fresh_RE
+
+    collector = []
+
+    def collect(name, doc):
+        if name == 'event':
+            collector.append(doc)
+
+    RE(bp.count([det]), collect)
+
+    event, = collector
+    assert event['filled'] == {}
+    collector.clear()
+
+    arr_det = ReaderWithRegistry('arr_det',
+                                 {'img': lambda: np.array(np.ones((10, 10)))},
+                                 reg=db.reg)
+
+    RE(bp.count([arr_det]), collect)
+    event, = collector
+    assert event['filled'] == {'img': False}
