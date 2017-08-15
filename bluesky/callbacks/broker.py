@@ -98,25 +98,13 @@ def post_run(callback, db, fill=False):
     +------------+-------------------+----------------+----------------+
 
     """
-
-    if db is None:
-        from databroker import DataBroker as db
-
     def f(name, doc):
         if name != 'stop':
             return
         uid = ensure_uid(doc['run_start'])
         header = db[uid]
-        callback('start', header['start'])
-        for descriptor in header['descriptors']:
-            callback('descriptor', descriptor)
-        for event in db.get_events(header, fill=fill):
-            callback('event', event)
-        # Depending on the order that this callback and the
-        # databroker-insertion callback were called in, the databroker might
-        # not yet have the 'stop' document that we currently have, so we'll
-        # use our copy instead of expecting the header to include one.
-        callback('stop', doc)
+        for name, doc in header.documents():
+            callback(name, doc)
 
     return f
 
