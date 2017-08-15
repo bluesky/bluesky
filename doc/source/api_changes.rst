@@ -195,7 +195,7 @@ API Changes
 * The module ``bluesky.qt_kicker`` has been removed. Its former contents are
   avaiable in ``bluesky.utils``. The module was originally deprecated in April
   2016, and it has been issuing warnings about this change since.
-* The Object-Orenited plans (``Count``, ``Scan``, etc.) have been deprecated
+* The Object-Orientated plans (``Count``, ``Scan``, etc.) have been deprecated
   and will be removed in a future release.
 
 Enhancements
