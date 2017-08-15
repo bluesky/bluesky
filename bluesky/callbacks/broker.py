@@ -15,12 +15,12 @@ class BrokerCallbackBase(CallbackBase):
     ----------
     fields: Iterable of str
         Names of data field in an Event
-    fs: FileStore instance
-        The FileStore instance to pull the data from
+    db: Broker instance, optional
+        The Broker instance to pull the data from
     """
 
-    def __init__(self, fields, *, fs=None):
-        self.fs = fs
+    def __init__(self, fields, *, db=None):
+        self.db = db
         self.fields = fields
 
     def event(self, doc):
@@ -28,10 +28,10 @@ class BrokerCallbackBase(CallbackBase):
             if doc.get('filled', {}).get(field):
                 pass
             else:
-                if self.fs is None:
+                if self.db is None:
                     raise RuntimeError('Either the data must be pre-loaded or'
-                                       'a FileStore instance must be provided.')
-                doc['data'][field] = self.fs.retrieve(doc['data'][field])
+                                       'a Broker instance must be provided.')
+                doc['data'][field] = self.db.fill_events([doc], field=field)
 
 
 class LiveImage(BrokerCallbackBase):
@@ -56,12 +56,12 @@ class LiveImage(BrokerCallbackBase):
         CrossSection2DView.interpolation
     """
 
-    def __init__(self, field, *, fs=None, cmap=None, norm=None,
+    def __init__(self, field, *, db=None, cmap=None, norm=None,
                  limit_func=None, auto_redraw=True, interpolation=None,
                  window_title=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
-        super().__init__((field,), fs=fs)
+        super().__init__((field,), db=db)
         fig = plt.figure()
         self.field = field
         self.cs = CrossSection(fig, cmap, norm,
@@ -235,7 +235,7 @@ class LiveTiffExporter(BrokerCallbackBase):
             self._tifffile = tifffile
 
         self.field = field
-        super().__init__((field,), fs=db.fs)
+        super().__init__((field,), db=db.fs)
         self.template = template
         self.dryrun = dryrun
         self.overwrite = overwrite

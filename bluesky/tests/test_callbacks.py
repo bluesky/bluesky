@@ -553,8 +553,8 @@ def test_live_scatter(fresh_RE):
 
 def test_broker_base(fresh_RE, db):
     class BrokerChecker(BrokerCallbackBase):
-        def __init__(self, field, *, fs=None):
-            super().__init__(field, fs=fs)
+        def __init__(self, field, *, db=None):
+            super().__init__(field, db=db)
 
         def event(self, doc):
             super().event(doc)
@@ -562,7 +562,7 @@ def test_broker_base(fresh_RE, db):
 
     RE = fresh_RE
     RE.subscribe(db.insert)
-    bc = BrokerChecker(('img', ), fs=db.fs)
+    bc = BrokerChecker(('img', ), db=db.fs)
     db.fs.register_handler('RWFS_NPY', ReaderWithFSHandler)
     det = ReaderWithFileStore('det',
                               {'img': lambda: np.array(np.ones((10, 10)))},
