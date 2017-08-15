@@ -86,6 +86,9 @@ def test_pretripped(fresh_RE):
                             'wait_for', 'null', 'rewindable', 'sleep']),
                           ([Msg('null')], [Msg('null')],
                            ['checkpoint', 'sleep', 'rewindable', 'null',
+                            'wait_for', 'null', 'rewindable', 'sleep']),
+                          (lambda: [Msg('null')], lambda: [Msg('null')],
+                           ['checkpoint', 'sleep', 'rewindable', 'null',
                             'wait_for', 'null', 'rewindable', 'sleep'])])
 def test_pre_suspend_plan(fresh_RE, pre_plan, post_plan, expected_list):
     RE = fresh_RE
