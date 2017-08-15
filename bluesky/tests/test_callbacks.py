@@ -2,7 +2,7 @@ from collections import defaultdict
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4, det5,
                               jittery_motor1, jittery_motor2,
-                              ReaderWithFileStore, ReaderWithFSHandler)
+                              ReaderWithRegistry, ReaderWithRegistryHandler)
 from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
                            outer_product_scan, run_wrapper, pause,
                            subs_wrapper, count)
@@ -266,6 +266,7 @@ def test_zmq(fresh_RE):
         def put_in_queue(name, doc):
             print('putting ', name, 'in queue')
             queue.put((name, doc))
+
         d = RemoteDispatcher('127.0.0.1:5568')
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
@@ -353,6 +354,7 @@ def test_zmq_no_RE(fresh_RE):
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
         Proxy(5567, 5568).start()
+
     proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
     proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
@@ -372,6 +374,7 @@ def test_zmq_no_RE(fresh_RE):
         def put_in_queue(name, doc):
             print('putting ', name, 'in queue')
             queue.put((name, doc))
+
         d = RemoteDispatcher('127.0.0.1:5568')
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
@@ -423,7 +426,7 @@ def test_live_fit(fresh_RE, motor_det):
         raise pytest.skip('requires lmfit')
 
     def gaussian(x, A, sigma, x0):
-        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+        return A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
 
     model = lmfit.Model(gaussian)
     init_guess = {'A': 2,
@@ -452,7 +455,7 @@ def test_live_fit_multidim(fresh_RE):
     det4.exposure_time = 0
 
     def gaussian(x, y, A, sigma, x0, y0):
-        return A*np.exp(-((x - x0)**2 + (y - y0)**2)/(2 * sigma**2))
+        return A * np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
 
     model = lmfit.Model(gaussian, ['x', 'y'])
     init_guess = {'A': 2,
@@ -477,7 +480,7 @@ def test_live_fit_plot(fresh_RE):
         raise pytest.skip('requires lmfit')
 
     def gaussian(x, A, sigma, x0):
-        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+        return A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
 
     model = lmfit.Model(gaussian)
     init_guess = {'A': 2,
@@ -531,7 +534,7 @@ def test_live_grid(fresh_RE):
     with pytest.warns(UserWarning):
         RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10,
                               False),
-        LiveRaster((6, 10), 'det4'))
+           LiveRaster((6, 10), 'det4'))
 
 
 def test_live_scatter(fresh_RE):
@@ -545,9 +548,9 @@ def test_live_scatter(fresh_RE):
     # Test the deprecated name.
     with pytest.warns(UserWarning):
         RE(outer_product_scan([det5],
-                            jittery_motor1, -3, 3, 6,
-                            jittery_motor2, -5, 5, 10, False),
-        LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+                              jittery_motor1, -3, 3, 6,
+                              jittery_motor2, -5, 5, 10, False),
+           LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
                     xlim=(-3, 3), ylim=(-5, 5)))
 
 
@@ -562,10 +565,10 @@ def test_broker_base(fresh_RE, db):
 
     RE = fresh_RE
     RE.subscribe(db.insert)
-    bc = BrokerChecker(('img', ), db=db)
-    db.fs.register_handler('RWFS_NPY', ReaderWithFSHandler)
-    det = ReaderWithFileStore('det',
-                              {'img': lambda: np.array(np.ones((10, 10)))},
-                              fs=db.fs)
+    bc = BrokerChecker(('img',), db=db)
+    db.fs.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
+    det = ReaderWithRegistry('det',
+                             {'img': lambda: np.array(np.ones((10, 10)))},
+                             reg=db.fs)
     RE.subscribe(bc)
     RE(count([det]))
