@@ -99,7 +99,7 @@ API Changes
      was not desirable!
 
      This scheme has been replaced by the
-     :ref:`diagnostic preprocessor <diagnostic_preprocessor>`, which can be
+     :ref:`supplemental data <supplemental_data>`, which can be
      used to globally modify *all* plans, including user-defined ones.
 
      .. code-block:: python
@@ -107,14 +107,14 @@ API Changes
         from bluesky.plans import count
 
         # one-time configuration
-        from bluesky import DiagnosticPreprocessor
-        diag = DiagnosticPreprocessor()
-        RE.preprocessors.append(diag)
+        from bluesky import SupplementalData
+        sd = SupplementalData()
+        RE.preprocessors.append(sd)
 
         # interactive use
-        diag.monitors = # a list of signals to monitor concurrently
-        diag.flyers = # a list of "flyable" devices
-        diag.baseline = # a list of devices to read at start and end
+        sd.monitors = # a list of signals to monitor concurrently
+        sd.flyers = # a list of "flyable" devices
+        sd.baseline = # a list of devices to read at start and end
 
         dets = # a list of detectors
         RE(count(dets))  # monitoring, flying, and baseline readings are added

@@ -3,7 +3,7 @@ from bluesky.examples import motor
 from bluesky.plans import scan
 from bluesky.utils import install_qt_kicker
 from bluesky.examples import motor, det3
-from bluesky.plans import scan, DiagnosticPreprocessor
+from bluesky.plans import scan, SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
 import time
 import random
@@ -93,6 +93,6 @@ def test_with_baseline(fresh_RE):
     det = Detector()
     bec = BestEffortCallback()
     RE.subscribe(bec)
-    diag = DiagnosticPreprocessor(baseline=[det3])
-    RE.preprocessors.append(diag)
+    sd = SupplementalData(baseline=[det3])
+    RE.preprocessors.append(sd)
     RE(scan([det], motor, 1, 5, 5))

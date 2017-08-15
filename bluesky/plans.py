@@ -3210,9 +3210,9 @@ def ramp_plan(go_plan,
     return (yield from polling_plan())
 
 
-class DiagnosticPreprocessor:
+class SupplementalData:
     """
-    A configurable preprocessor for diagnostic measurements
+    A configurable preprocessor for supplemental measurements
 
     This is a plan preprocessor. It inserts messages into plans to:
 
@@ -3242,13 +3242,13 @@ class DiagnosticPreprocessor:
 
     Examples
     --------
-    Create a DiagnosticPreprocessor and apply it to a RunEngine.
+    Create an instance of SupplementalData and apply it to a RunEngine.
 
-    >>> diag = DiagnosticPreprocessor(baseline=[some_motor, some_detector]),
-    ...                               monitors=[some_signal],
-    ...                               flyers=[some_flyer])
+    >>> sd = SupplementalData(baseline=[some_motor, some_detector]),
+    ...                       monitors=[some_signal],
+    ...                       flyers=[some_flyer])
     >>> RE = RunEngine({})
-    >>> RE.preprocessors.append(diag)
+    >>> RE.preprocessors.append(sd)
 
     Now all plans executed by RE will be modified to add baseline readings
     (before and after each run), monitors (during each run), and flyers
@@ -3256,32 +3256,32 @@ class DiagnosticPreprocessor:
 
     Inspect or update the lists of devices interactively.
 
-    >>> diag.baseline
+    >>> sd.baseline
     [some_motor, some_detector]
 
-    >>> diag.baseline.remove(some_motor)
+    >>> sd.baseline.remove(some_motor)
 
-    >>> diag.baseline
+    >>> sd.baseline
     [some_detector]
 
-    >>> diag.baseline.append(another_detector)
+    >>> sd.baseline.append(another_detector)
 
-    >>> diag.baseline
+    >>> sd.baseline
     [some_detector, another_detector]
 
     Each attribute (``baseline``, ``monitors``, ``flyers``) is an ordinary
     Python list, support all the standard list methods, such as:
 
-    >>> diag.baseline.clear()
+    >>> sd.baseline.clear()
 
-    The arguments to DiagnosticPreprocessor are optional. All the lists
+    The arguments to SupplementalData are optional. All the lists
     will empty by default.  As shown above, they can be populated
     interactively.
 
-    >>> diag = DiagnosticPreprocessor()
+    >>> sd = SupplementalData()
     >>> RE = RunEngine({})
-    >>> RE.preprocessors.append(diag)
-    >>> diag.baseline.append(some_detector)
+    >>> RE.preprocessors.append(sd)
+    >>> sd.baseline.append(some_detector)
     """
     def __init__(self, *, baseline=None, monitors=None, flyers=None):
         if baseline is None:

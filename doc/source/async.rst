@@ -75,16 +75,16 @@ and as a decorator, :func:`fly_during_decorator`.
 
     RE(fly_and_count([det]))
 
-Alternatively, if you are using the :ref:`diagnostic_preprocessor`, simply
+Alternatively, if you are using :ref:`supplemental_data`, simply
 append to or extend its list of flyers to kick off during every run:
 
 .. code-block:: python
 
     from bluesky.examples import flyer1, flyer2
 
-    # Assume D is an instance of the DiagnosticPreprocessor set up as
+    # Assume sd is an instance of the SupplementalData set up as
     # descripted in the documentation linked above.
-    D.flyers.extend([flyer1, flyer2])
+    sd.flyers.extend([flyer1, flyer2])
 
 They will be included with all plans until removed.
 
@@ -115,15 +115,15 @@ and as a decorator, :func:`monitor_during_decorator`.
 
     RE(monitor_and_count([det]))
 
-Alternatively, if you are using the :ref:`diagnostic_preprocessor`, simply
+Alternatively, if you are using :ref:`supplemental_data`, simply
 append to or extend its list of signals to monitor:
 
 .. code-block:: python
 
     from bluesky.examples import det1
 
-    # Assume D is an instance of the DiagnosticPreprocessor set up as
+    # Assume sd is an instance of the SupplementalData set up as
     # descripted in the documentation linked above.
-    D.monitors.append(det1)
+    sd.monitors.append(det1)
 
 They will be included with all plans until removed.
