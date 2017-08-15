@@ -57,7 +57,7 @@ class LiveImage(CallbackBase):
         self.cs._fig.canvas.draw_idle()
 
 
-def post_run(callback, db=None, fill=False):
+def post_run(callback, db, fill=False):
     """Trigger a callback to process all the Documents from a run at the end.
 
     This function does not receive the Document stream during collection.
@@ -72,9 +72,7 @@ def post_run(callback, db=None, fill=False):
             def func(doc_name, doc):
                 pass
 
-    db : Broker, optional
-        The databroker instance to use, if not provided use databroker
-        singleton
+    db : Broker
 
     fill : boolean, optional
         Whether to deference externally-stored data in the documents.
@@ -100,25 +98,13 @@ def post_run(callback, db=None, fill=False):
     +------------+-------------------+----------------+----------------+
 
     """
-
-    if db is None:
-        from databroker import DataBroker as db
-
     def f(name, doc):
         if name != 'stop':
             return
         uid = ensure_uid(doc['run_start'])
         header = db[uid]
-        callback('start', header['start'])
-        for descriptor in header['descriptors']:
-            callback('descriptor', descriptor)
-        for event in db.get_events(header, fill=fill):
-            callback('event', event)
-        # Depending on the order that this callback and the
-        # databroker-insertion callback were called in, the databroker might
-        # not yet have the 'stop' document that we currently have, so we'll
-        # use our copy instead of expecting the header to include one.
-        callback('stop', doc)
+        for name, doc in header.documents():
+            callback(name, doc)
 
     return f
 

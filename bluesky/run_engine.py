@@ -227,7 +227,7 @@ class RunEngine:
         self._config_desc_cache = dict()  # " obj.describe_configuration()
         self._config_values_cache = dict()  # " obj.read_configuration() values
         self._config_ts_cache = dict()  # " obj.read_configuration() timestamps
-        self._descriptors = dict()  # cache of {(name, objs_frozen_set): uid}
+        self._descriptors = dict()  # cache of {(name, objs_frozen_set): doc}
         self._monitor_params = dict()  # cache of {obj: (cb, kwargs)}
         self._sequence_counters = dict()  # a seq_num counter per Descriptor
         self._teed_sequence_counters = dict()  # for if we redo data-points
@@ -1476,7 +1476,8 @@ class RunEngine:
         objs_read = frozenset(self._objs_read)
 
         # Event Descriptor
-        if (self._bundle_name, objs_read) not in self._descriptors:
+        desc_key = (self._bundle_name, objs_read)
+        if desc_key not in self._descriptors:
             # We don't not have an Event Descriptor for this set.
             data_keys = {}
             config = {}
@@ -1505,9 +1506,9 @@ class RunEngine:
             self.log.debug("Emitted Event Descriptor with name %r containing "
                            "data keys %r (uid=%r)", self._bundle_name,
                            data_keys.keys(), descriptor_uid)
-            self._descriptors[(self._bundle_name, objs_read)] = descriptor_uid
+            self._descriptors[desc_key] = doc
         else:
-            descriptor_uid = self._descriptors[(self._bundle_name, objs_read)]
+            descriptor_uid = self._descriptors[desc_key]['uid']
         # This is a separate check because it can be reset on resume.
         seq_num_key = (self._bundle_name, objs_read)
         if seq_num_key not in self._sequence_counters:
@@ -1526,9 +1527,14 @@ class RunEngine:
         for key in readings:
             readings[key]['value'] = readings[key]['value']
         data, timestamps = _rearrange_into_parallel_dicts(readings)
+        # Mark all externally-stored data as not filled so that consumers
+        # know that the corresponding data are identifies, not deferenced data.
+        filled = {k: False
+                  for k, v in self._descriptors[desc_key]['data_keys'].items()
+                  if 'external' in v}
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
-                   seq_num=seq_num, uid=event_uid)
+                   seq_num=seq_num, uid=event_uid, filled=filled)
         yield from self.emit(DocumentNames.event, doc)
         self.log.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
                        event_uid)
@@ -1647,8 +1653,8 @@ class RunEngine:
         local_descriptors = {}  # hashed on obj_read, not (name, objs_read)
         for stream_name, data_keys in named_data_keys.items():
             objs_read = frozenset(data_keys)
-            key = (stream_name, objs_read)
-            if key not in self._descriptors:
+            desc_key = (stream_name, objs_read)
+            if desc_key not in self._descriptors:
                 # We don't not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
                 object_keys = {obj.name: list(data_keys)}
@@ -1663,10 +1669,10 @@ class RunEngine:
                 self.log.debug("Emitted Event Descriptor with name %r "
                                "containing data keys %r (uid=%r)", stream_name,
                                data_keys.keys(), descriptor_uid)
-                self._descriptors[key] = descriptor_uid
-                self._sequence_counters[key] = count(1)
+                self._descriptors[desc_key] = doc
+                self._sequence_counters[desc_key] = count(1)
             else:
-                descriptor_uid = self._descriptors[(stream_name, objs_read)]
+                descriptor_uid = self._descriptors[desc_key]['uid']
 
             local_descriptors[objs_read] = (stream_name, descriptor_uid)
 
