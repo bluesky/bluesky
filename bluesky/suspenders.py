@@ -20,10 +20,10 @@ class SuspenderBase(metaclass=ABCMeta):
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to 0
 
-    pre_plan : iterable or iterator, optional
+    pre_plan : iterable or iterator or generator function, optional
             a generator, list, or similar containing `Msg` objects
 
-    post_plan : iterable or iterator, optional
+    post_plan : iterable or iterator or generator function, optional
             a generator, list, or similar containing `Msg` objects
 
     tripped_message : str, optional

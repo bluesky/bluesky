@@ -942,7 +942,7 @@ def simple_scan_saving(det, motor):
 def stepscan(det, motor):
     yield Msg('open_run')
     for i in range(-5, 5):
-        yield Msg('create')
+        yield Msg('create', name='primary')
         yield Msg('set', motor, i)
         yield Msg('trigger', det)
         yield Msg('read', motor)

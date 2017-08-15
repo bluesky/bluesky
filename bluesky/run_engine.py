@@ -20,7 +20,7 @@ from super_state_machine.errors import TransitionError
 
 from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
                     AsyncInput, new_uid, NoReplayAllowed,
-                    RequestAbort, RequestStop,  RunEngineInterrupted,
+                    RequestAbort, RequestStop, RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
                     single_gen, short_uid)

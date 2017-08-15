@@ -175,17 +175,13 @@ API Changes
      For example, the 'center of mass' peak statistics for a field named
      ``'ccd_stats1_total'`` would be accessed like
      ``peaks.com['ccd_stats1_total']``.
-
+* The functions and classes in the module ``bluesky.callbacks.broker`` require
+  a instance of ``Broker`` to be passed in as an argument. They used to default
+  to the 'singleton' instance via ``from databroker import db``, which is now a
+  deprecated usage in databroker.
 * The plan preprocessors ``configure_count_time_wrapper`` and
   ``configure_count_time_decorator`` were moved to ``bluesky.plans`` from
   ``bluesky.spec_api``, reverting a change made in v0.9.0.
-* The method :meth:`bluesky.Dispatcher.subscribe` (which is encapsulated into
-  :class:`bluesky.RunEngine` and inherited by
-  :class:`bluesky.callbacks.zmq.RemoteDispatcher`) has a new signature. The
-  former signature was ``subscribe(name, func)``. The new signature is
-  ``subscribe(func, name='all')``. Because the meaning of the arguments is
-  unambigious (they must be a callable and a string, respectively) the old
-  order will be supported indefeinitely, with a warning.
 * The 0MQ pubsub integration classes ``Publisher`` and ``RemoteDispatcher``
   have been overhauled. They have been moved from
   :mod:`bluesky.callbacks.zmqpub` and :mod:`bluesky.callbacks.zmqsub` to
@@ -195,8 +191,19 @@ API Changes
 * The module ``bluesky.qt_kicker`` has been removed. Its former contents are
   avaiable in ``bluesky.utils``. The module was originally deprecated in April
   2016, and it has been issuing warnings about this change since.
+
+Deprecations
+^^^^^^^^^^^^
+
 * The Object-Orientated plans (``Count``, ``Scan``, etc.) have been deprecated
   and will be removed in a future release.
+* The method :meth:`bluesky.Dispatcher.subscribe` (which is encapsulated into
+  :class:`bluesky.RunEngine` and inherited by
+  :class:`bluesky.callbacks.zmq.RemoteDispatcher`) has a new signature. The
+  former signature was ``subscribe(name, func)``. The new signature is
+  ``subscribe(func, name='all')``. Because the meaning of the arguments is
+  unambigious (they must be a callable and a string, respectively) the old
+  order will be supported indefeinitely, with a warning.
 
 Enhancements
 ^^^^^^^^^^^^
