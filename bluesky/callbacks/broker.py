@@ -24,22 +24,31 @@ class BrokerCallbackBase(CallbackBase):
         self.fields = fields
         self.descriptor_dict = {}
 
+    def clear(self):
+        self.descriptor_dict.clear()
+
+    def stop(self, doc):
+        self.clear()
+
     def descriptor(self, doc):
         self.descriptor_dict = {doc['uid']: doc}
 
     def event(self, doc):
-        for field in self.fields:
-            if doc.get('filled', {}).get(field):
-                pass
-            else:
-                if self.db is None:
-                    raise RuntimeError('Either the data must be pre-loaded or'
-                                       'a Broker instance must be provided.')
-                doc['data'][field], = self.db.fill_events(
-                    [doc],
-                    [self.descriptor_dict[doc['descriptor']]],
-                    fields=field
-                )
+        # the subset of self.fields that are (1) in the doc and (2) unfilled
+        fields = [field for field in self.fields
+                  if (doc['data'].get(field) and
+                      not doc.get('filled', {}).get(field))]
+        if fields:
+            if self.db is None:
+                raise RuntimeError('Either the data must be pre-loaded or '
+                                   'a Broker instance must be provided '
+                                   'via the db parameter of '
+                                   'BrokerCallbackBase.')
+            res, = self.db.fill_events(
+                events=[doc],
+                descriptors=[self.descriptor_dict[doc['descriptor']]],
+                fields=fields)
+            doc['data'].update(**res['data'])  # modify in place
 
 
 class LiveImage(BrokerCallbackBase):
