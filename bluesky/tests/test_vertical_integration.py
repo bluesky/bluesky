@@ -6,23 +6,21 @@ from functools import partial
 
 def test_scan_and_get_data(fresh_RE, db):
     RE = fresh_RE
-    RE.subscribe(db.mds.insert)
+    RE.subscribe(db.insert)
     uid, = RE(stepscan(det, motor), group='foo', beamline_id='testing',
               config={})
 
     hdr = db[uid]
-    db.fetch_events(hdr)
+    list(hdr.events())
 
 
 def test_post_run(fresh_RE, db):
     RE = fresh_RE
-    RE.subscribe(db.mds.insert)
+    RE.subscribe(db.insert)
     output = defaultdict(list)
 
     def do_nothing(doctype, doc):
         output[doctype].append(doc)
-
-    RE.ignore_callback_exceptions = False
 
     RE(stepscan(det, motor), subs={'stop': [post_run(do_nothing, db=db)]})
     assert len(output)
@@ -34,7 +32,7 @@ def test_post_run(fresh_RE, db):
 
 def test_verify_files_saved(fresh_RE, db):
     RE = fresh_RE
-    RE.subscribe(db.mds.insert)
+    RE.subscribe(db.insert)
 
     vfs = partial(verify_files_saved, db=db)
     RE(stepscan(det, motor), subs={'stop': vfs})
