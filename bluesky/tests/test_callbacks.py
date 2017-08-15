@@ -562,7 +562,7 @@ def test_broker_base(fresh_RE, db):
 
     RE = fresh_RE
     RE.subscribe(db.insert)
-    bc = BrokerChecker(('img', ), db=db.fs)
+    bc = BrokerChecker(('img', ), db=db)
     db.fs.register_handler('RWFS_NPY', ReaderWithFSHandler)
     det = ReaderWithFileStore('det',
                               {'img': lambda: np.array(np.ones((10, 10)))},

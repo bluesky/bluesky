@@ -22,6 +22,10 @@ class BrokerCallbackBase(CallbackBase):
     def __init__(self, fields, *, db=None):
         self.db = db
         self.fields = fields
+        self.descriptor_dict = {}
+
+    def descriptor(self, doc):
+        self.descriptor_dict = {doc['uid']: doc}
 
     def event(self, doc):
         for field in self.fields:
@@ -31,7 +35,11 @@ class BrokerCallbackBase(CallbackBase):
                 if self.db is None:
                     raise RuntimeError('Either the data must be pre-loaded or'
                                        'a Broker instance must be provided.')
-                doc['data'][field] = self.db.fill_events([doc], field=field)
+                doc['data'][field], = self.db.fill_events(
+                    [doc],
+                    [self.descriptor_dict[doc['descriptor']]],
+                    fields=field
+                )
 
 
 class LiveImage(BrokerCallbackBase):
