@@ -1,13 +1,15 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4, det5,
-                              jittery_motor1, jittery_motor2)
+                              jittery_motor1, jittery_motor2,
+                              ReaderWithRegistry, ReaderWithRegistryHandler)
 from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
                            outer_product_scan, run_wrapper, pause,
-                           subs_wrapper)
+                           subs_wrapper, count)
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
+from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.tests.utils import _print_redirect, MsgCollector
 import multiprocessing
@@ -44,6 +46,7 @@ def test_raising_ignored_or_not(fresh_RE):
 
     def cb(name, doc):
         raise Exception
+
     # by default (with ignore... = True) it warns
     with pytest.warns(UserWarning):
         RE(stepscan(det, motor), subs=cb)
@@ -66,11 +69,13 @@ def test_subs_input():
     def cb_fact4(scan):
         def cb4(name, doc):
             pass
+
         return cb4
 
     def cb_fact5(scan):
         def cb5(name, doc):
             pass
+
         return cb5
 
     # Test input normalization on OO plans
@@ -108,6 +113,7 @@ def test_unknown_cb_raises(fresh_RE):
 
     def f(name, doc):
         pass
+
     with pytest.raises(KeyError):
         RE.subscribe(f, 'not a thing')
     # back-compat alias for subscribe
@@ -240,6 +246,7 @@ def test_zmq(fresh_RE):
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
         Proxy(5567, 5568).start()
+
     proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
     proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
@@ -259,6 +266,7 @@ def test_zmq(fresh_RE):
         def put_in_queue(name, doc):
             print('putting ', name, 'in queue')
             queue.put((name, doc))
+
         d = RemoteDispatcher('127.0.0.1:5568')
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
@@ -346,6 +354,7 @@ def test_zmq_no_RE(fresh_RE):
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
         Proxy(5567, 5568).start()
+
     proxy_proc = multiprocessing.Process(target=start_proxy, daemon=True)
     proxy_proc.start()
     time.sleep(5)  # Give this plenty of time to start up.
@@ -365,6 +374,7 @@ def test_zmq_no_RE(fresh_RE):
         def put_in_queue(name, doc):
             print('putting ', name, 'in queue')
             queue.put((name, doc))
+
         d = RemoteDispatcher('127.0.0.1:5568')
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
@@ -377,7 +387,7 @@ def test_zmq_no_RE(fresh_RE):
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
-    # Generate two documents. The Publisher will send them to the proxy 
+    # Generate two documents. The Publisher will send them to the proxy
     # device over 5567, and the proxy will send them to the
     # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
     # the queue, where we can verify that they round-tripped.
@@ -416,7 +426,7 @@ def test_live_fit(fresh_RE, motor_det):
         raise pytest.skip('requires lmfit')
 
     def gaussian(x, A, sigma, x0):
-        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+        return A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
 
     model = lmfit.Model(gaussian)
     init_guess = {'A': 2,
@@ -445,7 +455,7 @@ def test_live_fit_multidim(fresh_RE):
     det4.exposure_time = 0
 
     def gaussian(x, y, A, sigma, x0, y0):
-        return A*np.exp(-((x - x0)**2 + (y - y0)**2)/(2 * sigma**2))
+        return A * np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
 
     model = lmfit.Model(gaussian, ['x', 'y'])
     init_guess = {'A': 2,
@@ -470,7 +480,7 @@ def test_live_fit_plot(fresh_RE):
         raise pytest.skip('requires lmfit')
 
     def gaussian(x, A, sigma, x0):
-        return A*np.exp(-(x - x0)**2/(2 * sigma**2))
+        return A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
 
     model = lmfit.Model(gaussian)
     init_guess = {'A': 2,
@@ -524,7 +534,7 @@ def test_live_grid(fresh_RE):
     with pytest.warns(UserWarning):
         RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10,
                               False),
-        LiveRaster((6, 10), 'det4'))
+           LiveRaster((6, 10), 'det4'))
 
 
 def test_live_scatter(fresh_RE):
@@ -533,12 +543,32 @@ def test_live_scatter(fresh_RE):
                           jittery_motor1, -3, 3, 6,
                           jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
-                xlim=(-3, 3), ylim=(-5, 5)))
+                   xlim=(-3, 3), ylim=(-5, 5)))
 
     # Test the deprecated name.
     with pytest.warns(UserWarning):
         RE(outer_product_scan([det5],
-                            jittery_motor1, -3, 3, 6,
-                            jittery_motor2, -5, 5, 10, False),
-        LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+                              jittery_motor1, -3, 3, 6,
+                              jittery_motor2, -5, 5, 10, False),
+           LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
                     xlim=(-3, 3), ylim=(-5, 5)))
+
+
+def test_broker_base(fresh_RE, db):
+    class BrokerChecker(BrokerCallbackBase):
+        def __init__(self, field, *, db=None):
+            super().__init__(field, db=db)
+
+        def event(self, doc):
+            super().event(doc)
+            assert isinstance(doc['data'][self.fields[0]], np.ndarray)
+
+    RE = fresh_RE
+    RE.subscribe(db.insert)
+    bc = BrokerChecker(('img',), db=db)
+    db.fs.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
+    det = ReaderWithRegistry('det',
+                             {'img': lambda: np.array(np.ones((10, 10)))},
+                             reg=db.fs)
+    RE.subscribe(bc)
+    RE(count([det]))

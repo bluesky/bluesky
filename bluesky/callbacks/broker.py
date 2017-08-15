@@ -7,7 +7,51 @@ import doct
 import matplotlib.pyplot as plt
 
 
-class LiveImage(CallbackBase):
+class BrokerCallbackBase(CallbackBase):
+    """
+    Base class for callbacks which need filled documents
+
+    Parameters
+    ----------
+    fields: Iterable of str
+        Names of data field in an Event
+    db: Broker instance, optional
+        The Broker instance to pull the data from
+    """
+
+    def __init__(self, fields, *, db=None):
+        self.db = db
+        self.fields = fields
+        self.descriptor_dict = {}
+
+    def clear(self):
+        self.descriptor_dict.clear()
+
+    def stop(self, doc):
+        self.clear()
+
+    def descriptor(self, doc):
+        self.descriptor_dict = {doc['uid']: doc}
+
+    def event(self, doc):
+        # the subset of self.fields that are (1) in the doc and (2) unfilled
+        fields = [field for field in self.fields
+                  if (doc['data'].get(field) and
+                      not doc.get('filled', {}).get(field))]
+        if fields:
+            if self.db is None:
+                raise RuntimeError('Either the data must be pre-loaded or '
+                                   'a Broker instance must be provided '
+                                   'via the db parameter of '
+                                   'BrokerCallbackBase.')
+            res, = self.db.fill_events(
+                events=[doc],
+                descriptors=[self.descriptor_dict[doc['descriptor']]],
+                fields=fields)
+            doc['data'].update(**res['data'])  # modify in place
+
+
+class LiveImage(BrokerCallbackBase):
     """
     Stream 2D images in a cross-section viewer.
 
@@ -29,28 +73,24 @@ class LiveImage(CallbackBase):
         CrossSection2DView.interpolation
     """
 
-    def __init__(self, field, *, fs=None, cmap=None, norm=None,
-                 limit_func=None, auto_redraw=True, interpolation=None):
+    def __init__(self, field, *, db=None, cmap=None, norm=None,
+                 limit_func=None, auto_redraw=True, interpolation=None,
+                 window_title=None):
         from xray_vision.backend.mpl.cross_section_2d import CrossSection
         import matplotlib.pyplot as plt
-        super().__init__()
-        self.field = field
+        super().__init__((field,), db=db)
         fig = plt.figure()
+        self.field = field
         self.cs = CrossSection(fig, cmap, norm,
-                 limit_func, auto_redraw, interpolation)
+                               limit_func, auto_redraw, interpolation)
+        if window_title:
+            self.cs._fig.canvas.set_window_title(window_title)
         self.cs._fig.show()
-        if fs is None:
-            import filestore.api as fs
-        self.fs = fs
 
     def event(self, doc):
-        if doc.get('filled', {}).get(self.field) and self.fs is not None:
-            uid = doc['data'][self.field]
-            data = self.fs.retrieve(uid)
-        else:
-            data = doc['data'][self.field]
-        self.update(data)
         super().event(doc)
+        data = doc['data'][self.field]
+        self.update(data)
 
     def update(self, data):
         self.cs.update_image(data)
@@ -169,7 +209,7 @@ def verify_files_saved(name, doc, db):
         print('\x1b[1A\u2713')  # print a checkmark on the previous line
 
 
-class LiveTiffExporter(CallbackBase):
+class LiveTiffExporter(BrokerCallbackBase):
     """
     Save TIFF files.
 
@@ -184,19 +224,21 @@ class LiveTiffExporter(CallbackBase):
         the attributes of 'start', 'event', and (for image stacks) 'i',
         a sequential number.
         e.g., "dir/scan{start[scan_id]}_by_{start[experimenter]}_{i}.tiff"
-    db : Broker
-        The databroker instance to use
     dryrun : bool
         default to False; if True, do not write any files
     overwrite : bool
         default to False, raising an OSError if file exists
+    db : Broker, optional
+        The databroker instance to use, if not provided use databroker
+        singleton
 
     Attributes
     ----------
     filenames : list of filenames written in ongoing or most recent run
     """
 
-    def __init__(self, field, template, db, dryrun=False, overwrite=False):
+    def __init__(self, field, template, dryrun=False, overwrite=False,
+                 db=None):
         try:
             import tifffile
         except ImportError:
@@ -209,12 +251,8 @@ class LiveTiffExporter(CallbackBase):
             # stash a reference so the module is accessible in self._save_image
             self._tifffile = tifffile
 
-        if db is None:
-            from databroker import DataBroker as db
-
-        self.db = db
-
         self.field = field
+        super().__init__((field,), db=db.fs)
         self.template = template
         self.dryrun = dryrun
         self.overwrite = overwrite
@@ -240,7 +278,7 @@ class LiveTiffExporter(CallbackBase):
     def event(self, doc):
         if self.field not in doc['data']:
             return
-        self.db.fill_event(doc)  # modifies in place
+        super().event(doc)
         image = np.asarray(doc['data'][self.field])
         if image.ndim == 2:
             filename = self.template.format(start=self._start, event=doc)
@@ -250,7 +288,6 @@ class LiveTiffExporter(CallbackBase):
                 filename = self.template.format(i=i, start=self._start,
                                                 event=doc)
                 self._save_image(plane, filename)
-        super().event(doc)
 
     def stop(self, doc):
         self._start = None
