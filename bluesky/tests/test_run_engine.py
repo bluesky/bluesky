@@ -1169,6 +1169,7 @@ def test_hints(fresh_RE):
         def __init__(self, name):
             self.name = name
             self.parent = None
+            self.hints = {'vis': 'placeholder'}
 
         def read(self):
             return {}
@@ -1181,9 +1182,6 @@ def test_hints(fresh_RE):
 
         def describe_configuration(self):
             return {}
-
-        def hints(self):
-            return {'vis': 'placeholder'}
 
     det = Detector('det')
 
