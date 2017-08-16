@@ -37,17 +37,6 @@ def motor_det(request):
 def db(request):
     """Return a data broker
     """
-    from databroker import temp_config, Broker
-    db = Broker.from_config(temp_config())
-    fs = db.fs
-    mds = db.mds
-    fs_test_conf = fs.config
-    md_test_conf = mds.config
-
-    def delete_fs_mds():
-        print("DROPPING DB")
-        fs._connection.drop_database(fs_test_conf['database'])
-        mds._connection.drop_database(md_test_conf['database'])
-
-    request.addfinalizer(delete_fs_mds)
+    from databroker.tests.utils import build_pymongo_backed_broker
+    db = build_pymongo_backed_broker(request)
     return db
