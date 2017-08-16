@@ -128,7 +128,7 @@ class BestEffortCallback(CallbackBase):
 
         fig_name = '{} vs {}'.format(' '.join(sorted(columns)),
                                      ' '.join(sorted(dim_fields)))
-        if self.overplot:
+        if self.overplot and len(dim_fields) == 1:
             # If any open figure matches 'figname {number}', use it. If there
             # are multiple, the most recently touched one will be used.
             pat1 = re.compile('^' + fig_name + '$')
@@ -169,7 +169,7 @@ class BestEffortCallback(CallbackBase):
             for y_key, ax in zip(columns, axes):
                 # Create an instance of LivePlot and an instance of PeakStats.
                 live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
-                                            peak_results=self.peaks)
+                                              peak_results=self.peaks)
                 live_plot('start', self._start_doc)
                 live_plot('descriptor', doc)
                 peak_stats = PeakStats(x=x_key, y=y_key)
