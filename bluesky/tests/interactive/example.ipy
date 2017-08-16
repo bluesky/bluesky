@@ -1,0 +1,93 @@
+### FAKE HARDWARE ###
+
+# Import and build simulated hardware.
+from bluesky.examples import motor, det1, det2, det4, motor1, motor2
+from ophyd import Signal
+import asyncio
+import time
+import random
+import itertools
+now = time.time
+
+class Detector:
+    name = 'det'
+    parent = None
+    root = None
+
+    def read(self):
+        return {'stats1_total': {'value': random.random(), 'timestamp': now()},
+                'other_stuff': {'value': random.random(), 'timestamp': now()}}
+
+    def describe(self):
+        return {'stats1_total': {'dtype': 'number', 'shape': (), 'source': ''},
+                'other_stuff': {'dtype': 'number', 'shape': (), 'source': ''}}
+
+    def read_configuration(self):
+        return {}
+
+    def describe_configuration(self):
+        return {}
+
+    def hints(self):
+        return {'fields': ['stats1_total', 'other_stuff']}
+
+det = Detector()
+motor._fake_sleep = 0.1
+
+
+def flipper_factory(signal, frequency, sequence, loop=None):
+    if loop is None:
+        loop = asyncio.get_event_loop()
+    delay = 1 / frequency
+
+    async def inner():
+
+        for v in itertools.cycle(sequence):
+            ev = asyncio.Event(loop=loop)
+            st = signal.set(v)
+            st.finished_cb = lambda : loop.call_soon_threadsafe(
+                ev.set)
+            await asyncio.sleep(delay)
+            await ev.wait()
+
+    return inner()
+
+sig = Signal(name='flipper', value=0)
+loop = asyncio.get_event_loop()
+task = loop.create_task(flipper_factory(sig, 5, [0, 1, 2]))
+
+### CONFIGURATION ### 
+
+# Familiar configuration
+
+%matplotlib qt5
+from bluesky.utils import install_qt_kicker
+install_qt_kicker()
+
+from bluesky import RunEngine
+RE = RunEngine({})
+
+# New standard configuration steps!
+
+from bluesky.plans import scan, outer_product_scan, SupplementalData
+diag = SupplementalData()
+RE.preprocessors.append(diag)
+
+from bluesky.callbacks.best_effort import BestEffortCallback
+bec = BestEffortCallback()
+RE.subscribe(bec)
+peaks = bec.peaks  # convenience alias
+
+# New custom beamline configuration steps!
+diag.baseline = [det1, det2, motor1, motor2]
+diag.monitors = [sig]
+
+# sample usage
+RE(scan([det], motor, 1, 5, 5))
+RE(scan([det], motor, 1, 5, 5))
+bec.overplot = False
+RE(scan([det], motor, 1, 5, 5))
+
+bec.overplot = True
+RE(outer_product_scan([det4], motor1, 1, 5, 5, motor2, 1, 5, 5, False))
+RE(outer_product_scan([det4], motor1, 1, 5, 5, motor2, 1, 5, 5, False))
