@@ -21,6 +21,7 @@ def fresh_RE(request):
     request.addfinalizer(clean_event_loop)
     return RE
 
+
 RE = fresh_RE
 
 
@@ -37,4 +38,16 @@ def db(request):
     """Return a data broker
     """
     from databroker import temp_config, Broker
-    return Broker.from_config(temp_config())
+    db = Broker.from_config(temp_config())
+    fs = db.fs
+    mds = db.mds
+    fs_test_conf = fs.config
+    md_test_conf = mds.config
+
+    def delete_fs_mds():
+        print("DROPPING DB")
+        fs._connection.drop_database(fs_test_conf['database'])
+        mds._connection.drop_database(md_test_conf['database'])
+
+    request.addfinalizer(delete_fs_mds)
+    return db
