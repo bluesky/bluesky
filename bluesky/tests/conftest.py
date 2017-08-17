@@ -37,6 +37,6 @@ def motor_det(request):
 def db(request):
     """Return a data broker
     """
-    from databroker.tests.utils import build_pymongo_backed_broker
-    db = build_pymongo_backed_broker(request)
+    from databroker.tests.utils import build_sqlite_backed_broker
+    db = build_sqlite_backed_broker(request)
     return db
