@@ -622,11 +622,11 @@ plans in :mod:`bluesky.plans` for examples.)
     RE.subscribe(bec)
     RE(scan([det], motor, 1, 5, 5))
 
-Use ``bec.disable_text()`` and ``bec.enable_text()`` to temporarily toggle the
-text output off and on. Likewise use ``bec.disable_plot()`` and
-``bec.enable_plots()`` to toggle the plots. Blacklist plotting certain streams
-using the ``bec.noplot_streams`` attribute, which is a list of stream names.
-The blacklist is set to ``['baseline']`` by default.
+Use ``bec.disable_text()`` and ``bec.enable_text()`` to toggle the text output
+off and on. Likewise use ``bec.disable_plot()`` and ``bec.enable_plots()`` to
+toggle the plots. Blacklist plotting certain streams using the
+``bec.noplot_streams`` attribute, which is a list of stream names.  The
+blacklist is set to ``['baseline']`` by default.
 
 The attribute ``bec.overplot`` can be used to control whether line plots for
 subsequent runs are plotted on the same axes. It is ``True`` by default.
