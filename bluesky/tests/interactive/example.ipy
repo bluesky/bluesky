@@ -13,6 +13,7 @@ class Detector:
     name = 'det'
     parent = None
     root = None
+    hints = {'fields': ['stats1_total', 'other_stuff']}
 
     def read(self):
         return {'stats1_total': {'value': random.random(), 'timestamp': now()},
@@ -28,8 +29,6 @@ class Detector:
     def describe_configuration(self):
         return {}
 
-    def hints(self):
-        return {'fields': ['stats1_total', 'other_stuff']}
 
 det = Detector()
 motor._fake_sleep = 0.1
