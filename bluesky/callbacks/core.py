@@ -4,7 +4,6 @@ Useful callbacks for the Run Engine
 from itertools import count
 import warnings
 from collections import deque, namedtuple, OrderedDict, ChainMap
-import sys
 import time as ttime
 
 import matplotlib.pyplot as plt
@@ -537,8 +536,6 @@ class LiveTable(CallbackBase):
            def logbook(input_str):
                 pass
 
-    file : file-like, optional
-        Object that ``print`` writes to. Default is ``sys.stdout``.
     '''
     _FMTLOOKUP = {'s': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
                   'f': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
@@ -556,9 +553,8 @@ class LiveTable(CallbackBase):
     def __init__(self, fields, *, stream_name='primary',
                  print_header_interval=50,
                  min_width=12, default_prec=3, extra_pad=1,
-                 logbook=None, file=sys.stdout):
+                 logbook=None):
         super().__init__()
-        self._file = file
         self._header_interval = print_header_interval
         # expand objects
         self._fields = _get_obj_fields(fields)
@@ -695,7 +691,7 @@ class LiveTable(CallbackBase):
 
     def _print(self, out_str):
         self._rows.append(out_str)
-        print(out_str, file=self._file)
+        print(out_str)
 
 
 class LiveFit(CallbackBase):
