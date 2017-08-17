@@ -31,7 +31,7 @@ Notice that the names in the left column are links to detailed API
 documentation.
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
    count
@@ -103,7 +103,7 @@ We can use ``LivePlot`` to visualize this data. It is documented in the
     RE(count([noisy_det], num=5), LivePlot('noisy_det'))
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
    count
@@ -151,7 +151,7 @@ Or, again, to save some typing for repeated use,
     RE(scan([det], motor, 1, 5, 5), LivePlot('det', 'motor'))
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
    scan
