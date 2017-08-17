@@ -47,6 +47,8 @@ install:
     fi
   - pip install codecov
   - python setup.py install
+  # until fix in databroker propgates through
+  - pip install pymongo
   # Need to clean the python build directory (and other cruft) or pytest is
   # going to find the build directory and get confused why there are two sets
   # of every test file
