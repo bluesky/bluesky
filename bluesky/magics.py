@@ -5,10 +5,11 @@
 # ip = get_ipython()
 # ip.register_magics(BlueskyMagics)
 
-from IPython.core.magic import Magics, magics_class, line_magic
 from ast import literal_eval as le
+import asyncio
 import bluesky.plans as bp
 from bluesky import RunEngine
+from IPython.core.magic import Magics, magics_class, line_magic
 import numpy as np
 from operator import attrgetter
 
@@ -22,7 +23,7 @@ except ImportError:
 @magics_class
 class BlueskyMagics(Magics):
 
-    RE = RunEngine({})
+    RE = RunEngine({}, loop = asyncio.new_event_loop())
 
     @line_magic
     def mov(self, line):
