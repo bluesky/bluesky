@@ -536,6 +536,8 @@ class LiveTable(CallbackBase):
            def logbook(input_str):
                 pass
 
+    out : callable, optional
+        Function to call to 'print' a line.  Defaults to `print`
     '''
     _FMTLOOKUP = {'s': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
                   'f': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
@@ -553,7 +555,7 @@ class LiveTable(CallbackBase):
     def __init__(self, fields, *, stream_name='primary',
                  print_header_interval=50,
                  min_width=12, default_prec=3, extra_pad=1,
-                 logbook=None):
+                 logbook=None, out=print):
         super().__init__()
         self._header_interval = print_header_interval
         # expand objects
@@ -573,6 +575,7 @@ class LiveTable(CallbackBase):
         self._rows = []
         self.logbook = logbook
         self._sep_format = None
+        self._out = out
 
     def descriptor(self, doc):
         def patch_up_precision(p):
@@ -677,7 +680,7 @@ class LiveTable(CallbackBase):
         self._stop = doc
 
         wm = self.water_mark.format(st=self._start)
-        print(wm)
+        self._out(wm)
         if self.logbook:
             self.logbook('\n'.join([wm] + self._rows))
         super().stop(doc)
@@ -691,7 +694,7 @@ class LiveTable(CallbackBase):
 
     def _print(self, out_str):
         self._rows.append(out_str)
-        print(out_str)
+        self._out(out_str)
 
 
 class LiveFit(CallbackBase):
