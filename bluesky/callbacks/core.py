@@ -91,7 +91,6 @@ class LivePlot(CallbackBase):
     ----------
     y : str
         the name of a data field in an Event
-
     x : str, optional
         the name of a data field in an Event, or 'seq_num' or 'time'
         If None, use the Event's sequence number.
@@ -108,8 +107,11 @@ class LivePlot(CallbackBase):
         passed to Axes.set_ylim
     ax : Axes, optional
         matplotib Axes; if none specified, new figure and axes are made.
-    fig : Figure
+    fig : Figure, optional
         deprecated: use ax instead
+    epoch : {'run', 'unix'}, optional
+        If 'run' t=0 is the time recorded in the RunStart document. If 'unix',
+        t=0 is 1 Jan 1970 ("the UNIX epoch"). Default is 'run'.
     All additional keyword arguments are passed through to ``Axes.plot``.
 
     Examples
@@ -118,7 +120,7 @@ class LivePlot(CallbackBase):
     >>> RE(my_scan, my_plotter)
     """
     def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
-                 ax=None, fig=None, **kwargs):
+                 ax=None, fig=None, epoch='run', **kwargs):
         super().__init__()
         if fig is not None:
             if ax is not None:
@@ -153,6 +155,7 @@ class LivePlot(CallbackBase):
         self.legend = None
         self.legend_title = " :: ".join([name for name in self.legend_keys])
         self._epoch_offset = None  # used if x == 'time'
+        self._epoch = epoch
 
     def start(self, doc):
         # The doc is not used; we just use the singal that a new run began.
@@ -190,7 +193,7 @@ class LivePlot(CallbackBase):
 
         # Special-case 'time' to plot against against experiment epoch, not
         # UNIX epoch.
-        if self.x == 'time':
+        if self.x == 'time' and self._epoch == 'run':
             new_x -= self._epoch_offset
 
         self.update_caches(new_x, new_y)
