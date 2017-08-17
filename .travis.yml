@@ -9,15 +9,6 @@ cache:
     - $HOME/.cache/pip
     - $HOME/.cache/matplotlib
 
-services:
-  - mongodb
-addons:
-  apt:
-    sources:
-    - mongodb-3.2-precise
-    packages:
-    - mongodb-org-server
-
 matrix:
   include:
     - python: 3.6
@@ -40,15 +31,6 @@ before_install:
        conda config --set show_channel_urls True
        conda config --set always_yes True
     fi
-  - export MDS_HOST=localhost
-  - export MDS_DATABASE=test
-  - export MDS_TIMEZONE=US/Eastern
-  - mkdir -p /home/travis/.config/metadatastore
-  - 'echo ''port: 27017'' > /home/travis/.config/metadatastore/connection.yml'
-  - export FS_HOST=localhost
-  - export FS_DATABASE=test
-  - mkdir -p /home/travis/.config/filestore
-  - 'echo ''port: 27017'' > /home/travis/.config/filestore/connection.yml'
 
 
 install:
@@ -57,7 +39,6 @@ install:
     if [ $CONDA_ENV ]; then
        conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py traitlets jsonschema databroker pip doct xray-vision lmfit pyzmq ophyd filestore event-model dill ophyd pims mongoquery pytest $EXTRA_C_CHAN -c lightsource2-tag -c conda-forge -c soft-matter -c defaults --override-channels
        source activate testenv
-       pip install https://github.com/NSLS-II/portable-mds/zipball/master#egg=portable_mds
        pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model
        source activate testenv
     else
@@ -69,10 +50,9 @@ install:
   # Need to clean the python build directory (and other cruft) or pytest is
   # going to find the build directory and get confused why there are two sets
   # of every test file
-  - python -c "from filestore import utils, conf; utils.install_sentinels(conf.connection_config, 1)"
+  - git clean -xfd
   # make sure the sqlite file exists to avoid race conditions
   - python -c "from bluesky.utils import get_history; get_history()"
-  - git clean -xfd
 
 script:
   - coverage run run_tests.py
