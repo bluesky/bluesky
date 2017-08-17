@@ -58,14 +58,12 @@ def test_disable(fresh_RE):
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
-    bec.disable()
-    assert not bec.enabled
+    bec.disable_text()
 
     RE(scan([det], motor, 1, 5, 5))
     assert bec._table is None
 
-    bec.enable()
-    assert bec.enabled
+    bec.enable_text()
 
     RE(scan([det], motor, 1, 5, 5))
     assert bec._table is not None
