@@ -219,12 +219,14 @@ class BestEffortCallback(CallbackBase):
         fig.tight_layout()
 
     def event(self, doc):
-        if self._descriptors[doc['descriptor']].get('name') == 'primary':
+        descriptor = self._descriptors[doc['descriptor']]
+        if descriptor.get('name') == 'primary':
             if self._table is not None:
                 self._table('event', doc)
 
         # Show the baseline readings.
-        if self._descriptors[doc['descriptor']].get('name') == 'baseline':
+        if descriptor.get('name') == 'baseline':
+            columns = hinted_fields(descriptor)
             self._baseline_toggle = not self._baseline_toggle
             if self._baseline_toggle:
                 file = self._buffer
@@ -237,7 +239,9 @@ class BestEffortCallback(CallbackBase):
                 border = '+' + '-' * 32 + '+' + '-' * 32 + '+'
                 print(border, file=file)
                 for k, v in doc['data'].items():
-                     print('| {:>30} | {:<30} |'.format(k, v), file=file)
+                    if k not in columns:
+                        continue
+                    print('| {:>30} | {:<30} |'.format(k, v), file=file)
                 print(border, file=file)
 
         for y_key in doc['data']:
