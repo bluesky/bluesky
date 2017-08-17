@@ -1,6 +1,6 @@
 from bluesky.examples import (motor, motor1, motor2, det, det1, det2,
                               MockFlyer, NullStatus)
-                            
+
 import pytest
 import bluesky.plans as bp
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -33,7 +33,7 @@ class MotorEmptyHints:
         self.name = name
         self.parent = None
         self.position = 0
-
+        self.hints = {}
     def read(self):
         return {}
 
@@ -49,8 +49,6 @@ class MotorEmptyHints:
     def set(self, val):
         return NullStatus()
 
-    def hints(self):
-        return {}
 
 
 def checker(name, doc):
@@ -87,7 +85,7 @@ _motor2 = MotorNoHints('motor2')
 
 
 @pytest.mark.parametrize('pln,args,kwargs', [
-    # repeat with motor objects that do not have hints()
+    # repeat with motor objects that do not have hints
     (bp.scan, (_motor, 1, 2, 2), {}),
     (bp.inner_product_scan, (2, _motor, 1, 2), {}),
     (bp.relative_inner_product_scan, (2, _motor, 1, 2), {}),
@@ -109,7 +107,7 @@ _motor2 = MotorEmptyHints('motor2')
 
 
 @pytest.mark.parametrize('pln,args,kwargs', [
-    # repeat with motor objects that do not have hints()
+    # repeat with motor objects that do not have hints
     (bp.scan, (_motor, 1, 2, 2), {}),
     (bp.inner_product_scan, (2, _motor, 1, 2), {}),
     (bp.relative_inner_product_scan, (2, _motor, 1, 2), {}),

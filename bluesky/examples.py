@@ -349,6 +349,7 @@ class Mover(Reader):
                       'precision': 2}
         return ret
 
+    @property
     def hints(self):
         return {'fields': [list(self._fields)[0]]}
 

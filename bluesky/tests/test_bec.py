@@ -1,7 +1,4 @@
 import ast
-from bluesky.examples import motor
-from bluesky.plans import scan
-from bluesky.utils import install_qt_kicker
 from bluesky.examples import motor, det3
 from bluesky.plans import scan, SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
@@ -12,7 +9,7 @@ import random
 def test_hints(fresh_RE):
     RE = fresh_RE
     expected_hint = {'fields': [motor.name]}
-    assert motor.hints() == expected_hint
+    assert motor.hints == expected_hint
     collector = []
 
     def collect(*args):
@@ -22,12 +19,15 @@ def test_hints(fresh_RE):
     name, doc = collector.pop()
     assert doc['hints'][motor.name] == expected_hint
 
+
 now = time.time
+
 
 class Detector:
     name = 'det'
     parent = None
     root = None
+    hints = {'fields': ['a']}
 
     def read(self):
         return {'a': {'value': random.random(), 'timestamp': now()},
@@ -43,9 +43,6 @@ class Detector:
     def describe_configuration(self):
         return {}
 
-    def hints(self):
-        return {'fields': ['a']}
-
 
 def test_simple(fresh_RE):
     RE = fresh_RE
@@ -53,6 +50,7 @@ def test_simple(fresh_RE):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(scan([det], motor, 1, 5, 5))
+
 
 def test_disable(fresh_RE):
     RE = fresh_RE
