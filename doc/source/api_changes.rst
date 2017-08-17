@@ -195,8 +195,18 @@ API Changes
 Deprecations
 ^^^^^^^^^^^^
 
+* The module :mod:`bluesky.plan_tools` has been renamed
+  :mod:`bluesky.simualtors`.  In the new module,
+  :func:`bluesky.plan_tools.print_summary`` has been renamed
+  :func:`bluesky.simulators.summarize_plan`.
+  The old names are supported in this release, with a warning, but will be
+  removed in a future release.
 * The Object-Orientated plans (``Count``, ``Scan``, etc.) have been deprecated
-  and will be removed in a future release.
+  and will be removed in a future release. Their documentation has been
+  removed.
+* The plan context managers (``run_context``, ``stage_context``, etc.) have
+  been deprecated and will be removed in a future release. They were never
+  documented or widely used.
 * The method :meth:`bluesky.Dispatcher.subscribe` (which is encapsulated into
   :class:`bluesky.RunEngine` and inherited by
   :class:`bluesky.callbacks.zmq.RemoteDispatcher`) has a new signature. The
@@ -211,6 +221,8 @@ Enhancements
 * ``LivePlot`` now accepts ``x='time'`` and produces a plot with t=0 is the
   start of the run. It also accepts ``x='seq_num'``---a synonym for ``x=None``,
   which remains the default.
+* A new simulator :func:`bluesky.simulators.check_limits` verifies that a plan
+  will not try to move a movable device outside of its limits.
 * A new plan, :func:`bluesky.plan.mvr`, has been added as a relative counterpart
   to :func:`bluesky.plan.mv`.
 * The 0MQ pubsub integration classes :class:`bluesky.callbacks.zmq.Publisher``
