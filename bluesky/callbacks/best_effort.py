@@ -1,10 +1,12 @@
 from bluesky.callbacks import CallbackBase, LiveTable, LivePlot, LiveGrid
 from bluesky.callbacks.scientific import PeakStats
 from cycler import cycler
+from io import StringIO
 import itertools
 from itertools import chain
 import matplotlib.pyplot as plt
 import re
+import sys
 from pprint import pformat
 from warnings import warn
 import weakref
@@ -31,6 +33,10 @@ class BestEffortCallback(CallbackBase):
 
         # public data
         self.peaks = PeakResults()
+
+        # hack to handle the bottom border of the table
+        self._buffer = StringIO()
+        self._baseline_toggle = True
 
     def enable_text(self):
         self._text_enabled = True
@@ -219,9 +225,20 @@ class BestEffortCallback(CallbackBase):
 
         # Show the baseline readings.
         if self._descriptors[doc['descriptor']].get('name') == 'baseline':
-            for k, v in doc['data'].items():
-                if self._text_enabled:
-                    print('Baseline', k, ':', v)
+            self._baseline_toggle = not self._baseline_toggle
+            if self._baseline_toggle:
+                file = self._buffer
+                subject = 'End-of-run'
+            else:
+                file = sys.stdout
+                subject = 'Start-of-run'
+            if self._text_enabled:
+                print('{} baseline readings:'.format(subject), file=file)
+                border = '+' + '-' * 32 + '+' + '-' * 32 + '+'
+                print(border, file=file)
+                for k, v in doc['data'].items():
+                     print('| {:>30} | {:<30} |'.format(k, v), file=file)
+                print(border, file=file)
 
         for y_key in doc['data']:
             live_plot = self._live_plots.get(doc['descriptor'], {}).get(y_key)
@@ -254,6 +271,11 @@ class BestEffortCallback(CallbackBase):
             for live_grid in live_grids.values():
                 live_grid('stop', doc)
 
+        # Print baseline below bottom border of table.
+        self._buffer.seek(0)
+        print(self._buffer.read())
+        print('\n')
+
     def clear(self):
         self._start_doc = None
         self._descriptors.clear()
@@ -262,6 +284,7 @@ class BestEffortCallback(CallbackBase):
         self._peak_stats.clear()
         self._live_grids.clear()
         self.peaks.clear()
+        self._buffer = StringIO()
 
 
 class PeakResults:
