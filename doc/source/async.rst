@@ -14,7 +14,10 @@ data acquisition that is occurring at different rates.
     plans in the section on :doc:`plans`.
 
 In short, "flying" is for acquisition at high rates and "monitoring" is for
-acquisition an irregular or slow rate.
+acquisition at an irregular or slow rate. Monitoring does not guarantee that
+all readings will be captured; i.e. monitoring is lossy. It is susceptible to
+network glitches. But flying, by contract, is not lossy if correctly
+implementated.
 
 **Flying** means: "Let the hardware take control, cache data externally, and
 then transfer all the data to the RunEngine at the end." This is essential when
@@ -36,7 +39,8 @@ at a device's natural update rate. For example, we might monitor background
 condition (e.g., beam current) on the side while executing the primary logic of
 a plan. The documents are generated in real time --- not all at the end, like
 flying --- so if the update rate is too high, monitoring can slow down the
-execution of the plan.
+execution of the plan. As mentioned above, monitoring is also lossy: if network
+traffic is high, some readings may be missed.
 
 Flying
 ------
