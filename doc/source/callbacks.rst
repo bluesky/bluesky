@@ -574,6 +574,73 @@ There is also a convenience function for plotting:
 .. autoclass:: bluesky.callbacks.scientific.PeakStats
 .. autofunction:: bluesky.callbacks.scientific.plot_peak_stats
 
+Best-Effort Callback
+--------------------
+
+.. warning::
+
+    This is a new, experimental feature. It will likely be changed in future
+    releases in a way that is not backward-compatible.
+
+This is meant to be permanently subscribed to the RunEngine like so:
+
+.. code-block:: python
+
+    # one-time configuration
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+It provides best-effort plots and visualization for *any* plan. It uses the
+'hints' key provided by the plan, if present. (See the source code of the
+plans in :mod:`bluesky.plans` for examples.)
+
+.. ipython:: python
+    :suppress:
+
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+.. ipython:: python
+
+    from bluesky.examples import det1, det2
+    from bluesky.plans import scan
+
+    dets = [det1, det2]
+    
+    RE(scan([det], motor, 1, 5, 5))  # automatically prints table, shows plot
+
+.. plot::
+
+    from bluesky import RunEngine
+    from bluesky.plans import scan
+    from bluesky.examples import det, motor
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    RE = RunEngine({})
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    RE(scan([det], motor, 1, 5, 5))
+
+Use ``bec.disable_text()`` and ``bec.enable_text()`` to temporarily toggle the
+text output off and on. Likewise use ``bec.disable_plot()`` and
+``bec.enable_plots()`` to toggle the plots. Blacklist plotting certain streams
+using the ``bec.noplot_streams`` attribute, which is a list of stream names.
+The blacklist is set to ``['baseline']`` by default.
+
+The attribute ``bec.overplot`` can be used to control whether line plots for
+subsequent runs are plotted on the same axes. It is ``True`` by default.
+Overplotting only occurs if the names of the axes are the same from one plot
+to the next.
+
+For each plot, simple peak-fitting is performed in the background. Of
+course, it may or may not be applicable depending on your data, and it is
+not shown by default. To view fitting annotations in a plot, click the
+plot area and press Shift+P. (Lowercase p is a shortcut for
+"panning" the plot.)
+
+To access the peak-fit statistics programmatically, use ``bec.peaks``.
+
 Callback for Export
 -------------------
 

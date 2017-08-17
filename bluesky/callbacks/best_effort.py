@@ -16,6 +16,8 @@ class BestEffortCallback(CallbackBase):
         self._start_doc = None
         self._descriptors = {}
         self._table = None
+        self._text_enabled = True
+        self._plots_enabled = True
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
         self._live_grids = {}
@@ -24,23 +26,26 @@ class BestEffortCallback(CallbackBase):
         self._stream_names = set()
 
         # public options
-        self.enabled = True
         self.overplot = True
-        self.truncate_table = False 
-        # TODO custom width
         self.noplot_streams = ['baseline']
 
         # public data
         self.peaks = PeakResults()
 
-    def enable(self):
-        self.enabled = True
+    def enable_text(self):
+        self._text_enabled = True
 
-    def disable(self):
-        self.enabled = False
+    def disable_text(self):
+        self._text_enabled = False
+
+    def enable_plots(self):
+        self._plots_enabled = True
+
+    def disable_plots(self):
+        self._plots_enabled = False
 
     def __call__(self, name, doc):
-        if not self.enabled:
+        if not (self._text_enabled or self._plots_enabled):
             return
 
         super().__call__(name, doc)
@@ -82,7 +87,8 @@ class BestEffortCallback(CallbackBase):
 
         if stream_name not in self._stream_names:
             self._stream_names.add(stream_name)
-            print("New stream: {!r}".format(stream_name))
+            if self._text_enabled:
+                print("New stream: {!r}".format(stream_name))
 
         columns = hinted_fields(doc)
 
@@ -107,13 +113,16 @@ class BestEffortCallback(CallbackBase):
             # Ensure that no independent variables ('dimensions') are
             # duplicated here.
             columns = [c for c in columns if c not in self.dim_fields]
-            
-            self._table = LiveTable(list(self.dim_fields) + columns)
-            self._table('start', self._start_doc)
-            self._table('descriptor', doc)
+
+            if self._text_enabled:
+                self._table = LiveTable(list(self.dim_fields) + columns)
+                self._table('start', self._start_doc)
+                self._table('descriptor', doc)
 
         ### DECIDE WHICH KIND OF PLOT CAN BE USED ###
 
+        if not self._plots_enabled:
+            return
         if stream_name in self.noplot_streams:
             return
 
@@ -205,12 +214,14 @@ class BestEffortCallback(CallbackBase):
 
     def event(self, doc):
         if self._descriptors[doc['descriptor']].get('name') == 'primary':
-            self._table('event', doc)
+            if self._table is not None:
+                self._table('event', doc)
 
         # Show the baseline readings.
         if self._descriptors[doc['descriptor']].get('name') == 'baseline':
             for k, v in doc['data'].items():
-                print('Baseline', k, ':', v)
+                if self._text_enabled:
+                    print('Baseline', k, ':', v)
 
         for y_key in doc['data']:
             live_plot = self._live_plots.get(doc['descriptor'], {}).get(y_key)
