@@ -43,6 +43,7 @@ Index
    plans
    callbacks
    state-machine
+   simulation
    event_descriptors
    async
    debugging
