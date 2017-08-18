@@ -44,6 +44,7 @@ Index
    callbacks
    state-machine
    simulation
+   progress-bar
    event_descriptors
    async
    debugging

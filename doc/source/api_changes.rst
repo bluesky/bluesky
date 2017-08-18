@@ -218,6 +218,7 @@ Deprecations
 Enhancements
 ^^^^^^^^^^^^
 
+* A :doc:`progress bar <progress-bar>`_ add-on is available.
 * ``LivePlot`` now accepts ``x='time'`` and produces a plot with t=0 is the
   start of the run. It also accepts ``x='seq_num'``---a synonym for ``x=None``,
   which remains the default.
