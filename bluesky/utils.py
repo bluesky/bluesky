@@ -16,7 +16,12 @@ import numpy as np
 from cycler import cycler
 import logging
 import datetime
-from functools import wraps
+from functools import wraps, partial
+import sys
+from tqdm import tqdm
+from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
+from ophyd import EpicsMotor
+import warnings
 logger = logging.getLogger(__name__)
 
 
@@ -936,3 +941,63 @@ def apply_to_dict_recursively(d, f):
             d[key] = apply_to_dict_recursively(d=val, f=f)
         d[key] = f(val)
     return d
+
+
+class ProgressBar:
+    def __init__(self, status_objs):
+        self.meters = []
+        for pos, st in enumerate(status_objs):
+            if hasattr(st, 'watch'):
+                st.watch(partial(self.update, pos))
+                self.meters.append([''])
+        # Determine terminal width.
+        self.ncols = _environ_cols_wrapper()(sys.stdout)
+        self.fp = sys.stdout
+
+    def update(self, pos, *,
+               name,
+               current, initial, target, unit, precision,
+               fraction,
+               time_elapsed, time_remaining):
+        total = abs(round(target - initial, precision or 3))
+        n = abs(round(current - initial, precision or 3))
+        meter = tqdm.format_meter(n=n, total=total, elapsed=time_elapsed,
+                                  unit=unit,
+                                  prefix=name,
+                                  ncols=self.ncols)
+        self.meters[pos] = meter
+        self.draw()
+
+    def draw(self):
+        for meter in self.meters:
+            tqdm.status_printer(self.fp)(meter)
+            self.fp.write('\n')
+        self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+
+    def clear(self):
+        for meter in self.meters:
+            self.fp.write('\r')
+            self.fp.write(' ' * self.ncols)
+            self.fp.write('\r')
+            self.fp.write('\n')
+        self.meters.clear()
+
+
+class ProgressBarManager:
+    def __init__(self):
+        self.pbar = None
+
+    def __call__(self, status_objs_or_none):
+        if status_objs_or_none is not None:
+            # Start a new ProgressBar.
+            if self.pbar is not None:
+                warnings.warn("Previous ProgressBar never competed.")
+                self.pbar.clear()
+            self.pbar = ProgressBar(status_objs_or_none)
+        else:
+            # Clean up an old one.
+            if self.pbar is None:
+                warnings.warn("There is no Progress bar to clean up.")
+            else:
+                self.pbar.clear()
+                self.pbar = None

@@ -6,4 +6,5 @@ matplotlib
 numpy
 super_state_machine
 toolz
+tqdm
 traitlets
