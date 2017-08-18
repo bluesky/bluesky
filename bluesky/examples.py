@@ -17,12 +17,19 @@ class SimpleStatus:
     It is "simple" because it does not support a timeout or a settling time.
     """
 
-    def __init__(self, *, done=False, success=False):
+    def __init__(self, *, done=False, success=False, device=None):
         super().__init__()
         self._lock = RLock()
         self._cb = None
         self.done = done
         self.success = success
+        self.device = device
+        self._watchers = []
+
+    def watch(self, func):
+        if self.device is not None:
+            self._watchers.append(func)
+            func(name=str(self.device.name))
 
     def _finished(self, success=True, **kwargs):
         if self.done:
@@ -31,6 +38,8 @@ class SimpleStatus:
         with self._lock:
             self.success = success
             self.done = True
+            for watcher in self._watchers:
+                watcher(name=str(self.device.name), fraction=1)
 
             if self._cb is not None:
                 self._cb()
@@ -167,7 +176,7 @@ class Reader:
         delay_time = self.exposure_time
         if delay_time:
             if self.loop.is_running():
-                st = SimpleStatus()
+                st = SimpleStatus(device=self)
                 self.loop.call_later(delay_time, st._finished)
                 return st
             else:
@@ -318,7 +327,7 @@ class Mover(Reader):
 
         if self._fake_sleep:
             if self.loop.is_running():
-                st = SimpleStatus()
+                st = SimpleStatus(device=self)
                 def cb():
                     self._state = new_state
                     st._finished()
@@ -520,7 +529,7 @@ class ReaderWithRegistry(Reader):
         delay_time = self.exposure_time
         if delay_time:
             if self.loop.is_running():
-                st = SimpleStatus()
+                st = SimpleStatus(device=self)
                 self.loop.call_later(delay_time, st._finished)
                 return st
             else:
@@ -630,7 +639,7 @@ class MockFlyer:
         # that is immediately done, and return that, indicated that
         # the 'kickoff' step is done.
         self._future = self.loop.run_in_executor(None, self._scan)
-        st = SimpleStatus()
+        st = SimpleStatus(device=self)
         self._completion_status = st
         self._future.add_done_callback(lambda x: st._finished())
 

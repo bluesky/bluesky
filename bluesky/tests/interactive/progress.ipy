@@ -31,10 +31,17 @@ print('done')
 from bluesky.plans import mv
 from bluesky import RunEngine
 RE = RunEngine({})
-RE.waiting_hook = ProgressBarManager()
+RE.waiting_hook = ProgressBarManager(delay_draw=0.2)
 RE(mv(m1, 0, m2, 0))
-
+ 
 
 from bluesky.magics import BlueskyMagics
 get_ipython().register_magics(BlueskyMagics)
 %mov m1 1 m2 3
+
+from bluesky.plans import scan
+from bluesky.examples import det, det1, motor
+from bluesky.callbacks import LiveTable
+det.exposure_time = 3
+det1.exposure_time = 2
+RE(scan([det, det1], m1, 1, 5, 5), LiveTable([det, det1, m1]))
