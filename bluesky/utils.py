@@ -16,7 +16,14 @@ import numpy as np
 from cycler import cycler
 import logging
 import datetime
-from functools import wraps
+from functools import wraps, partial
+import sys
+import threading
+import time
+from tqdm import tqdm
+from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
+from ophyd import EpicsMotor
+import warnings
 logger = logging.getLogger(__name__)
 
 
@@ -936,3 +943,113 @@ def apply_to_dict_recursively(d, f):
             d[key] = apply_to_dict_recursively(d=val, f=f)
         d[key] = f(val)
     return d
+
+
+class ProgressBar:
+    def __init__(self, status_objs, delay_draw=0.2):
+        """
+        Represent status objects with a progress bars.
+
+        Parameters
+        ----------
+        status_objs : list
+            Status objects
+        delay_draw : float, optional
+            To avoid flashing progress bars that will complete quickly after
+            they are displayed, delay drawing until the progress bar has been
+            around for awhile. Default is 0.2 seconds.
+        """
+        self.meters = []
+        # Determine terminal width.
+        self.ncols = _environ_cols_wrapper()(sys.stdout)
+        self.fp = sys.stdout
+        self.creation_time = time.time()
+        self.delay_draw = delay_draw
+        self.drawn = False
+        self.done = False
+
+        # If the ProgressBar is not finished before the delay_draw time but
+        # never again updated after the delay_draw time, we need to draw it
+        # once.
+        threading.Thread(target=self._ensure_draw, daemon=True).start()
+
+        # Create a closure over self.update for each status object that
+        # implemets the 'watch' method.
+        for st in status_objs:
+            with threading.RLock():
+                if hasattr(st, 'watch') and not st.done:
+                    pos = len(self.meters)
+                    self.meters.append([''])
+                    st.watch(partial(self.update, pos))
+
+    def update(self, pos, *,
+               name=None,
+               current=None, initial=None, target=None,
+               unit=None, precision=None,
+               fraction=None,
+               time_elapsed=None, time_remaining=None):
+        if all(x is not None for x in (current, initial, target)):
+            total = abs(round(target - initial, precision or 3))
+            n = abs(round(current - initial, precision or 3))
+            meter = tqdm.format_meter(n=n, total=total, elapsed=time_elapsed,
+                                      unit=unit,
+                                      prefix=name,
+                                      ncols=self.ncols)
+        elif name is not None:
+            if fraction != 1:
+                meter = name + ' [No progress bar available.]'
+            else:
+                meter = name + ' [Complete.]'
+            meter += ' ' * (self.ncols - len(meter))
+            meter = meter[:self.ncols]
+
+        self.meters[pos] = meter
+        self.draw()
+
+    def draw(self):
+        if (time.time() - self.creation_time) < self.delay_draw:
+            return
+        self.drawn = True
+        for meter in self.meters:
+            tqdm.status_printer(self.fp)(meter)
+            self.fp.write('\n')
+        self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+
+    def _ensure_draw(self):
+        # Ensure that the progress bar is drawn at least once after the delay.
+        time.sleep(self.delay_draw)
+        if (not self.done) and (not self.drawn):
+            self.draw()
+
+    def clear(self):
+        self.done = True
+        if self.drawn:
+            for meter in self.meters:
+                self.fp.write('\r')
+                self.fp.write(' ' * self.ncols)
+                self.fp.write('\r')
+                self.fp.write('\n')
+        self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+        self.meters.clear()
+
+
+class ProgressBarManager:
+    def __init__(self, delay_draw=0.2):
+        self.delay_draw = delay_draw
+        self.pbar = None
+
+    def __call__(self, status_objs_or_none):
+        if status_objs_or_none is not None:
+            # Start a new ProgressBar.
+            if self.pbar is not None:
+                warnings.warn("Previous ProgressBar never competed.")
+                self.pbar.clear()
+            self.pbar = ProgressBar(status_objs_or_none,
+                                    delay_draw=self.delay_draw)
+        else:
+            # Clean up an old one.
+            if self.pbar is None:
+                warnings.warn("There is no Progress bar to clean up.")
+            else:
+                self.pbar.clear()
+                self.pbar = None

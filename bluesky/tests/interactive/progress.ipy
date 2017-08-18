@@ -1,0 +1,47 @@
+# This interactive tests relies on having EPICS motorsim running.
+# Once bluesky.examples is refactored to use Device, this can be replaced
+# by a simulated motor.
+
+from ophyd import EpicsMotor
+from bluesky.utils import ProgressBar, ProgressBarManager
+
+
+m1 = EpicsMotor('XF:31IDA-OP{Tbl-Ax:X1}Mtr', name='mtr1')
+m1.wait_for_connection()
+assert m1.connected
+m2 = EpicsMotor('XF:31IDA-OP{Tbl-Ax:X2}Mtr', name='mtr2')
+m2.wait_for_connection()
+assert m2.connected
+
+print('setting motors to zero (no progress bar yet)...')
+st1 = m1.set(0)
+st2 = m2.set(0)
+while not (st1.done and st2.done):
+    continue
+print('done')
+print('now setting motors to 1 and 3 respectively with a progress bar...')
+st1 = m1.set(1)
+st2 = m2.set(3)
+ProgressBar([st1, st2])
+while not (st1.done and st2.done):
+    continue
+print('done')
+
+
+from bluesky.plans import mv
+from bluesky import RunEngine
+RE = RunEngine({})
+RE.waiting_hook = ProgressBarManager(delay_draw=0.2)
+RE(mv(m1, 0, m2, 0))
+ 
+
+from bluesky.magics import BlueskyMagics
+get_ipython().register_magics(BlueskyMagics)
+%mov m1 1 m2 3
+
+from bluesky.plans import scan
+from bluesky.examples import det, det1, motor
+from bluesky.callbacks import LiveTable
+det.exposure_time = 3
+det1.exposure_time = 2
+RE(scan([det, det1], m1, 1, 5, 5), LiveTable([det, det1, m1]))
