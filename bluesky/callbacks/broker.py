@@ -36,7 +36,7 @@ class BrokerCallbackBase(CallbackBase):
     def event(self, doc):
         # the subset of self.fields that are (1) in the doc and (2) unfilled
         fields = [field for field in self.fields
-                  if (doc['data'].get(field) and
+                  if (field in doc['data'] and
                       not doc.get('filled', {}).get(field))]
         if fields:
             if self.db is None:
