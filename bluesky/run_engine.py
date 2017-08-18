@@ -1636,15 +1636,13 @@ class RunEngine:
             Msg('collect', obj, stream=True)
         """
         obj = msg.obj
-        if obj not in self._uncollected:
-            raise IllegalMessageSequence("The flyer %r was never kicked off "
-                                         "(or already collected)." % obj)
+
         if not self._run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
             # code path impossible
             raise IllegalMessageSequence("A 'collect' message was sent but no "
                                          "run is open.")
-        self._uncollected.remove(obj)
+        self._uncollected.discard(obj)
 
         named_data_keys = obj.describe_collect()
         # e.g., {name_for_desc1: data_keys_for_desc1,

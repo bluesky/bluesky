@@ -253,13 +253,14 @@ def test_flying_outside_a_run_is_illegal(fresh_RE):
     fresh_RE([Msg('open_run'), Msg('kickoff', flyer), Msg('collect', flyer),
               Msg('close_run')])
 
+    # This is normal, legal usage.
+    fresh_RE([Msg('open_run'), Msg('kickoff', flyer), Msg('collect', flyer),
+              Msg('collect', flyer), Msg('collect', flyer),
+              Msg('close_run')])
+
     # It is not legal to kickoff outside of a run.
     with pytest.raises(IllegalMessageSequence):
         fresh_RE([Msg('kickoff', flyer)])
-
-    # And of course you can't collect a flyer you never kicked off.
-    with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('open_run'), Msg('collect', flyer), Msg('close_run')])
 
 
 def test_empty_bundle(fresh_RE):
