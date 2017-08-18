@@ -8,6 +8,7 @@
 from ast import literal_eval as le
 import asyncio
 import bluesky.plans as bp
+from bluesky.utils import ProgressBarManager
 from bluesky import RunEngine
 from IPython.core.magic import Magics, magics_class, line_magic
 import numpy as np
@@ -24,6 +25,7 @@ except ImportError:
 class BlueskyMagics(Magics):
 
     RE = RunEngine({}, loop = asyncio.new_event_loop())
+    pbar_manager = ProgressBarManager()
 
     @line_magic
     def mov(self, line):
@@ -31,11 +33,12 @@ class BlueskyMagics(Magics):
             raise TypeError("Wrong parameters. Expected: "
                             "%mov motor position (or several pairs like that)")
         args = []
-        strs = []
         for motor, pos in partition(2, line.split()):
             args.extend([self.shell.user_ns[motor], le(pos)])
         plan = bp.mv(*args)
+        self.RE.waiting_hook = self.pbar_manager
         self.RE(plan)
+        self.RE.waiting_hook = None
         return None
 
     @line_magic
@@ -44,11 +47,12 @@ class BlueskyMagics(Magics):
             raise TypeError("Wrong parameters. Expected: "
                             "%mov motor position (or several pairs like that)")
         args = []
-        strs = []
         for motor, pos in partition(2, line.split()):
             args.extend([self.shell.user_ns[motor], le(pos)])
         plan = bp.mvr(*args)
+        self.RE.waiting_hook = self.pbar_manager
         self.RE(plan)
+        self.RE.waiting_hook = None
         return None
 
     dets = []
