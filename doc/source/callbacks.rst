@@ -574,6 +574,8 @@ There is also a convenience function for plotting:
 .. autoclass:: bluesky.callbacks.scientific.PeakStats
 .. autofunction:: bluesky.callbacks.scientific.plot_peak_stats
 
+.. _best_effort_callback:
+
 Best-Effort Callback
 --------------------
 
@@ -643,6 +645,8 @@ plot area and press Shift+P. (Lowercase p is a shortcut for
 "panning" the plot.)
 
 To access the peak-fit statistics programmatically, use ``bec.peaks``.
+
+.. _hints:
 
 Hints
 +++++

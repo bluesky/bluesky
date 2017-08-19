@@ -158,6 +158,13 @@ The interface of a readable device:
         Same API as ``describe``, but corresponding to the keys in
         ``read_configuration``.
 
+    .. attribute:: hints
+
+        A dictionary of suggestions for best-effort visualization and
+        processing. This does not affect what data is read or saved; it is only
+        a suggestion to enable automated tools to provide helpful information
+        with minimal guidance from the user. See :ref:`hints`.
+
     .. method:: configure(*args, **kwargs)
 
         This can change the device's configuration in an arbitrary way. When
