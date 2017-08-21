@@ -35,7 +35,7 @@ def test_bluesky_magics(pln, line, magic, fresh_RE):
     dets = [det]
     ip = FakeIPython({'motor1': motor1, 'motor2': motor2, 'dets': dets})
     sm = BlueskyMagics(ip)
-    sm.dets = default_dets
+    sm.detectors = default_dets
 
     # Spy on all msgs processed by RE.
     msgs = []

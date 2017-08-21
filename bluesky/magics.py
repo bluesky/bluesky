@@ -22,7 +22,26 @@ except ImportError:
 
 @magics_class
 class BlueskyMagics(Magics):
+    """
+    IPython magics for bluesky.
 
+    To install:
+
+    >>> ip = get_ipython()
+    >>> ip.register_magics(BlueskyMagics)
+
+    Optionally configure default detectors and positioners by setting
+    the class attributes:
+
+    * ``BlueskyMagics.detectors``
+    * ``BlueskyMagics.positioners``
+
+    For more advanced configuration, access the magic's RunEngine instance and
+    ProgressBarManager instance:
+
+    * ``BlueskyMagics.RE``
+    * ``BlueskyMagics.pbar_manager``
+    """
     RE = RunEngine({}, loop = asyncio.new_event_loop())
     pbar_manager = ProgressBarManager()
 
@@ -64,14 +83,14 @@ class BlueskyMagics(Magics):
         self._ensure_idle()
         return None
 
-    dets = []
+    detectors = []
 
     @line_magic
     def ct(self, line):
         if line.strip():
             dets = eval(line, self.shell.user_ns)
         else:
-            dets = self.dets  # default is SPECMagic.dets
+            dets = self.detectors
         plan = bp.count(dets)
         print("[This data will not be saved. "
               "Use the RunEngine to collect data.]")
