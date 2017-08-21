@@ -1,7 +1,9 @@
 from bluesky.magics import BlueskyMagics
 import bluesky.plans as bp
 from bluesky.examples import det, motor1, motor2, det1, det2
+import os
 import pytest
+import signal
 
 
 class FakeIPython:
@@ -80,3 +82,24 @@ def test_magics_missing_ns_key(fresh_RE):
         sm.mov('motor1 5')
     ip.user_ns['motor1'] = motor1
     sm.mov('motor1 5')
+
+
+def test_interrupted(motor_det):
+    motor, det = motor_det
+    motor._fake_sleep = 10
+
+    ip = FakeIPython({})
+    sm = BlueskyMagics(ip)
+    ip.user_ns['motor'] = motor
+
+    pid = os.getpid()
+
+    def sim_kill(n=1):
+        for j in range(n):
+            print('KILL')
+            os.kill(pid, signal.SIGINT)
+
+    motor.loop = sm.RE.loop
+    sm.RE.loop.call_later(1, sim_kill, 2)
+    sm.mov('motor 1')
+    assert sm.RE.state == 'idle'
