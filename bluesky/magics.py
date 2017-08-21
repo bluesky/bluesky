@@ -26,6 +26,12 @@ class BlueskyMagics(Magics):
     RE = RunEngine({}, loop = asyncio.new_event_loop())
     pbar_manager = ProgressBarManager()
 
+    def _ensure_idle(self):
+        if self.RE.state != 'idle':
+            print('The RunEngine invoked by magics cannot be resumed.')
+            print('Aborting...')
+            self.RE.abort()
+
     @line_magic
     def mov(self, line):
         if len(line.split()) % 2 != 0:
@@ -39,6 +45,7 @@ class BlueskyMagics(Magics):
         self.RE.waiting_hook = self.pbar_manager
         self.RE(plan)
         self.RE.waiting_hook = None
+        self._ensure_idle()
         return None
 
     @line_magic
@@ -54,6 +61,7 @@ class BlueskyMagics(Magics):
         self.RE.waiting_hook = self.pbar_manager
         self.RE(plan)
         self.RE.waiting_hook = None
+        self._ensure_idle()
         return None
 
     dets = []
@@ -68,6 +76,7 @@ class BlueskyMagics(Magics):
         print("[This data will not be saved. "
               "Use the RunEngine to collect data.]")
         self.RE(plan, _ct_callback)
+        self._ensure_idle()
         return None
 
     positioners = []
