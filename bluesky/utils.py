@@ -979,7 +979,7 @@ class ProgressBar:
             with threading.RLock():
                 if hasattr(st, 'watch') and not st.done:
                     pos = len(self.meters)
-                    self.meters.append([''])
+                    self.meters.append('')
                     st.watch(partial(self.update, pos))
 
     def update(self, pos, *,
