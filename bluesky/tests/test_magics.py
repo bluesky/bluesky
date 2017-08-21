@@ -76,10 +76,7 @@ def test_magics_missing_ns_key(fresh_RE):
     RE = fresh_RE
     ip = FakeIPython({})
     sm = BlueskyMagics(ip)
-    with pytest.raises(KeyError):
-        sm.mov('motor1 5')
-    ip.user_ns['RE'] = RE
-    with pytest.raises(KeyError):
+    with pytest.raises(NameError):
         sm.mov('motor1 5')
     ip.user_ns['motor1'] = motor1
     sm.mov('motor1 5')
