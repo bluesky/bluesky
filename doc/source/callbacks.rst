@@ -574,6 +574,8 @@ There is also a convenience function for plotting:
 .. autoclass:: bluesky.callbacks.scientific.PeakStats
 .. autofunction:: bluesky.callbacks.scientific.plot_peak_stats
 
+.. _best_effort_callback:
+
 Best-Effort Callback
 --------------------
 
@@ -633,6 +635,9 @@ subsequent runs are plotted on the same axes. It is ``True`` by default.
 Overplotting only occurs if the names of the axes are the same from one plot
 to the next.
 
+Peak Stats
+++++++++++
+
 For each plot, simple peak-fitting is performed in the background. Of
 course, it may or may not be applicable depending on your data, and it is
 not shown by default. To view fitting annotations in a plot, click the
@@ -640,6 +645,40 @@ plot area and press Shift+P. (Lowercase p is a shortcut for
 "panning" the plot.)
 
 To access the peak-fit statistics programmatically, use ``bec.peaks``.
+
+.. _hints:
+
+Hints
++++++
+
+The best-effort callback aims to print and plot useful information without
+being overwhelmingly comprehensive. It uses the ``hints`` attributes on devices
+to do this. The contents of hints *do not at all affect what data is saved*. It
+only affects what is displayed automatically by the BestEffortCallback.
+Additional callbacks can still be set up for live or *post-facto* visualization
+or processing.
+
+Movable devices (like motors, temperature controllers) have different hints
+than devices that are only readable (like CCDs).  A movable device might report
+the fields ``['x', 'x_setpoint']``. A useful hint would be:
+
+.. code-block:: python
+
+    # a list of the fields comprising independent dimensions
+    motor.hints = {'dimensions': ['x']}
+
+A readable device might report many fields like
+``['chan1', 'chan2', 'chan3', 'chan4', 'chan5']`` but perhaps only a couple are
+usually interesting. A useful hint would be:
+
+.. code-block:: python
+
+    # a selective subset of all the fields saved
+    det.hints = {'fields': ['chan1', 'chan2']}
+
+It's possible to adjust these interactively, but they are generally intended to
+be set in a startup file. Err on the side of displaying more information than
+you need to see, and you will rarely need to adjust them.
 
 Callback for Export
 -------------------

@@ -218,9 +218,17 @@ Deprecations
 Enhancements
 ^^^^^^^^^^^^
 
-* ``LivePlot`` now accepts ``x='time'`` and produces a plot with t=0 is the
-  start of the run. It also accepts ``x='seq_num'``---a synonym for ``x=None``,
-  which remains the default.
+* A :doc:`progress bar <progress-bar>`_ add-on is available.
+* As addressed above:
+    * The new :ref:`supplemental data <supplemental_data>` feature make it
+      easy to set up "baseline" readings and asynchronous acquisition in a way
+      that applies automatically to all plans.
+    * The new :ref:`best-effort callback <best_effort_callback>` sets up
+      automatic terminal output and plots for all plans, including user-defined
+      ones.
+* ``LivePlot`` now accepts ``x='time'``. It can set t=0 to the UNIX epoch or to
+  the start of the run. It also accepts ``x='seq_num'``---a synonym for
+  ``x=None``, which remains the default.
 * A new simulator :func:`bluesky.simulators.check_limits` verifies that a plan
   will not try to move a movable device outside of its limits.
 * A new plan, :func:`bluesky.plan.mvr`, has been added as a relative counterpart
@@ -231,8 +239,9 @@ Enhancements
   ``bluesky-0MQ-proxy`` has been added to streamline configuration.
 * Metadata recorded by many built-in plans now includes a new item,
   ``'hints'``, which is used by the best-effort callback to produce useful
-  visualizations. Its content may change or expand in future releases as this
-  new feature is explored.
+  visualizations. Additionally, the built-in examples devices have
+  :ref:`a new hints attribute <hints>`. Its content may change or expand in
+  future releases as this new feature is explored.
 * Some :doc:`IPython magics <magics>` mimicing the SPEC API have been added.
   These are experimental and may be altered or removed in the future.
 

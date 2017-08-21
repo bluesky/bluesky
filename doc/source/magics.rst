@@ -10,9 +10,7 @@ IPython 'Magics' [Experimental]
 What Are 'Magics'?
 ------------------
 
-IPython is an interactive Python interpreter designed for and by scientists. It
-includes a feature called "magics" --- convenience commands that aren't part of
-the Python language itself. For example, ``%history`` is a magic:
+IPython is an interactive Python interpreter designed for and by scientists. It includes a feature called "magics" --- convenience commands that aren't part of the Python language itself. For example, ``%history`` is a magic:
 
 .. ipython:: python
 

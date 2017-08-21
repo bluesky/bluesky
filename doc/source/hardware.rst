@@ -18,6 +18,8 @@ every kind of hardware we have encountered.
 Specification
 -------------
 
+.. _status_obj_api:
+
 Status object
 +++++++++++++
 
@@ -46,6 +48,29 @@ asynchronously monitor the compeletion of having triggered or set a device.
     It may be that ``Status`` is done before a function has been attached to
     ``finished_cb``. In that case, the function should be called as soon as it
     is attached.
+
+    .. method:: watch(func)
+
+        Subscribe to notifications about progress. Useful for progress bars.
+
+        Parameters
+        ----------
+        func : callable
+            Expected to accept the keyword aruments:
+
+                * ``name``
+                * ``current``
+                * ``initial``
+                * ``target``
+                * ``unit``
+                * ``precision``
+                * ``fraction``
+                * ``time_elapsed``
+                * ``time_remaining``
+
+            Any given call to ``func`` may only include a subset of these
+            parameters, depending on what the status object knows about its own
+            progress.
 
 Readable Device
 +++++++++++++++
@@ -132,6 +157,13 @@ The interface of a readable device:
 
         Same API as ``describe``, but corresponding to the keys in
         ``read_configuration``.
+
+    .. attribute:: hints
+
+        A dictionary of suggestions for best-effort visualization and
+        processing. This does not affect what data is read or saved; it is only
+        a suggestion to enable automated tools to provide helpful information
+        with minimal guidance from the user. See :ref:`hints`.
 
     .. method:: configure(*args, **kwargs)
 
