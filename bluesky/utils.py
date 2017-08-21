@@ -961,7 +961,7 @@ class ProgressBar:
         """
         self.meters = []
         # Determine terminal width.
-        self.ncols = _environ_cols_wrapper()(sys.stdout)
+        self.ncols = _environ_cols_wrapper()(sys.stdout) or 79
         self.fp = sys.stdout
         self.creation_time = time.time()
         self.delay_draw = delay_draw
