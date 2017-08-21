@@ -5,7 +5,6 @@
 # ip = get_ipython()
 # ip.register_magics(BlueskyMagics)
 
-from ast import literal_eval as le
 import asyncio
 import bluesky.plans as bp
 from bluesky.utils import ProgressBarManager
@@ -34,7 +33,8 @@ class BlueskyMagics(Magics):
                             "%mov motor position (or several pairs like that)")
         args = []
         for motor, pos in partition(2, line.split()):
-            args.extend([self.shell.user_ns[motor], le(pos)])
+            args.append(eval(motor, self.shell.user_ns))
+            args.append(eval(pos, self.shell.user_ns))
         plan = bp.mv(*args)
         self.RE.waiting_hook = self.pbar_manager
         self.RE(plan)
@@ -48,7 +48,8 @@ class BlueskyMagics(Magics):
                             "%mov motor position (or several pairs like that)")
         args = []
         for motor, pos in partition(2, line.split()):
-            args.extend([self.shell.user_ns[motor], le(pos)])
+            args.append(eval(motor, self.shell.user_ns))
+            args.append(eval(pos, self.shell.user_ns))
         plan = bp.mvr(*args)
         self.RE.waiting_hook = self.pbar_manager
         self.RE(plan)
