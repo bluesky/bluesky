@@ -105,11 +105,11 @@ class BlueskyMagics(Magics):
             if not isinstance(v, Exception):
                 try:
                     prec = p.precision
-                except Exception as exc:
+                except Exception:
                     prec = self.FMT_PREC
                 value = np.round(v, decimals=prec)
             else:
-                value = exc.__class__.__name__  # e.g. 'DisconnectedError'
+                value = v.__class__.__name__  # e.g. 'DisconnectedError'
             try:
                 low_limit, high_limit = p.low_limit, p.high_limit
             except Exception as exc:
