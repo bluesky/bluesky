@@ -35,7 +35,7 @@ def test_bluesky_magics(pln, line, magic, fresh_RE):
     dets = [det]
     ip = FakeIPython({'motor1': motor1, 'motor2': motor2, 'dets': dets})
     sm = BlueskyMagics(ip)
-    sm.dets = default_dets
+    sm.detectors = default_dets
 
     # Spy on all msgs processed by RE.
     msgs = []
@@ -76,10 +76,7 @@ def test_magics_missing_ns_key(fresh_RE):
     RE = fresh_RE
     ip = FakeIPython({})
     sm = BlueskyMagics(ip)
-    with pytest.raises(KeyError):
-        sm.mov('motor1 5')
-    ip.user_ns['RE'] = RE
-    with pytest.raises(KeyError):
+    with pytest.raises(NameError):
         sm.mov('motor1 5')
     ip.user_ns['motor1'] = motor1
     sm.mov('motor1 5')

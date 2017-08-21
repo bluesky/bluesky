@@ -5,7 +5,6 @@
 # ip = get_ipython()
 # ip.register_magics(BlueskyMagics)
 
-from ast import literal_eval as le
 import asyncio
 import bluesky.plans as bp
 from bluesky.utils import ProgressBarManager
@@ -23,9 +22,34 @@ except ImportError:
 
 @magics_class
 class BlueskyMagics(Magics):
+    """
+    IPython magics for bluesky.
 
+    To install:
+
+    >>> ip = get_ipython()
+    >>> ip.register_magics(BlueskyMagics)
+
+    Optionally configure default detectors and positioners by setting
+    the class attributes:
+
+    * ``BlueskyMagics.detectors``
+    * ``BlueskyMagics.positioners``
+
+    For more advanced configuration, access the magic's RunEngine instance and
+    ProgressBarManager instance:
+
+    * ``BlueskyMagics.RE``
+    * ``BlueskyMagics.pbar_manager``
+    """
     RE = RunEngine({}, loop = asyncio.new_event_loop())
     pbar_manager = ProgressBarManager()
+
+    def _ensure_idle(self):
+        if self.RE.state != 'idle':
+            print('The RunEngine invoked by magics cannot be resumed.')
+            print('Aborting...')
+            self.RE.abort()
 
     @line_magic
     def mov(self, line):
@@ -34,11 +58,13 @@ class BlueskyMagics(Magics):
                             "%mov motor position (or several pairs like that)")
         args = []
         for motor, pos in partition(2, line.split()):
-            args.extend([self.shell.user_ns[motor], le(pos)])
+            args.append(eval(motor, self.shell.user_ns))
+            args.append(eval(pos, self.shell.user_ns))
         plan = bp.mv(*args)
         self.RE.waiting_hook = self.pbar_manager
         self.RE(plan)
         self.RE.waiting_hook = None
+        self._ensure_idle()
         return None
 
     @line_magic
@@ -48,25 +74,28 @@ class BlueskyMagics(Magics):
                             "%mov motor position (or several pairs like that)")
         args = []
         for motor, pos in partition(2, line.split()):
-            args.extend([self.shell.user_ns[motor], le(pos)])
+            args.append(eval(motor, self.shell.user_ns))
+            args.append(eval(pos, self.shell.user_ns))
         plan = bp.mvr(*args)
         self.RE.waiting_hook = self.pbar_manager
         self.RE(plan)
         self.RE.waiting_hook = None
+        self._ensure_idle()
         return None
 
-    dets = []
+    detectors = []
 
     @line_magic
     def ct(self, line):
         if line.strip():
             dets = eval(line, self.shell.user_ns)
         else:
-            dets = self.dets  # default is SPECMagic.dets
+            dets = self.detectors
         plan = bp.count(dets)
         print("[This data will not be saved. "
               "Use the RunEngine to collect data.]")
         self.RE(plan, _ct_callback)
+        self._ensure_idle()
         return None
 
     positioners = []
@@ -95,11 +124,11 @@ class BlueskyMagics(Magics):
             if not isinstance(v, Exception):
                 try:
                     prec = p.precision
-                except Exception as exc:
+                except Exception:
                     prec = self.FMT_PREC
                 value = np.round(v, decimals=prec)
             else:
-                value = exc.__class__.__name__  # e.g. 'DisconnectedError'
+                value = v.__class__.__name__  # e.g. 'DisconnectedError'
             try:
                 low_limit, high_limit = p.low_limit, p.high_limit
             except Exception as exc:
