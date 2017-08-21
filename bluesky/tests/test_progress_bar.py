@@ -43,3 +43,14 @@ def test_mv_progress(fresh_RE):
     motor1._fake_sleep = 0.01
     motor1._fake_sleep = 0.01
     RE(mv(motor1, 0, motor2, 0))
+
+
+def test_draw_before_update():
+    class Status:
+        done = False
+        def watch(self, func):
+            ...
+
+    # Test that the default meter placeholder is valid to draw.
+    pbar = ProgressBar([Status()])
+    pbar.draw()
