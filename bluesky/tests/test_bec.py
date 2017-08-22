@@ -58,12 +58,12 @@ def test_disable(fresh_RE):
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
-    bec.disable_text()
+    bec.disable_table()
 
     RE(scan([det], motor, 1, 5, 5))
     assert bec._table is None
 
-    bec.enable_text()
+    bec.enable_table()
 
     RE(scan([det], motor, 1, 5, 5))
     assert bec._table is not None
@@ -74,6 +74,12 @@ def test_disable(fresh_RE):
 
     bec.clear()
     assert bec._table is None
+
+    # smoke test
+    bec.disable_plots()
+    bec.enable_plots()
+    bec.disable_baseline()
+    bec.enable_baseline()
 
 
 def test_blank_hints(fresh_RE):

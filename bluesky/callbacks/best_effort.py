@@ -18,7 +18,8 @@ class BestEffortCallback(CallbackBase):
         self._start_doc = None
         self._descriptors = {}
         self._table = None
-        self._text_enabled = True
+        self._table_enabled = True
+        self._baseline_enabled = True
         self._plots_enabled = True
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
@@ -38,20 +39,33 @@ class BestEffortCallback(CallbackBase):
         self._buffer = StringIO()
         self._baseline_toggle = True
 
-    def enable_text(self):
-        self._text_enabled = True
+    def enable_table(self):
+        "Print hinted readings from the 'primary' stream in a LiveTable."
+        self._table_enabled = True
 
-    def disable_text(self):
-        self._text_enabled = False
+    def disable_table(self):
+        "Opposite of enable_table()"
+        self._table_enabled = False
+
+    def enable_baseline(self):
+        "Print hinted fields from the 'baseline' stream."
+        self._baseline_enabled = True
+
+    def disable_baseline(self):
+        "Opposite of enable_baseline()"
+        self._baseline_enabled = False
 
     def enable_plots(self):
+        "Plot hinted fields from all streams not in ``noplot_streams``."
         self._plots_enabled = True
 
     def disable_plots(self):
+        "Do not plot anything."
         self._plots_enabled = False
 
     def __call__(self, name, doc):
-        if not (self._text_enabled or self._plots_enabled):
+        if not (self._table_enabled or self._baseline_enabled or
+                self._plots_enabled):
             return
 
         super().__call__(name, doc)
@@ -93,7 +107,7 @@ class BestEffortCallback(CallbackBase):
 
         if stream_name not in self._stream_names:
             self._stream_names.add(stream_name)
-            if self._text_enabled:
+            if self._table_enabled:
                 print("New stream: {!r}".format(stream_name))
 
         columns = hinted_fields(doc)
@@ -120,7 +134,7 @@ class BestEffortCallback(CallbackBase):
             # duplicated here.
             columns = [c for c in columns if c not in self.dim_fields]
 
-            if self._text_enabled:
+            if self._table_enabled:
                 self._table = LiveTable(list(self.dim_fields) + columns)
                 self._table('start', self._start_doc)
                 self._table('descriptor', doc)
@@ -234,7 +248,7 @@ class BestEffortCallback(CallbackBase):
             else:
                 file = sys.stdout
                 subject = 'Start-of-run'
-            if self._text_enabled:
+            if self._baseline_enabled:
                 print('{} baseline readings:'.format(subject), file=file)
                 border = '+' + '-' * 32 + '+' + '-' * 32 + '+'
                 print(border, file=file)
@@ -275,10 +289,11 @@ class BestEffortCallback(CallbackBase):
             for live_grid in live_grids.values():
                 live_grid('stop', doc)
 
-        # Print baseline below bottom border of table.
-        self._buffer.seek(0)
-        print(self._buffer.read())
-        print('\n')
+        if self._baseline_enabled:
+            # Print baseline below bottom border of table.
+            self._buffer.seek(0)
+            print(self._buffer.read())
+            print('\n')
 
     def clear(self):
         self._start_doc = None
@@ -289,6 +304,7 @@ class BestEffortCallback(CallbackBase):
         self._live_grids.clear()
         self.peaks.clear()
         self._buffer = StringIO()
+        self._baseline_toggle = True
 
 
 class PeakResults:
