@@ -624,11 +624,23 @@ plans in :mod:`bluesky.plans` for examples.)
     RE.subscribe(bec)
     RE(scan([det], motor, 1, 5, 5))
 
-Use ``bec.disable_text()`` and ``bec.enable_text()`` to toggle the text output
-off and on. Likewise use ``bec.disable_plot()`` and ``bec.enable_plots()`` to
-toggle the plots. Blacklist plotting certain streams using the
-``bec.noplot_streams`` attribute, which is a list of stream names.  The
-blacklist is set to ``['baseline']`` by default.
+Use these methods to toggle on or off parts of the functionality.
+
+.. currentmodule:: bluesky.callbacks.best_effort
+
+.. autosummary::
+    :toctree: generated
+
+    BestEffortCallback.enable_table
+    BestEffortCallback.disable_table
+    BestEffortCallback.enable_baseline
+    BestEffortCallback.disable_baseline
+    BestEffortCallback.enable_plots
+    BestEffortCallback.disable_plots
+
+Blacklist plotting certain streams using the ``bec.noplot_streams`` attribute,
+which is a list of stream names.  The blacklist is set to ``['baseline']`` by
+default.
 
 The attribute ``bec.overplot`` can be used to control whether line plots for
 subsequent runs are plotted on the same axes. It is ``True`` by default.
@@ -652,31 +664,59 @@ Hints
 +++++
 
 The best-effort callback aims to print and plot useful information without
-being overwhelmingly comprehensive. It uses the ``hints`` attributes on devices
-to do this. The contents of hints *do not at all affect what data is saved*. It
-only affects what is displayed automatically by the BestEffortCallback.
-Additional callbacks can still be set up for live or *post-facto* visualization
-or processing.
+being overwhelmingly comprehensive. Its usefulness is improved and tuned by the
+``hints`` attribute on devices (if available) and ``hints`` metadata injected
+by plans (if available). If either or both of these are not available, the
+best-effort callback still makes a best effort to display something useful.
 
-Movable devices (like motors, temperature controllers) have different hints
-than devices that are only readable (like CCDs).  A movable device might report
-the fields ``['x', 'x_setpoint']``. A useful hint would be:
+The contents of hints *do not at all affect what data is saved*. The content
+only affect what is displayed automatically by the best-effort callback and
+other tools that opt to look at the hints. Additional callbacks may still be
+set up for live or *post-facto* visualization or processing that do more
+specific things without relying on hints.
 
-.. code-block:: python
+The ``hints`` attribute or property on devices is a dictionary with the key
+``'fields'`` mapped to a list of fields.
 
-    # a list of the fields comprising independent dimensions
-    motor.hints = {'dimensions': ['x']}
+On movable devices such as motors or temperature controllers, these fields are
+expected to comprise the independent axes of the device. A motor that reads
+the fields ``['x', 'x_setpoint']`` might provide the hint ``{'fields': ['x']}``
+to indicate that it has one dependent axis and that the field ``x`` is the best
+representation of its value.
 
 A readable device might report many fields like
 ``['chan1', 'chan2', 'chan3', 'chan4', 'chan5']`` but perhaps only a couple are
-usually interesting. A useful hint would be:
+usually interesting. A useful hint might narrow them down to
+``{'fields': ['chan1', 'chan2']}`` so that a "best-effort" plot does not
+display an overwhelming amount of information.
+
+The hints provided by the devices are read by the RunEngine and collated in the
+:doc:`Event Descriptor documents <event_descriptors>`_.
+
+The plans generally know which devices are being used as dependent and
+independent variables (i.e., which are being "scanned" over), and they may
+provide this information via a ``'hints'`` metadata key that they inject into
+the start document along with the rest of their metadata. Examples:
 
 .. code-block:: python
 
-    # a selective subset of all the fields saved
-    det.hints = {'fields': ['chan1', 'chan2']}
+    # The pattern is
+    # {'dimensions': [(field, stream_name), (field, stream_name), ...]}
 
-It's possible to adjust these interactively, but they are generally intended to
+    # a scan over time
+    {'dimensions': [('time', 'primary')]}
+
+    # a one-dimensional scan
+    {'dimensions': [(motor.hints['fields'], 'primary')]}
+
+    # a two-dimensional scan
+    {'dimensions': [(x_motor.hints['fields'], 'primary'),
+                    (y_motor.hints['fields'], 'primary')]}
+
+    # an N-dimensional scan
+    {'dimensions': [(motor.hints['fields'], 'primary') for motor in motors]}
+
+It's possible to adjust hints interactively, but they are generally intended to
 be set in a startup file. Err on the side of displaying more information than
 you need to see, and you will rarely need to adjust them.
 
