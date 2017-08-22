@@ -7,6 +7,7 @@ from collections import defaultdict
 import time as ttime
 import pytest
 import numpy as np
+import uuid
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
                                 NoReplayAllowed, FailedStatus)
@@ -1231,28 +1232,15 @@ def test_filled(fresh_RE, db):
 
 
 def test_double_call(fresh_RE, db):
-    from bluesky.plans import count
-    from tempfile import TemporaryDirectory
-    shape = (10, 10)
-    reg = db.reg
-    td = TemporaryDirectory()
-    save_dir = td.name
     RE = fresh_RE
-    import uuid
-    dark_det = ReaderWithRegistry('pe1_image',
-                                  {'pe1_image': lambda: np.ones(shape)},
-                                  reg=reg, save_path=save_dir)
-    light_det = ReaderWithRegistry('pe1_image',
-                                   {'pe1_image': lambda: np.ones(shape)},
-                                   reg=reg, save_path=save_dir)
     beamtime_uid = str(uuid.uuid4())
     base_md = dict(beamtime_uid=beamtime_uid)
 
     # Insert the dark images
     dark_md = base_md.copy()
     dark_md.update(name='test-dark', is_dark=True)
-    cd = count([dark_det], num=1)
-    cl = count([light_det], num=5)
+    cd = bp.count([], num=1)
+    cl = bp.count([], num=5)
 
     dark_uid = RE(cd, **dark_md)
 
@@ -1260,5 +1248,4 @@ def test_double_call(fresh_RE, db):
     light_md = base_md.copy()
     light_md.update(name='test', sc_dk_field_uid=dark_uid)
     uid = RE(cl, **light_md)
-    td.cleanup()
     assert dark_uid != uid
