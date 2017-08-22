@@ -1231,21 +1231,10 @@ def test_filled(fresh_RE, db):
     assert event['filled'] == {'img': False}
 
 
-def test_double_call(fresh_RE, db):
+def test_double_call(fresh_RE):
     RE = fresh_RE
-    beamtime_uid = str(uuid.uuid4())
-    base_md = dict(beamtime_uid=beamtime_uid)
 
-    # Insert the dark images
-    dark_md = base_md.copy()
-    dark_md.update(name='test-dark', is_dark=True)
-    cd = bp.count([], num=1)
-    cl = bp.count([], num=5)
+    uid1 = RE(bp.count([]))
+    uid2 = RE(bp.count([]))
 
-    dark_uid = RE(cd, **dark_md)
-
-    # Insert the light images
-    light_md = base_md.copy()
-    light_md.update(name='test', sc_dk_field_uid=dark_uid)
-    uid = RE(cl, **light_md)
-    assert dark_uid != uid
+    assert uid1 != uid2
