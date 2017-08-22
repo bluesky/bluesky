@@ -1,5 +1,6 @@
 attrs
 coverage
+databroker
 dill
 doct
 ipython
@@ -18,4 +19,3 @@ pyyaml
 requests
 tifffile
 zmq
-git+https://github.com/NSLS-II/databroker#egg=databroker
