@@ -22,7 +22,6 @@ import threading
 import time
 from tqdm import tqdm
 from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
-from ophyd import EpicsMotor
 import warnings
 logger = logging.getLogger(__name__)
 
