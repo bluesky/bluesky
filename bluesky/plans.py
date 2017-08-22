@@ -2024,7 +2024,7 @@ def count(detectors, num=1, delay=None, *, md=None):
            'num_intervals': num_intervals,
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
            'plan_name': 'count',
-           'hints': {'dimensions': [('primary', 'time')]}
+           'hints': {'dimensions': [('time', 'primary')]}
           }
     _md.update(md or {})
 
@@ -2136,7 +2136,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
            'hints': {},
           }
     try:
-        dimensions = [('primary', motor.hints['fields'])]
+        dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
@@ -2229,7 +2229,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'hints': {},
           }
     try:
-        dimensions = [('primary', motor.hints['fields'])]
+        dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
@@ -2330,7 +2330,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'hints': {},
           }
     try:
-        dimensions = [('primary', motor.hints['fields'])]
+        dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
@@ -2441,7 +2441,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
            'hints': {},
           }
     try:
-        dimensions = [('primary', motor.hints['fields'])]
+        dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
@@ -2607,7 +2607,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
            'hints': {},
           }
     try:
-        dimensions = [('primary', motor.hints['fields'])
+        dimensions = [(motor.hints['fields'], 'primary')
                       for motor in cycler.keys]
     except (AttributeError, KeyError):
         # Not all motors provide a 'fields' hint, so we have to skip it.
@@ -2852,7 +2852,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
            'hints': {},
           }
     try:
-        dimensions = [('primary', motor.hints['fields'])]
+        dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
@@ -2962,8 +2962,8 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
            'hints': {},
           }
     try:
-        dimensions = [('primary', x_motor.hints['fields']),
-                      ('primary', y_motor.hints['fields'])]
+        dimensions = [(x_motor.hints['fields'], 'primary'),
+                      (y_motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
@@ -3075,8 +3075,8 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            'hints': {},
           }
     try:
-        dimensions = [('primary', x_motor.hints['fields']),
-                      ('primary', y_motor.hints['fields'])]
+        dimensions = [(x_motor.hints['fields'], 'primary'),
+                      (y_motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:

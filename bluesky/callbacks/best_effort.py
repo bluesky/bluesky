@@ -65,9 +65,9 @@ class BestEffortCallback(CallbackBase):
         # we need it.
         motors = self._start_doc.get('motors') or None
         if motors is not None:
-            GUESS = [('primary', [motor]) for motor in motors]
+            GUESS = [([motor], 'primary') for motor in motors]
         else:
-            GUESS = [('primary', ['time'])]
+            GUESS = [(['time'], 'primary')]
 
         # Ues the guess if there is not hint about dimensions.
         dimensions = self.plan_hints.get('dimensions')
@@ -77,15 +77,15 @@ class BestEffortCallback(CallbackBase):
 
         # We can only cope with all the dimensions belonging to the same
         # stream unless we resample. We are not doing to handle that yet.
-        if len(set(d[0] for d in dimensions)) != 1:
+        if len(set(d[1] for d in dimensions)) != 1:
             self._cleanup_motor_heuristic = True
             dimensions = GUESS  # Fall back on our GUESS.
             warn("We are ignoring the dimensions hinted because we cannot "
                  "combine streams.")
         self.dim_fields = [f
-                           for stream_name, field in dimensions
+                           for field, stream_name in dimensions
                                for f in field]
-        self.dim_stream, _  = dimensions[0]
+        _, self.dim_stream  = dimensions[0]
     
     def descriptor(self, doc):
         self._descriptors[doc['uid']] = doc
