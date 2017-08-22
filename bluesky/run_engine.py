@@ -648,7 +648,7 @@ class RunEngine:
             if raise_if_interrupted and self._interrupted:
                 raise RunEngineInterrupted("RunEngine was interrupted.")
 
-        return self._run_start_uids
+        return tuple(self._run_start_uids)
 
     def resume(self):
         """Resume a paused plan from the last checkpoint.

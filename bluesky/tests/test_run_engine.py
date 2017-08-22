@@ -7,6 +7,7 @@ from collections import defaultdict
 import time as ttime
 import pytest
 import numpy as np
+import uuid
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
                                 NoReplayAllowed, FailedStatus)
@@ -22,6 +23,7 @@ def test_states():
     assert RunEngineStateMachine.States.states() == ['idle',
                                                      'running',
                                                      'paused']
+
 
 def test_verbose(fresh_RE):
     fresh_RE.verbose = True
@@ -155,7 +157,6 @@ def test_unstage_and_log_errors(fresh_RE):
     unstaged = {}
 
     class MoverWithFlag(Mover):
-
         def stage(self):
             return [self]
 
@@ -164,7 +165,6 @@ def test_unstage_and_log_errors(fresh_RE):
             return [self]
 
     class BrokenMoverWithFlag(Mover):
-
         def stage(self):
             return [self]
 
@@ -246,7 +246,6 @@ def test_redundant_monitors_are_illegal(fresh_RE):
 
 
 def test_flying_outside_a_run_is_illegal(fresh_RE):
-
     flyer = TrivialFlyer()
 
     # This is normal, legal usage.
@@ -403,6 +402,7 @@ def test_unrewindable_det(fresh_RE, plan, motor, det, msg_seq):
 
     def collector(msg):
         msgs.append(msg)
+
     RE.msg_hook = collector
     RE(plan(motor, det))
     RE.resume()
@@ -449,6 +449,7 @@ def test_unrewindable_det_suspend(fresh_RE, plan, motor, det, msg_seq):
 
     def collector(msg):
         msgs.append(msg)
+
     RE.msg_hook = collector
 
     ev = asyncio.Event(loop=RE.loop)
@@ -633,7 +634,6 @@ def test_finalizer_closeable():
 
 
 def test_invalid_generator(fresh_RE, motor_det, capsys):
-
     RE = fresh_RE
     motor, det = motor_det
 
@@ -886,6 +886,7 @@ def test_nonrewindable_finalizer(fresh_RE, motor_det, start_state, msg_seq):
     def evil_plan():
         assert RE.rewindable is False
         yield Msg('aardvark')
+
     with pytest.raises(KeyError):
         RE(bp.rewindable_wrapper(evil_plan(), False))
 
@@ -1055,6 +1056,7 @@ def test_pardon_failures(fresh_RE):
 
     class Dummy:
         name = 'dummy'
+
         def set(self, val):
             return st
 
@@ -1071,6 +1073,7 @@ def test_failures_kill_run(fresh_RE):
 
     class Dummy:
         name = 'dummy'
+
         def set(self, val):
             st = SimpleStatus()
             st._finished(success=False)
@@ -1096,6 +1099,7 @@ def test_colliding_streams(fresh_RE):
             descs[doc['uid']] = doc['name']
         elif name == 'event':
             collector[descs[doc['descriptor']]].append(doc)
+
     RE(bp.baseline_wrapper(bp.outer_product_scan([motor],
                                                  motor, -1, 1, 5,
                                                  motor1, -5, 5, 7, True),
@@ -1188,7 +1192,8 @@ def test_hints(fresh_RE):
 
     collector = []
 
-    RE(bp.count([det]), {'descriptor': lambda name, doc: collector.append(doc)})
+    RE(bp.count([det]),
+       {'descriptor': lambda name, doc: collector.append(doc)})
     doc = collector.pop()
     assert doc['hints']['det'] == {'vis': 'placeholder'}
 
@@ -1224,3 +1229,12 @@ def test_filled(fresh_RE, db):
     RE(bp.count([arr_det]), collect)
     event, = collector
     assert event['filled'] == {'img': False}
+
+
+def test_double_call(fresh_RE):
+    RE = fresh_RE
+
+    uid1 = RE(bp.count([]))
+    uid2 = RE(bp.count([]))
+
+    assert uid1 != uid2
