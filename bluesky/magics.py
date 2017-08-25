@@ -127,12 +127,16 @@ class BlueskyMagics(Magics):
                 except Exception:
                     prec = self.FMT_PREC
                 value = np.round(v, decimals=prec)
+                try:
+                    low_limit, high_limit = p.limits
+                except Exception as exc:
+                    low_limit = high_limit = exc.__class__.__name__
+                else:
+                    low_limit = np.round(low_limit, decimals=prec)
+                    high_limit = np.round(high_limit, decimals=prec)
             else:
                 value = v.__class__.__name__  # e.g. 'DisconnectedError'
-            try:
-                low_limit, high_limit = p.low_limit, p.high_limit
-            except Exception as exc:
-                low_limit = high_limit = exc.__class__.__name__
+                low_limit = high_limit = ''
 
             lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit))
         print('\n'.join(lines))
