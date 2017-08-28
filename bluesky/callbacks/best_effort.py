@@ -145,6 +145,9 @@ class BestEffortCallback(CallbackBase):
             return
         if stream_name in self.noplot_streams:
             return
+        if ((self._start_doc.get('num_points') == 1) and
+            (stream_name == self.dim_stream)):
+            return
 
         # This is a heuristic approach until we think of how to hint this in a
         # generalizable way.
