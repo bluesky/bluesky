@@ -362,7 +362,7 @@ def test_zmq_full(fresh_RE):
           'scalar_stuff': np.float64(3),
           'array_stuff': np.ones((3, 3))}
 
-    RE(count[det], local_cb)
+    RE(count([det]), local_cb)
     time.sleep(1)
 
     # Get the two documents from the queue (or timeout --- test will fail)
