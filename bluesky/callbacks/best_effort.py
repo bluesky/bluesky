@@ -1,4 +1,5 @@
-from bluesky.callbacks import CallbackBase, LiveTable, LivePlot, LiveGrid
+from bluesky.callbacks import (CallbackBase, LiveTable, LivePlot, LiveGrid,
+                               LiveScatter)
 from bluesky.callbacks.scientific import PeakStats
 from cycler import cycler
 from io import StringIO

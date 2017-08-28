@@ -720,6 +720,10 @@ It's possible to adjust hints interactively, but they are generally intended to
 be set in a startup file. Err on the side of displaying more information than
 you need to see, and you will rarely need to adjust them.
 
+Plans may also hint whether their data is sampled on a regularly spaced grid
+via the hint ``{'gridded': <boolean>}``. This is useful, for example, for
+decided whether to visualize 2D data with LiveGrid or with LiveScatter.
+
 Callback for Export
 -------------------
 
