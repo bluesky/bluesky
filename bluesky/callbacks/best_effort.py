@@ -24,6 +24,7 @@ class BestEffortCallback(CallbackBase):
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
         self._live_grids = {}
+        self._live_scatters = {}
         self._peak_stats = {}  # same structure as live_plots
         self._cleanup_motor_heuristic = False
         self._stream_names = set()
@@ -216,23 +217,41 @@ class BestEffortCallback(CallbackBase):
             for ax in axes[:-1]:
                 ax.set_xlabel('')
         elif len(dim_fields) == 2:
-            self._live_grids[doc['uid']] = {}
-            x_key, y_key = dim_fields
-            try:
-                extents = self._start_doc['extents']
-                shape = self._start_doc['shape']
-            except KeyError:
-                warn("Need both 'shape' and 'extents' in plan metadata to "
-                     "create LiveGrid.")
+            if self._start_doc.get('hints', {}).get('gridded', False):
+                self._live_grids[doc['uid']] = {}
+                x_key, y_key = dim_fields
+                try:
+                    extents = self._start_doc['extents']
+                    shape = self._start_doc['shape']
+                except KeyError:
+                    warn("Need both 'shape' and 'extents' in plan metadata to "
+                        "create LiveGrid.")
+                else:
+                    for I_key, ax in zip(columns, axes):
+                        live_grid = LiveGrid(shape, I_key,
+                                            xlabel=x_key, ylabel=y_key,
+                                            extent=list(chain(*extents[::-1])),
+                                            ax=ax)
+                        live_grid('start', self._start_doc)
+                        live_grid('descriptor', doc)
+                        self._live_grids[doc['uid']][I_key] = live_grid
             else:
+                self._live_scatters[doc['uid']] = {}
+                x_key, y_key = dim_fields
                 for I_key, ax in zip(columns, axes):
-                    live_grid = LiveGrid(shape, I_key,
-                                         xlabel=x_key, ylabel=y_key,
-                                         extent=list(chain(*extents[::-1])),
-                                         ax=ax)
-                    live_grid('start', self._start_doc)
-                    live_grid('descriptor', doc)
-                    self._live_grids[doc['uid']][I_key] = live_grid
+                    try:
+                        extents = self._start_doc['extents']
+                    except KeyError:
+                        xlim = ylim = None
+                    else:
+                        xlim, ylim = extents
+                    live_scatter = LiveScatter(x_key, y_key, I_key,
+                                               xlim=xlim, ylim=ylim,
+                                               # Let clim autoscale.
+                                               ax=ax)
+                    live_scatter('start', self._start_doc)
+                    live_scatter('descriptor', doc)
+                    self._live_scatters[doc['uid']][I_key] = live_scatter
 
         fig.tight_layout()
 
@@ -269,6 +288,9 @@ class BestEffortCallback(CallbackBase):
             live_grid = self._live_grids.get(doc['descriptor'], {}).get(y_key)
             if live_grid is not None:
                 live_grid('event', doc)
+            live_sc = self._live_scatters.get(doc['descriptor'], {}).get(y_key)
+            if live_sc is not None:
+                live_sc('event', doc)
             peak_stats = self._peak_stats.get(doc['descriptor'], {}).get(y_key)
             if peak_stats is not None:
                 peak_stats('event', doc)
@@ -293,6 +315,10 @@ class BestEffortCallback(CallbackBase):
             for live_grid in live_grids.values():
                 live_grid('stop', doc)
 
+        for live_scatters in self._live_scatters.values():
+            for live_scatter in live_scatters.values():
+                live_scatter('stop', doc)
+
         if self._baseline_enabled:
             # Print baseline below bottom border of table.
             self._buffer.seek(0)
@@ -306,6 +332,7 @@ class BestEffortCallback(CallbackBase):
         self._live_plots.clear()
         self._peak_stats.clear()
         self._live_grids.clear()
+        self._live_scatters.clear()
         self.peaks.clear()
         self._buffer = StringIO()
         self._baseline_toggle = True
