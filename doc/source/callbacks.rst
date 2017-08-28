@@ -701,10 +701,10 @@ the start document along with the rest of their metadata. Examples:
 .. code-block:: python
 
     # The pattern is
-    # {'dimensions': [(field, stream_name), (field, stream_name), ...]}
+    # {'dimensions': [(fields, stream_name), (fields, stream_name), ...]}
 
     # a scan over time
-    {'dimensions': [('time', 'primary')]}
+    {'dimensions': [(('time',), 'primary')]}
 
     # a one-dimensional scan
     {'dimensions': [(motor.hints['fields'], 'primary')]}
