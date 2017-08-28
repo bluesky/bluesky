@@ -35,9 +35,12 @@ class BrokerCallbackBase(CallbackBase):
 
     def event(self, doc):
         # the subset of self.fields that are (1) in the doc and (2) unfilled
+        # and (3) external
         fields = [field for field in self.fields
                   if (field in doc['data'] and
-                      not doc.get('filled', {}).get(field))]
+                      not doc.get('filled', {}).get(field) and
+                      'external' in self.descriptor_dict[
+                          doc['descriptor']]['data_keys'][field])]
         if fields:
             if self.db is None:
                 raise RuntimeError('Either the data must be pre-loaded or '
