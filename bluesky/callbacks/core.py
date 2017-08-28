@@ -402,7 +402,7 @@ class LiveGrid(CallbackBase):
 
     Parameters
     ----------
-    raster_shap : tuple
+    raster_shape : tuple
         The (row, col) shape of the raster
 
     I : str
