@@ -2024,7 +2024,7 @@ def count(detectors, num=1, delay=None, *, md=None):
            'num_intervals': num_intervals,
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
            'plan_name': 'count',
-           'hints': {'dimensions': [('time', 'primary')]}
+           'hints': {'dimensions': [(('time',), 'primary')]}
           }
     _md.update(md or {})
 
