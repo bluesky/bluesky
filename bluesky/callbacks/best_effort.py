@@ -190,6 +190,7 @@ class BestEffortCallback(CallbackBase):
                 else:
                     ax = fig.add_subplot(len(columns), 1, 1 + i, sharex=ax)
             fig.subplots_adjust()
+            fig.tight_layout()
         axes = fig.axes
 
         ### LIVE PLOT AND PEAK ANALYSIS ###
