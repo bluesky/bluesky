@@ -368,7 +368,7 @@ def test_zmq_full(fresh_RE):
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []
     for i in range(2):
-        remote_accumulator.append(queue.get(timeout=2))
+        remote_accumulator.append(queue.get(timeout=10))
     p.close()
     proxy_proc.terminate()
     dispatcher_proc.terminate()
