@@ -21,6 +21,7 @@ import time
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
+import sqlite3.InterfaceError
 
 
 def exception_raiser(name, doc):
@@ -555,7 +556,8 @@ def test_live_scatter(fresh_RE):
                     xlim=(-3, 3), ylim=(-5, 5)))
 
 
-@pytest.mark.xfail(reason='something funny going on with 3.5, 3.6 and sqlite')
+@pytest.mark.xfail(raises=sqlite3.InterfaceError,
+                   reason='something funny going on with 3.5, 3.6 and sqlite')
 def test_broker_base(fresh_RE, db):
     class BrokerChecker(BrokerCallbackBase):
         def __init__(self, field, *, db=None):
@@ -576,6 +578,8 @@ def test_broker_base(fresh_RE, db):
     RE(count([det]))
 
 
+@pytest.mark.xfail(raises=sqlite3.InterfaceError,
+                   reason='something funny going on with 3.5, 3.6 and sqlite')
 def test_broker_base_no_unpack(fresh_RE, db):
     class BrokerChecker(BrokerCallbackBase):
         def __init__(self, field, *, db=None):
