@@ -577,7 +577,7 @@ def test_broker_base(fresh_RE, db):
 
 
 @pytest.mark.xfail(reason='something funny going on with 3.5, 3.6 and sqlite')
-def test_broker_base(fresh_RE, db):
+def test_broker_base_no_unpack(fresh_RE, db):
     class BrokerChecker(BrokerCallbackBase):
         def __init__(self, field, *, db=None):
             super().__init__(field, db=db)
