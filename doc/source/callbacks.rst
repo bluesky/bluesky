@@ -1091,7 +1091,22 @@ simple example, just print them.
     from bluesky.callbacks.zmq import RemoteDispatcher
     d = RemoteDispatcher('localhost:5578')
     d.subscribe(print)
+
+    # when done subscribing things and ready to use:
     d.start()  # runs event loop forever
+
+As `described above <kickers>`_, if you want to use any live-updating plots,
+you will need to install a "kicker". It needs to be installed on the same
+event loop used by the RemoteDispatcher, like so, and it must be done before
+calling ``d.start()``.
+
+.. code-block:: python
+
+    from bluesky.utils import install_qt_kicker
+    install_qt_kicker(loop=d.loop)
+
+In a Jupyter notebook, replace ``install_qt_kicker`` with
+``install_nb_kicker``.
 
 On the machine/process where you want to collect data, hook up a subscription
 to publish documents to the proxy.
