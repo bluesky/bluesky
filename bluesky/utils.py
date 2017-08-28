@@ -966,16 +966,18 @@ class ProgressBar:
         self.delay_draw = delay_draw
         self.drawn = False
         self.done = False
+        self.lock = threading.RLock()
 
         # If the ProgressBar is not finished before the delay_draw time but
         # never again updated after the delay_draw time, we need to draw it
         # once.
-        threading.Thread(target=self._ensure_draw, daemon=True).start()
+        if delay_draw:
+            threading.Thread(target=self._ensure_draw, daemon=True).start()
 
         # Create a closure over self.update for each status object that
         # implemets the 'watch' method.
         for st in status_objs:
-            with threading.RLock():
+            with self.lock:
                 if hasattr(st, 'watch') and not st.done:
                     pos = len(self.meters)
                     self.meters.append('')
@@ -1006,30 +1008,34 @@ class ProgressBar:
         self.draw()
 
     def draw(self):
-        if (time.time() - self.creation_time) < self.delay_draw:
-            return
-        self.drawn = True
-        for meter in self.meters:
-            tqdm.status_printer(self.fp)(meter)
-            self.fp.write('\n')
-        self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+        with self.lock:
+            if (time.time() - self.creation_time) < self.delay_draw:
+                return
+            if self.done:
+                return
+            for meter in self.meters:
+                tqdm.status_printer(self.fp)(meter)
+                self.fp.write('\n')
+            self.fp.write(_unicode(_term_move_up() * len(self.meters)))
+            self.drawn = True
 
     def _ensure_draw(self):
         # Ensure that the progress bar is drawn at least once after the delay.
         time.sleep(self.delay_draw)
-        if (not self.done) and (not self.drawn):
-            self.draw()
+        with self.lock:
+            if (not self.done) and (not self.drawn):
+                self.draw()
 
     def clear(self):
-        self.done = True
-        if self.drawn:
-            for meter in self.meters:
-                self.fp.write('\r')
-                self.fp.write(' ' * self.ncols)
-                self.fp.write('\r')
-                self.fp.write('\n')
-        self.fp.write(_unicode(_term_move_up() * len(self.meters)))
-        self.meters.clear()
+        with self.lock:
+            self.done = True
+            if self.drawn:
+                for meter in self.meters:
+                    self.fp.write('\r')
+                    self.fp.write(' ' * self.ncols)
+                    self.fp.write('\r')
+                    self.fp.write('\n')
+                self.fp.write(_unicode(_term_move_up() * len(self.meters)))
 
 
 class ProgressBarManager:
