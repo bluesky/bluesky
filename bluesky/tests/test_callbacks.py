@@ -578,8 +578,6 @@ def test_broker_base(fresh_RE, db):
     RE(count([det]))
 
 
-@pytest.mark.xfail(raises=sqlite3.InterfaceError,
-                   reason='something funny going on with 3.5, 3.6 and sqlite')
 def test_broker_base_no_unpack(fresh_RE, db):
     class BrokerChecker(BrokerCallbackBase):
         def __init__(self, field, *, db=None):
@@ -590,7 +588,6 @@ def test_broker_base_no_unpack(fresh_RE, db):
             assert isinstance(doc['data'][self.fields[0]], np.ndarray)
 
     RE = fresh_RE
-    RE.subscribe(db.insert)
     bc = BrokerChecker(('img',), db=db)
     db.fs.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
     det = Reader('det', {'img': lambda: np.array(np.ones((10, 10)))})
