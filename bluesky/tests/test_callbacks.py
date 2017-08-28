@@ -2,7 +2,8 @@ from collections import defaultdict
 from bluesky.run_engine import Msg
 from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4, det5,
                               jittery_motor1, jittery_motor2,
-                              ReaderWithRegistry, ReaderWithRegistryHandler)
+                              ReaderWithRegistry, ReaderWithRegistryHandler,
+                              Reader)
 from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
                            outer_product_scan, run_wrapper, pause,
                            subs_wrapper, count)
@@ -571,5 +572,24 @@ def test_broker_base(fresh_RE, db):
     det = ReaderWithRegistry('det',
                              {'img': lambda: np.array(np.ones((10, 10)))},
                              reg=db.fs)
+    RE.subscribe(bc)
+    RE(count([det]))
+
+
+@pytest.mark.xfail(reason='something funny going on with 3.5, 3.6 and sqlite')
+def test_broker_base(fresh_RE, db):
+    class BrokerChecker(BrokerCallbackBase):
+        def __init__(self, field, *, db=None):
+            super().__init__(field, db=db)
+
+        def event(self, doc):
+            super().event(doc)
+            assert isinstance(doc['data'][self.fields[0]], np.ndarray)
+
+    RE = fresh_RE
+    RE.subscribe(db.insert)
+    bc = BrokerChecker(('img',), db=db)
+    db.fs.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
+    det = Reader('det', {'img': lambda: np.array(np.ones((10, 10)))})
     RE.subscribe(bc)
     RE(count([det]))
