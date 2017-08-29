@@ -21,6 +21,7 @@ def fresh_RE(request):
     request.addfinalizer(clean_event_loop)
     return RE
 
+
 RE = fresh_RE
 
 
@@ -36,5 +37,6 @@ def motor_det(request):
 def db(request):
     """Return a data broker
     """
-    from databroker import temp_config, Broker
-    return Broker.from_config(temp_config())
+    from databroker.tests.utils import build_sqlite_backed_broker
+    db = build_sqlite_backed_broker(request)
+    return db
