@@ -1,6 +1,7 @@
 from collections import namedtuple
 import asyncio
 import os
+import sys
 import signal
 import operator
 import uuid
@@ -687,6 +688,22 @@ def get_history():
 _QT_KICKER_INSTALLED = {}
 _NB_KICKER_INSTALLED = {}
 
+def install_kicker(loop=None):
+    """Install the proper kicker (qt_kicker or nb_kicker) based on where 
+    the code is running
+    """
+    def is_ipython():
+        ip = True
+        if 'ipykernel' in sys.modules:
+            ip = False # Notebook
+        elif 'IPython' in sys.modules:
+            ip = True # Shell
+        return ip
+
+    if is_ipython():
+        install_qt_kicker(loop=loop)
+    else:
+        install_nb_kicker(loop=loop)
 
 def install_qt_kicker(loop=None, update_rate=0.03):
     """Install a periodic callback to integrate qt and asyncio event loops
