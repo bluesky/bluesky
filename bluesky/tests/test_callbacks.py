@@ -296,12 +296,13 @@ def test_zmq(fresh_RE):
           'scalar_stuff': np.float64(3),
           'array_stuff': np.ones((3, 3))}
 
-    RE([Msg('open_run', **md), Msg('close_run')], local_cb)
+    # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
+    RE(count([det]), local_cb)
     time.sleep(1)
 
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []
-    for i in range(2):
+    for i in range(len(local_accumulator)):
         remote_accumulator.append(queue.get(timeout=2))
     p.close()
     proxy_proc.terminate()
