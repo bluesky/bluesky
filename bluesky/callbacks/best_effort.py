@@ -218,7 +218,10 @@ class BestEffortCallback(CallbackBase):
             for ax in axes[:-1]:
                 ax.set_xlabel('')
         elif len(dim_fields) == 2:
-            if self._start_doc.get('hints', {}).get('gridded', False):
+            # Decide whether to use LiveGrid or LiveScatter. LiveScatter is the
+            # safer one to use, so it is the fallback..
+            gridding = self._start_doc.get('hints', {}).get('gridding')
+            if gridding == 'rectilinear':
                 self._live_grids[doc['uid']] = {}
                 x_key, y_key = dim_fields
                 try:

@@ -2226,7 +2226,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern': 'linspace',
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
-           'hints': {'gridded': True},
+           'hints': {},
           }
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
@@ -2604,7 +2604,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                          'cycler': repr(cycler),
                          'per_step': repr(per_step)},
            'plan_name': 'scan_nd',
-           'hints': {'gridded': True},
+           'hints': {},
           }
     try:
         dimensions = [(motor.hints['fields'], 'primary')
@@ -2735,7 +2735,8 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
            'plan_pattern': 'outer_product',
            'plan_pattern_args': dict(args=md_args),
            'plan_pattern_module': plan_patterns.__name__,
-           'motors': tuple(motor_names)
+           'motors': tuple(motor_names),
+           'hints': {'gridding': 'rectilinear'},
           }
     _md.update(md or {})
 
@@ -2961,7 +2962,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
            'plan_pattern': 'spiral_fermat',
            'plan_pattern_module': plan_patterns.__name__,
            'plan_pattern_args': pattern_args,
-           'hints': {'gridded': False},
+           'hints': {},
           }
     try:
         dimensions = [(x_motor.hints['fields'], 'primary'),
@@ -3076,7 +3077,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            'plan_pattern': 'spiral',
            'plan_pattern_args': pattern_args,
            'plan_pattern_module': plan_patterns.__name__,
-           'hints': {'gridded': False},
+           'hints': {},
           }
     try:
         dimensions = [(x_motor.hints['fields'], 'primary'),
