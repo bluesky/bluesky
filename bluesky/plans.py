@@ -2606,6 +2606,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
            'plan_name': 'scan_nd',
            'hints': {},
           }
+    _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')
                       for motor in cycler.keys]
@@ -2613,8 +2614,12 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         # Not all motors provide a 'fields' hint, so we have to skip it.
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
-    _md.update(md or {})
+        # we know that hints exists:
+        #  - the user passed it in and we are extending it
+        #  - the user did not pass it in and we got the default {}
+        # If the user supplied hints includes a dimension entry, do not
+        # change it, else set it to the one generated above
+        _md['hints'].setdefault('dimensions', dimensions)
 
     if per_step is None:
         per_step = one_nd_step
