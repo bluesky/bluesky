@@ -33,6 +33,7 @@ class BestEffortCallback(CallbackBase):
         # public options
         self.overplot = True
         self.noplot_streams = ['baseline']
+        self.omit_single_point_plot = True
 
         # public data
         self.peaks = PeakResults()
@@ -148,7 +149,8 @@ class BestEffortCallback(CallbackBase):
         if stream_name in self.noplot_streams:
             return
         if ((self._start_doc.get('num_points') == 1) and
-            (stream_name == self.dim_stream)):
+            (stream_name == self.dim_stream) and
+            self.omit_single_point_plot):
             return
 
         # This is a heuristic approach until we think of how to hint this in a
