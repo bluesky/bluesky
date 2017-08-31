@@ -1,11 +1,13 @@
 import ast
 import asyncio
+import copy
 import multiprocessing
 import os
 import socket
 import time
 from ..run_engine import Dispatcher, DocumentNames
-from ..utils import apply_to_dict_recursively, sanitize_np
+from ..utils import (apply_to_dict_recursively, sanitize_np,
+                     sanitize_ordered_dict)
 
 
 class Publisher:
@@ -23,6 +25,11 @@ class Publisher:
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
+    debug : boolean, optional
+        Verify that message content is valid by ensuring that it is
+        acceptable to ast.literal_eval before sending. In the event of
+        any errors, they can be debugged locally (on the sending side)
+        with access to the original objects. False by default.
 
     Example
     -------
@@ -32,7 +39,7 @@ class Publisher:
     >>> RE = RunEngine({})
     >>> publisher = Publisher('localhost:5567'), RE)
     """
-    def __init__(self, address, *, RE=None, zmq=None):
+    def __init__(self, address, *, RE=None, zmq=None, debug=False):
         if zmq is None:
             import zmq
         if isinstance(address, str):
@@ -41,6 +48,7 @@ class Publisher:
         self.RE = RE
         self.hostname = socket.gethostname()
         self.pid = os.getpid()
+        self.debug = debug
         url = "tcp://%s:%d" % self.address
         self._fmt_string = '{hostname} {pid} {RE_id} {{name}} {{doc}}'.format(
             hostname=self.hostname,
@@ -53,7 +61,15 @@ class Publisher:
             self._subscription_token = RE.subscribe(self)
 
     def __call__(self, name, doc):
+        doc = copy.deepcopy(doc)
         apply_to_dict_recursively(doc, sanitize_np)
+        # OrderedDict does not work inside literal_eval.
+        # Convert all OrderedDicts to dicts.
+        apply_to_dict_recursively(doc, sanitize_ordered_dict)
+        if self.debug:
+            # Any parsing problems are easier to debug on
+            # the sending side than on the receiving side.
+            ast.literal_eval(repr(doc))
         message = self._fmt_string.format(name=name, doc=doc)
         self._socket.send_string(message)
 

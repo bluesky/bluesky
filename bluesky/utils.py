@@ -10,7 +10,7 @@ import types
 import inspect
 from inspect import Parameter, Signature
 import itertools
-from collections import Iterable
+from collections import Iterable, OrderedDict
 import sys
 import numpy as np
 from cycler import cycler
@@ -847,6 +847,16 @@ def sanitize_np(val):
             return val.item()
         return val.tolist()
     return val
+
+
+def sanitize_ordered_dict(d):
+    """
+    Convert OrderedDicts to dicts.
+
+    This exists because OrderedDicts do not work inside
+    ast.literal_eval.
+    """
+    return dict(d) if isinstance(d, OrderedDict) else d
 
 
 def expiring_function(func, loop, *args, **kwargs):
