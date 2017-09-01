@@ -701,10 +701,10 @@ the start document along with the rest of their metadata. Examples:
 .. code-block:: python
 
     # The pattern is
-    # {'dimensions': [(field, stream_name), (field, stream_name), ...]}
+    # {'dimensions': [(fields, stream_name), (fields, stream_name), ...]}
 
     # a scan over time
-    {'dimensions': [('time', 'primary')]}
+    {'dimensions': [(('time',), 'primary')]}
 
     # a one-dimensional scan
     {'dimensions': [(motor.hints['fields'], 'primary')]}
@@ -719,6 +719,10 @@ the start document along with the rest of their metadata. Examples:
 It's possible to adjust hints interactively, but they are generally intended to
 be set in a startup file. Err on the side of displaying more information than
 you need to see, and you will rarely need to adjust them.
+
+Plans may also hint that their data is sampled on a regular rectangular grid
+via the hint ``{'gridding': 'rectilinear'}``. This is useful, for example, for
+decided whether to visualize 2D data with LiveGrid or with LiveScatter.
 
 Callback for Export
 -------------------

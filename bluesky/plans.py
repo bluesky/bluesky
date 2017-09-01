@@ -2024,9 +2024,10 @@ def count(detectors, num=1, delay=None, *, md=None):
            'num_intervals': num_intervals,
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
            'plan_name': 'count',
-           'hints': {'dimensions': [(('time',), 'primary')]}
+           'hints': {}
           }
     _md.update(md or {})
+    _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
     if not isinstance(delay, Iterable):
@@ -2135,13 +2136,13 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
            'plan_pattern_args': dict(object=steps),
            'hints': {},
           }
+    _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
-    _md.update(md or {})
+        _md['hints'].setdefault('dimensions', dimensions)
     if per_step is None:
         per_step = one_1d_step
 
@@ -2228,13 +2229,13 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
           }
+    _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
-    _md.update(md or {})
+        _md['hints'].setdefault('dimensions', dimensions)
 
     if per_step is None:
         per_step = one_1d_step
@@ -2329,13 +2330,14 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
           }
+    _md.update(md or {})
+
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
-    _md.update(md or {})
+        _md['hints'].setdefault('dimensions', dimensions)
 
     if per_step is None:
         per_step = one_1d_step
@@ -2440,13 +2442,13 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
            'plan_name': 'adaptive_scan',
            'hints': {},
           }
+    _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
-    _md.update(md or {})
+        _md['hints'].setdefault('dimensions', dimensions)
 
     @stage_decorator(list(detectors) + [motor])
     @run_decorator(md=_md)
@@ -2606,6 +2608,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
            'plan_name': 'scan_nd',
            'hints': {},
           }
+    _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')
                       for motor in cycler.keys]
@@ -2613,8 +2616,12 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         # Not all motors provide a 'fields' hint, so we have to skip it.
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
-    _md.update(md or {})
+        # We know that hints exists. Either:
+        #  - the user passed it in and we are extending it
+        #  - the user did not pass it in and we got the default {}
+        # If the user supplied hints includes a dimension entry, do not
+        # change it, else set it to the one generated above
+        _md['hints'].setdefault('dimensions', dimensions)
 
     if per_step is None:
         per_step = one_nd_step
@@ -2735,9 +2742,11 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
            'plan_pattern': 'outer_product',
            'plan_pattern_args': dict(args=md_args),
            'plan_pattern_module': plan_patterns.__name__,
-           'motors': tuple(motor_names)
+           'motors': tuple(motor_names),
+           'hints': {},
           }
     _md.update(md or {})
+    _md['hints'].setdefault('gridding', 'rectilinear')
 
     return (yield from scan_nd(detectors, full_cycler,
                                per_step=per_step, md=_md))
@@ -2955,6 +2964,8 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
                          'x_range': x_range, 'y_range': y_range,
                          'dr': dr, 'factor': factor, 'tilt': tilt,
                          'per_step': repr(per_step)},
+           'extents': tuple([[x_start - x_range, x_start + x_range],
+                             [y_start - y_range, y_start + y_range]]),
            'plan_name': 'spiral_fermat',
            'plan_pattern': 'spiral_fermat',
            'plan_pattern_module': plan_patterns.__name__,
@@ -3068,6 +3079,8 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
                          'x_range': x_range, 'y_range': y_range,
                          'dr': dr, 'nth': nth, 'tilt': tilt,
                          'per_step': repr(per_step)},
+           'extents': tuple([[x_start - x_range, x_start + x_range],
+                             [y_start - y_range, y_start + y_range]]),
            'plan_name': 'spiral',
            'plan_pattern': 'spiral',
            'plan_pattern_args': pattern_args,
