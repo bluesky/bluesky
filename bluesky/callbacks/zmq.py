@@ -1,7 +1,8 @@
-import ast
 import asyncio
+import copy
 import multiprocessing
 import os
+import pickle
 import socket
 import time
 from ..run_engine import Dispatcher, DocumentNames
@@ -42,10 +43,8 @@ class Publisher:
         self.hostname = socket.gethostname()
         self.pid = os.getpid()
         url = "tcp://%s:%d" % self.address
-        self._fmt_string = '{hostname} {pid} {RE_id} {{name}} {{doc}}'.format(
-            hostname=self.hostname,
-            pid=self.pid,
-            RE_id=id(RE))
+        self._prefix = b'%s %d %d ' % (self.hostname.encode(),
+                                       self.pid, id(RE))
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
         self._socket.connect(url)
@@ -53,9 +52,11 @@ class Publisher:
             self._subscription_token = RE.subscribe(self)
 
     def __call__(self, name, doc):
+        doc = copy.deepcopy(doc)
         apply_to_dict_recursively(doc, sanitize_np)
-        message = self._fmt_string.format(name=name, doc=doc)
-        self._socket.send_string(message)
+        message = bytes(self._prefix)  # making a copy
+        message += b' '.join([name.encode(), pickle.dumps(doc)])
+        self._socket.send(message)
 
     def close(self):
         if self.RE:
@@ -241,9 +242,13 @@ class RemoteDispatcher(Dispatcher):
     def _poll(self):
         while True:
             message = yield from self._socket.recv()
-            hostname, pid, RE_id, name, doc = message.decode().split(' ', 4)
+            hostname, pid, RE_id, name, doc = message.split(b' ', 4)
+            hostname = hostname.decode()
+            pid = int(pid)
+            RE_id = int(RE_id)
+            name = name.decode()
             if self._is_our_message(hostname, pid, RE_id):
-                doc = ast.literal_eval(doc)
+                doc = pickle.loads(doc)
                 self._loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
