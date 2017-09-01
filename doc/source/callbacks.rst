@@ -1107,7 +1107,7 @@ calling ``d.start()``.
 .. code-block:: python
 
     from bluesky.utils import install_qt_kicker
-    install_qt_kicker(loop=d._loop)
+    install_qt_kicker(loop=d.loop)
 
 In a Jupyter notebook, replace ``install_qt_kicker`` with
 ``install_nb_kicker``.

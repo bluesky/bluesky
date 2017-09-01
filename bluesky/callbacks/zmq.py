@@ -218,8 +218,8 @@ class RemoteDispatcher(Dispatcher):
 
         if loop is None:
             loop = zmq_asyncio.ZMQEventLoop()
-        self._loop = loop
-        asyncio.set_event_loop(self._loop)
+        self.loop = loop
+        asyncio.set_event_loop(self.loop)
         self._context = zmq_asyncio.Context()
         self._socket = self._context.socket(zmq.SUB)
         url = "tcp://%s:%d" % self.address
@@ -249,12 +249,12 @@ class RemoteDispatcher(Dispatcher):
             name = name.decode()
             if self._is_our_message(hostname, pid, RE_id):
                 doc = pickle.loads(doc)
-                self._loop.call_soon(self.process, DocumentNames[name], doc)
+                self.loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
         try:
-            self._task = self._loop.create_task(self._poll())
-            self._loop.run_forever()
+            self._task = self.loop.create_task(self._poll())
+            self.loop.run_forever()
         except:
             self.stop()
             raise
@@ -262,5 +262,5 @@ class RemoteDispatcher(Dispatcher):
     def stop(self):
         if self._task is not None:
             self._task.cancel()
-            self._loop.stop()
+            self.loop.stop()
         self._task = None
