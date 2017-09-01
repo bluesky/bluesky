@@ -440,7 +440,7 @@ class LiveGrid(CallbackBase):
         self.I = I
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
-        ax.set_aspect('equal')
+        ax.set_aspect(aspect)
         self.ax = ax
         self._Idata = np.ones(raster_shape) * np.nan
         self._norm = mcolors.Normalize()
