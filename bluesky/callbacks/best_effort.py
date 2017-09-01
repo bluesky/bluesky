@@ -4,7 +4,7 @@ from bluesky.callbacks.scientific import PeakStats
 from cycler import cycler
 from io import StringIO
 import itertools
-from itertools import chain
+import numpy as np
 import matplotlib.pyplot as plt
 import re
 import sys
@@ -242,11 +242,29 @@ class BestEffortCallback(CallbackBase):
                     warn("Need both 'shape' and 'extents' in plan metadata to "
                          "create LiveGrid.")
                 else:
+                    data_range = np.array([float(np.diff(e)) for e in extents])
+                    y_step, x_step = data_range / [s - 1 for s in shape]
+                    adjusted_extent = [extents[1][0] - x_step / 2,
+                                       extents[1][1] + x_step / 2,
+                                       extents[0][0] - y_step / 2,
+                                       extents[0][1] + y_step / 2]
                     for I_key, ax in zip(columns, axes):
+                        # MAGIC NUMBERS based on what tacaswell thinks looks OK
+                        data_aspect_ratio = np.abs(data_range[1]/data_range[0])
+                        MAR = 2
+                        if (1/MAR < data_aspect_ratio < MAR):
+                            aspect = 'equal'
+                            ax.set_aspect(aspect, adjustable='box-forced')
+                        else:
+                            aspect = 'auto'
+                            ax.set_aspect(aspect, adjustable='datalim')
+
                         live_grid = LiveGrid(shape, I_key,
-                                            xlabel=x_key, ylabel=y_key,
-                                            extent=list(chain(*extents[::-1])),
-                                            ax=ax)
+                                             xlabel=x_key, ylabel=y_key,
+                                             extent=adjusted_extent,
+                                             aspect=aspect,
+                                             ax=ax)
+
                         live_grid('start', self._start_doc)
                         live_grid('descriptor', doc)
                         self._live_grids[doc['uid']][I_key] = live_grid
