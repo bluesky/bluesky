@@ -192,6 +192,7 @@ class BestEffortCallback(CallbackBase):
             # The complexity here is due to making a shared x axis. This can be
             # simplified when Figure supports the `subplots` method in a future
             # release of matplotlib.
+            fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
             for i in range(len(columns)):
                 if i == 0:
                     ax = fig.add_subplot(len(columns), 1, 1 + i)
