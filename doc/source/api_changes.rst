@@ -191,6 +191,10 @@ API Changes
 * The module ``bluesky.qt_kicker`` has been removed. Its former contents are
   avaiable in ``bluesky.utils``. The module was originally deprecated in April
   2016, and it has been issuing warnings about this change since.
+* The plan ``bluesky.plans.input`` has been renamed
+  ``bluesky.plans.input_plan`` to avoid shadowing a builtin if the module is
+  bulk-imported. The plan was previously undocumented and rarely used, so the
+  impact of this change on users is expected to be small.
 
 Deprecations
 ^^^^^^^^^^^^
