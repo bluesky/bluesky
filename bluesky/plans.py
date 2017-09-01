@@ -644,7 +644,7 @@ def deferred_pause():
     return (yield Msg('pause', None, defer=True))
 
 
-def input(prompt=''):
+def input_plan(prompt=''):
     """
     Prompt the user for text input.
 

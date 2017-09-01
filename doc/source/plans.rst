@@ -487,6 +487,7 @@ Plans that control the RunEngine:
     checkpoint
     clear_checkpoint
     sleep
+    input_plan
     subscribe
     unsubscribe
     wait
