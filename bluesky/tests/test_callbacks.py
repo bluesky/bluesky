@@ -272,7 +272,7 @@ def test_zmq(fresh_RE):
         d = RemoteDispatcher('127.0.0.1:5568')
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
-        d._loop.call_later(9, d.stop)
+        d.loop.call_later(9, d.stop)
         d.start()
 
     queue = multiprocessing.Queue()
@@ -381,7 +381,7 @@ def test_zmq_no_RE(fresh_RE):
         d = RemoteDispatcher('127.0.0.1:5568')
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
-        d._loop.call_later(9, d.stop)
+        d.loop.call_later(9, d.stop)
         d.start()
 
     queue = multiprocessing.Queue()
