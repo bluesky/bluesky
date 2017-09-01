@@ -22,6 +22,63 @@ def test_status_with_name():
     time.sleep(0.25)
     st._finished()
 
+
+def test_tuple_progress():
+
+    class StatusPlaceholder:
+        "Just enough to make ProgressBar happy. We will update manually."
+        def __init__(self):
+            self.done = False
+
+        def watch(self, _):
+            ...
+
+    # where the status object computes the fraction
+    st = StatusPlaceholder()
+    pbar = ProgressBar([st])
+    pbar.update(0, name='',
+                current=(0, 0), initial=(0, 0), target=(1, 1),
+                fraction=0)
+    pbar.update(0, name='',
+                current=(0.2, 0.2), initial=(0, 0), target=(1, 1),
+                fraction=0.2)
+    pbar.update(0, name='',
+                current=(1, 1), initial=(0, 0), target=(1, 1),
+                fraction=1)
+    st.done = True
+    pbar.update(0, name='',
+                current=(1, 1), initial=(0, 0), target=(1, 1),
+                fraction=1)
+
+    # where the progress bar computes the fraction
+    st = StatusPlaceholder()
+    pbar = ProgressBar([st])
+    pbar.update(0, name='',
+                current=(0, 0), initial=(0, 0), target=(1, 1))
+    pbar.update(0, name='',
+                current=(0.2, 0.2), initial=(0, 0), target=(1, 1))
+    pbar.update(0, name='',
+                current=(1, 1), initial=(0, 0), target=(1, 1))
+    st.done = True
+    pbar.update(0, name='',
+                current=(1, 1), initial=(0, 0), target=(1, 1))
+
+    # minimal API
+    st = StatusPlaceholder()
+    pbar = ProgressBar([st])
+    pbar.update(0)
+    pbar.update(0)
+    st.done = True
+    pbar.update(0)
+
+    # name only
+    st = StatusPlaceholder()
+    pbar = ProgressBar([st])
+    pbar.update(0, name='foo')
+    pbar.update(0, name='foo')
+    st.done = True
+    pbar.update(0, name='foo')
+
 def test_mv_progress(fresh_RE):
     RE = fresh_RE
     RE.waiting_hook = ProgressBarManager()

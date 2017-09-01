@@ -959,6 +959,7 @@ class ProgressBar:
             around for awhile. Default is 0.2 seconds.
         """
         self.meters = []
+        self.status_objs = []
         # Determine terminal width.
         self.ncols = _environ_cols_wrapper()(sys.stdout) or 79
         self.fp = sys.stdout
@@ -981,26 +982,39 @@ class ProgressBar:
                 if hasattr(st, 'watch') and not st.done:
                     pos = len(self.meters)
                     self.meters.append('')
+                    self.status_objs.append(st)
                     st.watch(partial(self.update, pos))
 
     def update(self, pos, *,
                name=None,
                current=None, initial=None, target=None,
-               unit=None, precision=None,
+               unit='units', precision=None,
                fraction=None,
                time_elapsed=None, time_remaining=None):
         if all(x is not None for x in (current, initial, target)):
-            total = abs(round(target - initial, precision or 3))
-            n = abs(round(current - initial, precision or 3))
+            # Display a proper progress bar.
+            total = round(_L2norm(target, initial), precision or 3)
+            n = round(_L2norm(current, initial), precision or 3)
+            # Compute this only if the status object did not provide it.
+            if time_elapsed is None:
+                time_elapsed = time.time() - self.creation_time
+            # TODO Account for 'fraction', which might in some special cases
+            # differ from the naive computation above.
+            # TODO Account for 'time_remaining' which might in some special
+            # cases differ from the naive computaiton performed by
+            # format_meter.
             meter = tqdm.format_meter(n=n, total=total, elapsed=time_elapsed,
                                       unit=unit,
                                       prefix=name,
                                       ncols=self.ncols)
-        elif name is not None:
-            if fraction != 1:
-                meter = name + ' [No progress bar available.]'
-            else:
+        else:
+            # Simply display completeness.
+            if name is None:
+                name = ''
+            if self.status_objs[pos].done:
                 meter = name + ' [Complete.]'
+            else:
+                meter = name + ' [In progress. No progress bar available.]'
             meter += ' ' * (self.ncols - len(meter))
             meter = meter[:self.ncols]
 
@@ -1058,3 +1072,8 @@ class ProgressBarManager:
             else:
                 self.pbar.clear()
                 self.pbar = None
+
+
+def _L2norm(x, y):
+    "works on (3, 5) and ((0, 3), (4, 0))"
+    return np.sqrt(np.sum((np.asarray(x) - np.asarray(y))**2))
