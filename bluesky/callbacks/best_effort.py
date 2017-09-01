@@ -4,7 +4,7 @@ from bluesky.callbacks.scientific import PeakStats
 from cycler import cycler
 from io import StringIO
 import itertools
-from itertools import chain
+import numpy as np
 import matplotlib.pyplot as plt
 import re
 import sys
@@ -72,7 +72,7 @@ class BestEffortCallback(CallbackBase):
             return
 
         super().__call__(name, doc)
-    
+
     def start(self, doc):
         self.clear()
         self._start_doc = doc
@@ -101,9 +101,9 @@ class BestEffortCallback(CallbackBase):
                  "combine streams.")
         self.dim_fields = [f
                            for field, stream_name in dimensions
-                               for f in field]
-        _, self.dim_stream  = dimensions[0]
-    
+                           for f in field]
+        _, self.dim_stream = dimensions[0]
+
     def descriptor(self, doc):
         self._descriptors[doc['uid']] = doc
         stream_name = doc.get('name', 'primary')  # fall back for old docs
@@ -115,7 +115,7 @@ class BestEffortCallback(CallbackBase):
 
         columns = hinted_fields(doc)
 
-        ### This deals with old documents. ### 
+        # ## This deals with old documents. ## #
 
         if stream_name == 'primary' and self._cleanup_motor_heuristic:
             # We stashed object names in self.dim_fields, which we now need to
@@ -130,8 +130,8 @@ class BestEffortCallback(CallbackBase):
                 fixed_dim_fields.extend(fields)
             self.dim_fields = fixed_dim_fields
 
-        ### TABLE ###
-        
+        # ## TABLE ## #
+
         if stream_name == self.dim_stream:
             # Ensure that no independent variables ('dimensions') are
             # duplicated here.
@@ -142,15 +142,15 @@ class BestEffortCallback(CallbackBase):
                 self._table('start', self._start_doc)
                 self._table('descriptor', doc)
 
-        ### DECIDE WHICH KIND OF PLOT CAN BE USED ###
+        # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
 
         if not self._plots_enabled:
             return
         if stream_name in self.noplot_streams:
             return
         if ((self._start_doc.get('num_points') == 1) and
-            (stream_name == self.dim_stream) and
-            self.omit_single_point_plot):
+                (stream_name == self.dim_stream) and
+                self.omit_single_point_plot):
             return
 
         # This is a heuristic approach until we think of how to hint this in a
@@ -181,25 +181,35 @@ class BestEffortCallback(CallbackBase):
                     if not plt.fignum_exists(new_name):
                         fig_name = new_name
                         break
-        fig = plt.figure(fig_name)
+        ndims = len(dim_fields)
+        if not 0 < ndims < 3:
+            # we need 1 or 2 dims to do anything, do not make empty figures
+            return
 
+        fig = plt.figure(fig_name)
         if not fig.axes:
             # This is apparently a fresh figure. Make axes.
             # The complexity here is due to making a shared x axis. This can be
             # simplified when Figure supports the `subplots` method in a future
             # release of matplotlib.
+            fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
             for i in range(len(columns)):
                 if i == 0:
                     ax = fig.add_subplot(len(columns), 1, 1 + i)
+                    if ndims == 1:
+                        share_kwargs = {'sharex': ax}
+                    elif ndims == 2:
+                        share_kwargs = {'sharex': ax, 'sharey': ax}
+                    else:
+                        raise NotImplementedError("we now support 3D?!")
                 else:
-                    ax = fig.add_subplot(len(columns), 1, 1 + i, sharex=ax)
-            fig.subplots_adjust()
-            fig.tight_layout()
+                    ax = fig.add_subplot(len(columns), 1, 1 + i,
+                                         **share_kwargs)
         axes = fig.axes
 
-        ### LIVE PLOT AND PEAK ANALYSIS ###
+        # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
-        if len(dim_fields) == 1:
+        if ndims == 1:
             self._live_plots[doc['uid']] = {}
             self._peak_stats[doc['uid']] = {}
             x_key, = dim_fields
@@ -219,7 +229,7 @@ class BestEffortCallback(CallbackBase):
 
             for ax in axes[:-1]:
                 ax.set_xlabel('')
-        elif len(dim_fields) == 2:
+        elif ndims == 2:
             # Decide whether to use LiveGrid or LiveScatter. LiveScatter is the
             # safer one to use, so it is the fallback..
             gridding = self._start_doc.get('hints', {}).get('gridding')
@@ -231,13 +241,31 @@ class BestEffortCallback(CallbackBase):
                     shape = self._start_doc['shape']
                 except KeyError:
                     warn("Need both 'shape' and 'extents' in plan metadata to "
-                        "create LiveGrid.")
+                         "create LiveGrid.")
                 else:
+                    data_range = np.array([float(np.diff(e)) for e in extents])
+                    y_step, x_step = data_range / [s - 1 for s in shape]
+                    adjusted_extent = [extents[1][0] - x_step / 2,
+                                       extents[1][1] + x_step / 2,
+                                       extents[0][0] - y_step / 2,
+                                       extents[0][1] + y_step / 2]
                     for I_key, ax in zip(columns, axes):
+                        # MAGIC NUMBERS based on what tacaswell thinks looks OK
+                        data_aspect_ratio = np.abs(data_range[1]/data_range[0])
+                        MAR = 2
+                        if (1/MAR < data_aspect_ratio < MAR):
+                            aspect = 'equal'
+                            ax.set_aspect(aspect, adjustable='box-forced')
+                        else:
+                            aspect = 'auto'
+                            ax.set_aspect(aspect, adjustable='datalim')
+
                         live_grid = LiveGrid(shape, I_key,
-                                            xlabel=x_key, ylabel=y_key,
-                                            extent=list(chain(*extents[::-1])),
-                                            ax=ax)
+                                             xlabel=x_key, ylabel=y_key,
+                                             extent=adjusted_extent,
+                                             aspect=aspect,
+                                             ax=ax)
+
                         live_grid('start', self._start_doc)
                         live_grid('descriptor', doc)
                         self._live_grids[doc['uid']][I_key] = live_grid
@@ -258,6 +286,9 @@ class BestEffortCallback(CallbackBase):
                     live_scatter('start', self._start_doc)
                     live_scatter('descriptor', doc)
                     self._live_scatters[doc['uid']][I_key] = live_scatter
+        else:
+            raise NotImplementedError("we do not support 3D+ in BEC yet "
+                                      "(and it should have bailed above)")
 
         fig.tight_layout()
 

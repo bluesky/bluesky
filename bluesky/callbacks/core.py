@@ -356,7 +356,7 @@ class LiveScatter(CallbackBase):
                              norm=self._norm, cmap=self.cmap, **self.kwargs)
         self._sc.append(sc)
         self.sc = sc
-        cb = self.ax.figure.colorbar(sc)
+        cb = self.ax.figure.colorbar(sc, ax=self.ax)
         cb.set_label(self.I)
         super().start(doc)
 
@@ -440,7 +440,7 @@ class LiveGrid(CallbackBase):
         self.I = I
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
-        ax.set_aspect('equal')
+        ax.set_aspect(aspect)
         self.ax = ax
         self._Idata = np.ones(raster_shape) * np.nan
         self._norm = mcolors.Normalize()
@@ -473,7 +473,7 @@ class LiveGrid(CallbackBase):
                                                       uid=doc['uid'][:6]))
         self.snaking = doc.get('snaking', (False, False))
 
-        cb = self.ax.figure.colorbar(im)
+        cb = self.ax.figure.colorbar(im, ax=self.ax)
         cb.set_label(self.I)
         super().start(doc)
 
