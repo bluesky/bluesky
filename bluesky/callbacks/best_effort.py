@@ -181,8 +181,12 @@ class BestEffortCallback(CallbackBase):
                     if not plt.fignum_exists(new_name):
                         fig_name = new_name
                         break
-        fig = plt.figure(fig_name)
+        ndims = len(dim_fields)
+        if not 0 < ndims < 3:
+            # we need 1 or 2 dims to do anything, do not make empty figures
+            return
 
+        fig = plt.figure(fig_name)
         if not fig.axes:
             # This is apparently a fresh figure. Make axes.
             # The complexity here is due to making a shared x axis. This can be
@@ -191,15 +195,20 @@ class BestEffortCallback(CallbackBase):
             for i in range(len(columns)):
                 if i == 0:
                     ax = fig.add_subplot(len(columns), 1, 1 + i)
+                    if ndims == 1:
+                        share_kwargs = {'sharex': ax}
+                    elif ndims == 2:
+                        share_kwargs = {'sharex': ax, 'sharey': ax}
+                    else:
+                        raise NotImplementedError("we now support 3D?!")
                 else:
-                    ax = fig.add_subplot(len(columns), 1, 1 + i, sharex=ax)
-            fig.subplots_adjust()
-            fig.tight_layout()
+                    ax = fig.add_subplot(len(columns), 1, 1 + i,
+                                         **share_kwargs)
         axes = fig.axes
 
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
-        if len(dim_fields) == 1:
+        if ndims == 1:
             self._live_plots[doc['uid']] = {}
             self._peak_stats[doc['uid']] = {}
             x_key, = dim_fields
@@ -219,7 +228,7 @@ class BestEffortCallback(CallbackBase):
 
             for ax in axes[:-1]:
                 ax.set_xlabel('')
-        elif len(dim_fields) == 2:
+        elif ndims == 2:
             # Decide whether to use LiveGrid or LiveScatter. LiveScatter is the
             # safer one to use, so it is the fallback..
             gridding = self._start_doc.get('hints', {}).get('gridding')
@@ -258,6 +267,9 @@ class BestEffortCallback(CallbackBase):
                     live_scatter('start', self._start_doc)
                     live_scatter('descriptor', doc)
                     self._live_scatters[doc['uid']][I_key] = live_scatter
+        else:
+            raise NotImplementedError("we do not support 3D+ in BEC yet "
+                                      "(and it should have bailed above)")
 
         fig.tight_layout()
 
