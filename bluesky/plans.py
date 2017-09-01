@@ -2136,13 +2136,13 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
            'plan_pattern_args': dict(object=steps),
            'hints': {},
           }
+    _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
         _md['hints'].setdefault('dimensions', dimensions)
-    _md.update(md or {})
     if per_step is None:
         per_step = one_1d_step
 
@@ -2229,13 +2229,13 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
           }
+    _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
         _md['hints'].setdefault('dimensions', dimensions)
-    _md.update(md or {})
 
     if per_step is None:
         per_step = one_1d_step
@@ -2330,13 +2330,14 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
           }
+    _md.update(md or {})
+
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
         _md['hints'].setdefault('dimensions', dimensions)
-    _md.update(md or {})
 
     if per_step is None:
         per_step = one_1d_step
@@ -2441,13 +2442,13 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
            'plan_name': 'adaptive_scan',
            'hints': {},
           }
+    _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
         pass
     else:
         _md['hints'].setdefault('dimensions', dimensions)
-    _md.update(md or {})
 
     @stage_decorator(list(detectors) + [motor])
     @run_decorator(md=_md)
