@@ -72,7 +72,7 @@ class BestEffortCallback(CallbackBase):
             return
 
         super().__call__(name, doc)
-    
+
     def start(self, doc):
         self.clear()
         self._start_doc = doc
@@ -101,9 +101,9 @@ class BestEffortCallback(CallbackBase):
                  "combine streams.")
         self.dim_fields = [f
                            for field, stream_name in dimensions
-                               for f in field]
-        _, self.dim_stream  = dimensions[0]
-    
+                           for f in field]
+        _, self.dim_stream = dimensions[0]
+
     def descriptor(self, doc):
         self._descriptors[doc['uid']] = doc
         stream_name = doc.get('name', 'primary')  # fall back for old docs
@@ -115,7 +115,7 @@ class BestEffortCallback(CallbackBase):
 
         columns = hinted_fields(doc)
 
-        ### This deals with old documents. ### 
+        # ## This deals with old documents. ## #
 
         if stream_name == 'primary' and self._cleanup_motor_heuristic:
             # We stashed object names in self.dim_fields, which we now need to
@@ -130,8 +130,8 @@ class BestEffortCallback(CallbackBase):
                 fixed_dim_fields.extend(fields)
             self.dim_fields = fixed_dim_fields
 
-        ### TABLE ###
-        
+        # ## TABLE ## #
+
         if stream_name == self.dim_stream:
             # Ensure that no independent variables ('dimensions') are
             # duplicated here.
@@ -142,15 +142,15 @@ class BestEffortCallback(CallbackBase):
                 self._table('start', self._start_doc)
                 self._table('descriptor', doc)
 
-        ### DECIDE WHICH KIND OF PLOT CAN BE USED ###
+        # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
 
         if not self._plots_enabled:
             return
         if stream_name in self.noplot_streams:
             return
         if ((self._start_doc.get('num_points') == 1) and
-            (stream_name == self.dim_stream) and
-            self.omit_single_point_plot):
+                (stream_name == self.dim_stream) and
+                self.omit_single_point_plot):
             return
 
         # This is a heuristic approach until we think of how to hint this in a
@@ -197,7 +197,7 @@ class BestEffortCallback(CallbackBase):
             fig.tight_layout()
         axes = fig.axes
 
-        ### LIVE PLOT AND PEAK ANALYSIS ###
+        # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
         if len(dim_fields) == 1:
             self._live_plots[doc['uid']] = {}
@@ -231,7 +231,7 @@ class BestEffortCallback(CallbackBase):
                     shape = self._start_doc['shape']
                 except KeyError:
                     warn("Need both 'shape' and 'extents' in plan metadata to "
-                        "create LiveGrid.")
+                         "create LiveGrid.")
                 else:
                     for I_key, ax in zip(columns, axes):
                         live_grid = LiveGrid(shape, I_key,
