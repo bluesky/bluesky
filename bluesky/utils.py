@@ -688,7 +688,7 @@ _QT_KICKER_INSTALLED = {}
 _NB_KICKER_INSTALLED = {}
 
 
-def install_qt_kicker(loop=None):
+def install_qt_kicker(loop=None, update_rate=0.03):
     """Install a periodic callback to integrate qt and asyncio event loops
 
     If a version of the qt bindings are not already imported, this function
@@ -724,12 +724,12 @@ def install_qt_kicker(loop=None):
         _draw_all()
 
         qApp.processEvents()
-        loop.call_later(0.03, _qt_kicker)
+        loop.call_later(update_rate, _qt_kicker)
 
     _QT_KICKER_INSTALLED[loop] = loop.call_soon(_qt_kicker)
 
 
-def install_nb_kicker(loop=None):
+def install_nb_kicker(loop=None, update_rate=0.03):
     """
     The RunEngine Event Loop interferes with the qt event loop. Here we
     kick it to keep it going.
@@ -752,7 +752,7 @@ def install_nb_kicker(loop=None):
             if f_mgr.canvas.figure.stale:
                 f_mgr.canvas.draw()
 
-        loop.call_later(0.03, _nbagg_kicker)
+        loop.call_later(update_rate, _nbagg_kicker)
 
     _NB_KICKER_INSTALLED[loop] = loop.call_soon(_nbagg_kicker)
 
