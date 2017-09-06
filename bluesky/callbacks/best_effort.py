@@ -214,6 +214,10 @@ class BestEffortCallback(CallbackBase):
             self._peak_stats[doc['uid']] = {}
             x_key, = dim_fields
             for y_key, ax in zip(columns, axes):
+                dtype = doc['data_keys'][y_key]['dtype']
+                if dtype not in ('number',):
+                    warn("Omitting {} from plot because dtype is {}"
+                         "".format(y_key, dtype))
                 # Create an instance of LivePlot and an instance of PeakStats.
                 live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
                                               peak_results=self.peaks)
