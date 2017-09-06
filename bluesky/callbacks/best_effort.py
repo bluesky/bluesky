@@ -28,7 +28,7 @@ class BestEffortCallback(CallbackBase):
         self._live_scatters = {}
         self._peak_stats = {}  # same structure as live_plots
         self._cleanup_motor_heuristic = False
-        self._stream_names = set()
+        self._stream_names_seen = set()
 
         # public options
         self.overplot = True
@@ -108,8 +108,8 @@ class BestEffortCallback(CallbackBase):
         self._descriptors[doc['uid']] = doc
         stream_name = doc.get('name', 'primary')  # fall back for old docs
 
-        if stream_name not in self._stream_names:
-            self._stream_names.add(stream_name)
+        if stream_name not in self._stream_names_seen:
+            self._stream_names_seen.add(stream_name)
             if self._table_enabled:
                 print("New stream: {!r}".format(stream_name))
 
@@ -369,6 +369,7 @@ class BestEffortCallback(CallbackBase):
     def clear(self):
         self._start_doc = None
         self._descriptors.clear()
+        self._stream_names_seen.clear()
         self._table = None
         self._live_plots.clear()
         self._peak_stats.clear()
