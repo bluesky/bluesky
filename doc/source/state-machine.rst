@@ -221,7 +221,7 @@ and resume once it exceeds 3.
     from bluesky.suspenders import SuspendFloor
 
     beam_current = EpicsSignal('...PV string...')
-    sus = SuspendFloor(beam_current, 2, 3)
+    sus = SuspendFloor(beam_current, 2, resume_thresh=3)
     RE.install_suspender(sus)
 
 In the following example, the beam current dipped below 2 in the middle of
