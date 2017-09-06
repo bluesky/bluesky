@@ -60,5 +60,5 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     """
     warn("The bluesky.plan_tools module is deprecated. Use "
          "bluesky.simulators instead.")
-    return plot_raster_path(plan, x_motor, y_motor, ax=ax,
-                            probe_size=probe_size, lw=lw)
+    return _bs.plot_raster_path(plan, x_motor, y_motor, ax=ax,
+                                probe_size=probe_size, lw=lw)
