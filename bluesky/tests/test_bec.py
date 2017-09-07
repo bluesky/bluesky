@@ -80,6 +80,8 @@ def test_disable(fresh_RE):
     bec.enable_plots()
     bec.disable_baseline()
     bec.enable_baseline()
+    bec.disable_heading()
+    bec.enable_heading()
 
 
 def test_blank_hints(fresh_RE):

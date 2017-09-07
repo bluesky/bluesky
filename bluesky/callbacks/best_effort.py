@@ -2,13 +2,15 @@ from bluesky.callbacks import (CallbackBase, LiveTable, LivePlot, LiveGrid,
                                LiveScatter)
 from bluesky.callbacks.scientific import PeakStats
 from cycler import cycler
+from datetime import datetime
 from io import StringIO
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
+from pprint import pformat
 import re
 import sys
-from pprint import pformat
+import time
 from warnings import warn
 import weakref
 
@@ -19,6 +21,7 @@ class BestEffortCallback(CallbackBase):
         self._start_doc = None
         self._descriptors = {}
         self._table = None
+        self._heading_enabled = True
         self._table_enabled = True
         self._baseline_enabled = True
         self._plots_enabled = True
@@ -41,6 +44,14 @@ class BestEffortCallback(CallbackBase):
         # hack to handle the bottom border of the table
         self._buffer = StringIO()
         self._baseline_toggle = True
+
+    def enable_heading(self):
+        "Print timestamp and IDs at the top of a run."
+        self._heading_enabled = True
+
+    def disable_heading(self):
+        "Opposite of enable_heading()"
+        self._heading_enabled = False
 
     def enable_table(self):
         "Print hinted readings from the 'primary' stream in a LiveTable."
@@ -103,6 +114,15 @@ class BestEffortCallback(CallbackBase):
                            for field, stream_name in dimensions
                            for f in field]
         _, self.dim_stream = dimensions[0]
+
+        # Print heading.
+        tt = datetime.fromtimestamp(self._start_doc['time']).utctimetuple()
+        if self._heading_enabled:
+            print("Transient Scan ID: {0}     Time: {1}".format(
+                self._start_doc['scan_id'],
+                time.strftime("%Y/%m/%d %H:%M:%S", tt)))
+            print("Persistent Unique Scan ID: '{0}'".format(
+                self._start_doc['uid']))
 
     def descriptor(self, doc):
         self._descriptors[doc['uid']] = doc
