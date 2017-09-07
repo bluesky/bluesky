@@ -116,8 +116,8 @@ class BlueskyMagics(Magics):
             except Exception as exc:
                 values.append(exc)
 
-        headers = ['Positioner', 'Value', 'Low Limit', 'High Limit']
-        LINE_FMT = '{: <30} {: <15} {: <15} {: <15}'
+        headers = ['Positioner', 'Value', 'Low Limit', 'High Limit', 'Offset']
+        LINE_FMT = '{: <30} {: <11} {: <11} {: <11} {: <11}'
         lines = []
         lines.append(LINE_FMT.format(*headers))
         for p, v in zip(positioners, values):
@@ -134,11 +134,18 @@ class BlueskyMagics(Magics):
                 else:
                     low_limit = np.round(low_limit, decimals=prec)
                     high_limit = np.round(high_limit, decimals=prec)
+                try:
+                    offset = p.user_offset.get()
+                except Exception as exc:
+                    offset = exc.__class__.__name__
+                else:
+                    offset = np.round(offset, decimals=prec)
             else:
                 value = v.__class__.__name__  # e.g. 'DisconnectedError'
                 low_limit = high_limit = ''
 
-            lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit))
+            lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit,
+                                         offset))
         print('\n'.join(lines))
 
 
