@@ -218,6 +218,7 @@ class BestEffortCallback(CallbackBase):
                 if dtype not in ('number',):
                     warn("Omitting {} from plot because dtype is {}"
                          "".format(y_key, dtype))
+                    continue
                 # Create an instance of LivePlot and an instance of PeakStats.
                 live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
                                               peak_results=self.peaks)
