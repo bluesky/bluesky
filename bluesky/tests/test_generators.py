@@ -8,7 +8,7 @@ from bluesky import Msg
 from bluesky.plans import (msg_mutator, plan_mutator, pchain,
                            single_gen as single_message_gen, finalize_wrapper)
 
-from bluesky.utils import ensure_generator
+from bluesky.utils import ensure_generator, single_gen
 
 
 class EchoException(Exception):
@@ -402,20 +402,16 @@ def test_insert_after():
     def insert_after(msg):
         if msg.command == 'TARGET':
             def post():
-                ret = yield msg
-                assert ret is not None
-                assert ret.command == 'TARGET'
                 yield Msg('post', None)
-                return ret
 
-            return post(), None
+            return None, post()
         else:
             return None, None
 
     ret = EchoRE(plan_mutator(target(), insert_after))
 
 
-def test_base_excetpion():
+def test_base_exception():
     class SnowFlake(Exception):
         ...
 
