@@ -1,7 +1,7 @@
 Release Notes
 =============
 
-v0.10.1
+v0.10.2
 -------
 
 This is a small release with bug fixes and UI improvements.
@@ -17,6 +17,12 @@ Enhancements
 
 * Include a more informate header in BestEffortCallback.
 * Include an 'Offset' column in %wa output.
+
+v0.10.1
+-------
+
+This release is equivalent to v0.10.2. The number was skipped due to packaging
+problems.
 
 v0.10.0
 -------
