@@ -60,15 +60,28 @@ def plan_mutator(plan, msg_proc):
     plan : generator
         a generator that yields messages (`Msg` objects)
     msg_proc : callable
-        Functions that takes in a message and returns replacement messages.
-        Signatures:
+        This function takes in a message and specifies messages(s) to replace
+        it with. The function must account for what sort of response the
+        message would invoke. For example, an 'open_run' message would invoke a
+        uid string, while a 'set' message would invoke a status object. The
+        function should return a pair of generators ``(head, tail)`` that yield
+        messages. The last message out of the ``head`` generator is the one
+        whose invoked response will be returned. Therefore, that message should
+        invoke a response compatible with the original message that it is
+        replacing. Any responses to all other messages will be swallowed. As
+        shorthand, either ``head`` or ``tail`` can be replaced by ``None``.
+        This means:
 
-        * msg -> None, None (no op)
-        * msg -> gen, None (mutate and/or insert before current message;
-          last message in gen must invoke a response compatible
-          with original msg)
-        * msg -> gen, tail (same as above, but insert some messages *after*)
-        * msg -> None, tail (illegal -- raises RuntimeError)
+        * ``(None, None)`` No-op. Let the original message pass through.
+        * ``(head, None)`` Mutate and/or insert messages before the original
+        message.
+        * ``(head, tail)`` As above, and additionally insert messages after.
+        * ``(None, tail)`` Let the original message pass through and then
+        insert messages after.
+
+        The reason for returning a pair of generators instead of just one is to
+        provide a way to specify which message's response should escape. Again,
+        it's the last message yielded by the first generator (``head``).
 
     Yields
     ------
@@ -173,7 +186,7 @@ def plan_mutator(plan, msg_proc):
             new_gen, tail_gen = msg_proc(msg)
             # mild correctness check
             if tail_gen is not None and new_gen is None:
-                raise RuntimeError("This makes no sense")
+                new_gen = single_gen(msg)
             if new_gen is not None:
                 # stash the new generator
                 plan_stack.append(new_gen)
