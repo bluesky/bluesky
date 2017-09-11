@@ -1,9 +1,11 @@
 from bluesky.magics import BlueskyMagics
 import bluesky.plans as bp
-from bluesky.examples import det, motor1, motor2, det1, det2
+from bluesky.examples import det, motor1, motor2, det1, det2, Mover
+from collections import OrderedDict
 import os
 import pytest
 import signal
+from types import SimpleNamespace
 
 
 class FakeIPython:
@@ -62,7 +64,9 @@ def test_bluesky_magics(pln, line, magic, fresh_RE):
 
 # The %wa magic doesn't use a RunEngine or a plan.
 def test_wa():
-    from bluesky.examples import motor
+    motor = Mover('motor', OrderedDict([('motor', lambda x: x),
+                                        ('motor_setpoint', lambda x: x)]),
+                  {'x': 0})
     ip = FakeIPython({'motor': motor})
     sm = BlueskyMagics(ip)
     # Test an empty list.
@@ -70,6 +74,11 @@ def test_wa():
 
     sm.positioners.extend([motor])
     sm.wa('')
+
+    # Make motor support more attributes.
+    motor.limits = (-1, 1)
+    sm.wa('')
+    motor.user_offset = SimpleNamespace(get=lambda: 0)
 
     sm.wa('[motor]')
 
