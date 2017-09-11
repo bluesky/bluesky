@@ -96,3 +96,27 @@ def test_pickle():
     assert D2.baseline == D.baseline
     assert D2.monitors == D.monitors
     assert D2.flyers == D.flyers
+
+
+def test_uid_passthrough(fresh_RE):
+    # Test that none of the preprocessors in SupplementalData break plans
+    # returning uids (a bug that was caught on the floor).
+    RE = fresh_RE
+
+    # preliminary sanity check
+    def mycount1():
+        uid = yield from count([])
+        assert uid is not None
+        assert isinstance(uid, str)
+
+    RE(mycount1())
+
+    # actual test
+    sd = SupplementalData()
+    sd.baseline = [det]
+    def mycount2():
+        uid = yield from sd(count([]))
+        assert uid is not None
+        assert isinstance(uid, str)
+
+    RE(mycount2())

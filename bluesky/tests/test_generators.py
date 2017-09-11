@@ -363,6 +363,58 @@ def test_plan_mutator_returns():
                     kwargs_sq=[{}]*5)
 
 
+def test_insert_before():
+
+    def target():
+        yield Msg('a', None)
+        ret = yield Msg('TARGET', None)
+        yield Msg('b', None)
+        assert ret.command == 'TARGET'
+        return ret
+        return ret
+
+    def insert_before(msg):
+        if msg.command == 'TARGET':
+            def pre():
+                yield Msg('pre', None)
+                ret = yield msg
+                assert ret is not None
+                assert ret.command == 'TARGET'
+                return ret
+
+            return pre(), None
+        else:
+            return None, None
+
+    ret = EchoRE(plan_mutator(target(), insert_before))
+
+
+def test_insert_after():
+
+    def target():
+        yield Msg('a', None)
+        ret = yield Msg('TARGET', None)
+        yield Msg('b', None)
+        assert ret is not None
+        assert ret.command == 'TARGET'
+        return ret
+
+    def insert_after(msg):
+        if msg.command == 'TARGET':
+            def post():
+                ret = yield msg
+                assert ret is not None
+                assert ret.command == 'TARGET'
+                yield Msg('post', None)
+                return ret
+
+            return post(), None
+        else:
+            return None, None
+
+    ret = EchoRE(plan_mutator(target(), insert_after))
+
+
 def test_base_excetpion():
     class SnowFlake(Exception):
         ...
