@@ -39,12 +39,9 @@ install:
     if [ $CONDA_ENV ]; then
        conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py jsonschema databroker pip doct xray-vision lmfit pyzmq ophyd filestore event-model dill ophyd pims mongoquery pytest $EXTRA_C_CHAN -c lightsource2-tag -c conda-forge -c soft-matter -c defaults --override-channels
        source activate testenv
-       pip install https://github.com/NSLS-II/event-model/zipball/master#egg=event_model
-       source activate testenv
-    else
-       pip install -r requirements.txt
-       pip install -r test-requirements.txt
     fi
+  - pip install -r requirements.txt
+  - pip install -r test-requirements.txt
   - pip install codecov
   - python setup.py install
   # until fix in databroker propgates through
