@@ -1,6 +1,23 @@
 Release Notes
 =============
 
+v0.10.1
+-------
+
+This is a small release with bug fixes and UI improvements.
+
+Bug Fixes
+^^^^^^^^^
+
+* Fix bug wherein BestEffortCallback tried to plot strings as floats. The
+  intended behavior is to skip them and warn.
+
+Enhancements
+^^^^^^^^^^^^
+
+* Include a more informate header in BestEffortCallback.
+* Include an 'Offset' column in %wa output.
+
 v0.10.0
 -------
 
