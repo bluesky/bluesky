@@ -60,15 +60,30 @@ def plan_mutator(plan, msg_proc):
     plan : generator
         a generator that yields messages (`Msg` objects)
     msg_proc : callable
-        Functions that takes in a message and returns replacement messages.
-        Signatures:
+        This function takes in a message and specifies messages(s) to replace
+        it with. The function must account for what type of response the
+        message would prompt. For example, an 'open_run' message causes the
+        RunEngine to send a uid string back to the plan, while a 'set' message
+        causes the RunEngine to send a status object back to the plan. The
+        function should return a pair of generators ``(head, tail)`` that yield
+        messages. The last message out of the ``head`` generator is the one
+        whose response will be sent back to the host plan. Therefore, that
+        message should prompt a response compatible with the message that it is
+        replacing. Any responses to all other messages will be swallowed. As
+        shorthand, either ``head`` or ``tail`` can be replaced by ``None``.
+        This means:
 
-        * msg -> None, None (no op)
-        * msg -> gen, None (mutate and/or insert before current message;
-          last message in gen must invoke a response compatible
-          with original msg)
-        * msg -> gen, tail (same as above, but insert some messages *after*)
-        * msg -> None, tail (illegal -- raises RuntimeError)
+        * ``(None, None)`` No-op. Let the original message pass through.
+        * ``(head, None)`` Mutate and/or insert messages before the original
+        message.
+        * ``(head, tail)`` As above, and additionally insert messages after.
+        * ``(None, tail)`` Let the original message pass through and then
+        insert messages after.
+
+        The reason for returning a pair of generators instead of just one is to
+        provide a way to specify which message's response should be sent out to
+        the host plan. Again, it's the last message yielded by the first
+        generator (``head``).
 
     Yields
     ------
@@ -173,7 +188,7 @@ def plan_mutator(plan, msg_proc):
             new_gen, tail_gen = msg_proc(msg)
             # mild correctness check
             if tail_gen is not None and new_gen is None:
-                raise RuntimeError("This makes no sense")
+                new_gen = single_gen(msg)
             if new_gen is not None:
                 # stash the new generator
                 plan_stack.append(new_gen)
@@ -1743,11 +1758,7 @@ def baseline_wrapper(plan, devices, name='baseline'):
     """
     def insert_baseline(msg):
         if msg.command == 'open_run':
-            def pre_baseline():
-                ret = yield msg
-                yield from trigger_and_read(devices, name=name)
-                return ret
-            return pre_baseline(), None
+            return None, trigger_and_read(devices, name=name)
 
         elif msg.command == 'close_run':
             def post_baseline():
