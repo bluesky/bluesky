@@ -61,13 +61,14 @@ def plan_mutator(plan, msg_proc):
         a generator that yields messages (`Msg` objects)
     msg_proc : callable
         This function takes in a message and specifies messages(s) to replace
-        it with. The function must account for what sort of response the
-        message would invoke. For example, an 'open_run' message would invoke a
-        uid string, while a 'set' message would invoke a status object. The
+        it with. The function must account for what type of response the
+        message would prompt. For example, an 'open_run' message causes the
+        RunEngine to send a uid string back to the plan, while a 'set' message
+        causes the RunEngine to send a status object back to the plan. The
         function should return a pair of generators ``(head, tail)`` that yield
         messages. The last message out of the ``head`` generator is the one
-        whose invoked response will be returned. Therefore, that message should
-        invoke a response compatible with the original message that it is
+        whose response will be sent back to the host plan. Therefore, that
+        message should prompt a response compatible with the message that it is
         replacing. Any responses to all other messages will be swallowed. As
         shorthand, either ``head`` or ``tail`` can be replaced by ``None``.
         This means:
@@ -80,8 +81,9 @@ def plan_mutator(plan, msg_proc):
         insert messages after.
 
         The reason for returning a pair of generators instead of just one is to
-        provide a way to specify which message's response should escape. Again,
-        it's the last message yielded by the first generator (``head``).
+        provide a way to specify which message's response should be sent out to
+        the host plan. Again, it's the last message yielded by the first
+        generator (``head``).
 
     Yields
     ------
