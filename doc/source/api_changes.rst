@@ -1,6 +1,18 @@
 Release Notes
 =============
 
+v0.10.3
+-------
+
+This is a small release with one critical fix for a long-standing bug.
+
+Bug Fixes
+^^^^^^^^^
+
+* Fix bug wherein ``baseline_wrapper`` blocked the mechansim that allows the
+  RunEngine to pass responses back to the plan. Update the docstring to make
+  this mistake easier to avoid in the future.
+
 v0.10.2
 -------
 
