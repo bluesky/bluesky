@@ -114,6 +114,8 @@ def test_uid_passthrough(fresh_RE):
     # actual test
     sd = SupplementalData()
     sd.baseline = [det]
+    sd.monitors = [det2]
+    sd.flyers = [flyer1]
     def mycount2():
         uid = yield from sd(count([]))
         assert uid is not None
