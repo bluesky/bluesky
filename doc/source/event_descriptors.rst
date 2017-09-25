@@ -3,7 +3,7 @@ Event Descriptors
 
 In the section on :doc:`documents`, we gave an overview of the four kinds of
 document. We presented an example Run Start, Event, and Run Stop, but we
-deferred detailed discussion of the Event Descriptior.
+deferred detailed discussion of the Event Descriptor.
 
 Recall our example 'event' document.
 
