@@ -120,7 +120,7 @@ Stop
 ``RE.stop()`` is functionally identical to ``RE.abort()``. The only
 difference is that aborted runs are marked with ``exit_status: 'abort'``
 instead of ``exit_status: 'success'``. This distinction may be a useful
-distinction during analysis`.
+distinction during analysis.
 
 Halt
 ^^^^
