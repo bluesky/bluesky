@@ -778,7 +778,7 @@ class LiveFit(CallbackBase):
 
         # Maybe update the fit or maybe wait.
         if self.update_every is not None:
-            i = doc['seq_num']
+            i = len(self.ydata)
             N = len(self.model.param_names)
             if i < N:
                 # not enough points to fit yet
@@ -801,13 +801,14 @@ class LiveFit(CallbackBase):
     def update_fit(self):
         N = len(self.model.param_names)
         if len(self.ydata) < N:
-            raise RuntimeError("cannot update fit until there are least {} "
-                               "data points".format(N))
-        kwargs = {}
-        kwargs.update(self.independent_vars_data)
-        kwargs.update(self.init_guess)
-        self.result = self.model.fit(self.ydata, **kwargs)
-        self.__stale = False
+            print("LiveFitPlot cannot update fit until there are at least {} "
+                  "data points".format(N))
+        else:
+            kwargs = {}
+            kwargs.update(self.independent_vars_data)
+            kwargs.update(self.init_guess)
+            self.result = self.model.fit(self.ydata, **kwargs)
+            self.__stale = False
 
 
 class LiveFitPlot(LivePlot):
