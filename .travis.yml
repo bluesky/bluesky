@@ -10,42 +10,25 @@ cache:
     - $HOME/.cache/matplotlib
 
 matrix:
+  fast_finish: true
   include:
-    - python: 3.6
     - python: 3.5
-      env: CONDA_ENV=1
-    - python: 3.5
-      env: CONDA_ENV=1 EXTRA_C_CHAN='-c lightsource2-dev'
     - python: 3.6
-      env: BUILD_DOCS=1 CONDA_ENV=1
+      env: BUILD_DOCS=1
+    - python: nightly
+  allow_failures:
+    - python: nightly
 
 before_install:
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16"
   - "export DISPLAY=:99.0"
-  - |
-    if [ $CONDA_ENV ]; then
-       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-       chmod +x miniconda.sh
-       ./miniconda.sh -b -p /home/travis/mc
-       export PATH=/home/travis/mc/bin:$PATH
-       conda config --set show_channel_urls True
-       conda config --set always_yes True
-    fi
-
 
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
-  - |
-    if [ $CONDA_ENV ]; then
-       conda create -n testenv python=$TRAVIS_PYTHON_VERSION scipy matplotlib numpy h5py jsonschema databroker pip doct xray-vision lmfit pyzmq ophyd filestore event-model dill ophyd pims mongoquery pytest $EXTRA_C_CHAN -c lightsource2-tag -c conda-forge -c soft-matter -c defaults --override-channels
-       source activate testenv
-    fi
   - pip install -r requirements.txt
   - pip install -r test-requirements.txt
   - pip install codecov
   - python setup.py install
-  # until fix in databroker propgates through
-  - pip install pymongo
   # Need to clean the python build directory (and other cruft) or pytest is
   # going to find the build directory and get confused why there are two sets
   # of every test file
@@ -64,10 +47,6 @@ script:
       pushd doc
       make html
       popd
-      # Install doctr from a custom branch until
-      # https://github.com/drdoctr/doctr/pull/190 is merged.
-      pip uninstall -y doctr
-      pip install git+https://github.com/danielballan/doctr@other-master
       # Publish docs.
       doctr deploy --deploy-repo NSLS-II/NSLS-II.github.io --deploy-branch-name master bluesky
     fi
