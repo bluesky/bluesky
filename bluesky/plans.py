@@ -484,6 +484,9 @@ def mv(*args):
     return tuple(status_objects)
 
 
+mov = mv  # synonym
+
+
 def mvr(*args):
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
@@ -513,6 +516,9 @@ def mvr(*args):
         return (yield from mv(*args))
 
     return (yield from inner_mvr())
+
+
+movr = mvr  # synonym
 
 
 def stop(obj):
