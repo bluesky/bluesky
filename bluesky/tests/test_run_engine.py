@@ -1238,3 +1238,27 @@ def test_double_call(fresh_RE):
     uid2 = RE(bp.count([]))
 
     assert uid1 != uid2
+
+
+def test_num_events(fresh_RE, db):
+    RE = fresh_RE
+    RE.subscribe(db.insert)
+
+    uid1, = RE(bp.count([]))
+    h = db[uid1]
+    assert h.stop['num_events'] == {}
+
+    uid2, = RE(bp.count([det], 5))
+    h = db[uid2]
+    assert h.stop['num_events'] == {'primary': 5}
+
+    sd = bp.SupplementalData(baseline=[det])
+    RE.preprocessors.append(sd)
+
+    uid3, = RE(bp.count([]))
+    h = db[uid3]
+    assert h.stop['num_events'] == {'baseline': 2}
+
+    uid4, = RE(bp.count([det], 5))
+    h = db[uid4]
+    assert h.stop['num_events'] == {'primary': 5, 'baseline': 2}

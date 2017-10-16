@@ -165,7 +165,8 @@ The most commonly useful fields here are 'time' and 'exit_status'.
      'reason': '',  # The RunEngine can provide reason for failure here.
      'time': 1442521012.1021606,
      'uid': '<randomly-generated unique ID>',
-     'start': '<reference to the start document>'
+     'start': '<reference to the start document>',
+     'num_events': {'primary': 16}
     }
 
 Event Descriptor

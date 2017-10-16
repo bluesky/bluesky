@@ -1275,10 +1275,18 @@ class RunEngine:
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
             obj.clear_sub(cb)
             del self._monitor_params[obj]
+        # Count the number of Events in each stream.
+        num_events = {}
+        for (bundle_name, _), counter in self._sequence_counters.items():
+            if bundle_name is None:
+                # rare but possible via Msg('create')
+                continue
+            num_events[bundle_name] = next(counter) - 1
         doc = dict(run_start=self._run_start_uid,
                    time=ttime.time(), uid=new_uid(),
                    exit_status=self._exit_status,
-                   reason=self._reason)
+                   reason=self._reason,
+                   num_events=num_events)
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
