@@ -5,7 +5,7 @@ from itertools import zip_longest
 
 from bluesky import Msg
 
-from bluesky.plans import (msg_mutator, plan_mutator, pchain,
+from bluesky.plans import (msg_mutator, stub_wrapper, plan_mutator, pchain,
                            single_gen as single_message_gen, finalize_wrapper)
 
 from bluesky.utils import ensure_generator, single_gen
@@ -447,3 +447,16 @@ def test_msg_mutator_skip():
                     cmd_sq='abcd',
                     args_sq=[()]*4,
                     kwargs_sq=[{}]*4)
+
+
+def test_stub_wrapper():
+    def plan():
+        yield Msg('open_run')
+        yield Msg('stage')
+        yield Msg('read')
+        yield Msg('unstage')
+        yield Msg('close_run')
+
+    stub_plan = list(stub_wrapper(plan()))
+    assert len(stub_plan) == 1
+    assert stub_plan[0].command == 'read'

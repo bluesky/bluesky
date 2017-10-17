@@ -1397,6 +1397,41 @@ def inject_md_wrapper(plan, md):
     return (yield from msg_mutator(plan, _inject_md))
 
 
+def stub_wrapper(plan):
+    """
+    Remove Msg object in order to use plan as a stub
+
+    This will remove any `open_run`, `close_run`, `stage` and `unstage` `Msg`
+    objects present in the plan in order for it to be run as part of a larger
+    scan. Note, that any metadata from the provided plan will not be sent to
+    the RunEngine automatically.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        A generator list or similar containing `Msg` objects
+
+    Returns
+    -------
+    md : dict
+        Metadata discovered from `open_run` Msg
+    """
+    md = {}
+    def _block_run_control(msg):
+        """
+        Block open and close run messages
+        """
+        #Capture the metadata from open_run
+        if msg.command == 'open_run':
+            md.update(msg.kwargs)
+            return None
+        elif msg.command in ('close_run', 'stage', 'unstage'):
+            return None
+        return msg
+
+    yield from msg_mutator(plan, _block_run_control)
+    return md
+
 def monitor_during_wrapper(plan, signals):
     """
     Monitor (asynchronously read) devices during runs.
@@ -2007,6 +2042,7 @@ fly_during_decorator = make_decorator(fly_during_wrapper)
 monitor_during_decorator = make_decorator(monitor_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
 run_decorator = make_decorator(run_wrapper)
+stub_decorator = make_decorator(stub_wrapper)
 configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
 
 
