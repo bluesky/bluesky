@@ -856,8 +856,13 @@ class LiveFitPlot(LivePlot):
         self.livefit.start(doc)
         self.x, = self.livefit.independent_vars.keys()  # in case it changed
         super().start(doc)
+        self.y_guess = self.livefit.result.init_fit
+        self.init_guess_line, = self.ax.plot([], [], color='grey', label='init guess')
+        # initial guess shows from the beginning, no need to update each time with new event
+        self.init_guess_line.set_data(self.x, self.y_guess)
+        self.lines.append(self.init_guess_line)
         # Put fit above other lines (default 2) but below text (default 3).
-        self.current_line.set_zorder(2.5)
+        [line.set_zorder(2.5) for line in self.current_line]
 
     def event(self, doc):
         self.livefit.event(doc)
