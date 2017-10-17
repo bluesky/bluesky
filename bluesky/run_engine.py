@@ -166,6 +166,12 @@ class RunEngine:
         For built-in Python interpreter, set to 2. For IPython, set to 11
         (tested on IPython 5.1.0; other versions may vary).
 
+    pause_msg : str
+        The message printed when a run is interrupted. This message
+        includes instructions of changing the state of the RunEngine.
+        It is set to ``bluesky.run_engine.PAUSE_MSG`` by default and
+        can be modified based on needs.
+
     """
 
     state = LoggingPropertyMachine(RunEngineStateMachine)
@@ -201,6 +207,7 @@ class RunEngine:
         self.state_hook = None
         self.waiting_hook = None
         self.record_interruptions = False
+        self.pause_msg = PAUSE_MSG
 
         # The RunEngine keeps track of a *lot* of state.
         # All flags and caches are defined here with a comment. Good luck.
@@ -1056,7 +1063,7 @@ class RunEngine:
                           "KeyboardInterrupt. Intercepting and triggering "
                           "a HALT.")
                     self.loop.call_soon(self.halt)
-                    print(PAUSE_MSG)
+                    print(self.pause_msg)
                 except asyncio.CancelledError as e:
                     # if we are handling this twice, raise and leave the plans
                     # alone
@@ -1157,7 +1164,7 @@ class RunEngine:
                     self.log.debug("RunEngine detected two SIGINTs. "
                                    "A hard pause will be requested.")
                     self.loop.call_soon(self.request_pause, False)
-                    print(PAUSE_MSG)
+                    print(self.pause_msg)
             else:
                 # No new SIGINTs to process.
                 if self._num_sigints_processed > 0:
