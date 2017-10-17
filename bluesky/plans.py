@@ -1403,24 +1403,34 @@ def stub_wrapper(plan):
 
     This will remove any `open_run`, `close_run`, `stage` and `unstage` `Msg`
     objects present in the plan in order for it to be run as part of a larger
-    scan.
+    scan. Note, that any metadata from the provided plan will not be sent to
+    the RunEngine automatically.
 
     Parameters
     ----------
     plan : iterable or iterator
         A generator list or similar containing `Msg` objects
+
+    Returns
+    -------
+    md : dict
+        Metadata discovered from `open_run` Msg
     """
+    md = {}
     def _block_run_control(msg):
         """
         Block open and close run messages
         """
-        if msg.command in ['open_run', 'close_run',
-                           'stage', 'unstage']:
+        #Capture the metadata from open_run
+        if msg.command == 'open_run':
+            md.update(msg.kwargs)
+            return None
+        elif msg.command in ('close_run', 'stage', 'unstage'):
             return None
         return msg
 
-    return (yield from msg_mutator(plan, _block_run_control))
-
+    yield from msg_mutator(plan, _block_run_control)
+    return md
 
 def monitor_during_wrapper(plan, signals):
     """
