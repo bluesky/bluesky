@@ -139,7 +139,8 @@ def test_pause_from_suspend(fresh_RE):
     RE._loop.call_later(1, RE.request_pause)
     RE._loop.call_later(2, sig.put, 0)
     RE.msg_hook = accum
-    RE(scan)
+    with pytest.raises(RunEngineInterrupted):
+        RE(scan)
     assert [m[0] for m in msg_lst] == ['wait_for']
     RE.resume()
     assert ['wait_for', 'wait_for', 'checkpoint'] == [m[0] for m in msg_lst]
@@ -163,7 +164,8 @@ def test_deferred_pause_from_suspend(fresh_RE):
     RE._loop.call_later(1, RE.request_pause, True)
     RE._loop.call_later(4, sig.put, 0)
     RE.msg_hook = accum
-    RE(scan)
+    with pytest.raises(RunEngineInterrupted):
+        RE(scan)
     assert [m[0] for m in msg_lst] == ['wait_for', 'checkpoint']
     RE.resume()
     assert ['wait_for', 'checkpoint', 'null'] == [m[0] for m in msg_lst]
@@ -183,6 +185,6 @@ def test_unresumable_suspend_fail(fresh_RE):
     loop.call_later(1, ev.set)
     start = time.time()
     with pytest.raises(RunEngineInterrupted):
-        RE(scan, raise_if_interrupted=True)
+        RE(scan)
     stop = time.time()
     assert .1 < stop - start < 1

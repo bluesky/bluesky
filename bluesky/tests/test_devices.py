@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from bluesky.utils import ancestry, share_ancestor, separate_devices
 from bluesky.plans import trigger_and_read
-from bluesky import Msg
+from bluesky import Msg, RunEngineInterrupted
 import pytest
 from bluesky.tests import requires_ophyd, ophyd
 
@@ -94,7 +94,9 @@ def test_monitor_with_pause_resume(fresh_RE):
         yield Msg('pause')
         a.s1._run_subs(sub_type='value')
         yield Msg('close_run')
-    fresh_RE(plan(), collect)
+
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE(plan(), collect)
     assert len(docs) == 3  # RunStart, EventDescriptor, one Event
     # All but one of these will be ignored. Why is one not ignored, you ask?
     # Beacuse ophyd runs subscriptions when they are (re-)subscriped.

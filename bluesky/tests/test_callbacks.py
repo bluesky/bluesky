@@ -1,5 +1,5 @@
 from collections import defaultdict
-from bluesky.run_engine import Msg
+from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4, det5,
                               jittery_motor1, jittery_motor2,
                               ReaderWithRegistry, ReaderWithRegistryHandler,
@@ -31,7 +31,7 @@ def exception_raiser(name, doc):
 def test_all(fresh_RE):
     RE = fresh_RE
     c = CallbackCounter()
-    RE(stepscan(det, motor), subs={'all': c})
+    RE(stepscan(det, motor), {'all': c})
     assert c.value == 10 + 1 + 2  # events, descriptor, start and stop
 
     c = CallbackCounter()
@@ -51,11 +51,11 @@ def test_raising_ignored_or_not(fresh_RE):
 
     # by default (with ignore... = True) it warns
     with pytest.warns(UserWarning):
-        RE(stepscan(det, motor), subs=cb)
+        RE(stepscan(det, motor), cb)
 
     RE.ignore_callback_exceptions = False
     with pytest.raises(Exception):
-        RE(stepscan(det, motor), subs={'all': cb})
+        RE(stepscan(det, motor), {'all': cb})
 
 
 def test_subs_input():
@@ -504,8 +504,8 @@ def test_live_fit_plot(fresh_RE):
                          [('stop', 1, 5),
                           ('abort', 1, 5),
                           ('halt', 1, 3)])
-def test_intreupted_with_callbacks(fresh_RE, int_meth,
-                                   stop_num, msg_num):
+def test_interrupted_with_callbacks(fresh_RE, int_meth,
+                                    stop_num, msg_num):
     RE = fresh_RE
 
     docs = defaultdict(list)
@@ -515,8 +515,10 @@ def test_intreupted_with_callbacks(fresh_RE, int_meth,
         docs[name].append(doc)
 
     RE.msg_hook = MsgCollector()
-    RE(subs_wrapper(run_wrapper(pause()),
-                    {'all': collector_cb}))
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(subs_wrapper(run_wrapper(pause()),
+                        {'all': collector_cb}))
     getattr(RE, int_meth)()
 
     assert len(docs['start']) == 1

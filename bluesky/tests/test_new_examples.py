@@ -1,6 +1,6 @@
 from collections import deque, defaultdict
 import pytest
-from bluesky import Msg
+from bluesky import Msg, RunEngineInterrupted
 from bluesky.examples import (det, det1, det2, Mover, NullStatus, motor,
                               SynGauss, Reader, motor1, motor2)
 from bluesky.plans import (create, save, read, monitor, unmonitor, null,
@@ -626,7 +626,8 @@ def test_infinite_count(fresh_RE):
     def collector(name, doc):
         docs[name].append(doc)
 
-    fresh_RE(count([det], num=None), collector)
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE(count([det], num=None), collector)
 
     assert len(docs['start']) == 1
     assert len(docs['stop']) == 1

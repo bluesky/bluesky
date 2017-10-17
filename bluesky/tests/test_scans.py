@@ -26,7 +26,7 @@ RE = setup_test_run_engine()
 def traj_checker(scan, expected_traj):
     actual_traj = []
     callback = collector('motor', actual_traj)
-    RE(scan, subs={'event': callback})
+    RE(scan, {'event': callback})
     assert actual_traj == list(expected_traj)
 
 
@@ -36,7 +36,7 @@ def multi_traj_checker(scan, expected_data):
     def collect_data(name, event):
         actual_data.append(event['data'])
 
-    RE(scan, subs={'event': collect_data})
+    RE(scan, {'event': collect_data})
     assert actual_data == expected_data
 
 
@@ -46,7 +46,7 @@ def approx_multi_traj_checker(RE, scan, expected_data, *, decimal=2):
     def collect_data(name, event):
         actual_data.append(event['data'])
 
-    RE(scan, subs={'event': collect_data})
+    RE(scan, {'event': collect_data})
     keys = sorted(expected_data[0].keys())
     actual_values = [[row[key] for key in keys]
                      for row in actual_data]
@@ -227,8 +227,8 @@ def test_adaptive_ascan():
     counter1 = CallbackCounter()
     counter2 = CallbackCounter()
 
-    RE(scan1, subs={'event': [col, counter1]})
-    RE(scan2, subs={'event': counter2})
+    RE(scan1, {'event': [col, counter1]})
+    RE(scan2, {'event': counter2})
     assert counter1.value > counter2.value
     assert actual_traj[0] == 0
 
@@ -250,8 +250,8 @@ def test_adaptive_dscan():
     counter2 = CallbackCounter()
 
     motor.set(1)
-    RE(scan1, subs={'event': [col, counter1]})
-    RE(scan2, subs={'event': counter2})
+    RE(scan1, {'event': [col, counter1]})
+    RE(scan2, {'event': counter2})
     assert counter1.value > counter2.value
     assert actual_traj[0] == 1
 
@@ -267,14 +267,14 @@ def test_count():
     col = collector('det', actual_intensity)
     motor.set(0)
     scan = Count([det])
-    RE(scan, subs={'event': col})
+    RE(scan, {'event': col})
     assert actual_intensity[0] == 1.
 
     # multiple counts, via updating attribute
     actual_intensity = []
     col = collector('det', actual_intensity)
     scan = Count([det], num=3, delay=0.05)
-    RE(scan, subs={'event': col})
+    RE(scan, {'event': col})
     assert scan.num == 3
     assert actual_intensity == [1., 1., 1.]
 
@@ -282,13 +282,13 @@ def test_count():
     actual_intensity = []
     col = collector('det', actual_intensity)
     scan = Count([det], num=3, delay=0.05)
-    RE(scan(num=2), subs={'event': col})
+    RE(scan(num=2), {'event': col})
     assert actual_intensity == [1., 1.]
     # attribute should still be 3
     assert scan.num == 3
     actual_intensity = []
     col = collector('det', actual_intensity)
-    RE(scan, subs={'event': col})
+    RE(scan, {'event': col})
     assert actual_intensity == [1., 1., 1.]
 
 
