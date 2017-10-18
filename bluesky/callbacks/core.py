@@ -848,6 +848,7 @@ class LiveFitPlot(LivePlot):
         self.num_points = num_points
         self._livefit = livefit
         self._xlim = xlim
+        self._has_been_run = False
 
     @property
     def livefit(self):
@@ -856,9 +857,16 @@ class LiveFitPlot(LivePlot):
     def start(self, doc):
         self.livefit.start(doc)
         self.x, = self.livefit.independent_vars.keys()  # in case it changed
+        if self._has_been_run:
+            label = '_nolegend_'
+        else:
+            label = 'init guess'
+        self._has_been_run = True
+        self.init_guess_line, = self.ax.plot([], [], color='grey', label=label)
+        self.lines.append(self.init_guess_line)
         super().start(doc)
         # Put fit above other lines (default 2) but below text (default 3).
-        self.current_line.set_zorder(2.5)
+        [line.set_zorder(2.5) for line in self.lines]
 
     def event(self, doc):
         self.livefit.event(doc)
@@ -876,8 +884,19 @@ class LiveFitPlot(LivePlot):
             kwargs.update(self.livefit.result.values)
             self.y_data = self.livefit.result.model.eval(**kwargs)
             self.x_data = x_points
+            # update kwargs to inital guess
+            kwargs.update(self.livefit.result.init_values)
+            self.y_guess = self.livefit.result.model.eval(**kwargs)
             self.update_plot()
         # Intentionally override LivePlot.event. Do not call super().
+
+    def update_plot(self):
+        self.current_line.set_data(self.x_data, self.y_data)
+        self.init_guess_line.set_data(self.x_data, self.y_guess)
+        # Rescale and redraw.
+        self.ax.relim(visible_only=True)
+        self.ax.autoscale_view(tight=True)
+        self.ax.figure.canvas.draw_idle()
 
     def descriptor(self, doc):
         self.livefit.descriptor(doc)
