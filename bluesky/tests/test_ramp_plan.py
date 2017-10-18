@@ -1,5 +1,5 @@
 from bluesky.tests import requires_ophyd
-from bluesky.tests.utils import MsgCollector
+from bluesky.tests.utils import DocCollector
 from bluesky.plans import (ramp_plan, trigger_and_read)
 from bluesky import Msg
 from bluesky.utils import RampFail
@@ -9,7 +9,7 @@ import pytest
 
 
 @requires_ophyd
-def test_ramp(RE, db):
+def test_ramp(RE):
     from ophyd.positioner import SoftPositioner
     from ophyd import StatusBase
     from bluesky.examples import SynGauss
@@ -31,22 +31,19 @@ def test_ramp(RE, db):
         yield from trigger_and_read([dd])
 
     g = ramp_plan(kickoff(), tt, inner_plan, period=0.08)
+    db = DocCollector()
     RE.subscribe(db.insert)
-    RE.msg_hook = MsgCollector()
     rs_uid, = RE(g)
-    hdr = db[-1]
-    assert hdr.start.uid == rs_uid
-    assert len(hdr.descriptors) == 2
+    assert db.start[0]['uid'] == rs_uid
+    assert len(db.descriptor[rs_uid]) == 2
+    descs = {d['name']: d for d in db.descriptor[rs_uid]}
 
-    assert set([d['name'] for d in hdr.descriptors]) == \
-        set(['primary', 'mot_monitor'])
+    assert set(descs) == set(['primary', 'mot_monitor'])
 
-    primary_events = list(db.get_events(hdr, stream_name='primary'))
-    # There is no way to be sure how many of these we should get,
-    # but we should get at least one.
-    assert len(primary_events) > 1
+    primary_events = db.event[descs['primary']['uid']]
+    assert len(primary_events) > 11
 
-    monitor_events = list(db.get_events(hdr, stream_name='mot_monitor'))
+    monitor_events = db.event[descs['mot_monitor']['uid']]
     assert len(monitor_events) == 10
 
 

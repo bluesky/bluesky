@@ -1,4 +1,5 @@
 from bluesky.run_engine import RunEngine
+from collections import defaultdict
 import contextlib
 import tempfile
 import sys
@@ -41,7 +42,7 @@ class DocCollector:
     def __init__(self):
         self.start = []
         self.stop = {}
-        self.descriptor = {}
+        self.descriptor = defaultdict(list)
         self.event = {}
 
     def insert(self, name, doc):
@@ -50,7 +51,7 @@ class DocCollector:
         elif name == 'stop':
             self.stop[doc['run_start']] = doc
         elif name == 'descriptor':
-            self.descriptor[doc['run_start']] = doc
+            self.descriptor[doc['run_start']].append(doc)
             self.event[doc['uid']] = []
         else:
             self.event[doc['descriptor']].append(doc)
