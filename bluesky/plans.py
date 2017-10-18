@@ -1059,7 +1059,7 @@ def open_run(md=None):
     return (yield Msg('open_run', **(md or {})))
 
 
-def close_run():
+def close_run(exit_status=None, reason=None):
     """
     Mark the end of the current 'run'. Emit a RunStop document.
 
@@ -1067,12 +1067,16 @@ def close_run():
     ------
     msg : Msg
         Msg('close_run')
+    exit_status : {None, 'success', 'abort', 'fail'}
+        The exit status to report in the Stop document
+    reason : str, optional
+        Long-form description of why the run ended
 
     See Also
     --------
     :func:`bluesky.plans.open_run`
     """
-    return (yield Msg('close_run'))
+    return (yield Msg('close_run', exit_status=exit_status, reason=reason))
 
 
 def wait_for(futures, **kwargs):

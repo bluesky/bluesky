@@ -1284,7 +1284,10 @@ class RunEngine:
 
         Expected message object is:
 
-            Msg('close_run')
+            Msg('close_run', None, exit_status=None, reason=None)
+
+        if *exit_stats* and *reason* are not provided, use the values
+        stashed on the RE.
         """
         if not self._run_is_open:
             raise IllegalMessageSequence("A 'close_run' message was received "
@@ -1304,10 +1307,16 @@ class RunEngine:
                 # rare but possible via Msg('create')
                 continue
             num_events[bundle_name] = next(counter) - 1
+        reason = msg.kwargs.get('reason', None)
+        if reason is None:
+            reason = self._reason
+        exit_status = msg.kwargs.get('exit_status', None)
+        if exit_status is None:
+            exit_status = self._exit_status
         doc = dict(run_start=self._run_start_uid,
                    time=ttime.time(), uid=new_uid(),
-                   exit_status=self._exit_status,
-                   reason=self._reason,
+                   exit_status=exit_status,
+                   reason=reason,
                    num_events=num_events)
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)

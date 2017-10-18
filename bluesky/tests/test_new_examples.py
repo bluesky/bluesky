@@ -94,7 +94,7 @@ def cb(name, doc):
      (unsubscribe, (1,), {}, [Msg('unsubscribe', None, token=1)]),
      (open_run, (), {}, [Msg('open_run')]),
      (open_run, (), {'md': {'a': 1}}, [Msg('open_run', a=1)]),
-     (close_run, (), {}, [Msg('close_run')]),
+     (close_run, (), {}, [Msg('close_run', reason=None, exit_status=None)]),
      (wait_for, (['fut1', 'fut2'],), {}, [Msg('wait_for', None, ['fut1', 'fut2'])]),
     ])
 def test_stub_plans(plan, plan_args, plan_kwargs, msgs):
