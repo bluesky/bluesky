@@ -1337,11 +1337,11 @@ def test_exceptions_exit_status(fresh_RE):
         yield Msg('null')
         raise Snowflake('boo')
 
-    with pytest.raises(Snowflake):
+    with pytest.raises(Snowflake) as sf:
         RE(bad_plan())
 
     assert len(d.start) == 1
     rs = d.start[0]['uid']
     assert len(d.stop) == 1
     assert d.stop[rs]['exit_status'] == 'fail'
-    assert len(d.stop[rs]['reason']) > 0
+    assert d.stop[rs]['reason'] == str(sf.value)
