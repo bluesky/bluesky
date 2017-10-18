@@ -36,19 +36,23 @@ class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
             self.command, self.obj, self.args, self.kwargs)
 
 
-class NoReplayAllowed(Exception):
+class RunEngineControlExceptions(Exception):
     pass
 
 
-class RequestAbort(Exception):
+class RequestAbort(RunEngineControlExceptions):
     pass
 
 
-class RequestStop(Exception):
+class RequestStop(RunEngineControlExceptions):
     pass
 
 
 class RunEngineInterrupted(Exception):
+    pass
+
+
+class NoReplayAllowed(Exception):
     pass
 
 
