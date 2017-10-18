@@ -897,6 +897,7 @@ class RunEngine:
         self._task.cancel()
         for task in self._status_tasks:
             task.cancel()
+        self._exit_status = 'abort'
         if self.state == 'paused':
             self._resume_event_loop()
         return self._run_start_uids
@@ -936,6 +937,7 @@ class RunEngine:
               "'abort'...")
         self._interrupted = True
         self._exception = PlanHalt()
+        self._exit_status = 'abort'
         self._task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
