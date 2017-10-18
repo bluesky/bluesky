@@ -859,7 +859,7 @@ class LiveFitPlot(LivePlot):
         self.init_guess_line, = self.ax.plot([], [], color='grey', label='init guess')
         self.lines.append(self.init_guess_line)
         # Put fit above other lines (default 2) but below text (default 3).
-        [line.set_zorder(2.5) for line in self.current_line]
+        [line.set_zorder(2.5) for line in self.lines]
 
     def event(self, doc):
         self.livefit.event(doc)
@@ -868,8 +868,8 @@ class LiveFitPlot(LivePlot):
             # To determine the domain of x, use xlim if availabe. Otherwise,
             # use the range of x points measured up to this point.
             if self._xlim is None:
-                self.x_var = self.livefit.independent_vars_data[self.__x_key]
-                xmin, xmax = np.min(self.x_var), np.max(self.x_var)
+                x_data = self.livefit.independent_vars_data[self.__x_key]
+                xmin, xmax = np.min(x_data), np.max(x_data)
             else:
                 xmin, xmax = self._xlim
             x_points = np.linspace(xmin, xmax, self.num_points)
@@ -877,13 +877,15 @@ class LiveFitPlot(LivePlot):
             kwargs.update(self.livefit.result.values)
             self.y_data = self.livefit.result.model.eval(**kwargs)
             self.x_data = x_points
-            self.y_guess = self.livefit.result.init_fit
+            # update kwargs to inital guess
+            kwargs.update(self.livefit.result.init_values)
+            self.y_guess = self.livefit.result.model.eval(**kwargs)
             self.update_plot()
         # Intentionally override LivePlot.event. Do not call super().
 
     def update_plot(self):
         self.current_line.set_data(self.x_data, self.y_data)
-        self.init_guess_line.set_data(self.x_var, self.y_guess)
+        self.init_guess_line.set_data(self.x_data, self.y_guess)
         # Rescale and redraw.
         self.ax.relim(visible_only=True)
         self.ax.autoscale_view(tight=True)
