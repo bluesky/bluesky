@@ -899,6 +899,7 @@ class RunEngine:
             task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
+        return self._run_start_uids
 
     def stop(self):
         """
@@ -918,6 +919,7 @@ class RunEngine:
         self._task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
+        return self._run_start_uids
 
     def halt(self):
         '''
@@ -937,6 +939,7 @@ class RunEngine:
         self._task.cancel()
         if self.state == 'paused':
             self._resume_event_loop()
+        return self._run_start_uids
 
     def _stop_movable_objects(self, *, success=True):
         "Call obj.stop() for all objects we have moved. Log any exceptions."
