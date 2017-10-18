@@ -20,7 +20,8 @@ from . import plan_patterns
 from .utils import (Struct, Subs, normalize_subs_input, root_ancestor,
                     separate_devices, apply_sub_factories, update_sub_lists,
                     all_safe_rewind, Msg, ensure_generator, single_gen,
-                    short_uid as _short_uid, RampFail, make_decorator)
+                    short_uid as _short_uid, RampFail, make_decorator,
+                    RunEngineControlExceptions)
 
 
 def planify(func):
@@ -931,8 +932,17 @@ def run_wrapper(plan, *, md=None):
         metadata to be passed into the 'open_run' message
     """
     rs_uid = yield from open_run(md)
-    yield from finalize_wrapper(plan,
-                                close_run())
+
+    def except_plan(e):
+        if isinstance(e, RunEngineControlExceptions):
+            yield from close_run()
+        else:
+            yield from close_run(exit_status='fail', reason=str(e))
+
+    yield from contingency_wrapper(plan,
+                            except_plan=except_plan,
+                            else_plan=close_run
+                            )
     return rs_uid
 
 
@@ -1154,6 +1164,75 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
         # https://docs.python.org/3/reference/expressions.html?#generator.close
         if cleanup:
             yield from ensure_generator(final_plan_instance)
+    return ret
+
+
+def contingency_wrapper(plan, *,
+                 except_plan=None,
+                 else_plan=None,
+                 final_plan=None,
+                 pause_for_debug=False):
+    '''try...except...else...finally helper
+
+    Run the first plan and then the second.  If any of the messages
+    raise an error in the RunEngine (or otherwise), the second plan
+    will attempted to be run anyway.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    except_plan : generator function, optional
+        this will be called with the exception as the only input.  The
+        plan does not need to re-raise, but may if you want to change the
+        exception.
+
+        Only subclasses of `Exception` will be passed in, will not see
+        `GeneratorExit`, `SystemExit`, or `KeyboardInterrupt`
+    else_plan : generator function, optional
+        well be called with no arguments if plan completes without raising
+    final_plan : generator function, optional
+        a generator, list, or similar containing `Msg` objects or a callable
+        that reurns one; attempted to be run no matter what happens in the
+        first plan
+    pause_for_debug : bool, optional
+        If the plan should pause before running the clean final_plan in
+        the case of an Exception.  This is intended as a debugging tool only.
+    Yields
+    ------
+    msg : Msg
+        messages from `plan` until it terminates or an error is raised, then
+        messages from `final_plan`
+    '''
+    cleanup = True
+    try:
+        ret = yield from plan
+    except GeneratorExit:
+        cleanup = False
+        raise
+    except Exception as e:
+        if pause_for_debug:
+            yield from pause()
+        if except_plan:
+            # it might be better to throw this in, but this is simpler
+            # to implement for now
+            yield from except_plan(e)
+        raise
+    else:
+        if else_plan:
+            yield from else_plan()
+    finally:
+        # if the exception raised in `GeneratorExit` that means
+        # someone called `gen.close()` on this generator.  In those
+        # cases generators must either re-raise the GeneratorExit or
+        # raise a different exception.  Trying to yield any values
+        # results in a RuntimeError being raised where `close` is
+        # called.  Thus, we catch, the GeneratorExit, disable cleanup
+        # and then re-raise
+
+        # https://docs.python.org/3/reference/expressions.html?#generator.close
+        if cleanup and final_plan:
+            yield from final_plan()
     return ret
 
 
@@ -2046,6 +2125,7 @@ fly_during_decorator = make_decorator(fly_during_wrapper)
 monitor_during_decorator = make_decorator(monitor_during_wrapper)
 inject_md_decorator = make_decorator(inject_md_wrapper)
 run_decorator = make_decorator(run_wrapper)
+contingency_decorator = make_decorator(contingency_wrapper)
 stub_decorator = make_decorator(stub_wrapper)
 configure_count_time_decorator = make_decorator(configure_count_time_wrapper)
 
