@@ -1322,3 +1322,26 @@ def test_force_stop_exit_status(bail_func, status, fresh_RE):
     assert d.start[0]['uid'] == rs
     assert len(d.stop) == 1
     assert d.stop[rs]['exit_status'] == status
+
+
+def test_exceptions_exit_status(fresh_RE):
+    RE = fresh_RE
+    d = DocCollector()
+    RE.subscribe(d.insert)
+
+    class Snowflake(Exception):
+        ...
+
+    @bp.run_decorator()
+    def bad_plan():
+        yield Msg('null')
+        raise Snowflake('boo')
+
+    with pytest.raises(Snowflake):
+        RE(bad_plan())
+
+    assert len(d.start) == 1
+    rs = d.start[0]['uid']
+    assert len(d.stop) == 1
+    assert d.stop[rs]['exit_status'] == 'fail'
+    assert len(d.stop[rs]['reason']) > 0
