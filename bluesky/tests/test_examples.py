@@ -16,6 +16,7 @@ import asyncio
 import time as ttime
 import numpy as np
 from numpy.testing import assert_array_equal
+import pytest
 
 
 def test_msgs(fresh_RE):
@@ -73,9 +74,11 @@ def test_wait_multiple(fresh_RE):
 def test_hard_pause(fresh_RE):
     RE = fresh_RE
     assert RE.state == 'idle'
-    RE(conditional_pause(det, motor, False, True))
+    with pytest.raises(RunEngineInterrupted):
+        RE(conditional_pause(det, motor, False, True))
     assert RE.state == 'paused'
-    RE.resume()
+    with pytest.raises(RunEngineInterrupted):
+        RE.resume()
     assert RE.state == 'paused'
     RE.abort()
     assert RE.state == 'idle'
@@ -86,8 +89,9 @@ def test_deferred_pause(fresh_RE):
     # (future checkpoints should not trigger another pause)
     RE = fresh_RE
     assert RE.state == 'idle'
-    RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('checkpoint'),
-        Msg('checkpoint')])
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('checkpoint'),
+            Msg('checkpoint')])
     assert RE.state == 'paused'
     RE.resume()
     assert RE.state == 'idle'
@@ -97,8 +101,9 @@ def test_deferred_pause1(fresh_RE):
     # deferred pause should never be processed, being superceded by a hard
     # pause
     RE = fresh_RE
-    RE([Msg('pause', defer=True), Msg('pause', defer=False),
-        Msg('checkpoint')])
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg('pause', defer=True), Msg('pause', defer=False),
+            Msg('checkpoint')])
     assert RE.state == 'paused'
     RE.resume()
     assert RE.state == 'idle'
@@ -106,10 +111,12 @@ def test_deferred_pause1(fresh_RE):
 
 def test_deferred_pause2(fresh_RE):
     RE = fresh_RE
-    RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('pause', defer=True),
-        Msg('checkpoint')])
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('pause', defer=True),
+            Msg('checkpoint')])
     assert RE.state == 'paused'
-    RE.resume()
+    with pytest.raises(RunEngineInterrupted):
+        RE.resume()
     assert RE.state == 'paused'
     RE.resume()
     assert RE.state == 'idle'
@@ -118,14 +125,16 @@ def test_deferred_pause2(fresh_RE):
 def test_hard_pause_no_checkpoint(fresh_RE):
     RE = fresh_RE
     assert RE.state == 'idle'
-    RE([Msg('clear_checkpoint'), Msg('pause', False)]),
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg('clear_checkpoint'), Msg('pause', False)]),
     assert RE.state == 'idle'
 
 
 def test_deferred_pause_no_checkpoint(fresh_RE):
     RE = fresh_RE
     assert RE.state == 'idle'
-    RE([Msg('clear_checkpoint'), Msg('pause', True)])
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg('clear_checkpoint'), Msg('pause', True)])
     assert RE.state == 'idle'
 
 
@@ -137,12 +146,14 @@ def test_pause_from_outside(fresh_RE):
         RE.request_pause()
 
     RE.loop.call_later(1, local_pause)
-    RE(checkpoint_forever())
+    with pytest.raises(RunEngineInterrupted):
+        RE(checkpoint_forever())
     assert RE.state == 'paused'
 
     # Cue up a second pause requests in 2 seconds.
     RE.loop.call_later(2, local_pause)
-    RE.resume()
+    with pytest.raises(RunEngineInterrupted):
+        RE.resume()
     assert RE.state == 'paused'
 
     RE.abort()
@@ -160,7 +171,7 @@ def print_event_time(name, doc):
 def test_calltime_subscription(fresh_RE):
     RE = fresh_RE
     assert RE.state == 'idle'
-    RE(simple_scan_saving(det, motor), subs={'event': print_event_time})
+    RE(simple_scan_saving(det, motor), {'event': print_event_time})
     assert RE.state == 'idle'
 
 
@@ -185,7 +196,7 @@ def test_live_plotter(fresh_RE):
 
     my_plotter = LivePlot('det', 'motor')
     assert RE.state == 'idle'
-    RE(stepscan(det, motor), subs={'all': my_plotter})
+    RE(stepscan(det, motor), {'all': my_plotter})
     assert RE.state == 'idle'
     xlen = len(my_plotter.x_data)
     assert xlen > 0
@@ -224,15 +235,16 @@ def _md(md, RE):
     RE(scan, project='sitting')
     # 'project' should not persist
     scan = simple_scan(motor)
-    RE(scan, subs={'start': [validate_dict_cb_opposite('project')]})
+    RE(scan, {'start': [validate_dict_cb_opposite('project')]})
     # ...unless we add it to RE.md
     RE.md['project'] = 'sitting'
     scan = simple_scan(motor)
-    RE(scan, subs={'start': [validate_dict_cb('project', 'sitting')]})
+    RE(scan, {'start': [validate_dict_cb('project', 'sitting')]})
     # new values to 'project' passed in the call override the value in md
     scan = simple_scan(motor)
-    RE(scan, project='standing',
-       subs={'start': [validate_dict_cb('project', 'standing')]})
+    RE(scan,
+       {'start': [validate_dict_cb('project', 'standing')]},
+       project='standing')
     # ...but they do not update the value in md
     assert RE.md['project'] == 'sitting'
 
@@ -298,7 +310,7 @@ def test_suspend(fresh_RE):
     # grab the start time
     start = ttime.time()
     # run, this will not return until it is done
-    RE(test_list, subs={'event': ev_cb})
+    RE(test_list, {'event': ev_cb})
     # check to make sure it took long enough
     assert out[0]['time'] - start > 1.1
 
@@ -325,7 +337,8 @@ def test_pause_resume(fresh_RE):
     RE.loop.call_later(1.1, sim_kill)
     RE.loop.call_later(2, done)
 
-    RE(scan)
+    with pytest.raises(RunEngineInterrupted):
+        RE(scan)
     assert RE.state == 'paused'
     mid = ttime.time()
     RE.resume()
@@ -356,7 +369,8 @@ def test_pause_abort(fresh_RE):
     RE.loop.call_later(.2, sim_kill)
     RE.loop.call_later(1, done)
 
-    RE(scan)
+    with pytest.raises(RunEngineInterrupted):
+        RE(scan)
     assert RE.state == 'paused'
     mid = ttime.time()
     RE.abort()
@@ -387,7 +401,8 @@ def test_abort(fresh_RE):
     RE.loop.call_later(.1, sim_kill)
     RE.loop.call_later(.2, sim_kill)
     RE.loop.call_later(.3, done)
-    RE(scan)
+    with pytest.raises(RunEngineInterrupted):
+        RE(scan)
     stop = ttime.time()
 
     RE.loop.run_until_complete(ev.wait())
@@ -405,7 +420,8 @@ def test_rogue_sigint(fresh_RE):
         yield Msg('checkpoint')
         raise KeyboardInterrupt()
 
-    RE(bad_scan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(bad_scan())
     assert RE.state == 'idle'
 
 
@@ -436,7 +452,10 @@ def test_seqnum_nonrepeated(fresh_RE):
         seq_nums.append(doc['seq_num'])
 
     RE.verbose = True
-    RE(gen(), {'event': f})
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(gen(), {'event': f})
+
     print("RESUMING!!!!")
     RE.resume()
     assert seq_nums == [1, 2, 2, 3]
@@ -563,7 +582,8 @@ def test_clear_checkpoint(fresh_RE):
     good_plan = [Msg('pause')]
     fine_plan = [Msg('clear_checkpoint')]
 
-    RE(good_plan)
+    with pytest.raises(RunEngineInterrupted):
+        RE(good_plan)
     assert RE.state == 'paused'
     RE.stop()
 
@@ -571,8 +591,10 @@ def test_clear_checkpoint(fresh_RE):
     assert RE.state == 'idle'
 
     # this should raise an attribute error if the last entry in the plan
-    # is passed to the run engine
-    RE(bad_plan)
+    # is passed to the run engine (but that should not happen because it should
+    # die when it hits the 'pause' and has no checkpoint)
+    with pytest.raises(RunEngineInterrupted):
+        RE(bad_plan)
     assert RE.state == 'idle'
 
 
@@ -580,7 +602,7 @@ def test_interruption_exception(fresh_RE):
     RE = fresh_RE
 
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('checkpoint'), Msg('pause')], raise_if_interrupted=True)
+        RE([Msg('checkpoint'), Msg('pause')])
     RE.stop()
 
 
@@ -624,7 +646,8 @@ def test_rewindable_by_default(fresh_RE):
         yield Msg('pause')
         raise Sentinel
 
-    RE(plan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())
     assert RE.state == 'paused'
     with pytest.raises(Sentinel):
         RE.resume()
@@ -633,7 +656,8 @@ def test_rewindable_by_default(fresh_RE):
         yield Msg('clear_checkpoint')
         yield Msg('pause')
 
-    RE(plan())  # cannot pause
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan())  # cannot pause
     assert RE.state == 'idle'
 
 

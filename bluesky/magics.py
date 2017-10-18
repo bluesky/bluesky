@@ -8,7 +8,7 @@
 import asyncio
 import bluesky.plans as bp
 from bluesky.utils import ProgressBarManager
-from bluesky import RunEngine
+from bluesky import RunEngine, RunEngineInterrupted
 from IPython.core.magic import Magics, magics_class, line_magic
 import numpy as np
 from operator import attrgetter
@@ -62,7 +62,10 @@ class BlueskyMagics(Magics):
             args.append(eval(pos, self.shell.user_ns))
         plan = bp.mv(*args)
         self.RE.waiting_hook = self.pbar_manager
-        self.RE(plan)
+        try:
+            self.RE(plan)
+        except RunEngineInterrupted:
+            ...
         self.RE.waiting_hook = None
         self._ensure_idle()
         return None
@@ -78,7 +81,10 @@ class BlueskyMagics(Magics):
             args.append(eval(pos, self.shell.user_ns))
         plan = bp.mvr(*args)
         self.RE.waiting_hook = self.pbar_manager
-        self.RE(plan)
+        try:
+            self.RE(plan)
+        except RunEngineInterrupted:
+            ...
         self.RE.waiting_hook = None
         self._ensure_idle()
         return None
@@ -94,7 +100,10 @@ class BlueskyMagics(Magics):
         plan = bp.count(dets)
         print("[This data will not be saved. "
               "Use the RunEngine to collect data.]")
-        self.RE(plan, _ct_callback)
+        try:
+            self.RE(plan, _ct_callback)
+        except RunEngineInterrupted:
+            ...
         self._ensure_idle()
         return None
 

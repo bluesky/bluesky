@@ -4,6 +4,7 @@ import time as ttime
 import sys
 import logging
 from warnings import warn
+from inspect import Parameter, Signature
 from itertools import count, tee
 from collections import deque, defaultdict, ChainMap
 import signal
@@ -80,6 +81,14 @@ class LoggingPropertyMachine(PropertyMachine):
                      obj, old_value, value)
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
+
+
+# See RunEngine.__call__.
+_call_sig = Signature(
+    [Parameter('self', Parameter.POSITIONAL_ONLY),
+     Parameter('plan', Parameter.POSITIONAL_ONLY),
+     Parameter('subs', Parameter.POSITIONAL_ONLY, default=None),
+     Parameter('metadata_kw', Parameter.VAR_KEYWORD)])
 
 
 class RunEngine:
@@ -551,19 +560,20 @@ class RunEngine:
             jsonschema.validate(doc, schemas[DocumentNames.event])
             self.dispatcher.process(DocumentNames.event, doc)
 
-    def __call__(self, plan, subs=None, *, raise_if_interrupted=False,
-                 **metadata_kw):
+    def __call__(self, *args, **metadata_kw):
         """Execute a plan.
 
-        Any keyword arguments other than those listed below will be interpreted
-        as metadata and recorded with the run.
+        Any keyword arguments will be interpreted as metadata and recorded with
+        any run(s) created by executing the plan. Notice that the plan
+        (required) and extra subscriptions (optional) must be given as
+        positional arguments.
 
         Parameters
         ----------
-        plan : generator
+        plan : generator (positional only)
             a generator or that yields ``Msg`` objects (or an iterable that
             returns such a generator)
-        subs: callable, list, or dict, optional
+        subs : callable, list, or dict, optional (positional only)
             Temporary subscriptions (a.k.a. callbacks) to be used on this run.
             For convenience, any of the following are accepted:
 
@@ -573,18 +583,23 @@ class RunEngine:
               lists of callables; valid keys are {'all', 'start', 'stop',
               'event', 'descriptor'}
 
-        raise_if_interrupted : bool
-            If the RunEngine is called from inside a script or a function, it
-            can be useful to make it raise an exception to halt further
-            execution of the script after a pause or a stop. If True, these
-            interruptions (that would normally not raise any exception) will
-            raise RunEngineInterrupted. False by default.
-
         Returns
         -------
         uids : list
             list of uids (i.e. RunStart Document uids) of run(s)
         """
+        # This scheme lets us make 'plan' and 'subs' POSITIONAL ONLY, reserving
+        # all keyword arguments for user metdata.
+        arguments = _call_sig.bind(self, *args, **metadata_kw).arguments
+        plan = arguments['plan']
+        subs = arguments.get('subs', None)
+        metadata_kw = arguments.get('metadata_kw', {})
+        if 'raise_if_interrupted' in metadata_kw:
+            warn("The 'raise_if_interrupted' flag has been removed. The "
+                 "RunEngine now always raises RunEngineInterrupted if it is "
+                 "interrupted. The 'raise_if_interrupted' keyword argument, "
+                 "like all keyword arguments, will be interpreted as "
+                 "metadata.")
         # Check that the RE is not being called from inside a function.
         if self.max_depth is not None:
             frame = inspect.currentframe()
@@ -652,10 +667,12 @@ class RunEngine:
                     if exc is not None:
                         raise exc
 
-            if raise_if_interrupted and self._interrupted:
-                raise RunEngineInterrupted("RunEngine was interrupted.")
+            if self._interrupted:
+                raise RunEngineInterrupted(self.pause_msg) from None
 
         return tuple(self._run_start_uids)
+
+    __call__.__signature__ = _call_sig
 
     def resume(self):
         """Resume a paused plan from the last checkpoint.
@@ -684,6 +701,8 @@ class RunEngine:
             if hasattr(obj, 'resume'):
                 obj.resume()
         self._resume_event_loop()
+        if self._interrupted:
+            raise RunEngineInterrupted(self.pause_msg) from None
         return self._run_start_uids
 
     def _rewind(self):
@@ -1063,7 +1082,6 @@ class RunEngine:
                           "KeyboardInterrupt. Intercepting and triggering "
                           "a HALT.")
                     self.loop.call_soon(self.halt)
-                    print(self.pause_msg)
                 except asyncio.CancelledError as e:
                     # if we are handling this twice, raise and leave the plans
                     # alone
@@ -1164,7 +1182,6 @@ class RunEngine:
                     self.log.debug("RunEngine detected two SIGINTs. "
                                    "A hard pause will be requested.")
                     self.loop.call_soon(self.request_pause, False)
-                    print(self.pause_msg)
             else:
                 # No new SIGINTs to process.
                 if self._num_sigints_processed > 0:

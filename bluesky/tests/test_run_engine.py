@@ -10,7 +10,8 @@ import numpy as np
 import uuid
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
-                                NoReplayAllowed, FailedStatus)
+                                NoReplayAllowed, FailedStatus,
+                                RunEngineInterrupted)
 from bluesky import Msg
 from functools import partial
 from bluesky.examples import (det, Mover, TrivialFlyer, SynGauss, SimpleStatus,
@@ -34,14 +35,16 @@ def test_verbose(fresh_RE):
 
 
 def test_reset(fresh_RE):
-    fresh_RE([Msg('open_run'), Msg('pause')])
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE([Msg('open_run'), Msg('pause')])
     assert fresh_RE._run_start_uid is not None
     fresh_RE.reset()
     assert fresh_RE._run_start_uid is None
 
 
 def test_running_from_paused_state_raises(fresh_RE):
-    fresh_RE([Msg('pause')])
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE([Msg('pause')])
     assert fresh_RE.state == 'paused'
     with pytest.raises(RuntimeError):
         fresh_RE([Msg('null')])
@@ -53,7 +56,8 @@ def test_running_from_paused_state_raises(fresh_RE):
 def test_resuming_from_idle_state_raises(fresh_RE):
     with pytest.raises(RuntimeError):
         fresh_RE.resume()
-    fresh_RE([Msg('pause')])
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE([Msg('pause')])
     assert fresh_RE.state == 'paused'
     fresh_RE.resume()
     assert fresh_RE.state == 'idle'
@@ -112,12 +116,16 @@ def test_stop_motors_and_log_any_errors(fresh_RE):
     motor = MoverWithFlag('a', {'a': lambda x: x}, {'x': 0})
     broken_motor = BrokenMoverWithFlag('b', {'b': lambda x: x}, {'x': 0})
 
-    fresh_RE([Msg('set', broken_motor, 1), Msg('set', motor, 1), Msg('pause')])
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE([Msg('set', broken_motor, 1), Msg('set', motor, 1),
+                  Msg('pause')])
     assert 'a' in stopped
     assert 'b' in stopped
     fresh_RE.stop()
 
-    fresh_RE([Msg('set', motor, 1), Msg('set', broken_motor, 1), Msg('pause')])
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE([Msg('set', motor, 1), Msg('set', broken_motor, 1),
+                  Msg('pause')])
     assert 'a' in stopped
     assert 'b' in stopped
     fresh_RE.stop()
@@ -271,13 +279,13 @@ def test_empty_bundle(fresh_RE):
     # In this case, an Event should be emitted.
     mutable.clear()
     fresh_RE([Msg('open_run'), Msg('create'), Msg('read', det), Msg('save')],
-             subs={'event': cb})
+             {'event': cb})
     assert 'flag' in mutable
 
     # In this case, an Event should not be emitted because the bundle is
     # emtpy (i.e., there are no readings.)
     mutable.clear()
-    fresh_RE([Msg('open_run'), Msg('create'), Msg('save')], subs={'event': cb})
+    fresh_RE([Msg('open_run'), Msg('create'), Msg('save')], {'event': cb})
     assert 'flag' not in mutable
 
 
@@ -320,7 +328,8 @@ def test_pause_resume_devices(fresh_RE):
 
     dummy = Dummy('dummy')
 
-    fresh_RE([Msg('stage', dummy), Msg('pause')])
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE([Msg('stage', dummy), Msg('pause')])
     fresh_RE.resume()
     assert 'dummy' in paused
     assert 'dummy' in resumed
@@ -350,15 +359,19 @@ def test_record_interruptions(fresh_RE):
     plan = [Msg('pause'), Msg('open_run'), Msg('pause'), Msg('close_run')]
 
     assert not fresh_RE.record_interruptions
-    fresh_RE(plan)
-    fresh_RE.resume()
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE(plan)
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE.resume()
     fresh_RE.resume()
     assert len(docs['descriptor']) == 0
     assert len(docs['event']) == 0
 
     fresh_RE.record_interruptions = True
-    fresh_RE(plan)
-    fresh_RE.resume()
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE(plan)
+    with pytest.raises(RunEngineInterrupted):
+        fresh_RE.resume()
     fresh_RE.resume()
     assert len(docs['descriptor']) == 1
     assert len(docs['event']) == 2
@@ -404,7 +417,8 @@ def test_unrewindable_det(fresh_RE, plan, motor, det, msg_seq):
         msgs.append(msg)
 
     RE.msg_hook = collector
-    RE(plan(motor, det))
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan(motor, det))
     RE.resume()
     assert [m.command for m in msgs] == msg_seq
 
@@ -477,7 +491,8 @@ def test_cleanup_after_pause(fresh_RE, unpause_func, motor_det):
         for j in range(15):
             yield Msg('set', motor, -j)
 
-    RE(simple_plan(motor))
+    with pytest.raises(RunEngineInterrupted):
+        RE(simple_plan(motor))
     assert motor.position == 14
     unpause_func(RE)
     assert motor.position == 1024
@@ -501,8 +516,9 @@ def test_sigint_three_hits(fresh_RE, motor_det):
     lp.call_later(.02, sim_kill, 3)
     lp.call_later(.02, sim_kill, 3)
     start_time = ttime.time()
-    RE(bp.finalize_wrapper(bp.abs_set(motor, 1, wait=True),
-                           bp.abs_set(motor, 0, wait=True)))
+    with pytest.raises(RunEngineInterrupted):
+        RE(bp.finalize_wrapper(bp.abs_set(motor, 1, wait=True),
+                            bp.abs_set(motor, 0, wait=True)))
     end_time = ttime.time()
     assert end_time - start_time < 0.2  # not enough time for motor to cleanup
     RE.abort()  # now cleanup
@@ -530,7 +546,8 @@ def test_sigint_many_hits_pln(fresh_RE):
     start_time = ttime.time()
     timer = threading.Timer(0.2, sim_kill, (11,))
     timer.start()
-    RE(hanging_plan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(hanging_plan())
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
@@ -560,7 +577,8 @@ def test_sigint_many_hits_cb(fresh_RE):
     start_time = ttime.time()
     timer = threading.Timer(0.2, sim_kill, (11,))
     timer.start()
-    RE(infinite_plan(), {'start': hanging_callback})
+    with pytest.raises(RunEngineInterrupted):
+        RE(infinite_plan(), {'start': hanging_callback})
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
@@ -613,7 +631,10 @@ def test_cleanup_pathological_plans(fresh_RE, motor_det, plan):
     motor, det = motor_det
     motor.set(1024)
     try:
-        RE(plan(motor))
+        try:
+            RE(plan(motor))
+        except RunEngineInterrupted:
+            pass
         if RE.state == 'paused':
             assert motor.position != 1024
             RE.resume()
@@ -661,7 +682,8 @@ def test_invalid_generator(fresh_RE, motor_det, capsys):
         return patho_finalize_wrapper(base_plan(motor),
                                       post_plan(motor))
 
-    RE(make_plan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(make_plan())
     RE.request_suspend(None, pre_plan=pre_suspend_plan())
     capsys.readouterr()
     try:
@@ -698,7 +720,8 @@ def test_exception_cascade_REside(fresh_RE):
         for j in range(5):
             yield Msg('null')
 
-    RE(pausing_plan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(pausing_plan())
     ev = asyncio.Event(loop=RE.loop)
     ev.set()
     RE.request_suspend(ev.wait(), pre_plan=pre_plan())
@@ -729,7 +752,8 @@ def test_exception_cascade_planside(fresh_RE):
         for j in range(5):
             yield Msg('null')
 
-    RE(pausing_plan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(pausing_plan())
     ev = asyncio.Event(loop=RE.loop)
     ev.set()
     RE.request_suspend(ev.wait(), pre_plan=pre_plan())
@@ -774,7 +798,8 @@ def test_no_rewind(fresh_RE):
 
     plan = [Msg('null')] * 3 + [Msg('pause')] + [Msg('null')] * 3
     RE.msg_hook = msg_collector
-    RE(plan)
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan)
     RE.resume()
     assert msg_lst == plan
 
@@ -794,7 +819,8 @@ def test_no_rewindable_msg(fresh_RE):
 
     RE.msg_hook = msg_collector
 
-    RE(plan)
+    with pytest.raises(RunEngineInterrupted):
+        RE(plan)
     RE.resume()
     assert msg_lst[:4] == plan[:4]
     assert msg_lst[4:7] == plan[:3]
@@ -912,7 +938,8 @@ def test_halt_from_pause(fresh_RE):
             except_hit = True
             raise
 
-    RE(pausing_plan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(pausing_plan())
     RE.halt()
     assert not except_hit
     assert [m.command for m in m_coll.msgs] == ['null'] * 5 + ['pause']
@@ -935,7 +962,8 @@ def test_halt_async(fresh_RE):
 
     RE.loop.call_later(.1, RE.halt)
     start = ttime.time()
-    RE(sleeping_plan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(sleeping_plan())
     stop = ttime.time()
     assert .09 < stop - start < 5
     assert not except_hit
@@ -962,7 +990,8 @@ def test_prompt_stop(fresh_RE, cancel_func):
 
     RE.loop.call_later(.1, partial(cancel_func, RE))
     start = ttime.time()
-    RE(sleeping_plan())
+    with pytest.raises(RunEngineInterrupted):
+        RE(sleeping_plan())
     stop = ttime.time()
     if RE.state != 'idle':
         RE.abort()
@@ -989,7 +1018,8 @@ def test_empty_cache_pause(fresh_RE):
            Msg('pause'),
            Msg('save'),
            Msg('close_run')]
-    RE(pln)
+    with pytest.raises(RunEngineInterrupted):
+        RE(pln)
     RE.resume()
 
 
@@ -1001,7 +1031,8 @@ def test_state_hook(fresh_RE):
         states.append((new, old))
 
     RE.state_hook = log_state
-    RE([Msg('open_run'), Msg('pause'), Msg('close_run')])
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg('open_run'), Msg('pause'), Msg('close_run')])
     RE.resume()
     expected = [('running', 'idle'),
                 ('paused', 'running'),
@@ -1262,3 +1293,8 @@ def test_num_events(fresh_RE, db):
     uid4, = RE(bp.count([det], 5))
     h = db[uid4]
     assert h.stop['num_events'] == {'primary': 5, 'baseline': 2}
+
+
+def test_raise_if_interrupted_deprecation(fresh_RE):
+    with pytest.warns(UserWarning):
+        fresh_RE([], raise_if_interrupted=True)

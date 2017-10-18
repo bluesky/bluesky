@@ -15,7 +15,7 @@ def test_custom_metadata():
         assert 'animal' in doc
         assert doc['animal'] == 'lion'
 
-    RE(simple_scan(motor), animal='lion', subs={'start': assert_lion})
+    RE(simple_scan(motor), {'start': assert_lion}, animal='lion')
     # Note: Because assert_lion is processed on the main thread, it can
     # fail the test. I checked by writing a failing version of it.  - D.A.
 

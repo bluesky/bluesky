@@ -22,7 +22,7 @@ def test_post_run(fresh_RE, db):
     def do_nothing(doctype, doc):
         output[doctype].append(doc)
 
-    RE(stepscan(det, motor), subs={'stop': [post_run(do_nothing, db=db)]})
+    RE(stepscan(det, motor), {'stop': [post_run(do_nothing, db=db)]})
     assert len(output)
     assert len(output['start']) == 1
     assert len(output['stop']) == 1
@@ -35,4 +35,4 @@ def test_verify_files_saved(fresh_RE, db):
     RE.subscribe(db.insert)
 
     vfs = partial(verify_files_saved, db=db)
-    RE(stepscan(det, motor), subs={'stop': vfs})
+    RE(stepscan(det, motor), {'stop': vfs})
