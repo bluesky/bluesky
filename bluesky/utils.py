@@ -17,7 +17,6 @@ from cycler import cycler
 import logging
 import datetime
 from functools import wraps, partial
-import sys
 import threading
 import time
 from tqdm import tqdm
