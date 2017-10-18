@@ -31,7 +31,7 @@ def test_ramp(RE, db):
         yield from trigger_and_read([dd])
 
     g = ramp_plan(kickoff(), tt, inner_plan, period=0.08)
-    RE.subscribe(db.mds.insert)
+    RE.subscribe(db.insert)
     RE.msg_hook = MsgCollector()
     rs_uid, = RE(g)
     hdr = db[-1]
@@ -42,7 +42,9 @@ def test_ramp(RE, db):
         set(['primary', 'mot_monitor'])
 
     primary_events = list(db.get_events(hdr, stream_name='primary'))
-    assert len(primary_events) > 11
+    # There is no way to be sure how many of these we should get,
+    # but we should get at least one.
+    assert len(primary_events) > 1
 
     monitor_events = list(db.get_events(hdr, stream_name='mot_monitor'))
     assert len(monitor_events) == 10
