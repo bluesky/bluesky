@@ -36,15 +36,15 @@ class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
             self.command, self.obj, self.args, self.kwargs)
 
 
-class RunEngineControlExceptions(Exception):
+class RunEngineControlException(Exception):
     pass
 
 
-class RequestAbort(RunEngineControlExceptions):
+class RequestAbort(RunEngineControlException):
     pass
 
 
-class RequestStop(RunEngineControlExceptions):
+class RequestStop(RunEngineControlException):
     pass
 
 

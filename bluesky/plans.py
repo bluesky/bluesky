@@ -21,7 +21,7 @@ from .utils import (Struct, Subs, normalize_subs_input, root_ancestor,
                     separate_devices, apply_sub_factories, update_sub_lists,
                     all_safe_rewind, Msg, ensure_generator, single_gen,
                     short_uid as _short_uid, RampFail, make_decorator,
-                    RunEngineControlExceptions)
+                    RunEngineControlException)
 
 
 def planify(func):
@@ -934,7 +934,7 @@ def run_wrapper(plan, *, md=None):
     rs_uid = yield from open_run(md)
 
     def except_plan(e):
-        if isinstance(e, RunEngineControlExceptions):
+        if isinstance(e, RunEngineControlException):
             yield from close_run()
         else:
             yield from close_run(exit_status='fail', reason=str(e))
