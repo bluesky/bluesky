@@ -6,6 +6,7 @@ import bluesky.plans as bp
 from bluesky import Msg, RunEngineInterrupted
 import pytest
 from bluesky.tests import requires_ophyd, ophyd
+from .utils import DocCollector
 
 if ophyd:
     from ophyd import Component as Cpt, Device, Signal
@@ -113,19 +114,23 @@ def test_monitor_with_pause_resume(fresh_RE):
 
 
 def _make_overlapping_raising_tests(func):
+    labels = ['part_v_whole',
+              'whole_v_part',
+              'different_obj_same_names',
+              'different_names']
     if ophyd:
         dcm = DCM('', name='dcm')
-        dcm2 = DCM('', name='dcm2')
+        dcm2 = DCM('', name='dcm')
+        dcm3 = DCM('', name='dcm3')
         dets = ((dcm.th, dcm),
                 (dcm, dcm.th),
-                (dcm, dcm2))
+                (dcm, dcm2),
+                (dcm, dcm3))
     else:
-        dets = ((None, None),
-                (None, None),
-                (None, None))
+        dets = ((None, None),) * len(labels)
 
     return pytest.mark.parametrize('det1,det2',
-                                   dets)(func)
+                                   dets, ids=labels)(func)
 
 
 @requires_ophyd
@@ -141,6 +146,40 @@ def test_overlapping_raise(fresh_RE, det1, det2):
         fresh_RE(test_plan(det1, det2))
 
 
+def _make_overlapping_tests_2stream(func):
+    labels = ['part_v_whole',
+              'whole_v_part',
+              'different',
+              'same']
+    if ophyd:
+        dcm = DCM('', name='dcm')
+        dcm2 = DCM('', name='dcm')
+        dets = ((dcm.th, dcm),
+                (dcm, dcm.th),
+                (dcm, dcm2),
+                (dcm, dcm))
+    else:
+        dets = ((None, None),) * len(labels)
+
+    return pytest.mark.parametrize('det1,det2',
+                                   dets, ids=labels)(func)
+
+
+@requires_ophyd
+@_make_overlapping_tests_2stream
+def test_keyoverlap_2stream(fresh_RE, det1, det2):
+
+    @bp.run_decorator()
+    def test_plan(det1, det2):
+        yield from bp.trigger_and_read([det1])
+        yield from bp.trigger_and_read([det2], name='other')
+
+    d = DocCollector()
+    rs, = fresh_RE(test_plan(det1, det2), d.insert)
+    assert len(d.start) == 1
+    assert len(d.descriptor[rs]) == 2
+
+
 @requires_ophyd
 def test_overlapping_read(fresh_RE):
     dcm = DCM('', name='dcm')
@@ -148,34 +187,6 @@ def test_overlapping_read(fresh_RE):
 
     def collect(name, doc):
         docs[name].append(doc)
-
-    docs = defaultdict(list)
-    fresh_RE(([Msg('open_run')] +
-              list(trigger_and_read([dcm.th])) +
-              list(trigger_and_read([dcm], name='other')) +
-              [Msg('close_run')]), collect)
-    assert len(docs['descriptor']) == 2
-
-    docs = defaultdict(list)
-    fresh_RE(([Msg('open_run')] +
-              list(trigger_and_read([dcm])) +
-              list(trigger_and_read([dcm], name='other')) +
-              [Msg('close_run')]), collect)
-    assert len(docs['descriptor']) == 2
-
-    docs = defaultdict(list)
-    fresh_RE(([Msg('open_run')] +
-              list(trigger_and_read([dcm])) +
-              list(trigger_and_read([dcm.th], name='other')) +
-              [Msg('close_run')]), collect)
-    assert len(docs['descriptor']) == 2
-
-    docs = defaultdict(list)
-    fresh_RE(([Msg('open_run')] +
-              list(trigger_and_read([dcm])) +
-              list(trigger_and_read([dcm2], name='other')) +
-              [Msg('close_run')]), collect)
-    assert len(docs['descriptor']) == 2
 
     docs = defaultdict(list)
     fresh_RE(([Msg('open_run')] +
