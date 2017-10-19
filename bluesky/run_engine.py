@@ -243,9 +243,9 @@ class RunEngine:
         self._config_desc_cache = dict()  # " obj.describe_configuration()
         self._config_values_cache = dict()  # " obj.read_configuration() values
         self._config_ts_cache = dict()  # " obj.read_configuration() timestamps
-        self._descriptors = dict()  # cache of {(name, objs_frozen_set): doc}
+        self._descriptors = dict()  # cache of {name: (objs_frozen_set, doc)}
         self._monitor_params = dict()  # cache of {obj: (cb, kwargs)}
-        self._sequence_counters = dict()  # a seq_num counter per Descriptor
+        self._sequence_counters = dict()  # a seq_num counter per stream
         self._teed_sequence_counters = dict()  # for if we redo data-points
         self._suspenders = set()  # set holding suspenders
         self._groups = defaultdict(set)  # sets of Events to wait for
