@@ -1302,7 +1302,7 @@ class RunEngine:
             del self._monitor_params[obj]
         # Count the number of Events in each stream.
         num_events = {}
-        for (bundle_name, _), counter in self._sequence_counters.items():
+        for bundle_name, counter in self._sequence_counters.items():
             if bundle_name is None:
                 # rare but possible via Msg('create')
                 continue
@@ -1522,8 +1522,12 @@ class RunEngine:
         objs_read = frozenset(self._objs_read)
 
         # Event Descriptor
-        desc_key = (self._bundle_name, objs_read)
-        if desc_key not in self._descriptors:
+        desc_key = self._bundle_name
+        d_objs, doc = self._descriptors.get(desc_key, (None, None))
+        if d_objs is not None and d_objs != objs_read:
+            raise RuntimeError("Miss matched objects read, expected {!s}, "
+                               "got {!s}".format(d_objs, objs_read))
+        if doc is None:
             # We don't not have an Event Descriptor for this set.
             data_keys = {}
             config = {}
@@ -1552,11 +1556,12 @@ class RunEngine:
             self.log.debug("Emitted Event Descriptor with name %r containing "
                            "data keys %r (uid=%r)", self._bundle_name,
                            data_keys.keys(), descriptor_uid)
-            self._descriptors[desc_key] = doc
-        else:
-            descriptor_uid = self._descriptors[desc_key]['uid']
+            self._descriptors[desc_key] = (objs_read, doc)
+
+        descriptor_uid = doc['uid']
+
         # This is a separate check because it can be reset on resume.
-        seq_num_key = (self._bundle_name, objs_read)
+        seq_num_key = desc_key
         if seq_num_key not in self._sequence_counters:
             counter = count(1)
             counter_copy1, counter_copy2 = tee(counter)
@@ -1576,7 +1581,8 @@ class RunEngine:
         # Mark all externally-stored data as not filled so that consumers
         # know that the corresponding data are identifies, not deferenced data.
         filled = {k: False
-                  for k, v in self._descriptors[desc_key]['data_keys'].items()
+                  for k, v in
+                  self._descriptors[desc_key][1]['data_keys'].items()
                   if 'external' in v}
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
@@ -1696,9 +1702,9 @@ class RunEngine:
         bulk_data = {}
         local_descriptors = {}  # hashed on obj_read, not (name, objs_read)
         for stream_name, data_keys in named_data_keys.items():
-            objs_read = frozenset(data_keys)
-            desc_key = (stream_name, objs_read)
+            desc_key = stream_name
             if desc_key not in self._descriptors:
+                objs_read = frozenset(data_keys)
                 # We don't not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
                 object_keys = {obj.name: list(data_keys)}
@@ -1713,11 +1719,17 @@ class RunEngine:
                 self.log.debug("Emitted Event Descriptor with name %r "
                                "containing data keys %r (uid=%r)", stream_name,
                                data_keys.keys(), descriptor_uid)
-                self._descriptors[desc_key] = doc
+                self._descriptors[desc_key] = (objs_read, doc)
                 self._sequence_counters[desc_key] = count(1)
             else:
-                descriptor_uid = self._descriptors[desc_key]['uid']
+                objs_read, doc = self._descriptors[desc_key]
+                d_objs = frozenset(data_keys)
+                if d_objs != objs_read:
+                    raise RuntimeError("Miss matched objects read, "
+                                       "expected {!s}, "
+                                       "got {!s}".format(d_objs, objs_read))
 
+            descriptor_uid = doc['uid']
             local_descriptors[objs_read] = (stream_name, descriptor_uid)
 
             bulk_data[descriptor_uid] = []
@@ -1728,7 +1740,7 @@ class RunEngine:
         for ev in obj.collect():
             objs_read = frozenset(ev['data'])
             stream_name, descriptor_uid = local_descriptors[objs_read]
-            seq_num = next(self._sequence_counters[(stream_name, objs_read)])
+            seq_num = next(self._sequence_counters[stream_name])
 
             event_uid = new_uid()
 
@@ -1986,9 +1998,10 @@ class RunEngine:
         # Invalidate any event descriptors that include this object.
         # New event descriptors, with this new configuration, will
         # be created for any future event documents.
-        for name, obj_set in list(self._descriptors):
+        for name in list(self._descriptors):
+            obj_set, _ = self._descriptors[name]
             if obj in obj_set:
-                del self._descriptors[(name, obj_set)]
+                del self._descriptors[name]
 
         old, new = obj.configure(*args, **kwargs)
 
