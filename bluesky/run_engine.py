@@ -1525,7 +1525,7 @@ class RunEngine:
         desc_key = self._bundle_name
         d_objs, doc = self._descriptors.get(desc_key, (None, None))
         if d_objs is not None and d_objs != objs_read:
-            raise RuntimeError("Miss matched objects read, expected {!s}, "
+            raise RuntimeError("Mismatched objects read, expected {!s}, "
                                "got {!s}".format(d_objs, objs_read))
         if doc is None:
             # We don't not have an Event Descriptor for this set.
@@ -1703,8 +1703,9 @@ class RunEngine:
         local_descriptors = {}  # hashed on obj_read, not (name, objs_read)
         for stream_name, data_keys in named_data_keys.items():
             desc_key = stream_name
+            d_objs = frozenset(data_keys)
             if desc_key not in self._descriptors:
-                objs_read = frozenset(data_keys)
+                objs_read = d_objs
                 # We don't not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
                 object_keys = {obj.name: list(data_keys)}
@@ -1723,11 +1724,10 @@ class RunEngine:
                 self._sequence_counters[desc_key] = count(1)
             else:
                 objs_read, doc = self._descriptors[desc_key]
-                d_objs = frozenset(data_keys)
-                if d_objs != objs_read:
-                    raise RuntimeError("Miss matched objects read, "
-                                       "expected {!s}, "
-                                       "got {!s}".format(d_objs, objs_read))
+            if d_objs != objs_read:
+                raise RuntimeError("Mismatched objects read, "
+                                   "expected {!s}, "
+                                   "got {!s}".format(d_objs, objs_read))
 
             descriptor_uid = doc['uid']
             local_descriptors[objs_read] = (stream_name, descriptor_uid)
