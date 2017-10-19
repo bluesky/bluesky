@@ -115,29 +115,54 @@ def test_monitor_with_pause_resume(fresh_RE):
 def test_overlapping_read(fresh_RE):
 
     dcm = DCM('', name='dcm')
-    dcm2 = DCM('', name='dcm')
+    dcm2 = DCM('', name='dcm2')
 
     def collect(name, doc):
         docs[name].append(doc)
 
+    with pytest.raises(RuntimeError):
+        fresh_RE(([Msg('open_run')] +
+                  list(trigger_and_read([dcm.th])) +
+                  list(trigger_and_read([dcm])) +
+                  [Msg('close_run')]))
+
+    with pytest.raises(RuntimeError):
+        fresh_RE(([Msg('open_run')] +
+                  list(trigger_and_read([dcm])) +
+                  list(trigger_and_read([dcm.th])) +
+                  [Msg('close_run')]))
+
+    with pytest.raises(RuntimeError):
+        fresh_RE(([Msg('open_run')] +
+                  list(trigger_and_read([dcm])) +
+                  list(trigger_and_read([dcm2])) +
+                  [Msg('close_run')]))
+
     docs = defaultdict(list)
     fresh_RE(([Msg('open_run')] +
               list(trigger_and_read([dcm.th])) +
-              list(trigger_and_read([dcm])) +
+              list(trigger_and_read([dcm], name='other')) +
               [Msg('close_run')]), collect)
     assert len(docs['descriptor']) == 2
 
     docs = defaultdict(list)
     fresh_RE(([Msg('open_run')] +
               list(trigger_and_read([dcm])) +
-              list(trigger_and_read([dcm.th])) +
+              list(trigger_and_read([dcm], name='other')) +
               [Msg('close_run')]), collect)
     assert len(docs['descriptor']) == 2
 
     docs = defaultdict(list)
     fresh_RE(([Msg('open_run')] +
               list(trigger_and_read([dcm])) +
-              list(trigger_and_read([dcm2])) +
+              list(trigger_and_read([dcm.th], name='other')) +
+              [Msg('close_run')]), collect)
+    assert len(docs['descriptor']) == 2
+
+    docs = defaultdict(list)
+    fresh_RE(([Msg('open_run')] +
+              list(trigger_and_read([dcm])) +
+              list(trigger_and_read([dcm2], name='other')) +
               [Msg('close_run')]), collect)
     assert len(docs['descriptor']) == 2
 
