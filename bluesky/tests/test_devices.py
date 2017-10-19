@@ -1,4 +1,5 @@
 from collections import defaultdict
+import itertools
 
 from bluesky.utils import ancestry, share_ancestor, separate_devices
 from bluesky.plans import trigger_and_read
@@ -180,34 +181,38 @@ def test_keyoverlap_2stream(fresh_RE, det1, det2):
     assert len(d.descriptor[rs]) == 2
 
 
+def _make_overlapping_tests_stream(func):
+    labels = ['whole_whole',
+              'whole_v_w+th',
+              'whole_v_w+x',
+              'whole_v_w+x+th']
+    if ophyd:
+        dcm = DCM('', name='dcm')
+        dets = ((dcm, [dcm]),
+                (dcm, [dcm, dcm.th]),
+                (dcm, [dcm, dcm.x]),
+                (dcm, [dcm, dcm.x, dcm.th])
+                )
+    else:
+        dets = ((None, None),) * len(labels)
+
+    return pytest.mark.parametrize('det1,det_list',
+                                   dets, ids=labels)(func)
+
+
 @requires_ophyd
-def test_overlapping_read(fresh_RE):
-    dcm = DCM('', name='dcm')
-    dcm2 = DCM('', name='dcm2')
+@_make_overlapping_tests_stream
+def test_overlapped_but_identical(fresh_RE, det1, det_list):
+    @bp.run_decorator()
+    def test_plan(det1, det_list):
+        yield from bp.trigger_and_read([det1])
+        for p in itertools.permutations(det_list):
+            yield from bp.trigger_and_read(det_list)
 
-    def collect(name, doc):
-        docs[name].append(doc)
-
-    docs = defaultdict(list)
-    fresh_RE(([Msg('open_run')] +
-              list(trigger_and_read([dcm, dcm.th])) +
-              list(trigger_and_read([dcm])) +
-              [Msg('close_run')]), collect)
-    assert len(docs['descriptor']) == 1
-
-    docs = defaultdict(list)
-    fresh_RE(([Msg('open_run')] +
-              list(trigger_and_read([dcm.th, dcm.x, dcm])) +
-              list(trigger_and_read([dcm])) +
-              [Msg('close_run')]), collect)
-    assert len(docs['descriptor']) == 1
-
-    docs = defaultdict(list)
-    fresh_RE(([Msg('open_run')] +
-              list(trigger_and_read([dcm, dcm.th, dcm.x])) +
-              list(trigger_and_read([dcm])) +
-              [Msg('close_run')]), collect)
-    assert len(docs['descriptor']) == 1
+    d = DocCollector()
+    rs, = fresh_RE(test_plan(det1, det_list), d.insert)
+    assert len(d.start) == 1
+    assert len(d.descriptor[rs]) == 1
 
 
 @requires_ophyd
