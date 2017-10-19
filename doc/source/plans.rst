@@ -48,8 +48,10 @@ documentation.
    scan_nd
    spiral
    spiral_fermat
+   spiral_square
    relative_spiral
    relative_spiral_fermat
+   relative_spiral_square
    adaptive_scan
    relative_adaptive_scan
    tweak
@@ -366,8 +368,10 @@ A fermat spiral:
 
    spiral
    spiral_fermat
+   spiral_square
    relative_spiral
    relative_spiral_fermat
+   relative_spiral_square
 
 Adaptive scans
 ^^^^^^^^^^^^^^
