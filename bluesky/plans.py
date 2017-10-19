@@ -1334,7 +1334,7 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
 def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
                   y_range, x_num, y_num, *, per_step=None, md=None):
     '''Absolute square spiral scan, centered around (x_centre, y_centre)
-    
+
     Parameters
     ----------
     detectors : list
@@ -1353,8 +1353,9 @@ def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
         y width of spiral
     x_num : float
         number of x axis points
-    y_num : float (must be even if x_num is even and must be odd if x_num is odd, if not it is increased by 1 to ensure this)
-        number of y axis points 
+    y_num : float
+        Number of y axis points.  Must be even if x_num is even and must be odd
+        if x_num is odd; if not it is increased by 1 to ensure this.
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -1388,9 +1389,8 @@ def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
-  
-  
-  
+
+
 def ramp_plan(go_plan,
               monitor_sig,
               inner_plan_func,
