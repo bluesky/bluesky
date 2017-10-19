@@ -1210,11 +1210,17 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     '''
     _md = {'plan_name': 'rel_spiral_fermat'}
     _md.update(md or {})
-    return (yield from spiral_fermat(detectors, x_motor, y_motor,
-                                     x_motor.position,
-                                     y_motor.position, x_range,
-                                     y_range, dr, factor, tilt=tilt,
-                                     per_step=per_step, md=_md))
+
+    @reset_positions_decorator([x_motor, y_motor])
+    @relative_set_decorator([x_motor, y_motor])
+    def inner_relative_spiral_fermat():
+        return (yield from spiral_fermat(detectors, x_motor, y_motor,
+                                         0, 0,
+                                         x_range, y_range,
+                                         dr, factor, tilt=tilt,
+                                         per_step=per_step, md=_md))
+
+    return (yield from inner_relative_spiral_fermat())
 
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
@@ -1326,10 +1332,16 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     '''
     _md = {'plan_name': 'relative_spiral'}
     _md.update(md or {})
-    return (yield from spiral(detectors, x_motor, y_motor,
-                              x_motor.position, y_motor.position,
-                              x_range, y_range, dr, nth, tilt=tilt,
-                              per_step=per_step, md=_md))
+
+    @reset_positions_decorator([x_motor, y_motor])
+    @relative_set_decorator([x_motor, y_motor])
+    def inner_relative_spiral():
+        return (yield from spiral(detectors, x_motor, y_motor,
+                                  0, 0,
+                                  x_range, y_range, dr, nth, tilt=tilt,
+                                  per_step=per_step, md=_md))
+
+    return (yield from inner_relative_spiral())
 
 def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
                   y_range, x_num, y_num, *, per_step=None, md=None):
