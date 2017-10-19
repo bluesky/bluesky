@@ -37,8 +37,8 @@ def test_ancestry():
 
 @requires_ophyd
 def test_share_ancestor():
-    b1 = B('')
-    b2 = B('')
+    b1 = B('', name='b1')
+    b2 = B('', name='b2')
     assert share_ancestor(b1, b1)
     assert share_ancestor(b1, b1.a1)
     assert share_ancestor(b1, b1.a1.s1)
@@ -66,7 +66,7 @@ def test_monitor(fresh_RE):
     def collect(name, doc):
         docs.append(doc)
 
-    a = A('')
+    a = A('', name='a')
 
     def plan():
         yield Msg('open_run')
@@ -84,7 +84,7 @@ def test_monitor_with_pause_resume(fresh_RE):
     def collect(name, doc):
         docs.append(doc)
 
-    a = A('')
+    a = A('', name='a')
 
     def plan():
         yield Msg('open_run')
