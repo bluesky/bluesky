@@ -67,7 +67,7 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     return cyc
 
 
-def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range, x_num,y_num):
+def spiral_square_pattern(x_motor, y_motor, x_center, y_center, x_range, y_range, x_num,y_num):
     '''Square spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -76,9 +76,9 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
         any 'setable' object (motor, temp controller, etc.)
     y_motor : object, optional
         any 'setable' object (motor, temp controller, etc.)
-    x_centre : float
+    x_center : float
         x center
-    y_centre : float
+    y_center : float
         y center
     x_range : float
         x width of spiral
@@ -106,22 +106,22 @@ def spiral_square_pattern(x_motor, y_motor, x_centre, y_centre, x_range, y_range
             y_num+=1
         offset=0
 
-        x_points.append(x_centre)
-        y_points.append(y_centre)
+        x_points.append(x_center)
+        y_points.append(y_center)
 
     delta_x = x_range/(x_num-1)
     delta_y = y_range/(y_num-1)
     num_ring = max(x_num,y_num)
-    x_max=x_centre + delta_x * (x_num-1)/2
-    x_min=x_centre - delta_x * (x_num-1)/2
-    y_max=y_centre + delta_y * (y_num-1)/2
-    y_min=y_centre - delta_y * (y_num-1)/2
+    x_max=x_center + delta_x * (x_num-1)/2
+    x_min=x_center - delta_x * (x_num-1)/2
+    y_max=y_center + delta_y * (y_num-1)/2
+    y_min=y_center - delta_y * (y_num-1)/2
 
     for n,i_ring in enumerate(range(num_st, num_ring+1,2)):
-        x_ring_max=x_centre + delta_x * (n+offset)
-        y_ring_max=y_centre + delta_y * (n+offset)
-        x_ring_min=x_centre - delta_x * (n+offset)
-        y_ring_min=y_centre - delta_y * (n+offset)
+        x_ring_max=x_center + delta_x * (n+offset)
+        y_ring_max=y_center + delta_y * (n+offset)
+        x_ring_min=x_center - delta_x * (n+offset)
+        y_ring_min=y_center - delta_y * (n+offset)
 
         for n in range(1, i_ring):
             x = x_ring_min+delta_x*(n-1)

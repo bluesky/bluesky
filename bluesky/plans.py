@@ -3208,9 +3208,9 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     return (yield from inner_relative_spiral())
 
 
-def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
+def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
                   y_range, x_num, y_num, *, per_step=None, md=None):
-    '''Absolute square spiral scan, centered around (x_centre, y_centre)
+    '''Absolute square spiral scan, centered around (x_center, y_center)
 
     Parameters
     ----------
@@ -3220,9 +3220,9 @@ def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
         any 'setable' object (motor, temp controller, etc.)
     y_motor : object
         any 'setable' object (motor, temp controller, etc.)
-    x_centre : float
+    x_center : float
         x center
-    y_centre : float
+    y_center : float
         y center
     x_range : float
         x width of spiral
@@ -3248,8 +3248,8 @@ def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
     :func:`bluesky.plans.spiral_fermat`
     :func:`bluesky.plans.relative_spiral_fermat`
     '''
-    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_centre=x_centre,
-                        y_centre=y_centre, x_range=x_range, y_range=y_range,
+    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_center=x_center,
+                        y_center=y_center, x_range=x_range, y_range=y_range,
                         x_num = x_num, y_num = y_num)
     cyc = plan_patterns.spiral_square_pattern(**pattern_args)
 
@@ -3258,7 +3258,7 @@ def spiral_square(detectors, x_motor, y_motor, x_centre, y_centre, x_range,
     pattern_args['y_motor'] = repr(y_motor)
     _md = {'plan_args': {'detectors': list(map(repr, detectors)),
                          'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
-                         'x_centre': x_centre, 'y_centre': y_centre,
+                         'x_center': x_center, 'y_center': y_center,
                          'x_range': x_range, 'y_range': y_range,
                          'x_num': x_num, 'y_num': y_num,
                          'per_step': repr(per_step)},
