@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from bluesky.utils import ancestry, share_ancestor, separate_devices
 from bluesky.plans import trigger_and_read
+import bluesky.plans as bp
 from bluesky import Msg, RunEngineInterrupted
 import pytest
 from bluesky.tests import requires_ophyd, ophyd
@@ -111,32 +112,42 @@ def test_monitor_with_pause_resume(fresh_RE):
     assert len(docs) == 6  # two new Events + RunStop
 
 
+def _make_overlapping_raising_tests(func):
+    if ophyd:
+        dcm = DCM('', name='dcm')
+        dcm2 = DCM('', name='dcm2')
+        dets = ((dcm.th, dcm),
+                (dcm, dcm.th),
+                (dcm, dcm2))
+    else:
+        dets = ((None, None),
+                (None, None),
+                (None, None))
+
+    return pytest.mark.parametrize('det1,det2',
+                                   dets)(func)
+
+
+@requires_ophyd
+@_make_overlapping_raising_tests
+def test_overlapping_raise(fresh_RE, det1, det2):
+
+    @bp.run_decorator()
+    def test_plan(det1, det2):
+        yield from bp.trigger_and_read([det1])
+        yield from bp.trigger_and_read([det2])
+
+    with pytest.raises(RuntimeError):
+        fresh_RE(test_plan(det1, det2))
+
+
 @requires_ophyd
 def test_overlapping_read(fresh_RE):
-
     dcm = DCM('', name='dcm')
     dcm2 = DCM('', name='dcm2')
 
     def collect(name, doc):
         docs[name].append(doc)
-
-    with pytest.raises(RuntimeError):
-        fresh_RE(([Msg('open_run')] +
-                  list(trigger_and_read([dcm.th])) +
-                  list(trigger_and_read([dcm])) +
-                  [Msg('close_run')]))
-
-    with pytest.raises(RuntimeError):
-        fresh_RE(([Msg('open_run')] +
-                  list(trigger_and_read([dcm])) +
-                  list(trigger_and_read([dcm.th])) +
-                  [Msg('close_run')]))
-
-    with pytest.raises(RuntimeError):
-        fresh_RE(([Msg('open_run')] +
-                  list(trigger_and_read([dcm])) +
-                  list(trigger_and_read([dcm2])) +
-                  [Msg('close_run')]))
 
     docs = defaultdict(list)
     fresh_RE(([Msg('open_run')] +
