@@ -17,7 +17,6 @@ from cycler import cycler
 import logging
 import datetime
 from functools import wraps, partial
-import sys
 import threading
 import time
 from tqdm import tqdm
@@ -37,19 +36,23 @@ class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
             self.command, self.obj, self.args, self.kwargs)
 
 
-class NoReplayAllowed(Exception):
+class RunEngineControlException(Exception):
     pass
 
 
-class RequestAbort(Exception):
+class RequestAbort(RunEngineControlException):
     pass
 
 
-class RequestStop(Exception):
+class RequestStop(RunEngineControlException):
     pass
 
 
 class RunEngineInterrupted(Exception):
+    pass
+
+
+class NoReplayAllowed(Exception):
     pass
 
 

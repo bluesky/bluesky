@@ -17,7 +17,7 @@ from functools import partial
 from bluesky.examples import (det, Mover, TrivialFlyer, SynGauss, SimpleStatus,
                               ReaderWithRegistry)
 import bluesky.plans as bp
-from bluesky.tests.utils import MsgCollector
+from bluesky.tests.utils import MsgCollector, DocCollector
 
 
 def test_states():
@@ -1298,3 +1298,50 @@ def test_num_events(fresh_RE, db):
 def test_raise_if_interrupted_deprecation(fresh_RE):
     with pytest.warns(UserWarning):
         fresh_RE([], raise_if_interrupted=True)
+
+
+@pytest.mark.parametrize('bail_func,status', (('resume', 'success'),
+                                              ('stop', 'success'),
+                                              ('abort', 'abort'),
+                                              ('halt', 'abort')))
+def test_force_stop_exit_status(bail_func, status, fresh_RE):
+    RE = fresh_RE
+    d = DocCollector()
+    RE.subscribe(d.insert)
+
+    @bp.run_decorator()
+    def bad_plan():
+        yield Msg('pause')
+    try:
+        RE(bad_plan())
+    except:
+        ...
+    rs, = getattr(RE, bail_func)()
+
+    assert len(d.start) == 1
+    assert d.start[0]['uid'] == rs
+    assert len(d.stop) == 1
+    assert d.stop[rs]['exit_status'] == status
+
+
+def test_exceptions_exit_status(fresh_RE):
+    RE = fresh_RE
+    d = DocCollector()
+    RE.subscribe(d.insert)
+
+    class Snowflake(Exception):
+        ...
+
+    @bp.run_decorator()
+    def bad_plan():
+        yield Msg('null')
+        raise Snowflake('boo')
+
+    with pytest.raises(Snowflake) as sf:
+        RE(bad_plan())
+
+    assert len(d.start) == 1
+    rs = d.start[0]['uid']
+    assert len(d.stop) == 1
+    assert d.stop[rs]['exit_status'] == 'fail'
+    assert d.stop[rs]['reason'] == str(sf.value)
