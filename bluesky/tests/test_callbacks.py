@@ -4,9 +4,10 @@ from bluesky.examples import (motor, det, stepscan, motor1, motor2, det4, det5,
                               jittery_motor1, jittery_motor2,
                               ReaderWithRegistry, ReaderWithRegistryHandler,
                               Reader)
-from bluesky.plans import (AdaptiveAbsScanPlan, AbsScanPlan, scan,
+from bluesky.plans import (AbsScanPlan, scan,
                            outer_product_scan, run_wrapper, pause,
                            subs_wrapper, count)
+import bluesky.plans as bp
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
@@ -141,10 +142,10 @@ def test_table(fresh_RE):
         motor.precision = 2
 
         table = LiveTable(['det', 'motor'], min_width=16, extra_pad=2)
-        ad_scan = AdaptiveAbsScanPlan([det], 'det', motor, -15, 5, .01, 1, .05,
-                                      True)
+        ad_scan = bp.adaptive_scan([det], 'det', motor, -15, 5, .01, 1, .05,
+                                   True)
         # use lossless sub here because rows can get dropped
-        token = RE.subscribe_lossless(table)
+        token = RE.subscribe(table)
         RE(ad_scan)
         RE.unsubscribe_lossless(token)
 
@@ -281,7 +282,7 @@ def test_zmq(fresh_RE):
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
-    # Generate two documents. The Publisher will send them to the proxy 
+    # Generate two documents. The Publisher will send them to the proxy
     # device over 5567, and the proxy will send them to the
     # RemoteDispatcher over 5568. The RemoteDispatcher will push them into
     # the queue, where we can verify that they round-tripped.
