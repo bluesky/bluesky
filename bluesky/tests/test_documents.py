@@ -2,20 +2,16 @@ import pytest
 import jsonschema
 from bluesky.run_engine import RunEngine
 from event_model import DocumentNames, schemas
-from bluesky.tests.utils import setup_test_run_engine
 from bluesky.utils import new_uid
-from bluesky.examples import simple_scan, motor
+from bluesky.examples import simple_scan
 
 
-RE = setup_test_run_engine()
-
-
-def test_custom_metadata():
+def test_custom_metadata(RE, hw):
     def assert_lion(name, doc):
         assert 'animal' in doc
         assert doc['animal'] == 'lion'
 
-    RE(simple_scan(motor), {'start': assert_lion}, animal='lion')
+    RE(simple_scan(hw.motor), {'start': assert_lion}, animal='lion')
     # Note: Because assert_lion is processed on the main thread, it can
     # fail the test. I checked by writing a failing version of it.  - D.A.
 

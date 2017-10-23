@@ -1,8 +1,6 @@
 import pytest
-
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
-from bluesky.examples import motor, motor1, motor2, det
 import numpy as np
 import pandas as pd
 
@@ -26,15 +24,15 @@ def _validate_start(start, expected_values):
         assert start[k] == v
 
 
-def _make_plan_marker():
+
+def test_plan_header(RE, hw):
     args = []
-    ids = []
 
     ##
-    args.append((bp.outer_product_scan([det],
-                                       motor, 1, 2, 3,
-                                       motor1, 4, 5, 6, True,
-                                       motor2, 7, 8, 9, True),
+    args.append((bp.outer_product_scan([hw.det],
+                                       hw.motor, 1, 2, 3,
+                                       hw.motor1, 4, 5, 6, True,
+                                       hw.motor2, 7, 8, 9, True),
                  {'motors': ('motor', 'motor1', 'motor2'),
                   'extents': ([1, 2], [4, 5], [7, 8]),
                   'shape': (3, 6, 9),
@@ -42,32 +40,25 @@ def _make_plan_marker():
                   'plan_pattern_module': 'bluesky.plan_patterns',
                   'plan_pattern': 'outer_product',
                   'plan_name': 'outer_product_scan'}))
-    ids.append('outer_product_scan')
 
     ##
-    args.append((bp.inner_product_scan([det], 9,
-                                       motor, 1, 2,
-                                       motor1, 4, 5,
-                                       motor2, 7, 8),
+    args.append((bp.inner_product_scan([hw.det], 9,
+                                       hw.motor, 1, 2,
+                                       hw.motor1, 4, 5,
+                                       hw.motor2, 7, 8),
                 {'motors': ('motor', 'motor1', 'motor2')}))
-    ids.append('inner_product_scan')
 
-    return pytest.mark.parametrize('plan,target',
-                                   args,
-                                   ids=ids)
-
-
-@_make_plan_marker()
-def test_plan_header(fresh_RE, plan, target):
-    RE = fresh_RE
-    c = DocCollector()
-    RE(plan, c.insert)
-    for s in c.start:
-        _validate_start(s, target)
+    for plan, target in args:
+        c = DocCollector()
+        RE(plan, c.insert)
+        for s in c.start:
+            _validate_start(s, target)
 
 
-def test_ops_dimension_hints(fresh_RE):
-    RE = fresh_RE
+def test_ops_dimension_hints(RE, hw):
+    det = hw.det
+    motor = hw.motor
+    motor1 = hw.motor1
     c = DocCollector()
     RE.subscribe(c.insert)
     rs, = RE(bp.outer_product_scan([det],
@@ -82,10 +73,9 @@ def test_ops_dimension_hints(fresh_RE):
         (m.hints['fields'], 'primary') for m in (motor, motor1)]
 
 
-def test_mesh_pseudo(hw, fresh_RE):
+def test_mesh_pseudo(hw, RE):
     p3x3 = hw.pseudo3x3
     sig = hw.sig
-    RE = fresh_RE
     d = DocCollector()
 
     RE.subscribe(d.insert)
@@ -105,12 +95,11 @@ def test_mesh_pseudo(hw, fresh_RE):
     assert all(df[p3x3.pseudo3.name] == 0)
 
 
-def test_rmesh_pseudo(hw, fresh_RE):
+def test_rmesh_pseudo(hw, RE):
     p3x3 = hw.pseudo3x3
     p3x3.set(1, -2, 100)
     init_pos = p3x3.position
     sig = hw.sig
-    RE = fresh_RE
     d = DocCollector()
 
     RE.subscribe(d.insert)
@@ -134,8 +123,7 @@ def test_rmesh_pseudo(hw, fresh_RE):
     assert init_pos == p3x3.position
 
 
-def test_relative_pseudo(hw, fresh_RE, db):
-    RE = fresh_RE
+def test_relative_pseudo(hw, RE, db):
     RE.subscribe(db.insert)
     p = hw.pseudo3x3
     p.set(1, 1, 1)

@@ -1,22 +1,26 @@
 from bluesky.utils import ProgressBar, ProgressBarManager
 from bluesky.plans import mv
+from bluesky.tests import requires_ophyd
 from bluesky import RunEngine
-from bluesky.examples import NullStatus, SimpleStatus, Mover
 from collections import OrderedDict
 import time
 
 
+@requires_ophyd
 def test_status_without_watch():
+    from ophyd.sim import NullStatus
     st = NullStatus()
     ProgressBar([st])
 
 
-def test_status_with_name():
-    st = SimpleStatus()
+@requires_ophyd
+def test_status_with_name(hw):
+    from ophyd.status import DeviceStatus
+    st = DeviceStatus(device=hw.det)
     pbar = ProgressBar([st])
     st._finished()
 
-    st = SimpleStatus()
+    st = DeviceStatus(device=hw.det)
     pbar = ProgressBar([st])
     assert pbar.delay_draw == 0.2
     time.sleep(0.25)
@@ -79,26 +83,21 @@ def test_tuple_progress():
     st.done = True
     pbar.update(0, name='foo')
 
-def test_mv_progress(fresh_RE):
-    RE = fresh_RE
-    RE.waiting_hook = ProgressBarManager()
-    motor1 = Mover('motor1', OrderedDict([('motor1', lambda x: x),
-                                        ('motor1_setpoint', lambda x: x)]),
-                {'x': 0})
-    motor2 = Mover('motor2', OrderedDict([('motor2', lambda x: x),
-                                        ('motor2_setpoint', lambda x: x)]),
-                {'x': 0})
+def test_mv_progress(RE, hw):
+    motor1 = hw.motor1
+    motor2 = hw.motor2
 
+    RE.waiting_hook = ProgressBarManager()
     assert RE.waiting_hook.delay_draw == 0.2
 
     # moving time > delay_draw
-    motor1._fake_sleep = 0.5
-    motor1._fake_sleep = 0.5
+    motor1.delay = 0.5
+    motor1.delay = 0.5
     RE(mv(motor1, 0, motor2, 0))
 
     # moving time < delay_draw
-    motor1._fake_sleep = 0.01
-    motor1._fake_sleep = 0.01
+    motor1.delay = 0.01
+    motor1.delay = 0.01
     RE(mv(motor1, 0, motor2, 0))
 
 

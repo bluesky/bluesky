@@ -1,54 +1,6 @@
-from bluesky.examples import (motor, motor1, motor2, det, det1, det2,
-                              MockFlyer, NullStatus)
-
 import pytest
 import bluesky.plans as bp
 from bluesky.callbacks.best_effort import BestEffortCallback
-
-
-class MotorNoHints:
-    def __init__(self, name):
-        self.name = name
-        self.parent = None
-        self.position = 0
-
-    def read(self):
-        return {}
-
-    def read_configuration(self):
-        return {}
-
-    def describe(self):
-        return {}
-
-    def describe_configuration(self):
-        return {}
-
-    def set(self, val):
-        return NullStatus()
-
-
-class MotorEmptyHints:
-    def __init__(self, name):
-        self.name = name
-        self.parent = None
-        self.position = 0
-        self.hints = {}
-    def read(self):
-        return {}
-
-    def read_configuration(self):
-        return {}
-
-    def describe(self):
-        return {}
-
-    def describe_configuration(self):
-        return {}
-
-    def set(self, val):
-        return NullStatus()
-
 
 
 def checker(name, doc):
@@ -63,61 +15,71 @@ def checker(name, doc):
     # of the test function below.
     (bp.count, (), {}),
     (bp.count, (), {'num': 3}),
-    (bp.scan, (motor, 1, 2, 2), {}),
-    (bp.inner_product_scan, (2, motor, 1, 2), {}),
-    (bp.relative_inner_product_scan, (2, motor, 1, 2), {}),
-    (bp.outer_product_scan, (motor1, 1, 2, 2, motor2, 1, 2, 3, False), {}),
-    (bp.spiral, (motor1, motor2, 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral, (motor1, motor2, 0.3, 0.3, 0.05, 3), {}),
-    (bp.spiral_fermat, (motor1, motor2, 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral_fermat, (motor1, motor2, 0.3, 0.3, 0.05, 3), {}),
+    (bp.scan, ('motor', 1, 2, 2), {}),
+    (bp.inner_product_scan, (2, 'motor', 1, 2), {}),
+    (bp.relative_inner_product_scan, (2, 'motor', 1, 2), {}),
+    (bp.outer_product_scan, ('motor1', 1, 2, 2, 'motor2', 1, 2, 3, False), {}),
+    (bp.spiral, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
+    (bp.relative_spiral, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
+    (bp.spiral_fermat, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
+    (bp.relative_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     ])
-def test_plans(fresh_RE, pln, args, kwargs):
+def test_plans(RE, pln, args, kwargs, hw):
+    args = tuple(getattr(hw, v, v) if isinstance(v, str) else v
+                 for v in args)
+    det = hw.det
     bec = BestEffortCallback()
-    fresh_RE.subscribe(bec)
-    fresh_RE.subscribe(checker)
-    fresh_RE(pln([det], *args, **kwargs))
-
-
-_motor = MotorNoHints('motor')
-_motor1 = MotorNoHints('motor1')
-_motor2 = MotorNoHints('motor2')
+    RE.subscribe(bec)
+    RE.subscribe(checker)
+    RE(pln([det], *args, **kwargs))
 
 
 @pytest.mark.parametrize('pln,args,kwargs', [
     # repeat with motor objects that do not have hints
-    (bp.scan, (_motor, 1, 2, 2), {}),
-    (bp.inner_product_scan, (2, _motor, 1, 2), {}),
-    (bp.relative_inner_product_scan, (2, _motor, 1, 2), {}),
-    (bp.outer_product_scan, (_motor1, 1, 2, 2, _motor2, 1, 2, 3, False), {}),
-    (bp.spiral, (_motor1, _motor2, 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral, (_motor1, _motor2, 0.3, 0.3, 0.05, 3), {}),
-    (bp.spiral_fermat, (_motor1, _motor2, 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral_fermat, (_motor1, _motor2, 0.3, 0.3, 0.05, 3), {}),
+    (bp.scan, ('motor_no_hints1', 1, 2, 2), {}),
+    (bp.inner_product_scan, (2, 'motor_no_hints1', 1, 2), {}),
+    (bp.relative_inner_product_scan, (2, 'motor_no_hints1', 1, 2), {}),
+    (bp.outer_product_scan,
+     ('motor_no_hints1', 1, 2, 2, 'motor_no_hints2', 1, 2, 3, False), {}),
+    (bp.spiral,
+     ('motor_no_hints1', 'motor_no_hints2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
+    (bp.relative_spiral,
+     ('motor_no_hints1', 'motor_no_hints2', 0.3, 0.3, 0.05, 3), {}),
+    (bp.spiral_fermat,
+     ('motor_no_hints1', 'motor_no_hints2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
+    (bp.relative_spiral_fermat,
+     ('motor_no_hints1', 'motor_no_hints2', 0.3, 0.3, 0.05, 3), {}),
     ])
-def test_plans_motors_no_hints(fresh_RE, pln, args, kwargs):
+def test_plans_motors_no_hints(RE, pln, args, kwargs, hw):
+    args = tuple(getattr(hw, v, v) if isinstance(v, str) else v
+                 for v in args)
+    det = hw.det
+    for v in args:
+        assert not hasattr(v, 'hints')
     bec = BestEffortCallback()
-    fresh_RE.subscribe(bec)
-    fresh_RE(pln([det], *args, **kwargs))
-
-
-_motor = MotorEmptyHints('motor')
-_motor1 = MotorEmptyHints('motor1')
-_motor2 = MotorEmptyHints('motor2')
+    RE.subscribe(bec)
+    RE(pln([det], *args, **kwargs))
 
 
 @pytest.mark.parametrize('pln,args,kwargs', [
     # repeat with motor objects that have empty hints
-    (bp.scan, (_motor, 1, 2, 2), {}),
-    (bp.inner_product_scan, (2, _motor, 1, 2), {}),
-    (bp.relative_inner_product_scan, (2, _motor, 1, 2), {}),
-    (bp.outer_product_scan, (_motor1, 1, 2, 2, _motor2, 1, 2, 3, False), {}),
-    (bp.spiral, (_motor1, _motor2, 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral, (_motor1, _motor2, 0.3, 0.3, 0.05, 3), {}),
-    (bp.spiral_fermat, (_motor1, _motor2, 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral_fermat, (_motor1, _motor2, 0.3, 0.3, 0.05, 3), {}),
+    (bp.scan, ('motor1', 1, 2, 2), {}),
+    (bp.inner_product_scan, (2, 'motor1', 1, 2), {}),
+    (bp.relative_inner_product_scan, (2, 'motor1', 1, 2), {}),
+    (bp.outer_product_scan, ('motor1', 1, 2, 2, 'motor2', 1, 2, 3, False), {}),
+    (bp.spiral, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
+    (bp.relative_spiral, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
+    (bp.spiral_fermat, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
+    (bp.relative_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     ])
-def test_plans_motor_empty_hints(fresh_RE, pln, args, kwargs):
+def test_plans_motor_empty_hints(RE, pln, args, kwargs, hw):
+    args = tuple(getattr(hw, v, v) if isinstance(v, str) else v
+                 for v in args)
+    for v in args:
+        if hasattr(v, 'hints'):
+            v.hints = {}
+            assert v.hints == {}
+    det = hw.det
     bec = BestEffortCallback()
-    fresh_RE.subscribe(bec)
-    fresh_RE(pln([det], *args, **kwargs))
+    RE.subscribe(bec)
+    RE(pln([det], *args, **kwargs))

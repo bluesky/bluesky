@@ -1,7 +1,7 @@
 ### FAKE HARDWARE ###
 
 # Import and build simulated hardware.
-from bluesky.examples import motor, det1, det2, det4, motor1, motor2
+from ophyd.sim import motor, det1, det2, det4, motor1, motor2
 from ophyd import Signal
 import asyncio
 import time
@@ -31,7 +31,7 @@ class Detector:
 
 
 det = Detector()
-motor._fake_sleep = 0.1
+motor.delay = 0.1
 
 
 def flipper_factory(signal, frequency, sequence, loop=None):
