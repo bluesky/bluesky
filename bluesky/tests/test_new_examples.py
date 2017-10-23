@@ -15,11 +15,12 @@ from bluesky.plans import (create, save, read, monitor, unmonitor, null,
                            monitor_during_wrapper,
                            lazily_stage_wrapper, relative_set_wrapper,
                            subs_wrapper, trigger_and_read, stop,
-                           repeater, caching_repeater, count, Count, Scan,
+                           repeater, caching_repeater, count,
                            fly_during_decorator, subs_decorator,
                            monitor_during_decorator,
                            inject_md_wrapper, finalize_decorator,
                            configure_count_time_wrapper)
+import bluesky.plans as bp
 
 from bluesky.utils import all_safe_rewind
 
@@ -608,12 +609,12 @@ def test_plan_md(fresh_RE):
 
     # test Plan with explicit __init__
     mutable.clear()
-    fresh_RE(Count([det], md=md), collector)
+    fresh_RE(bp.count([det], md=md), collector)
     assert 'color' in mutable[0]
 
     # test Plan with implicit __init__ (created via metaclasss)
     mutable.clear()
-    fresh_RE(Scan([det], motor, 1, 2, 2, md=md), collector)
+    fresh_RE(bp.scan([det], motor, 1, 2, 2, md=md), collector)
     assert 'color' in mutable[0]
 
 

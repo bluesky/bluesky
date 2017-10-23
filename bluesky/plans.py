@@ -3444,7 +3444,6 @@ class SupplementalData:
         self.monitors = list(monitors)
         self.flyers = list(flyers)
 
-
     def __repr__(self):
         return ("{cls}(baseline={baseline}, monitors={monitors}, "
                 "flyers={flyers})"
@@ -3515,7 +3514,7 @@ class Plan(Struct):
         """
         warn("This plan and all object-oriented plans have been deprecated "
              "and will be removed in a future release of bluesky. Instead of "
-             "Count or Scan use count or scan, etc.")
+             "Count or Scan use count or scan, etc.", stacklevel=2)
         subs = defaultdict(list)
         update_sub_lists(subs, self.subs)
         update_sub_lists(subs, apply_sub_factories(self.sub_factories, self))

@@ -1,15 +1,5 @@
-import warnings
-import pytest
 from bluesky.callbacks import collector, CallbackCounter
-from bluesky.plans import (AbsListScanPlan, AbsScanPlan, LogAbsScanPlan,
-                           DeltaListScanPlan, DeltaScanPlan, LogDeltaScanPlan,
-                           AdaptiveAbsScanPlan, AdaptiveDeltaScanPlan, Count,
-                           OuterProductAbsScanPlan, InnerProductAbsScanPlan,
-                           OuterProductDeltaScanPlan,
-                           InnerProductDeltaScanPlan, SpiralScan,
-                           SpiralFermatScan, RelativeSpiralScan,
-                           RelativeSpiralFermatScan)
-
+import bluesky.plans as bp
 from bluesky import Msg
 from bluesky.examples import motor, det, SynGauss, motor1, motor2, Mover
 from bluesky.tests.utils import setup_test_run_engine
@@ -60,8 +50,8 @@ def approx_multi_traj_checker(RE, scan, expected_data, *, decimal=2):
 
 def test_outer_product_ascan():
     motor.set(0)
-    scan = OuterProductAbsScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
-                                   False)
+    scan = bp.outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
+                                 False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -79,7 +69,7 @@ def test_outer_product_ascan():
 
 def test_outer_product_ascan_snaked():
     motor.set(0)
-    scan = OuterProductAbsScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2, True)
+    scan = bp.outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -97,7 +87,7 @@ def test_outer_product_ascan_snaked():
 
 def test_inner_product_ascan():
     motor.set(0)
-    scan = InnerProductAbsScanPlan([det], 3, motor1, 1, 3, motor2, 10, 30)
+    scan = bp.inner_product_scan([det], 3, motor1, 1, 3, motor2, 10, 30)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -111,8 +101,8 @@ def test_inner_product_ascan():
 
 
 def test_outer_product_dscan():
-    scan = OuterProductDeltaScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
-                                 False)
+    scan = bp.relative_outer_product_scan(
+        [det], motor1, 1, 3, 3, motor2, 10, 20, 2, False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     motor.set(0)
@@ -132,8 +122,8 @@ def test_outer_product_dscan():
 
 
 def test_outer_product_dscan_snaked():
-    scan = OuterProductDeltaScanPlan([det], motor1, 1, 3, 3, motor2, 10, 20, 2,
-                                 True)
+    scan = bp.relative_outer_product_scan(
+        [det], motor1, 1, 3, 3, motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     motor.set(0)
@@ -156,7 +146,8 @@ def test_inner_product_dscan():
     motor.set(0)
     motor1.set(5)
     motor2.set(8)
-    scan = InnerProductDeltaScanPlan([det], 3, motor1, 1, 3, motor2, 10, 30)
+    scan = bp.relative_inner_product_scan(
+        [det], 3, motor1, 1, 3, motor2, 10, 30)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -171,7 +162,7 @@ def test_inner_product_dscan():
 
 def test_ascan():
     traj = [1, 2, 3]
-    scan = AbsListScanPlan([det], motor, traj)
+    scan = bp.list_scan([det], motor, traj)
     traj_checker(scan, traj)
 
 
@@ -179,7 +170,7 @@ def test_dscan():
     traj = np.array([1, 2, 3])
     motor.set(-4)
     print(motor.read())
-    scan = DeltaListScanPlan([det], motor, traj)
+    scan = bp.relative_list_scan([det], motor, traj)
     traj_checker(scan, traj - 4)
 
 
@@ -187,40 +178,40 @@ def test_dscan_list_input():
     # GH225
     traj = [1, 2, 3]
     motor.set(-4)
-    scan = DeltaListScanPlan([det], motor, traj)
+    scan = bp.relative_list_scan([det], motor, traj)
     traj_checker(scan, np.array(traj) - 4)
 
 
 def test_lin_ascan():
     traj = np.linspace(0, 10, 5)
-    scan = AbsScanPlan([det], motor, 0, 10, 5)
+    scan = bp.scan([det], motor, 0, 10, 5)
     traj_checker(scan, traj)
 
 
 def test_log_ascan():
     traj = np.logspace(0, 10, 5)
-    scan = LogAbsScanPlan([det], motor, 0, 10, 5)
+    scan = bp.log_scan([det], motor, 0, 10, 5)
     traj_checker(scan, traj)
 
 
 def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
-    scan = DeltaScanPlan([det], motor, 0, 10, 5)
+    scan = bp.relative_scan([det], motor, 0, 10, 5)
     traj_checker(scan, traj)
 
 
 def test_log_dscan():
     traj = np.logspace(0, 10, 5) + 6
     motor.set(6)
-    scan = LogDeltaScanPlan([det], motor, 0, 10, 5)
+    scan = bp.relative_log_scan([det], motor, 0, 10, 5)
     traj_checker(scan, traj)
 
 
 def test_adaptive_ascan():
-    scan1 = AdaptiveAbsScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
-    scan2 = AdaptiveAbsScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
-    scan3 = AdaptiveAbsScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
+    scan1 = bp.adaptive_scan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
+    scan2 = bp.adaptive_scan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
+    scan3 = bp.adaptive_scan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -240,9 +231,12 @@ def test_adaptive_ascan():
 
 
 def test_adaptive_dscan():
-    scan1 = AdaptiveDeltaScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
-    scan2 = AdaptiveDeltaScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
-    scan3 = AdaptiveDeltaScanPlan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
+    scan1 = bp.relative_adaptive_scan(
+        [det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
+    scan2 = bp.relative_adaptive_scan(
+        [det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
+    scan3 = bp.relative_adaptive_scan(
+        [det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -262,18 +256,18 @@ def test_adaptive_dscan():
     assert monotonic_increasing
 
 
-def test_count():
+def test_count(recwarn):
     actual_intensity = []
     col = collector('det', actual_intensity)
     motor.set(0)
-    scan = Count([det])
+    scan = bp.Count([det])
     RE(scan, {'event': col})
     assert actual_intensity[0] == 1.
-
+    assert len(recwarn) == 1
     # multiple counts, via updating attribute
     actual_intensity = []
     col = collector('det', actual_intensity)
-    scan = Count([det], num=3, delay=0.05)
+    scan = bp.Count([det], num=3, delay=0.05)
     RE(scan, {'event': col})
     assert scan.num == 3
     assert actual_intensity == [1., 1., 1.]
@@ -281,7 +275,7 @@ def test_count():
     # multiple counts, via passing arts to __call__
     actual_intensity = []
     col = collector('det', actual_intensity)
-    scan = Count([det], num=3, delay=0.05)
+    scan = bp.Count([det], num=3, delay=0.05)
     RE(scan(num=2), {'event': col})
     assert actual_intensity == [1., 1.]
     # attribute should still be 3
@@ -293,7 +287,7 @@ def test_count():
 
 
 def test_set():
-    scan = AbsScanPlan([det], motor, 1, 5, 3)
+    scan = bp.Scan([det], motor, 1, 5, 3)
     assert scan.start == 1
     assert scan.stop == 5
     assert scan.num == 3
@@ -318,14 +312,14 @@ def test_wait_for():
 
 
 def test_pre_run_post_run():
-    c = Count([])
+    c = bp.Count([])
 
     def f(x):
         yield Msg('HEY', None)
     c.pre_run = f
     list(c)[0].command == 'HEY'
 
-    c = Count([])
+    c = bp.Count([])
 
     def f(x):
         yield Msg('HEY', None)
@@ -360,11 +354,13 @@ def test_absolute_spiral(fresh_RE):
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
     motor1.set(1.0)
     motor2.set(1.0)
-    scan = SpiralScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0, 0.0)
+    scan = bp.spiral([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1, 1.0,
+                     tilt=0.0)
     approx_multi_traj_checker(fresh_RE, scan, _get_spiral_data(0.0, 0.0),
                               decimal=2)
 
-    scan = SpiralScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0, 0.0)
+    scan = bp.spiral([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1, 1.0,
+                     tilt=0.0)
     approx_multi_traj_checker(fresh_RE, scan, _get_spiral_data(0.5, 0.5),
                               decimal=2)
 
@@ -380,7 +376,11 @@ def test_relative_spiral(fresh_RE):
 
     motor1.set(start_x)
     motor2.set(start_y)
-    scan = RelativeSpiralScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0, 0.0)
+    scan = bp.relative_spiral([det],
+                              motor1, motor2,
+                              1.0, 1.0,
+                              0.1, 1.0,
+                              tilt=0.0)
 
     approx_multi_traj_checker(fresh_RE, scan,
                               _get_spiral_data(start_x, start_y),
@@ -435,13 +435,17 @@ def test_absolute_fermat_spiral(fresh_RE):
 
     motor1.set(1.0)
     motor2.set(1.0)
-    scan = SpiralFermatScan([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1,
-                            1.0, 0.0)
+    scan = bp.spiral_fermat([det], motor1, motor2, 0.0, 0.0, 1.0, 1.0, 0.1,
+                            1.0, tilt=0.0)
     approx_multi_traj_checker(fresh_RE, scan, _get_fermat_data(0.0, 0.0),
                               decimal=2)
 
-    scan = SpiralFermatScan([det], motor1, motor2, 0.5, 0.5, 1.0, 1.0, 0.1,
-                            1.0, 0.0)
+    scan = bp.spiral_fermat([det],
+                            motor1, motor2,
+                            0.5, 0.5,
+                            1.0, 1.0,
+                            0.1, 1.0,
+                            tilt=0.0)
     approx_multi_traj_checker(fresh_RE, scan, _get_fermat_data(0.5, 0.5),
                               decimal=2)
 
@@ -458,8 +462,11 @@ def test_relative_fermat_spiral(fresh_RE):
 
     motor1.set(start_x)
     motor2.set(start_y)
-    scan = RelativeSpiralFermatScan([det], motor1, motor2, 1.0, 1.0, 0.1, 1.0,
-                                    0.0)
+    scan = bp.relative_spiral_fermat([det],
+                                     motor1, motor2,
+                                     1.0, 1.0,
+                                     0.1, 1.0,
+                                     tilt=0.0)
 
     approx_multi_traj_checker(fresh_RE, scan,
                               _get_fermat_data(start_x, start_y),
