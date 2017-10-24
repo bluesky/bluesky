@@ -2565,6 +2565,10 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     --------
     :func:`bluesky.plans.relative_adaptive_scan`
     """
+    if not 0 < min_step < max_step:
+        raise ValueError("min_step and max_step must meet condition of "
+                         "max_step > min_step > 0")
+
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
            'plan_args': {'detectors': list(map(repr, detectors)),
@@ -2595,7 +2599,11 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         past_I = None
         cur_I = None
         cur_det = {}
-        while next_pos < stop:
+        if stop >= start:
+            direction_sign = 1
+        else:
+            direction_sign = -1
+        while next_pos * direction_sign < stop * direction_sign:
             yield Msg('checkpoint')
             yield from mv(motor, next_pos)
             yield Msg('create', None, name='primary')
@@ -2611,7 +2619,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             # special case first first loop
             if past_I is None:
                 past_I = cur_I
-                next_pos += step
+                next_pos += step * direction_sign
                 continue
 
             dI = np.abs(cur_I - past_I)
@@ -2629,7 +2637,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             else:
                 past_I = cur_I
                 step = 0.2 * new_step + 0.8 * step
-            next_pos += step
+            next_pos += step * direction_sign
 
     return (yield from adaptive_core())
 

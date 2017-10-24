@@ -7,6 +7,7 @@ import asyncio
 import time as ttime
 import numpy as np
 import numpy.testing
+import pytest
 
 loop = asyncio.get_event_loop()
 
@@ -212,6 +213,7 @@ def test_adaptive_ascan():
     scan1 = bp.adaptive_scan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, True)
     scan2 = bp.adaptive_scan([det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
     scan3 = bp.adaptive_scan([det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
+    scan4 = bp.adaptive_scan([det], 'det', motor, 5, 0, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -229,6 +231,16 @@ def test_adaptive_ascan():
     monotonic_increasing = np.all(np.diff(actual_traj) > 0)
     assert monotonic_increasing
 
+    actual_traj = []
+    col = collector('motor', actual_traj)
+    RE(scan4, {'event': col})
+    monotonic_decreasing = np.all(np.diff(actual_traj) < 0)
+    assert monotonic_decreasing
+
+    with pytest.raises(ValueError):  # min step < 0
+        scan5 = bp.adaptive_scan([det], 'det', motor, 5, 0, -0.1, 1.0, 0.1, False)
+        RE(scan5)
+
 
 def test_adaptive_dscan():
     scan1 = bp.relative_adaptive_scan(
@@ -237,6 +249,8 @@ def test_adaptive_dscan():
         [det], 'det', motor, 0, 5, 0.1, 1, 0.2, True)
     scan3 = bp.relative_adaptive_scan(
         [det], 'det', motor, 0, 5, 0.1, 1, 0.1, False)
+    scan4 = bp.relative_adaptive_scan(
+        [det], 'det', motor, 5, 0, 0.1, 1, 0.1, False)
 
     actual_traj = []
     col = collector('motor', actual_traj)
@@ -254,6 +268,17 @@ def test_adaptive_dscan():
     RE(scan3, {'event': col})
     monotonic_increasing = np.all(np.diff(actual_traj) > 0)
     assert monotonic_increasing
+
+    actual_traj = []
+    col = collector('motor', actual_traj)
+    RE(scan4, {'event': col})
+    monotonic_decreasing = np.all(np.diff(actual_traj) < 0)
+    assert monotonic_decreasing
+
+    with pytest.raises(ValueError):  # min step > max step
+        scan5 = bp.relative_adaptive_scan(
+            [det], 'det', motor, 5, 0, 1, 0.1, 0.1, False)
+        RE(scan5)
 
 
 def test_count(recwarn):
