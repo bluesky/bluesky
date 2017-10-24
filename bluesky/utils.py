@@ -22,6 +22,12 @@ import time
 from tqdm import tqdm
 from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
 import warnings
+try:
+    # cytools is a drop-in replacement for toolz, implemented in Cython
+    from cytools import groupby
+except ImportError:
+    from toolz import groupby
+
 logger = logging.getLogger(__name__)
 
 
@@ -1080,3 +1086,52 @@ class ProgressBarManager:
 def _L2norm(x, y):
     "works on (3, 5) and ((0, 3), (4, 0))"
     return np.sqrt(np.sum((np.asarray(x) - np.asarray(y))**2))
+
+
+def merge_cycler(cyc):
+    def munge_list_of_parts(objs):
+        def get_parent(o):
+            return getattr(o, 'parent')
+
+        independent_objs = set()
+        maybe_coupleed = set()
+        complex_objs = set()
+        for o in objs:
+            parent = o.parent
+            if hasattr(o, 'RealPosition'):
+                complex_objs.add(o)
+            elif (parent is not None and hasattr(parent, 'RealPosition')):
+                maybe_coupleed.add(o)
+            else:
+                independent_objs.add(o)
+
+        return (independent_objs, complex_objs,
+                groupby(get_parent, maybe_coupleed))
+
+    def my_name(obj):
+        parent = obj.parent
+        if parent is None:
+            raise ValueError("Not a child component")
+        return next(iter([nm for nm in parent.component_names
+                          if getattr(parent, nm) is obj]))
+
+    io, co, gb = munge_list_of_parts(cyc.keys)
+
+    # only simple non-coupled objects, declare victory and bail!
+    if len(co) == len(gb) == 0:
+        return cyc
+
+    input_data = cyc.by_key()
+    output_data = [input_data[i] for i in io + co]
+
+    for parent, children in gb.items():
+        if parent in co:
+            raise ValueError("complex device came in whole and in parts")
+
+        # TODO check for real / pseudo conflicts
+        p_cyc = reduce(operator.add,
+                       (cycler(my_name(c), input_data[c])
+                        for c in children))
+        output_data.append(cycler(parent, list(p_cyc)))
+
+    return reduce(operator.add, output_data)

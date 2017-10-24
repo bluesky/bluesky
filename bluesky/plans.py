@@ -21,7 +21,7 @@ from .utils import (Struct, Subs, normalize_subs_input, root_ancestor,
                     separate_devices, apply_sub_factories, update_sub_lists,
                     all_safe_rewind, Msg, ensure_generator, single_gen,
                     short_uid as _short_uid, RampFail, make_decorator,
-                    RunEngineControlException)
+                    RunEngineControlException, merge_cycler)
 
 
 def planify(func):
@@ -2913,6 +2913,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     if per_step is None:
         per_step = one_nd_step
     pos_cache = defaultdict(lambda: None)  # where last position is stashed
+    cycler = merge_cycler(cycler)
     motors = list(cycler.keys)
 
     @stage_decorator(list(detectors) + motors)
