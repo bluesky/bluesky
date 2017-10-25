@@ -283,7 +283,7 @@ def test_adaptive_dscan():
 
 def test_tune_centroid():
     scan1 = bp.tune_centroid([det], 'det', motor, 0, 5, 0.1, 10, snake=True)
-    scan2 = bp.tune_centroid([det], 'det', motor, 0, 5, 0.01, 10, True)
+    scan2 = bp.tune_centroid([det], 'det', motor, 0, 5, 0.01, 10, snake=True)
     scan3 = bp.tune_centroid([det], 'det', motor, 0, 5, 0.1, 10, snake=False)
     scan4 = bp.tune_centroid([det], 'det', motor, 5, 0, 0.1, 10, snake=False)
 
