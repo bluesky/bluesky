@@ -2773,8 +2773,8 @@ def tune_centroid(
     else:
         _md['hints'].setdefault('dimensions', dimensions)
 
-    @bp.stage_decorator(list(detectors) + [motor])
-    @bp.run_decorator(md=_md)
+    @stage_decorator(list(detectors) + [motor])
+    @run_decorator(md=_md)
     def _tune_core(start, stop, num_points, signal):
         next_pos = start
         step = (stop - start) / (num_points - 1)
@@ -2786,7 +2786,7 @@ def tune_centroid(
         
         while abs(step) >= min_step:
             yield Msg('checkpoint')
-            yield from bp.mv(motor, next_pos)
+            yield from mv(motor, next_pos)
             yield Msg('create', None, name='primary')
             for det in detectors:
                 yield Msg('trigger', det, group='B')
@@ -2813,7 +2813,7 @@ def tune_centroid(
                     return
                 peak_position = sum_xI / sum_I  # centroid
                 # TODO: report current peak_position in metadata
-                RE.md["peak_position"] = str(peak_position)
+                # RE.md["peak_position"] = str(peak_position)
                 start = peak_position - step_factor*step
                 stop = peak_position + step_factor*step
                 if snake:
@@ -2823,11 +2823,11 @@ def tune_centroid(
 
         # finally, move to peak position
         if peak_position is not None:
-            RE.md["peak_position"] = peak_position
-            yield from bp.mv(motor, peak_position)
+            # RE.md["peak_position"] = peak_position
+            yield from mv(motor, peak_position)
 
     yield from _tune_core(start, stop, num_points, signal)
-    print("Peak at ", RE.md["peak_position"])
+    # print("Peak at ", RE.md["peak_position"])
     return
 
 
