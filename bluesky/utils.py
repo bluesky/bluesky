@@ -1147,7 +1147,7 @@ def merge_cycler(cyc):
         return cyc
 
     input_data = cyc.by_key()
-    output_data = [input_data[i] for i in io | co]
+    output_data = [cycler(i, input_data[i]) for i in io | co]
 
     for parent, children in gb.items():
         if parent in co:
