@@ -2746,7 +2746,7 @@ def tune_centroid(
     Example
     -------
     motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
-    det = SynGauss('det', m1, 'm1', center=-1.3, Imax=1e5, sigma=0.05)
+    det = SynGauss('det', motor, 'motor', center=-1.3, Imax=1e5, sigma=0.05)
     RE(tune_centroid([det], "det", motor, -1.5, -0.5, 0.01, 10))
     """
     if step_factor <= 0:
