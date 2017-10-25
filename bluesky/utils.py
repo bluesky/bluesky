@@ -1150,10 +1150,6 @@ def merge_cycler(cyc):
     output_data = [cycler(i, input_data[i]) for i in io | co]
 
     for parent, children in gb.items():
-        if parent in co:
-            raise ValueError("A PseudoPostiioner and its children were both "
-                             "passed in.  We do not yet know how to merge "
-                             "these inputs, failing.")
         real_p = set(parent.real_positioners)
         pseudo_p = set(parent.pseudo_positioners)
         type_map = {'real': [], 'pseudo': [], 'unrelated': []}
@@ -1164,6 +1160,12 @@ def merge_cycler(cyc):
                 type_map['pseudo'].append(c)
             else:
                 type_map['unrelated'].append(c)
+
+        if parent in co and (type_map['pseudo'] or type_map['real']):
+            raise ValueError("A PseudoPostiioner and its children were both "
+                             "passed in.  We do not yet know how to merge "
+                             "these inputs, failing.")
+
         if type_map['real'] and type_map['pseudo']:
             raise ValueError("Passed in a mix of real and pseudo axis.  "
                              "Can not cope, failing")
