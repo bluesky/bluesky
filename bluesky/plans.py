@@ -1168,10 +1168,10 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
 
 
 def contingency_wrapper(plan, *,
-                 except_plan=None,
-                 else_plan=None,
-                 final_plan=None,
-                 pause_for_debug=False):
+                        except_plan=None,
+                        else_plan=None,
+                        final_plan=None,
+                        pause_for_debug=False):
     '''try...except...else...finally helper
 
     Run the first plan and then the second.  If any of the messages
@@ -1500,6 +1500,7 @@ def stub_wrapper(plan):
         Metadata discovered from `open_run` Msg
     """
     md = {}
+
     def _block_run_control(msg):
         """
         Block open and close run messages
@@ -1514,6 +1515,7 @@ def stub_wrapper(plan):
 
     yield from msg_mutator(plan, _block_run_control)
     return md
+
 
 def monitor_during_wrapper(plan, signals):
     """
@@ -2019,7 +2021,6 @@ def trigger_and_read(devices, name='primary'):
         yield from save()
         return ret
 
-
     return (yield from rewindable_wrapper(inner_trigger_and_read(),
                                           rewindable))
 
@@ -2162,7 +2163,7 @@ def count(detectors, num=1, delay=None, *, md=None):
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
            'plan_name': 'count',
            'hints': {}
-          }
+           }
     _md.update(md or {})
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
@@ -2185,7 +2186,7 @@ def count(detectors, num=1, delay=None, *, md=None):
     @run_decorator(md=_md)
     def finite_plan():
         for i in range(num):
-            now = time.time() # Intercept the flow in its earliest moment.
+            now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg('checkpoint')
             yield from trigger_and_read(detectors)
             try:
@@ -2265,14 +2266,14 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
            'num_points': len(steps),
            'num_intervals': len(steps) - 1,
            'plan_args': {'detectors': list(map(repr, detectors)),
-                           'motor': repr(motor), 'steps': steps,
-                           'per_step': repr(per_step)},
+                         'motor': repr(motor), 'steps': steps,
+                         'per_step': repr(per_step)},
            'plan_name': 'list_scan',
            'plan_pattern': 'array',
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(object=steps),
            'hints': {},
-          }
+           }
     _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
@@ -2365,7 +2366,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
-          }
+           }
     _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
@@ -2466,7 +2467,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
-          }
+           }
     _md.update(md or {})
 
     try:
@@ -2582,7 +2583,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
                          'threshold': threshold},
            'plan_name': 'adaptive_scan',
            'hints': {},
-          }
+           }
     _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
@@ -2894,7 +2895,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                          'per_step': repr(per_step)},
            'plan_name': 'scan_nd',
            'hints': {},
-          }
+           }
     _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')
@@ -3033,7 +3034,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
            'plan_pattern_module': plan_patterns.__name__,
            'motors': tuple(motor_names),
            'hints': {},
-          }
+           }
     _md.update(md or {})
     _md['hints'].setdefault('gridding', 'rectilinear')
     try:
@@ -3153,7 +3154,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
                          'step': step},
            'plan_name': 'tweak',
            'hints': {},
-          }
+           }
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
@@ -3265,7 +3266,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
            'plan_pattern_module': plan_patterns.__name__,
            'plan_pattern_args': pattern_args,
            'hints': {},
-          }
+           }
     try:
         dimensions = [(x_motor.hints['fields'], 'primary'),
                       (y_motor.hints['fields'], 'primary')]
@@ -3380,7 +3381,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            'plan_pattern_args': pattern_args,
            'plan_pattern_module': plan_patterns.__name__,
            'hints': {},
-          }
+           }
     try:
         dimensions = [(x_motor.hints['fields'], 'primary'),
                       (y_motor.hints['fields'], 'primary')]
