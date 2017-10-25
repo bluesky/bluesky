@@ -1135,8 +1135,6 @@ def merge_cycler(cyc):
         """Get the attribute name of this device on its parent Device
         """
         parent = obj.parent
-        if parent is None:
-            raise ValueError("Not a child component")
         return next(iter([nm for nm in parent.component_names
                           if getattr(parent, nm) is obj]))
 
