@@ -2731,8 +2731,6 @@ def tune_centroid(
         end of range, note: start < stop
     min_step : float
         smallest step size to use.
-        note: For EpicsMotors, ``min_step=min(min_step,motor.MRES)``
-        is used.
     num_points : int, optional
         number of points with each step size, default = 10
     step_factor : float, optional
@@ -2756,8 +2754,6 @@ def tune_centroid(
             "Increase num_points and/or decrease step_factor"
             " or tune_centroid will never converge to a solution"
         )
-    if isinstance(motor, EpicsMotor):
-        min_step = max(min_step, epics.caget(motor.prefix+".MRES"))
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
            'plan_args': {'detectors': list(map(repr, detectors)),
