@@ -2694,9 +2694,9 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
 def tune_centroid(
         detectors, signal, motor, 
         start, stop, min_step, 
-        num_points = 10, 
-        step_factor = 2,
-        snake = False,
+        num_points=10, 
+        step_factor=2,
+        snake=False,
         *, md=None):
     """
     plan: tune a motor to the centroid of signal(motor)
