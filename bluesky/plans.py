@@ -2747,6 +2747,8 @@ def tune_centroid(
     det = SynGauss('det', motor, 'motor', center=-1.3, Imax=1e5, sigma=0.05)
     RE(tune_centroid([det], "det", motor, -1.5, -0.5, 0.01, 10))
     """
+    if min_step <= 0:
+        raise ValueError("min_step must be positive")
     if step_factor <= 0:
         raise ValueError("step_factor must be positive")
     if (num_points - 1) <= 2*step_factor:
