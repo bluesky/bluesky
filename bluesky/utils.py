@@ -1089,26 +1089,51 @@ def _L2norm(x, y):
 
 
 def merge_cycler(cyc):
+    """Specify movements of sets of interdependent axes atomically.
+
+    Inspect the keys of ``cyc`` (which are Devices) to indentify those
+    which are interdependent (part of the same
+    PseudoPositioner) and merge those independent entries into
+    a single entry.
+
+    This also validates that the user has not passed conflicting
+    interdependent axis (such as a real and pseudo axis from the same
+    PseudoPositioner)
+
+    Parameters
+    ----------
+    cyc : Cycler[OphydObj, Sequence]
+       A cycler as would be passed to :func:`scan_nd`
+
+    Returns
+    -------
+    Cycler[OphydObj, Sequence]
+       A cycler as would be passed to :func:`scan_nd` with the same
+       or fewer keys than the input.
+
+    """
     def munge_list_of_parts(objs):
         def get_parent(o):
             return getattr(o, 'parent')
 
         independent_objs = set()
-        maybe_coupleed = set()
+        maybe_coupled = set()
         complex_objs = set()
         for o in objs:
             parent = o.parent
             if hasattr(o, 'RealPosition'):
                 complex_objs.add(o)
             elif (parent is not None and hasattr(parent, 'RealPosition')):
-                maybe_coupleed.add(o)
+                maybe_coupled.add(o)
             else:
                 independent_objs.add(o)
 
         return (independent_objs, complex_objs,
-                groupby(get_parent, maybe_coupleed))
+                groupby(get_parent, maybe_coupled))
 
     def my_name(obj):
+        """Get the attribute name of this device on its parent Device
+        """
         parent = obj.parent
         if parent is None:
             raise ValueError("Not a child component")
@@ -1122,13 +1147,20 @@ def merge_cycler(cyc):
         return cyc
 
     input_data = cyc.by_key()
-    output_data = [input_data[i] for i in io + co]
+    output_data = [input_data[i] for i in io | co]
 
     for parent, children in gb.items():
         if parent in co:
-            raise ValueError("complex device came in whole and in parts")
+            raise ValueError("A PseudoPostiioner and its children were both "
+                             "passed in.  We do not yet know how to merge "
+                             "these inputs, failing.")
+        real_p = parent.real_positioners
+        pseudo_p = parent.pseudo_positioners
+        if (any(c in real_p for c in children) and
+                any(c in pseudo_p for c in children)):
+            raise ValueError("Passed in a mix of real and pseudo axis.  "
+                             "Can not cope, failing")
 
-        # TODO check for real / pseudo conflicts
         p_cyc = reduce(operator.add,
                        (cycler(my_name(c), input_data[c])
                         for c in children))
