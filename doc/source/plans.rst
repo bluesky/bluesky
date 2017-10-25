@@ -52,6 +52,7 @@ documentation.
    relative_spiral_fermat
    adaptive_scan
    relative_adaptive_scan
+   tune_centroid
    tweak
    fly
 
