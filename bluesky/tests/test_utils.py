@@ -114,6 +114,34 @@ def test_cycler_merge_pseudo_real_clash(hw, children):
 
 
 @pytest.mark.parametrize('children',
+                         (['pseudo1', ],
+                          ['pseudo1', 'pseudo2'],
+                          ['real1'],
+                          ['real1', 'real2']))
+def test_cycler_parent_and_parts_fail(hw, children):
+    p3x3 = hw.pseudo3x3
+    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5))
+                                for k in children))
+    cyc += cycler(p3x3, range(5))
+
+    with pytest.raises(ValueError):
+        merge_cycler(cyc)
+
+
+@pytest.mark.parametrize('children',
+                         (['sig', ],))
+def test_cycler_parent_and_parts_succed(hw, children):
+    p3x3 = hw.pseudo3x3
+    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5))
+                                for k in children))
+    cyc += cycler(p3x3, range(5))
+    mcyc = merge_cycler(cyc)
+
+    assert mcyc.keys == cyc.keys
+    assert mcyc.by_key() == cyc.by_key()
+
+
+@pytest.mark.parametrize('children',
                          (
                              ['pseudo1'],
                              ['pseudo2', 'sig'],
