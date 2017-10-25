@@ -1167,12 +1167,16 @@ def merge_cycler(cyc):
         if type_map['real'] and type_map['pseudo']:
             raise ValueError("Passed in a mix of real and pseudo axis.  "
                              "Can not cope, failing")
-
-        if type_map['pseudo']:
+        pseudo_axes = type_map['pseudo']
+        if len(pseudo_axes) > 1:
             p_cyc = reduce(operator.add,
                            (cycler(my_name(c), input_data[c])
                             for c in type_map['pseudo']))
             output_data.append(cycler(parent, list(p_cyc)))
+        elif len(pseudo_axes) == 1:
+            c, = pseudo_axes
+            output_data.append(cycler(c, input_data[c]))
+
         for c in type_map['real'] + type_map['unrelated']:
             output_data.append(cycler(c, input_data[c]))
 
