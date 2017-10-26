@@ -2893,8 +2893,12 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
           }
     _md.update(md or {})
     _md['hints'].setdefault('gridding', 'rectilinear')
-    _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
-                                           for m in motors])
+    try:
+        _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
+                                               for m in motors])
+    except (AttributeError, KeyError):
+        ...
+
     return (yield from scan_nd(detectors, full_cycler,
                                per_step=per_step, md=_md))
 
