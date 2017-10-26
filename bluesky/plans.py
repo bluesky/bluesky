@@ -2783,6 +2783,9 @@ def tune_centroid(
     else:
         _md['hints'].setdefault('dimensions', dimensions)
 
+    low_limit = min(start, stop)
+    high_limit = max(start, stop)
+
     @stage_decorator(list(detectors) + [motor])
     @run_decorator(md=_md)
     def _tune_core(start, stop, num_points, signal):
@@ -2817,6 +2820,8 @@ def tune_centroid(
                 # improvement: report current peak_position somehow
                 start = peak_position - step_factor*step
                 stop = peak_position + step_factor*step
+                start = max(min(start, high_limit), low_limit)
+                stop = max(min(stop, high_limit), low_limit)
                 if snake:
                     start, stop = stop, start
                 step = (stop - start) / (num_points - 1)
