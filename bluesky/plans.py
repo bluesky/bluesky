@@ -2866,13 +2866,14 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
 
     md_args = []
     motor_names = []
+    motors = []
     for i, (motor, start, stop, num, snake) in enumerate(chunk_args):
         md_args.extend([repr(motor), start, stop, num])
         if i > 0:
             # snake argument only shows up after the first motor
             md_args.append(snake)
         motor_names.append(motor.name)
-
+        motors.append(motor)
     _md = {'shape': tuple(num for motor, start, stop, num, snake
                           in chunk_args),
            'extents': tuple([start, stop] for motor, start, stop, num, snake
@@ -2892,7 +2893,8 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
           }
     _md.update(md or {})
     _md['hints'].setdefault('gridding', 'rectilinear')
-
+    _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
+                                           for m in motors])
     return (yield from scan_nd(detectors, full_cycler,
                                per_step=per_step, md=_md))
 
