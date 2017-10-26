@@ -323,6 +323,7 @@ class LiveScatter(CallbackBase):
                  clim=None, cmap='viridis', ax=None, **kwargs):
         if ax is None:
             fig, ax = plt.subplots()
+            fig.show()
         ax.cla()
         self.x = x
         self.y = y
