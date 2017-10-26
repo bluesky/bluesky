@@ -31,7 +31,7 @@ class Publisher:
     Publish from a RunEngine to a Proxy running on localhost on port 5567.
 
     >>> RE = RunEngine({})
-    >>> publisher = Publisher('localhost:5567'), RE)
+    >>> publisher = Publisher('localhost:5567', RE)
     """
     def __init__(self, address, *, RE=None, zmq=None):
         if zmq is None:
