@@ -2765,7 +2765,7 @@ def tune_centroid(
     except (AttributeError, ValueError):
         motor_name = motor.name
     _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor_name],
+           'motors': [motor.name],
            'plan_args': {'detectors': list(map(repr, detectors)),
                          'motor': repr(motor),
                          'start': start,
@@ -2818,10 +2818,8 @@ def tune_centroid(
                     return
                 peak_position = sum_xI / sum_I  # centroid
                 # improvement: report current peak_position somehow
-                start = peak_position - step_factor*step
-                stop = peak_position + step_factor*step
-                start = max(min(start, high_limit), low_limit)
-                stop = max(min(stop, high_limit), low_limit)
+                start = np.clip(peak_position - step_factor*step, low_limit, high_limit)
+                stop = np.clip(peak_position + step_factor*step, low_limit, high_limit)
                 if snake:
                     start, stop = stop, start
                 step = (stop - start) / (num_points - 1)
