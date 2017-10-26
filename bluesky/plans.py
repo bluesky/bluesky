@@ -2694,7 +2694,7 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
 def tune_centroid(
         detectors, signal, motor, 
         start, stop, min_step, 
-        num_points=10, 
+        num=10, 
         step_factor=2,
         snake=False,
         *, md=None):
@@ -2735,8 +2735,8 @@ def tune_centroid(
         end of range, note: start < stop
     min_step : float
         smallest step size to use.
-    num_points : int, optional
-        number of points with each step size, default = 10
+    num : int, optional
+        number of steps with each step size, default = 10
     step_factor : float, optional
         used in calculating range when 
         maximum is found, note: step_factor > 0, default = 2
@@ -2755,9 +2755,9 @@ def tune_centroid(
         raise ValueError("min_step must be positive")
     if step_factor <= 0:
         raise ValueError("step_factor must be positive")
-    if (num_points - 1) <= 2*step_factor:
+    if (num - 1) <= 2*step_factor:
         raise ValueError(
-            "Increase num_points and/or decrease step_factor"
+            "Increase num and/or decrease step_factor"
             " or tune_centroid will never converge to a solution"
         )
     try:
@@ -2770,7 +2770,7 @@ def tune_centroid(
                          'motor': repr(motor),
                          'start': start,
                          'stop': stop,
-                         'num_points': num_points,
+                         'num': num,
                          'min_step': min_step,},
            'plan_name': 'tune_centroid',
            'hints': {},
@@ -2788,9 +2788,9 @@ def tune_centroid(
 
     @stage_decorator(list(detectors) + [motor])
     @run_decorator(md=_md)
-    def _tune_core(start, stop, num_points, signal):
+    def _tune_core(start, stop, num, signal):
         next_pos = start
-        step = (stop - start) / (num_points - 1)
+        step = (stop - start) / num
         peak_position = None
         cur_I = None
         cur_det = {}
@@ -2822,7 +2822,7 @@ def tune_centroid(
                 stop = np.clip(peak_position + step_factor*step, low_limit, high_limit)
                 if snake:
                     start, stop = stop, start
-                step = (stop - start) / (num_points - 1)
+                step = (stop - start) / num
                 next_pos = start
 
         # finally, move to peak position
@@ -2830,7 +2830,7 @@ def tune_centroid(
             # improvement: report final peak_position
             yield from mv(motor, peak_position)
 
-    return (yield from _tune_core(start, stop, num_points, signal))
+    return (yield from _tune_core(start, stop, num, signal))
 
 
 def one_nd_step(detectors, step, pos_cache):
