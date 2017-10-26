@@ -301,3 +301,30 @@ class LiveTiffExporter(BrokerCallbackBase):
         self._start = None
         self.filenames = []
         super().stop(doc)
+
+
+class Exporter(CallbackBase):
+    def __init__(self, new_db, old_db, new_root=None, copy_kwargs=None):
+        """
+
+        Parameters
+        ----------
+        new_db: databroker.Broker
+        old_db: databroker.Broker
+        new_root: str
+        copy_kwargs: dict
+        """
+        self.new_db = new_db
+        self.old_db = old_db
+        self.copy_kwargs = copy_kwargs
+        self.new_root = new_root
+
+        self.start_uid = None
+
+    def start(self, doc):
+        # This is run on start just in case we miss a stop
+        if self.start_uid:
+            hdr = self.old_db[self.start_uid]
+            self.old_db.export(hdr, self.new_db, self.new_root,
+                               self.copy_kwargs)
+        self.start_uid = doc['uid']

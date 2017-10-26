@@ -1,6 +1,6 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg, RunEngineInterrupted
-from bluesky.examples import stepscan
+from bluesky.examples import stepscan, Reader, ReaderWithRegistryHandler
 from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
 from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
@@ -9,7 +9,7 @@ import bluesky.plans as bp
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
-from bluesky.callbacks.broker import BrokerCallbackBase
+from bluesky.callbacks.broker import BrokerCallbackBase, Exporter
 from bluesky.callbacks import CallbackBase
 from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
 import signal
@@ -449,3 +449,14 @@ def test_plotting_hints(RE, hw, db):
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
                  True, hw.motor3, -2, 0, 2, True))
     assert dc.start[-1]['hints'] == hint
+
+
+def test_exporter(fresh_RE, db, db2, tmpdir):
+    RE = fresh_RE
+    RE.subscribe(db.insert)
+    db.fs.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
+    det = Reader('det', {'img': lambda: np.array(np.ones((10, 10)))})
+    exporter = Exporter(db2, db, tmpdir)
+    RE.subscribe(exporter)
+    RE(count([det]))
+    assert db2[-1] == db[-1]

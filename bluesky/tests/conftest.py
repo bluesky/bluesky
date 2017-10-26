@@ -59,3 +59,12 @@ def cleanup_any_figures(request):
     import matplotlib.pyplot as plt
     "Close any matplotlib figures that were opened during a test."
     plt.close('all')
+
+
+@pytest.fixture(scope='function')
+def db2(request):
+    """Return a data broker
+    """
+    from databroker.tests.utils import build_sqlite_backed_broker
+    db = build_sqlite_backed_broker(request)
+    return db
