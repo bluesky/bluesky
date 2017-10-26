@@ -328,3 +328,10 @@ class Exporter(CallbackBase):
             self.old_db.export(hdr, self.new_db, self.new_root,
                                self.copy_kwargs)
         self.start_uid = doc['uid']
+
+    def stop(self, doc):
+        if self.start_uid:
+            hdr = self.old_db[self.start_uid]
+            self.old_db.export(hdr, self.new_db, self.new_root,
+                               self.copy_kwargs)
+            self.start_uid = None
