@@ -2716,6 +2716,10 @@ def tune_centroid(
     those with hysteresis, snake scanning may not be appropriate.  
     For such positioners, always approach the positions from the 
     same direction.
+    
+    Note:  Ideally the signal has only one peak in the range to 
+    be scanned.  It is assumed the signal is not polymodal 
+    between `start` and `stop`. 
 
     Parameters
     ----------
@@ -2756,8 +2760,12 @@ def tune_centroid(
             "Increase num_points and/or decrease step_factor"
             " or tune_centroid will never converge to a solution"
         )
+    try:
+        motor_name, = motor.hints['fields']
+    except (AttributeError, ValueError):
+        motor_name = motor.name
     _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor.name],
+           'motors': [motor_name],
            'plan_args': {'detectors': list(map(repr, detectors)),
                          'motor': repr(motor),
                          'start': start,
@@ -2789,19 +2797,11 @@ def tune_centroid(
         while abs(step) >= min_step:
             yield Msg('checkpoint')
             yield from mv(motor, next_pos)
-            yield Msg('create', None, name='primary')
-            for det in detectors:
-                yield Msg('trigger', det, group='B')
-            yield Msg('wait', None, 'B')
-            for det in separate_devices(detectors + [motor]):
-                cur_det = yield Msg('read', det)
-                if signal in cur_det:
-                    cur_I = cur_det[signal]['value']
-                    sum_I += cur_I
-                    position = motor.read()[motor.name]["value"]
-                    sum_xI += position * cur_I
-
-            yield Msg('save')
+            ret = (yield from trigger_and_read(detectors + [motor]))
+            cur_I = ret[signal]['value']
+            sum_I += cur_I
+            position = ret[motor_name]['value']
+            sum_xI += position * cur_I
 
             if (stop - start) < abs(stop - start):
                 in_range = start >= next_pos >= stop  # negative motion
@@ -2814,8 +2814,7 @@ def tune_centroid(
                 if sum_I == 0:
                     return
                 peak_position = sum_xI / sum_I  # centroid
-                # TODO: report current peak_position in metadata
-                # RE.md["peak_position"] = str(peak_position)
+                # improvement: report current peak_position somehow
                 start = peak_position - step_factor*step
                 stop = peak_position + step_factor*step
                 if snake:
@@ -2825,12 +2824,10 @@ def tune_centroid(
 
         # finally, move to peak position
         if peak_position is not None:
-            # RE.md["peak_position"] = peak_position
+            # improvement: report final peak_position
             yield from mv(motor, peak_position)
 
-    yield from _tune_core(start, stop, num_points, signal)
-    # print("Peak at ", RE.md["peak_position"])
-    return
+    return (yield from _tune_core(start, stop, num_points, signal))
 
 
 def one_nd_step(detectors, step, pos_cache):
