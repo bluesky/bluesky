@@ -1088,6 +1088,72 @@ def _L2norm(x, y):
     return np.sqrt(np.sum((np.asarray(x) - np.asarray(y))**2))
 
 
+def merge_axis(objs):
+    '''Merge possibly related axis
+
+    This function will take a list of objects and separate it into
+
+     - list of completely independent objects (most settable things and
+       detectors) that do not have coupled motion.
+     - list of devices who have children who are coupled (PseudoPositioner
+       ducked by looking for 'RealPosition' as an attribute)
+
+    Both of these lists will only contain objects directly passed in
+    in objs
+
+     - map between parents and objects passed in.  Each value
+       of the map is a map between the strings
+       {'real', 'pseudo', 'independent'} and a list of objects.  All
+       of the objects in the (doubly nested) map are in the input.
+
+    Parameters
+    ----------
+    objs : Iterable[OphydObj]
+        The input devices
+
+    Returns
+    -------
+    independent_objs : List[OphydObj]
+        Independent 'simple' axis
+
+    complex_objs : List[PseudoPositioner]
+        Independent objects which have interdependent children
+
+    coupled : Dict[PseudoPositioner, Dict[str, List[OphydObj]]]
+        Mapping of interdependent axis passed in.
+    '''
+    def get_parent(o):
+        return getattr(o, 'parent')
+
+    independent_objs = set()
+    maybe_coupled = set()
+    complex_objs = set()
+    for o in objs:
+        parent = o.parent
+        if hasattr(o, 'RealPosition'):
+            complex_objs.add(o)
+        elif (parent is not None and hasattr(parent, 'RealPosition')):
+            maybe_coupled.add(o)
+        else:
+            independent_objs.add(o)
+    coupled = {}
+
+    for parent, children in groupby(get_parent, maybe_coupled).items():
+        real_p = set(parent.real_positioners)
+        pseudo_p = set(parent.pseudo_positioners)
+        type_map = {'real': [], 'pseudo': [], 'unrelated': []}
+        for c in children:
+            if c in real_p:
+                type_map['real'].append(c)
+            elif c in pseudo_p:
+                type_map['pseudo'].append(c)
+            else:
+                type_map['unrelated'].append(c)
+        coupled[parent] = type_map
+
+    return (independent_objs, complex_objs, coupled)
+
+
 def merge_cycler(cyc):
     """Specify movements of sets of interdependent axes atomically.
 
@@ -1112,25 +1178,6 @@ def merge_cycler(cyc):
        or fewer keys than the input.
 
     """
-    def munge_list_of_parts(objs):
-        def get_parent(o):
-            return getattr(o, 'parent')
-
-        independent_objs = set()
-        maybe_coupled = set()
-        complex_objs = set()
-        for o in objs:
-            parent = o.parent
-            if hasattr(o, 'RealPosition'):
-                complex_objs.add(o)
-            elif (parent is not None and hasattr(parent, 'RealPosition')):
-                maybe_coupled.add(o)
-            else:
-                independent_objs.add(o)
-
-        return (independent_objs, complex_objs,
-                groupby(get_parent, maybe_coupled))
-
     def my_name(obj):
         """Get the attribute name of this device on its parent Device
         """
@@ -1138,7 +1185,7 @@ def merge_cycler(cyc):
         return next(iter([nm for nm in parent.component_names
                           if getattr(parent, nm) is obj]))
 
-    io, co, gb = munge_list_of_parts(cyc.keys)
+    io, co, gb = merge_axis(cyc.keys)
 
     # only simple non-coupled objects, declare victory and bail!
     if len(co) == len(gb) == 0:
@@ -1147,17 +1194,7 @@ def merge_cycler(cyc):
     input_data = cyc.by_key()
     output_data = [cycler(i, input_data[i]) for i in io | co]
 
-    for parent, children in gb.items():
-        real_p = set(parent.real_positioners)
-        pseudo_p = set(parent.pseudo_positioners)
-        type_map = {'real': [], 'pseudo': [], 'unrelated': []}
-        for c in children:
-            if c in real_p:
-                type_map['real'].append(c)
-            elif c in pseudo_p:
-                type_map['pseudo'].append(c)
-            else:
-                type_map['unrelated'].append(c)
+    for parent, type_map in gb.items():
 
         if parent in co and (type_map['pseudo'] or type_map['real']):
             raise ValueError("A PseudoPostiioner and its children were both "
