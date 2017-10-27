@@ -103,3 +103,27 @@ def test_mesh_pseudo(hw, fresh_RE):
 
     assert all(df[sig.name] == 0)
     assert all(df[p3x3.pseudo3.name] == 0)
+
+
+def test_rmesh_pseudo(hw, fresh_RE):
+    p3x3 = hw.pseudo3x3
+    sig = hw.sig
+    RE = fresh_RE
+    d = DocCollector()
+
+    RE.subscribe(d.insert)
+    rs, = RE(bp.relative_outer_product_scan(
+        [sig],
+        p3x3.pseudo1, 0, 3, 5,
+        p3x3.pseudo2, 7, 10, 7, False))
+    df = pd.DataFrame([_['data']
+                       for _ in d.event[d.descriptor[rs][0]['uid']]])
+
+    for k in p3x3.describe():
+        assert k in df
+
+    for k in sig.describe():
+        assert k in df
+
+    assert all(df[sig.name] == 0)
+    assert all(df[p3x3.pseudo3.name] == 0)
