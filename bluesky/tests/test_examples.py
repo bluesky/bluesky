@@ -4,7 +4,8 @@ from bluesky.examples import (motor, simple_scan, det, sleepy, wait_one,
                               checkpoint_forever, simple_scan_saving,
                               stepscan, MockFlyer, fly_gen,
                               conditional_break, SynGauss, flyer1,
-                              ReaderWithRegistry, ReaderWithRegistryHandler
+                              ReaderWithRegistry, ReaderWithRegistryHandler,
+                              Mover, SynPseudoVoigt
                               )
 from bluesky.callbacks import LivePlot
 from bluesky import (Msg, IllegalMessageSequence,
@@ -720,3 +721,64 @@ def test_reg_reader(db):
     datum_id = reading['img']['value']
     arr = reg.retrieve(datum_id)
     assert_array_equal(np.ones((10, 10)), arr)
+
+
+def test_pseudovoigt():
+    precision = 1e-5		# tolerance for floating point calculations
+    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    motor.set(0)
+    assert motor.read()["motor"]["value"] == 0
+
+    with pytest.raises(ValueError):
+        SynPseudoVoigt('det1', motor, 'motor', eta=-0.01)
+    with pytest.raises(ValueError):
+        SynPseudoVoigt('det1', motor, 'motor', eta=1.01)
+    with pytest.raises(ValueError):
+        SynPseudoVoigt('det1', motor, 'motor', scale=0.99)
+    with pytest.raises(ValueError):
+        SynPseudoVoigt('det1', motor, 'motor', sigma=0)
+    with pytest.raises(ValueError):
+        SynPseudoVoigt('det1', motor, 'motor', bkg=-1)
+
+    det1 = SynPseudoVoigt('det1', motor, 'motor')
+    assert det1.read()["det1"]["value"] == 1
+
+    det2 = SynPseudoVoigt('det2', motor, 'motor', 
+        center=0, eta=0.5, scale=1, sigma=1, bkg=0)
+    assert det2.read()["det2"]["value"] == 1
+    
+    def assert_expected(det, expected, precision):
+        value = det.read()[det.name]["value"]
+        assert abs(value - expected) < precision*abs(expected)
+
+    position = 1
+    expected = 0.55326532985631671
+    motor.set(position)
+    assert motor.read()["motor"]["value"] == position
+    assert_expected(det2, expected, precision)
+    assert det2.read()["det2"]["value"] == det1.read()["det1"]["value"]
+
+    position = 0.15
+    motor.set(position)
+    det2 = SynPseudoVoigt('det2', motor, 'motor', sigma=position)
+    assert_expected(det2, expected, precision)
+
+    motor.set(0)
+    scale = 1e7
+    det1 = SynPseudoVoigt('det1', motor, 'motor', scale=scale)
+    assert det1.read()["det1"]["value"] == scale
+    det2 = SynPseudoVoigt('det2', motor, 'motor', scale=scale, noise="poisson")
+    assert det2.read()["det2"]["value"] != det1.read()["det1"]["value"]
+
+    motor.set(100)
+    background = 1e-5
+    det1 = SynPseudoVoigt('det1', motor, 'motor', eta=0)
+    assert det1.read()["det1"]["value"] == 0
+    det2 = SynPseudoVoigt('det2', motor, 'motor', eta=0, bkg=background)
+    assert det2.read()["det2"]["value"] == background
+    
+    expected = 1/(1+1.0e4)
+    det1 = SynPseudoVoigt('det1', motor, 'motor', eta=1)
+    assert_expected(det1, expected, precision)
+    det2 = SynPseudoVoigt('det2', motor, 'motor', eta=1, bkg=background)
+    assert_expected(det2, expected+background, precision)
