@@ -419,10 +419,10 @@ class LiveGrid(CallbackBase):
        Labels for the x and y axis
 
     extent : scalars (left, right, bottom, top), optional
-       Passed through to `Axes.imshow`
+       Passed through to :meth:`matplotlib.axes.Axes.imshow`
 
     aspect : str or float, optional
-       Passed through to `Axes.imshow`
+       Passed through to :meth:`matplotlib.axes.Axes.imshow`
 
     ax : Axes, optional
         matplotib Axes; if none specified, new figure and axes are made.
