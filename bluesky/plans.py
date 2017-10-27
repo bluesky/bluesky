@@ -21,7 +21,7 @@ from .utils import (Struct, Subs, normalize_subs_input, root_ancestor,
                     separate_devices, apply_sub_factories, update_sub_lists,
                     all_safe_rewind, Msg, ensure_generator, single_gen,
                     short_uid as _short_uid, RampFail, make_decorator,
-                    RunEngineControlException, merge_cycler)
+                    RunEngineControlException, merge_cycler, merge_axis)
 
 
 def planify(func):
@@ -1770,6 +1770,25 @@ def relative_set_wrapper(plan, devices=None):
         mutated
     """
     initial_positions = {}
+    coupled_parents = set()
+    if devices is not None:
+        # if we have any pseudo devices then setting any part of it
+        # needs to trigger the relative behavior.
+        io, co, go = merge_axis(devices)
+        devices = set(devices) | set(io) | set(co) | set(go)
+        # if a device with coupled children is directly in the
+        # list, include all the coupled children as well
+        for obj in co:
+            devices |= set(obj.pseudo_positioners)
+            coupled_parents.add(obj)
+
+        # if at least one child of a device with coupled children
+        # only include the coupled children if at least of the children
+        # directly included is one of the coupled ones.
+        for obj, type_map in go.items():
+            if len(type_map['pseudo']) > 0:
+                devices |= set(obj.pseudo_positioners)
+                coupled_parents.add(obj)
 
     def read_and_stash_a_motor(obj):
         # obj should have a `position` attribution
