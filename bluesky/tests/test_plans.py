@@ -62,3 +62,19 @@ def test_plan_header(fresh_RE, plan, target):
     RE(plan, c.insert)
     for s in c.start:
         _validate_start(s, target)
+
+
+def test_ops_dimension_hints(fresh_RE):
+    RE = fresh_RE
+    c = DocCollector()
+    RE.subscribe(c.insert)
+    rs, = RE(bp.outer_product_scan([det],
+                                   motor, -1, 1, 7,
+                                   motor1, 0, 2, 3, False))
+
+    st = c.start[0]
+
+    assert 'dimensions' in st['hints']
+
+    assert st['hints']['dimensions'] == [
+        (m.hints['fields'], 'primary') for m in (motor, motor1)]
