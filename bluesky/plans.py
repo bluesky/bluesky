@@ -2710,7 +2710,7 @@ def tune_centroid(
     
     Set `snake=True` if your positions are reproducible
     moving from either direction.  This will not necessarily
-    decrease the number of steps required to reach convergence.
+    decrease the number of traversals required to reach convergence.
     Snake motion reduces the total time spent on motion
     to reset the positioner.  For some positioners, such as 
     those with hysteresis, snake scanning may not be appropriate.  
