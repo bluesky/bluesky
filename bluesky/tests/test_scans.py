@@ -281,6 +281,39 @@ def test_adaptive_dscan():
         RE(scan5)
 
 
+def test_tune_centroid():
+    scan1 = bp.tune_centroid([det], 'det', motor, 0, 5, 0.1, 10, snake=True)
+    scan2 = bp.tune_centroid([det], 'det', motor, 0, 5, 0.01, 10, snake=True)
+    scan3 = bp.tune_centroid([det], 'det', motor, 0, 5, 0.1, 10, snake=False)
+    scan4 = bp.tune_centroid([det], 'det', motor, 5, 0, 0.1, 10, snake=False)
+
+    actual_traj = []
+    col = collector('motor', actual_traj)
+    counter1 = CallbackCounter()
+    counter2 = CallbackCounter()
+
+    RE(scan1, {'event': [col, counter1]})
+    RE(scan2, {'event': counter2})
+    #assert counter1.value > counter2.value
+    assert actual_traj[0] == 0
+
+    actual_traj = []
+    col = collector('motor', actual_traj)
+    RE(scan3, {'event': col})
+    monotonic_increasing = np.all(np.diff(actual_traj) > 0)
+    assert not monotonic_increasing
+
+    actual_traj = []
+    col = collector('motor', actual_traj)
+    RE(scan4, {'event': col})
+    monotonic_decreasing = np.all(np.diff(actual_traj) < 0)
+    assert not monotonic_decreasing
+
+    with pytest.raises(ValueError):  # min step < 0
+        scan5 = bp.tune_centroid([det], 'det', motor, 5, 0, -0.1, 10, snake=False)
+        RE(scan5)
+
+
 def test_count(recwarn):
     actual_intensity = []
     col = collector('det', actual_intensity)
