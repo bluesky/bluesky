@@ -2736,7 +2736,7 @@ def tune_centroid(
     min_step : float
         smallest step size to use.
     num : int, optional
-        number of steps with each step size, default = 10
+        number of points with each traversal, default = 10
     step_factor : float, optional
         used in calculating range when 
         maximum is found, note: step_factor > 0, default = 2
@@ -2755,7 +2755,7 @@ def tune_centroid(
         raise ValueError("min_step must be positive")
     if step_factor <= 0:
         raise ValueError("step_factor must be positive")
-    if (num - 1) <= 2*step_factor:
+    if (num - 2) <= 2*step_factor:
         raise ValueError(
             "Increase num and/or decrease step_factor"
             " or tune_centroid will never converge to a solution"
@@ -2790,7 +2790,7 @@ def tune_centroid(
     @run_decorator(md=_md)
     def _tune_core(start, stop, num, signal):
         next_pos = start
-        step = (stop - start) / num
+        step = (stop - start) / (num - 1)
         peak_position = None
         cur_I = None
         cur_det = {}
@@ -2822,7 +2822,7 @@ def tune_centroid(
                 stop = np.clip(peak_position + step_factor*step, low_limit, high_limit)
                 if snake:
                     start, stop = stop, start
-                step = (stop - start) / num
+                step = (stop - start) / (num - 1)
                 next_pos = start
 
         # finally, move to peak position
