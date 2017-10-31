@@ -574,10 +574,10 @@ def test_broker_base(fresh_RE, db):
     RE = fresh_RE
     RE.subscribe(db.insert)
     bc = BrokerChecker(('img',), db=db)
-    db.fs.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
+    db.reg.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
     det = ReaderWithRegistry('det',
                              {'img': lambda: np.array(np.ones((10, 10)))},
-                             reg=db.fs)
+                             reg=db.reg)
     RE.subscribe(bc)
     RE(count([det]))
 
@@ -593,7 +593,7 @@ def test_broker_base_no_unpack(fresh_RE, db):
 
     RE = fresh_RE
     bc = BrokerChecker(('img',), db=db)
-    db.fs.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
+    db.reg.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
     det = Reader('det', {'img': lambda: np.array(np.ones((10, 10)))})
     RE.subscribe(bc)
     RE(count([det]))
