@@ -1,5 +1,5 @@
 from bluesky.utils import ProgressBar, ProgressBarManager
-from bluesky.plans import mv
+from bluesky.plan_stubs import mv
 from bluesky.tests import requires_ophyd
 from bluesky import RunEngine
 from collections import OrderedDict

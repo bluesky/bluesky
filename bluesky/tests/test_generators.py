@@ -5,10 +5,12 @@ from itertools import zip_longest
 
 from bluesky import Msg
 
-from bluesky.plans import (msg_mutator, stub_wrapper, plan_mutator, pchain,
-                           single_gen as single_message_gen, finalize_wrapper)
+from bluesky.preprocessors import (msg_mutator, stub_wrapper,
+                                   plan_mutator, pchain, single_gen as
+                                   single_message_gen,
+                                   finalize_wrapper)
 
-from bluesky.utils import ensure_generator, single_gen
+from bluesky.utils import ensure_generator
 
 
 class EchoException(Exception):

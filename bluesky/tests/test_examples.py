@@ -7,14 +7,13 @@ from bluesky.examples import (simple_scan, sleepy, wait_one,
 from bluesky.callbacks import LivePlot
 from bluesky import (Msg, IllegalMessageSequence,
                      RunEngineInterrupted, FailedStatus)
-import bluesky.plans as bp
+import bluesky.plan_stubs as bps
 import os
 import signal
 import asyncio
 import time as ttime
 import numpy as np
 from numpy.testing import assert_array_equal
-import pytest
 
 
 def test_msgs(RE, hw):
@@ -658,8 +657,8 @@ def test_async_trigger_delay(RE, hw):
     hw.motor.delay = .5
     hw.det.exposure_time = .5
 
-    _time_test(bp.trigger, .5, hw.det, wait=True)
-    _time_test(bp.abs_set, .5, hw.motor, 1, wait=True)
+    _time_test(bps.trigger, .5, hw.det, wait=True)
+    _time_test(bps.abs_set, .5, hw.motor, 1, wait=True)
 
 
 def test_reg_reader(hw, db):

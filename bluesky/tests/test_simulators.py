@@ -14,6 +14,7 @@ def test_print_summary(hw):
     summarize_plan(scan([det], motor, -1, 1, 10))  # new name
     list(print_summary_wrapper(scan([det], motor, -1, 1, 10)))
 
+
 def test_old_module_name(hw):
     det = hw.det
     motor = hw.motor
