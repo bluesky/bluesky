@@ -282,7 +282,7 @@ class PeakStats(CollectThenCompute):
             self.cen = np.mean(_cen_list)
 
         if len(_cen_list) >= 2:
-            self.fwhm = float(_cen_list[-1] - _cen_list[0])
+            self.fwhm = np.abs(_cen_list[-1] - _cen_list[0], dtype=float)
 
         # reset y data
         y = self.y_data
