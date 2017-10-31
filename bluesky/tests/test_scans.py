@@ -197,7 +197,7 @@ def test_log_ascan():
 def test_lin_dscan():
     traj = np.linspace(0, 10, 5) + 6
     motor.set(6)
-    scan = bp.relative_scan([det], motor, 0, 10, 5)
+    scan = bp.rel_scan([det], motor, 0, 10, 5)
     traj_checker(scan, traj)
 
 

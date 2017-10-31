@@ -2350,7 +2350,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_scan`
+    :func:`bluesky.plans.rel_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
@@ -2388,8 +2388,8 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_scan())
 
 
-def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
-                  md=None):
+def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
+            md=None):
     """
     Scan over one variable in equally spaced steps relative to current positon.
 
@@ -2415,7 +2415,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     --------
     :func:`bluesky.plans.scan`
     """
-    _md = {'plan_name': 'relative_scan'}
+    _md = {'plan_name': 'rel_scan'}
     _md.update(md or {})
     # TODO read initial positions (redundantly) so they can be put in md here
 
@@ -2427,6 +2427,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
 
     return (yield from inner_relative_scan())
 
+relative_scan = rel_scan   # back-compat
 
 def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
@@ -3766,10 +3767,10 @@ LogAbsScanPlan = LogScan  # back-compat
 
 class RelativeScan(Plan):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
-    __doc__ = relative_scan.__doc__
+    __doc__ = rel_scan.__doc__
 
     def _gen(self):
-        return relative_scan(self.detectors, self.motor, self.start, self.stop,
+        return rel_scan(self.detectors, self.motor, self.start, self.stop,
                              self.num, md=self.md)
 
 DeltaScanPlan = RelativeScan  # back-compat

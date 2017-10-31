@@ -883,7 +883,7 @@ determine which template to use.
 
     templates = {'count': COUNT_TEMPLATE,
                  'scan': SCAN_TEMPLATE,
-                 'relative_scan': SCAN_TEMPLATE}
+                 'rel_scan': SCAN_TEMPLATE}
 
     # Do same boilerplate above to set up configured_logbook_func. Then:
     cb = logbook_cb_factory(configured_logbook_func,

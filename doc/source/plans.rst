@@ -5,7 +5,7 @@ Plans
 
 A *plan* is bluesky's concept of an experimental procedure. A
 :doc:`previous section <plans_intro>` introduced some built-in plans like
-:func:`count`, :func:`scan`, and :func:`relative_scan`. This section covers all
+:func:`count`, :func:`scan`, and :func:`rel_scan`. This section covers all
 of the plans and plan-related tools in bluesky with examples showing how to
 combine and customize them.
 
@@ -36,7 +36,7 @@ documentation.
 
    count
    scan
-   relative_scan
+   rel_scan
    list_scan
    relative_list_scan
    log_scan
@@ -118,13 +118,13 @@ pseudo-axis. It's all the same to the plans. Examples:
 .. code-block:: python
 
     from bluesky.examples import det, motor
-    from bluesky.plans import scan, relative_scan, list_scan
+    from bluesky.plans import scan, rel_scan, list_scan
 
     # scan a motor from 1 to 5, taking 5 equally-spaced readings of 'det'
     RE(scan([det], motor, 1, 5, 5))
 
     # scan a motor from 1 to 5 *relative to its current position*
-    RE(relative_scan([det], motor, 1, 5, 5))
+    RE(rel_scan([det], motor, 1, 5, 5))
 
     # scan a motor through a list of user-specified positions
     RE(list_scan([det], motor, [1, 1, 2, 3, 5, 8]))
@@ -156,7 +156,7 @@ Or, again, to save some typing for repeated use,
    :nosignatures:
 
    scan
-   relative_scan
+   rel_scan
    list_scan
    relative_list_scan
    log_scan
@@ -759,7 +759,7 @@ to be relative to the initial position.
 
 .. code-block:: python
 
-    def relative_scan(detectors, motor, start, stop, num):
+    def rel_scan(detectors, motor, start, stop, num):
         absolute = scan(detectors, motor, start, stop, num)
         relative = relative_set_wrapper(absolute, [motor])
         yield from relative
@@ -774,7 +774,7 @@ like ``scan(...)``. There are corresponding decorator functions like
 .. code-block:: python
 
     # Using a decorator to modify a generator function
-    def relative_scan(detectors, motor, start, stop, num):
+    def rel_scan(detectors, motor, start, stop, num):
 
         @relative_set_decorator([motor])  # unfamiliar syntax? -- see box below
         def inner_relative_scan():
