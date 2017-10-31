@@ -1,13 +1,10 @@
 [run]
-source = 
+source =
     bluesky
 [report]
 omit =
     */python?.?/*
     */site-packages/nose/*
-    *test*
-    */tests/*
-    */testing/*
     # ignore _version.py and versioneer.py
     .*version.*
     *_version.py
