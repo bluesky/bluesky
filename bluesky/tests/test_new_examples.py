@@ -29,6 +29,7 @@ class DummyMover:
     def __init__(self, name):
         self._value = 0
         self.name = name
+        self.parent = None
 
     def describe(self):
         return {self.name: {}}
