@@ -5,7 +5,7 @@ from bluesky.simulators import (print_summary, print_summary_wrapper,
                                 plot_raster_path)
 import pytest
 from bluesky.examples import motor1, motor2, det
-from bluesky.plans import outer_product_scan
+from bluesky.plans import grid_scan
 
 
 def test_print_summary(motor_det):
@@ -23,8 +23,7 @@ def test_old_module_name(motor_det):
     with pytest.warns(UserWarning):
         list(print_summary_wrapper(scan([det], motor, -1, 1, 10)))
     with pytest.warns(UserWarning):
-        plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15,
-                                  True)
+        plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
         plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
 
 def test_check_limits(motor_det):
@@ -52,5 +51,5 @@ def test_check_limits(motor_det):
         check_limits(scan([det], motor, -1, 1, 3))
 
 def test_plot_raster_path():
-    plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
+    plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
     plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)

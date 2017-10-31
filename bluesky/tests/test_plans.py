@@ -29,18 +29,18 @@ def _make_plan_marker():
     ids = []
 
     ##
-    args.append((bp.outer_product_scan([det],
-                                       motor, 1, 2, 3,
-                                       motor1, 4, 5, 6, True,
-                                       motor2, 7, 8, 9, True),
+    args.append((bp.grid_scan([det],
+                              motor, 1, 2, 3,
+                              motor1, 4, 5, 6, True,
+                              motor2, 7, 8, 9, True),
                  {'motors': ('motor', 'motor1', 'motor2'),
                   'extents': ([1, 2], [4, 5], [7, 8]),
                   'shape': (3, 6, 9),
                   'snaking': (False, True, True),
                   'plan_pattern_module': 'bluesky.plan_patterns',
                   'plan_pattern': 'outer_product',
-                  'plan_name': 'outer_product_scan'}))
-    ids.append('outer_product_scan')
+                  'plan_name': 'grid_scan'}))
+    ids.append('grid_scan')
 
     ##
     args.append((bp.inner_product_scan([det], 9,
@@ -68,9 +68,9 @@ def test_ops_dimension_hints(fresh_RE):
     RE = fresh_RE
     c = DocCollector()
     RE.subscribe(c.insert)
-    rs, = RE(bp.outer_product_scan([det],
-                                   motor, -1, 1, 7,
-                                   motor1, 0, 2, 3, False))
+    rs, = RE(bp.grid_scan([det],
+                          motor, -1, 1, 7,
+                          motor1, 0, 2, 3, False))
 
     st = c.start[0]
 

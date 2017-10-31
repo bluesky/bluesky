@@ -283,23 +283,23 @@ Plot a scalar value as a function of two variables on a regular grid. Example:
 
 .. code-block:: python
 
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan 
     from bluesky.examples import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
 
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
 .. plot::
 
     from bluesky import RunEngine
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan 
     from bluesky.examples import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
     motor1._fake_sleep = 0
     motor2._fake_sleep = 0
     RE = RunEngine({})
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
 .. autoclass:: bluesky.callbacks.LiveGrid
@@ -313,28 +313,28 @@ Example:
 
 .. code-block:: python
 
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan 
     from bluesky.examples import det5, jittery_motor1, jittery_motor2
     from bluesky.callbacks import LiveScatter
 
     # The 'jittery' example motors won't go exactly where they are told to go.
 
-    RE(outer_product_scan([det5],
-                          jittery_motor1, -3, 3, 6,
-                          jittery_motor2, -5, 5, 10, False),
+    RE(grid_scan([det5],
+                 jittery_motor1, -3, 3, 6,
+                 jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
                 xlim=(-3, 3), ylim=(-5, 5)))
 
 .. plot::
 
     from bluesky import RunEngine
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan 
     from bluesky.examples import det5, jittery_motor1, jittery_motor2
     from bluesky.callbacks import LiveScatter
     RE = RunEngine({})
-    RE(outer_product_scan([det5],
-                          jittery_motor1, -3, 3, 6,
-                          jittery_motor2, -5, 5, 10, False),
+    RE(grid_scan([det5],
+                 jittery_motor1, -3, 3, 6,
+                 jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
                 xlim=(-3, 3), ylim=(-5, 5)))
 
@@ -421,8 +421,7 @@ This example uses a model with two independent variables, x and y.
     lf = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess)
 
     # Scan a 2D mesh.
-    RE(outer_product_scan([det4], motor1, -1, 1, 20, motor2, -1, 1, 20, False),
-       lf)
+    RE(grid_scan([det4], motor1, -1, 1, 20, motor2, -1, 1, 20, False), lf)
 
 By default, the fit is recomputed every time a new data point is available. See
 the API documentation below for other options. Fitting does not commence until
