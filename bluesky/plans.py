@@ -21,7 +21,7 @@ from .utils import (Struct, Subs, normalize_subs_input, root_ancestor,
                     separate_devices, apply_sub_factories, update_sub_lists,
                     all_safe_rewind, Msg, ensure_generator, single_gen,
                     short_uid as _short_uid, RampFail, make_decorator,
-                    RunEngineControlException)
+                    RunEngineControlException, merge_cycler, merge_axis)
 
 
 def planify(func):
@@ -1168,10 +1168,10 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
 
 
 def contingency_wrapper(plan, *,
-                 except_plan=None,
-                 else_plan=None,
-                 final_plan=None,
-                 pause_for_debug=False):
+                        except_plan=None,
+                        else_plan=None,
+                        final_plan=None,
+                        pause_for_debug=False):
     '''try...except...else...finally helper
 
     Run the first plan and then the second.  If any of the messages
@@ -1500,6 +1500,7 @@ def stub_wrapper(plan):
         Metadata discovered from `open_run` Msg
     """
     md = {}
+
     def _block_run_control(msg):
         """
         Block open and close run messages
@@ -1514,6 +1515,7 @@ def stub_wrapper(plan):
 
     yield from msg_mutator(plan, _block_run_control)
     return md
+
 
 def monitor_during_wrapper(plan, signals):
     """
@@ -1750,6 +1752,79 @@ def stage_wrapper(plan, devices):
     return (yield from finalize_wrapper(inner(), unstage_devices()))
 
 
+def _normalize_devices(devices):
+    coupled_parents = set()
+    # if we have any pseudo devices then setting any part of it
+    # needs to trigger the relative behavior.
+    io, co, go = merge_axis(devices)
+    devices = set(devices) | set(io) | set(co) | set(go)
+    # if a device with coupled children is directly in the
+    # list, include all the coupled children as well
+    for obj in co:
+        devices |= set(obj.pseudo_positioners)
+        coupled_parents.add(obj)
+
+    # if at least one child of a device with coupled children
+    # only include the coupled children if at least of the children
+    # directly included is one of the coupled ones.
+    for obj, type_map in go.items():
+        if len(type_map['pseudo']) > 0:
+            devices |= set(obj.pseudo_positioners)
+            coupled_parents.add(obj)
+    return devices, coupled_parents
+
+
+def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
+    """Internal plan for relative set and reset wrappers
+
+
+    .. warning ::
+
+       Do not use this plan directly for any reason.
+
+    """
+    # obj should have a `position` attribution
+    try:
+        cur_pos = obj.position
+    except AttributeError:
+        # ... but as a fallback we can read obj and grab the value of the
+        # first key
+        reading = yield Msg('read', obj)
+        if reading is None:
+            # this plan may be being list-ified
+            cur_pos = 0
+        else:
+            fields = getattr(obj, 'hints', {}).get('fields', [])
+            if len(fields) == 1:
+                k, = fields
+                cur_pos = reading[k]['value']
+            elif len(fields) == 0:
+                k = list(reading.keys())[0]
+                cur_pos = reading[k]['value']
+            else:
+                raise Exception("do not yet know how to deal with "
+                                "non pseudopositioner multi-axis.  Please "
+                                "contact DAMA to justify why you need "
+                                "this.")
+
+    initial_positions[obj] = cur_pos
+
+    # if we move a pseudo positioner also stash it's children
+    if obj in coupled_parents:
+        for c, p in zip(obj.pseudo_positioners, cur_pos):
+            initial_positions[c] = p
+
+    # if we move a pseudo single, also stash it's parent and siblings
+    parent = obj.parent
+    if parent in coupled_parents and obj in parent.pseudo_positioners:
+        parent_pos = parent.position
+        initial_positions[parent] = parent_pos
+        for c, p in zip(parent.pseudo_positioners, parent_pos):
+            initial_positions[c] = p
+
+    # TODO forbid mixed pseudo / real motion
+
+
 def relative_set_wrapper(plan, devices=None):
     """
     Interpret 'set' messages on devices as relative to initial position.
@@ -1768,22 +1843,10 @@ def relative_set_wrapper(plan, devices=None):
         mutated
     """
     initial_positions = {}
-
-    def read_and_stash_a_motor(obj):
-        # obj should have a `position` attribution
-        try:
-            cur_pos = obj.position
-        except AttributeError:
-            # ... but as a fallback we can read obj and grab the value of the
-            # first key
-            reading = yield Msg('read', obj)
-            if reading is None:
-                # this plan may be being list-ified
-                cur_pos = 0
-            else:
-                k = list(reading.keys())[0]
-                cur_pos = reading[k]['value']
-        initial_positions[obj] = cur_pos
+    if devices is not None:
+        devices, coupled_parents = _normalize_devices(devices)
+    else:
+        coupled_parents = set()
 
     def rewrite_pos(msg):
         if (msg.command == 'set') and (msg.obj in initial_positions):
@@ -1798,8 +1861,10 @@ def relative_set_wrapper(plan, devices=None):
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-                return pchain(read_and_stash_a_motor(msg.obj),
-                              single_gen(msg)), None
+                return (pchain(
+                    __read_and_stash_a_motor(
+                        msg.obj, initial_positions, coupled_parents),
+                    single_gen(msg)), None)
         else:
             return None, None
 
@@ -1825,6 +1890,10 @@ def reset_positions_wrapper(plan, devices=None):
         messages from plan with 'read' and finally 'set' messages inserted
     """
     initial_positions = OrderedDict()
+    if devices is not None:
+        devices, coupled_parents = _normalize_devices(devices)
+    else:
+        coupled_parents = set()
 
     def read_and_stash_a_motor(obj):
         try:
@@ -1843,8 +1912,10 @@ def reset_positions_wrapper(plan, devices=None):
         eligible = devices is None or msg.obj in devices
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-            return pchain(read_and_stash_a_motor(msg.obj),
-                          single_gen(msg)), None
+            return (pchain(
+                    __read_and_stash_a_motor(
+                        msg.obj, initial_positions, coupled_parents),
+                    single_gen(msg)), None)
         else:
             return None, None
 
@@ -2019,7 +2090,6 @@ def trigger_and_read(devices, name='primary'):
         yield from save()
         return ret
 
-
     return (yield from rewindable_wrapper(inner_trigger_and_read(),
                                           rewindable))
 
@@ -2162,7 +2232,7 @@ def count(detectors, num=1, delay=None, *, md=None):
            'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
            'plan_name': 'count',
            'hints': {}
-          }
+           }
     _md.update(md or {})
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
@@ -2185,7 +2255,7 @@ def count(detectors, num=1, delay=None, *, md=None):
     @run_decorator(md=_md)
     def finite_plan():
         for i in range(num):
-            now = time.time() # Intercept the flow in its earliest moment.
+            now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg('checkpoint')
             yield from trigger_and_read(detectors)
             try:
@@ -2265,14 +2335,14 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
            'num_points': len(steps),
            'num_intervals': len(steps) - 1,
            'plan_args': {'detectors': list(map(repr, detectors)),
-                           'motor': repr(motor), 'steps': steps,
-                           'per_step': repr(per_step)},
+                         'motor': repr(motor), 'steps': steps,
+                         'per_step': repr(per_step)},
            'plan_name': 'list_scan',
            'plan_pattern': 'array',
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(object=steps),
            'hints': {},
-          }
+           }
     _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
@@ -2365,7 +2435,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
-          }
+           }
     _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
@@ -2467,7 +2537,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
            'plan_pattern_module': 'numpy',
            'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
-          }
+           }
     _md.update(md or {})
 
     try:
@@ -2583,7 +2653,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
                          'threshold': threshold},
            'plan_name': 'adaptive_scan',
            'hints': {},
-          }
+           }
     _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
@@ -2895,7 +2965,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                          'per_step': repr(per_step)},
            'plan_name': 'scan_nd',
            'hints': {},
-          }
+           }
     _md.update(md or {})
     try:
         dimensions = [(motor.hints['fields'], 'primary')
@@ -2914,6 +2984,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     if per_step is None:
         per_step = one_nd_step
     pos_cache = defaultdict(lambda: None)  # where last position is stashed
+    cycler = merge_cycler(cycler)
     motors = list(cycler.keys)
 
     @stage_decorator(list(detectors) + motors)
@@ -3033,7 +3104,7 @@ def grid_scan(detectors, *args, per_step=None, md=None):
            'plan_pattern_module': plan_patterns.__name__,
            'motors': tuple(motor_names),
            'hints': {},
-          }
+           }
     _md.update(md or {})
     _md['hints'].setdefault('gridding', 'rectilinear')
     try:
@@ -3156,7 +3227,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
                          'step': step},
            'plan_name': 'tweak',
            'hints': {},
-          }
+           }
     try:
         dimensions = [(motor.hints['fields'], 'primary')]
     except (AttributeError, KeyError):
@@ -3268,7 +3339,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
            'plan_pattern_module': plan_patterns.__name__,
            'plan_pattern_args': pattern_args,
            'hints': {},
-          }
+           }
     try:
         dimensions = [(x_motor.hints['fields'], 'primary'),
                       (y_motor.hints['fields'], 'primary')]
@@ -3383,7 +3454,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            'plan_pattern_args': pattern_args,
            'plan_pattern_module': plan_patterns.__name__,
            'hints': {},
-          }
+           }
     try:
         dimensions = [(x_motor.hints['fields'], 'primary'),
                       (y_motor.hints['fields'], 'primary')]

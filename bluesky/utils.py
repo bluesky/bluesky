@@ -22,6 +22,12 @@ import time
 from tqdm import tqdm
 from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
 import warnings
+try:
+    # cytools is a drop-in replacement for toolz, implemented in Cython
+    from cytools import groupby
+except ImportError:
+    from toolz import groupby
+
 logger = logging.getLogger(__name__)
 
 
@@ -1080,3 +1086,135 @@ class ProgressBarManager:
 def _L2norm(x, y):
     "works on (3, 5) and ((0, 3), (4, 0))"
     return np.sqrt(np.sum((np.asarray(x) - np.asarray(y))**2))
+
+
+def merge_axis(objs):
+    '''Merge possibly related axis
+
+    This function will take a list of objects and separate it into
+
+     - list of completely independent objects (most settable things and
+       detectors) that do not have coupled motion.
+     - list of devices who have children who are coupled (PseudoPositioner
+       ducked by looking for 'RealPosition' as an attribute)
+
+    Both of these lists will only contain objects directly passed in
+    in objs
+
+     - map between parents and objects passed in.  Each value
+       of the map is a map between the strings
+       {'real', 'pseudo', 'independent'} and a list of objects.  All
+       of the objects in the (doubly nested) map are in the input.
+
+    Parameters
+    ----------
+    objs : Iterable[OphydObj]
+        The input devices
+
+    Returns
+    -------
+    independent_objs : List[OphydObj]
+        Independent 'simple' axis
+
+    complex_objs : List[PseudoPositioner]
+        Independent objects which have interdependent children
+
+    coupled : Dict[PseudoPositioner, Dict[str, List[OphydObj]]]
+        Mapping of interdependent axis passed in.
+    '''
+    def get_parent(o):
+        return getattr(o, 'parent')
+
+    independent_objs = set()
+    maybe_coupled = set()
+    complex_objs = set()
+    for o in objs:
+        parent = o.parent
+        if hasattr(o, 'RealPosition'):
+            complex_objs.add(o)
+        elif (parent is not None and hasattr(parent, 'RealPosition')):
+            maybe_coupled.add(o)
+        else:
+            independent_objs.add(o)
+    coupled = {}
+
+    for parent, children in groupby(get_parent, maybe_coupled).items():
+        real_p = set(parent.real_positioners)
+        pseudo_p = set(parent.pseudo_positioners)
+        type_map = {'real': [], 'pseudo': [], 'unrelated': []}
+        for c in children:
+            if c in real_p:
+                type_map['real'].append(c)
+            elif c in pseudo_p:
+                type_map['pseudo'].append(c)
+            else:
+                type_map['unrelated'].append(c)
+        coupled[parent] = type_map
+
+    return (independent_objs, complex_objs, coupled)
+
+
+def merge_cycler(cyc):
+    """Specify movements of sets of interdependent axes atomically.
+
+    Inspect the keys of ``cyc`` (which are Devices) to indentify those
+    which are interdependent (part of the same
+    PseudoPositioner) and merge those independent entries into
+    a single entry.
+
+    This also validates that the user has not passed conflicting
+    interdependent axis (such as a real and pseudo axis from the same
+    PseudoPositioner)
+
+    Parameters
+    ----------
+    cyc : Cycler[OphydObj, Sequence]
+       A cycler as would be passed to :func:`scan_nd`
+
+    Returns
+    -------
+    Cycler[OphydObj, Sequence]
+       A cycler as would be passed to :func:`scan_nd` with the same
+       or fewer keys than the input.
+
+    """
+    def my_name(obj):
+        """Get the attribute name of this device on its parent Device
+        """
+        parent = obj.parent
+        return next(iter([nm for nm in parent.component_names
+                          if getattr(parent, nm) is obj]))
+
+    io, co, gb = merge_axis(cyc.keys)
+
+    # only simple non-coupled objects, declare victory and bail!
+    if len(co) == len(gb) == 0:
+        return cyc
+
+    input_data = cyc.by_key()
+    output_data = [cycler(i, input_data[i]) for i in io | co]
+
+    for parent, type_map in gb.items():
+
+        if parent in co and (type_map['pseudo'] or type_map['real']):
+            raise ValueError("A PseudoPostiioner and its children were both "
+                             "passed in.  We do not yet know how to merge "
+                             "these inputs, failing.")
+
+        if type_map['real'] and type_map['pseudo']:
+            raise ValueError("Passed in a mix of real and pseudo axis.  "
+                             "Can not cope, failing")
+        pseudo_axes = type_map['pseudo']
+        if len(pseudo_axes) > 1:
+            p_cyc = reduce(operator.add,
+                           (cycler(my_name(c), input_data[c])
+                            for c in type_map['pseudo']))
+            output_data.append(cycler(parent, list(p_cyc)))
+        elif len(pseudo_axes) == 1:
+            c, = pseudo_axes
+            output_data.append(cycler(c, input_data[c]))
+
+        for c in type_map['real'] + type_map['unrelated']:
+            output_data.append(cycler(c, input_data[c]))
+
+    return reduce(operator.add, output_data)

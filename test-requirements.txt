@@ -10,7 +10,7 @@ matplotlib
 mongoquery
 networkx
 nose
-ophyd
+git+git://github.com/NSLS-II/ophyd.git@master#egg=ophyd
 pandas
 pims
 pyepics
