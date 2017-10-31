@@ -108,6 +108,7 @@ def test_mesh_pseudo(hw, fresh_RE):
 def test_rmesh_pseudo(hw, fresh_RE):
     p3x3 = hw.pseudo3x3
     p3x3.set(1, -2, 100)
+    init_pos = p3x3.position
     sig = hw.sig
     RE = fresh_RE
     d = DocCollector()
@@ -130,3 +131,4 @@ def test_rmesh_pseudo(hw, fresh_RE):
     assert all(df[p3x3.pseudo3.name] == 100)
     assert len(df) == 35
     assert min(df[p3x3.pseudo1.name]) == 1
+    assert init_pos == p3x3.position

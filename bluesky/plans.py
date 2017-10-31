@@ -1752,6 +1752,79 @@ def stage_wrapper(plan, devices):
     return (yield from finalize_wrapper(inner(), unstage_devices()))
 
 
+def _normalize_devices(devices):
+    coupled_parents = set()
+    # if we have any pseudo devices then setting any part of it
+    # needs to trigger the relative behavior.
+    io, co, go = merge_axis(devices)
+    devices = set(devices) | set(io) | set(co) | set(go)
+    # if a device with coupled children is directly in the
+    # list, include all the coupled children as well
+    for obj in co:
+        devices |= set(obj.pseudo_positioners)
+        coupled_parents.add(obj)
+
+    # if at least one child of a device with coupled children
+    # only include the coupled children if at least of the children
+    # directly included is one of the coupled ones.
+    for obj, type_map in go.items():
+        if len(type_map['pseudo']) > 0:
+            devices |= set(obj.pseudo_positioners)
+            coupled_parents.add(obj)
+    return devices, coupled_parents
+
+
+def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
+    """Internal plan for relative set and reset wrappers
+
+
+    .. warning ::
+
+       Do not use this plan directly for any reason.
+
+    """
+    # obj should have a `position` attribution
+    try:
+        cur_pos = obj.position
+    except AttributeError:
+        # ... but as a fallback we can read obj and grab the value of the
+        # first key
+        reading = yield Msg('read', obj)
+        if reading is None:
+            # this plan may be being list-ified
+            cur_pos = 0
+        else:
+            fields = getattr(obj, 'hints', {}).get('fields', [])
+            if len(fields) == 1:
+                k, = fields
+                cur_pos = reading[k]['value']
+            elif len(fields) == 0:
+                k = list(reading.keys())[0]
+                cur_pos = reading[k]['value']
+            else:
+                raise Exception("do not yet know how to deal with "
+                                "non pseudopositioner multi-axis.  Please "
+                                "contact DAMA to justify why you need "
+                                "this.")
+
+    initial_positions[obj] = cur_pos
+
+    # if we move a pseudo positioner also stash it's children
+    if obj in coupled_parents:
+        for c, p in zip(obj.pseudo_positioners, cur_pos):
+            initial_positions[c] = p
+
+    # if we move a pseudo single, also stash it's parent and siblings
+    parent = obj.parent
+    if parent in coupled_parents and obj in parent.pseudo_positioners:
+        parent_pos = parent.position
+        initial_positions[parent] = parent_pos
+        for c, p in zip(parent.pseudo_positioners, parent_pos):
+            initial_positions[c] = p
+
+    # TODO forbid mixed pseudo / real motion
+
+
 def relative_set_wrapper(plan, devices=None):
     """
     Interpret 'set' messages on devices as relative to initial position.
@@ -1770,41 +1843,10 @@ def relative_set_wrapper(plan, devices=None):
         mutated
     """
     initial_positions = {}
-    coupled_parents = set()
     if devices is not None:
-        # if we have any pseudo devices then setting any part of it
-        # needs to trigger the relative behavior.
-        io, co, go = merge_axis(devices)
-        devices = set(devices) | set(io) | set(co) | set(go)
-        # if a device with coupled children is directly in the
-        # list, include all the coupled children as well
-        for obj in co:
-            devices |= set(obj.pseudo_positioners)
-            coupled_parents.add(obj)
-
-        # if at least one child of a device with coupled children
-        # only include the coupled children if at least of the children
-        # directly included is one of the coupled ones.
-        for obj, type_map in go.items():
-            if len(type_map['pseudo']) > 0:
-                devices |= set(obj.pseudo_positioners)
-                coupled_parents.add(obj)
-
-    def read_and_stash_a_motor(obj):
-        # obj should have a `position` attribution
-        try:
-            cur_pos = obj.position
-        except AttributeError:
-            # ... but as a fallback we can read obj and grab the value of the
-            # first key
-            reading = yield Msg('read', obj)
-            if reading is None:
-                # this plan may be being list-ified
-                cur_pos = 0
-            else:
-                k = list(reading.keys())[0]
-                cur_pos = reading[k]['value']
-        initial_positions[obj] = cur_pos
+        devices, coupled_parents = _normalize_devices(devices)
+    else:
+        coupled_parents = set()
 
     def rewrite_pos(msg):
         if (msg.command == 'set') and (msg.obj in initial_positions):
@@ -1819,8 +1861,10 @@ def relative_set_wrapper(plan, devices=None):
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-                return pchain(read_and_stash_a_motor(msg.obj),
-                              single_gen(msg)), None
+                return (pchain(
+                    __read_and_stash_a_motor(
+                        msg.obj, initial_positions, coupled_parents),
+                    single_gen(msg)), None)
         else:
             return None, None
 
@@ -1846,6 +1890,10 @@ def reset_positions_wrapper(plan, devices=None):
         messages from plan with 'read' and finally 'set' messages inserted
     """
     initial_positions = OrderedDict()
+    if devices is not None:
+        devices, coupled_parents = _normalize_devices(devices)
+    else:
+        coupled_parents = set()
 
     def read_and_stash_a_motor(obj):
         try:
@@ -1864,8 +1912,10 @@ def reset_positions_wrapper(plan, devices=None):
         eligible = devices is None or msg.obj in devices
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-            return pchain(read_and_stash_a_motor(msg.obj),
-                          single_gen(msg)), None
+            return (pchain(
+                    __read_and_stash_a_motor(
+                        msg.obj, initial_positions, coupled_parents),
+                    single_gen(msg)), None)
         else:
             return None, None
 
