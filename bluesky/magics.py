@@ -151,7 +151,7 @@ class BlueskyMagics(Magics):
                     offset = np.round(offset, decimals=prec)
             else:
                 value = v.__class__.__name__  # e.g. 'DisconnectedError'
-                low_limit = high_limit = ''
+                low_limit = high_limit = offset = ''
 
             lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit,
                                          offset))

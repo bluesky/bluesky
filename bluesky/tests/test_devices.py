@@ -63,7 +63,7 @@ def test_separate_devices():
 
 
 @requires_ophyd
-def test_monitor(fresh_RE):
+def test_monitor(RE):
     docs = []
 
     def collect(name, doc):
@@ -76,12 +76,12 @@ def test_monitor(fresh_RE):
         yield Msg('monitor', a.s1)
         a.s1._run_subs(sub_type='value')
         yield Msg('close_run')
-    fresh_RE(plan(), collect)
+    RE(plan(), collect)
     assert len(docs) == 4
 
 
 @requires_ophyd
-def test_monitor_with_pause_resume(fresh_RE):
+def test_monitor_with_pause_resume(RE):
     docs = []
 
     def collect(name, doc):
@@ -99,7 +99,7 @@ def test_monitor_with_pause_resume(fresh_RE):
         yield Msg('close_run')
 
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE(plan(), collect)
+        RE(plan(), collect)
     assert len(docs) == 3  # RunStart, EventDescriptor, one Event
     # All but one of these will be ignored. Why is one not ignored, you ask?
     # Beacuse ophyd runs subscriptions when they are (re-)subscriped.
@@ -110,7 +110,7 @@ def test_monitor_with_pause_resume(fresh_RE):
     a.s1._run_subs(sub_type='value')
     a.s1._run_subs(sub_type='value')
     assert len(docs) == 3
-    fresh_RE.resume()
+    RE.resume()
     assert len(docs) == 6  # two new Events + RunStop
 
 
@@ -136,7 +136,7 @@ def _make_overlapping_raising_tests(func):
 
 @requires_ophyd
 @_make_overlapping_raising_tests
-def test_overlapping_raise(fresh_RE, det1, det2):
+def test_overlapping_raise(RE, det1, det2):
 
     @bp.run_decorator()
     def test_plan(det1, det2):
@@ -144,7 +144,7 @@ def test_overlapping_raise(fresh_RE, det1, det2):
         yield from bp.trigger_and_read([det2])
 
     with pytest.raises(RuntimeError):
-        fresh_RE(test_plan(det1, det2))
+        RE(test_plan(det1, det2))
 
 
 def _make_overlapping_tests_2stream(func):
@@ -168,7 +168,7 @@ def _make_overlapping_tests_2stream(func):
 
 @requires_ophyd
 @_make_overlapping_tests_2stream
-def test_keyoverlap_2stream(fresh_RE, det1, det2):
+def test_keyoverlap_2stream(RE, det1, det2):
 
     @bp.run_decorator()
     def test_plan(det1, det2):
@@ -176,7 +176,7 @@ def test_keyoverlap_2stream(fresh_RE, det1, det2):
         yield from bp.trigger_and_read([det2], name='other')
 
     d = DocCollector()
-    rs, = fresh_RE(test_plan(det1, det2), d.insert)
+    rs, = RE(test_plan(det1, det2), d.insert)
     assert len(d.start) == 1
     assert len(d.descriptor[rs]) == 2
 
@@ -202,7 +202,7 @@ def _make_overlapping_tests_stream(func):
 
 @requires_ophyd
 @_make_overlapping_tests_stream
-def test_overlapped_but_identical(fresh_RE, det1, det_list):
+def test_overlapped_but_identical(RE, det1, det_list):
     @bp.run_decorator()
     def test_plan(det1, det_list):
         yield from bp.trigger_and_read([det1])
@@ -210,27 +210,27 @@ def test_overlapped_but_identical(fresh_RE, det1, det_list):
             yield from bp.trigger_and_read(det_list)
 
     d = DocCollector()
-    rs, = fresh_RE(test_plan(det1, det_list), d.insert)
+    rs, = RE(test_plan(det1, det_list), d.insert)
     assert len(d.start) == 1
     assert len(d.descriptor[rs]) == 1
 
 
 @requires_ophyd
-def test_read_clash(fresh_RE):
+def test_read_clash(RE):
     dcm = DCM('', name='dcm')
     dcm2 = DCM('', name='dcm')
 
     with pytest.raises(ValueError):
-        fresh_RE(([Msg('open_run')] +
+        RE(([Msg('open_run')] +
                   list(trigger_and_read([dcm, dcm2.th])) +
                   [Msg('close_run')]))
 
     with pytest.raises(ValueError):
-        fresh_RE(([Msg('open_run')] +
+        RE(([Msg('open_run')] +
                   list(trigger_and_read([dcm, dcm2])) +
                   [Msg('close_run')]))
 
     with pytest.raises(ValueError):
-        fresh_RE(([Msg('open_run')] +
+        RE(([Msg('open_run')] +
                   list(trigger_and_read([dcm.th, dcm2.th])) +
                   [Msg('close_run')]))

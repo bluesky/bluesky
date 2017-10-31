@@ -4,20 +4,23 @@ from bluesky.simulators import (print_summary, print_summary_wrapper,
                                 check_limits, LimitsExceeded,
                                 plot_raster_path)
 import pytest
-from bluesky.examples import motor1, motor2, det
 from bluesky.plans import outer_product_scan
 
 
-def test_print_summary(motor_det):
-    motor, det = motor_det
+def test_print_summary(hw):
+    det = hw.det
+    motor = hw.motor
     print_summary(scan([det], motor, -1, 1, 10))  # old name
     summarize_plan(scan([det], motor, -1, 1, 10))  # new name
     list(print_summary_wrapper(scan([det], motor, -1, 1, 10)))
 
-def test_old_module_name(motor_det):
+def test_old_module_name(hw):
+    det = hw.det
+    motor = hw.motor
+    motor1 = hw.motor1
+    motor2 = hw.motor2
     from bluesky.plan_tools import (print_summary, print_summary_wrapper,
                                     plot_raster_path)
-    motor, det = motor_det
     with pytest.warns(UserWarning):
         print_summary(scan([det], motor, -1, 1, 10))
     with pytest.warns(UserWarning):
@@ -27,8 +30,9 @@ def test_old_module_name(motor_det):
                                   True)
         plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
 
-def test_check_limits(motor_det):
-    motor, det = motor_det
+def test_check_limits(hw):
+    det = hw.det
+    motor = hw.motor
     # The motor object does not currently implement limits.
     # Use an assert to help us out if this changes in the future.
     assert not hasattr(motor, 'limits')
@@ -51,6 +55,9 @@ def test_check_limits(motor_det):
     with pytest.warns(UserWarning):
         check_limits(scan([det], motor, -1, 1, 3))
 
-def test_plot_raster_path():
+def test_plot_raster_path(hw):
+    det = hw.det
+    motor1 = hw.motor1
+    motor2 = hw.motor2
     plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
     plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)

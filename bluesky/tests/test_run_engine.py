@@ -1,5 +1,6 @@
 import asyncio
 import threading
+import types
 import os
 import signal
 import sys
@@ -8,14 +9,13 @@ import time as ttime
 import pytest
 import numpy as np
 import uuid
+from bluesky.tests import requires_ophyd
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
                                 NoReplayAllowed, FailedStatus,
                                 RunEngineInterrupted)
 from bluesky import Msg
 from functools import partial
-from bluesky.examples import (det, Mover, TrivialFlyer, SynGauss, SimpleStatus,
-                              ReaderWithRegistry)
 import bluesky.plans as bp
 from bluesky.tests.utils import MsgCollector, DocCollector
 
@@ -26,63 +26,63 @@ def test_states():
                                                      'paused']
 
 
-def test_verbose(fresh_RE):
-    fresh_RE.verbose = True
-    assert fresh_RE.verbose
+def test_verbose(RE, hw):
+    RE.verbose = True
+    assert RE.verbose
     # Emit all four kinds of document, exercising the logging.
-    fresh_RE([Msg('open_run'), Msg('create'), Msg('read', det), Msg('save'),
+    RE([Msg('open_run'), Msg('create'), Msg('read', hw.det), Msg('save'),
               Msg('close_run')])
 
 
-def test_reset(fresh_RE):
+def test_reset(RE):
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE([Msg('open_run'), Msg('pause')])
-    assert fresh_RE._run_start_uid is not None
-    fresh_RE.reset()
-    assert fresh_RE._run_start_uid is None
+        RE([Msg('open_run'), Msg('pause')])
+    assert RE._run_start_uid is not None
+    RE.reset()
+    assert RE._run_start_uid is None
 
 
-def test_running_from_paused_state_raises(fresh_RE):
+def test_running_from_paused_state_raises(RE):
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE([Msg('pause')])
-    assert fresh_RE.state == 'paused'
+        RE([Msg('pause')])
+    assert RE.state == 'paused'
     with pytest.raises(RuntimeError):
-        fresh_RE([Msg('null')])
-    fresh_RE.resume()
-    assert fresh_RE.state == 'idle'
-    fresh_RE([Msg('null')])
+        RE([Msg('null')])
+    RE.resume()
+    assert RE.state == 'idle'
+    RE([Msg('null')])
 
 
-def test_resuming_from_idle_state_raises(fresh_RE):
+def test_resuming_from_idle_state_raises(RE):
     with pytest.raises(RuntimeError):
-        fresh_RE.resume()
+        RE.resume()
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE([Msg('pause')])
-    assert fresh_RE.state == 'paused'
-    fresh_RE.resume()
-    assert fresh_RE.state == 'idle'
+        RE([Msg('pause')])
+    assert RE.state == 'paused'
+    RE.resume()
+    assert RE.state == 'idle'
     with pytest.raises(RuntimeError):
-        fresh_RE.resume()
+        RE.resume()
 
 
-def test_stopping_from_idle_state_raises(fresh_RE):
+def test_stopping_from_idle_state_raises(RE):
     with pytest.raises(TransitionError):
-        fresh_RE.stop()
+        RE.stop()
 
 
-def test_pausing_from_idle_state_raises(fresh_RE):
+def test_pausing_from_idle_state_raises(RE):
     with pytest.raises(TransitionError):
-        fresh_RE.request_pause(defer=False)
+        RE.request_pause(defer=False)
 
 
-def test_aborting_from_idle_state_raises(fresh_RE):
+def test_aborting_from_idle_state_raises(RE):
     with pytest.raises(TransitionError):
-        fresh_RE.abort()
+        RE.abort()
 
 
-def test_register(fresh_RE):
+def test_register(RE):
     mutable = {}
-    fresh_RE.verbose = True
+    RE.verbose = True
 
     @asyncio.coroutine
     def func(msg):
@@ -91,49 +91,52 @@ def test_register(fresh_RE):
     def plan():
         yield Msg('custom-command')
 
-    fresh_RE.register_command('custom-command', func)
-    fresh_RE(plan())
+    RE.register_command('custom-command', func)
+    RE(plan())
     assert 'flag' in mutable
     # Unregister command; now the Msg should not be recognized.
-    fresh_RE.unregister_command('custom-command')
+    RE.unregister_command('custom-command')
     with pytest.raises(KeyError):
-        fresh_RE([Msg('custom-command')])
+        RE([Msg('custom-command')])
 
 
-def test_stop_motors_and_log_any_errors(fresh_RE):
+def test_stop_motors_and_log_any_errors(RE, hw):
     # test that if stopping one motor raises an error, we can carry on
     stopped = {}
 
-    class MoverWithFlag(Mover):
-        def stop(self, *, success=False):
-            stopped[self.name] = True
+    def stop(self, *, success=False):
+        stopped[self.name] = True
 
-    class BrokenMoverWithFlag(Mover):
-        def stop(self, *, success=False):
-            stopped[self.name] = True
-            raise Exception
+    def stop_encounters_error(self, *, success=False):
+        stopped[self.name] = True
+        raise Exception
 
-    motor = MoverWithFlag('a', {'a': lambda x: x}, {'x': 0})
-    broken_motor = BrokenMoverWithFlag('b', {'b': lambda x: x}, {'x': 0})
-
-    with pytest.raises(RunEngineInterrupted):
-        fresh_RE([Msg('set', broken_motor, 1), Msg('set', motor, 1),
-                  Msg('pause')])
-    assert 'a' in stopped
-    assert 'b' in stopped
-    fresh_RE.stop()
+    motor = hw.motor1
+    broken_motor = hw.motor2
+    motor.stop = types.MethodType(stop, motor)
+    broken_motor.stop = types.MethodType(stop_encounters_error, broken_motor)
 
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE([Msg('set', motor, 1), Msg('set', broken_motor, 1),
+        RE([Msg('set', broken_motor, 1), Msg('set', motor, 1),
                   Msg('pause')])
-    assert 'a' in stopped
-    assert 'b' in stopped
-    fresh_RE.stop()
+    assert 'motor1' in stopped
+    assert 'motor2' in stopped
+    RE.stop()
+
+    with pytest.raises(RunEngineInterrupted):
+        RE([Msg('set', motor, 1), Msg('set', broken_motor, 1),
+                  Msg('pause')])
+    assert 'motor1' in stopped
+    assert 'motor2' in stopped
+    RE.stop()
 
 
-def test_collect_uncollected_and_log_any_errors(fresh_RE):
+@requires_ophyd
+def test_collect_uncollected_and_log_any_errors(RE):
     # test that if stopping one motor raises an error, we can carry on
     collected = {}
+
+    from ophyd.sim import TrivialFlyer
 
     class DummyFlyerWithFlag(TrivialFlyer):
         def collect(self):
@@ -151,20 +154,23 @@ def test_collect_uncollected_and_log_any_errors(fresh_RE):
     flyer2.name = 'flyer2'
 
     collected.clear()
-    fresh_RE([Msg('open_run'), Msg('kickoff', flyer1), Msg('kickoff', flyer2)])
+    RE([Msg('open_run'), Msg('kickoff', flyer1), Msg('kickoff', flyer2)])
     assert 'flyer1' in collected
     assert 'flyer2' in collected
 
     collected.clear()
-    fresh_RE([Msg('open_run'), Msg('kickoff', flyer2), Msg('kickoff', flyer1)])
+    RE([Msg('open_run'), Msg('kickoff', flyer2), Msg('kickoff', flyer1)])
     assert 'flyer1' in collected
     assert 'flyer2' in collected
 
 
-def test_unstage_and_log_errors(fresh_RE):
+@requires_ophyd
+def test_unstage_and_log_errors(RE):
     unstaged = {}
 
-    class MoverWithFlag(Mover):
+    from ophyd.sim import SynAxis
+
+    class MoverWithFlag(SynAxis):
         def stage(self):
             return [self]
 
@@ -172,7 +178,7 @@ def test_unstage_and_log_errors(fresh_RE):
             unstaged[self.name] = True
             return [self]
 
-    class BrokenMoverWithFlag(Mover):
+    class BrokenMoverWithFlag(SynAxis):
         def stage(self):
             return [self]
 
@@ -180,41 +186,41 @@ def test_unstage_and_log_errors(fresh_RE):
             unstaged[self.name] = True
             return [self]
 
-    a = MoverWithFlag('a', {'a': lambda x: x}, {'x': 0})
-    b = BrokenMoverWithFlag('b', {'b': lambda x: x}, {'x': 0})
+    a = MoverWithFlag(name='a')
+    b = BrokenMoverWithFlag(name='b')
 
     unstaged.clear()
-    fresh_RE([Msg('stage', a), Msg('stage', b)])
+    RE([Msg('stage', a), Msg('stage', b)])
     assert 'a' in unstaged
     assert 'b' in unstaged
 
     unstaged.clear()
-    fresh_RE([Msg('stage', b), Msg('stage', a)])
+    RE([Msg('stage', b), Msg('stage', a)])
     assert 'a' in unstaged
     assert 'b' in unstaged
 
 
-def test_open_run_twice_is_illegal(fresh_RE):
+def test_open_run_twice_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('open_run'), Msg('open_run')])
+        RE([Msg('open_run'), Msg('open_run')])
 
 
-def test_saving_without_an_open_bundle_is_illegal(fresh_RE):
+def test_saving_without_an_open_bundle_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('open_run'), Msg('save')])
+        RE([Msg('open_run'), Msg('save')])
 
 
-def test_opening_a_bundle_without_a_run_is_illegal(fresh_RE):
+def test_opening_a_bundle_without_a_run_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('create')])
+        RE([Msg('create')])
 
 
-def test_checkpoint_inside_a_bundle_is_illegal(fresh_RE):
+def test_checkpoint_inside_a_bundle_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('open_run'), Msg('create'), Msg('checkpoint')])
+        RE([Msg('open_run'), Msg('create'), Msg('checkpoint')])
 
 
-def test_redundant_monitors_are_illegal(fresh_RE):
+def test_redundant_monitors_are_illegal(RE):
     class Dummy:
         def __init__(self, name):
             self.name = name
@@ -237,40 +243,54 @@ def test_redundant_monitors_are_illegal(fresh_RE):
     dummy = Dummy('dummy')
 
     with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('open_run'), Msg('monitor', dummy),
+        RE([Msg('open_run'), Msg('monitor', dummy),
                   Msg('monitor', dummy)])
 
     # Monitoring, unmonitoring, and monitoring again is legal.
-    fresh_RE([Msg('open_run'), Msg('monitor', dummy), Msg('unmonitor', dummy),
+    RE([Msg('open_run'), Msg('monitor', dummy), Msg('unmonitor', dummy),
               Msg('monitor', dummy)])
 
     # Monitoring outside a run is illegal.
     with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('monitor', dummy)])
+        RE([Msg('monitor', dummy)])
 
     # Unmonitoring something that was never monitored is illegal.
     with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('unmonitor', dummy)])
+        RE([Msg('unmonitor', dummy)])
 
 
-def test_flying_outside_a_run_is_illegal(fresh_RE):
-    flyer = TrivialFlyer()
-
-    # This is normal, legal usage.
-    fresh_RE([Msg('open_run'), Msg('kickoff', flyer), Msg('collect', flyer),
-              Msg('close_run')])
+def test_flying_outside_a_run_is_illegal(RE, hw):
+    flyer = hw.trivial_flyer
 
     # This is normal, legal usage.
-    fresh_RE([Msg('open_run'), Msg('kickoff', flyer), Msg('collect', flyer),
-              Msg('collect', flyer), Msg('collect', flyer),
-              Msg('close_run')])
+    RE([Msg('open_run'),
+        Msg('kickoff', flyer, group='foo'),
+        Msg('wait', group='foo'),
+        Msg('complete', flyer, group='bar'),
+        Msg('wait', group='bar'),
+        Msg('collect', flyer),
+        Msg('close_run')])
+
+    # This is normal, legal usage (partial collection).
+    RE([Msg('open_run'),
+        Msg('kickoff', flyer, group='foo'),
+        Msg('wait', group='foo'),
+        Msg('collect', flyer),
+        Msg('collect', flyer),
+        Msg('collect', flyer),
+        Msg('complete', flyer, group='bar'),
+        Msg('wait', group='bar'),
+        Msg('collect', flyer),
+        Msg('collect', flyer),
+        Msg('collect', flyer),
+        Msg('close_run')])
 
     # It is not legal to kickoff outside of a run.
     with pytest.raises(IllegalMessageSequence):
-        fresh_RE([Msg('kickoff', flyer)])
+        RE([Msg('kickoff', flyer)])
 
 
-def test_empty_bundle(fresh_RE):
+def test_empty_bundle(RE, hw):
     mutable = {}
 
     def cb(name, doc):
@@ -278,18 +298,18 @@ def test_empty_bundle(fresh_RE):
 
     # In this case, an Event should be emitted.
     mutable.clear()
-    fresh_RE([Msg('open_run'), Msg('create'), Msg('read', det), Msg('save')],
+    RE([Msg('open_run'), Msg('create'), Msg('read', hw.det), Msg('save')],
              {'event': cb})
     assert 'flag' in mutable
 
     # In this case, an Event should not be emitted because the bundle is
     # emtpy (i.e., there are no readings.)
     mutable.clear()
-    fresh_RE([Msg('open_run'), Msg('create'), Msg('save')], {'event': cb})
+    RE([Msg('open_run'), Msg('create'), Msg('save')], {'event': cb})
     assert 'flag' not in mutable
 
 
-def test_dispatcher_unsubscribe_all(fresh_RE):
+def test_dispatcher_unsubscribe_all(RE):
     def count_callbacks(RE):
         return sum([len(cbs) for cbs in
                     RE.dispatcher.cb_registry.callbacks.values()])
@@ -297,22 +317,22 @@ def test_dispatcher_unsubscribe_all(fresh_RE):
     def cb(name, doc):
         pass
 
-    fresh_RE.subscribe(cb)
-    assert count_callbacks(fresh_RE) == 5
-    fresh_RE.dispatcher.unsubscribe_all()
-    assert count_callbacks(fresh_RE) == 0
+    RE.subscribe(cb)
+    assert count_callbacks(RE) == 5
+    RE.dispatcher.unsubscribe_all()
+    assert count_callbacks(RE) == 0
 
 
-def test_stage_and_unstage_are_optional_methods(fresh_RE):
+def test_stage_and_unstage_are_optional_methods(RE):
     class Dummy:
         pass
 
     dummy = Dummy()
 
-    fresh_RE([Msg('stage', dummy), Msg('unstage', dummy)])
+    RE([Msg('stage', dummy), Msg('unstage', dummy)])
 
 
-def test_pause_resume_devices(fresh_RE):
+def test_pause_resume_devices(RE):
     paused = {}
     resumed = {}
 
@@ -329,20 +349,19 @@ def test_pause_resume_devices(fresh_RE):
     dummy = Dummy('dummy')
 
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE([Msg('stage', dummy), Msg('pause')])
-    fresh_RE.resume()
+        RE([Msg('stage', dummy), Msg('pause')])
+    RE.resume()
     assert 'dummy' in paused
     assert 'dummy' in resumed
 
 
-def test_bad_call_args(fresh_RE):
-    RE = fresh_RE
+def test_bad_call_args(RE):
     with pytest.raises(Exception):
         RE(53)
     assert RE.state == 'idle'
 
 
-def test_record_interruptions(fresh_RE):
+def test_record_interruptions(RE):
     docs = defaultdict(lambda: [])
 
     def collect(name, doc):
@@ -350,41 +369,44 @@ def test_record_interruptions(fresh_RE):
         docs[name].append(doc)
         print(docs)
 
-    fresh_RE.subscribe(collect)
-    fresh_RE.ignore_callback_exceptions = False
-    fresh_RE.msg_hook = print
+    RE.subscribe(collect)
+    RE.ignore_callback_exceptions = False
+    RE.msg_hook = print
 
     # The 'pause' inside the run should generate an event iff
     # record_interruptions is True.
     plan = [Msg('pause'), Msg('open_run'), Msg('pause'), Msg('close_run')]
 
-    assert not fresh_RE.record_interruptions
+    assert not RE.record_interruptions
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE(plan)
+        RE(plan)
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE.resume()
-    fresh_RE.resume()
+        RE.resume()
+    RE.resume()
     assert len(docs['descriptor']) == 0
     assert len(docs['event']) == 0
 
-    fresh_RE.record_interruptions = True
+    RE.record_interruptions = True
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE(plan)
+        RE(plan)
     with pytest.raises(RunEngineInterrupted):
-        fresh_RE.resume()
-    fresh_RE.resume()
+        RE.resume()
+    RE.resume()
     assert len(docs['descriptor']) == 1
     assert len(docs['event']) == 2
     docs['event'][0]['data']['interruption'] == 'pause'
     docs['event'][1]['data']['interruption'] == 'resume'
 
 
+@requires_ophyd
 def _make_unrewindable_marker():
+    from ophyd.sim import SynGauss, SynAxis
+
     class UnReplayableSynGauss(SynGauss):
         def pause(self):
             raise NoReplayAllowed()
 
-    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    motor = SynAxis(name='motor')
 
     def test_plan(motor, det):
         yield Msg('set', motor, 0)
@@ -409,8 +431,7 @@ def _make_unrewindable_marker():
 
 
 @_make_unrewindable_marker()
-def test_unrewindable_det(fresh_RE, plan, motor, det, msg_seq):
-    RE = fresh_RE
+def test_unrewindable_det(RE, plan, motor, det, msg_seq):
     msgs = []
 
     def collector(msg):
@@ -423,12 +444,15 @@ def test_unrewindable_det(fresh_RE, plan, motor, det, msg_seq):
     assert [m.command for m in msgs] == msg_seq
 
 
+@requires_ophyd
 def _make_unrewindable_suspender_marker():
+    from ophyd.sim import SynGauss, SynAxis
+
     class UnReplayableSynGauss(SynGauss):
         def pause(self):
             raise NoReplayAllowed()
 
-    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
+    motor = SynAxis(name='motor')
 
     def test_plan(motor, det):
         yield Msg('set', motor, 0)
@@ -457,8 +481,7 @@ def _make_unrewindable_suspender_marker():
 
 
 @_make_unrewindable_suspender_marker()
-def test_unrewindable_det_suspend(fresh_RE, plan, motor, det, msg_seq):
-    RE = fresh_RE
+def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
     msgs = []
 
     def collector(msg):
@@ -477,10 +500,9 @@ def test_unrewindable_det_suspend(fresh_RE, plan, motor, det, msg_seq):
 @pytest.mark.parametrize('unpause_func', [lambda RE: RE.stop(),
                                           lambda RE: RE.abort(),
                                           lambda RE: RE.resume()])
-def test_cleanup_after_pause(fresh_RE, unpause_func, motor_det):
-    RE = fresh_RE
+def test_cleanup_after_pause(RE, unpause_func, hw):
 
-    motor, det = motor_det
+    motor = hw.motor
     motor.set(1024)
 
     @bp.reset_positions_decorator()
@@ -498,10 +520,9 @@ def test_cleanup_after_pause(fresh_RE, unpause_func, motor_det):
     assert motor.position == 1024
 
 
-def test_sigint_three_hits(fresh_RE, motor_det):
-    motor, det = motor_det
-    motor._fake_sleep = 0.3
-    RE = fresh_RE
+def test_sigint_three_hits(RE, hw):
+    motor = hw.motor
+    motor.delay = 0.3
 
     pid = os.getpid()
 
@@ -528,8 +549,7 @@ def test_sigint_three_hits(fresh_RE, motor_det):
 
 @pytest.mark.skipif(sys.version_info < (3, 5),
                     reason="requires python3.5")
-def test_sigint_many_hits_pln(fresh_RE):
-    RE = fresh_RE
+def test_sigint_many_hits_pln(RE):
     pid = os.getpid()
 
     def sim_kill(n=1):
@@ -556,8 +576,7 @@ def test_sigint_many_hits_pln(fresh_RE):
 
 @pytest.mark.skipif(sys.version_info < (3, 5),
                     reason="requires python3.5")
-def test_sigint_many_hits_cb(fresh_RE):
-    RE = fresh_RE
+def test_sigint_many_hits_cb(RE):
     pid = os.getpid()
 
     def sim_kill(n=1):
@@ -625,10 +644,9 @@ def _make_plan_marker():
 
 
 @_make_plan_marker()
-def test_cleanup_pathological_plans(fresh_RE, motor_det, plan):
-    RE = fresh_RE
+def test_cleanup_pathological_plans(RE, hw, plan):
 
-    motor, det = motor_det
+    motor = hw.motor
     motor.set(1024)
     try:
         try:
@@ -654,9 +672,8 @@ def test_finalizer_closeable():
     plan.close()
 
 
-def test_invalid_generator(fresh_RE, motor_det, capsys):
-    RE = fresh_RE
-    motor, det = motor_det
+def test_invalid_generator(RE, hw, capsys):
+    motor = hw.motor
 
     # this is not a valid generator as it will try to yield if it
     # is throw a GeneratorExit
@@ -699,8 +716,7 @@ def test_invalid_generator(fresh_RE, motor_det, capsys):
     assert actual_err[::-1][:len(expected_postfix)] == expected_postfix
 
 
-def test_exception_cascade_REside(fresh_RE):
-    RE = fresh_RE
+def test_exception_cascade_REside(RE):
     except_hit = False
 
     def pausing_plan():
@@ -730,8 +746,7 @@ def test_exception_cascade_REside(fresh_RE):
     assert except_hit
 
 
-def test_exception_cascade_planside(fresh_RE):
-    RE = fresh_RE
+def test_exception_cascade_planside(RE):
     except_hit = False
 
     def pausing_plan():
@@ -762,8 +777,7 @@ def test_exception_cascade_planside(fresh_RE):
     assert except_hit
 
 
-def test_sideband_cancel(fresh_RE):
-    RE = fresh_RE
+def test_sideband_cancel(RE):
     ev = asyncio.Event(loop=RE.loop)
 
     def done():
@@ -787,8 +801,7 @@ def test_sideband_cancel(fresh_RE):
     assert .5 < (stop - start) < 2
 
 
-def test_no_rewind(fresh_RE):
-    RE = fresh_RE
+def test_no_rewind(RE):
     msg_lst = []
 
     def msg_collector(msg):
@@ -804,8 +817,7 @@ def test_no_rewind(fresh_RE):
     assert msg_lst == plan
 
 
-def test_no_rewindable_msg(fresh_RE):
-    RE = fresh_RE
+def test_no_rewindable_msg(RE):
     RE.rewindable = True
 
     msg_lst = []
@@ -828,8 +840,7 @@ def test_no_rewindable_msg(fresh_RE):
 
 
 @pytest.mark.parametrize('start_state', [True, False])
-def test_rewindable_state_retrival(fresh_RE, start_state):
-    RE = fresh_RE
+def test_rewindable_state_retrival(RE, start_state):
     RE.rewindable = start_state
 
     def rewind_plan(start_value):
@@ -871,20 +882,18 @@ def test_rewindable_state_retrival(fresh_RE, start_state):
                                                           'read',
                                                           'save',
                                                           'close_run'])))
-def test_nonrewindable_detector(fresh_RE, motor_det, start_state, msg_seq):
+def test_nonrewindable_detector(RE, hw, start_state, msg_seq):
     class FakeSig:
         def get(self):
             return False
 
-    motor, det = motor_det
-    det.rewindable = FakeSig()
+    hw.det.rewindable = FakeSig()
 
-    RE = fresh_RE
     RE.rewindable = start_state
     m_col = MsgCollector()
     RE.msg_hook = m_col
 
-    RE(bp.run_wrapper(bp.trigger_and_read([motor, det])))
+    RE(bp.run_wrapper(bp.trigger_and_read([hw.motor, hw.det])))
 
     assert [m.command for m in m_col.msgs] == msg_seq
 
@@ -896,15 +905,14 @@ def test_nonrewindable_detector(fresh_RE, motor_det, start_state, msg_seq):
                                                    'rewindable']),
                                                  (False, ['rewindable',
                                                           'aardvark'])))
-def test_nonrewindable_finalizer(fresh_RE, motor_det, start_state, msg_seq):
+def test_nonrewindable_finalizer(RE, hw, start_state, msg_seq):
     class FakeSig:
         def get(self):
             return False
 
-    motor, det = motor_det
+    det = hw.det
     det.rewindable = FakeSig()
 
-    RE = fresh_RE
     RE.rewindable = start_state
     m_col = MsgCollector()
     RE.msg_hook = m_col
@@ -921,8 +929,7 @@ def test_nonrewindable_finalizer(fresh_RE, motor_det, start_state, msg_seq):
     assert [m.command for m in m_col.msgs] == msg_seq
 
 
-def test_halt_from_pause(fresh_RE):
-    RE = fresh_RE
+def test_halt_from_pause(RE):
     except_hit = False
     m_coll = MsgCollector()
     RE.msg_hook = m_coll
@@ -945,8 +952,7 @@ def test_halt_from_pause(fresh_RE):
     assert [m.command for m in m_coll.msgs] == ['null'] * 5 + ['pause']
 
 
-def test_halt_async(fresh_RE):
-    RE = fresh_RE
+def test_halt_async(RE):
     except_hit = False
     m_coll = MsgCollector()
     RE.msg_hook = m_coll
@@ -973,8 +979,7 @@ def test_halt_async(fresh_RE):
 @pytest.mark.parametrize('cancel_func',
                          [lambda RE: RE.stop(), lambda RE: RE.abort(),
                           lambda RE: RE.request_pause(defer=False)])
-def test_prompt_stop(fresh_RE, cancel_func):
-    RE = fresh_RE
+def test_prompt_stop(RE, cancel_func):
     except_hit = False
     m_coll = MsgCollector()
     RE.msg_hook = m_coll
@@ -1005,13 +1010,12 @@ def test_prompt_stop(fresh_RE, cancel_func):
                                          lambda RE: RE.halt(),
                                          lambda RE: RE.request_pause(),
                                          lambda RE: RE.resume()])
-def test_bad_from_idle_transitions(fresh_RE, change_func):
+def test_bad_from_idle_transitions(RE, change_func):
     with pytest.raises(TransitionError):
-        change_func(fresh_RE)
+        change_func(RE)
 
 
-def test_empty_cache_pause(fresh_RE):
-    RE = fresh_RE
+def test_empty_cache_pause(RE):
     RE.rewindable = False
     pln = [Msg('open_run'),
            Msg('create'),
@@ -1023,8 +1027,7 @@ def test_empty_cache_pause(fresh_RE):
     RE.resume()
 
 
-def test_state_hook(fresh_RE):
-    RE = fresh_RE
+def test_state_hook(RE):
     states = []
 
     def log_state(new, old):
@@ -1041,8 +1044,7 @@ def test_state_hook(fresh_RE):
     assert states == expected
 
 
-def test_max_depth(fresh_RE):
-    RE = fresh_RE
+def test_max_depth(RE):
 
     RE.max_depth is None
     RE([])  # should not raise
@@ -1056,8 +1058,7 @@ def test_max_depth(fresh_RE):
         RE([])
 
 
-def test_preprocessors(fresh_RE):
-    RE = fresh_RE
+def test_preprocessors(RE):
 
     def custom_cleanup(plan):
         yield from plan
@@ -1081,9 +1082,10 @@ def test_preprocessors(fresh_RE):
     assert actual == expected
 
 
-def test_pardon_failures(fresh_RE):
-    RE = fresh_RE
-    st = SimpleStatus()
+@requires_ophyd
+def test_pardon_failures(RE):
+    from ophyd import StatusBase
+    st = StatusBase()
 
     class Dummy:
         name = 'dummy'
@@ -1098,15 +1100,16 @@ def test_pardon_failures(fresh_RE):
     RE([Msg('null')])
 
 
-def test_failures_kill_run(fresh_RE):
+@requires_ophyd
+def test_failures_kill_run(RE):
     # just to make sure that 'pardon_failures' does not block *real* failures
-    RE = fresh_RE
+    from ophyd import StatusBase
 
     class Dummy:
         name = 'dummy'
 
         def set(self, val):
-            st = SimpleStatus()
+            st = StatusBase()
             st._finished(success=False)
             return st
 
@@ -1116,11 +1119,7 @@ def test_failures_kill_run(fresh_RE):
         RE([Msg('set', dummy, 1)])
 
 
-def test_colliding_streams(fresh_RE):
-    RE = fresh_RE
-
-    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
-    motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
+def test_colliding_streams(RE, hw):
 
     collector = {'primary': [], 'baseline': []}
     descs = {}
@@ -1131,10 +1130,10 @@ def test_colliding_streams(fresh_RE):
         elif name == 'event':
             collector[descs[doc['descriptor']]].append(doc)
 
-    RE(bp.baseline_wrapper(bp.outer_product_scan([motor],
-                                                 motor, -1, 1, 5,
-                                                 motor1, -5, 5, 7, True),
-                           [motor, motor1]),
+    RE(bp.baseline_wrapper(bp.outer_product_scan([hw.motor],
+                                                 hw.motor, -1, 1, 5,
+                                                 hw.motor1, -5, 5, 7, True),
+                           [hw.motor, hw.motor1]),
        local_cb)
 
     assert len(collector['primary']) == 35
@@ -1144,9 +1143,8 @@ def test_colliding_streams(fresh_RE):
     assert list(range(1, 3)) == [e['seq_num'] for e in collector['baseline']]
 
 
-def test_old_subscribe(fresh_RE):
+def test_old_subscribe(RE):
     # Old usage had reversed argument order. It should warn but still work.
-    RE = fresh_RE
     collector = []
 
     def collect(name, doc):
@@ -1168,9 +1166,7 @@ def test_old_subscribe(fresh_RE):
     RE.unsubscribe(1)
 
 
-def test_waiting_hook(fresh_RE):
-    from bluesky.examples import motor, motor1, motor2
-    RE = fresh_RE
+def test_waiting_hook(RE, hw):
 
     collector = []
 
@@ -1179,7 +1175,7 @@ def test_waiting_hook(fresh_RE):
 
     RE.waiting_hook = collect
 
-    RE([Msg('set', motor, 5, group='A'), Msg('wait', group='A')])
+    RE([Msg('set', hw.motor, 5, group='A'), Msg('wait', group='A')])
 
     sts, none = collector
     assert isinstance(sts, set)
@@ -1187,8 +1183,8 @@ def test_waiting_hook(fresh_RE):
     assert none is None
     collector.clear()
 
-    RE([Msg('set', motor1, 5, group='A'),
-        Msg('set', motor2, 3, group='A'),
+    RE([Msg('set', hw.motor1, 5, group='A'),
+        Msg('set', hw.motor2, 3, group='A'),
         Msg('wait', group='A')])
 
     sts, none = collector
@@ -1198,8 +1194,7 @@ def test_waiting_hook(fresh_RE):
     collector.clear()
 
 
-def test_hints(fresh_RE):
-    RE = fresh_RE
+def test_hints(RE):
 
     class Detector:
         def __init__(self, name):
@@ -1229,17 +1224,16 @@ def test_hints(fresh_RE):
     assert doc['hints']['det'] == {'vis': 'placeholder'}
 
 
-def test_flyer_descriptor(fresh_RE):
-    RE = fresh_RE
-    flyers = [TrivialFlyer()]
+def test_flyer_descriptor(RE, hw):
+    flyers = [hw.flyer1]
+    hw.flyer1.loop = RE.loop
     collector = []
     RE(bp.fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
     descriptor = collector.pop()
     assert 'object_keys' in descriptor
 
 
-def test_filled(fresh_RE, db):
-    RE = fresh_RE
+def test_filled(RE, hw, db):
 
     collector = []
 
@@ -1247,23 +1241,19 @@ def test_filled(fresh_RE, db):
         if name == 'event':
             collector.append(doc)
 
-    RE(bp.count([det]), collect)
+    RE(bp.count([hw.det]), collect)
 
     event, = collector
     assert event['filled'] == {}
     collector.clear()
 
-    arr_det = ReaderWithRegistry('arr_det',
-                                 {'img': lambda: np.array(np.ones((10, 10)))},
-                                 reg=db.reg)
-
-    RE(bp.count([arr_det]), collect)
+    hw.img.reg = db.reg
+    RE(bp.count([hw.img]), collect)
     event, = collector
     assert event['filled'] == {'img': False}
 
 
-def test_double_call(fresh_RE):
-    RE = fresh_RE
+def test_double_call(RE):
 
     uid1 = RE(bp.count([]))
     uid2 = RE(bp.count([]))
@@ -1271,41 +1261,39 @@ def test_double_call(fresh_RE):
     assert uid1 != uid2
 
 
-def test_num_events(fresh_RE, db):
-    RE = fresh_RE
+def test_num_events(RE, hw, db):
     RE.subscribe(db.insert)
 
     uid1, = RE(bp.count([]))
     h = db[uid1]
     assert h.stop['num_events'] == {}
 
-    uid2, = RE(bp.count([det], 5))
+    uid2, = RE(bp.count([hw.det], 5))
     h = db[uid2]
     assert h.stop['num_events'] == {'primary': 5}
 
-    sd = bp.SupplementalData(baseline=[det])
+    sd = bp.SupplementalData(baseline=[hw.det])
     RE.preprocessors.append(sd)
 
     uid3, = RE(bp.count([]))
     h = db[uid3]
     assert h.stop['num_events'] == {'baseline': 2}
 
-    uid4, = RE(bp.count([det], 5))
+    uid4, = RE(bp.count([hw.det], 5))
     h = db[uid4]
     assert h.stop['num_events'] == {'primary': 5, 'baseline': 2}
 
 
-def test_raise_if_interrupted_deprecation(fresh_RE):
+def test_raise_if_interrupted_deprecation(RE):
     with pytest.warns(UserWarning):
-        fresh_RE([], raise_if_interrupted=True)
+        RE([], raise_if_interrupted=True)
 
 
 @pytest.mark.parametrize('bail_func,status', (('resume', 'success'),
                                               ('stop', 'success'),
                                               ('abort', 'abort'),
                                               ('halt', 'abort')))
-def test_force_stop_exit_status(bail_func, status, fresh_RE):
-    RE = fresh_RE
+def test_force_stop_exit_status(bail_func, status, RE):
     d = DocCollector()
     RE.subscribe(d.insert)
 
@@ -1324,8 +1312,7 @@ def test_force_stop_exit_status(bail_func, status, fresh_RE):
     assert d.stop[rs]['exit_status'] == status
 
 
-def test_exceptions_exit_status(fresh_RE):
-    RE = fresh_RE
+def test_exceptions_exit_status(RE):
     d = DocCollector()
     RE.subscribe(d.insert)
 

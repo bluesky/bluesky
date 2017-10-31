@@ -40,7 +40,7 @@ get_ipython().register_magics(BlueskyMagics)
 %mov m1 1 m2 3
 
 from bluesky.plans import scan
-from bluesky.examples import det, det1, motor
+from ophyd.sim import det, det1, motor
 from bluesky.callbacks import LiveTable
 det.exposure_time = 3
 det1.exposure_time = 2

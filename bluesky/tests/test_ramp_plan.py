@@ -12,7 +12,7 @@ import pytest
 def test_ramp(RE):
     from ophyd.positioner import SoftPositioner
     from ophyd import StatusBase
-    from bluesky.examples import SynGauss
+    from ophyd.sim import SynGauss
 
     tt = SoftPositioner(name='mot')
     tt.set(0)
@@ -50,7 +50,7 @@ def test_ramp(RE):
 @requires_ophyd
 def test_timeout(RE):
     from ophyd.positioner import SoftPositioner
-    from bluesky.examples import SynGauss
+    from ophyd.sim import SynGauss
     from ophyd import StatusBase
 
     mot = SoftPositioner(name='mot')

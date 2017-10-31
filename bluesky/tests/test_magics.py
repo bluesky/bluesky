@@ -1,6 +1,5 @@
 from bluesky.magics import BlueskyMagics
 import bluesky.plans as bp
-from bluesky.examples import det, motor1, motor2, det1, det2, Mover
 from collections import OrderedDict
 import os
 import pytest
@@ -20,26 +19,21 @@ def compare_msgs(actual, expected):
         e.kwargs.pop('group', None)
         assert a == e
 
-dets = [det]
-default_dets = [det1, det2]
 
-@pytest.mark.parametrize('pln,magic,line', [
-    (bp.mv(motor1, 2), 'mov', 'motor1 2'),
-    (bp.mv(motor1, 2, motor2, 3), 'mov', 'motor1 2 motor2 3'),
-    (bp.mvr(motor1, 2), 'movr', 'motor1 2'),
-    (bp.mvr(motor1, 2, motor2, 3), 'movr', 'motor1 2 motor2 3'),
-    (bp.count(dets), 'ct', 'dets'),
-    (bp.count(default_dets), 'ct', ''),
+@pytest.mark.parametrize('pln,plnargs,magic,line', [
+    (bp.mv, lambda hw: (hw.motor1, 2), 'mov', 'motor1 2'),
+    (bp.mv, lambda hw: (hw.motor1, 2, hw.motor2, 3), 'mov', 'motor1 2 motor2 3'),
+    (bp.mvr, lambda hw: (hw.motor1, 2), 'movr', 'motor1 2'),
+    (bp.mvr, lambda hw: (hw.motor1, 2, hw.motor2, 3), 'movr', 'motor1 2 motor2 3'),
+    (bp.count, lambda hw: ([hw.invariant1],), 'ct', 'dets'),
+    (bp.count, lambda hw: ([hw.invariant1, hw.invariant2],), 'ct', ''),
     ])
-def test_bluesky_magics(pln, line, magic, fresh_RE):
-    RE = fresh_RE
-
+def test_bluesky_magics(pln, plnargs, line, magic, RE, hw):
     # Build a FakeIPython instance to use the magics with.
-
-    dets = [det]
-    ip = FakeIPython({'motor1': motor1, 'motor2': motor2, 'dets': dets})
+    dets = [hw.invariant1]
+    ip = FakeIPython({'motor1': hw.motor1, 'motor2': hw.motor2, 'dets': dets})
     sm = BlueskyMagics(ip)
-    sm.detectors = default_dets
+    sm.detectors = [hw.invariant1, hw.invariant2]
 
     # Spy on all msgs processed by RE.
     msgs = []
@@ -51,11 +45,11 @@ def test_bluesky_magics(pln, line, magic, fresh_RE):
     sm.RE.msg_hook = collect
 
     # Test magics cause the RunEngine to execute the messages we expect.
-    RE(bp.mv(motor1, 10, motor2, 10))  # ensure known initial state
-    RE(pln)
+    RE(bp.mv(hw.motor1, 10, hw.motor2, 10))  # ensure known initial state
+    RE(pln(*plnargs(hw)))
     expected = msgs.copy()
     msgs.clear()
-    RE(bp.mv(motor1, 10, motor2, 10))  # ensure known initial state
+    RE(bp.mv(hw.motor1, 10, hw.motor2, 10))  # ensure known initial state
     getattr(sm, magic)(line)
     actual = msgs.copy()
     msgs.clear()
@@ -63,10 +57,8 @@ def test_bluesky_magics(pln, line, magic, fresh_RE):
 
 
 # The %wa magic doesn't use a RunEngine or a plan.
-def test_wa():
-    motor = Mover('motor', OrderedDict([('motor', lambda x: x),
-                                        ('motor_setpoint', lambda x: x)]),
-                  {'x': 0})
+def test_wa(hw):
+    motor = hw.motor
     ip = FakeIPython({'motor': motor})
     sm = BlueskyMagics(ip)
     # Test an empty list.
@@ -83,19 +75,18 @@ def test_wa():
     sm.wa('[motor]')
 
 
-def test_magics_missing_ns_key(fresh_RE):
-    RE = fresh_RE
+def test_magics_missing_ns_key(RE, hw):
     ip = FakeIPython({})
     sm = BlueskyMagics(ip)
     with pytest.raises(NameError):
         sm.mov('motor1 5')
-    ip.user_ns['motor1'] = motor1
+    ip.user_ns['motor1'] = hw.motor1
     sm.mov('motor1 5')
 
 
-def test_interrupted(motor_det):
-    motor, det = motor_det
-    motor._fake_sleep = 10
+def test_interrupted(RE, hw):
+    motor = hw.motor
+    motor.delay = 10
 
     ip = FakeIPython({})
     sm = BlueskyMagics(ip)

@@ -1,7 +1,6 @@
 attrs
 coverage
 databroker
-dill
 doct
 ipython
 jinja2

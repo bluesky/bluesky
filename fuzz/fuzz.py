@@ -3,11 +3,12 @@ import os
 import random
 import signal
 import time as ttime
-import pdb
 from pprint import pprint
 from bluesky import IllegalMessageSequence
-from bluesky.examples import *
 from bluesky.tests.utils import setup_test_run_engine
+from bluesky.utils import Msg, RunEngineInterrupted
+import bluesky.examples as bse
+from ophyd.sim import MockFlyer, SynGauss, Syn2DGauss, SynAxis
 import uuid
 import itertools
 import gc
@@ -20,8 +21,10 @@ def unique_name():
 
 # create objects
 all_objects = set()
+
+
 # create functions to get objects
-def get_flyer():
+def get_magic_flyer():
     """Get a new magic flyer. Magic flyers require no additional arguments in
     their message: Msg('kickoff', get_magic_flyer())
     """
@@ -90,7 +93,7 @@ def get_motor():
     Mover object
     """
     mtr_name = 'mtr_' + unique_name()
-    mtr = Mover(mtr_name, [mtr_name], sleep_time=random.random() / 20)
+    mtr = SynAxis(name=mtr_name, delay=random.random() / 20)
     all_objects.add(mtr)
     return mtr
 
@@ -140,6 +143,7 @@ def spam_SIGINT():
 
 
 def randomly_SIGINT_in_the_future():
+    loop = asyncio.get_event_loop()
     for _ in range(10):
         func = interrupt_func
         if random.random() > 0.5:
@@ -152,22 +156,22 @@ def randomly_SIGINT_in_the_future():
 
 
 all_scan_generator_funcs = [
-    simple_scan,
-    conditional_break,
-    sleepy,
-    do_nothing,
+    bse.simple_scan,
+    bse.conditional_break,
+    bse.sleepy,
+    bse.do_nothing,
     # checkpoint_forever should be part of these scans, as it will indefinitely
     # hang the fuzzing effort
     # checkpoint_forever,
-    wait_one,
-    wait_multiple,
-    wait_complex,
-    conditional_pause,
-    simple_scan_saving,
-    stepscan,
-    cautious_stepscan,
-    fly_gen,
-    multi_sample_temperature_ramp]
+    bse.wait_one,
+    bse.wait_multiple,
+    bse.wait_complex,
+    bse.conditional_pause,
+    bse.simple_scan_saving,
+    bse.stepscan,
+    bse.cautious_stepscan,
+    bse.fly_gen,
+    bse.multi_sample_temperature_ramp]
 
 
 scan_kwarg_map = {
@@ -251,7 +255,7 @@ def get_shuffleable_scan_generators():
             if RE.state != 'idle':
                 RE.abort()
             RE(scan_list)
-        except IllegalMessageSequence:
+        except (IllegalMessageSequence, ValueError):
             # this is acceptable
             pass
     return [scan for scan in scans if scan not in unshuffleable]
@@ -283,11 +287,13 @@ def kickoff_and_collect(block=False, magic=False):
 
 
 def run_fuzz():
+    loop = asyncio.get_event_loop()
     # create 10 different flyers with corresponding kickoff and collect
     # messages
     flyer_messages = [msg for _ in range(10)
-                      for msg in kickoff_and_collect(block=random.random()>0.5,
-                                                     magic=random.random()>0.5)]
+                      for msg in kickoff_and_collect(
+                              block=random.random() > 0.5,
+                              magic=random.random() > 0.5)]
     set_messages = [Msg('set', mtr, i) for i, mtr in
                     itertools.product(range(-5, 6),
                                       [get_motor() for _ in range(5)])]
@@ -331,12 +337,12 @@ def run_fuzz():
           set([msg.command for msg in message_objects]))
 
     num_message = 100
-    num_SIGINT = 8
+    num_SIGINT = 10
     num_scans = 50
     num_shuffled_scans = 50
     random.shuffle(message_objects)
     choices = (['message'] * num_message +
-               ['sigint'] * num_SIGINT +
+               # ['sigint'] * num_SIGINT +
                ['scan'] * num_scans +
                ['shuffled_scan'] * num_shuffled_scans)
     sigints = [
@@ -359,7 +365,10 @@ def run_fuzz():
                 msg = random.choice(message_objects)
                 print(msg.command)
                 msg_seq.append(msg.command)
-                RE([msg])
+                try:
+                    RE([msg])
+                except RunEngineInterrupted:
+                    pass
                 if msg.command == 'pause':
                     RE.resume()
                 assert RE.state == 'idle'
@@ -370,18 +379,25 @@ def run_fuzz():
             print("Running scan: {}"
                   "".format(scan_gen_func.__code__.co_name))
             scan_generator = make_scan_from_gen_func(scan_gen_func)
-            RE(scan_generator)
+            try:
+                RE(scan_generator)
+            except RunEngineInterrupted:
+                pass
         elif name == 'shuffled_scan':
             scan_gen_func = random.choice(shufflable_scans)
             print("Running shuffled scan: {}"
                   "".format(scan_gen_func.__code__.co_name))
             shuffled_scan = make_scan_from_gen_func(scan_gen_func)
-            RE(shuffled_scan)
+            try:
+                RE(shuffled_scan)
+            except RunEngineInterrupted:
+                pass
         elif name == 'sigint':
             sigint_type, allowed_states, func = random.choice(sigints)
             print(sigint_type)
             msg_seq.append(sigint_type)
-            #TODO Figure out how to verify that the RunEngine is in the desired state after this call_later executes
+            # TODO Figure out how to verify that the RunEngine is in
+            # the desired state after this call_later executes
             loop.call_later(1, func)
         else:
             raise NotImplementedError("{} is not implemented".format(name))
