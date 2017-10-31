@@ -3113,7 +3113,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.relative_outer_product_scan`
-    :func:`bluesky.plans.joint_scan`
+    :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
     _md = {'plan_name': 'relative_inner_product_scan'}
