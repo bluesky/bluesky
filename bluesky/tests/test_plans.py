@@ -3,6 +3,7 @@ import pytest
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
 from bluesky.examples import motor, motor1, motor2, det
+import numpy as np
 import pandas as pd
 
 
@@ -63,7 +64,6 @@ def test_plan_header(fresh_RE, plan, target):
     RE(plan, c.insert)
     for s in c.start:
         _validate_start(s, target)
-
 
 
 def test_ops_dimension_hints(fresh_RE):
@@ -132,3 +132,42 @@ def test_rmesh_pseudo(hw, fresh_RE):
     assert len(df) == 35
     assert min(df[p3x3.pseudo1.name]) == 1
     assert init_pos == p3x3.position
+
+
+def test_relative_pseudo(hw, fresh_RE, db):
+    RE = fresh_RE
+    RE.subscribe(db.insert)
+    p = hw.pseudo3x3
+    p.set(1, 1, 1)
+    base_pos = p.position
+
+    # this triggers the merging code path
+    rs, = RE(bp.relative_inner_product_scan([p],
+                                            5,
+                                            p.pseudo1, -1, 1,
+                                            p.pseudo2, -2, -1))
+    tb1 = db[rs].table().drop('time', 1)
+    assert p.position == base_pos
+
+    # this triggers this does not
+    rs, = RE(bp.relative_inner_product_scan([p],
+                                            5,
+                                            p.real1, 1, -1,
+                                            p.real2, 2, 1))
+    tb2 = db[rs].table().drop('time', 1)
+    assert p.position == base_pos
+
+    # same columns
+    assert set(tb1) == set(tb2)
+    # same number of points
+    assert len(tb1) == len(tb2)
+
+    def get_hint(c):
+        return c.hints['fields'][0]
+
+    for c in list(p.pseudo_positioners) + list(p.real_positioners):
+        col = get_hint(c)
+        print(col)
+        assert (tb1[col] == tb2[col]).all()
+
+    assert (tb1[get_hint(p.pseudo1)] == np.linspace(0, 2, 5)).all()
