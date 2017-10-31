@@ -1,6 +1,3 @@
-import matplotlib.pyplot as plt
-from matplotlib import collections as mcollections
-from matplotlib import patches as mpatches
 from warnings import warn
 from bluesky.plans import print_summary_wrapper
 
@@ -25,6 +22,9 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     lw : float, optional
         Width of lines drawn between points
     """
+    import matplotlib.pyplot as plt
+    from matplotlib import collections as mcollections
+    from matplotlib import patches as mpatches
     if ax is None:
         ax = plt.subplots()[1]
     ax.set_aspect('equal')
