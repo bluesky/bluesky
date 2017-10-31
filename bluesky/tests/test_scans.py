@@ -101,7 +101,7 @@ def test_inner_product_ascan():
 
 
 def test_outer_product_dscan():
-    scan = bp.relative_outer_product_scan(
+    scan = bp.rel_grid_scan(
         [det], motor1, 1, 3, 3, motor2, 10, 20, 2, False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
@@ -122,7 +122,7 @@ def test_outer_product_dscan():
 
 
 def test_outer_product_dscan_snaked():
-    scan = bp.relative_outer_product_scan(
+    scan = bp.rel_grid_scan(
         [det], motor1, 1, 3, 3, motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.

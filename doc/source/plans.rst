@@ -44,7 +44,7 @@ documentation.
    inner_product_scan
    grid_scan
    relative_inner_product_scan
-   relative_outer_product_scan
+   rel_grid_scan
    scan_nd
    spiral
    spiral_fermat
@@ -325,7 +325,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    inner_product_scan
    grid_scan
    relative_inner_product_scan
-   relative_outer_product_scan
+   rel_grid_scan
    scan_nd
 
 Spiral trajectories
