@@ -1,5 +1,6 @@
 import asyncio
 from bluesky.run_engine import RunEngine
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pytest
@@ -52,3 +53,9 @@ def db(request):
     db = build_sqlite_backed_broker(request)
     db.reg.register_handler('NPY_SEQ', NumpySeqHandler)
     return db
+
+
+@pytest.fixture(autouse=True)
+def cleanup_any_figures(request):
+    "Close any matplotlib figures that were opened during a test."
+    plt.close('all')
