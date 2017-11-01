@@ -44,7 +44,7 @@ def approx_multi_traj_checker(RE, scan, expected_data, *, decimal=2):
 
 
 def test_outer_product_ascan(RE, hw):
-    scan = bp.outer_product_scan([hw.det],
+    scan = bp.grid_scan([hw.det],
                                  hw.motor1, 1, 3, 3,
                                  hw.motor2, 10, 20, 2, False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
@@ -63,7 +63,7 @@ def test_outer_product_ascan(RE, hw):
 
 
 def test_outer_product_ascan_snaked(RE, hw):
-    scan = bp.outer_product_scan([hw.det],
+    scan = bp.grid_scan([hw.det],
                                  hw.motor1, 1, 3, 3,
                                  hw.motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"

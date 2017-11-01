@@ -2954,7 +2954,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.inner_product_scan`
-    :func:`bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.grid_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name for motor in cycler.keys],
@@ -3019,7 +3019,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.relative_inner_product_scan`
-    :func:`bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
     md_args = list(chain(*((repr(motor), start, stop)
@@ -3043,7 +3043,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
                                per_step=per_step, md=_md))
 
 
-def outer_product_scan(detectors, *args, per_step=None, md=None):
+def grid_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -3098,7 +3098,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
            'plan_args': {'detectors': list(map(repr, detectors)),
                          'args': md_args,
                          'per_step': repr(per_step)},
-           'plan_name': 'outer_product_scan',
+           'plan_name': 'grid_scan',
            'plan_pattern': 'outer_product',
            'plan_pattern_args': dict(args=md_args),
            'plan_pattern_module': plan_patterns.__name__,
@@ -3143,7 +3143,7 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.relative_inner_product_scan`
-    :func:`bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
     _md = {'plan_name': 'rel_grid_scan'}
@@ -3154,7 +3154,7 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
     @reset_positions_decorator(motors)
     @relative_set_decorator(motors)
     def inner_rel_grid_scan():
-        return (yield from outer_product_scan(detectors, *args,
+        return (yield from grid_scan(detectors, *args,
                                               per_step=per_step, md=_md))
 
     return (yield from inner_rel_grid_scan())
@@ -3937,7 +3937,7 @@ InnerProductDeltaScanPlan = RelativeInnerProductScan  # back-compat
 
 
 class OuterProductScan(Plan):
-    __doc__ = outer_product_scan.__doc__
+    __doc__ = grid_scan.__doc__
 
     def __init__(self, detectors, *args, md=None):
         self.detectors = detectors
@@ -3946,7 +3946,7 @@ class OuterProductScan(Plan):
         self.md = md
 
     def _gen(self):
-        return outer_product_scan(self.detectors, *self.args, md=self.md)
+        return grid_scan(self.detectors, *self.args, md=self.md)
 
 OuterProductAbsScanPlan = OuterProductScan  # back-compat
 

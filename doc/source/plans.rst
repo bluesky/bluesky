@@ -42,7 +42,7 @@ documentation.
    log_scan
    relative_log_scan
    inner_product_scan
-   outer_product_scan
+   grid_scan
    relative_inner_product_scan
    rel_grid_scan
    scan_nd
@@ -192,7 +192,7 @@ Demo:
     from bluesky.examples import det, motor1, motor2
     from bluesky.callbacks import LiveTable
     from bluesky import RunEngine
-    from bluesky.plans import outer_product_scan, inner_product_scan
+    from bluesky.plans import grid_scan, inner_product_scan
     RE = RunEngine({})
 
 .. ipython:: python
@@ -220,17 +220,17 @@ square: each motor can move a different number of steps.
 .. code-block:: python
 
     from bluesky.examples import det, motor1, motor2
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
 
     # Outer product: move motors in a mesh.
     # Move motor1 from 1-3 in 3 steps and motor2 from 10-50 in 5 steps.
-    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
+    RE(grid_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
 
 Demo:
 
 .. ipython:: python
 
-    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
+    RE(grid_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
        LiveTable(['det', 'motor1', 'motor2']))
 
 The final parameter designates whether motor2 should "snake" back and forth
@@ -241,11 +241,11 @@ direction each time (``False``), as illustrated.
 
     from bluesky.simulators import plot_raster_path
     from bluesky.examples import motor1, motor2, det
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     import matplotlib.pyplot as plt
 
-    true_plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
-    false_plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, False)
+    true_plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
+    false_plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, False)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
     plot_raster_path(true_plan, 'motor1', 'motor2', probe_size=.3, ax=ax1)
@@ -255,7 +255,7 @@ direction each time (``False``), as illustrated.
     ax1.set_xlim(-6, 6)
     ax2.set_xlim(-6, 6)
 
-Both :func:`inner_product_scan` and :func:`outer_product_scan` support an
+Both :func:`inner_product_scan` and :func:`grid_scan` support an
 unlimited number of motors/dimensions.
 
 To visualize 2-dimensional data, we can use ``LiveGrid``, which is documented
@@ -270,19 +270,19 @@ in :ref:`in the next section <liveraster>`. In previous examples we used
     # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
     from bluesky.examples import det4
 
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
 .. plot::
 
     from bluesky import RunEngine
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     from bluesky.examples import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
     motor1.delay = 0
     motor2.delay = 0
     RE = RunEngine({})
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
 The general case, moving some motors together in an "inner product" against
@@ -323,7 +323,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    :nosignatures:
 
    inner_product_scan
-   outer_product_scan
+   grid_scan
    relative_inner_product_scan
    rel_grid_scan
    scan_nd

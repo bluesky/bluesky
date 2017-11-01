@@ -68,7 +68,7 @@ RE = RunEngine({})
 
 # New standard configuration steps!
 
-from bluesky.plans import scan, outer_product_scan, SupplementalData
+from bluesky.plans import scan, grid_scan, SupplementalData
 diag = SupplementalData()
 RE.preprocessors.append(diag)
 
@@ -88,5 +88,5 @@ bec.overplot = False
 RE(scan([det], motor, 1, 5, 5))
 
 bec.overplot = True
-RE(outer_product_scan([det4], motor1, 1, 5, 5, motor2, 1, 5, 5, False))
-RE(outer_product_scan([det4], motor1, 1, 5, 5, motor2, 1, 5, 5, False))
+RE(grid_scan([det4], motor1, 1, 5, 5, motor2, 1, 5, 5, False))
+RE(grid_scan([det4], motor1, 1, 5, 5, motor2, 1, 5, 5, False))

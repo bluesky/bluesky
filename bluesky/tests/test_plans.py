@@ -29,7 +29,7 @@ def test_plan_header(RE, hw):
     args = []
 
     ##
-    args.append((bp.outer_product_scan([hw.det],
+    args.append((bp.grid_scan([hw.det],
                                        hw.motor, 1, 2, 3,
                                        hw.motor1, 4, 5, 6, True,
                                        hw.motor2, 7, 8, 9, True),
@@ -39,7 +39,7 @@ def test_plan_header(RE, hw):
                   'snaking': (False, True, True),
                   'plan_pattern_module': 'bluesky.plan_patterns',
                   'plan_pattern': 'outer_product',
-                  'plan_name': 'outer_product_scan'}))
+                  'plan_name': 'grid_scan'}))
 
     ##
     args.append((bp.inner_product_scan([hw.det], 9,
@@ -61,7 +61,7 @@ def test_ops_dimension_hints(RE, hw):
     motor1 = hw.motor1
     c = DocCollector()
     RE.subscribe(c.insert)
-    rs, = RE(bp.outer_product_scan([det],
+    rs, = RE(bp.grid_scan([det],
                                    motor, -1, 1, 7,
                                    motor1, 0, 2, 3, False))
 
@@ -79,7 +79,7 @@ def test_mesh_pseudo(hw, RE):
     d = DocCollector()
 
     RE.subscribe(d.insert)
-    rs, = RE(bp.outer_product_scan([sig],
+    rs, = RE(bp.grid_scan([sig],
                                    p3x3.pseudo1, 0, 3, 5,
                                    p3x3.pseudo2, 7, 10, 7, False))
     df = pd.DataFrame([_['data']

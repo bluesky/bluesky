@@ -1130,7 +1130,7 @@ def test_colliding_streams(RE, hw):
         elif name == 'event':
             collector[descs[doc['descriptor']]].append(doc)
 
-    RE(bp.baseline_wrapper(bp.outer_product_scan([hw.motor],
+    RE(bp.baseline_wrapper(bp.grid_scan([hw.motor],
                                                  hw.motor, -1, 1, 5,
                                                  hw.motor1, -5, 5, 7, True),
                            [hw.motor, hw.motor1]),
