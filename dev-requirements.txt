@@ -10,8 +10,8 @@ lmfit
 matplotlib
 mongoquery
 networkx
-numpydoc
 nose
+numpydoc
 ophyd
 pandas
 pims
