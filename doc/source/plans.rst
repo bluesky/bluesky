@@ -57,6 +57,7 @@ documentation.
    tweak
    fly
 
+
 Time series ("count")
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -440,6 +441,7 @@ Misc.
 
 Stub Plans
 ----------
+.. currentmodule:: bluesky.plan_stubs
 
 These are the aforementioned "ingredients" for remixing, the pieces from which
 the pre-assembled plans above were made. The next section provides many
@@ -737,6 +739,7 @@ name.
 
 Plan Preprocessors
 ==================
+.. currentmodule:: bluesky.preprocessors
 
 .. _supplemental_data:
 
@@ -812,6 +815,7 @@ have clear names.
 
 Built-in Preprocessors
 ----------------------
+.. currentmodule:: bluesky.preprocessors
 
 Each of the following functions named ``<something>_wrapper`` operates on
 a generator instance. The corresponding functions named
@@ -1149,7 +1153,14 @@ These are useful utilities for defining custom plans and plan preprocessors.
     msg_mutator
     plan_mutator
     single_gen
+    make_decorator
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
     broadcast_msg
     repeater
     caching_repeater
-    make_decorator
