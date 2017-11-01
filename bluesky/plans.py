@@ -2420,7 +2420,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_scan`
+    :func:`bluesky.plans.rel_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
@@ -2458,7 +2458,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_scan())
 
 
-def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
+def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
                   md=None):
     """
     Scan over one variable in equally spaced steps relative to current positon.
@@ -2485,7 +2485,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     --------
     :func:`bluesky.plans.scan`
     """
-    _md = {'plan_name': 'relative_scan'}
+    _md = {'plan_name': 'rel_scan'}
     _md.update(md or {})
     # TODO read initial positions (redundantly) so they can be put in md here
 
@@ -2497,6 +2497,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
 
     return (yield from inner_relative_scan())
 
+relative_scan = rel_scan  # back-compat
 
 def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
@@ -2762,34 +2763,34 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
 
 
 def tune_centroid(
-        detectors, signal, motor, 
-        start, stop, min_step, 
-        num=10, 
+        detectors, signal, motor,
+        start, stop, min_step,
+        num=10,
         step_factor=2,
         snake=False,
         *, md=None):
     """
     plan: tune a motor to the centroid of signal(motor)
-    
+
     Initially, traverse the range from start to stop with
     the number of points specified.  Repeat with progressively
     smaller step size until the minimum step size is reached.
     Rescans will be centered on the signal centroid
     (for $I(x)$, centroid$= \sum{I}/\sum{x*I}$)
     with a scan range of 2*step_factor*step of current scan.
-    
+
     Set `snake=True` if your positions are reproducible
     moving from either direction.  This will not necessarily
     decrease the number of traversals required to reach convergence.
     Snake motion reduces the total time spent on motion
-    to reset the positioner.  For some positioners, such as 
-    those with hysteresis, snake scanning may not be appropriate.  
-    For such positioners, always approach the positions from the 
+    to reset the positioner.  For some positioners, such as
+    those with hysteresis, snake scanning may not be appropriate.
+    For such positioners, always approach the positions from the
     same direction.
-    
-    Note:  Ideally the signal has only one peak in the range to 
-    be scanned.  It is assumed the signal is not polymodal 
-    between `start` and `stop`. 
+
+    Note:  Ideally the signal has only one peak in the range to
+    be scanned.  It is assumed the signal is not polymodal
+    between `start` and `stop`.
 
     Parameters
     ----------
@@ -2808,7 +2809,7 @@ def tune_centroid(
     num : int, optional
         number of points with each traversal, default = 10
     step_factor : float, optional
-        used in calculating range when 
+        used in calculating range when
         maximum is found, note: step_factor > 0, default = 2
     snake : bool, optional
         if False (default), always scan from start to stop
@@ -2866,7 +2867,7 @@ def tune_centroid(
         cur_det = {}
         sum_I = 0       # for peak centroid calculation, I(x)
         sum_xI = 0
-        
+
         while abs(step) >= min_step:
             yield Msg('checkpoint')
             yield from mv(motor, next_pos)
@@ -2880,7 +2881,7 @@ def tune_centroid(
                 in_range = start >= next_pos >= stop  # negative motion
             else:
                 in_range = start <= next_pos <= stop  # positive motion
-            
+
             if in_range:
                 next_pos += step
             else:
@@ -3834,10 +3835,10 @@ LogAbsScanPlan = LogScan  # back-compat
 
 class RelativeScan(Plan):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
-    __doc__ = relative_scan.__doc__
+    __doc__ = rel_scan.__doc__
 
     def _gen(self):
-        return relative_scan(self.detectors, self.motor, self.start, self.stop,
+        return rel_scan(self.detectors, self.motor, self.start, self.stop,
                              self.num, md=self.md)
 
 DeltaScanPlan = RelativeScan  # back-compat

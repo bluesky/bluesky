@@ -15,7 +15,7 @@ Overview of Callbacks
 
 As the RunEngine executes a plan, it organizes metadata and data into
 *Documents,* Python dictionaries organized in a `specified but flexible
-<http://nsls-ii.github.io/architecture-overview.html>`__ way. 
+<http://nsls-ii.github.io/architecture-overview.html>`__ way.
 Each time a new Document is created, the RunEngine passes it to a list of
 functions. These functions can do anything: store the data to disk, print a
 line of text to the screen, add a point to a plot, or even transfer the data to
@@ -536,7 +536,7 @@ Notice that they can styled independently.
 
 .. autoclass:: bluesky.callbacks.LiveFitPlot
 
-PeakStats 
+PeakStats
 ++++++++++
 
 Compute statistics of peak-like data. Example:
@@ -610,7 +610,7 @@ plans in :mod:`bluesky.plans` for examples.)
     from bluesky.plans import scan
 
     dets = [det1, det2]
-    
+
     RE(scan([det], motor, 1, 5, 5))  # automatically prints table, shows plot
 
 .. plot::
@@ -884,7 +884,7 @@ determine which template to use.
 
     templates = {'count': COUNT_TEMPLATE,
                  'scan': SCAN_TEMPLATE,
-                 'relative_scan': SCAN_TEMPLATE}
+                 'rel_scan': SCAN_TEMPLATE}
 
     # Do same boilerplate above to set up configured_logbook_func. Then:
     cb = logbook_cb_factory(configured_logbook_func,
