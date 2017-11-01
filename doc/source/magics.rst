@@ -84,7 +84,7 @@ parameters:
 
 .. ipython:: python
 
-    BlueskyMagics.dets = [det1, det2]
+    BlueskyMagics.detectors = [det1, det2]
     %ct
 
 If IPython’s ‘automagic’ feature is enabled, IPython will even let you drop the
