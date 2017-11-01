@@ -694,7 +694,7 @@ usually interesting. A useful hint might narrow them down to
 display an overwhelming amount of information.
 
 The hints provided by the devices are read by the RunEngine and collated in the
-:doc:`Event Descriptor documents <event_descriptors>`_.
+:ref:`Event Descriptor documents <event_descriptors>`_.
 
 The plans generally know which devices are being used as dependent and
 independent variables (i.e., which are being "scanned" over), and they may
