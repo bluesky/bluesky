@@ -200,7 +200,7 @@ def test_lin_dscan(RE, hw):
 def test_log_dscan(RE, hw):
     traj = np.logspace(0, 10, 5) + 6
     hw.motor.set(6)
-    scan = bp.relative_log_scan([hw.det], hw.motor, 0, 10, 5)
+    scan = bp.rel_log_scan([hw.det], hw.motor, 0, 10, 5)
     traj_checker(RE, scan, traj)
 
 

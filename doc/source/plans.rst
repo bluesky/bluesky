@@ -40,7 +40,7 @@ documentation.
    list_scan
    rel_list_scan
    log_scan
-   relative_log_scan
+   rel_log_scan
    inner_product_scan
    grid_scan
    relative_inner_product_scan
@@ -160,7 +160,7 @@ Or, again, to save some typing for repeated use,
    list_scan
    rel_list_scan
    log_scan
-   relative_log_scan
+   rel_log_scan
 
 .. _multi-dimensional_scans:
 

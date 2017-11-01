@@ -2390,10 +2390,10 @@ def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
 
     @reset_positions_decorator([motor])
     @relative_set_decorator([motor])
-    def inner_rel_list_scan():
+    def inner_relative_list_scan():
         return (yield from list_scan(detectors, motor, steps,
                                      per_step=per_step, md=_md))
-    return (yield from inner_rel_list_scan())
+    return (yield from inner_relative_list_scan())
 
 relative_list_scan = rel_list_scan  # back-compat
 
@@ -2524,7 +2524,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_log_scan`
+    :func:`bluesky.plans.rel_log_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
@@ -2562,7 +2562,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_log_scan())
 
 
-def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
+def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
                       md=None):
     """
     Scan over one variable in log-spaced steps relative to current position.
@@ -2590,7 +2590,7 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     :func:`bluesky.plans.log_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    _md = {'plan_name': 'relative_log_scan'}
+    _md = {'plan_name': 'rel_log_scan'}
     _md.update(md or {})
 
     @reset_positions_decorator([motor])
@@ -2601,6 +2601,7 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
 
     return (yield from inner_relative_log_scan())
 
+relative_log_scan = rel_log_scan  # back-compat
 
 def adaptive_scan(detectors, target_field, motor, start, stop,
                   min_step, max_step, target_delta, backstep,
@@ -3851,10 +3852,10 @@ DeltaScanPlan = RelativeScan  # back-compat
 
 class RelativeLogScan(Plan):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
-    __doc__ = relative_log_scan.__doc__
+    __doc__ = rel_log_scan.__doc__
 
     def _gen(self):
-        return relative_log_scan(self.detectors, self.motor, self.start,
+        return rel_log_scan(self.detectors, self.motor, self.start,
                                  self.stop, self.num, md=self.md)
 
 LogDeltaScanPlan = RelativeLogScan  # back-compat
