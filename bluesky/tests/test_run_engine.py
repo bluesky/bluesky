@@ -7,8 +7,6 @@ import sys
 from collections import defaultdict
 import time as ttime
 import pytest
-import numpy as np
-import uuid
 from bluesky.tests import requires_ophyd
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
@@ -16,8 +14,14 @@ from bluesky.run_engine import (RunEngineStateMachine,
                                 RunEngineInterrupted)
 from bluesky import Msg
 from functools import partial
-import bluesky.plans as bp
 from bluesky.tests.utils import MsgCollector, DocCollector
+from bluesky.plans import (count, grid_scan)
+from bluesky.plan_stubs import (fly, abs_set, trigger_and_read)
+from bluesky.preprocessors import (finalize_wrapper, run_decorator,
+                                   reset_positions_decorator,
+                                   run_wrapper, rewindable_wrapper,
+                                   subs_wrapper, baseline_wrapper,
+                                   SupplementalData)
 
 
 def test_states():
@@ -31,7 +35,7 @@ def test_verbose(RE, hw):
     assert RE.verbose
     # Emit all four kinds of document, exercising the logging.
     RE([Msg('open_run'), Msg('create'), Msg('read', hw.det), Msg('save'),
-              Msg('close_run')])
+        Msg('close_run')])
 
 
 def test_reset(RE):
@@ -118,14 +122,14 @@ def test_stop_motors_and_log_any_errors(RE, hw):
 
     with pytest.raises(RunEngineInterrupted):
         RE([Msg('set', broken_motor, 1), Msg('set', motor, 1),
-                  Msg('pause')])
+            Msg('pause')])
     assert 'motor1' in stopped
     assert 'motor2' in stopped
     RE.stop()
 
     with pytest.raises(RunEngineInterrupted):
         RE([Msg('set', motor, 1), Msg('set', broken_motor, 1),
-                  Msg('pause')])
+            Msg('pause')])
     assert 'motor1' in stopped
     assert 'motor2' in stopped
     RE.stop()
@@ -244,11 +248,11 @@ def test_redundant_monitors_are_illegal(RE):
 
     with pytest.raises(IllegalMessageSequence):
         RE([Msg('open_run'), Msg('monitor', dummy),
-                  Msg('monitor', dummy)])
+            Msg('monitor', dummy)])
 
     # Monitoring, unmonitoring, and monitoring again is legal.
     RE([Msg('open_run'), Msg('monitor', dummy), Msg('unmonitor', dummy),
-              Msg('monitor', dummy)])
+        Msg('monitor', dummy)])
 
     # Monitoring outside a run is illegal.
     with pytest.raises(IllegalMessageSequence):
@@ -299,7 +303,7 @@ def test_empty_bundle(RE, hw):
     # In this case, an Event should be emitted.
     mutable.clear()
     RE([Msg('open_run'), Msg('create'), Msg('read', hw.det), Msg('save')],
-             {'event': cb})
+       {'event': cb})
     assert 'flag' in mutable
 
     # In this case, an Event should not be emitted because the bundle is
@@ -505,7 +509,7 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
     motor = hw.motor
     motor.set(1024)
 
-    @bp.reset_positions_decorator()
+    @reset_positions_decorator()
     def simple_plan(motor):
         for j in range(15):
             yield Msg('set', motor, j)
@@ -538,8 +542,8 @@ def test_sigint_three_hits(RE, hw):
     lp.call_later(.02, sim_kill, 3)
     start_time = ttime.time()
     with pytest.raises(RunEngineInterrupted):
-        RE(bp.finalize_wrapper(bp.abs_set(motor, 1, wait=True),
-                            bp.abs_set(motor, 0, wait=True)))
+        RE(finalize_wrapper(abs_set(motor, 1, wait=True),
+                            abs_set(motor, 0, wait=True)))
     end_time = ttime.time()
     assert end_time - start_time < 0.2  # not enough time for motor to cleanup
     RE.abort()  # now cleanup
@@ -585,7 +589,7 @@ def test_sigint_many_hits_cb(RE):
             ttime.sleep(0.05)
             os.kill(pid, signal.SIGINT)
 
-    @bp.run_decorator()
+    @run_decorator()
     def infinite_plan():
         while True:
             yield Msg('null')
@@ -607,32 +611,32 @@ def test_sigint_many_hits_cb(RE):
 
 
 def _make_plan_marker():
-    @bp.reset_positions_decorator()
+    @reset_positions_decorator()
     def raiser(motor):
         for j in range(15):
             yield Msg('set', motor, j)
         raise RuntimeError()
 
-    @bp.reset_positions_decorator()
+    @reset_positions_decorator()
     def pausing_raiser(motor):
         for j in range(15):
             yield Msg('set', motor, j)
         yield Msg('pause')
         raise RuntimeError()
 
-    @bp.reset_positions_decorator()
+    @reset_positions_decorator()
     def bad_set(motor):
         for j in range(15):
             yield Msg('set', motor, j)
             yield Msg('set', None, j)
 
-    @bp.reset_positions_decorator()
+    @reset_positions_decorator()
     def bad_msg(motor):
         for j in range(15):
             yield Msg('set', motor, j)
         yield Msg('aardvark')
 
-    @bp.reset_positions_decorator()
+    @reset_positions_decorator()
     def cannot_pauser(motor):
         yield Msg('clear_checkpoint')
         for j in range(15):
@@ -665,7 +669,7 @@ def test_finalizer_closeable():
     pre = (j for j in range(18))
     post = (j for j in range(18))
 
-    plan = bp.finalize_wrapper(pre, post)
+    plan = finalize_wrapper(pre, post)
 
     for j in range(3):
         next(plan)
@@ -893,7 +897,7 @@ def test_nonrewindable_detector(RE, hw, start_state, msg_seq):
     m_col = MsgCollector()
     RE.msg_hook = m_col
 
-    RE(bp.run_wrapper(bp.trigger_and_read([hw.motor, hw.det])))
+    RE(run_wrapper(trigger_and_read([hw.motor, hw.det])))
 
     assert [m.command for m in m_col.msgs] == msg_seq
 
@@ -922,7 +926,7 @@ def test_nonrewindable_finalizer(RE, hw, start_state, msg_seq):
         yield Msg('aardvark')
 
     with pytest.raises(KeyError):
-        RE(bp.rewindable_wrapper(evil_plan(), False))
+        RE(rewindable_wrapper(evil_plan(), False))
 
     assert RE.rewindable is start_state
 
@@ -1068,7 +1072,7 @@ def test_preprocessors(RE):
         pass
 
     def custom_subs(plan):
-        yield from bp.subs_wrapper(plan, my_sub)
+        yield from subs_wrapper(plan, my_sub)
 
     RE.preprocessors = [custom_cleanup, custom_subs]
     actual = []
@@ -1130,10 +1134,10 @@ def test_colliding_streams(RE, hw):
         elif name == 'event':
             collector[descs[doc['descriptor']]].append(doc)
 
-    RE(bp.baseline_wrapper(bp.grid_scan([hw.motor],
-                                                 hw.motor, -1, 1, 5,
-                                                 hw.motor1, -5, 5, 7, True),
-                           [hw.motor, hw.motor1]),
+    RE(baseline_wrapper(grid_scan([hw.motor],
+                                  hw.motor, -1, 1, 5,
+                                  hw.motor1, -5, 5, 7, True),
+                        [hw.motor, hw.motor1]),
        local_cb)
 
     assert len(collector['primary']) == 35
@@ -1218,7 +1222,7 @@ def test_hints(RE):
 
     collector = []
 
-    RE(bp.count([det]),
+    RE(count([det]),
        {'descriptor': lambda name, doc: collector.append(doc)})
     doc = collector.pop()
     assert doc['hints']['det'] == {'vis': 'placeholder'}
@@ -1228,7 +1232,7 @@ def test_flyer_descriptor(RE, hw):
     flyers = [hw.flyer1]
     hw.flyer1.loop = RE.loop
     collector = []
-    RE(bp.fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
+    RE(fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
     descriptor = collector.pop()
     assert 'object_keys' in descriptor
 
@@ -1241,22 +1245,22 @@ def test_filled(RE, hw, db):
         if name == 'event':
             collector.append(doc)
 
-    RE(bp.count([hw.det]), collect)
+    RE(count([hw.det]), collect)
 
     event, = collector
     assert event['filled'] == {}
     collector.clear()
 
     hw.img.reg = db.reg
-    RE(bp.count([hw.img]), collect)
+    RE(count([hw.img]), collect)
     event, = collector
     assert event['filled'] == {'img': False}
 
 
 def test_double_call(RE):
 
-    uid1 = RE(bp.count([]))
-    uid2 = RE(bp.count([]))
+    uid1 = RE(count([]))
+    uid2 = RE(count([]))
 
     assert uid1 != uid2
 
@@ -1264,22 +1268,22 @@ def test_double_call(RE):
 def test_num_events(RE, hw, db):
     RE.subscribe(db.insert)
 
-    uid1, = RE(bp.count([]))
+    uid1, = RE(count([]))
     h = db[uid1]
     assert h.stop['num_events'] == {}
 
-    uid2, = RE(bp.count([hw.det], 5))
+    uid2, = RE(count([hw.det], 5))
     h = db[uid2]
     assert h.stop['num_events'] == {'primary': 5}
 
-    sd = bp.SupplementalData(baseline=[hw.det])
+    sd = SupplementalData(baseline=[hw.det])
     RE.preprocessors.append(sd)
 
-    uid3, = RE(bp.count([]))
+    uid3, = RE(count([]))
     h = db[uid3]
     assert h.stop['num_events'] == {'baseline': 2}
 
-    uid4, = RE(bp.count([hw.det], 5))
+    uid4, = RE(count([hw.det], 5))
     h = db[uid4]
     assert h.stop['num_events'] == {'primary': 5, 'baseline': 2}
 
@@ -1297,7 +1301,7 @@ def test_force_stop_exit_status(bail_func, status, RE):
     d = DocCollector()
     RE.subscribe(d.insert)
 
-    @bp.run_decorator()
+    @run_decorator()
     def bad_plan():
         yield Msg('pause')
     try:
@@ -1319,7 +1323,7 @@ def test_exceptions_exit_status(RE):
     class Snowflake(Exception):
         ...
 
-    @bp.run_decorator()
+    @run_decorator()
     def bad_plan():
         yield Msg('null')
         raise Snowflake('boo')

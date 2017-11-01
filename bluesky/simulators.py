@@ -1,5 +1,5 @@
 from warnings import warn
-from bluesky.plans import print_summary_wrapper
+from bluesky.preprocessors import print_summary_wrapper
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):

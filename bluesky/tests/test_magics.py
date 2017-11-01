@@ -1,6 +1,6 @@
 from bluesky.magics import BlueskyMagics
 import bluesky.plans as bp
-from collections import OrderedDict
+import bluesky.plan_stubs as bps
 import os
 import pytest
 import signal
@@ -21,12 +21,18 @@ def compare_msgs(actual, expected):
 
 
 @pytest.mark.parametrize('pln,plnargs,magic,line', [
-    (bp.mv, lambda hw: (hw.motor1, 2), 'mov', 'motor1 2'),
-    (bp.mv, lambda hw: (hw.motor1, 2, hw.motor2, 3), 'mov', 'motor1 2 motor2 3'),
-    (bp.mvr, lambda hw: (hw.motor1, 2), 'movr', 'motor1 2'),
-    (bp.mvr, lambda hw: (hw.motor1, 2, hw.motor2, 3), 'movr', 'motor1 2 motor2 3'),
-    (bp.count, lambda hw: ([hw.invariant1],), 'ct', 'dets'),
-    (bp.count, lambda hw: ([hw.invariant1, hw.invariant2],), 'ct', ''),
+    (bps.mv, lambda hw: (hw.motor1, 2),
+     'mov', 'motor1 2'),
+    (bps.mv, lambda hw: (hw.motor1, 2, hw.motor2, 3),
+     'mov', 'motor1 2 motor2 3'),
+    (bps.mvr, lambda hw: (hw.motor1, 2),
+     'movr', 'motor1 2'),
+    (bps.mvr, lambda hw: (hw.motor1, 2, hw.motor2, 3),
+     'movr', 'motor1 2 motor2 3'),
+    (bp.count, lambda hw: ([hw.invariant1],),
+     'ct', 'dets'),
+    (bp.count, lambda hw: ([hw.invariant1, hw.invariant2],),
+     'ct', ''),
     ])
 def test_bluesky_magics(pln, plnargs, line, magic, RE, hw):
     # Build a FakeIPython instance to use the magics with.
@@ -45,11 +51,11 @@ def test_bluesky_magics(pln, plnargs, line, magic, RE, hw):
     sm.RE.msg_hook = collect
 
     # Test magics cause the RunEngine to execute the messages we expect.
-    RE(bp.mv(hw.motor1, 10, hw.motor2, 10))  # ensure known initial state
+    RE(bps.mv(hw.motor1, 10, hw.motor2, 10))  # ensure known initial state
     RE(pln(*plnargs(hw)))
     expected = msgs.copy()
     msgs.clear()
-    RE(bp.mv(hw.motor1, 10, hw.motor2, 10))  # ensure known initial state
+    RE(bps.mv(hw.motor1, 10, hw.motor2, 10))  # ensure known initial state
     getattr(sm, magic)(line)
     actual = msgs.copy()
     msgs.clear()

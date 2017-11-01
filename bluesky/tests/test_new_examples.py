@@ -1,53 +1,58 @@
-from collections import deque, defaultdict
+from collections import defaultdict
 import pytest
 from bluesky import Msg, RunEngineInterrupted
-from bluesky.plans import (create, save, read, monitor, unmonitor, null,
-                           abs_set, rel_set, trigger, sleep, wait, checkpoint,
-                           clear_checkpoint, pause, deferred_pause, kickoff,
-                           collect, configure, stage, unstage, subscribe,
-                           unsubscribe, open_run, close_run, wait_for, mv, mvr,
-                           subs_context, run_context, event_context,
-                           baseline_context, monitor_context,
-                           stage_context, planify, finalize_wrapper,
-                           fly_during_wrapper, reset_positions_wrapper,
-                           monitor_during_wrapper,
-                           lazily_stage_wrapper, relative_set_wrapper,
-                           subs_wrapper, trigger_and_read, stop,
-                           repeater, caching_repeater, count,
-                           fly_during_decorator, subs_decorator,
-                           monitor_during_decorator,
-                           inject_md_wrapper, finalize_decorator,
-                           configure_count_time_wrapper)
+from bluesky.plan_stubs import (
+    create,
+    save,
+    read,
+    monitor,
+    unmonitor,
+    null,
+    abs_set,
+    rel_set,
+    trigger,
+    sleep,
+    wait,
+    checkpoint,
+    clear_checkpoint,
+    pause,
+    deferred_pause,
+    kickoff,
+    collect,
+    configure,
+    stage,
+    unstage,
+    subscribe,
+    unsubscribe,
+    open_run,
+    close_run,
+    wait_for,
+    mv,
+    mvr,
+    trigger_and_read,
+    stop,
+    repeater,
+    caching_repeater,)
+from bluesky.preprocessors import (
+    finalize_wrapper,
+    fly_during_wrapper,
+    reset_positions_wrapper,
+    monitor_during_wrapper,
+    lazily_stage_wrapper,
+    relative_set_wrapper,
+    subs_wrapper,
+    fly_during_decorator,
+    subs_decorator,
+    monitor_during_decorator,
+    inject_md_wrapper,
+    finalize_decorator,
+    configure_count_time_wrapper)
+
+from bluesky.plans import count
+
 import bluesky.plans as bp
 
 from bluesky.utils import all_safe_rewind
-
-
-class DummyMover:
-    def __init__(self, name):
-        self._value = 0
-        self.name = name
-        self.parent = None
-
-    def describe(self):
-        return {self.name: {}}
-
-    def set(self, value):
-        self._value = value
-        return NullStatus()
-
-    def read_configuration(self):
-        return {}
-
-    def describe_configuration(self):
-        return {}
-
-    def read(self):
-        return {self.name: {'value': self._value, 'timestamp': 0}}
-
-
-def cb(name, doc):
-    pass
 
 
 @pytest.mark.parametrize(
@@ -222,6 +227,7 @@ def test_fly_during():
 
 def test_lazily_stage(hw):
     det1, det2 = hw.det1, hw.det2
+
     def plan():
         yield from [Msg('read', det1), Msg('read', det1), Msg('read', det2)]
 
@@ -312,7 +318,8 @@ def test_finalize(hw):
     assert processed_plan == expected
 
     # or func that returns list
-    processed_plan = list(finalize_decorator(lambda: [Msg('read', det)])(plan)())
+    processed_plan = list(finalize_decorator(
+        lambda: [Msg('read', det)])(plan)())
     expected = [Msg('null'), Msg('read', det)]
     assert processed_plan == expected
 
@@ -341,7 +348,7 @@ def test_finalize_runs_after_error(RE, hw):
     try:
         RE(finalize_wrapper(plan(), [Msg('read', det)]))
     except Exception:
-        pass # swallow the Exception; we are interested in msgs below
+        pass  # swallow the Exception; we are interested in msgs below
 
     expected = [Msg('null'), Msg('read', det)]
 

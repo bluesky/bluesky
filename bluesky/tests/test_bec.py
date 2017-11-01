@@ -1,5 +1,6 @@
 import ast
-from bluesky.plans import scan, SupplementalData
+from bluesky.plans import scan
+from bluesky.preprocessors import SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
 
 

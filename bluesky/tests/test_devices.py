@@ -1,9 +1,8 @@
-from collections import defaultdict
 import itertools
 
 from bluesky.utils import ancestry, share_ancestor, separate_devices
-from bluesky.plans import trigger_and_read
-import bluesky.plans as bp
+from bluesky.plan_stubs import trigger_and_read
+from bluesky.preprocessors import run_decorator
 from bluesky import Msg, RunEngineInterrupted
 import pytest
 from bluesky.tests import requires_ophyd, ophyd
@@ -138,10 +137,10 @@ def _make_overlapping_raising_tests(func):
 @_make_overlapping_raising_tests
 def test_overlapping_raise(RE, det1, det2):
 
-    @bp.run_decorator()
+    @run_decorator()
     def test_plan(det1, det2):
-        yield from bp.trigger_and_read([det1])
-        yield from bp.trigger_and_read([det2])
+        yield from trigger_and_read([det1])
+        yield from trigger_and_read([det2])
 
     with pytest.raises(RuntimeError):
         RE(test_plan(det1, det2))
@@ -170,10 +169,10 @@ def _make_overlapping_tests_2stream(func):
 @_make_overlapping_tests_2stream
 def test_keyoverlap_2stream(RE, det1, det2):
 
-    @bp.run_decorator()
+    @run_decorator()
     def test_plan(det1, det2):
-        yield from bp.trigger_and_read([det1])
-        yield from bp.trigger_and_read([det2], name='other')
+        yield from trigger_and_read([det1])
+        yield from trigger_and_read([det2], name='other')
 
     d = DocCollector()
     rs, = RE(test_plan(det1, det2), d.insert)
@@ -203,11 +202,11 @@ def _make_overlapping_tests_stream(func):
 @requires_ophyd
 @_make_overlapping_tests_stream
 def test_overlapped_but_identical(RE, det1, det_list):
-    @bp.run_decorator()
+    @run_decorator()
     def test_plan(det1, det_list):
-        yield from bp.trigger_and_read([det1])
+        yield from trigger_and_read([det1])
         for p in itertools.permutations(det_list):
-            yield from bp.trigger_and_read(det_list)
+            yield from trigger_and_read(det_list)
 
     d = DocCollector()
     rs, = RE(test_plan(det1, det_list), d.insert)
@@ -222,15 +221,15 @@ def test_read_clash(RE):
 
     with pytest.raises(ValueError):
         RE(([Msg('open_run')] +
-                  list(trigger_and_read([dcm, dcm2.th])) +
-                  [Msg('close_run')]))
+            list(trigger_and_read([dcm, dcm2.th])) +
+            [Msg('close_run')]))
 
     with pytest.raises(ValueError):
         RE(([Msg('open_run')] +
-                  list(trigger_and_read([dcm, dcm2])) +
-                  [Msg('close_run')]))
+            list(trigger_and_read([dcm, dcm2])) +
+            [Msg('close_run')]))
 
     with pytest.raises(ValueError):
         RE(([Msg('open_run')] +
-                  list(trigger_and_read([dcm.th, dcm2.th])) +
-                  [Msg('close_run')]))
+            list(trigger_and_read([dcm.th, dcm2.th])) +
+            [Msg('close_run')]))

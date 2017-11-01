@@ -6,13 +6,13 @@
 # ip.register_magics(BlueskyMagics)
 
 import asyncio
-import bluesky.plans as bp
 from bluesky.utils import ProgressBarManager
 from bluesky import RunEngine, RunEngineInterrupted
 from IPython.core.magic import Magics, magics_class, line_magic
 import numpy as np
 from operator import attrgetter
-
+from . import plans as bp
+from . import plan_stubs as bps
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
@@ -42,7 +42,7 @@ class BlueskyMagics(Magics):
     * ``BlueskyMagics.RE``
     * ``BlueskyMagics.pbar_manager``
     """
-    RE = RunEngine({}, loop = asyncio.new_event_loop())
+    RE = RunEngine({}, loop=asyncio.new_event_loop())
     pbar_manager = ProgressBarManager()
 
     def _ensure_idle(self):
@@ -60,7 +60,7 @@ class BlueskyMagics(Magics):
         for motor, pos in partition(2, line.split()):
             args.append(eval(motor, self.shell.user_ns))
             args.append(eval(pos, self.shell.user_ns))
-        plan = bp.mv(*args)
+        plan = bps.mv(*args)
         self.RE.waiting_hook = self.pbar_manager
         try:
             self.RE(plan)
@@ -79,7 +79,7 @@ class BlueskyMagics(Magics):
         for motor, pos in partition(2, line.split()):
             args.append(eval(motor, self.shell.user_ns))
             args.append(eval(pos, self.shell.user_ns))
-        plan = bp.mvr(*args)
+        plan = bps.mvr(*args)
         self.RE.waiting_hook = self.pbar_manager
         try:
             self.RE(plan)

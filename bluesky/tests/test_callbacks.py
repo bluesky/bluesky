@@ -1,9 +1,10 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.examples import stepscan
-from bluesky.plans import (AbsScanPlan, scan,
-                           grid_scan, run_wrapper, pause,
-                           subs_wrapper, count)
+from bluesky.plans import (scan, grid_scan, count)
+from bluesky.object_plans import AbsScanPlan
+from bluesky.preprocessors import run_wrapper, subs_wrapper
+from bluesky.plan_stubs import pause
 import bluesky.plans as bp
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
@@ -459,8 +460,8 @@ def test_live_fit_multidim(RE, hw):
     cb = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess,
                  update_every=50)
     RE(grid_scan([hw.det4],
-                          hw.motor1, -1, 1, 10,
-                          hw.motor2, -1, 1, 10, False),
+                 hw.motor1, -1, 1, 10,
+                 hw.motor2, -1, 1, 10, False),
        cb)
 
     expected = {'A': 1, 'sigma': 1, 'x0': 0, 'y0': 0}
@@ -485,7 +486,7 @@ def test_live_fit_plot(RE, hw):
                       update_every=50)
     lfplot = LiveFitPlot(livefit, color='r')
     lplot = LivePlot('det', 'motor', ax=plt.gca(), marker='o', ls='none')
-    RE(scan([hw.det], hw.motor, -1, 1, 50), [lplot, lfplot]) 
+    RE(scan([hw.det], hw.motor, -1, 1, 50), [lplot, lfplot])
     expected = {'A': 1, 'sigma': 1, 'x0': 0}
     for k, v in expected.items():
         assert np.allclose(livefit.result.values[k], v, atol=1e-6)
@@ -522,29 +523,29 @@ def test_live_grid(RE, hw):
     hw.motor1.delay = 0
     hw.motor2.delay = 0
     RE(grid_scan([hw.det4],
-                          hw.motor1, -3, 3, 6,
-                          hw.motor2, -5, 5, 10, False),
+                 hw.motor1, -3, 3, 6,
+                 hw.motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
     # Test the deprecated name.
     with pytest.warns(UserWarning):
         RE(grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2,
-                              -5, 5, 10, False),
+                     -5, 5, 10, False),
            LiveRaster((6, 10), 'det4'))
 
 
 def test_live_scatter(RE, hw):
     RE(grid_scan([hw.det5],
-                          hw.jittery_motor1, -3, 3, 6,
-                          hw.jittery_motor2, -5, 5, 10, False),
+                 hw.jittery_motor1, -3, 3, 6,
+                 hw.jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
                    xlim=(-3, 3), ylim=(-5, 5)))
 
     # Test the deprecated name.
     with pytest.warns(UserWarning):
         RE(grid_scan([hw.det5],
-                              hw.jittery_motor1, -3, 3, 6,
-                              hw.jittery_motor2, -5, 5, 10, False),
+                     hw.jittery_motor1, -3, 3, 6,
+                     hw.jittery_motor2, -5, 5, 10, False),
            LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
                     xlim=(-3, 3), ylim=(-5, 5)))
 
