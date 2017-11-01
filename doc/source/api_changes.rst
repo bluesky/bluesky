@@ -1,6 +1,84 @@
 Release Notes
 =============
 
+v0.11.0
+-------
+
+This is the last release before 1.0.0. It contains major restructurings and
+general clean-up.
+
+API Changes
+^^^^^^^^^^^
+
+* The :mod:`bluesky.plans` module has been split into
+
+    * :mod:`bluesky.plans` --- plans that create a run, such as :func:`count`
+      and :func:`scan`
+    * :mod:`bluesky.preprocessors` --- plans that take in other plans and
+      motify them, such as :func:`baseline_wrapper`
+    * :mod:`bluesky.plan_stubs` --- small plans meant as convenient building
+      blocks for creating custom plans, such as :func:`trigger_and_read`
+    * :mod:`bluesky.object_plans` and :mod:`bluesky.cntx`, containing
+      legacy APIs to plans that were deprecated in a previous release and
+      will be removed in a future release.
+
+* The RunEngine raises a ``RunEngineInterrupted`` exception when interrupted
+  (e.g. paused). The optional argument ``raise_if_interrupted`` has been
+  removed.
+* The module :mod:`bluesky.callbacks.scientific` has been removed.
+* ``PeakStats`` has been moved to :mod:`bluesky.callbacks.fitting`, and
+  :func:`plot_peak_stats` has been moved to `bluesky.callbacks.mpl_plotting`.
+
+Deprecations
+^^^^^^^^^^^^
+
+* The synthetic 'hardware' objects in ``bluesky.examples`` have been relocated
+  to ophyd (bluesky's sister package) and aggressively refactored to be more
+  closely aligned with the behavior of real hardware. The ``Reader`` and
+  ``Mover`` classes have been removed in favor of ``SynSignal``,
+  ``SynPeriodicSignal``, ``SynAxis``, ``SynSignalWithRegistry``.
+
+Enhancements
+^^^^^^^^^^^^
+
+* Add :func:`stub_wrapper` and :func:`stub_decorator` that strips
+  open_run/close_run and stage/unstage messages out of a plan, so that it can
+  be reused as part of a larger plan that manages the scope of a run manually.
+* Add :func:`tune_centroid` plan that iteratively finds the centroid of a
+  single peak.
+* Allow devices with couple axes to be used in N-dimensional scan plans.
+* Add :func:`contingency_wrapper` and :func:`contingency_decorator` for
+  richer cleanup specification.
+* The number of events in each event stream is recorded in the RunStop document
+  under the key 'num_events'.
+* Make the message shown when the RunEngine is paused configurable via the
+  attribute ``RunEngine.pause_msg``.
+* Make :func:`plan_mutator` more flexible. (See docstring.)
+
+Bug Fixes
+^^^^^^^^^
+
+* Fix ordering of dimensions in :func:`grid_scan` hints.
+* Show Figures created internally.
+* Support a negative direction for adaptive scans.
+* Validate that all descriptors with a given (event stream) name have
+  consistent data keys.
+* Correctly mark ``exit_status`` field in RunStop metadata based on which
+  termination method was called (abort, stop, halt).
+* ``LiveFitPlot`` handles updates more carefully.
+* Fix critical :func:`baseline_wrapper` bug.
+
+Internal Chnages
+^^^^^^^^^^^^^^^^
+
+* The :mod:`bluesky.callbacks` package has been split up into more modules.
+  Shim imports maintain backward compatibility, except where noted in the
+  section on API Changes above.
+* Matplotlib is now an optional dependency. If it is not importable,
+  plotting-related callbacks will not be available.
+* An internal change to the RunEngine supports ophyd's new Status object API
+  for adding callbacks.
+
 v0.10.2
 -------
 
