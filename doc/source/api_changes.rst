@@ -18,6 +18,9 @@ API Changes
       motify them, such as :func:`baseline_wrapper`
     * :mod:`bluesky.plan_stubs` --- small plans meant as convenient building
       blocks for creating custom plans, such as :func:`trigger_and_read`
+    * :mod:`bluesky.object_plans` and :mod:`bluesky.cntx`, containing
+      legacy APIs to plans that were deprecated in a previous release and
+      will be removed in a future release.
 
 * The RunEngine raises a ``RunEngineInterrupted`` exception when interrupted
   (e.g. paused). The optional argument ``raise_if_interrupted`` has been
