@@ -178,3 +178,16 @@ def test_reset_wrapper(hw, RE):
                     p, None]
     assert len(m_col.msgs) == 14
     assert [m.obj for m in m_col.msgs] == expecte_objs
+
+
+@pytest.mark.parametrize('pln', [bps.mv, bps.mvr])
+def test_pseudo_mv(hw, RE, pln):
+    p = hw.pseudo3x3
+    m_col = MsgCollector()
+    RE.msg_hook = m_col
+
+    RE(pln(p.pseudo1, 1,
+           p.pseudo2, 1))
+    expecte_objs = [p, None]
+    assert len(m_col.msgs) == 2
+    assert [m.obj for m in m_col.msgs] == expecte_objs

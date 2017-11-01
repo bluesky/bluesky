@@ -1,5 +1,9 @@
 import itertools
 import uuid
+from cycler import cycler
+from . import utils
+import operator
+from functools import reduce
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -212,7 +216,12 @@ def mv(*args):
     """
     group = str(uuid.uuid4())
     status_objects = []
-    for obj, val in partition(2, args):
+
+    cyl = reduce(operator.add,
+                 [cycler(obj, [val]) for
+                  obj, val in partition(2, args)])
+    step, = utils.merge_cycler(cyl)
+    for obj, val in step.items():
         ret = yield Msg('set', obj, val, group=group)
         status_objects.append(ret)
     yield Msg('wait', None, group=group)
