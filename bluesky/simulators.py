@@ -82,6 +82,18 @@ class LimitsExceeded(Exception):
 
 
 def check_limits(plan):
+    """
+    Check that a plan will not move devices outside of their limits.
+
+    Parameters
+    ----------
+    plan : iterable
+        Must yield `Msg` objects
+
+    Raises
+    ------
+    LimitsExceeded
+    """
     ignore = []
     for msg in plan:
         if msg.command == 'set':
