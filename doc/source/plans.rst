@@ -38,7 +38,7 @@ documentation.
    scan
    rel_scan
    list_scan
-   relative_list_scan
+   rel_list_scan
    log_scan
    relative_log_scan
    inner_product_scan
@@ -158,7 +158,7 @@ Or, again, to save some typing for repeated use,
    scan
    rel_scan
    list_scan
-   relative_list_scan
+   rel_list_scan
    log_scan
    relative_log_scan
 

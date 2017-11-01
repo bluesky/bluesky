@@ -2328,7 +2328,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_list_scan`
+    :func:`bluesky.plans.rel_list_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
@@ -2362,7 +2362,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     return (yield from inner_list_scan())
 
 
-def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
+def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     Scan over one variable in steps relative to current position.
 
@@ -2385,16 +2385,17 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     :func:`bluesky.plans.list_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    _md = {'plan_name': 'relative_list_scan'}
+    _md = {'plan_name': 'rel_list_scan'}
     _md.update(md or {})
 
     @reset_positions_decorator([motor])
     @relative_set_decorator([motor])
-    def inner_relative_list_scan():
+    def inner_rel_list_scan():
         return (yield from list_scan(detectors, motor, steps,
                                      per_step=per_step, md=_md))
-    return (yield from inner_relative_list_scan())
+    return (yield from inner_rel_list_scan())
 
+relative_list_scan = rel_list_scan  # back-compat
 
 def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
@@ -3806,10 +3807,10 @@ AbsListScanPlan = ListScan  # back-compat
 
 class RelativeListScan(Plan):
     _fields = ['detectors', 'motor', 'steps']
-    __doc__ = relative_list_scan.__doc__
+    __doc__ = rel_list_scan.__doc__
 
     def _gen(self):
-        return relative_list_scan(self.detectors, self.motor, self.steps,
+        return rel_list_scan(self.detectors, self.motor, self.steps,
                                   md=self.md)
 
 DeltaListScanPlan = RelativeListScan  # back-compat

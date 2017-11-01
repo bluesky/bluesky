@@ -166,7 +166,7 @@ def test_ascan(RE, hw):
 def test_dscan(RE, hw):
     traj = np.array([1, 2, 3])
     hw.motor.set(-4)
-    scan = bp.relative_list_scan([hw.det], hw.motor, traj)
+    scan = bp.rel_list_scan([hw.det], hw.motor, traj)
     traj_checker(RE, scan, traj - 4)
 
 
@@ -174,7 +174,7 @@ def test_dscan_list_input(RE, hw):
     # GH225
     traj = [1, 2, 3]
     hw.motor.set(-4)
-    scan = bp.relative_list_scan([hw.det], hw.motor, traj)
+    scan = bp.rel_list_scan([hw.det], hw.motor, traj)
     traj_checker(RE, scan, np.array(traj) - 4)
 
 
