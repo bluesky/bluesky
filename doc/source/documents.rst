@@ -92,7 +92,7 @@ The command:
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import det, motor  # simulated detector, motor
+    from ophyd.sim import det, motor  # simulated detector, motor
 
     # Scan 'motor' from -3 to 3 in 10 steps, taking readings from 'det'.
     RE(scan([det], motor, -3, 3, 16), purpose='calibration',

@@ -65,7 +65,7 @@ Examples:
 
 .. code-block:: python
 
-    from bluesky.examples import det
+    from ophyd.sim import det
     from bluesky.plans import count
 
     # a single reading of the detector 'det'
@@ -91,7 +91,7 @@ We can use ``LivePlot`` to visualize this data. It is documented in the
     from bluesky.callbacks import LivePlot
 
     # We'll use the 'noisy_det' example detector for a more interesting plot.
-    from bluesky.examples import noisy_det
+    from ophyd.sim import noisy_det
 
     RE(count([noisy_det], num=5), LivePlot('noisy_det'))
 
@@ -100,7 +100,7 @@ We can use ``LivePlot`` to visualize this data. It is documented in the
 
     from bluesky import RunEngine
     from bluesky.plans import count
-    from bluesky.examples import noisy_det
+    from ophyd.sim import noisy_det
     from bluesky.callbacks import LivePlot
     RE = RunEngine({})
     RE(count([noisy_det], num=5), LivePlot('noisy_det'))
@@ -119,7 +119,7 @@ pseudo-axis. It's all the same to the plans. Examples:
 
 .. code-block:: python
 
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
     from bluesky.plans import scan, rel_scan, list_scan
 
     # scan a motor from 1 to 5, taking 5 equally-spaced readings of 'det'
@@ -148,7 +148,7 @@ Or, again, to save some typing for repeated use,
 
     from bluesky import RunEngine
     from bluesky.plans import scan
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
     from bluesky.callbacks import LivePlot
     RE = RunEngine({})
     RE(scan([det], motor, 1, 5, 5), LivePlot('det', 'motor'))
@@ -179,7 +179,7 @@ and y motors simultaneously.
 
 .. code-block:: python
 
-    from bluesky.examples import det, motor1, motor2
+    from ophyd.sim import det, motor1, motor2
     from bluesky.plans import inner_product_scan
 
     # Inner product: move motors together.
@@ -191,7 +191,7 @@ Demo:
 .. ipython:: python
     :suppress:
 
-    from bluesky.examples import det, motor1, motor2
+    from ophyd.sim import det, motor1, motor2
     from bluesky.callbacks import LiveTable
     from bluesky import RunEngine
     from bluesky.plans import grid_scan, inner_product_scan
@@ -205,7 +205,7 @@ Demo:
 .. plot::
 
     from bluesky.simulators import plot_raster_path
-    from bluesky.examples import motor1, motor2, det
+    from ophyd.sim import motor1, motor2, det
     from bluesky.plans import inner_product_scan
     import matplotlib.pyplot as plt
 
@@ -221,7 +221,7 @@ square: each motor can move a different number of steps.
 
 .. code-block:: python
 
-    from bluesky.examples import det, motor1, motor2
+    from ophyd.sim import det, motor1, motor2
     from bluesky.plans import grid_scan
 
     # Outer product: move motors in a mesh.
@@ -242,7 +242,7 @@ direction each time (``False``), as illustrated.
 .. plot::
 
     from bluesky.simulators import plot_raster_path
-    from bluesky.examples import motor1, motor2, det
+    from ophyd.sim import motor1, motor2, det
     from bluesky.plans import grid_scan
     import matplotlib.pyplot as plt
 
@@ -270,7 +270,7 @@ in :ref:`in the next section <liveraster>`. In previous examples we used
     from bluesky.callbacks import LiveGrid
 
     # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
-    from bluesky.examples import det4
+    from ophyd.sim import det4
 
     RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
@@ -279,7 +279,7 @@ in :ref:`in the next section <liveraster>`. In previous examples we used
 
     from bluesky import RunEngine
     from bluesky.plans import grid_scan
-    from bluesky.examples import det4, motor1, motor2
+    from ophyd.sim import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
     motor1.delay = 0
     motor2.delay = 0
@@ -294,7 +294,7 @@ Notice what happens when we add or multiply ``cycler`` objects.
 .. ipython:: python
 
     from cycler import cycler
-    from bluesky.examples import motor1, motor2, motor3
+    from ophyd.sim import motor1, motor2, motor3
 
     traj1 = cycler(motor1, [1, 2, 3])
     traj2 = cycler(motor2, [10, 20, 30])
@@ -341,7 +341,7 @@ A simple spiral:
    :include-source:
 
     from bluesky.simulators import plot_raster_path
-    from bluesky.examples import motor1, motor2, det
+    from ophyd.sim import motor1, motor2, det
     from bluesky.plans import spiral
 
     plan = spiral([det], motor1, motor2, x_start=0.0, y_start=0.0, x_range=1.,
@@ -355,7 +355,7 @@ A fermat spiral:
    :include-source:
 
     from bluesky.simulators import plot_raster_path
-    from bluesky.examples import motor1, motor2, det
+    from ophyd.sim import motor1, motor2, det
     from bluesky.plans import spiral_fermat
 
     plan = spiral_fermat([det], motor1, motor2, x_start=0.0, y_start=0.0,
@@ -386,7 +386,7 @@ This is a basic example of the power of adaptive plan logic.
 
     from bluesky.plans import adaptive_scan
     from bluesky.callbacks import LivePlot
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
 
     RE(adaptive_scan([det], 'det', motor,
                      start=-15,
@@ -402,7 +402,7 @@ This is a basic example of the power of adaptive plan logic.
     from bluesky import RunEngine
     from bluesky.plans import adaptive_scan
     from bluesky.callbacks import LivePlot
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
 
     RE = RunEngine({})
 
@@ -524,7 +524,7 @@ Produce several runs, changing a parameter each time.
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
 
     def scan_varying_density():
         "Run a scan several times, changing the step size each time."
@@ -544,7 +544,7 @@ sets *relative* to the current value.
 
     from bluesky.plans import count
     from bluesky.plan_stubs import abs_set
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
 
     def move_and_count():
         "Move a motor into place, then take a reading from detectors."
@@ -559,7 +559,7 @@ them both to finish.
 .. code-block:: python
 
     from bluesky.plan_stubs import abs_set, wait
-    from bluesky.examples import motor1, motor2
+    from ophyd.sim import motor1, motor2
 
     def set_two_motors():
         "Set, trigger, read"
@@ -636,7 +636,7 @@ A "sleep" is a timed delay.
 .. code-block:: python
 
     from bluesky.plan_stubs import sleep, abs_set
-    from bluesky.examples import motor
+    from ophyd.sim import motor
 
     def sleepy():
         "Set motor; sleep for a fixed time; set it to a new position."
@@ -686,7 +686,7 @@ which makes it easy for a user-defined plan to pass in extra metadata.
 .. code-block:: python
 
     from bluesky.plans import count
-    from bluesky.examples import det
+    from ophyd.sim import det
 
     def master_plan():
         "Read a detector with the shutter closed and then open."
@@ -991,7 +991,7 @@ a table of the data).
 
 .. code-block:: python
 
-    from bluesky.examples import det1, det2
+    from ophyd.sim import det1, det2
     from bluesky.plans import count
 
     dets = [det1, det2]
@@ -1077,7 +1077,7 @@ make an on-the-fly decision about whether to continue or stop.
 .. code-block:: python
 
     from bluesky.plan_stubs import abs_set, trigger, read
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
 
     def conditional_break(threshold):
         """Set, trigger, read until the detector reads intensity < threshold"""

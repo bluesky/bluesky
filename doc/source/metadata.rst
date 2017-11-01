@@ -51,7 +51,7 @@ For example, this plan generates three different runs.
 .. code-block:: python
 
     from bluesky.plans import count, scan
-    from bluesky.examples det1, det2, motor  # simulated detectors, motor
+    from ophyd.sim det1, det2, motor  # simulated detectors, motor
 
     def plan():
         yield from count([det])

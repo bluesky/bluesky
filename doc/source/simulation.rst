@@ -29,7 +29,7 @@ executed by the RunEngine.
 .. ipython:: python
 
     from bluesky.simulators import summarize_plan
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
     from bluesky.plans import scan
     summarize_plan(scan([det], motor, 1, 3 ,3))
 
@@ -75,7 +75,7 @@ Simulated Hardware
     and these simulated hardware objects behave differently, ophyd is correct.
 
 It's easy to mock up an object that simulates a detector or a motor. The
-classes :class:`bluesky.examples.Reader` and :class:`bluesky.examples.Mover`
+classes :class:`ophyd.sim.Reader` and :class:`ophyd.sim.Mover`
 provide scaffolds for quickly building objects that behave like a detector or
 a "settable" device such as a motor or a temperature controller.
 

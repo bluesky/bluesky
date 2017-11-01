@@ -35,7 +35,7 @@ each Document as it is generated during data collection.
 .. code-block:: python
 
     from bluesky.plans import count
-    from bluesky.examples import det
+    from ophyd.sim import det
 
     RE(count([det]), print)
 
@@ -59,7 +59,7 @@ A working example:
 
 .. code-block:: python
 
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
     from bluesky.plans import scan
     from bluesky.callbacks import LiveTable
     dets = [det]
@@ -145,7 +145,7 @@ row is added to the table. Demo:
 .. ipython:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
     from bluesky.callbacks import LiveTable
 
     RE(scan([det], motor, 1, 5, 5), LiveTable([motor, det]))
@@ -235,7 +235,7 @@ Plot scalars. Example:
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
     from bluesky.callbacks import LivePlot
 
     RE(scan([det], motor, -5, 5, 30), LivePlot('det', 'motor'))
@@ -244,7 +244,7 @@ Plot scalars. Example:
 
     from bluesky import RunEngine
     from bluesky.plans import scan
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
     from bluesky.callbacks import LivePlot
     RE = RunEngine({})
     RE(scan([det], motor, -5, 5, 30), LivePlot('det', 'motor'))
@@ -262,7 +262,7 @@ To customize style, pass in any
 
     from bluesky import RunEngine
     from bluesky.plans import scan
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
     from bluesky.callbacks import LivePlot
     RE = RunEngine({})
     RE(scan([det], motor, -5, 5, 30),
@@ -285,7 +285,7 @@ Plot a scalar value as a function of two variables on a regular grid. Example:
 .. code-block:: python
 
     from bluesky.plans import grid_scan
-    from bluesky.examples import det4, motor1, motor2
+    from ophyd.sim import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
 
     RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
@@ -295,7 +295,7 @@ Plot a scalar value as a function of two variables on a regular grid. Example:
 
     from bluesky import RunEngine
     from bluesky.plans import grid_scan
-    from bluesky.examples import det4, motor1, motor2
+    from ophyd.sim import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
     motor1.delay = 0
     motor2.delay = 0
@@ -315,7 +315,7 @@ Example:
 .. code-block:: python
 
     from bluesky.plans import grid_scan
-    from bluesky.examples import det5, jittery_motor1, jittery_motor2
+    from ophyd.sim import det5, jittery_motor1, jittery_motor2
     from bluesky.callbacks import LiveScatter
 
     # The 'jittery' example motors won't go exactly where they are told to go.
@@ -330,7 +330,7 @@ Example:
 
     from bluesky import RunEngine
     from bluesky.plans import grid_scan
-    from bluesky.examples import det5, jittery_motor1, jittery_motor2
+    from ophyd.sim import det5, jittery_motor1, jittery_motor2
     from bluesky.callbacks import LiveScatter
     RE = RunEngine({})
     RE(grid_scan([det5],
@@ -381,7 +381,7 @@ To integrate with the bluesky we need to provide:
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, noisy_det
+    from ophyd.sim import motor, noisy_det
     from bluesky.callbacks import LiveFit
 
     lf = LiveFit(model, 'noisy_det', {'x': 'motor'}, init_guess)
@@ -406,7 +406,7 @@ This example uses a model with two independent variables, x and y.
 
 .. code-block:: python
 
-    from bluesky.examples import motor1, motor2, det4
+    from ophyd.sim import motor1, motor2, det4
 
     def gaussian(x, y, A, sigma, x0, y0):
         return A*np.exp(-((x - x0)**2 + (y - y0)**2)/(2 * sigma**2))
@@ -447,7 +447,7 @@ Repeating the example from ``LiveFit`` above, adding a plot:
     import numpy as np
     import lmfit
     from bluesky.plans import scan
-    from bluesky.examples import motor, noisy_det
+    from ophyd.sim import motor, noisy_det
     from bluesky.callbacks import LiveFit
 
     def gaussian(x, A, sigma, x0):
@@ -475,7 +475,7 @@ Repeating the example from ``LiveFit`` above, adding a plot:
     import numpy as np
     import lmfit
     from bluesky.plans import scan
-    from bluesky.examples import motor, noisy_det
+    from ophyd.sim import motor, noisy_det
     from bluesky.callbacks import LiveFit, LiveFitPlot
     from bluesky import RunEngine
 
@@ -512,7 +512,7 @@ Notice that they can styled independently.
     import numpy as np
     import lmfit
     from bluesky.plans import scan
-    from bluesky.examples import motor, noisy_det
+    from ophyd.sim import motor, noisy_det
     from bluesky.callbacks import LiveFit, LivePlot, LiveFitPlot
     from bluesky import RunEngine
 
@@ -545,7 +545,7 @@ Compute statistics of peak-like data. Example:
 .. code-block:: python
 
     from bluesky.callbacks.fitting import PeakStats
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
     from bluesky.plans import scan
 
     ps = PeakStats('motor', 'det')
@@ -565,7 +565,7 @@ There is also a convenience function for plotting:
     from bluesky import RunEngine
     from bluesky.callbacks.fitting import PeakStats
     from bluesky.callbacks.mpl_plotting import plot_peak_stats
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
     from bluesky.plans import scan
 
     RE = RunEngine({})
@@ -608,7 +608,7 @@ plans in :mod:`bluesky.plans` for examples.)
 
 .. ipython:: python
 
-    from bluesky.examples import det1, det2
+    from ophyd.sim import det1, det2
     from bluesky.plans import scan
 
     dets = [det1, det2]
@@ -619,7 +619,7 @@ plans in :mod:`bluesky.plans` for examples.)
 
     from bluesky import RunEngine
     from bluesky.plans import scan
-    from bluesky.examples import det, motor
+    from ophyd.sim import det, motor
     from bluesky.callbacks.best_effort import BestEffortCallback
     RE = RunEngine({})
     bec = BestEffortCallback()
@@ -988,7 +988,7 @@ We are setting up a *subscription*.
 
 .. ipython:: python
 
-    from bluesky.examples import det
+    from ophyd.sim import det
     from bluesky.plans import count
 
     RE(count([det]), {'event': print_data})

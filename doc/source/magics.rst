@@ -41,7 +41,7 @@ For this example we'll use some simulated hardware.
 
 .. ipython:: python
 
-    from bluesky.examples import det1, det2, motor1, motor2
+    from ophyd.sim import det1, det2, motor1, motor2
 
 Suppose you want to move a motor interactively. You can use the ``%mov`` magic:
 

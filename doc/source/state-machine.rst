@@ -410,7 +410,7 @@ To see this in action, try this example:
     from bluesky.plans import count
     from bluesky.preprocessors import pchain
     from bluesky.plan_stubs import pause
-    from bluesky.examples import det
+    from ophyd.sim import det
 
     RE.record_interruptions = True
 

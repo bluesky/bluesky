@@ -58,7 +58,7 @@ execution.
 .. ipython:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, det  # a simulated motor and detector
+    from ophyd.sim import motor, det  # a simulated motor and detector
     RE(scan([det], motor, 1, 5, 5))  # Scan from 1 to 5 in 5 steps.
 
 The plan has been executed. But where is the data? The RunEngine must be given
@@ -83,7 +83,7 @@ Or, similarly, we can plot the data during the scan using ``LivePlot``.
     from bluesky import RunEngine
     RE = RunEngine({})
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
     from bluesky.callbacks import LivePlot
     RE(scan([det], motor, 1, 5, 5), LivePlot('det', 'motor'))
 
@@ -120,7 +120,7 @@ dataset), takes a reading, and marks the end of that run.
 .. ipython:: python
 
     from bluesky.simulators import print_summary
-    from bluesky.examples import det
+    from ophyd.sim import det
     from bluesky.plans import count
     print_summary(count([det]))
 
@@ -129,7 +129,7 @@ position.
 
 .. ipython:: python
 
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
     from bluesky.plans import scan, rel_scan
     print_summary(scan([det], motor, 1, 3, 3))
 
@@ -174,7 +174,7 @@ coverage of the sample.
    :include-source:
 
     from bluesky.simulators import plot_raster_path
-    from bluesky.examples import motor1, motor2, det
+    from ophyd.sim import motor1, motor2, det
     from bluesky.plans import grid_scan
     import matplotlib.pyplot as plt
 
@@ -283,7 +283,7 @@ You might be tempted to write a script like this:
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
 
     # Don't do this!
     for j in [1, 2, 3]:
@@ -306,7 +306,7 @@ But, instead, you should do this:
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
 
     def my_plan():
         for j in [1, 2, 3]:
@@ -327,7 +327,7 @@ chain"):
 
 .. code-block:: python
 
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
     from bluesky.plans import scan
     from bluesky.plan_stubs import sleep
     from bluesky.preprocessors import pchain

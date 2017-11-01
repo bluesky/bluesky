@@ -21,7 +21,7 @@ and metadata. It emphasizes the following virtues:
 
 Bluesky interacts with hardware through Python objects that are expected to
 have a specified interface. This interface is implemented for "simulated"
-motors and detectors included in the ``bluesky.examples`` module, which we use
+motors and detectors included in the ``ophyd.sim`` module, which we use
 here in documented examples and tests.
 
 To control actual hardware, an additional package is required. The `ophyd

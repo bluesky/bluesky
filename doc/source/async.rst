@@ -62,7 +62,7 @@ To "fly" one or more "flyable" devices during a plan, bluesky provides a
 
 .. code-block:: python
 
-    from bluesky.examples import det, flyer1, flyer2  # simulated hardware
+    from ophyd.sim import det, flyer1, flyer2  # simulated hardware
     from bluesky.plans import count
     from bluesky.preprocessors fly_during_wrapper
 
@@ -72,7 +72,7 @@ and as a decorator, :func:`fly_during_decorator`.
 
 .. code-block:: python
 
-    from bluesky.examples import det, flyer1, flyer2  # simulated hardware
+    from ophyd.sim import det, flyer1, flyer2  # simulated hardware
     from bluesky.plans import count
     from bluesky.preprocessors fly_during_wrapper
 
@@ -86,7 +86,7 @@ append to or extend its list of flyers to kick off during every run:
 
 .. code-block:: python
 
-    from bluesky.examples import flyer1, flyer2
+    from ophyd.sim import flyer1, flyer2
 
     # Assume sd is an instance of the SupplementalData set up as
     # descripted in the documentation linked above.
@@ -103,7 +103,7 @@ is available as a wrapper, :func:`monitor_during_wrapper`
 
 .. code-block:: python
 
-    from bluesky.examples import det, det1
+    from ophyd.sim import det, det1
     from bluesky.plans import count
     from bluesky.preprocessors import monitor_during_wrapper
 
@@ -114,7 +114,7 @@ and as a decorator, :func:`monitor_during_decorator`.
 
 .. code-block:: python
 
-    from bluesky.examples import det, det1
+    from ophyd.sim import det, det1
     from bluesky.plans import count
     from bluesky.preprocessors import monitor_during_wrapper
 
@@ -128,7 +128,7 @@ append to or extend its list of signals to monitor:
 
 .. code-block:: python
 
-    from bluesky.examples import det1
+    from ophyd.sim import det1
 
     # Assume sd is an instance of the SupplementalData set up as
     # descripted in the documentation linked above.
