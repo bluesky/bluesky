@@ -470,7 +470,7 @@ def test_relative_fermat_spiral(RE, hw):
 
     motor1.set(start_x)
     motor2.set(start_y)
-    scan = bp.relative_spiral_fermat([det],
+    scan = bp.rel_spiral_fermat([det],
                                      motor1, motor2,
                                      1.0, 1.0,
                                      0.1, 1.0,

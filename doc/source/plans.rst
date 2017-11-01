@@ -49,7 +49,7 @@ documentation.
    spiral
    spiral_fermat
    relative_spiral
-   relative_spiral_fermat
+   rel_spiral_fermat
    adaptive_scan
    relative_adaptive_scan
    tune_centroid
@@ -368,7 +368,7 @@ A fermat spiral:
    spiral
    spiral_fermat
    relative_spiral
-   relative_spiral_fermat
+   rel_spiral_fermat
 
 Adaptive scans
 ^^^^^^^^^^^^^^

@@ -22,7 +22,7 @@ def checker(name, doc):
     (bp.spiral, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
     (bp.relative_spiral, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     (bp.spiral_fermat, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
+    (bp.rel_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     ])
 def test_plans(RE, pln, args, kwargs, hw):
     args = tuple(getattr(hw, v, v) if isinstance(v, str) else v
@@ -47,7 +47,7 @@ def test_plans(RE, pln, args, kwargs, hw):
      ('motor_no_hints1', 'motor_no_hints2', 0.3, 0.3, 0.05, 3), {}),
     (bp.spiral_fermat,
      ('motor_no_hints1', 'motor_no_hints2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral_fermat,
+    (bp.rel_spiral_fermat,
      ('motor_no_hints1', 'motor_no_hints2', 0.3, 0.3, 0.05, 3), {}),
     ])
 def test_plans_motors_no_hints(RE, pln, args, kwargs, hw):
@@ -70,7 +70,7 @@ def test_plans_motors_no_hints(RE, pln, args, kwargs, hw):
     (bp.spiral, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
     (bp.relative_spiral, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     (bp.spiral_fermat, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
+    (bp.rel_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     ])
 def test_plans_motor_empty_hints(RE, pln, args, kwargs, hw):
     args = tuple(getattr(hw, v, v) if isinstance(v, str) else v

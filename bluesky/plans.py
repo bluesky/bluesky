@@ -3315,7 +3315,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     --------
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.relative_spiral`
-    :func:`bluesky.plans.relative_spiral_fermat`
+    :func:`bluesky.plans.rel_spiral_fermat`
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
@@ -3351,7 +3351,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
+def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
                            factor, *, tilt=0.0, per_step=None, md=None):
     '''Relative fermat spiral scan
 
@@ -3386,7 +3386,7 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     :func:`bluesky.plans.relative_spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
-    _md = {'plan_name': 'relative_spiral_fermat'}
+    _md = {'plan_name': 'rel_spiral_fermat'}
     _md.update(md or {})
     return (yield from spiral_fermat(detectors, x_motor, y_motor,
                                      x_motor.position,
@@ -3394,6 +3394,7 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
                                      y_range, dr, factor, tilt=tilt,
                                      per_step=per_step, md=_md))
 
+relative_spiral_fermat = rel_spiral_fermat  # back-compat
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            nth, *, tilt=0.0, per_step=None, md=None):
@@ -3430,7 +3431,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     --------
     :func:`bluesky.plans.relative_spiral`
     :func:`bluesky.plans.spiral_fermat`
-    :func:`bluesky.plans.relative_spiral_fermat`
+    :func:`bluesky.plans.rel_spiral_fermat`
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
@@ -3502,7 +3503,7 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
-    _md = {'plan_name': 'relative_spiral_fermat'}
+    _md = {'plan_name': 'rel_spiral_fermat'}
     _md.update(md or {})
     return (yield from spiral(detectors, x_motor, y_motor,
                               x_motor.position, y_motor.position,
@@ -4009,10 +4010,10 @@ class RelativeSpiralScan(Plan):
 class RelativeSpiralFermatScan(Plan):
     _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
                'factor', 'tilt']
-    __doc__ = relative_spiral_fermat.__doc__
+    __doc__ = rel_spiral_fermat.__doc__
 
     def _gen(self):
-        return relative_spiral_fermat(self.detectors, self.x_motor,
+        return rel_spiral_fermat(self.detectors, self.x_motor,
                                       self.y_motor, self.x_range, self.y_range,
                                       self.dr, self.factor, tilt=self.tilt,
                                       md=self.md)
