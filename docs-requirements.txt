@@ -1,8 +1,0 @@
-doctr
-ipython
-ipywidgets
-matplotlib
-numpydoc
-ophyd
-sphinx
-sphinx_rtd_theme
