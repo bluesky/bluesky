@@ -1,6 +1,7 @@
 from collections import ChainMap
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from cycler import cycler
 import numpy as np
 import warnings
 
