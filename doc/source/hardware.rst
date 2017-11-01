@@ -326,10 +326,7 @@ Simulated Hardware
 ++++++++++++++++++
 
 A toy "test" implementation the interface is included in the
-``bluesky.examples`` module. These implementations act as simulated hardware,
+:mod:`ophyd.sim` module. These implementations act as simulated hardware,
 and we use them extensively in examples, demos, and the test suite. They can
 also be useful for exercising analysis workflows before running a real
 experiment. API documentation is below.
-
-.. autoclass:: bluesky.examples.Reader
-.. autoclass:: bluesky.examples.Mover
