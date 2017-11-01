@@ -1,6 +1,16 @@
 Release Notes
 =============
 
+v1.0.0
+------
+
+This tag marks an important release for bluesky, signifying the conclusion of
+the early development phase. From this point on, we intend that this project
+will be co-developed between multiple facilities. The 1.x series is intended to
+be a long-term-support release.
+
+This release contains no changes with respect to the previous one, v0.11.0.
+
 v0.11.0
 -------
 
