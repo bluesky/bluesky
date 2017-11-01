@@ -1,5 +1,3 @@
-.. currentmodule:: bluesky.plans
-
 Basic Usage & Intro to Plans
 ============================
 
@@ -45,9 +43,9 @@ setup instructions for each.
 Running the RunEngine
 ---------------------
 
-We'll use the built-in :func:`scan` plan, which moves a motor and triggers and
-reads one or more detectors. We'll pass the plan to the RunEngine for
-execution.
+We'll use the built-in :func:`~bluesky.plans.scan` plan, which moves a motor
+and triggers and reads one or more detectors. We'll pass the plan to the
+RunEngine for execution.
 
 .. ipython:: python
     :suppress:
@@ -58,7 +56,7 @@ execution.
 .. ipython:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, det  # a simulated motor and detector
+    from ophyd.sim import motor, det  # a simulated motor and detector
     RE(scan([det], motor, 1, 5, 5))  # Scan from 1 to 5 in 5 steps.
 
 The plan has been executed. But where is the data? The RunEngine must be given
@@ -83,7 +81,7 @@ Or, similarly, we can plot the data during the scan using ``LivePlot``.
     from bluesky import RunEngine
     RE = RunEngine({})
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
     from bluesky.callbacks import LivePlot
     RE(scan([det], motor, 1, 5, 5), LivePlot('det', 'motor'))
 
@@ -114,37 +112,38 @@ Bluesky's design separates the *specification* of the plan --- e.g.,
 the fly, as we'll see :ref:`later below <preprocessors>`.
 
 Bluesky provides a simple function for summarizing the action of a plan,
-``print_summary``. Here, we see that the plan :func:`count` opens a "run" (i.e.,
-dataset), takes a reading, and marks the end of that run.
+:func:`~bluesky.simulators.summarize_plan`. Here, we see that the plan
+:func:`~bluesky.plans.count` opens a "run" (i.e., dataset), takes a reading,
+and marks the end of that run.
 
 .. ipython:: python
 
-    from bluesky.simulators import print_summary
-    from bluesky.examples import det
+    from bluesky.simulators import summarize_plan
+    from ophyd.sim import det
     from bluesky.plans import count
-    print_summary(count([det]))
+    summarize_plan(count([det]))
 
-The plan :func:`scan` moves a motor in steps and takes a reading at each
-position.
+The plan :func:`~bluesky.plans.scan` moves a motor in steps and takes a reading
+at each position.
 
 .. ipython:: python
 
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
     from bluesky.plans import scan, rel_scan
-    print_summary(scan([det], motor, 1, 3, 3))
+    summarize_plan(scan([det], motor, 1, 3, 3))
 
 .. ipython:: python
    :suppress:
 
     motor.set(3)
 
-As you might guess, :func:`rel_scan` moves the motor relative to its
-starting position. And at the end, :func:`rel_scan` returns it to that
-starting position.
+As you might guess, :func:`~bluesky.plans.rel_scan` moves the motor relative to
+its starting position. And at the end, :func:`~bluesky.plans.rel_scan` returns
+it to that starting position.
 
 .. ipython:: python
 
-    print_summary(rel_scan([det], motor, 1, 3, 3))
+    summarize_plan(rel_scan([det], motor, 1, 3, 3))
 
 Summarizing a plan is also a quick way to check for some types of errors.
 More sophisticated error checking is possible and a likely area of future
@@ -153,7 +152,7 @@ development in bluesky.
 
 .. note::
 
-    As the name suggests, ``print_summary`` omits some details. To examine the
+    As the name suggests, ``summarize_plan`` omits some details. To examine the
     full content of a plan, just pass it to ``list()``.
 
     This will not work on plans that are adaptive. Adaptive plans necessarily
@@ -174,7 +173,7 @@ coverage of the sample.
    :include-source:
 
     from bluesky.simulators import plot_raster_path
-    from bluesky.examples import motor1, motor2, det
+    from ophyd.sim import motor1, motor2, det
     from bluesky.plans import grid_scan
     import matplotlib.pyplot as plt
 
@@ -283,7 +282,7 @@ You might be tempted to write a script like this:
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
 
     # Don't do this!
     for j in [1, 2, 3]:
@@ -306,7 +305,7 @@ But, instead, you should do this:
 .. code-block:: python
 
     from bluesky.plans import scan
-    from bluesky.examples import motor, det
+    from ophyd.sim import motor, det
 
     def my_plan():
         for j in [1, 2, 3]:
@@ -322,13 +321,15 @@ smoothly recover, and they can easily result in unintended behavior. To avoid
 these problems, always express a multi-step procedure as a single plan (as
 above) and pass the whole thing to ``RE``.
 
-A convenient way to run multiple plans in sequence is :func:`pchain` (for "plan
-chain"):
+A convenient way to run multiple plans in sequence is
+:func:`~bluesky.preprocessors.pchain` (for "plan chain"):
 
 .. code-block:: python
 
-    from bluesky.examples import motor, det
-    from bluesky.plans import scan, sleep, pchain
+    from ophyd.sim import motor, det
+    from bluesky.plans import scan
+    from bluesky.plan_stubs import sleep
+    from bluesky.preprocessors import pchain
 
     RE(pchain(scan([det], motor, 1, 5, 3),
               sleep(1),

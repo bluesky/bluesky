@@ -37,7 +37,7 @@ def plan_mutator(plan, msg_proc):
           message.
         * ``(head, tail)`` As above, and additionally insert messages after.
         * ``(None, tail)`` Let the original message pass through and then
-         insert messages after.
+          insert messages after.
 
         The reason for returning a pair of generators instead of just one is to
         provide a way to specify which message's response should be sent out to

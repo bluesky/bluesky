@@ -62,8 +62,9 @@ To "fly" one or more "flyable" devices during a plan, bluesky provides a
 
 .. code-block:: python
 
-    from bluesky.examples import det, flyer1, flyer2  # simulated hardware
-    from bluesky.plans import count, fly_during_wrapper
+    from ophyd.sim import det, flyer1, flyer2  # simulated hardware
+    from bluesky.plans import count
+    from bluesky.preprocessors fly_during_wrapper
 
     RE(fly_during_wrapper(count([det], num=5), [flyer1, flyer2]))
 
@@ -71,8 +72,9 @@ and as a decorator, :func:`fly_during_decorator`.
 
 .. code-block:: python
 
-    from bluesky.examples import det, flyer1, flyer2  # simulated hardware
-    from bluesky.plans import count, fly_during_decorator
+    from ophyd.sim import det, flyer1, flyer2  # simulated hardware
+    from bluesky.plans import count
+    from bluesky.preprocessors fly_during_wrapper
 
     # Define a new plan for future use.
     fly_and_count = fly_during_decorator([flyer1, flyer2])(count)
@@ -84,7 +86,7 @@ append to or extend its list of flyers to kick off during every run:
 
 .. code-block:: python
 
-    from bluesky.examples import flyer1, flyer2
+    from ophyd.sim import flyer1, flyer2
 
     # Assume sd is an instance of the SupplementalData set up as
     # descripted in the documentation linked above.
@@ -101,8 +103,9 @@ is available as a wrapper, :func:`monitor_during_wrapper`
 
 .. code-block:: python
 
-    from bluesky.examples import det, det1
-    from bluesky.plans import count, monitor_during_wrapper
+    from ophyd.sim import det, det1
+    from bluesky.plans import count
+    from bluesky.preprocessors import monitor_during_wrapper
 
     # Record any updates from det1 while 'counting' det 5 times.
     RE(monitor_during_wrapper(count([det], num=5), [det1]))
@@ -111,8 +114,9 @@ and as a decorator, :func:`monitor_during_decorator`.
 
 .. code-block:: python
 
-    from bluesky.examples import det, det1
-    from bluesky.plans import count, monitor_during_decorator
+    from ophyd.sim import det, det1
+    from bluesky.plans import count
+    from bluesky.preprocessors import monitor_during_wrapper
 
     # Define a new plan for future use.
     monitor_and_count = monitor_during_decorator([det1])(count)
@@ -124,7 +128,7 @@ append to or extend its list of signals to monitor:
 
 .. code-block:: python
 
-    from bluesky.examples import det1
+    from ophyd.sim import det1
 
     # Assume sd is an instance of the SupplementalData set up as
     # descripted in the documentation linked above.

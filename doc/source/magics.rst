@@ -41,7 +41,7 @@ For this example we'll use some simulated hardware.
 
 .. ipython:: python
 
-    from bluesky.examples import det1, det2, motor1, motor2
+    from ophyd.sim import det1, det2, motor1, motor2
 
 Suppose you want to move a motor interactively. You can use the ``%mov`` magic:
 
@@ -53,7 +53,7 @@ This is equivanent to:
 
 .. code-block:: python
 
-    from bluesky.plans import mv
+    from bluesky.plan_stubs import mv
 
     RE(mv(motor1, 42))
 
@@ -84,7 +84,7 @@ parameters:
 
 .. ipython:: python
 
-    BlueskyMagics.dets = [det1, det2]
+    BlueskyMagics.detectors = [det1, det2]
     %ct
 
 If IPython’s ‘automagic’ feature is enabled, IPython will even let you drop the
@@ -125,13 +125,11 @@ Again, they must be registered with IPython before they can be used:
     from bluesky.magics import BlueskyMagics
     get_ipython().register_magics(BlueskyMagics)
 
-.. currentmodule:: bluesky.plans
-
 ======================================================================= ==============================
 Magic                                                                   Plan Invoked
 ======================================================================= ==============================
-``%mov``                                                                :func:`mv`
-``%movr``                                                               :func:`mvr`
-``%ct``                                                                 :func:`count`
+``%mov``                                                                :func:`~bluesky.plan_stubs.mv`
+``%movr``                                                               :func:`~bluesky.plan_stubs.mvr`
+``%ct``                                                                 :func:`~bluesky.plans.count`
 ``%wa``                                                                 ("where all") Survey positioners*
 ======================================================================= ==============================

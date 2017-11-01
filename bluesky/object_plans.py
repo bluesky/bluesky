@@ -1,3 +1,9 @@
+# DO NOT USE THIS MODULE.
+
+# This module contians a legacy API, an early approach to plans that
+# was deprecated in v0.10.0. It will be removed in a future release. It should
+# not be used. To build 'reusable' plans we now recommend `functools.partial`.
+
 from . import utils
 import warnings
 from collections import defaultdict

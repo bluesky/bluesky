@@ -125,3 +125,6 @@ target/
 .ipynb_checkpoints/
 
 .tags
+
+# sphinx
+doc/source/generated/*.rst

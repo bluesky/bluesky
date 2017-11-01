@@ -20,16 +20,16 @@ That would look like this:
 .. code-block:: python
 
    In [7]: RE(count([det]))
-   stage: (<bluesky.examples.SynGauss object at 0x10f1bfb38>), (), {}
-   open_run: (None), (), {'plan_args': {'num': 1, 'detectors': ['<bluesky.examples.SynGauss object at 0x10f1bfb38>']}, 'detectors': ['det'], 'plan_name': 'count'}
+   stage: (<ophyd.sim.SynGauss object at 0x10f1bfb38>), (), {}
+   open_run: (None), (), {'plan_args': {'num': 1, 'detectors': ['<ophyd.sim.SynGauss object at 0x10f1bfb38>']}, 'detectors': ['det'], 'plan_name': 'count'}
    checkpoint: (None), (), {}
-   trigger: (<bluesky.examples.SynGauss object at 0x10f1bfb38>), (), {'group': 'trigger-ff93f4'}
+   trigger: (<ophyd.sim.SynGauss object at 0x10f1bfb38>), (), {'group': 'trigger-ff93f4'}
    wait: (None), (), {'group': 'trigger-ff93f4'}
 
 The last message is is a 'wait' message, and it waiting for the 'trigger' just
 above it to complete. If the plan freezes at this point, a likely culprit is
 the triggering mechanism of the detector. In this example, we can see the
-detector in question is a simulated detector, ``bluesky.examples.SynGauss``.
+detector in question is a simulated detector, ``ophyd.sim.SynGauss``.
 From here we would investigate whether the hardware was behaving properly and
 whether its triggering behavior was programmed properly on the Python side.
 
