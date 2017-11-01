@@ -2636,7 +2636,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
 
     See Also
     --------
-    :func:`bluesky.plans.relative_adaptive_scan`
+    :func:`bluesky.plans.rel_adaptive_scan`
     """
     if not 0 < min_step < max_step:
         raise ValueError("min_step and max_step must meet condition of "
@@ -2715,7 +2715,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     return (yield from adaptive_core())
 
 
-def relative_adaptive_scan(detectors, target_field, motor, start, stop,
+def rel_adaptive_scan(detectors, target_field, motor, start, stop,
                            min_step, max_step, target_delta, backstep,
                            threshold=0.8, *, md=None):
     """
@@ -2750,7 +2750,7 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
     --------
     :func:`bluesky.plans.adaptive_scan`
     """
-    _md = {'plan_name': 'adaptive_relative_scan'}
+    _md = {'plan_name': 'rel_adaptive_scan'}
     _md.update(md or {})
 
     @reset_positions_decorator([motor])
@@ -2763,6 +2763,7 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
 
     return (yield from inner_relative_adaptive_scan())
 
+relative_adaptive_scan = rel_adaptive_scan  # back-compat
 
 def tune_centroid(
         detectors, signal, motor,
@@ -3893,10 +3894,10 @@ AdaptiveAbsScanPlan = AdaptiveScan  # back-compat
 
 
 class RelativeAdaptiveScan(AdaptiveAbsScanPlan):
-    __doc__ = relative_adaptive_scan.__doc__
+    __doc__ = rel_adaptive_scan.__doc__
 
     def _gen(self):
-        return relative_adaptive_scan(self.detectors, self.target_field,
+        return rel_adaptive_scan(self.detectors, self.target_field,
                                       self.motor, self.start, self.stop,
                                       self.min_step, self.max_step,
                                       self.target_delta, self.backstep,

@@ -239,13 +239,13 @@ def test_adaptive_ascan(RE, hw):
 
 
 def test_adaptive_dscan(RE, hw):
-    scan1 = bp.relative_adaptive_scan(
+    scan1 = bp.rel_adaptive_scan(
         [hw.det], 'det', hw.motor, 0, 5, 0.1, 1, 0.1, True)
-    scan2 = bp.relative_adaptive_scan(
+    scan2 = bp.rel_adaptive_scan(
         [hw.det], 'det', hw.motor, 0, 5, 0.1, 1, 0.2, True)
-    scan3 = bp.relative_adaptive_scan(
+    scan3 = bp.rel_adaptive_scan(
         [hw.det], 'det', hw.motor, 0, 5, 0.1, 1, 0.1, False)
-    scan4 = bp.relative_adaptive_scan(
+    scan4 = bp.rel_adaptive_scan(
         [hw.det], 'det', hw.motor, 5, 0, 0.1, 1, 0.1, False)
 
     actual_traj = []
@@ -272,7 +272,7 @@ def test_adaptive_dscan(RE, hw):
     assert monotonic_decreasing
 
     with pytest.raises(ValueError):  # min step > max step
-        scan5 = bp.relative_adaptive_scan(
+        scan5 = bp.rel_adaptive_scan(
             [hw.det], 'det', hw.motor, 5, 0, 1, 0.1, 0.1, False)
         RE(scan5)
 

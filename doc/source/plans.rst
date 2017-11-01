@@ -51,7 +51,7 @@ documentation.
    rel_spiral
    rel_spiral_fermat
    adaptive_scan
-   relative_adaptive_scan
+   rel_adaptive_scan
    tune_centroid
    tweak
    fly
@@ -423,7 +423,7 @@ stride again.
    :nosignatures:
 
    adaptive_scan
-   relative_adaptive_scan
+   rel_adaptive_scan
 
 Misc.
 ^^^^^
