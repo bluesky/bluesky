@@ -3314,7 +3314,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     See Also
     --------
     :func:`bluesky.plans.spiral`
-    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.rel_spiral_fermat`
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
@@ -3383,7 +3383,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     See Also
     --------
     :func:`bluesky.plans.spiral`
-    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
     _md = {'plan_name': 'rel_spiral_fermat'}
@@ -3394,7 +3394,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
                                      y_range, dr, factor, tilt=tilt,
                                      per_step=per_step, md=_md))
 
-relative_spiral_fermat = rel_spiral_fermat  # back-compat
+rel_spiral_fermat = rel_spiral_fermat  # back-compat
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            nth, *, tilt=0.0, per_step=None, md=None):
@@ -3429,7 +3429,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 
     See Also
     --------
-    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.spiral_fermat`
     :func:`bluesky.plans.rel_spiral_fermat`
     '''
@@ -3467,7 +3467,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
+def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
                     *, tilt=0.0, per_step=None, md=None):
     '''Relative spiral scan
 
@@ -3510,6 +3510,7 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
                               x_range, y_range, dr, nth, tilt=tilt,
                               per_step=per_step, md=_md))
 
+relative_spiral = rel_spiral  # back-compat
 
 def ramp_plan(go_plan,
               monitor_sig,
@@ -3999,10 +4000,10 @@ class SpiralFermatScan(Plan):
 class RelativeSpiralScan(Plan):
     _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
                'nth', 'tilt']
-    __doc__ = relative_spiral.__doc__
+    __doc__ = rel_spiral.__doc__
 
     def _gen(self):
-        return relative_spiral(self.detectors, self.x_motor, self.y_motor,
+        return rel_spiral(self.detectors, self.x_motor, self.y_motor,
                                self.x_range, self.y_range, self.dr, self.nth,
                                tilt=self.tilt, md=self.md)
 

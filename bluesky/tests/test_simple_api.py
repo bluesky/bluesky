@@ -20,7 +20,7 @@ def checker(name, doc):
     (bp.relative_inner_product_scan, (2, 'motor', 1, 2), {}),
     (bp.grid_scan, ('motor1', 1, 2, 2, 'motor2', 1, 2, 3, False), {}),
     (bp.spiral, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
+    (bp.rel_spiral, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     (bp.spiral_fermat, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
     (bp.rel_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     ])
@@ -43,7 +43,7 @@ def test_plans(RE, pln, args, kwargs, hw):
      ('motor_no_hints1', 1, 2, 2, 'motor_no_hints2', 1, 2, 3, False), {}),
     (bp.spiral,
      ('motor_no_hints1', 'motor_no_hints2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral,
+    (bp.rel_spiral,
      ('motor_no_hints1', 'motor_no_hints2', 0.3, 0.3, 0.05, 3), {}),
     (bp.spiral_fermat,
      ('motor_no_hints1', 'motor_no_hints2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
@@ -68,7 +68,7 @@ def test_plans_motors_no_hints(RE, pln, args, kwargs, hw):
     (bp.relative_inner_product_scan, (2, 'motor1', 1, 2), {}),
     (bp.grid_scan, ('motor1', 1, 2, 2, 'motor2', 1, 2, 3, False), {}),
     (bp.spiral, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
-    (bp.relative_spiral, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
+    (bp.rel_spiral, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     (bp.spiral_fermat, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
     (bp.rel_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     ])

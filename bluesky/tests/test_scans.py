@@ -378,7 +378,7 @@ def test_absolute_spiral(RE, hw):
                               decimal=2)
 
 
-def test_relative_spiral(RE, hw):
+def test_rel_spiral(RE, hw):
     motor1 = hw.motor1
     motor2 = hw.motor2
     det = hw.det
@@ -388,7 +388,7 @@ def test_relative_spiral(RE, hw):
 
     motor1.set(start_x)
     motor2.set(start_y)
-    scan = bp.relative_spiral([det],
+    scan = bp.rel_spiral([det],
                               motor1, motor2,
                               1.0, 1.0,
                               0.1, 1.0,

@@ -48,7 +48,7 @@ documentation.
    scan_nd
    spiral
    spiral_fermat
-   relative_spiral
+   rel_spiral
    rel_spiral_fermat
    adaptive_scan
    relative_adaptive_scan
@@ -367,7 +367,7 @@ A fermat spiral:
 
    spiral
    spiral_fermat
-   relative_spiral
+   rel_spiral
    rel_spiral_fermat
 
 Adaptive scans
