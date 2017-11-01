@@ -1,3 +1,9 @@
+# DO NOT USE THIS MODULE.
+
+# This module contians a legacy API, an early approach to composing plans that
+# was little used and finally deprecated in v0.10.0. It will be removed in a
+# future release. It should not be used.
+
 from functools import wraps
 from contextlib import contextmanager
 import warnings
