@@ -2328,7 +2328,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_list_scan`
+    :func:`bluesky.plans.rel_list_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
@@ -2362,7 +2362,7 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     return (yield from inner_list_scan())
 
 
-def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
+def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     """
     Scan over one variable in steps relative to current position.
 
@@ -2385,7 +2385,7 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     :func:`bluesky.plans.list_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    _md = {'plan_name': 'relative_list_scan'}
+    _md = {'plan_name': 'rel_list_scan'}
     _md.update(md or {})
 
     @reset_positions_decorator([motor])
@@ -2395,6 +2395,7 @@ def relative_list_scan(detectors, motor, steps, *, per_step=None, md=None):
                                      per_step=per_step, md=_md))
     return (yield from inner_relative_list_scan())
 
+relative_list_scan = rel_list_scan  # back-compat
 
 def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
@@ -2420,7 +2421,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_scan`
+    :func:`bluesky.plans.rel_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
@@ -2458,7 +2459,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_scan())
 
 
-def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
+def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
                   md=None):
     """
     Scan over one variable in equally spaced steps relative to current positon.
@@ -2485,7 +2486,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
     --------
     :func:`bluesky.plans.scan`
     """
-    _md = {'plan_name': 'relative_scan'}
+    _md = {'plan_name': 'rel_scan'}
     _md.update(md or {})
     # TODO read initial positions (redundantly) so they can be put in md here
 
@@ -2497,6 +2498,7 @@ def relative_scan(detectors, motor, start, stop, num, *, per_step=None,
 
     return (yield from inner_relative_scan())
 
+relative_scan = rel_scan  # back-compat
 
 def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
@@ -2522,7 +2524,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_log_scan`
+    :func:`bluesky.plans.rel_log_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name],
@@ -2560,7 +2562,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_log_scan())
 
 
-def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
+def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
                       md=None):
     """
     Scan over one variable in log-spaced steps relative to current position.
@@ -2588,7 +2590,7 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     :func:`bluesky.plans.log_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    _md = {'plan_name': 'relative_log_scan'}
+    _md = {'plan_name': 'rel_log_scan'}
     _md.update(md or {})
 
     @reset_positions_decorator([motor])
@@ -2599,6 +2601,7 @@ def relative_log_scan(detectors, motor, start, stop, num, *, per_step=None,
 
     return (yield from inner_relative_log_scan())
 
+relative_log_scan = rel_log_scan  # back-compat
 
 def adaptive_scan(detectors, target_field, motor, start, stop,
                   min_step, max_step, target_delta, backstep,
@@ -2633,7 +2636,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
 
     See Also
     --------
-    :func:`bluesky.plans.relative_adaptive_scan`
+    :func:`bluesky.plans.rel_adaptive_scan`
     """
     if not 0 < min_step < max_step:
         raise ValueError("min_step and max_step must meet condition of "
@@ -2712,7 +2715,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     return (yield from adaptive_core())
 
 
-def relative_adaptive_scan(detectors, target_field, motor, start, stop,
+def rel_adaptive_scan(detectors, target_field, motor, start, stop,
                            min_step, max_step, target_delta, backstep,
                            threshold=0.8, *, md=None):
     """
@@ -2747,7 +2750,7 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
     --------
     :func:`bluesky.plans.adaptive_scan`
     """
-    _md = {'plan_name': 'adaptive_relative_scan'}
+    _md = {'plan_name': 'rel_adaptive_scan'}
     _md.update(md or {})
 
     @reset_positions_decorator([motor])
@@ -2760,36 +2763,37 @@ def relative_adaptive_scan(detectors, target_field, motor, start, stop,
 
     return (yield from inner_relative_adaptive_scan())
 
+relative_adaptive_scan = rel_adaptive_scan  # back-compat
 
 def tune_centroid(
-        detectors, signal, motor, 
-        start, stop, min_step, 
-        num=10, 
+        detectors, signal, motor,
+        start, stop, min_step,
+        num=10,
         step_factor=2,
         snake=False,
         *, md=None):
     """
     plan: tune a motor to the centroid of signal(motor)
-    
+
     Initially, traverse the range from start to stop with
     the number of points specified.  Repeat with progressively
     smaller step size until the minimum step size is reached.
     Rescans will be centered on the signal centroid
     (for $I(x)$, centroid$= \sum{I}/\sum{x*I}$)
     with a scan range of 2*step_factor*step of current scan.
-    
+
     Set `snake=True` if your positions are reproducible
     moving from either direction.  This will not necessarily
     decrease the number of traversals required to reach convergence.
     Snake motion reduces the total time spent on motion
-    to reset the positioner.  For some positioners, such as 
-    those with hysteresis, snake scanning may not be appropriate.  
-    For such positioners, always approach the positions from the 
+    to reset the positioner.  For some positioners, such as
+    those with hysteresis, snake scanning may not be appropriate.
+    For such positioners, always approach the positions from the
     same direction.
-    
-    Note:  Ideally the signal has only one peak in the range to 
-    be scanned.  It is assumed the signal is not polymodal 
-    between `start` and `stop`. 
+
+    Note:  Ideally the signal has only one peak in the range to
+    be scanned.  It is assumed the signal is not polymodal
+    between `start` and `stop`.
 
     Parameters
     ----------
@@ -2808,7 +2812,7 @@ def tune_centroid(
     num : int, optional
         number of points with each traversal, default = 10
     step_factor : float, optional
-        used in calculating range when 
+        used in calculating range when
         maximum is found, note: step_factor > 0, default = 2
     snake : bool, optional
         if False (default), always scan from start to stop
@@ -2866,7 +2870,7 @@ def tune_centroid(
         cur_det = {}
         sum_I = 0       # for peak centroid calculation, I(x)
         sum_xI = 0
-        
+
         while abs(step) >= min_step:
             yield Msg('checkpoint')
             yield from mv(motor, next_pos)
@@ -2880,7 +2884,7 @@ def tune_centroid(
                 in_range = start >= next_pos >= stop  # negative motion
             else:
                 in_range = start <= next_pos <= stop  # positive motion
-            
+
             if in_range:
                 next_pos += step
             else:
@@ -2953,7 +2957,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.inner_product_scan`
-    :func:`bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.grid_scan`
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name for motor in cycler.keys],
@@ -3018,7 +3022,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.relative_inner_product_scan`
-    :func:`bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
     md_args = list(chain(*((repr(motor), start, stop)
@@ -3042,7 +3046,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
                                per_step=per_step, md=_md))
 
 
-def outer_product_scan(detectors, *args, per_step=None, md=None):
+def grid_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -3069,7 +3073,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_outer_product_scan`
+    :func:`bluesky.plans.rel_grid_scan`
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
@@ -3097,7 +3101,7 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
            'plan_args': {'detectors': list(map(repr, detectors)),
                          'args': md_args,
                          'per_step': repr(per_step)},
-           'plan_name': 'outer_product_scan',
+           'plan_name': 'grid_scan',
            'plan_pattern': 'outer_product',
            'plan_pattern_args': dict(args=md_args),
            'plan_pattern_module': plan_patterns.__name__,
@@ -3115,8 +3119,9 @@ def outer_product_scan(detectors, *args, per_step=None, md=None):
     return (yield from scan_nd(detectors, full_cycler,
                                per_step=per_step, md=_md))
 
+outer_product_scan = grid_scan  # back-compat
 
-def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
+def rel_grid_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over a mesh relative to current position.
 
@@ -3142,22 +3147,23 @@ def relative_outer_product_scan(detectors, *args, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.relative_inner_product_scan`
-    :func:`bluesky.plans.outer_product_scan`
+    :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    _md = {'plan_name': 'relative_outer_product_scan'}
+    _md = {'plan_name': 'rel_grid_scan'}
     _md.update(md or {})
     motors = [m[0] for m in
               plan_patterns.chunk_outer_product_args(args)]
 
     @reset_positions_decorator(motors)
     @relative_set_decorator(motors)
-    def inner_relative_outer_product_scan():
-        return (yield from outer_product_scan(detectors, *args,
+    def inner_rel_grid_scan():
+        return (yield from grid_scan(detectors, *args,
                                               per_step=per_step, md=_md))
 
-    return (yield from inner_relative_outer_product_scan())
+    return (yield from inner_rel_grid_scan())
 
+relative_outer_product_scan = rel_grid_scan  # back-compat
 
 def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
@@ -3181,7 +3187,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.relative_outer_product_scan`
+    :func:`bluesky.plans.rel_grid_scan`
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
@@ -3311,8 +3317,8 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     See Also
     --------
     :func:`bluesky.plans.spiral`
-    :func:`bluesky.plans.relative_spiral`
-    :func:`bluesky.plans.relative_spiral_fermat`
+    :func:`bluesky.plans.rel_spiral`
+    :func:`bluesky.plans.rel_spiral_fermat`
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
@@ -3348,7 +3354,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
+def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
                            factor, *, tilt=0.0, per_step=None, md=None):
     '''Relative fermat spiral scan
 
@@ -3380,10 +3386,10 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     See Also
     --------
     :func:`bluesky.plans.spiral`
-    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
-    _md = {'plan_name': 'relative_spiral_fermat'}
+    _md = {'plan_name': 'rel_spiral_fermat'}
     _md.update(md or {})
     return (yield from spiral_fermat(detectors, x_motor, y_motor,
                                      x_motor.position,
@@ -3391,6 +3397,7 @@ def relative_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
                                      y_range, dr, factor, tilt=tilt,
                                      per_step=per_step, md=_md))
 
+rel_spiral_fermat = rel_spiral_fermat  # back-compat
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
            nth, *, tilt=0.0, per_step=None, md=None):
@@ -3425,9 +3432,9 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 
     See Also
     --------
-    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.spiral_fermat`
-    :func:`bluesky.plans.relative_spiral_fermat`
+    :func:`bluesky.plans.rel_spiral_fermat`
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
@@ -3463,7 +3470,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
+def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
                     *, tilt=0.0, per_step=None, md=None):
     '''Relative spiral scan
 
@@ -3499,13 +3506,14 @@ def relative_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
-    _md = {'plan_name': 'relative_spiral_fermat'}
+    _md = {'plan_name': 'rel_spiral_fermat'}
     _md.update(md or {})
     return (yield from spiral(detectors, x_motor, y_motor,
                               x_motor.position, y_motor.position,
                               x_range, y_range, dr, nth, tilt=tilt,
                               per_step=per_step, md=_md))
 
+relative_spiral = rel_spiral  # back-compat
 
 def ramp_plan(go_plan,
               monitor_sig,
@@ -3801,10 +3809,10 @@ AbsListScanPlan = ListScan  # back-compat
 
 class RelativeListScan(Plan):
     _fields = ['detectors', 'motor', 'steps']
-    __doc__ = relative_list_scan.__doc__
+    __doc__ = rel_list_scan.__doc__
 
     def _gen(self):
-        return relative_list_scan(self.detectors, self.motor, self.steps,
+        return rel_list_scan(self.detectors, self.motor, self.steps,
                                   md=self.md)
 
 DeltaListScanPlan = RelativeListScan  # back-compat
@@ -3834,10 +3842,10 @@ LogAbsScanPlan = LogScan  # back-compat
 
 class RelativeScan(Plan):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
-    __doc__ = relative_scan.__doc__
+    __doc__ = rel_scan.__doc__
 
     def _gen(self):
-        return relative_scan(self.detectors, self.motor, self.start, self.stop,
+        return rel_scan(self.detectors, self.motor, self.start, self.stop,
                              self.num, md=self.md)
 
 DeltaScanPlan = RelativeScan  # back-compat
@@ -3845,10 +3853,10 @@ DeltaScanPlan = RelativeScan  # back-compat
 
 class RelativeLogScan(Plan):
     _fields = ['detectors', 'motor', 'start', 'stop', 'num']
-    __doc__ = relative_log_scan.__doc__
+    __doc__ = rel_log_scan.__doc__
 
     def _gen(self):
-        return relative_log_scan(self.detectors, self.motor, self.start,
+        return rel_log_scan(self.detectors, self.motor, self.start,
                                  self.stop, self.num, md=self.md)
 
 LogDeltaScanPlan = RelativeLogScan  # back-compat
@@ -3886,10 +3894,10 @@ AdaptiveAbsScanPlan = AdaptiveScan  # back-compat
 
 
 class RelativeAdaptiveScan(AdaptiveAbsScanPlan):
-    __doc__ = relative_adaptive_scan.__doc__
+    __doc__ = rel_adaptive_scan.__doc__
 
     def _gen(self):
-        return relative_adaptive_scan(self.detectors, self.target_field,
+        return rel_adaptive_scan(self.detectors, self.target_field,
                                       self.motor, self.start, self.stop,
                                       self.min_step, self.max_step,
                                       self.target_delta, self.backstep,
@@ -3936,7 +3944,7 @@ InnerProductDeltaScanPlan = RelativeInnerProductScan  # back-compat
 
 
 class OuterProductScan(Plan):
-    __doc__ = outer_product_scan.__doc__
+    __doc__ = grid_scan.__doc__
 
     def __init__(self, detectors, *args, md=None):
         self.detectors = detectors
@@ -3945,16 +3953,16 @@ class OuterProductScan(Plan):
         self.md = md
 
     def _gen(self):
-        return outer_product_scan(self.detectors, *self.args, md=self.md)
+        return grid_scan(self.detectors, *self.args, md=self.md)
 
 OuterProductAbsScanPlan = OuterProductScan  # back-compat
 
 
 class RelativeOuterProductScan(OuterProductScan):
-    __doc__ = relative_outer_product_scan.__doc__
+    __doc__ = rel_grid_scan.__doc__
 
     def _gen(self):
-        return relative_outer_product_scan(self.detectors, *self.args,
+        return rel_grid_scan(self.detectors, *self.args,
                                            md=self.md)
 
 OuterProductDeltaScanPlan = RelativeOuterProductScan  # back-compat
@@ -3995,10 +4003,10 @@ class SpiralFermatScan(Plan):
 class RelativeSpiralScan(Plan):
     _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
                'nth', 'tilt']
-    __doc__ = relative_spiral.__doc__
+    __doc__ = rel_spiral.__doc__
 
     def _gen(self):
-        return relative_spiral(self.detectors, self.x_motor, self.y_motor,
+        return rel_spiral(self.detectors, self.x_motor, self.y_motor,
                                self.x_range, self.y_range, self.dr, self.nth,
                                tilt=self.tilt, md=self.md)
 
@@ -4006,10 +4014,10 @@ class RelativeSpiralScan(Plan):
 class RelativeSpiralFermatScan(Plan):
     _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
                'factor', 'tilt']
-    __doc__ = relative_spiral_fermat.__doc__
+    __doc__ = rel_spiral_fermat.__doc__
 
     def _gen(self):
-        return relative_spiral_fermat(self.detectors, self.x_motor,
+        return rel_spiral_fermat(self.detectors, self.x_motor,
                                       self.y_motor, self.x_range, self.y_range,
                                       self.dr, self.factor, tilt=self.tilt,
                                       md=self.md)

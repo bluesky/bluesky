@@ -5,7 +5,7 @@ Plans
 
 A *plan* is bluesky's concept of an experimental procedure. A
 :doc:`previous section <plans_intro>` introduced some built-in plans like
-:func:`count`, :func:`scan`, and :func:`relative_scan`. This section covers all
+:func:`count`, :func:`scan`, and :func:`rel_scan`. This section covers all
 of the plans and plan-related tools in bluesky with examples showing how to
 combine and customize them.
 
@@ -36,22 +36,22 @@ documentation.
 
    count
    scan
-   relative_scan
+   rel_scan
    list_scan
-   relative_list_scan
+   rel_list_scan
    log_scan
-   relative_log_scan
+   rel_log_scan
    inner_product_scan
-   outer_product_scan
+   grid_scan
    relative_inner_product_scan
-   relative_outer_product_scan
+   rel_grid_scan
    scan_nd
    spiral
    spiral_fermat
-   relative_spiral
-   relative_spiral_fermat
+   rel_spiral
+   rel_spiral_fermat
    adaptive_scan
-   relative_adaptive_scan
+   rel_adaptive_scan
    tune_centroid
    tweak
    fly
@@ -109,7 +109,7 @@ We can use ``LivePlot`` to visualize this data. It is documented in the
 
    count
 
-Scans over one dimesion
+Scans over one dimension
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The "dimension" might be a physical motor position, a temperature, or a
@@ -118,13 +118,13 @@ pseudo-axis. It's all the same to the plans. Examples:
 .. code-block:: python
 
     from bluesky.examples import det, motor
-    from bluesky.plans import scan, relative_scan, list_scan
+    from bluesky.plans import scan, rel_scan, list_scan
 
     # scan a motor from 1 to 5, taking 5 equally-spaced readings of 'det'
     RE(scan([det], motor, 1, 5, 5))
 
     # scan a motor from 1 to 5 *relative to its current position*
-    RE(relative_scan([det], motor, 1, 5, 5))
+    RE(rel_scan([det], motor, 1, 5, 5))
 
     # scan a motor through a list of user-specified positions
     RE(list_scan([det], motor, [1, 1, 2, 3, 5, 8]))
@@ -156,11 +156,11 @@ Or, again, to save some typing for repeated use,
    :nosignatures:
 
    scan
-   relative_scan
+   rel_scan
    list_scan
-   relative_list_scan
+   rel_list_scan
    log_scan
-   relative_log_scan
+   rel_log_scan
 
 .. _multi-dimensional_scans:
 
@@ -192,7 +192,7 @@ Demo:
     from bluesky.examples import det, motor1, motor2
     from bluesky.callbacks import LiveTable
     from bluesky import RunEngine
-    from bluesky.plans import outer_product_scan, inner_product_scan
+    from bluesky.plans import grid_scan, inner_product_scan
     RE = RunEngine({})
 
 .. ipython:: python
@@ -220,17 +220,17 @@ square: each motor can move a different number of steps.
 .. code-block:: python
 
     from bluesky.examples import det, motor1, motor2
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
 
     # Outer product: move motors in a mesh.
     # Move motor1 from 1-3 in 3 steps and motor2 from 10-50 in 5 steps.
-    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
+    RE(grid_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
 
 Demo:
 
 .. ipython:: python
 
-    RE(outer_product_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
+    RE(grid_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
        LiveTable(['det', 'motor1', 'motor2']))
 
 The final parameter designates whether motor2 should "snake" back and forth
@@ -241,11 +241,11 @@ direction each time (``False``), as illustrated.
 
     from bluesky.simulators import plot_raster_path
     from bluesky.examples import motor1, motor2, det
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     import matplotlib.pyplot as plt
 
-    true_plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
-    false_plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, False)
+    true_plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
+    false_plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, False)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
     plot_raster_path(true_plan, 'motor1', 'motor2', probe_size=.3, ax=ax1)
@@ -255,7 +255,7 @@ direction each time (``False``), as illustrated.
     ax1.set_xlim(-6, 6)
     ax2.set_xlim(-6, 6)
 
-Both :func:`inner_product_scan` and :func:`outer_product_scan` support an
+Both :func:`inner_product_scan` and :func:`grid_scan` support an
 unlimited number of motors/dimensions.
 
 To visualize 2-dimensional data, we can use ``LiveGrid``, which is documented
@@ -270,19 +270,19 @@ in :ref:`in the next section <liveraster>`. In previous examples we used
     # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
     from bluesky.examples import det4
 
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
 .. plot::
 
     from bluesky import RunEngine
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     from bluesky.examples import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
     motor1.delay = 0
     motor2.delay = 0
     RE = RunEngine({})
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
 The general case, moving some motors together in an "inner product" against
@@ -323,9 +323,9 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    :nosignatures:
 
    inner_product_scan
-   outer_product_scan
+   grid_scan
    relative_inner_product_scan
-   relative_outer_product_scan
+   rel_grid_scan
    scan_nd
 
 Spiral trajectories
@@ -367,8 +367,8 @@ A fermat spiral:
 
    spiral
    spiral_fermat
-   relative_spiral
-   relative_spiral_fermat
+   rel_spiral
+   rel_spiral_fermat
 
 Adaptive scans
 ^^^^^^^^^^^^^^
@@ -423,7 +423,7 @@ stride again.
    :nosignatures:
 
    adaptive_scan
-   relative_adaptive_scan
+   rel_adaptive_scan
 
 Misc.
 ^^^^^
@@ -759,7 +759,7 @@ to be relative to the initial position.
 
 .. code-block:: python
 
-    def relative_scan(detectors, motor, start, stop, num):
+    def rel_scan(detectors, motor, start, stop, num):
         absolute = scan(detectors, motor, start, stop, num)
         relative = relative_set_wrapper(absolute, [motor])
         yield from relative
@@ -774,7 +774,7 @@ like ``scan(...)``. There are corresponding decorator functions like
 .. code-block:: python
 
     # Using a decorator to modify a generator function
-    def relative_scan(detectors, motor, start, stop, num):
+    def rel_scan(detectors, motor, start, stop, num):
 
         @relative_set_decorator([motor])  # unfamiliar syntax? -- see box below
         def inner_relative_scan():

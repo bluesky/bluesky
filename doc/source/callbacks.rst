@@ -15,7 +15,7 @@ Overview of Callbacks
 
 As the RunEngine executes a plan, it organizes metadata and data into
 *Documents,* Python dictionaries organized in a `specified but flexible
-<http://nsls-ii.github.io/architecture-overview.html>`__ way. 
+<http://nsls-ii.github.io/architecture-overview.html>`__ way.
 Each time a new Document is created, the RunEngine passes it to a list of
 functions. These functions can do anything: store the data to disk, print a
 line of text to the screen, add a point to a plot, or even transfer the data to
@@ -283,23 +283,23 @@ Plot a scalar value as a function of two variables on a regular grid. Example:
 
 .. code-block:: python
 
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     from bluesky.examples import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
 
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
 .. plot::
 
     from bluesky import RunEngine
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     from bluesky.examples import det4, motor1, motor2
     from bluesky.callbacks import LiveGrid
     motor1.delay = 0
     motor2.delay = 0
     RE = RunEngine({})
-    RE(outer_product_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
 .. autoclass:: bluesky.callbacks.LiveGrid
@@ -313,13 +313,13 @@ Example:
 
 .. code-block:: python
 
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     from bluesky.examples import det5, jittery_motor1, jittery_motor2
     from bluesky.callbacks import LiveScatter
 
     # The 'jittery' example motors won't go exactly where they are told to go.
 
-    RE(outer_product_scan([det5],
+    RE(grid_scan([det5],
                           jittery_motor1, -3, 3, 6,
                           jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
@@ -328,11 +328,11 @@ Example:
 .. plot::
 
     from bluesky import RunEngine
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     from bluesky.examples import det5, jittery_motor1, jittery_motor2
     from bluesky.callbacks import LiveScatter
     RE = RunEngine({})
-    RE(outer_product_scan([det5],
+    RE(grid_scan([det5],
                           jittery_motor1, -3, 3, 6,
                           jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
@@ -421,7 +421,7 @@ This example uses a model with two independent variables, x and y.
     lf = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess)
 
     # Scan a 2D mesh.
-    RE(outer_product_scan([det4], motor1, -1, 1, 20, motor2, -1, 1, 20, False),
+    RE(grid_scan([det4], motor1, -1, 1, 20, motor2, -1, 1, 20, False),
        lf)
 
 By default, the fit is recomputed every time a new data point is available. See
@@ -536,7 +536,7 @@ Notice that they can styled independently.
 
 .. autoclass:: bluesky.callbacks.LiveFitPlot
 
-PeakStats 
+PeakStats
 ++++++++++
 
 Compute statistics of peak-like data. Example:
@@ -611,7 +611,7 @@ plans in :mod:`bluesky.plans` for examples.)
     from bluesky.plans import scan
 
     dets = [det1, det2]
-    
+
     RE(scan([det], motor, 1, 5, 5))  # automatically prints table, shows plot
 
 .. plot::
@@ -885,7 +885,7 @@ determine which template to use.
 
     templates = {'count': COUNT_TEMPLATE,
                  'scan': SCAN_TEMPLATE,
-                 'relative_scan': SCAN_TEMPLATE}
+                 'rel_scan': SCAN_TEMPLATE}
 
     # Do same boilerplate above to set up configured_logbook_func. Then:
     cb = logbook_cb_factory(configured_logbook_func,

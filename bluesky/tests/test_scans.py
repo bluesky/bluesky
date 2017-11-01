@@ -44,7 +44,7 @@ def approx_multi_traj_checker(RE, scan, expected_data, *, decimal=2):
 
 
 def test_outer_product_ascan(RE, hw):
-    scan = bp.outer_product_scan([hw.det],
+    scan = bp.grid_scan([hw.det],
                                  hw.motor1, 1, 3, 3,
                                  hw.motor2, 10, 20, 2, False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
@@ -63,7 +63,7 @@ def test_outer_product_ascan(RE, hw):
 
 
 def test_outer_product_ascan_snaked(RE, hw):
-    scan = bp.outer_product_scan([hw.det],
+    scan = bp.grid_scan([hw.det],
                                  hw.motor1, 1, 3, 3,
                                  hw.motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
@@ -98,7 +98,7 @@ def test_inner_product_ascan(RE, hw):
 
 
 def test_outer_product_dscan(RE, hw):
-    scan = bp.relative_outer_product_scan([hw.det],
+    scan = bp.rel_grid_scan([hw.det],
                                           hw.motor1, 1, 3, 3,
                                           hw.motor2, 10, 20, 2, False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
@@ -119,7 +119,7 @@ def test_outer_product_dscan(RE, hw):
 
 
 def test_outer_product_dscan_snaked(RE, hw):
-    scan = bp.relative_outer_product_scan([hw.det],
+    scan = bp.rel_grid_scan([hw.det],
                                           hw.motor1, 1, 3, 3,
                                           hw.motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
@@ -166,7 +166,7 @@ def test_ascan(RE, hw):
 def test_dscan(RE, hw):
     traj = np.array([1, 2, 3])
     hw.motor.set(-4)
-    scan = bp.relative_list_scan([hw.det], hw.motor, traj)
+    scan = bp.rel_list_scan([hw.det], hw.motor, traj)
     traj_checker(RE, scan, traj - 4)
 
 
@@ -174,7 +174,7 @@ def test_dscan_list_input(RE, hw):
     # GH225
     traj = [1, 2, 3]
     hw.motor.set(-4)
-    scan = bp.relative_list_scan([hw.det], hw.motor, traj)
+    scan = bp.rel_list_scan([hw.det], hw.motor, traj)
     traj_checker(RE, scan, np.array(traj) - 4)
 
 
@@ -193,14 +193,14 @@ def test_log_ascan(RE, hw):
 def test_lin_dscan(RE, hw):
     traj = np.linspace(0, 10, 5) + 6
     hw.motor.set(6)
-    scan = bp.relative_scan([hw.det], hw.motor, 0, 10, 5)
+    scan = bp.rel_scan([hw.det], hw.motor, 0, 10, 5)
     traj_checker(RE, scan, traj)
 
 
 def test_log_dscan(RE, hw):
     traj = np.logspace(0, 10, 5) + 6
     hw.motor.set(6)
-    scan = bp.relative_log_scan([hw.det], hw.motor, 0, 10, 5)
+    scan = bp.rel_log_scan([hw.det], hw.motor, 0, 10, 5)
     traj_checker(RE, scan, traj)
 
 
@@ -239,13 +239,13 @@ def test_adaptive_ascan(RE, hw):
 
 
 def test_adaptive_dscan(RE, hw):
-    scan1 = bp.relative_adaptive_scan(
+    scan1 = bp.rel_adaptive_scan(
         [hw.det], 'det', hw.motor, 0, 5, 0.1, 1, 0.1, True)
-    scan2 = bp.relative_adaptive_scan(
+    scan2 = bp.rel_adaptive_scan(
         [hw.det], 'det', hw.motor, 0, 5, 0.1, 1, 0.2, True)
-    scan3 = bp.relative_adaptive_scan(
+    scan3 = bp.rel_adaptive_scan(
         [hw.det], 'det', hw.motor, 0, 5, 0.1, 1, 0.1, False)
-    scan4 = bp.relative_adaptive_scan(
+    scan4 = bp.rel_adaptive_scan(
         [hw.det], 'det', hw.motor, 5, 0, 0.1, 1, 0.1, False)
 
     actual_traj = []
@@ -272,7 +272,7 @@ def test_adaptive_dscan(RE, hw):
     assert monotonic_decreasing
 
     with pytest.raises(ValueError):  # min step > max step
-        scan5 = bp.relative_adaptive_scan(
+        scan5 = bp.rel_adaptive_scan(
             [hw.det], 'det', hw.motor, 5, 0, 1, 0.1, 0.1, False)
         RE(scan5)
 
@@ -378,7 +378,7 @@ def test_absolute_spiral(RE, hw):
                               decimal=2)
 
 
-def test_relative_spiral(RE, hw):
+def test_rel_spiral(RE, hw):
     motor1 = hw.motor1
     motor2 = hw.motor2
     det = hw.det
@@ -388,7 +388,7 @@ def test_relative_spiral(RE, hw):
 
     motor1.set(start_x)
     motor2.set(start_y)
-    scan = bp.relative_spiral([det],
+    scan = bp.rel_spiral([det],
                               motor1, motor2,
                               1.0, 1.0,
                               0.1, 1.0,
@@ -470,7 +470,7 @@ def test_relative_fermat_spiral(RE, hw):
 
     motor1.set(start_x)
     motor2.set(start_y)
-    scan = bp.relative_spiral_fermat([det],
+    scan = bp.rel_spiral_fermat([det],
                                      motor1, motor2,
                                      1.0, 1.0,
                                      0.1, 1.0,

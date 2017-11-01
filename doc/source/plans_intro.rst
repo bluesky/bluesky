@@ -130,7 +130,7 @@ position.
 .. ipython:: python
 
     from bluesky.examples import motor, det
-    from bluesky.plans import scan, relative_scan
+    from bluesky.plans import scan, rel_scan
     print_summary(scan([det], motor, 1, 3, 3))
 
 .. ipython:: python
@@ -138,13 +138,13 @@ position.
 
     motor.set(3)
 
-As you might guess, :func:`relative_scan` moves the motor relative to its
-starting position. And at the end, :func:`relative_scan` returns it to that
+As you might guess, :func:`rel_scan` moves the motor relative to its
+starting position. And at the end, :func:`rel_scan` returns it to that
 starting position.
 
 .. ipython:: python
 
-    print_summary(relative_scan([det], motor, 1, 3, 3))
+    print_summary(rel_scan([det], motor, 1, 3, 3))
 
 Summarizing a plan is also a quick way to check for some types of errors.
 More sophisticated error checking is possible and a likely area of future
@@ -155,7 +155,7 @@ development in bluesky.
 
     As the name suggests, ``print_summary`` omits some details. To examine the
     full content of a plan, just pass it to ``list()``.
-    
+
     This will not work on plans that are adaptive. Adaptive plans necessarily
     generate their messages on the fly.
 
@@ -175,10 +175,10 @@ coverage of the sample.
 
     from bluesky.simulators import plot_raster_path
     from bluesky.examples import motor1, motor2, det
-    from bluesky.plans import outer_product_scan
+    from bluesky.plans import grid_scan
     import matplotlib.pyplot as plt
 
-    plan = outer_product_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
+    plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
     plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
 
 A Primer on ``yield`` and ``yield from``

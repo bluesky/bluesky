@@ -2,7 +2,7 @@ from collections import defaultdict
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.examples import stepscan
 from bluesky.plans import (AbsScanPlan, scan,
-                           outer_product_scan, run_wrapper, pause,
+                           grid_scan, run_wrapper, pause,
                            subs_wrapper, count)
 import bluesky.plans as bp
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
@@ -458,7 +458,7 @@ def test_live_fit_multidim(RE, hw):
                   'y0': 0.3}
     cb = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess,
                  update_every=50)
-    RE(outer_product_scan([hw.det4],
+    RE(grid_scan([hw.det4],
                           hw.motor1, -1, 1, 10,
                           hw.motor2, -1, 1, 10, False),
        cb)
@@ -521,20 +521,20 @@ def test_interrupted_with_callbacks(RE, int_meth,
 def test_live_grid(RE, hw):
     hw.motor1.delay = 0
     hw.motor2.delay = 0
-    RE(outer_product_scan([hw.det4],
+    RE(grid_scan([hw.det4],
                           hw.motor1, -3, 3, 6,
                           hw.motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
     # Test the deprecated name.
     with pytest.warns(UserWarning):
-        RE(outer_product_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2,
+        RE(grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2,
                               -5, 5, 10, False),
            LiveRaster((6, 10), 'det4'))
 
 
 def test_live_scatter(RE, hw):
-    RE(outer_product_scan([hw.det5],
+    RE(grid_scan([hw.det5],
                           hw.jittery_motor1, -3, 3, 6,
                           hw.jittery_motor2, -5, 5, 10, False),
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
@@ -542,7 +542,7 @@ def test_live_scatter(RE, hw):
 
     # Test the deprecated name.
     with pytest.warns(UserWarning):
-        RE(outer_product_scan([hw.det5],
+        RE(grid_scan([hw.det5],
                               hw.jittery_motor1, -3, 3, 6,
                               hw.jittery_motor2, -5, 5, 10, False),
            LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',

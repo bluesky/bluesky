@@ -1,5 +1,5 @@
 import matplotlib.widgets as mwidgets
-from bluesky.plans import outer_product_scan
+from bluesky.plans import grid_scan
 from collections import ChainMap
 
 
@@ -129,7 +129,7 @@ class OuterProductWidget(ROIPlanCreator):
         x1, y1 = p1
         x2, y2 = p2
 
-        return outer_product_scan(self.dets,
+        return grid_scan(self.dets,
                                   self.motor1, x1, x2, self.num1,
                                   self.motor2, y1, y2, self.num2,
                                   self.snake, md=self.md)
