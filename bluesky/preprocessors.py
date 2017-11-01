@@ -16,6 +16,7 @@ def plan_mutator(plan, msg_proc):
     Parameters
     ----------
     plan : generator
+
         a generator that yields messages (`Msg` objects)
     msg_proc : callable
         This function takes in a message and specifies messages(s) to replace
@@ -33,10 +34,10 @@ def plan_mutator(plan, msg_proc):
 
         * ``(None, None)`` No-op. Let the original message pass through.
         * ``(head, None)`` Mutate and/or insert messages before the original
-        message.
+          message.
         * ``(head, tail)`` As above, and additionally insert messages after.
         * ``(None, tail)`` Let the original message pass through and then
-        insert messages after.
+         insert messages after.
 
         The reason for returning a pair of generators instead of just one is to
         provide a way to specify which message's response should be sent out to

@@ -1,7 +1,8 @@
 .. currentmodule:: bluesky.plans
 
-Plans
-=====
+=======
+ Plans
+=======
 
 A *plan* is bluesky's concept of an experimental procedure. A
 :doc:`previous section <plans_intro>` introduced some built-in plans like
@@ -14,18 +15,18 @@ you can use our pre-assembled plans or assemble your own from the same
 ingredients, catalogued under the heading :ref:`stub_plans` below.
 
 Built-in Plans
---------------
+==============
 
 .. _preassembled_plans:
 
 Pre-assembled Plans
-+++++++++++++++++++
+-------------------
 
 Below this summary table, we break the down the plans by category and show
 examples with figures.
 
 Summary
-^^^^^^^
+~~~~~~~
 
 Notice that the names in the left column are links to detailed API
 documentation.
@@ -56,8 +57,9 @@ documentation.
    tweak
    fly
 
+
 Time series ("count")
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 
 Examples:
 
@@ -110,7 +112,7 @@ We can use ``LivePlot`` to visualize this data. It is documented in the
    count
 
 Scans over one dimension
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 The "dimension" might be a physical motor position, a temperature, or a
 pseudo-axis. It's all the same to the plans. Examples:
@@ -165,7 +167,7 @@ Or, again, to save some typing for repeated use,
 .. _multi-dimensional_scans:
 
 Multi-dimensional scans
-^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Here, "dimensions" are things independently scanned. They may be physical
 position (stepping motor), temperature, etc.
@@ -329,7 +331,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    scan_nd
 
 Spiral trajectories
-^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~
 
 We provide two-dimensional scans that trace out spiral trajectories.
 
@@ -371,7 +373,7 @@ A fermat spiral:
    rel_spiral_fermat
 
 Adaptive scans
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 These are one-dimension scans with an adaptive step size tuned to move quickly
 over flat regions can concentrate readings in areas of high variation by
@@ -426,7 +428,7 @@ stride again.
    rel_adaptive_scan
 
 Misc.
-^^^^^
+~~~~~
 
 .. autosummary::
    :toctree:
@@ -438,7 +440,8 @@ Misc.
 .. _stub_plans:
 
 Stub Plans
-++++++++++
+----------
+.. currentmodule:: bluesky.plan_stubs
 
 These are the aforementioned "ingredients" for remixing, the pieces from which
 the pre-assembled plans above were made. The next section provides many
@@ -510,10 +513,10 @@ these easier.
 .. _plan_examples1:
 
 Examples
---------
+========
 
 Changing a Parameter Between Runs
-+++++++++++++++++++++++++++++++++
+---------------------------------
 
 Produce several runs, changing a parameter each time.
 
@@ -530,7 +533,7 @@ Produce several runs, changing a parameter each time.
             yield from scan([det], motor, -1, 1, num)
 
 Setting Devices to a Set Point
-++++++++++++++++++++++++++++++
+------------------------------
 
 Next, we introduce :func:`abs_set`, which sets a motor to a position (or a
 temperature controller to a temperature, etc.). See also :func:`rel_set`, which
@@ -624,7 +627,7 @@ consider whether your use case could be addressed with one of the built-in
 :ref:`multi-dimensional_scans`.
 
 Sleeping
-++++++++
+--------
 
 A "sleep" is a timed delay.
 
@@ -647,7 +650,7 @@ updating plots --- to be executed while the clock runs.
 .. _planned_pauses:
 
 Planned Pauses
-++++++++++++++
+--------------
 
 Pausing is typically done :ref:`interactively <pausing_interactively>` (Ctrl+C)
 but it can also be incorporated into a plan. The plan can pause the RunEngine,
@@ -680,7 +683,7 @@ Or pauses can be incorporated in a plan like so:
 .. _customizing_metadata:
 
 Customizing metadata
---------------------
+====================
 
 Metadata can be loaded from a persistent file, specified by the user
 interactively at execution time, or incorporated in a plan.
@@ -735,12 +738,13 @@ name.
 .. _preprocessors:
 
 Plan Preprocessors
-------------------
+==================
+.. currentmodule:: bluesky.preprocessors
 
 .. _supplemental_data:
 
 Supplemental Data
-+++++++++++++++++
+-----------------
 
 Plan preprocessors modify a plans contents on the fly. One common use of a
 preprocessor is to take "baseline" readings of a group of devices at the
@@ -751,7 +755,7 @@ executed by a RunEngine using the :class:`SupplementalData`.
     :members:
 
 Preprocessor Wrappers and Decorators
-++++++++++++++++++++++++++++++++++++
+------------------------------------
 
 Preprocessors can make arbirary modifcations to a plan, and can get quite
 devious. For example, the :func:`relative_set_wrapper` rewrites all positions
@@ -810,7 +814,8 @@ have clear names.
         g(f)(...)
 
 Built-in Preprocessors
-++++++++++++++++++++++
+----------------------
+.. currentmodule:: bluesky.preprocessors
 
 Each of the following functions named ``<something>_wrapper`` operates on
 a generator instance. The corresponding functions named
@@ -844,7 +849,7 @@ a generator instance. The corresponding functions named
     subs_wrapper
 
 Custom Preprocessors
-++++++++++++++++++++
+--------------------
 
 The preprocessors are implemented using :func:`msg_mutator` (for altering
 messages in place) and :func:`plan_mutator` (for inserting
@@ -857,7 +862,7 @@ processors (catalogued above) in the
 .. _exception_handling:
 
 How Plans Handle Exceptions
----------------------------
+===========================
 
 If an exception is raised, the RunEngine gives the plan the opportunity to
 catch the exception and either handle it or merely yield some "clean up"
@@ -904,7 +909,7 @@ Or, at your preference, the same logic is available as a decorator:
         yield from main_plan()
 
 Customize Step Scans with ``per_step``
---------------------------------------
+======================================
 
 The one-dimensional and multi-dimensional plans are composed (1) setup,
 (2) a loop over a plan to perform at each position, (3) cleanup.
@@ -986,7 +991,7 @@ Likewise, a custom function with the same signature may be passed into the
 .. _reimplementing_count:
 
 Controlling the Scope of a "Run"
---------------------------------
+================================
 
 By default, the :func:`count` plan generates one "run" (i.e., dataset)
 with one "event" (i.e., one bundle of readings from the detectors, one row in
@@ -1070,7 +1075,7 @@ Starting from the middle and explaining outward:
   ready, triggerable state and then restored to standby at the end of the plan.
 
 Plans with Adaptive Logic
--------------------------
+=========================
 
 Two-way communication is possible between the generator and the RunEngine.
 For example, the 'read' command responds with its reading. We can use it to
@@ -1128,7 +1133,7 @@ For a detailed technical description of the messages and their responses,
 see :ref:`msg`.
 
 Asynchronous Plans: "Fly Scans" and "Monitoring"
-------------------------------------------------
+================================================
 
 See the section on :doc:`async` for some context on these terms and, near the
 end of the section, some example plans.
@@ -1136,7 +1141,7 @@ end of the section, some example plans.
 .. _plan_utils:
 
 Plan Utilities
---------------
+==============
 
 These are useful utilities for defining custom plans and plan preprocessors.
 
@@ -1148,7 +1153,14 @@ These are useful utilities for defining custom plans and plan preprocessors.
     msg_mutator
     plan_mutator
     single_gen
+    make_decorator
+
+.. currentmodule:: bluesky.plan_stubs
+
+.. autosummary::
+   :toctree:
+   :nosignatures:
+
     broadcast_msg
     repeater
     caching_repeater
-    make_decorator

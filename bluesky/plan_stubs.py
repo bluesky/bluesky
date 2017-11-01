@@ -685,36 +685,6 @@ def wait_for(futures, **kwargs):
     return (yield Msg('wait_for', None, futures, **kwargs))
 
 
-def fly(flyers, *, md=None):
-    """
-    Perform a fly scan with one or more 'flyers'.
-
-    Parameters
-    ----------
-    flyers : collection
-        objects that support the flyer interface
-    md : dict, optional
-        metadata
-
-    Yields
-    ------
-    msg : Msg
-        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
-
-    See Also
-    --------
-    :func:`bluesky.plans.fly_during`
-    """
-    yield from open_run(md)
-    for flyer in flyers:
-        yield from kickoff(flyer, wait=True)
-    for flyer in flyers:
-        yield from complete(flyer, wait=True)
-    for flyer in flyers:
-        yield from collect(flyer)
-    yield from close_run()
-
-
 def trigger_and_read(devices, name='primary'):
     """
     Trigger and read a list of detectors and bundle readings into one Event.

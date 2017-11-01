@@ -1362,6 +1362,36 @@ def ramp_plan(go_plan,
     return (yield from polling_plan())
 
 
+def fly(flyers, *, md=None):
+    """
+    Perform a fly scan with one or more 'flyers'.
+
+    Parameters
+    ----------
+    flyers : collection
+        objects that support the flyer interface
+    md : dict, optional
+        metadata
+
+    Yields
+    ------
+    msg : Msg
+        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
+
+    See Also
+    --------
+    :func:`bluesky.plans.fly_during`
+    """
+    yield from bps.open_run(md)
+    for flyer in flyers:
+        yield from bps.kickoff(flyer, wait=True)
+    for flyer in flyers:
+        yield from bps.complete(flyer, wait=True)
+    for flyer in flyers:
+        yield from bps.collect(flyer)
+    yield from bps.close_run()
+
+
 relative_list_scan = rel_list_scan  # back-compat
 relative_scan = rel_scan  # back-compat
 relative_log_scan = rel_log_scan  # back-compat
