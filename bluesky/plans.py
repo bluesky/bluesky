@@ -3116,6 +3116,7 @@ def grid_scan(detectors, *args, per_step=None, md=None):
     return (yield from scan_nd(detectors, full_cycler,
                                per_step=per_step, md=_md))
 
+outer_product_scan = grid_scan  # back-compat
 
 def rel_grid_scan(detectors, *args, per_step=None, md=None):
     """
@@ -3159,6 +3160,7 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
 
     return (yield from inner_rel_grid_scan())
 
+relative_outer_product_scan = rel_grid_scan  # back-compat
 
 def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
