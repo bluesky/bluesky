@@ -1,8 +1,11 @@
 import pytest
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
+import bluesky.preprocessors as bpp
+import bluesky.plan_stubs as bps
 import numpy as np
 import pandas as pd
+from bluesky.tests.utils import MsgCollector
 
 
 def _validate_start(start, expected_values):
@@ -24,15 +27,14 @@ def _validate_start(start, expected_values):
         assert start[k] == v
 
 
-
 def test_plan_header(RE, hw):
     args = []
 
     ##
     args.append((bp.grid_scan([hw.det],
-                                       hw.motor, 1, 2, 3,
-                                       hw.motor1, 4, 5, 6, True,
-                                       hw.motor2, 7, 8, 9, True),
+                              hw.motor, 1, 2, 3,
+                              hw.motor1, 4, 5, 6, True,
+                              hw.motor2, 7, 8, 9, True),
                  {'motors': ('motor', 'motor1', 'motor2'),
                   'extents': ([1, 2], [4, 5], [7, 8]),
                   'shape': (3, 6, 9),
@@ -62,8 +64,8 @@ def test_ops_dimension_hints(RE, hw):
     c = DocCollector()
     RE.subscribe(c.insert)
     rs, = RE(bp.grid_scan([det],
-                                   motor, -1, 1, 7,
-                                   motor1, 0, 2, 3, False))
+                          motor, -1, 1, 7,
+                          motor1, 0, 2, 3, False))
 
     st = c.start[0]
 
@@ -80,8 +82,8 @@ def test_mesh_pseudo(hw, RE):
 
     RE.subscribe(d.insert)
     rs, = RE(bp.grid_scan([sig],
-                                   p3x3.pseudo1, 0, 3, 5,
-                                   p3x3.pseudo2, 7, 10, 7, False))
+                          p3x3.pseudo1, 0, 3, 5,
+                          p3x3.pseudo2, 7, 10, 7, False))
     df = pd.DataFrame([_['data']
                        for _ in d.event[d.descriptor[rs][0]['uid']]])
 
@@ -159,3 +161,20 @@ def test_relative_pseudo(hw, RE, db):
         assert (tb1[col] == tb2[col]).all()
 
     assert (tb1[get_hint(p.pseudo1)] == np.linspace(0, 2, 5)).all()
+
+
+def test_reset_wrapper(hw, RE):
+    p = hw.pseudo3x3
+    m_col = MsgCollector()
+    RE.msg_hook = m_col
+
+    RE(bp.relative_inner_product_scan([], 1,
+                                      p.pseudo1, 0, 1,
+                                      p.pseudo2, 0, 1))
+    expecte_objs = [p, None, None,
+                    p, None, p,
+                    None, None, p,
+                    None, None, p,
+                    p, None]
+    assert len(m_col.msgs) == 14
+    assert [m.obj for m in m_col.msgs] == expecte_objs

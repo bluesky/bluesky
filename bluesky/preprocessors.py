@@ -1043,6 +1043,8 @@ def reset_positions_wrapper(plan, devices=None):
     def reset():
         blk_grp = 'reset-{}'.format(str(uuid.uuid4())[:6])
         for k, v in initial_positions.items():
+            if k.parent in coupled_parents:
+                continue
             yield Msg('set', k, v, group=blk_grp)
         yield Msg('wait', None, group=blk_grp)
 
