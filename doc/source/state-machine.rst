@@ -252,7 +252,7 @@ Built-in Suspenders
 -------------------
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
    bluesky.suspenders.SuspendBoolHigh

@@ -78,7 +78,7 @@ Examples:
     RE(count([det], num=5, delay=1))
 
     # a variable delay
-    RE(count([det], num=5, delay=[1, 2, 3, 4])
+    RE(count([det], num=5, delay=[1, 2, 3, 4]))
 
     # Take readings forever, until interrupted (e.g., with Ctrl+C)
     RE(count([det], num=None))
