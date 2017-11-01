@@ -1,7 +1,121 @@
-import numpy as np
 from cycler import cycler
-import matplotlib.pyplot as plt
-from bluesky.callbacks import CollectThenCompute
+import numpy as np
+
+from .core import CallbackBase, CollectThenCompute
+
+
+class LiveFit(CallbackBase):
+    """
+    Fit a model to data using nonlinear least-squares minimization.
+
+    Parameters
+    ----------
+    model : lmfit.Model
+    y : string
+        name of the field in the Event document that is the dependent variable
+    independent_vars : dict
+        map the independent variable name(s) in the model to the field(s)
+        in the Event document; e.g., ``{'x': 'motor'}``
+    init_guess : dict, optional
+        initial guesses for other values, if expected by model;
+        e.g., ``{'sigma': 1}``
+    update_every : int or None, optional
+        How often to recompute the fit. If `None`, do not compute until the
+        end. Default is 1 (recompute after each new point).
+
+    Attributes
+    ----------
+    result : lmfit.ModelResult
+    """
+    def __init__(self, model, y, independent_vars, init_guess=None, *,
+                 update_every=1):
+        self.ydata = []
+        self.independent_vars_data = {}
+        self.__stale = False
+        self.result = None
+        self._model = model
+        self.y = y
+        self.independent_vars = independent_vars
+        if init_guess is None:
+            init_guess = {}
+        self.init_guess = init_guess
+        self.update_every = update_every
+
+    @property
+    def model(self):
+        # Make this a property so it can't be updated.
+        return self._model
+
+    @property
+    def independent_vars(self):
+        return self._independent_vars
+
+    @independent_vars.setter
+    def independent_vars(self, val):
+        if set(val) != set(self.model.independent_vars):
+            raise ValueError("keys {} must match the independent variables in "
+                             "the model "
+                             "{}".format(set(val),
+                                         set(self.model.independent_vars)))
+        self._independent_vars = val
+        self.independent_vars_data.clear()
+        self.independent_vars_data.update({k: [] for k in val})
+        self._reset()
+
+    def _reset(self):
+        self.result = None
+        self.__stale = False
+        self.ydata.clear()
+        for v in self.independent_vars_data.values():
+            v.clear()
+
+    def start(self, doc):
+        self._reset()
+        super().start(doc)
+
+    def event(self, doc):
+        if self.y not in doc['data']:
+            return
+        y = doc['data'][self.y]
+        idv = {k: doc['data'][v] for k, v in self.independent_vars.items()}
+
+        # Always stash the data for the next time the fit is updated.
+        self.update_caches(y, idv)
+        self.__stale = True
+
+        # Maybe update the fit or maybe wait.
+        if self.update_every is not None:
+            i = len(self.ydata)
+            N = len(self.model.param_names)
+            if i < N:
+                # not enough points to fit yet
+                pass
+            elif (i == N) or ((i - 1) % self.update_every == 0):
+                self.update_fit()
+        super().event(doc)
+
+    def stop(self, doc):
+        # Update the fit if it was not updated by the last event.
+        if self.__stale:
+            self.update_fit()
+        super().stop(doc)
+
+    def update_caches(self, y, independent_vars):
+        self.ydata.append(y)
+        for k, v in self.independent_vars_data.items():
+            v.append(independent_vars[k])
+
+    def update_fit(self):
+        N = len(self.model.param_names)
+        if len(self.ydata) < N:
+            warnings.warn("LiveFitPlot cannot update fit until there are at least {} "
+                          "data points".format(N))
+        else:
+            kwargs = {}
+            kwargs.update(self.independent_vars_data)
+            kwargs.update(self.init_guess)
+            self.result = self.model.fit(self.ydata, **kwargs)
+            self.__stale = False
 
 
 # This function is vendored from scipy v0.16.1 to avoid adding a scipy
@@ -173,52 +287,3 @@ class PeakStats(CollectThenCompute):
         # reset y data
         y = self.y_data
         # insert lmfit
-
-
-def plot_peak_stats(peak_stats, ax=None):
-    """
-    Plot data and various peak statistics.
-
-    Parameters
-    ----------
-    peak_stats : PeakStats
-    ax : matplotlib.Axes, optional
-
-    Returns
-    -------
-    arts : dict
-        dictionary of matplotlib Artist objects, for further styling
-    """
-    arts = {}
-    ps = peak_stats  # for brevity
-    if ax is None:
-        fig, ax = plt.subplots()
-    ax.margins(.1)
-    # Plot points, vertical lines, and a legend. Collect Artist objs to return.
-    points, = ax.plot(ps.x_data, ps.y_data, 'o')
-    vlines = []
-    styles = iter(cycler('color', 'krgbm'))
-    for style, attr in zip(styles, ['cen', 'com']):
-        print(style, attr)
-        val = getattr(ps, attr)
-        if val is None:
-            continue
-        vlines.append(ax.axvline(val, label=attr, **style))
-
-    for style, attr in zip(styles, ['max', 'min']):
-        print(style, attr)
-        val = getattr(ps, attr)
-        if val is None:
-            continue
-        vlines.append(ax.axvline(val[0], label=attr, lw=3, **style))
-        vlines.append(ax.axhline(val[1], lw=3, **style))
-
-    if ps.lin_bkg:
-        lb = ps.lin_bkg
-        ln, = ax.plot(ps.x_data, ps.x_data*lb['m'] + lb['b'],
-                      ls='--', lw=2, color='k')
-        arts['bkg'] = ln
-
-    legend = ax.legend(loc='best')
-    arts.update({'points': points, 'vlines': vlines, 'legend': legend})
-    return arts

@@ -543,7 +543,7 @@ Compute statistics of peak-like data. Example:
 
 .. code-block:: python
 
-    from bluesky.callbacks.scientific import PeakStats
+    from bluesky.callbacks.fitting import PeakStats
     from bluesky.examples import motor, det
     from bluesky.plans import scan
 
@@ -562,7 +562,8 @@ There is also a convenience function for plotting:
 .. plot::
 
     from bluesky import RunEngine
-    from bluesky.callbacks.scientific import PeakStats, plot_peak_stats
+    from bluesky.callbacks.fitting import PeakStats
+    from bluesky.callbacks.mpl_plotting import plot_peak_stats
     from bluesky.examples import motor, det
     from bluesky.plans import scan
 
@@ -571,8 +572,8 @@ There is also a convenience function for plotting:
     RE(scan([det], motor, -5, 5, 10), ps)
     plot_peak_stats(ps)
 
-.. autoclass:: bluesky.callbacks.scientific.PeakStats
-.. autofunction:: bluesky.callbacks.scientific.plot_peak_stats
+.. autoclass:: bluesky.callbacks.fitting.PeakStats
+.. autofunction:: bluesky.callbacks.mpl_plotting.plot_peak_stats
 
 .. _best_effort_callback:
 

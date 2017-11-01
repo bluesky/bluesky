@@ -1,6 +1,3 @@
-from bluesky.callbacks import (CallbackBase, LiveTable, LivePlot, LiveGrid,
-                               LiveScatter)
-from bluesky.callbacks.scientific import PeakStats
 from cycler import cycler
 from datetime import datetime
 from io import StringIO
@@ -13,6 +10,10 @@ import sys
 import time
 from warnings import warn
 import weakref
+
+from .core import CallbackBase, LiveTable
+from .mpl_plotting import LivePlot, LiveGrid, LiveScatter
+from .fitting import PeakStats
 
 
 class BestEffortCallback(CallbackBase):
