@@ -53,7 +53,7 @@ This is equivanent to:
 
 .. code-block:: python
 
-    from bluesky.plans import mv
+    from bluesky.plan_stubs import mv
 
     RE(mv(motor1, 42))
 
@@ -125,13 +125,11 @@ Again, they must be registered with IPython before they can be used:
     from bluesky.magics import BlueskyMagics
     get_ipython().register_magics(BlueskyMagics)
 
-.. currentmodule:: bluesky.plans
-
 ======================================================================= ==============================
 Magic                                                                   Plan Invoked
 ======================================================================= ==============================
-``%mov``                                                                :func:`mv`
-``%movr``                                                               :func:`mvr`
-``%ct``                                                                 :func:`count`
+``%mov``                                                                :func:`~bluesky.plan_stubs.mv`
+``%movr``                                                               :func:`~bluesky.plan_stubs.mvr`
+``%ct``                                                                 :func:`~bluesky.plans.count`
 ``%wa``                                                                 ("where all") Survey positioners*
 ======================================================================= ==============================

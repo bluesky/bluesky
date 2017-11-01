@@ -323,7 +323,7 @@ Deprecations
 Enhancements
 ^^^^^^^^^^^^
 
-* A :ref:`progress bar <progress-bar>`_ add-on is available.
+* A :doc:`progress bar <progress-bar>` add-on is available.
 * As addressed above:
     * The new :ref:`supplemental data <supplemental_data>` feature make it
       easy to set up "baseline" readings and asynchronous acquisition in a way

@@ -179,4 +179,7 @@ of actually reading and writing to hardware, merely reports what it *would*
 have done.
 
 .. automethod:: bluesky.run_engine.RunEngine.register_command
+   :noindex:
+
 .. automethod:: bluesky.run_engine.RunEngine.unregister_command
+   :noindex:

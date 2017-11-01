@@ -328,7 +328,9 @@ chain"):
 .. code-block:: python
 
     from bluesky.examples import motor, det
-    from bluesky.plans import scan, sleep, pchain
+    from bluesky.plans import scan
+    from bluesky.plan_stubs import sleep
+    from bluesky.preprocessors import pchain
 
     RE(pchain(scan([det], motor, 1, 5, 3),
               sleep(1),

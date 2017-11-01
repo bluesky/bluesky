@@ -321,7 +321,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
     RE(scan_nd([det], (traj1 + traj2) * traj3))
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
    inner_product_scan
@@ -364,7 +364,7 @@ A fermat spiral:
 
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
    spiral
@@ -421,7 +421,7 @@ sample more densely through the peak. As the peak flattens, it lengthens its
 stride again.
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
    adaptive_scan
@@ -431,7 +431,7 @@ Misc.
 ~~~~~
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
    tweak
@@ -451,7 +451,7 @@ Plans for interacting with hardware:
 
 .. autosummary::
    :nosignatures:
-   :toctree:
+   :toctree: generated
 
     abs_set
     rel_set
@@ -468,7 +468,7 @@ Plans for asynchronous acquisition:
 
 .. autosummary::
    :nosignatures:
-   :toctree:
+   :toctree: generated
 
     monitor
     unmonitor
@@ -480,7 +480,7 @@ Plans that control the RunEngine:
 
 .. autosummary::
    :nosignatures:
-   :toctree:
+   :toctree: generated
 
     open_run
     close_run
@@ -501,6 +501,7 @@ Plans that control the RunEngine:
 Combinations of the above that are often convenient:
 
 .. autosummary::
+
     trigger_and_read
     one_1d_step
     one_nd_step
@@ -541,7 +542,8 @@ sets *relative* to the current value.
 
 .. code-block:: python
 
-    from bluesky.plans import count, abs_set
+    from bluesky.plans import count
+    from bluesky.plan_stubs import abs_set
     from bluesky.examples import det, motor
 
     def move_and_count():
@@ -556,7 +558,7 @@ them both to finish.
 
 .. code-block:: python
 
-    from bluesky.plans import abs_set, wait
+    from bluesky.plan_stubs import abs_set, wait
     from bluesky.examples import motor1, motor2
 
     def set_two_motors():
@@ -633,7 +635,7 @@ A "sleep" is a timed delay.
 
 .. code-block:: python
 
-    from bluesky.plans import sleep, abs_set
+    from bluesky.plan_stubs import sleep, abs_set
     from bluesky.examples import motor
 
     def sleepy():
@@ -657,21 +659,11 @@ but it can also be incorporated into a plan. The plan can pause the RunEngine,
 requiring the user to type ``RE.resume()`` to continue or ``RE.stop()`` to
 clean up and stop.
 
-Pauses can be interspersed using :func:`chain`. Demo:
-
-.. ipython:: python
-
-    from bluesky.plans import pchain, count, pause
-    from bluesky.examples import det
-    RE(pchain(count([det]), pause(), count([det])))
-    RE.state  # optional -- just doing this to show that we are paused
-    RE.resume()  # or, alternatively, RE.stop()
-
-Or pauses can be incorporated in a plan like so:
+Pauses can be incorporated in a plan like so:
 
 .. code-block:: python
 
-    from bluesky.plans import pause, checkpoint
+    from bluesky.plan_stubs import pause, checkpoint
 
     def pausing_plan():
         while True:
@@ -823,7 +815,7 @@ a generator instance. The corresponding functions named
 
 .. autosummary::
    :nosignatures:
-   :toctree:
+   :toctree: generated
 
     baseline_decorator
     baseline_wrapper
@@ -889,7 +881,7 @@ way of applying this general pattern.
 
 .. code-block:: python
 
-    from bluesky.plans import finalize_wrapper
+    from bluesky.preprocessors import finalize_wrapper
 
     def plan_with_cleanup():
         yield from finalize_wrapper(main_plan(), cleanup_plan())
@@ -898,7 +890,7 @@ Or, at your preference, the same logic is available as a decorator:
 
 .. code-block:: python
 
-    from bluesky.plans import finalize_decorator
+    from bluesky.preprocessors import finalize_decorator
 
     plan_with_cleanup = finalize_decorator(cleanup_plan)(main_plan)
 
@@ -921,7 +913,7 @@ For one-dimensional plans, the default inner loop is:
 
 .. code-block:: python
 
-    from bluesky.plans import checkpoint, abs_set, trigger_and_read
+    from bluesky.plan_stubs import checkpoint, abs_set, trigger_and_read
 
     def one_1d_step(detectors, motor, step):
         """
@@ -953,7 +945,7 @@ For multi-dimensional plans, the default inner loop is:
 .. code-block:: python
 
     from bluesky.utils import short_uid
-    from bluesky.plans import checkpoint, abs_set, wait, trigger_and_read
+    from bluesky.plan_stubs import checkpoint, abs_set, wait, trigger_and_read
 
     def one_nd_step(detectors, step, pos_cache):
         """
@@ -1051,7 +1043,8 @@ deeper, re-implementing :func:`count` from scratch.
 
 .. code-block:: python
 
-    from bluesky.plans import run_decorator, stage_decorator, trigger_and_read
+    from bluesky.preprocessors import run_decorator, stage_decorator
+    from bluesky.plan_stubs import trigger_and_read
 
     def multicount(dets, num=3, *, md=None):
 
@@ -1083,7 +1076,7 @@ make an on-the-fly decision about whether to continue or stop.
 
 .. code-block:: python
 
-    from bluesky.plans import abs_set, trigger, read
+    from bluesky.plan_stubs import abs_set, trigger, read
     from bluesky.examples import det, motor
 
     def conditional_break(threshold):
@@ -1146,7 +1139,7 @@ Plan Utilities
 These are useful utilities for defining custom plans and plan preprocessors.
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
     pchain
@@ -1158,7 +1151,7 @@ These are useful utilities for defining custom plans and plan preprocessors.
 .. currentmodule:: bluesky.plan_stubs
 
 .. autosummary::
-   :toctree:
+   :toctree: generated
    :nosignatures:
 
     broadcast_msg

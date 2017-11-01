@@ -348,7 +348,7 @@ seconds.
 
 .. code-block:: python
 
-    from bluesky.plans import null
+    from bluesky.plan_stubs import null
 
     def loop_forever():
         "a silly plan"
@@ -407,7 +407,9 @@ To see this in action, try this example:
 
 .. code-block:: python
 
-    from bluesky.plans import pchain, count, pause
+    from bluesky.plans import count
+    from bluesky.preprocessors import pchain
+    from bluesky.plan_stubs import pause
     from bluesky.examples import det
 
     RE.record_interruptions = True
