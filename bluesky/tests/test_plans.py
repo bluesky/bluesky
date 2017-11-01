@@ -103,7 +103,7 @@ def test_rmesh_pseudo(hw, RE):
     d = DocCollector()
 
     RE.subscribe(d.insert)
-    rs, = RE(bp.relative_outer_product_scan(
+    rs, = RE(bp.rel_grid_scan(
         [sig],
         p3x3.pseudo1, 0, 3, 5,
         p3x3.pseudo2, 7, 10, 7, False))
