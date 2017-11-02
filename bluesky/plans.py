@@ -622,8 +622,10 @@ def tune_centroid(
 
     Example
     -------
-    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
-    det = SynGauss('det', motor, 'motor', center=-1.3, Imax=1e5, sigma=0.05)
+    from ophyd.sim import SynAxis, SynGauss
+    motor = SynAxis(name='motor')
+    det = SynGauss(name='det', motor, 'motor',
+                   center=-1.3, Imax=1e5, sigma=0.05)
     RE(tune_centroid([det], "det", motor, -1.5, -0.5, 0.01, 10))
     """
     if min_step <= 0:
