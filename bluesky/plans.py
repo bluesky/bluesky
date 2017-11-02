@@ -620,11 +620,15 @@ def tune_centroid(
     md : dict, optional
         metadata
 
-    Example
-    -------
-    motor = Mover('motor', {'motor': lambda x: x}, {'x': 0})
-    det = SynGauss('det', motor, 'motor', center=-1.3, Imax=1e5, sigma=0.05)
-    RE(tune_centroid([det], "det", motor, -1.5, -0.5, 0.01, 10))
+    Examples
+    --------
+    Find the center of a peak using synthetic hardware.
+
+    >>> from ophyd.sim import SynAxis, SynGauss
+    >>> motor = SynAxis(name='motor')
+    >>> det = SynGauss(name='det', motor, 'motor',
+    ...                center=-1.3, Imax=1e5, sigma=0.05)
+    >>> RE(tune_centroid([det], "det", motor, -1.5, -0.5, 0.01, 10))
     """
     if min_step <= 0:
         raise ValueError("min_step must be positive")
