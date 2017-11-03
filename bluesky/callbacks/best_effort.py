@@ -169,6 +169,8 @@ class BestEffortCallback(CallbackBase):
             return
         if stream_name in self.noplot_streams:
             return
+        if not columns:
+            return
         if ((self._start_doc.get('num_points') == 1) and
                 (stream_name == self.dim_stream) and
                 self.omit_single_point_plot):
