@@ -1,6 +1,5 @@
 import asyncio
 from bluesky.run_engine import RunEngine
-import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pytest
@@ -57,5 +56,6 @@ def db(request):
 
 @pytest.fixture(autouse=True)
 def cleanup_any_figures(request):
+    import matplotlib.pyplot as plt
     "Close any matplotlib figures that were opened during a test."
     plt.close('all')
