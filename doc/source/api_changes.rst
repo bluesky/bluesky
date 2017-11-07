@@ -12,10 +12,12 @@ be a long-term-support release.
 Bug Fixes
 ^^^^^^^^^
 
-* `~bluesky.plans.mv` and `~bluesky.plans.mvr` now works on pseudopositioners.
-* `~bluesky.plans.reset_positions_wrapper` now works on pseudopositioners.
+* :func:`~bluesky.plan_stubs.mv` and :func:`~bluesky.plan_stubs.mvr` now works
+  on pseudopositioners.
+* :func:`~bluesky.preprocessors.reset_positions_wrapper` now works on
+  pseudopositioners.
 * Plans given an empty detectors list, such as ``count([])``, no longer break
-  the ``BestEffortCallback``.
+  the :class:`~bluesky.callbacks.best_effort.BestEffortCallback`.
 
 v0.11.0
 -------
