@@ -6,7 +6,7 @@ v1.0.0
 
 This tag marks an important release for bluesky, signifying the conclusion of
 the early development phase. From this point on, we intend that this project
-will be co-developed between multiple facilities. The 1.x series is intended to
+will be co-developed between multiple facilities. The 1.x series is planned to
 be a long-term-support release.
 
 Bug Fixes
