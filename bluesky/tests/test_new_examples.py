@@ -121,12 +121,11 @@ def test_mv(hw):
     # special-case mv because the group is not configurable
     # move motors first to ensure that movement is absolute, not relative
     actual = list(mv(hw.motor1, 1, hw.motor2, 2))
-    expected = [Msg('set', hw.motor1, 1, group=None),
-                Msg('set', hw.motor2, 2, group=None),
-                Msg('wait', None, group=None)]
     strip_group(actual)
-    strip_group(expected)
-    assert actual == expected
+    for msg in actual[:2]:
+        msg.command == 'set'
+    assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])
+    assert actual[2] == Msg('wait', None)
 
 
 def test_mvr(RE, hw):
@@ -137,12 +136,12 @@ def test_mvr(RE, hw):
     actual = []
     RE.msg_hook = lambda msg: actual.append(msg)
     RE(mvr(hw.motor1, 1, hw.motor2, 2))
-    expected = [Msg('set', hw.motor1, 11, group=None),
-                Msg('set', hw.motor2, 12, group=None),
-                Msg('wait', None, group=None)]
+    actual = list(mv(hw.motor1, 1, hw.motor2, 2))
     strip_group(actual)
-    strip_group(expected)
-    assert actual == expected
+    for msg in actual[:2]:
+        msg.command == 'set'
+    assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])
+    assert actual[2] == Msg('wait', None)
 
 
 def strip_group(plan):
