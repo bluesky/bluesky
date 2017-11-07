@@ -9,7 +9,13 @@ the early development phase. From this point on, we intend that this project
 will be co-developed between multiple facilities. The 1.x series is intended to
 be a long-term-support release.
 
-This release contains no changes with respect to the previous one, v0.11.0.
+Bug Fixes
+^^^^^^^^^
+
+* `~bluesky.plans.mv` and `~bluesky.plans.mvr` now works on pseudopositioners.
+* `~bluesky.plans.reset_positions_wrapper` now works on pseudopositioners.
+* Plans given an empty detectors list, such as ``count([])``, no longer break
+  the ``BestEffortCallback``.
 
 v0.11.0
 -------
