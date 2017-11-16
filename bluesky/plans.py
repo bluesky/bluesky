@@ -972,7 +972,10 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     # Default should assume the first motor is what to plot
     # If another motor is desired, override with separate hints
     if 'fields' in motors[0].hints:
-        default_dimensions = [((motors[0].hints['fields'][0],), 'primary')]
+        fields = list()
+        for motor in motors:
+            fields.extend(motor.hints['fields'])
+        default_dimensions = [(fields, 'primary')]
         default_hints = {'dimensions': default_dimensions}
     else:
         default_hints = {}
