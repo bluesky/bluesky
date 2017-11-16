@@ -982,7 +982,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
 
     _md['hints'] = default_hints
 
-    if 'hints' in md:
+    if md is not None and 'hints' in md:
         _md['hints'].update(md['hints'])
 
     @bpp.reset_positions_decorator(motors)
