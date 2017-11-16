@@ -92,7 +92,7 @@ class BestEffortCallback(CallbackBase):
 
         # Prepare a guess about the dimensions (independent variables) in case
         # we need it.
-        motors = self._start_doc.get('motors') or None
+        motors = self._start_doc.get('motors')
         if motors is not None:
             GUESS = [([motor], 'primary') for motor in motors]
         else:
