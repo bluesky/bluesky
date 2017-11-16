@@ -111,8 +111,11 @@ class BestEffortCallback(CallbackBase):
             dimensions = GUESS  # Fall back on our GUESS.
             warn("We are ignoring the dimensions hinted because we cannot "
                  "combine streams.")
+        # TODO : Add option to select multiple dim_fields
+        # i.e. [['motor1', 'motor2'], 'primary'] assumes a 1D plot
+        # where 'motor1' is the x axis. There is current no option to allow for
+        # selecting 'motor2' (see relative_inner_product_scan for use case)
         # just select the first field
-        # TODO : Allow option for selecting other fields
         self.dim_fields = [fields[0]
                            for fields, stream_name in dimensions]
         _, self.dim_stream = dimensions[0]
@@ -155,10 +158,6 @@ class BestEffortCallback(CallbackBase):
 
         # ## TABLE ## #
 
-        # TODO : Add option to select multiple dim_fields
-        # i.e. [['motor1', 'motor2'], 'primary'] assumes a 1D plot
-        # where 'motor1' is the x axis. There is current no option to allow for
-        # selecting 'motor2' (see relative_inner_product_scan for use case)
         if stream_name == self.dim_stream:
             # Ensure that no independent variables ('dimensions') are
             # duplicated here.
