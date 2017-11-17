@@ -971,7 +971,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
 
     # Default should assume the first motor is what to plot
     # If another motor is desired, override with separate hints
-    if 'fields' in motors[0].hints:
+    if hasatttr(motors[0], 'hints') and 'fields' in motors[0].hints:
         fields = list()
         for motor in motors:
             fields.extend(motor.hints['fields'])
