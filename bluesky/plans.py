@@ -966,24 +966,27 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     """
     _md = {'plan_name': 'relative_inner_product_scan',
            }
-    _md.update(md or {})
+    md = md or {}
+    _md.update(md)
     motors = [motor for motor, start, stop in partition(3, args)]
 
-    # Default should assume the first motor is what to plot
-    # If another motor is desired, override with separate hints
-    if hasattr(motors[0], 'hints') and 'fields' in motors[0].hints:
-        fields = list()
-        for motor in motors:
-            fields.extend(motor.hints['fields'])
-        default_dimensions = [(fields, 'primary')]
-        default_hints = {'dimensions': default_dimensions}
-    else:
-        default_hints = {}
+    # Give a hint that the motors all lie along the same axis
+    # [(['motor1', 'motor2', ...], 'primary'), ] is 1D (this case)
+    # [ ('motor1', 'primary'), ('motor2', 'primary'), ... ] is 2D for example
+    fields = []
+    for motor in motors:
+        fields.extend(getattr(motor, 'hints', {}).get('fields', []))
 
+    default_dimensions = [(fields, 'primary')]
+
+    default_hints = {}
+    if len(fields) > 0:
+        default_hints.update(dimensions=default_dimensions)
+
+    # now add default_hints and override any hints from the original md (if
+    # exists)
     _md['hints'] = default_hints
-
-    if md is not None and 'hints' in md:
-        _md['hints'].update(md['hints'])
+    _md['hints'].update(md.get('hints', {}) or {})
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
