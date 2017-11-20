@@ -259,8 +259,7 @@ Built-in Suspenders
    bluesky.suspenders.SuspendBoolLow
    bluesky.suspenders.SuspendFloor
    bluesky.suspenders.SuspendCeil
-   bluesky.suspenders.SuspendInBand
-   bluesky.suspenders.SuspendOutBand
+   bluesky.suspenders.SuspendWhenOutsideBand
 
 .. _checkpoints:
 
