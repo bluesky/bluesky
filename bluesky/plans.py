@@ -697,14 +697,14 @@ def tune_centroid(
                     start, stop = stop, start
                 step = (stop - start) / (num - 1)
                 next_pos = start
-                #print("peak position = {}".format(peak_position))
-                #print("start = {}".format(start))
-                #print("stop = {}".format(stop))
+                # print("peak position = {}".format(peak_position))
+                # print("start = {}".format(start))
+                # print("stop = {}".format(stop))
 
         # finally, move to peak position
         if peak_position is not None:
             # improvement: report final peak_position
-            #print("final position = {}".format(peak_position))
+            # print("final position = {}".format(peak_position))
             yield from bps.mv(motor, peak_position)
 
     return (yield from _tune_core(start, stop, num, signal))
