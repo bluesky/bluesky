@@ -32,7 +32,7 @@ Pause Now: Ctrl+C twice
     Pausing...
     In [2]:
 
-Before returning the prompt the user, the RunEngine ensures that all motors
+Before returning the prompt to the user, the RunEngine ensures that all motors
 that it has touched are stopped. It also performs any device-specific cleanup
 defined in the device's (optional) ``pause()`` method.
 
@@ -119,8 +119,8 @@ Stop
 
 ``RE.stop()`` is functionally identical to ``RE.abort()``. The only
 difference is that aborted runs are marked with ``exit_status: 'abort'``
-instead of ``exit_status: 'success'``. This distinction may be a useful
-distinction during analysis.
+instead of ``exit_status: 'success'``. This may be a useful distinction
+during analysis.
 
 Halt
 ^^^^
@@ -166,27 +166,13 @@ RE.state       Check if 'paused' or 'idle'.
 Automated Suspension
 ====================
 
-It can also be useful to interrupt execution automatically in response some
-condition (e.g., shutter closed, beam dumped, temperature exceed some limit).
+It can also be useful to interrupt execution automatically in response to some
+condition (e.g., shutter closed, beam dumped, temperature exceeded some limit).
 We use the word *suspension* to mean an unplanned pause initialized by some
 agent running the background. The agent (a "suspender") monitors some condition
 and, if it detects a problem, it suspends execution. When it detects that
 conditions have returned to normal, it gives the RunEngine permission to resume
 after some interval. This can operate unattended.
-
-.. ipython::
-    :verbatim:
-
-    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor, det]))
-    +------------+-------------------+----------------+----------------+
-    |   seq_num  |             time  |         motor  |           det  |
-    +------------+-------------------+----------------+----------------+
-    |         1  |  16:46:08.953815  |          0.03  |        290.00  |
-    Suspending....To get prompt hit Ctrl-C to pause the scan
-    |         2  |  16:46:20.868445  |          0.09  |        279.00  |
-    |         3  |  16:46:29.077690  |          0.16  |        284.00  |
-    |         4  |  16:46:33.540643  |          0.23  |        278.00  |
-    +------------+-------------------+----------------+----------------+
 
 A *suspended* plan does not return the prompt to the user. Like a paused plan,
 it stops executing new instructions and rewinds to the most recent checkpoint.
@@ -213,7 +199,7 @@ Example: Suspend a plan if the beam current dips low
 
 This defines a suspender and installs it on the RunEngine. With this, plans
 will be automatically suspended when the ``beam_current`` signal goes below 2
-and resume once it exceeds 3.
+and resumed once it exceeds 3.
 
 .. code-block:: python
 
@@ -267,25 +253,25 @@ Built-in Suspenders
 Checkpoints
 ===========
 
-Plan are specified as a sequence of :ref:`messages <msg>`, granular
+Plans are specified as a sequence of :ref:`messages <msg>`, granular
 instructions like 'read' and 'set'. The messages can optionally include one
-or more 'checkpoint' messages, indicating a place where it safe to resume after
-an interruption. For example, checkpoints are placed before each step of a
+or more 'checkpoint' messages, indicating a place where it is safe to resume
+after an interruption. For example, checkpoints are placed before each step of a
 :func:`bluesky.plans.scan`.
 
 Some experiments are not resumable: for example, the sample may be melting or
-aging. Incorporating :func:`bluesky.plans.clear_checkpoint` in a plan makes it
-un-resuming. If a pause or suspension are requested, the plan will abort
-instead.
+aging. Incorporating :func:`bluesky.plan_stubs.clear_checkpoint` in a plan
+makes it un-resuming. If a pause or suspension are requested, the plan will
+abort instead.
 
 .. note::
 
     Some details about checkpoints and when they are allowed:
 
-    It is not legal to create checkpoint in the middle of a data point (between
-    'create' and 'save') Checkpoints are implicitly created after actions that
-    it is not safe to replay: staging a device, adding a monitor, or adding a
-    subscription.
+    It is not legal to create a checkpoint in the middle of a data point
+    (between 'create' and 'save'). Checkpoints are implicitly created after
+    actions that it is not safe to replay: staging a device, adding a
+    monitor, or adding a subscription.
 
 Planned Pauses
 ==============
@@ -309,7 +295,7 @@ The states are:
 
 * ``'idle'``: RunEngine is waiting for instructions.
 * ``'running'``: RunEngine is executing instructions.
-* ``'paused'``: RunEngine is waiting for user input. It can be 
+* ``'paused'``: RunEngine is waiting for user input.
 
 Suspender-related Methods
 -------------------------
@@ -318,6 +304,9 @@ Suspender-related Methods
     :noindex:
 
 .. automethod:: bluesky.run_engine.RunEngine.remove_suspender
+    :noindex:
+
+.. automethod:: bluesky.run_engine.RunEngine.clear_suspenders
     :noindex:
 
 The RunEngine also has a ``suspenders`` property, a collection of the
@@ -342,9 +331,9 @@ by user-defined agents.
 Example: Requesting a pause from the asyncio event loop
 -------------------------------------------------------
 
-Since the user does not control of the prompt, calls to ``RE.request_pause``
-must be planned in advance. Here is a example that pauses the plan after 5
-seconds.
+Since the user does not have control of the prompt, calls to
+``RE.request_pause`` must be planned in advance. Here is a example that pauses
+the plan after 5 seconds.
 
 .. code-block:: python
 
