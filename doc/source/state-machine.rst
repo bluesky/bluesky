@@ -174,6 +174,20 @@ and, if it detects a problem, it suspends execution. When it detects that
 conditions have returned to normal, it gives the RunEngine permission to resume
 after some interval. This can operate unattended.
 
+.. ipython::
+    :verbatim:
+
+    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor, det]))
+    +------------+-------------------+----------------+----------------+
+    |   seq_num  |             time  |         motor  |           det  |
+    +------------+-------------------+----------------+----------------+
+    |         1  |  16:46:08.953815  |          0.03  |        290.00  |
+    Suspending....To get prompt hit Ctrl-C to pause the scan
+    |         2  |  16:46:20.868445  |          0.09  |        279.00  |
+    |         3  |  16:46:29.077690  |          0.16  |        284.00  |
+    |         4  |  16:46:33.540643  |          0.23  |        278.00  |
+    +------------+-------------------+----------------+----------------+
+
 A *suspended* plan does not return the prompt to the user. Like a paused plan,
 it stops executing new instructions and rewinds to the most recent checkpoint.
 But unlike a paused plan, it resumes execution automatically when conditions
