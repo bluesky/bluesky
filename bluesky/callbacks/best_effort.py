@@ -111,9 +111,9 @@ class BestEffortCallback(CallbackBase):
             dimensions = GUESS  # Fall back on our GUESS.
             warn("We are ignoring the dimensions hinted because we cannot "
                  "combine streams.")
-        self.dim_fields = [f
-                           for field, stream_name in dimensions
-                           for f in field]
+        # TODO : Add option to select multiple dim_fields
+        self.dim_fields = [fields[0]
+                           for fields, stream_name in dimensions]
         _, self.dim_stream = dimensions[0]
 
         # Print heading.

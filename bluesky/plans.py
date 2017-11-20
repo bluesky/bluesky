@@ -964,9 +964,29 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    _md = {'plan_name': 'relative_inner_product_scan'}
-    _md.update(md or {})
+    _md = {'plan_name': 'relative_inner_product_scan',
+           }
+    md = md or {}
+    _md.update(md)
     motors = [motor for motor, start, stop in partition(3, args)]
+
+    # Give a hint that the motors all lie along the same axis
+    # [(['motor1', 'motor2', ...], 'primary'), ] is 1D (this case)
+    # [ ('motor1', 'primary'), ('motor2', 'primary'), ... ] is 2D for example
+    fields = []
+    for motor in motors:
+        fields.extend(getattr(motor, 'hints', {}).get('fields', []))
+
+    default_dimensions = [(fields, 'primary')]
+
+    default_hints = {}
+    if len(fields) > 0:
+        default_hints.update(dimensions=default_dimensions)
+
+    # now add default_hints and override any hints from the original md (if
+    # exists)
+    _md['hints'] = default_hints
+    _md['hints'].update(md.get('hints', {}) or {})
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
