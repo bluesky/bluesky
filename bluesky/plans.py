@@ -581,9 +581,9 @@ def tune_centroid(
     smaller step size until the minimum step size is reached.
     Rescans will be centered on the signal centroid
     (for $I(x)$, centroid$= \sum{I}/\sum{x*I}$)
-    with original scan range reduced by `step_factor`.
+    with original scan range reduced by ``step_factor``.
 
-    Set `snake=True` if your positions are reproducible
+    Set ``snake=True`` if your positions are reproducible
     moving from either direction.  This will not necessarily
     decrease the number of traversals required to reach convergence.
     Snake motion reduces the total time spent on motion
@@ -594,7 +594,7 @@ def tune_centroid(
 
     Note:  Ideally the signal has only one peak in the range to
     be scanned.  It is assumed the signal is not polymodal
-    between `start` and `stop`.
+    between ``start`` and ``stop``.
 
     Parameters
     ----------
