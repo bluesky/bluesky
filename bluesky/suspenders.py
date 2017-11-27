@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 import operator
 from threading import Lock
 from functools import partial
+from warnings import warn
 
 
 class SuspenderBase(metaclass=ABCMeta):
@@ -425,7 +426,7 @@ class _SuspendBandBase(SuspenderBase):
         self._top = band_top
 
 
-class SuspendInBand(_SuspendBandBase):
+class SuspendWhenOutsideBand(_SuspendBandBase):
     """
     Suspend when a scalar signal leaves a given band of values.
 
@@ -494,6 +495,7 @@ class SuspendOutBand(_SuspendBandBase):
     post_plan : iterable or iterator, optional
             a generator, list, or similar containing `Msg` objects
     """
+    warn("bluesky.suspenders.SuspendOutBand is deprecated.")
     def _should_resume(self, value):
         return not (self._bot < value < self._top)
 
