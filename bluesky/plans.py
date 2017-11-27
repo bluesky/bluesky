@@ -570,7 +570,7 @@ def tune_centroid(
         detectors, signal, motor,
         start, stop, min_step,
         num=10,
-        step_factor=2,
+        step_factor=3.0,
         snake=False,
         *, md=None):
     """
@@ -581,9 +581,9 @@ def tune_centroid(
     smaller step size until the minimum step size is reached.
     Rescans will be centered on the signal centroid
     (for $I(x)$, centroid$= \sum{I}/\sum{x*I}$)
-    with a scan range of 2*step_factor*step of current scan.
+    with original scan range reduced by ``step_factor``.
 
-    Set `snake=True` if your positions are reproducible
+    Set ``snake=True`` if your positions are reproducible
     moving from either direction.  This will not necessarily
     decrease the number of traversals required to reach convergence.
     Snake motion reduces the total time spent on motion
@@ -594,7 +594,7 @@ def tune_centroid(
 
     Note:  Ideally the signal has only one peak in the range to
     be scanned.  It is assumed the signal is not polymodal
-    between `start` and `stop`.
+    between ``start`` and ``stop``.
 
     Parameters
     ----------
@@ -613,8 +613,9 @@ def tune_centroid(
     num : int, optional
         number of points with each traversal, default = 10
     step_factor : float, optional
-        used in calculating range when
-        maximum is found, note: step_factor > 0, default = 2
+        used in calculating new range after each pass
+        
+        note: step_factor > 1.0, default = 3
     snake : bool, optional
         if False (default), always scan from start to stop
     md : dict, optional
@@ -632,13 +633,8 @@ def tune_centroid(
     """
     if min_step <= 0:
         raise ValueError("min_step must be positive")
-    if step_factor <= 0:
-        raise ValueError("step_factor must be positive")
-    if (num - 2) <= 2*step_factor:
-        raise ValueError(
-            "Increase num and/or decrease step_factor"
-            " or tune_centroid will never converge to a solution"
-        )
+    if step_factor <= 1.0:
+        raise ValueError("step_factor must be greater than 1.0")
     try:
         motor_name, = motor.hints['fields']
     except (AttributeError, ValueError):
@@ -675,7 +671,7 @@ def tune_centroid(
         sum_I = 0       # for peak centroid calculation, I(x)
         sum_xI = 0
 
-        while abs(step) >= min_step:
+        while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg('checkpoint')
             yield from bps.mv(motor, next_pos)
             ret = (yield from bps.trigger_and_read(detectors + [motor]))
@@ -684,30 +680,31 @@ def tune_centroid(
             position = ret[motor_name]['value']
             sum_xI += position * cur_I
 
-            if (stop - start) < abs(stop - start):
-                in_range = start >= next_pos >= stop  # negative motion
-            else:
-                in_range = start <= next_pos <= stop  # positive motion
+            next_pos += step
+            in_range = min(start, stop) <= next_pos <= max(start, stop)
 
-            if in_range:
-                next_pos += step
-            else:
+            if not in_range:
                 if sum_I == 0:
                     return
                 peak_position = sum_xI / sum_I  # centroid
-                # improvement: report current peak_position somehow
-                start = np.clip(peak_position - step_factor*step,
+                sum_I, sum_xI = 0, 0    # reset for next pass
+                new_scan_range = (stop - start) / step_factor
+                start = np.clip(peak_position - new_scan_range/2,
                                 low_limit, high_limit)
-                stop = np.clip(peak_position + step_factor*step,
+                stop = np.clip(peak_position + new_scan_range/2,
                                low_limit, high_limit)
                 if snake:
                     start, stop = stop, start
                 step = (stop - start) / (num - 1)
                 next_pos = start
+                # print("peak position = {}".format(peak_position))
+                # print("start = {}".format(start))
+                # print("stop = {}".format(stop))
 
         # finally, move to peak position
         if peak_position is not None:
             # improvement: report final peak_position
+            # print("final position = {}".format(peak_position))
             yield from bps.mv(motor, peak_position)
 
     return (yield from _tune_core(start, stop, num, signal))
