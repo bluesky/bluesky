@@ -79,15 +79,8 @@ Index
 
 .. toctree::
    :hidden:
-   :caption: Data Analysis
-
-   scikit-beam <http://scikit-beam.github.io/scikit-beam>
-
-.. toctree::
-   :hidden:
    :caption: GitHub Links
 
    NSLS-II Repositories <https://github.com/NSLS-II/>
-   Wish List <https://github.com/NSLS-II/wishlist/issues>
    Bug Reports <https://github.com/NSLS-II/Bug-Reports/issues>
 
