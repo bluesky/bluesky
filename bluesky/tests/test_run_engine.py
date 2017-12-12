@@ -214,6 +214,11 @@ def test_saving_without_an_open_bundle_is_illegal(RE):
         RE([Msg('open_run'), Msg('save')])
 
 
+def test_dropping_without_an_open_bundle_is_illegal(RE):
+    with pytest.raises(IllegalMessageSequence):
+        RE([Msg('open_run'), Msg('drop')])
+
+
 def test_opening_a_bundle_without_a_run_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
         RE([Msg('create')])
@@ -1336,3 +1341,31 @@ def test_exceptions_exit_status(RE):
     assert len(d.stop) == 1
     assert d.stop[rs]['exit_status'] == 'fail'
     assert d.stop[rs]['reason'] == str(sf.value)
+
+
+def test_drop(RE, hw):
+    det = hw.det
+
+    def inner(msg):
+        yield Msg('create')
+        yield Msg('read', det)
+        yield Msg(msg)
+
+    # Drop first, drop after saving, save after dropping
+    def plan():
+        yield Msg('open_run')
+        yield from inner('drop')
+        yield from inner('save')
+        yield from inner('drop')
+        yield from inner('save')
+        yield from inner('save')
+        yield Msg('close_run')
+
+    docs = defaultdict(list)
+
+    def collector(name, doc):
+        docs[name].append(doc)
+
+    RE(plan(), collector)
+
+    assert len(docs['event']) == 3
