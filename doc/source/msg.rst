@@ -41,7 +41,7 @@ create
 ++++++
 
 This command tells the run engine that it should start to collect the results of
-``read`` to create an event.  If this is called twice without a ``save`` between
+``read`` to create an event.  If this is called twice without a ``save`` or ``drop`` between
 them it is an exception (as you can not have more than one open event going at a time).
 
 This relies very heavily on the internal state of the run engine and should not
@@ -118,6 +118,21 @@ collect
 
 kickoff
 +++++++
+
+drop
+++++
+
+This is a command that abandons previous ``create`` and ``read`` commands
+without emitting an event. This can be used to drop known bad events
+(e.g. no beam) and keep the event document stream clean. It is safe to start
+another ``create``, ``read``, ``save`` sequence after a ``drop``.
+
+This must be called after a ``create`` or a the scan will die and raise
+`IllegalMessageSequence`.
+
+This call returns `None` back to the co-routine.
+
+This ignores all parts of the `Msg` except the command.
 
 Registering Custom Commands
 ---------------------------
