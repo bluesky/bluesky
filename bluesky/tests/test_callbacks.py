@@ -7,7 +7,8 @@ from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.plan_stubs import pause
 import bluesky.plans as bp
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
-                               LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
+                               LiveFitPlot, LivePlot, LiveGrid, LiveScatter,
+                               LiveWaterfall)
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
@@ -580,3 +581,19 @@ def test_broker_base_no_unpack(RE, hw, db):
     bc = BrokerChecker(('img',), db=db)
     RE.subscribe(bc)
     RE(count([hw.direct_img]))
+
+
+def test_live_Waterfall(RE, hw):
+    RE(grid_scan([hw.det5],
+                 hw.jittery_motor1, -3, 3, 6,
+                 hw.jittery_motor2, -5, 5, 10, False),
+       LiveWaterfall('jittery_motor1', 'jittery_motor2', 'det5',
+                   xlim=(-3, 3), ylim=(-5, 5)))
+
+    # Test the deprecated name.
+    with pytest.warns(UserWarning):
+        RE(grid_scan([hw.det5],
+                     hw.jittery_motor1, -3, 3, 6,
+                     hw.jittery_motor2, -5, 5, 10, False),
+           LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
+                    xlim=(-3, 3), ylim=(-5, 5)))
