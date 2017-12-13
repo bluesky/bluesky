@@ -54,6 +54,23 @@ def save():
     return (yield Msg('save'))
 
 
+def drop():
+    """
+    Drop a bundle of readings without emitting a completed Event document.
+
+    Yields
+    ------
+    msg : Msg
+        Msg('drop')
+
+    See Also
+    --------
+    :func:`bluesky.plans.save`
+    :func:`bluesky.plans.create`
+    """
+    return (yield Msg('drop'))
+
+
 def read(obj):
     """
     Take a reading and add it to the current bundle of readings.

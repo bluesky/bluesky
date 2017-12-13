@@ -264,6 +264,7 @@ class RunEngine:
         self._command_registry = {
             'create': self._create,
             'save': self._save,
+            'drop': self._drop,
             'read': self._read,
             'monitor': self._monitor,
             'unmonitor': self._unmonitor,
@@ -1347,8 +1348,8 @@ class RunEngine:
         if self._bundling:
             raise IllegalMessageSequence("A second 'create' message is not "
                                          "allowed until the current event "
-                                         "bundle is closed with a 'save' "
-                                         "message.")
+                                         "bundle is closed with a 'save' or "
+                                         'drop' "message.")
         self._read_cache.clear()
         self._objs_read.clear()
         self._bundling = True
@@ -1590,6 +1591,27 @@ class RunEngine:
         yield from self.emit(DocumentNames.event, doc)
         self.log.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
                        event_uid)
+
+    @asyncio.coroutine
+    def _drop(self, msg):
+        """Drop the event that is currently being bundled
+
+        Expected message object is:
+
+            Msg('drop')
+        """
+        if not self._bundling:
+            raise IllegalMessageSequence("A 'create' message must be sent, to "
+                                         "open an event bundle, before that "
+                                         "bundle can be dropped with 'drop'.")
+        if not self._run_is_open:
+            # sanity check -- this should be caught by 'create' which makes
+            # this code path impossible
+            raise IllegalMessageSequence("A 'drop' message was sent but no "
+                                         "run is open.")
+        self._bundling = False
+        self._bundle_name = None
+        self.log.debug("Dropped open event bundle")
 
     @asyncio.coroutine
     def _kickoff(self, msg):

@@ -486,6 +486,7 @@ Plans that control the RunEngine:
     close_run
     create
     save
+    drop
     pause
     deferred_pause
     checkpoint

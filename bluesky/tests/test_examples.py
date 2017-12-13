@@ -475,7 +475,7 @@ def test_illegal_sequences(RE, hw):
         yield(Msg('close_run'))
 
     with pytest.raises(IllegalMessageSequence):
-        RE(gen1())
+        RE(gen2())
 
     def gen3():
         # 'configure' after 'create', before 'save'
@@ -485,6 +485,17 @@ def test_illegal_sequences(RE, hw):
 
     with pytest.raises(IllegalMessageSequence):
         RE(gen3())
+
+    def gen4():
+        # two 'drop' msgs in a row
+        yield(Msg('open_run'))
+        yield(Msg('create'))
+        yield(Msg('drop'))
+        yield(Msg('drop'))
+        yield(Msg('close_run'))
+
+    with pytest.raises(IllegalMessageSequence):
+        RE(gen4())
 
 
 def test_new_ev_desc(RE, hw):

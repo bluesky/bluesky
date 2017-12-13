@@ -4,6 +4,7 @@ from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import (
     create,
     save,
+    drop,
     read,
     monitor,
     unmonitor,
@@ -60,6 +61,7 @@ from bluesky.utils import all_safe_rewind
     [(create, (), {}, [Msg('create', name='primary')]),
      (create, ('custom_name',), {}, [Msg('create', name='custom_name')]),
      (save, (), {}, [Msg('save')]),
+     (drop, (), {}, [Msg('drop')]),
      (read, ('det',), {}, [Msg('read', 'det')]),
      (monitor, ('foo',), {}, [Msg('monitor', 'foo', name=None)]),
      (monitor, ('foo',), {'name': 'c'}, [Msg('monitor', 'foo', name='c')]),
