@@ -19,6 +19,7 @@ pyepics
 pytest
 pyyaml
 requests
+streamz
 sphinx
 sphinx_rtd_theme
 tifffile
