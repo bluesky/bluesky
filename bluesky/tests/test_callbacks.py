@@ -583,17 +583,9 @@ def test_broker_base_no_unpack(RE, hw, db):
     RE(count([hw.direct_img]))
 
 
-def test_live_Waterfall(RE, hw):
-    RE(grid_scan([hw.det5],
-                 hw.jittery_motor1, -3, 3, 6,
-                 hw.jittery_motor2, -5, 5, 10, False),
-       LiveWaterfall('jittery_motor1', 'jittery_motor2', 'det5',
-                   xlim=(-3, 3), ylim=(-5, 5)))
+def test_live_Waterfall(RE):
+    from ophyd.sim import SynSignal
+    x = SynSignal(func=lambda: np.random.random(10), name='x')
+    y = SynSignal(func=lambda: np.random.random(10), name='y')
 
-    # Test the deprecated name.
-    with pytest.warns(UserWarning):
-        RE(grid_scan([hw.det5],
-                     hw.jittery_motor1, -3, 3, 6,
-                     hw.jittery_motor2, -5, 5, 10, False),
-           LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
-                    xlim=(-3, 3), ylim=(-5, 5)))
+    RE(count([x, y], 5), LiveWaterfall('x', 'y'))

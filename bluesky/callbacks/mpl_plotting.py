@@ -492,10 +492,8 @@ class LiveWaterfall(CallbackBase):
         The units for the x and y axes
     """
 
-    def __init__(self, x_name, y_name, db=None, units=None,
+    def __init__(self, x_name, y_name, units=None,
                  window_title=None):
-        super().__init__((x_name, y_name,), db=db)
-        self.db = db
         self.x_name = x_name
         self.y_name = y_name
         self.units = units
