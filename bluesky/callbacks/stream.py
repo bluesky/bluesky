@@ -126,7 +126,7 @@ class LiveStream(CallbackBase):
         # The rest of the stop information is passed on to the next callback
         md = ChainMap(dict(run_start=self._stream_start_uid,
                            time=ttime.time(), uid=new_uid(),
-                           num_events=self.seq_count),
+                           num_events={'primary': self.seq_count}),
                       doc)
         self.emit(DocumentNames.stop, dict(md))
         # Clear the local caches for the run

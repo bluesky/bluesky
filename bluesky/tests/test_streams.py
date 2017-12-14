@@ -3,7 +3,6 @@ import pytest
 from bluesky.callbacks import CallbackCounter
 from bluesky.examples import stepscan
 from bluesky.tests.utils import DocCollector
-from bluesky.callbacks import LiveTable
 
 # Do not run these test if streamz is not installed
 try:
@@ -41,7 +40,6 @@ def test_average_stream(RE, hw):
     ls.subscribe(c)
     ls.subscribe(d.insert)
     # Run a basic plan
-    RE.subscribe(LiveTable(('motor', 'det')))
     RE(stepscan(hw.det, hw.motor), {'all': ls})
     assert c.value == 1 + 1 + 2  # events, descriptor, start and stop
     # See that we made sensible descriptor
@@ -56,3 +54,5 @@ def test_average_stream(RE, hw):
     # See that we returned the correct average
     assert evt['data']['motor'] == -0.5  # mean of range(-5, 5)
     assert evt['data']['motor_setpoint'] == -0.5  # mean of range(-5, 5)
+    assert start_uid in d.stop
+    assert d.stop[start_uid]['num_events'] == {'primary': 1}
