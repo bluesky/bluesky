@@ -204,7 +204,7 @@ this command once. In an IPython terminal, the command is:
 .. code-block:: python
 
     %matplotlib qt
-    from bluesky.utils import install_qt_kickcer
+    from bluesky.utils import install_qt_kicker
     install_qt_kicker()
 
 If you are using a Jupyter notebook, the command is:
@@ -212,7 +212,7 @@ If you are using a Jupyter notebook, the command is:
 .. code-block:: python
 
     %matplotlib notebook
-    from bluesky.utils import install_nb_kickcer
+    from bluesky.utils import install_nb_kicker
     install_nb_kicker()
 
 Why? The RunEngine and matplotlib (technically, matplotlib's Qt backend) both
