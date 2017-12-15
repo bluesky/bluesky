@@ -4,6 +4,8 @@ from cycler import cycler
 from . import utils
 import operator
 from functools import reduce
+from collections import Iterable
+import time
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -873,3 +875,78 @@ def one_nd_step(detectors, step, pos_cache):
     motors = step.keys()
     yield from move()
     yield from trigger_and_read(list(detectors) + list(motors))
+
+
+def repeat(plan, num=1, delay=None):
+    """
+    Repeat a plan num times with delay between each repeat.
+
+    Parameters
+    ----------
+    plan: callable or list
+        Callable that returns a valid plan, or a list of Message objects
+    num : integer, optional
+        number of readings to take; default is 1
+
+        If None, capture data until canceled
+    delay : iterable or scalar, optional
+        time delay between successive readings; default is 0
+
+    Notes
+    -----
+    If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
+    the plan will raise a ``ValueError`` during iteration.
+    """
+    # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
+    if not isinstance(delay, Iterable):
+        delay = itertools.repeat(delay)
+    else:
+        try:
+            num_delays = len(delay)
+        except TypeError:
+            # No way to tell in advance if we have enough delays.
+            pass
+        else:
+            if num - 1 > num_delays:
+                raise ValueError("num=%r but delays only provides %r "
+                                 "entries" % (num, num_delays))
+        delay = iter(delay)
+
+    def finite_plan():
+        for i in range(num):
+            now = time.time()  # Intercept the flow in its earliest moment.
+            if isinstance(plan, list):
+                yield from plan
+            else:
+                yield from plan()
+            try:
+                d = next(delay)
+            except StopIteration:
+                if i + 1 == num:
+                    break
+                else:
+                    # num specifies a number of iterations less than delay
+                    raise ValueError("num=%r but delays only provides %r "
+                                     "entries" % (num, i))
+            if d is not None:
+                d = d - (time.time() - now)
+                if d > 0:  # Sleep if and only if time is left to do it.
+                    yield Msg('sleep', None, d)
+
+    def infinite_plan():
+        while True:
+            if isinstance(plan, list):
+                yield from plan
+            else:
+                yield from plan()
+            try:
+                d = next(delay)
+            except StopIteration:
+                break
+            if d is not None:
+                yield Msg('sleep', None, d)
+
+    if num is None:
+        return (yield from infinite_plan())
+    else:
+        return (yield from finite_plan())
