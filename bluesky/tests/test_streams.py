@@ -1,8 +1,12 @@
+import math
 import pytest
+
+import numpy as np
 
 from bluesky.callbacks import CallbackCounter
 from bluesky.examples import stepscan
 from bluesky.tests.utils import DocCollector
+from bluesky.callbacks.stream import LiveDispatcher
 
 # Do not run these test if streamz is not installed
 try:
@@ -10,37 +14,115 @@ try:
     has_streamz = True
 except ImportError:
     has_streamz = False
-else:
-    from bluesky.callbacks.stream import LiveStream, AverageStream
-
 
 requires_streamz = pytest.mark.skipif(not has_streamz,
                                       reason='Missing streamz library')
 
 
-@requires_streamz
+class NegativeStream(LiveDispatcher):
+    """Stream that only adds metadata to start document"""
+    def start(self, doc):
+        doc.update({"stream_level": "boring"})
+        super().start(doc)
+
+    def event(self, doc):
+        modified = dict()
+        for key, val in doc['data'].items():
+            modified['modified_{}'.format(key)] = -math.fabs(val)
+        doc['data'] = modified
+        return self.process_event(doc)
+
+
+class AverageStream(LiveDispatcher):
+    """Stream that averages data points together"""
+    def __init__(self, n=None):
+        self.n = n
+        self.in_node = None
+        self.out_node = None
+        self.averager = None
+        super().__init__()
+
+    def start(self, doc):
+        """
+        Create the stream after seeing the start document
+
+        The callback looks for the 'average' key in the start document to
+        configure itself.
+        """
+        # Grab the average key
+        self.n = doc.get('average', self.n)
+        # Define our nodes
+        if not self.in_node:
+            self.in_node = streamz.Source(stream_name='Input')
+
+        self.averager = self.in_node.partition(self.n)
+
+        def average_events(cache):
+            average_evt = dict()
+            desc_id = cache[0]['descriptor']
+            # Check that all of our events came from the same configuration
+            if not all([desc_id == evt['descriptor'] for evt in cache]):
+                raise Exception('The events in this bundle are from '
+                                'different configurations!')
+            # Use the last descriptor to avoid strings and objects
+            data_keys = self.raw_descriptors[desc_id]['data_keys']
+            for key, info in data_keys.items():
+                # Information from non-number fields is dropped
+                if info['dtype'] in ('number', 'array'):
+                    # Average together
+                    average_evt[key] = np.mean([evt['data'][key]
+                                                for evt in cache], axis=0)
+            return {'data': average_evt, 'descriptor': desc_id}
+
+        self.out_node = self.averager.map(average_events)
+        self.out_node.sink(self.process_event)
+        super().start(doc)
+
+    def event(self, doc):
+        """Send an Event through the stream"""
+        self.in_node.emit(doc)
+
+    def stop(self, doc):
+        """Delete the stream when run stops"""
+        self.in_node = None
+        self.out_node = None
+        self.averager = None
+        super().stop(doc)
+
+
 def test_straight_through_stream(RE, hw):
     # Just a stream that sinks the events it receives
-    s = streamz.Source()
+    ss = NegativeStream()
     # Create callback chain
-    ls = LiveStream(s)
     c = CallbackCounter()
-    ls.subscribe(c)
+    d = DocCollector()
+    ss.subscribe(c)
+    ss.subscribe(d.insert)
     # Run a basic plan
-    RE(stepscan(hw.det, hw.motor), {'all': ls})
+    RE(stepscan(hw.det, hw.motor), {'all': ss})
+    # Check that our metadata is there
     assert c.value == 10 + 1 + 2  # events, descriptor, start and stop
+    assert d.start[0]['stream_level'] == 'boring'
+    desc = d.descriptor[d.start[0]['uid']][0]
+    events = d.event[desc['uid']]
+    print(desc)
+    print([evt['data'] for evt in events])
+    assert all([evt['data'][key] <= 0
+                for evt in events
+                for key in evt['data'].keys()])
+    assert all([key in desc['data_keys'] for key in events[0]['data'].keys()])
 
 
 @requires_streamz
 def test_average_stream(RE, hw):
     # Create callback chain
-    ls = AverageStream(10)
+    avg = AverageStream(10)
     c = CallbackCounter()
     d = DocCollector()
-    ls.subscribe(c)
-    ls.subscribe(d.insert)
+    avg.subscribe(c)
+    avg.subscribe(d.insert)
     # Run a basic plan
-    RE(stepscan(hw.det, hw.motor), {'all': ls})
+    RE(stepscan(hw.det, hw.motor), {'all': avg})
     assert c.value == 1 + 1 + 2  # events, descriptor, start and stop
     # See that we made sensible descriptor
     start_uid = d.start[0]['uid']
