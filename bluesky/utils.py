@@ -1,6 +1,7 @@
 from collections import namedtuple
 import asyncio
 import os
+import sys
 import signal
 import operator
 import uuid
@@ -696,14 +697,43 @@ def get_history():
 _QT_KICKER_INSTALLED = {}
 _NB_KICKER_INSTALLED = {}
 
+def install_kicker(loop=None, update_rate=0.03):
+    """
+    Install a periodic callback to integrate drawing and asyncio event loops.
+
+    This dispatches to :func:`install_qt_kicker` or :func:`install_nb_kicker`
+    depending on the current matplotlib backend.
+
+    Parameters
+    ----------
+    loop : event loop, optional
+    update_rate : number
+        Seconds between periodic updates. Default is 0.03.
+    """
+    import matplotlib
+    backend = matplotlib.get_backend()
+    if backend == 'nbAgg':
+        install_nb_kicker(loop=loop, update_rate=update_rate)
+    elif backend in ('Qt4Agg', 'Qt5Agg'):
+        install_qt_kicker(loop=loop, update_rate=update_rate)
+    else:
+        raise NotImplementedError("The matplotlib backend {} is not yet "
+                                  "supported.".format(backend))
+
 
 def install_qt_kicker(loop=None, update_rate=0.03):
-    """Install a periodic callback to integrate qt and asyncio event loops
+    """Install a periodic callback to integrate Qt and asyncio event loops.
 
-    If a version of the qt bindings are not already imported, this function
+    If a version of the Qt bindings are not already imported, this function
     will do nothing.
 
     It is safe to call this function multiple times.
+
+    Parameters
+    ----------
+    loop : event loop, optional
+    update_rate : number
+        Seconds between periodic updates. Default is 0.03.
     """
     if loop is None:
         loop = asyncio.get_event_loop()
@@ -740,12 +770,15 @@ def install_qt_kicker(loop=None, update_rate=0.03):
 
 def install_nb_kicker(loop=None, update_rate=0.03):
     """
-    The RunEngine Event Loop interferes with the qt event loop. Here we
-    kick it to keep it going.
+    Install a periodic callback to integrate ipykernel and asyncio event loops.
 
-    This works with the notebook, where `install_qt_kicker` does not.
+    It is safe to call this function multiple times.
 
-    Calling this function multiple times has no effect.
+    Parameters
+    ----------
+    loop : event loop, optional
+    update_rate : number
+        Seconds between periodic updates. Default is 0.03.
     """
     import matplotlib
     if loop is None:
