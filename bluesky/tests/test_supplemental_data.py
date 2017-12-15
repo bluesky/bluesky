@@ -2,6 +2,7 @@ import pickle
 from bluesky import SupplementalData
 from bluesky.plans import count
 from bluesky.preprocessors import pchain
+from bluesky.utils import Msg
 
 
 def test_monitors(hw):
@@ -80,6 +81,47 @@ def test_mixture(hw):
     original = list(count([hw.det]))
     processed = list(D(count([hw.det])))
     assert len(processed) == 2 + 5 + 10 + len(original)
+
+
+def test_order(hw):
+    D = SupplementalData(baseline=[hw.det2],
+                         flyers=[hw.flyer1],
+                         monitors=[hw.rand])
+
+    def null_run():
+        yield Msg('open_run')
+        yield Msg('null')
+        yield Msg('close_run')
+
+    actual = [msg.command for msg in D(null_run())]
+    expected = ['open_run',
+                # baseline
+                'trigger',
+                'wait',
+                'create',
+                'read',
+                'save',
+                # monitors
+                'monitor',
+                # flyers
+                'kickoff',
+                'wait',
+                # plan
+                'null',
+                # flyers
+                'complete',
+                'wait',
+                'collect',
+                # montiors
+                'unmonitor',
+                # baseline
+                'trigger',
+                'wait',
+                'create',
+                'read',
+                'save',
+                'close_run']
+    assert actual == expected
 
 
 def test_repr():

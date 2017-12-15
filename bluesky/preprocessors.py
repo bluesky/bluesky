@@ -1120,10 +1120,10 @@ class SupplementalData:
 
     * take "baseline" readings at the beginning and end of each run for the
       devices listed in its ``baseline`` atrribute
-    * kick off "flyable" devices listed in its ``flyers`` attribute at the
-      beginning of each run and collect their data at the end
     * monitor signals in its ``monitors`` attribute for asynchronous
       updates during each run.
+    * kick off "flyable" devices listed in its ``flyers`` attribute at the
+      beginning of each run and collect their data at the end
 
     Internally, it uses the plan preprocessors:
 
@@ -1222,7 +1222,17 @@ class SupplementalData:
         plan : iterable or iterator
             a generator, list, or similar containing `Msg` objects
         """
-        plan = baseline_wrapper(plan, self.baseline)
-        plan = monitor_during_wrapper(plan, self.monitors)
+        # Read this as going from the inside out: first we wrap the plan in the
+        # flying instructions, then monitoring, then baseline, so that the
+        # order of operations is:
+        # - Take baseline readings
+        # - Start monitoring.
+        # - Kick off flyers and wait for them to be kicked off.
+        # - Do `plan`.
+        # - Complete and collect flyers.
+        # - Stop monitoring.
+        # - Take baseline readings.
         plan = fly_during_wrapper(plan, self.flyers)
+        plan = monitor_during_wrapper(plan, self.monitors)
+        plan = baseline_wrapper(plan, self.baseline)
         return (yield from plan)
