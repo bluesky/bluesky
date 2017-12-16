@@ -86,7 +86,7 @@ class LivePlot(CallbackBase):
         self._epoch = epoch
 
     def start(self, doc):
-        # The doc is not used; we just use the singal that a new run began.
+        # The doc is not used; we just use the signal that a new run began.
         self._epoch_offset = doc['time']  # used if self.x == 'time'
         self.x_data, self.y_data = [], []
         label = " :: ".join(
