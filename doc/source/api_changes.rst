@@ -1,6 +1,53 @@
 Release Notes
 =============
 
+v1.1.0
+------
+
+This release fixes small bugs in v1.0.0 and introduces one new feature. The
+API changes or deprecataions are not expected to affect many users.
+
+Enhancements
+^^^^^^^^^^^^
+
+* Add a new command to the Rungine, ``'drop'``, which jetisons the currently
+  active event bundle without saving. This is useful for workflows that
+  generate many readings that can immediately be categorized as not useful by
+  the plan and summarily discarded.
+* Add :func:`~bluesky.utils.install_kicker`, which dispatches automatically to
+  :func:`~bluesky.utils.install_qt_kicker` or
+  :func:`bluesky.utils.install_nb_kicker` depending on the current matplotlib
+  backend.
+
+Bug Fixes
+^^^^^^^^^
+
+* Fix the hint for :func:`~bluesky.plans.inner_product_scan`, which previously
+  used a default hint that was incorrect.
+
+API Changes
+^^^^^^^^^^^
+
+* In :func:`~bluesky.plans.tune_centroid`, change the meaning of the
+  ``step_factor`` parameter to be the factor to reduce the range of each
+  successive iteration. Enforce bounds on the motion, and determine the
+  centroid from each pass separately.
+* The :class:`~bluesky.preprocessors.SupplementalData` preprocessor inserts its
+  instructions in a more logical order: first baseline readings, then
+  monitors, then flyres. Previously, the order was reversed.
+
+Deprecations
+^^^^^^^^^^^^
+
+* The suspender :class:`~bluesky.suspenders.SuspendInBand` has been renamed to
+  :class:`~bluesky.suspenders.SuspendWhenOutsideBand` to make its meaning more
+  clear. Its behavior has not changed: it suspends when a value exits a given
+  range. The original, confusing name now issues a warning.
+* The suspender :class:`~bluesky.suspenders.SuspendOutBand`, which
+  counterintuitively suspenders *when a value enters a given range*, has been
+  deprecated. (If some application is found for this unusual scenario, the user
+  can always implement a custom suspender to handle it.)
+
 v1.0.0
 ------
 
