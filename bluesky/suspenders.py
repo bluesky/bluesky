@@ -468,6 +468,13 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
                          if s)
 
 
+class SuspendInBand(SuspendWhenOutsideBand):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        warn("SuspendInBand has been renamed SuspendWhenOutsideBand to make "
+             "its meaning more clear. Its behavior has not changed.")
+
+
 class SuspendOutBand(_SuspendBandBase):
     """
     Suspend when a scalar signal enters a given band of values.

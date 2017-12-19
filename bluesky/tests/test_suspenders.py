@@ -6,6 +6,7 @@ from bluesky.suspenders import (SuspendBoolHigh,
                                 SuspendFloor,
                                 SuspendCeil,
                                 SuspendWhenOutsideBand,
+                                SuspendInBand,
                                 SuspendOutBand)
 from bluesky.tests.utils import MsgCollector
 from bluesky import Msg
@@ -20,7 +21,8 @@ import time
      (SuspendFloor, (.5,), 1, 0, 1, .2),
      (SuspendCeil, (.5,), 0, 1, 0, .2),
      (SuspendWhenOutsideBand, (.5, 1.5), 1, 0, 1, .2),
-     (SuspendOutBand, (.5, 1.5), 0, 1, 0, .2)])
+     (SuspendInBand, (.5, 1.5), 1, 0, 1, .2),  # renamed to WhenOutsideBand
+     (SuspendOutBand, (.5, 1.5), 0, 1, 0, .2)])  # deprecated
 def test_suspender(klass, sc_args, start_val, fail_val,
                    resume_val, wait_time, RE, hw):
     loop = RE._loop
