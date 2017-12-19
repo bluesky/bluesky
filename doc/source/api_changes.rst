@@ -16,7 +16,7 @@ Enhancements
   the plan and summarily discarded.
 * Add :func:`~bluesky.utils.install_kicker`, which dispatches automatically to
   :func:`~bluesky.utils.install_qt_kicker` or
-  :func:`bluesky.utils.install_nb_kicker` depending on the current matplotlib
+  :func:`~bluesky.utils.install_nb_kicker` depending on the current matplotlib
   backend.
 
 Bug Fixes
