@@ -161,6 +161,12 @@ def test_table(RE, hw):
             assert ln[26:] == kn[26:]
 
 
+def test_table_external(RE, hw, db):
+    RE.subscribe(db.insert)
+    hw.img.reg = db.reg
+    RE(count([hw.img]), LiveTable(['img']))
+
+
 KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 |   seq_num  |        time  |           det  |         motor  |
 +------------+--------------+----------------+----------------+
