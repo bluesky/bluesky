@@ -14,7 +14,7 @@ except ImportError:
     from toolz import partition
 
 
-from .utils import (separate_devices, all_safe_rewind, Msg,
+from .utils import (separate_devices, all_safe_rewind, Msg, ensure_generator,
                     short_uid as _short_uid)
 
 
@@ -921,10 +921,8 @@ def repeat(plan, num=1, delay=None):
     def repeated_plan():
         for i in iterator:
             now = time.time()  # Intercept the flow in its earliest moment.
-            if isinstance(plan, list):
-                yield from plan
-            else:
-                yield from plan()
+            yield Msg('checkpoint')
+            yield from ensure_generator(plan())
             try:
                 d = next(delay)
             except StopIteration:

@@ -1,5 +1,6 @@
 import sys
 from itertools import chain
+from functools import partial
 
 from collections import defaultdict
 import time
@@ -56,14 +57,11 @@ def count(detectors, num=1, delay=None, *, md=None):
     _md.update(md or {})
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
-    def take_data():
-        yield Msg('checkpoint')
-        return (yield from bps.trigger_and_read(detectors))
-
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
     def inner_count():
-        return (yield from bps.repeat(take_data, num=num, delay=delay))
+        return (yield from bps.repeat(partial(bps.trigger_and_read, detectors),
+                                      num=num, delay=delay))
 
     return (yield from inner_count())
 
