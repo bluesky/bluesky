@@ -32,7 +32,8 @@ from bluesky.plan_stubs import (
     trigger_and_read,
     stop,
     repeater,
-    caching_repeater,)
+    caching_repeater,
+    repeat)
 from bluesky.preprocessors import (
     finalize_wrapper,
     fly_during_wrapper,
@@ -506,6 +507,19 @@ def test_caching_repeater():
     assert next(p) == 2
     assert next(p) == 3
     assert next(p) == 1
+
+
+def test_repeat():
+    # Check if lists and callables both work
+    messages = [1, 2, 3]
+
+    def plan():
+        yield from messages
+
+    num = 3
+    expected = [Msg('checkpoint'), 1, 2, 3] * num
+    assert list(repeat(plan, num=num)) == expected
+    assert list(repeat(messages, num=num)) == expected
 
 
 def test_trigger_and_read(hw):

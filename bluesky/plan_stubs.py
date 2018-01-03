@@ -922,7 +922,10 @@ def repeat(plan, num=1, delay=None):
         for i in iterator:
             now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg('checkpoint')
-            yield from ensure_generator(plan())
+            if callable(plan):
+                yield from ensure_generator(plan())
+            else:
+                yield from ensure_generator(plan)
             try:
                 d = next(delay)
             except StopIteration:
