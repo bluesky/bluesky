@@ -897,6 +897,12 @@ def repeat(plan, num=1, delay=None):
     If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
     the plan will raise a ``ValueError`` during iteration.
     """
+    # Create finite or infinite counter
+    if num is None:
+        iterator = itertools.count()
+    else:
+        iterator = range(num)
+
     # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
     if not isinstance(delay, Iterable):
         delay = itertools.repeat(delay)
@@ -912,8 +918,8 @@ def repeat(plan, num=1, delay=None):
                                  "entries" % (num, num_delays))
         delay = iter(delay)
 
-    def finite_plan():
-        for i in range(num):
+    def repeated_plan():
+        for i in iterator:
             now = time.time()  # Intercept the flow in its earliest moment.
             if isinstance(plan, list):
                 yield from plan
@@ -924,6 +930,8 @@ def repeat(plan, num=1, delay=None):
             except StopIteration:
                 if i + 1 == num:
                     break
+                elif num is None:
+                    break
                 else:
                     # num specifies a number of iterations less than delay
                     raise ValueError("num=%r but delays only provides %r "
@@ -933,20 +941,4 @@ def repeat(plan, num=1, delay=None):
                 if d > 0:  # Sleep if and only if time is left to do it.
                     yield Msg('sleep', None, d)
 
-    def infinite_plan():
-        while True:
-            if isinstance(plan, list):
-                yield from plan
-            else:
-                yield from plan()
-            try:
-                d = next(delay)
-            except StopIteration:
-                break
-            if d is not None:
-                yield Msg('sleep', None, d)
-
-    if num is None:
-        return (yield from infinite_plan())
-    else:
-        return (yield from finite_plan())
+    return (yield from repeated_plan())
