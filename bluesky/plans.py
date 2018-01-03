@@ -56,18 +56,16 @@ def count(detectors, num=1, delay=None, *, md=None):
     _md.update(md or {})
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
-    def outer():
-        def inner():
-            yield Msg('checkpoint')
-            yield from bps.trigger_and_read(detectors)
-        return (yield from inner())
+    def take_data():
+        yield Msg('checkpoint')
+        return (yield from bps.trigger_and_read(detectors))
 
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
-    def plan():
-        return (yield from bps.repeat(outer, num=num, delay=delay))
+    def inner_count():
+        return (yield from bps.repeat(take_data, num=num, delay=delay))
 
-    return (yield from plan())
+    return (yield from inner_count())
 
 
 def list_scan(detectors, motor, steps, *, per_step=None, md=None):
