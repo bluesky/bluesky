@@ -879,7 +879,12 @@ def one_nd_step(detectors, step, pos_cache):
 
 def repeat(plan, num=1, delay=None):
     """
-    Repeat a plan num times with delay between each repeat.
+    Repeat a plan num times with delay and checkpoint between each repeat.
+
+    This is different from ``repeater`` and ``caching_repeater`` in that it
+    adds ``checkpoint`` and optionally ``sleep`` messages if delay is provided.
+    This is intended for users who need the structure of ``count`` but do not
+    want to reimplement the control flow.
 
     Parameters
     ----------
