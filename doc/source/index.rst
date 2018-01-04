@@ -60,3 +60,27 @@ Index
    msg
    run_engine
    api_changes
+
+.. toctree::
+   :hidden:
+   :caption: Data Collection
+
+   bluesky <https://nsls-ii.github.io/bluesky>
+   ophyd <https://nsls-ii.github.io/ophyd>
+
+.. toctree::
+   :hidden:
+   :caption: Data Access and Management
+
+   databroker <https://nsls-ii.github.io/databroker>
+   amostra <https://nsls-ii.github.io/amostra>
+   datamuxer <https://nsls-ii.github.io/datamuxer>
+   suitcase <https://nsls-ii.github.io/suitcase>
+
+.. toctree::
+   :hidden:
+   :caption: GitHub Links
+
+   NSLS-II Repositories <https://github.com/NSLS-II/>
+   Bug Reports <https://github.com/NSLS-II/Bug-Reports/issues>
+
