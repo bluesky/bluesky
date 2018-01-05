@@ -5,15 +5,15 @@ v1.1.0
 ------
 
 This release fixes small bugs in v1.0.0 and introduces one new feature. The
-API changes or deprecataions are not expected to affect many users.
+API changes or deprecations are not expected to affect many users.
 
 Enhancements
 ^^^^^^^^^^^^
 
-* Add a new command to the Rungine, ``'drop'``, which jetisons the currently
-  active event bundle without saving. This is useful for workflows that
-  generate many readings that can immediately be categorized as not useful by
-  the plan and summarily discarded.
+* Add a new command to the :class:`~bluesky.run_engine.RunEngine`, ``'drop'``,
+  which jettisons the currently active event bundle without saving. This is
+  useful for workflows that generate many readings that can immediately be
+  categorized as not useful by the plan and summarily discarded.
 * Add :func:`~bluesky.utils.install_kicker`, which dispatches automatically to
   :func:`~bluesky.utils.install_qt_kicker` or
   :func:`~bluesky.utils.install_nb_kicker` depending on the current matplotlib
@@ -34,7 +34,7 @@ API Changes
   centroid from each pass separately.
 * The :class:`~bluesky.preprocessors.SupplementalData` preprocessor inserts its
   instructions in a more logical order: first baseline readings, then
-  monitors, then flyres. Previously, the order was reversed.
+  monitors, then flyers. Previously, the order was reversed.
 
 Deprecations
 ^^^^^^^^^^^^
@@ -44,7 +44,7 @@ Deprecations
   clear. Its behavior has not changed: it suspends when a value exits a given
   range. The original, confusing name now issues a warning.
 * The suspender :class:`~bluesky.suspenders.SuspendOutBand`, which
-  counterintuitively suspenders *when a value enters a given range*, has been
+  counter-intuitively suspends *when a value enters a given range*, has been
   deprecated. (If some application is found for this unusual scenario, the user
   can always implement a custom suspender to handle it.)
 

@@ -225,6 +225,10 @@ bluesky in particular. See
 `the relevant section of the IPython documentation <https://ipython.readthedocs.io/en/stable/interactive/magics.html?highlight=matplotlib#magic-matplotlib>`_
 for details.
 
+.. autofunction:: bluesky.utils.install_kicker
+.. autofunction:: bluesky.utils.install_qt_kicker
+.. autofunction:: bluesky.utils.install_nb_kicker
+
 .. _liveplot:
 
 LivePlot (for scalar data)
