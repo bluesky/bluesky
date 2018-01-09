@@ -502,7 +502,10 @@ class SuspendOutBand(_SuspendBandBase):
     post_plan : iterable or iterator, optional
             a generator, list, or similar containing `Msg` objects
     """
-    warn("bluesky.suspenders.SuspendOutBand is deprecated.")
+    def __init__(self, *args, **kwargs):
+        warn("bluesky.suspenders.SuspendOutBand is deprecated.")
+        super().__init__(*args, **kwargs)
+
     def _should_resume(self, value):
         return not (self._bot < value < self._top)
 
