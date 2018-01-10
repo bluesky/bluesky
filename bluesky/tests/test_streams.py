@@ -30,7 +30,7 @@ class NegativeStream(LiveDispatcher):
         for key, val in doc['data'].items():
             modified['modified_{}'.format(key)] = -math.fabs(val)
         doc['data'] = modified
-        return self.process_event(doc)
+        return super().event(doc)
 
 
 class AverageStream(LiveDispatcher):
@@ -75,7 +75,7 @@ class AverageStream(LiveDispatcher):
             return {'data': average_evt, 'descriptor': desc_id}
 
         self.out_node = self.averager.map(average_events)
-        self.out_node.sink(self.process_event)
+        self.out_node.sink(super().event)
         super().start(doc)
 
     def event(self, doc):

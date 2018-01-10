@@ -14,7 +14,28 @@ logger = logging.getLogger(__name__)
 
 
 class LiveDispatcher(CallbackBase):
-    """Create a secondary event stream of processed data"""
+    """
+    A secondary event stream of processed data
+
+    The LiveDipatcher base implementation does not change any of the data
+    emitted, this task is left to sub-classes, but instead handles
+    reimplementing a secondary event stream that fits the same schema demanded
+    by the RunEngine itself. In order to reduce the work done by these
+    processed data pipelines, the LiveDispatcher handles the nitty-gritty
+    details of formatting the event documents. This includes creating new uids,
+    numbering events and creating descriptors.
+
+    The LiveDispatcher can be subscribed to using the same syntax as the
+    RunEngine, effectively creating a small chain of callbacks
+
+    .. code::
+        # Create our dispatcher
+        ld = LiveDispatcher()
+        # Subscribe it to receive events from the RunEgine
+        RE.subscribe(ld)
+        # Subscribe any callbacks we desire to second stream
+        ld.subscribe(LivePlot('det', x='motor'))
+    """
     def __init__(self):
         # Public dispatcher for callbacks
         self.dispatcher = Dispatcher()
@@ -44,22 +65,57 @@ class LiveDispatcher(CallbackBase):
         self.raw_descriptors[doc['uid']] = doc
         super().descriptor(doc)
 
+    def event(self, doc, **kwargs):
+        """
+        Receive an event document from the original stream.
+
+        This should be reimplemented by a subclass, with ``super().event``
+        called as the last step in the method.
+
+        Parameters
+        ----------
+        doc : event
+
+        kwargs:
+            All keyword arguments are passed to :meth:`.process_event`
+        """
+        self.process_event(doc, **kwargs)
+        return super().event(doc)
+
     def process_event(self, doc, stream_name='primary',
                       id_args=None, config=None):
         """
-        Receive an event document
+        Process an event document before emitting
 
-        If we have not released a description yet, we can view the event
-        document and the last description we received from the raw RunEngine
-        and create a new updated description document. The event document is
-        also modified to have a new sequence number and description source so
-        that it is not confused with the raw data stream being emitted from the
-        RunEngine
+        This will pass an Event document to the dispatcher. If we have received
+        a new event descriptor from the original stream, or we have recieved a
+        new set of `id_args` or `descriptor_id` , a new descriptor document is
+        first issued and passed through to the dispatcher.  When issuing a new
+        event, the new descriptor is given a new source field.
+
+        Parameters
+        ----------
+        doc : event
+
+        stream_name : str, optional
+            String identifier for a particular stream
+
+        id_args : tuple, optional
+            Additional tuple of hashable objects to identify the stream
+
+        config: dict, optional
+            Additional configuration information to be included in the event
+            descriptor
+
+        Notes
+        -----
+        Any callback subscribed to the `Dispatcher` will receive these event
+        streams.  If nothing is subscribed, these documents will not go
+        anywhere.
         """
         id_args = id_args or (doc['descriptor'],)
         config = config or dict()
         # Determine the descriptor id
-
         desc_id = frozenset((tuple(doc['data'].keys()), stream_name, id_args))
         # If we haven't described this configuration
         # Send a new document to our subscribers
@@ -142,7 +198,7 @@ class LiveDispatcher(CallbackBase):
         super().stop(doc)
 
     def emit(self, name, doc):
-        """Emit a document, first checking the schema"""
+        """Check the document schema and send to the dispatcher"""
         jsonschema.validate(doc, schemas[name])
         self.dispatcher.process(name, doc)
 
