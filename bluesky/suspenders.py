@@ -503,7 +503,8 @@ class SuspendOutBand(_SuspendBandBase):
             a generator, list, or similar containing `Msg` objects
     """
     def __init__(self, *args, **kwargs):
-        warn("bluesky.suspenders.SuspendOutBand is deprecated.")
+        warn("bluesky.suspenders.SuspendOutBand is deprecated.",
+             DeprecationWarning)
         super().__init__(*args, **kwargs)
 
     def _should_resume(self, value):
