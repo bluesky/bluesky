@@ -1137,3 +1137,91 @@ Publisher / RemoteDispatcher API
 .. autoclass:: bluesky.callbacks.zmq.Proxy
 .. autoclass:: bluesky.callbacks.zmq.Publisher
 .. autoclass:: bluesky.callbacks.zmq.RemoteDispatcher
+
+
+Secondary Event Stream
+----------------------
+For certain applications, it may desirable to interpret event documents as
+they are created instead of waiting for them to reach offline storage. In order
+to keep this information completely quarantined from the raw data, the
+:class:`.LiveDispatcher` presents a completely unique stream that can be
+subscribed to using the same syntax as the RunEngine.
+
+In the majority of applications of :class:`.LiveDispatcher`, it is expected
+that subclasses are created to implement online analysis. This secondary event
+stream can be displayed and saved offline using the same callbacks that you
+would use to display the raw data.
+
+Below is an example using the `streamz
+<https://streamz.readthedocs.io/en/latest>`_ library to average a number of
+events together. The callback can be configured by looking at the start
+document metadata, or at initialization time. Events are then received and
+stored by the ``streamz`` network and a new averaged event is emitted when the
+correct number of events are in the cache. The important thing to note here is
+that the analysis only handles creating new ``data`` keys, but the descriptors,
+sequence numbering and event ids are all handled by the base `LiveDispatcher`
+class.
+
+.. code-block:: python
+
+    class AverageStream(LiveDispatcher):
+        """Stream that averages data points together"""
+        def __init__(self, n=None):
+            self.n = n
+            self.in_node = None
+            self.out_node = None
+            self.averager = None
+            super().__init__()
+
+        def start(self, doc):
+            """
+            Create the stream after seeing the start document
+
+            The callback looks for the 'average' key in the start document to
+            configure itself.
+            """
+            # Grab the average key
+            self.n = doc.get('average', self.n)
+            # Define our nodes
+            if not self.in_node:
+                self.in_node = streamz.Source(stream_name='Input')
+
+            self.averager = self.in_node.partition(self.n)
+
+            def average_events(cache):
+                average_evt = dict()
+                desc_id = cache[0]['descriptor']
+                # Check that all of our events came from the same configuration
+                if not all([desc_id == evt['descriptor'] for evt in cache]):
+                    raise Exception('The events in this bundle are from '
+                                    'different configurations!')
+                # Use the last descriptor to avoid strings and objects
+                data_keys = self.raw_descriptors[desc_id]['data_keys']
+                for key, info in data_keys.items():
+                    # Information from non-number fields is dropped
+                    if info['dtype'] in ('number', 'array'):
+                        # Average together
+                        average_evt[key] = np.mean([evt['data'][key]
+                                                    for evt in cache], axis=0)
+                return {'data': average_evt, 'descriptor': desc_id}
+
+            self.out_node = self.averager.map(average_events)
+            self.out_node.sink(self.process_event)
+            super().start(doc)
+
+        def event(self, doc):
+            """Send an Event through the stream"""
+            self.in_node.emit(doc)
+
+        def stop(self, doc):
+            """Delete the stream when run stops"""
+            self.in_node = None
+            self.out_node = None
+            self.averager = None
+            super().stop(doc)
+
+
+LiveDispatcher API
+++++++++++++++++++
+.. autoclass:: bluesky.callbacks.stream.LiveDispatcher
+   :members:

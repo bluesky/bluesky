@@ -29,6 +29,7 @@ class LiveDispatcher(CallbackBase):
     RunEngine, effectively creating a small chain of callbacks
 
     .. code::
+
         # Create our dispatcher
         ld = LiveDispatcher()
         # Subscribe it to receive events from the RunEgine
@@ -69,8 +70,7 @@ class LiveDispatcher(CallbackBase):
         """
         Receive an event document from the original stream.
 
-        This should be reimplemented by a subclass, with ``super().event``
-        called as the last step in the method.
+        This should be reimplemented by a subclass.
 
         Parameters
         ----------
