@@ -298,7 +298,12 @@ class LiveTable(CallbackBase):
         data[self.ev_time_key] = fmt_time
         data['seq_num'] = doc['seq_num']
         cols = [f.format(**{k: data[k]})
-                if k in data else ' ' * self._format_info[k].width
+                # Show data[k] if k exists in this Event and is 'filled'.
+                # (The latter is only applicable if the data is
+                # externally-stored -- hence the fallback to `True`.)
+                if ((k in data) and doc.get('filled', {}).get(k, True))
+                # Otherwise use a placeholder of whitespace.
+                else ' ' * self._format_info[k].width
                 for k, f in self._data_formats.items()]
         self._print('|' + '|'.join(cols) + '|')
         super().event(doc)
