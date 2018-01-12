@@ -614,7 +614,7 @@ def tune_centroid(
         number of points with each traversal, default = 10
     step_factor : float, optional
         used in calculating new range after each pass
-        
+
         note: step_factor > 1.0, default = 3
     snake : bool, optional
         if False (default), always scan from start to stop
@@ -1411,6 +1411,52 @@ def fly(flyers, *, md=None):
     for flyer in flyers:
         yield from bps.collect(flyer)
     yield from bps.close_run()
+
+
+def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
+             per_step=None, md=None):
+    """
+    Relatively scan over two motors in a 2:1 ratio
+
+    This is a generalized version of a theta2theta scan
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+
+    motor1, motor2 : Positioner
+        The second motor will move half as much as the first
+
+    start, stop : float
+        The relative limits of the first motor.  The second motor
+        will move between ``start / 2`` and ``stop / 2``
+
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
+        details.
+
+    md : dict, optional
+        metadata
+
+
+    """
+    _md = {'plan_name': 'x2x_scan',
+           'plan_args': {'detectors': list(map(repr, detectors)),
+                         'motor1': motor1.name,
+                         'motor2': motor2.name,
+                         'start': start, 'stop': stop, 'num': num,
+                         'per_step': repr(per_step)}
+           }
+
+    _md.update(md or {})
+    return (yield from relative_inner_product_scan(
+        detectors, num,
+        motor1, start, stop,
+        motor2, start / 2, stop / 2,
+        per_step=per_step,
+        md=_md))
 
 
 relative_list_scan = rel_list_scan  # back-compat
