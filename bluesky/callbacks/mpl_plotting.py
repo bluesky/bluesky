@@ -323,15 +323,19 @@ class LiveGrid(CallbackBase):
             raise RuntimeError("Can not re-use LiveGrid")
         self._Idata = np.ones(self.raster_shape) * np.nan
         # The user can control origin by specific 'extent'.
-        origin = None
         extent = self.extent
-        if extent is not None:
-            if extent[2] < extent[3]:
-                origin = 'lower'
+        # origin must be 'lower' for the plot to fill in correctly
+        # (the first voxel filled must be closest to what mpl thinks
+        # is the 'lower left' of the image)
         im = self.ax.imshow(self._Idata, norm=self._norm,
                             cmap=self.cmap, interpolation='none',
                             extent=extent, aspect=self.aspect,
-                            origin=origin)
+                            origin='lower')
+
+        # make sure the 'sense' of the axes is 'y values increasing up'
+        ymin, ymax = ax.get_ylim()
+        if ymin > ymax:
+            ax.set_ylim(ymax, ymin)
 
         self.im = im
         self.ax.set_title('scan {uid} [{sid}]'.format(sid=doc['scan_id'],
