@@ -1,7 +1,6 @@
 attrs
 coverage
 databroker
-doct
 doctr
 ipython
 ipywidgets
