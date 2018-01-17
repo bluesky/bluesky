@@ -1,4 +1,6 @@
+attrs
 cycler
+doct
 event-model
 historydict
 jsonschema
@@ -6,4 +8,3 @@ numpy
 super_state_machine
 toolz
 tqdm
-doct
