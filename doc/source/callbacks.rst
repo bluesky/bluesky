@@ -560,7 +560,7 @@ There is also a convenience function for plotting:
 
 .. code-block:: python
 
-    from bluesky.callbacks.scientific import plot_peak_stats
+    from bluesky.callbacks.mpl_plotting import plot_peak_stats
 
     plot_peak_stats(ps)
 
@@ -617,7 +617,7 @@ plans in :mod:`bluesky.plans` for examples.)
 
     dets = [det1, det2]
 
-    RE(scan([det], motor, 1, 5, 5))  # automatically prints table, shows plot
+    RE(scan(dets, motor, 1, 5, 5))  # automatically prints table, shows plot
 
 .. plot::
 
