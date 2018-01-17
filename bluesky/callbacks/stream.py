@@ -47,7 +47,7 @@ class LiveDispatcher(CallbackBase):
         self._descriptors = dict()  # Dictionary of sent descriptors
 
     def start(self, doc, _md=None):
-        """Receive a start document, re-emit it for this event stream"""
+        """Receive a raw start document, re-emit it for the modified stream"""
         self._stream_start_uid = new_uid()
         _md = _md or dict()
         # Create a new start document with a new uid, start time, and the uid
@@ -68,7 +68,7 @@ class LiveDispatcher(CallbackBase):
 
     def event(self, doc, **kwargs):
         """
-        Receive an event document from the original stream.
+        Receive an event document from the raw stream.
 
         This should be reimplemented by a subclass.
 
@@ -85,7 +85,7 @@ class LiveDispatcher(CallbackBase):
     def process_event(self, doc, stream_name='primary',
                       id_args=None, config=None):
         """
-        Process an event document before emitting
+        Process a modified event document then emit it for the modified stream
 
         This will pass an Event document to the dispatcher. If we have received
         a new event descriptor from the original stream, or we have recieved a
@@ -178,7 +178,7 @@ class LiveDispatcher(CallbackBase):
         self.emit(DocumentNames.event, dict(evt))
 
     def stop(self, doc, _md=None):
-        """Receive a stop document, re-emit it for this event stream"""
+        """Receive a raw stop document, re-emit it for the modified stream"""
         # Create a new stop document with a new_uid, pointing to the correct
         # start document uid, and tally the number of events we have emitted.
         # The rest of the stop information is passed on to the next callback
