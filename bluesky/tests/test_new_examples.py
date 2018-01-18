@@ -519,6 +519,7 @@ def test_repeat():
     num = 3
     expected = [Msg('checkpoint'), 1, 2, 3] * num
     assert list(repeat(plan, num=num)) == expected
+    assert list(repeat(plan(), num=num)) == expected
     assert list(repeat(messages, num=num)) == expected
 
 
