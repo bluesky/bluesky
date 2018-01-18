@@ -924,13 +924,16 @@ def repeat(plan, num=1, delay=None):
         delay = iter(delay)
 
     def repeated_plan():
+        nonlocal plan
         for i in iterator:
             now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg('checkpoint')
             if callable(plan):
                 yield from ensure_generator(plan())
             else:
-                yield from ensure_generator(plan)
+                # Stash plan for our next trip through the loop; use plan_copy.
+                plan, plan_copy = itertools.tee(ensure_generator(plan))
+                yield from plan_copy
             try:
                 d = next(delay)
             except StopIteration:
