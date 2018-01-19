@@ -1,8 +1,8 @@
 import sys
-import itertools
 from itertools import chain
+from functools import partial
 
-from collections import (Iterable, defaultdict)
+from collections import defaultdict
 import time
 
 import numpy as np
@@ -57,59 +57,13 @@ def count(detectors, num=1, delay=None, *, md=None):
     _md.update(md or {})
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
-    # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
-    if not isinstance(delay, Iterable):
-        delay = itertools.repeat(delay)
-    else:
-        try:
-            num_delays = len(delay)
-        except TypeError:
-            # No way to tell in advance if we have enough delays.
-            pass
-        else:
-            if num - 1 > num_delays:
-                raise ValueError("num=%r but delays only provides %r "
-                                 "entries" % (num, num_delays))
-        delay = iter(delay)
-
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
-    def finite_plan():
-        for i in range(num):
-            now = time.time()  # Intercept the flow in its earliest moment.
-            yield Msg('checkpoint')
-            yield from bps.trigger_and_read(detectors)
-            try:
-                d = next(delay)
-            except StopIteration:
-                if i + 1 == num:
-                    break
-                else:
-                    # num specifies a number of iterations less than delay
-                    raise ValueError("num=%r but delays only provides %r "
-                                     "entries" % (num, i))
-            if d is not None:
-                d = d - (time.time() - now)
-                if d > 0:  # Sleep if and only if time is left to do it.
-                    yield Msg('sleep', None, d)
+    def inner_count():
+        return (yield from bps.repeat(partial(bps.trigger_and_read, detectors),
+                                      num=num, delay=delay))
 
-    @bpp.stage_decorator(detectors)
-    @bpp.run_decorator(md=_md)
-    def infinite_plan():
-        while True:
-            yield Msg('checkpoint')
-            yield from bps.trigger_and_read(detectors)
-            try:
-                d = next(delay)
-            except StopIteration:
-                break
-            if d is not None:
-                yield Msg('sleep', None, d)
-
-    if num is None:
-        return (yield from infinite_plan())
-    else:
-        return (yield from finite_plan())
+    return (yield from inner_count())
 
 
 def list_scan(detectors, motor, steps, *, per_step=None, md=None):
@@ -614,7 +568,7 @@ def tune_centroid(
         number of points with each traversal, default = 10
     step_factor : float, optional
         used in calculating new range after each pass
-        
+
         note: step_factor > 1.0, default = 3
     snake : bool, optional
         if False (default), always scan from start to stop

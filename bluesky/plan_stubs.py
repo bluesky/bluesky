@@ -4,6 +4,8 @@ from cycler import cycler
 from . import utils
 import operator
 from functools import reduce
+from collections import Iterable
+import time
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -12,7 +14,7 @@ except ImportError:
     from toolz import partition
 
 
-from .utils import (separate_devices, all_safe_rewind, Msg,
+from .utils import (separate_devices, all_safe_rewind, Msg, ensure_generator,
                     short_uid as _short_uid)
 
 
@@ -890,3 +892,79 @@ def one_nd_step(detectors, step, pos_cache):
     motors = step.keys()
     yield from move()
     yield from trigger_and_read(list(detectors) + list(motors))
+
+
+def repeat(plan, num=1, delay=None):
+    """
+    Repeat a plan num times with delay and checkpoint between each repeat.
+
+    This is different from ``repeater`` and ``caching_repeater`` in that it
+    adds ``checkpoint`` and optionally ``sleep`` messages if delay is provided.
+    This is intended for users who need the structure of ``count`` but do not
+    want to reimplement the control flow.
+
+    Parameters
+    ----------
+    plan: callable or list
+        Callable that returns a valid plan, or a list of Message objects
+    num : integer, optional
+        number of readings to take; default is 1
+
+        If None, capture data until canceled
+    delay : iterable or scalar, optional
+        time delay between successive readings; default is 0
+
+    Notes
+    -----
+    If ``delay`` is an iterable, it must have at least ``num - 1`` entries or
+    the plan will raise a ``ValueError`` during iteration.
+    """
+    # Create finite or infinite counter
+    if num is None:
+        iterator = itertools.count()
+    else:
+        iterator = range(num)
+
+    # If delay is a scalar, repeat it forever. If it is an iterable, leave it.
+    if not isinstance(delay, Iterable):
+        delay = itertools.repeat(delay)
+    else:
+        try:
+            num_delays = len(delay)
+        except TypeError:
+            # No way to tell in advance if we have enough delays.
+            pass
+        else:
+            if num - 1 > num_delays:
+                raise ValueError("num=%r but delays only provides %r "
+                                 "entries" % (num, num_delays))
+        delay = iter(delay)
+
+    def repeated_plan():
+        nonlocal plan
+        for i in iterator:
+            now = time.time()  # Intercept the flow in its earliest moment.
+            yield Msg('checkpoint')
+            if callable(plan):
+                yield from ensure_generator(plan())
+            else:
+                # Stash plan for our next trip through the loop; use plan_copy.
+                plan, plan_copy = itertools.tee(ensure_generator(plan))
+                yield from plan_copy
+            try:
+                d = next(delay)
+            except StopIteration:
+                if i + 1 == num:
+                    break
+                elif num is None:
+                    break
+                else:
+                    # num specifies a number of iterations less than delay
+                    raise ValueError("num=%r but delays only provides %r "
+                                     "entries" % (num, i))
+            if d is not None:
+                d = d - (time.time() - now)
+                if d > 0:  # Sleep if and only if time is left to do it.
+                    yield Msg('sleep', None, d)
+
+    return (yield from repeated_plan())
