@@ -6,25 +6,42 @@ Message Hook
 
 If the RunEngine is "hanging," running slowly, or repeatedly encountering an
 error, it is useful to know exactly where in the plan the problem is occurring.
-To follow the RunEngine's progress through the plan, use the message hook:
+To follow the RunEngine's progress through the plan, use the message hook. You
+can set it to any callable, including the ``print`` function:
 
 .. code-block:: python
 
     RE.msg_hook = print
 
-Now the RunEngine will call ``print(msg)`` before processing each ``msg`` in
-the plan. Execute the plan that is causing the issue and watch the output.
-Suppose we are running a ``count`` that freezes up while triggering a detector.
-That would look like this:
+or a small utility that formats a more readable message and includes a
+timestamp:
 
 .. code-block:: python
 
-   In [7]: RE(count([det]))
-   stage: (<ophyd.sim.SynGauss object at 0x10f1bfb38>), (), {}
-   open_run: (None), (), {'plan_args': {'num': 1, 'detectors': ['<ophyd.sim.SynGauss object at 0x10f1bfb38>']}, 'detectors': ['det'], 'plan_name': 'count'}
-   checkpoint: (None), (), {}
-   trigger: (<ophyd.sim.SynGauss object at 0x10f1bfb38>), (), {'group': 'trigger-ff93f4'}
-   wait: (None), (), {'group': 'trigger-ff93f4'}
+    from bluesky.utils import ts_msg_hook
+
+    RE.msg_hook = ts_msg_hook
+
+Now the RunEngine will call ``ts_msg_hook(msg)`` before processing each ``msg``
+in the plan. Execute the plan that is causing the issue and watch the output.
+Suppose we are running a ``count`` that freezes up while triggering a detector.
+That would look like this:
+
+.. ipython::
+    :verbatim:
+
+    In [8]: RE(count([det]))
+    11:39:06.712560 stage             -> det             args: (), kwargs: {}
+    11:39:06.715281 open_run          -> None            args: (), kwargs:
+    {'detectors': ['det'], 'num_points': 1, 'num_intervals': 0, 'plan_args':
+    {'detectors': ["SynGauss(name='det', value=1.0, timestamp=1516379938.010617)"],
+    'num': 1}, 'plan_name': 'count', 'hints': {'dimensions': [(('time',),
+    'primary')]}}
+    11:39:06.717813 checkpoint        -> None            args: (), kwargs: {}
+    11:39:06.718076 trigger           -> det             args: (), kwargs:
+    {'group': 'trigger-0487d9'}
+    11:39:06.718659 wait              -> None            args: (), kwargs:
+    {'group': 'trigger-0487d9'}
 
 The last message is is a 'wait' message, and it waiting for the 'trigger' just
 above it to complete. If the plan freezes at this point, a likely culprit is
