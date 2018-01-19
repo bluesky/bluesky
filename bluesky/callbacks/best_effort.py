@@ -144,6 +144,11 @@ class BestEffortCallback(CallbackBase):
             self._cleanup_motor_heuristic = False
             fixed_dim_fields = []
             for obj_name in self.dim_fields:
+                # Special case: 'time' can be a dim_field, but it's not an
+                # object name. Just add it directly to the list of fields.
+                if obj_name == 'time':
+                    fixed_dim_fields.append('time')
+                    continue
                 try:
                     fields = doc.get('hints', {}).get(obj_name, {})['fields']
                 except KeyError:

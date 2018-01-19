@@ -1,5 +1,7 @@
 import ast
 from bluesky.plans import scan
+import bluesky.preprocessors as bpp
+import bluesky.plan_stubs as bps
 from bluesky.preprocessors import SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
 
@@ -67,3 +69,14 @@ def test_with_baseline(RE, hw):
     sd = SupplementalData(baseline=[hw.det])
     RE.preprocessors.append(sd)
     RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
+
+
+def test_underhinted_plan(RE, hw):
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+    @bpp.run_decorator()
+    def broken_plan(dets):
+        yield from bps.trigger_and_read(dets)
+
+    RE(broken_plan([hw.det]))
