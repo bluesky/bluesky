@@ -268,7 +268,7 @@ class BestEffortCallback(CallbackBase):
             gridding = self._start_doc.get('hints', {}).get('gridding')
             if gridding == 'rectilinear':
                 self._live_grids[doc['uid']] = {}
-                x_key, y_key = dim_fields
+                slow, fast = dim_fields
                 try:
                     extents = self._start_doc['extents']
                     shape = self._start_doc['shape']
@@ -294,7 +294,7 @@ class BestEffortCallback(CallbackBase):
                             ax.set_aspect(aspect, adjustable='datalim')
 
                         live_grid = LiveGrid(shape, I_key,
-                                             xlabel=x_key, ylabel=y_key,
+                                             xlabel=fast, ylabel=slow,
                                              extent=adjusted_extent,
                                              aspect=aspect,
                                              ax=ax)
