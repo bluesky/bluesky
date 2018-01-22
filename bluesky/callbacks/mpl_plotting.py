@@ -333,9 +333,9 @@ class LiveGrid(CallbackBase):
                             origin='lower')
 
         # make sure the 'sense' of the axes is 'y values increasing up'
-        ymin, ymax = ax.get_ylim()
+        ymin, ymax = self.ax.get_ylim()
         if ymin > ymax:
-            ax.set_ylim(ymax, ymin)
+            self.ax.set_ylim(ymax, ymin)
 
         self.im = im
         self.ax.set_title('scan {uid} [{sid}]'.format(sid=doc['scan_id'],
