@@ -7,4 +7,5 @@ except ImportError:
     ...
 else:
     from .mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
-                               LiveFitPlot, LiveRaster, LiveMesh)
+                               LiveFitPlot, LiveRaster, LiveMesh,
+                               LiveWaterfall)

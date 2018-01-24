@@ -6,6 +6,7 @@ import numpy as np
 import warnings
 
 from .core import CallbackBase, get_obj_fields
+from .waterfall import Waterfall
 
 
 class LivePlot(CallbackBase):
@@ -47,6 +48,7 @@ class LivePlot(CallbackBase):
     >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
     >>> RE(my_scan, my_plotter)
     """
+
     def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, fig=None, epoch='run', **kwargs):
         super().__init__()
@@ -124,9 +126,12 @@ class LivePlot(CallbackBase):
         if self.x == 'time' and self._epoch == 'run':
             new_x -= self._epoch_offset
 
+        self.update(new_x, new_y)
+        super().event(doc)
+
+    def update(self, new_x, new_y):
         self.update_caches(new_x, new_y)
         self.update_plot()
-        super().event(doc)
 
     def update_caches(self, x, y):
         self.y_data.append(y)
@@ -183,6 +188,7 @@ class LiveScatter(CallbackBase):
     --------
     :class:`bluesky.callbacks.LiveGrid`.
     """
+
     def __init__(self, x, y, I, *, xlim=None, ylim=None,
                  clim=None, cmap='viridis', ax=None, **kwargs):
         if ax is None:
@@ -295,6 +301,7 @@ class LiveGrid(CallbackBase):
     --------
     :class:`bluesky.callbacks.LiveScatter`.
     """
+
     def __init__(self, raster_shape, I, *,
                  clim=None, cmap='viridis',
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
@@ -401,6 +408,7 @@ class LiveFitPlot(LivePlot):
         matplotib Axes; if none specified, new figure and axes are made.
     All additional keyword arguments are passed through to ``Axes.plot``.
     """
+
     def __init__(self, livefit, *, num_points=100, legend_keys=None, xlim=None,
                  ylim=None, ax=None, **kwargs):
         if len(livefit.independent_vars) != 1:
@@ -472,6 +480,50 @@ class LiveFitPlot(LivePlot):
         # Intentionally override LivePlot.stop. Do not call super().
 
 
+class LiveWaterfall(CallbackBase):
+    """
+    Stream 1D images in a waterfall viewer.
+
+    Parameters
+    ----------
+    x_name : str
+        field name for x dimension
+    y_name: str
+        field name for y dimension
+    db: databroker.Broker instance
+        The Broker to fill the events if events are not filled
+    units: tuple of str
+        The units for the x and y axes
+    """
+
+    def __init__(self, x_name, y_name, units=None,
+                 window_title=None):
+        self.x_name = x_name
+        self.y_name = y_name
+        self.units = units
+
+        self.fig = plt.figure(window_title)
+
+        self.wf = Waterfall(fig=self.fig, unit=self.units)
+        self.i = 0
+        self.fig.show()
+
+    def start(self, doc):
+        self.i = 0
+        self.wf.key_list.clear()
+        self.wf.int_data_list.clear()
+
+    def event(self, doc):
+        y = doc['data'][self.y_name]
+        x = doc['data'][self.x_name]
+        self.update((x, y))
+        super().event(doc)
+
+    def update(self, data):
+        self.wf.update(key_list=[self.i], int_data_list=[data])
+        self.i += 1
+
+
 def plot_peak_stats(peak_stats, ax=None):
     """
     Plot data and various peak statistics.
@@ -512,7 +564,7 @@ def plot_peak_stats(peak_stats, ax=None):
 
     if ps.lin_bkg:
         lb = ps.lin_bkg
-        ln, = ax.plot(ps.x_data, ps.x_data*lb['m'] + lb['b'],
+        ln, = ax.plot(ps.x_data, ps.x_data * lb['m'] + lb['b'],
                       ls='--', lw=2, color='k')
         arts['bkg'] = ln
 

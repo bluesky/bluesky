@@ -7,7 +7,8 @@ from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.plan_stubs import pause
 import bluesky.plans as bp
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
-                               LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
+                               LiveFitPlot, LivePlot, LiveGrid, LiveScatter,
+                               LiveWaterfall)
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
@@ -586,3 +587,11 @@ def test_broker_base_no_unpack(RE, hw, db):
     bc = BrokerChecker(('img',), db=db)
     RE.subscribe(bc)
     RE(count([hw.direct_img]))
+
+
+def test_live_Waterfall(RE):
+    from ophyd.sim import SynSignal
+    x = SynSignal(func=lambda: np.random.random(10), name='x')
+    y = SynSignal(func=lambda: np.random.random(10), name='y')
+
+    RE(count([x, y], 5), LiveWaterfall('x', 'y'))

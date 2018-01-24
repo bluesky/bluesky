@@ -4,7 +4,6 @@ from .core import CallbackBase
 from ..utils import ensure_uid
 import numpy as np
 import doct
-import matplotlib.pyplot as plt
 
 
 class BrokerCallbackBase(CallbackBase):
@@ -296,3 +295,4 @@ class LiveTiffExporter(BrokerCallbackBase):
         self._start = None
         self.filenames = []
         super().stop(doc)
+
