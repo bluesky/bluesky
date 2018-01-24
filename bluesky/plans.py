@@ -773,15 +773,17 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     # Give a hint that the motors all lie along the same axis
     # [(['motor1', 'motor2', ...], 'primary'), ] is 1D (this case)
     # [ ('motor1', 'primary'), ('motor2', 'primary'), ... ] is 2D for example
-    fields = []
+    # call x_fields because these are meant to be the x (independent) axis
+    x_fields = []
     for motor in motors:
-        fields.extend(getattr(motor, 'hints', {}).get('fields', []))
+        x_fields.extend(getattr(motor, 'hints', {}).get('fields', []))
 
-    default_dimensions = [(fields, 'primary')]
+    default_dimensions = [(x_fields, 'primary')]
 
     default_hints = {}
-    if len(fields) > 0:
+    if len(x_fields) > 0:
         default_hints.update(dimensions=default_dimensions)
+
 
     # now add default_hints and override any hints from the original md (if
     # exists)

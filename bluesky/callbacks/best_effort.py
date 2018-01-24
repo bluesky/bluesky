@@ -111,9 +111,21 @@ class BestEffortCallback(CallbackBase):
             dimensions = GUESS  # Fall back on our GUESS.
             warn("We are ignoring the dimensions hinted because we cannot "
                  "combine streams.")
+
         # TODO : Add option to select multiple dim_fields
         self.dim_fields = [fields[0]
                            for fields, stream_name in dimensions]
+
+        # make distinction between flattened fields and plotted fields
+        # motivation for this is that when plotting, we find dependent variable
+        # by finding elements that are not independent variables
+        # TODO : add list comprehension
+        self.independent_vars = list()
+        for fields, stream_name in dimensions:
+            for field in fields:
+                self.independent_vars.append(field)
+
+
         _, self.dim_stream = dimensions[0]
 
         # Print heading.
@@ -161,7 +173,7 @@ class BestEffortCallback(CallbackBase):
         if stream_name == self.dim_stream:
             # Ensure that no independent variables ('dimensions') are
             # duplicated here.
-            columns = [c for c in columns if c not in self.dim_fields]
+            columns = [c for c in columns if c not in self.independent_vars]
 
             if self._table_enabled:
                 self._table = LiveTable(list(self.dim_fields) + columns)
