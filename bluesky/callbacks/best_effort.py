@@ -121,12 +121,9 @@ class BestEffortCallback(CallbackBase):
         # make distinction between flattened fields and plotted fields
         # motivation for this is that when plotting, we find dependent variable
         # by finding elements that are not independent variables
-        # TODO : add list comprehension
-        self.all_dim_fields = list()
-        for fields, stream_name in dimensions:
-            for field in fields:
-                self.all_dim_fields.append(field)
-
+        self.all_dim_fields = [field
+                               for fields, stream_name in dimensions
+                               for field in fields]
 
         _, self.dim_stream = dimensions[0]
 

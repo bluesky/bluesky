@@ -784,7 +784,6 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     if len(x_fields) > 0:
         default_hints.update(dimensions=default_dimensions)
 
-
     # now add default_hints and override any hints from the original md (if
     # exists)
     _md['hints'] = default_hints
@@ -944,7 +943,6 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     md = md or {}
     _md.update(md)
     motors = [motor for motor, start, stop in partition(3, args)]
-
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
