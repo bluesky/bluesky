@@ -697,8 +697,8 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
            }
     _md.update(md or {})
     try:
-        dimensions = [([motor.hints['fields'] for motor in cycler.keys], 'primary')
-                      ]
+        dimensions = [(motor.hints['fields'], 'primary')
+                      for motor in cycler.keys]
     except (AttributeError, KeyError):
         # Not all motors provide a 'fields' hint, so we have to skip it.
         pass
