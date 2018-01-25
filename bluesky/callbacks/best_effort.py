@@ -175,7 +175,8 @@ class BestEffortCallback(CallbackBase):
             columns = [c for c in columns if c not in self.all_dim_fields]
 
             if self._table_enabled:
-                self._table = LiveTable(list(self.dim_fields) + columns)
+                # plot everything, independent or dependent variables
+                self._table = LiveTable(list(self.all_dim_fields) + columns)
                 self._table('start', self._start_doc)
                 self._table('descriptor', doc)
 
