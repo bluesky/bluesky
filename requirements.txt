@@ -1,4 +1,6 @@
+attrs
 cycler
+doct
 event-model
 historydict
 jsonschema
