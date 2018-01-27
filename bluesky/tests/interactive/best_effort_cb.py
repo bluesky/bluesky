@@ -84,11 +84,12 @@ mot2_cycl = cycler(motor2, np.linspace(-1, 0, 40))
 # now try rectilinear gridding
 outer_hints = {'fields' : [det4.name],
                'dimensions' : [([motor2.name],'primary'),
-                               ([motor1.name], 'primary')]}
-md = {'shape': (20, 20),
-      #'extents': ([-1, 0], [-1, 0]),
+                               ([motor1.name], 'primary')],
+               'gridding' : 'rectilinear'
+              }
+md = {'shape': (20, 40),
+      'extents': ([-1, 0], [-1, 0]),
       'hints' : outer_hints,
-      'gridding' : 'rectilinear'
      }
 
 RE(scan_nd([det4], mot1_cycl*mot2_cycl), **md)
