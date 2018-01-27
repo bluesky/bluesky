@@ -91,5 +91,5 @@ md = {'shape': (20, 20),
       'gridding' : 'rectilinear'
      }
 
-RE(scan_nd([det4], mot1_cycl*mot2_cycl), print, **md)
+RE(scan_nd([det4], mot1_cycl*mot2_cycl), **md)
 
