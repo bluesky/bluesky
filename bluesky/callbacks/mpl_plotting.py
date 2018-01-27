@@ -200,7 +200,10 @@ class LiveScatter(CallbackBase):
         ax.margins(.1)
         self._xdata, self._ydata, self._Idata = [], [], []
         self._norm = mcolors.Normalize()
+        self._minx, self._maxx, self._miny, self._maxy = (None,)*4
 
+        self.xlim = xlim
+        self.ylim = ylim
         if xlim is not None:
             ax.set_xlim(xlim)
         if ylim is not None:
@@ -233,12 +236,28 @@ class LiveScatter(CallbackBase):
         super().event(doc)
 
     def update(self, x, y, I):
+        # if one is None all are
+        if self._minx is None:
+            self._minx = x
+            self._maxx = x
+            self._miny = y
+            self._maxy = y
+
         self._xdata.append(x)
         self._ydata.append(y)
         self._Idata.append(I)
         offsets = np.vstack([self._xdata, self._ydata]).T
         self.sc.set_offsets(offsets)
         self.sc.set_array(np.asarray(self._Idata))
+
+        if self.xlim is None:
+            minx, maxx = np.minimum(x, self._minx), np.maximum(x, self._maxx)
+            self.ax.set_xlim(minx, maxx)
+
+        if self.ylim is None:
+            miny, maxy = np.minimum(y, self._miny), np.maximum(y, self._maxy)
+            self.ax.set_ylim(miny, maxy)
+
         if self.clim is None:
             clim = np.nanmin(self._Idata), np.nanmax(self._Idata)
             self.sc.set_clim(*clim)
