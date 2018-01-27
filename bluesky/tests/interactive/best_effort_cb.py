@@ -42,25 +42,25 @@ RE.subscribe(db.insert)
 # move motor to a reproducible location
 RE(mov(motor1, 0))
 RE(mov(motor2, 0))
-RE(relative_outer_product_scan([det4], motor1, -1, 0, 20, motor2, -2,
-                               0, 40, True))
-RE(outer_product_scan([det4], motor1, -1, 0, 20, motor2, -2, 0, 40,
+RE(relative_outer_product_scan([det4], motor1, -1, 0, 10, motor2, -2,
+                               0, 20, True))
+RE(outer_product_scan([det4], motor1, -1, 0, 10, motor2, -2, 0, 20,
                       True))
 
 # move motor to a reproducible location
 RE(mov(motor1, 0))
 RE(mov(motor2, 0))
-RE(relative_inner_product_scan([det4], 20, motor1, -1, 0, motor2, -2,
+RE(relative_inner_product_scan([det4], 10, motor1, -1, 0, motor2, -2,
                                0))
-RE(inner_product_scan([det4], 20, motor1, -1, 0, motor2, -2, 0))
+RE(inner_product_scan([det4], 10, motor1, -1, 0, motor2, -2, 0))
 
 
 # do it manually
 from cycler import cycler
 
 
-mot1_cycl = cycler(motor1, np.linspace(-1, 0, 20))
-mot2_cycl = cycler(motor2, np.linspace(-1, 0, 20))
+mot1_cycl = cycler(motor1, np.linspace(-1, 0, 10))
+mot2_cycl = cycler(motor2, np.linspace(-2, 0, 10))
 
 
 # inner product
@@ -80,14 +80,14 @@ md = {'shape': (20, 20),
 RE(scan_nd([det4], mot1_cycl*mot2_cycl), **md)
 
 # make 40 points just to test
-mot2_cycl = cycler(motor2, np.linspace(-1, 0, 40))
+mot2_cycl = cycler(motor2, np.linspace(-1, 0, 20))
 # now try rectilinear gridding
 outer_hints = {'fields' : [det4.name],
                'dimensions' : [([motor2.name],'primary'),
                                ([motor1.name], 'primary')],
                'gridding' : 'rectilinear'
               }
-md = {'shape': (20, 40),
+md = {'shape': (10, 20),
       'extents': ([-1, 0], [-1, 0]),
       'hints' : outer_hints,
      }
