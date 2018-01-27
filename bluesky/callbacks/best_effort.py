@@ -1,3 +1,8 @@
+'''
+    Best Effort Callback.
+    For instructions on how to test in a simulated environment please see:
+        tests/interactive/best_effort_cb.py
+'''
 from cycler import cycler
 from datetime import datetime
 from io import StringIO
