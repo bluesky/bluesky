@@ -22,15 +22,17 @@ from .fitting import PeakStats
 
 
 class BestEffortCallback(CallbackBase):
-    def __init__(self):
+    def __init__(self, ax=None, table_enabled=True):
         # internal state
         self._start_doc = None
         self._descriptors = {}
         self._table = None
         self._heading_enabled = True
-        self._table_enabled = True
+        self._table_enabled = table_enabled
         self._baseline_enabled = True
         self._plots_enabled = True
+        # axes supplied from outside
+        self._axis = ax
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
         self._live_grids = {}
@@ -231,26 +233,31 @@ class BestEffortCallback(CallbackBase):
             # we need 1 or 2 dims to do anything, do not make empty figures
             return
 
-        fig = plt.figure(fig_name)
-        if not fig.axes:
-            # This is apparently a fresh figure. Make axes.
-            # The complexity here is due to making a shared x axis. This can be
-            # simplified when Figure supports the `subplots` method in a future
-            # release of matplotlib.
-            fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
-            for i in range(len(columns)):
-                if i == 0:
-                    ax = fig.add_subplot(len(columns), 1, 1 + i)
-                    if ndims == 1:
-                        share_kwargs = {'sharex': ax}
-                    elif ndims == 2:
-                        share_kwargs = {'sharex': ax, 'sharey': ax}
+        if self._axis:
+            axes = self._axis.figure.axes
+            ax = self._axis
+            fig = ax.figure
+        else:
+            fig = plt.figure(fig_name)
+            if not fig.axes:
+                # This is apparently a fresh figure. Make axes.
+                # The complexity here is due to making a shared x axis. This can be
+                # simplified when Figure supports the `subplots` method in a future
+                # release of matplotlib.
+                fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
+                for i in range(len(columns)):
+                    if i == 0:
+                        ax = fig.add_subplot(len(columns), 1, 1 + i)
+                        if ndims == 1:
+                            share_kwargs = {'sharex': ax}
+                        elif ndims == 2:
+                            share_kwargs = {'sharex': ax, 'sharey': ax}
+                        else:
+                            raise NotImplementedError("we now support 3D?!")
                     else:
-                        raise NotImplementedError("we now support 3D?!")
-                else:
-                    ax = fig.add_subplot(len(columns), 1, 1 + i,
-                                         **share_kwargs)
-        axes = fig.axes
+                        ax = fig.add_subplot(len(columns), 1, 1 + i,
+                                             **share_kwargs)
+            axes = fig.axes
 
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
