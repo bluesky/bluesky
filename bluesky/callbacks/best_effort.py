@@ -235,9 +235,13 @@ class BestEffortCallback(CallbackBase):
 
         if self._fig_factory:
             fig = self._fig_factory(fig_name)
-            fig.clf()
-            # if figure is given, assume we always need to redraw from scratch
-            # TODO : de-duplicate this code (same as further below)
+        else:
+            fig = plt.figure(fig_name)
+        if not fig.axes:
+            # This is apparently a fresh figure. Make axes.
+            # The complexity here is due to making a shared x axis. This can be
+            # simplified when Figure supports the `subplots` method in a future
+            # release of matplotlib.
             fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
             for i in range(len(columns)):
                 if i == 0:
@@ -251,26 +255,6 @@ class BestEffortCallback(CallbackBase):
                 else:
                     ax = fig.add_subplot(len(columns), 1, 1 + i,
                                          **share_kwargs)
-        else:
-            fig = plt.figure(fig_name)
-            if not fig.axes:
-                # This is apparently a fresh figure. Make axes.
-                # The complexity here is due to making a shared x axis. This can be
-                # simplified when Figure supports the `subplots` method in a future
-                # release of matplotlib.
-                fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
-                for i in range(len(columns)):
-                    if i == 0:
-                        ax = fig.add_subplot(len(columns), 1, 1 + i)
-                        if ndims == 1:
-                            share_kwargs = {'sharex': ax}
-                        elif ndims == 2:
-                            share_kwargs = {'sharex': ax, 'sharey': ax}
-                        else:
-                            raise NotImplementedError("we now support 3D?!")
-                    else:
-                        ax = fig.add_subplot(len(columns), 1, 1 + i,
-                                             **share_kwargs)
         axes = fig.axes
 
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
