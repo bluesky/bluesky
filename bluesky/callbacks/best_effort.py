@@ -22,15 +22,17 @@ from .fitting import PeakStats
 
 
 class BestEffortCallback(CallbackBase):
-    def __init__(self):
+    def __init__(self, *, fig_factory=None, table_enabled=True):
         # internal state
         self._start_doc = None
         self._descriptors = {}
         self._table = None
         self._heading_enabled = True
-        self._table_enabled = True
+        self._table_enabled = table_enabled
         self._baseline_enabled = True
         self._plots_enabled = True
+        # axes supplied from outside
+        self._fig_factory = fig_factory
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
         self._live_grids = {}
@@ -231,7 +233,10 @@ class BestEffortCallback(CallbackBase):
             # we need 1 or 2 dims to do anything, do not make empty figures
             return
 
-        fig = plt.figure(fig_name)
+        if self._fig_factory:
+            fig = self._fig_factory(fig_name)
+        else:
+            fig = plt.figure(fig_name)
         if not fig.axes:
             # This is apparently a fresh figure. Make axes.
             # The complexity here is due to making a shared x axis. This can be
