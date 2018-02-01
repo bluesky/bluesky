@@ -613,6 +613,21 @@ def test_plotting_hints(RE, hw, db):
                           hw.motor3, -2, 0), HintChecker(hint))
 
     # check that the outer product (grid_scan) hints are passed correctly
-    hint = {'dimensions': [(['motor1', 'motor2', 'motor3'], 'primary')]}
-    RE(grid_scan([hw.det], hw.motor1, -1, 1, 20, hw.motor2, -1, 1, 20,
-                 True, hw.motor3, -2, 0, 30, True), HintChecker(hint))
+    hint = {'dimensions': [(['motor1'], 'primary'),
+                           (['motor2'], 'primary'),
+                           (['motor3'], 'primary')]}
+    # grid_scan passes "rectilinear" gridding as well
+    # make sure this is also passed
+    output_hint = hint.copy()
+    output_hint['gridding'] = 'rectilinear'
+    RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
+                 True, hw.motor3, -2, 0, 2, True), HintChecker(output_hint))
+
+    # check that if gridding is supplied, it's not overwritten by grid_scan
+    # check that the outer product (grid_scan) hints are passed correctly
+    hint = {'dimensions': [(['motor1'], 'primary'),
+                           (['motor2'], 'primary'),
+                           (['motor3'], 'primary')],
+            'gridding': 'rectilinear'}
+    RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
+                 True, hw.motor3, -2, 0, 2, True), HintChecker(hint))
