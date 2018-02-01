@@ -3,8 +3,6 @@ import time as ttime
 from .core import CallbackBase
 from ..utils import ensure_uid
 import numpy as np
-import doct
-import matplotlib.pyplot as plt
 
 
 class BrokerCallbackBase(CallbackBase):
@@ -254,6 +252,13 @@ class LiveTiffExporter(BrokerCallbackBase):
             # stash a reference so the module is accessible in self._save_image
             self._tifffile = tifffile
 
+        try:
+            import doct
+        except ImportError:
+            print('doct is required by LiveTiffExporter')
+        else:
+            self._doct = doct
+
         self.field = field
         super().__init__((field,), db=db.fs)
         self.template = template
@@ -275,7 +280,7 @@ class LiveTiffExporter(BrokerCallbackBase):
         self.filenames = []
         # Convert doc from dict into dottable dict, more convenient
         # in Python format strings: doc.key == doc['key']
-        self._start = doct.Document('start', doc)
+        self._start = self._doct.Document('start', doc)
         super().start(doc)
 
     def event(self, doc):
