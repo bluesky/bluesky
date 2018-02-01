@@ -8,21 +8,33 @@ Message Protocol
 Overview
 --------
 
-The `bluesky.Msg` object is a `namedtuple` subclass which has the fields
+The `RunEngine` oversees all commands of a run, intelligently rewinding and
+re-running commands during a run in order to produce a clean result. How does
+it work? On the basic level, it works by storing a list of atomistic operations
+to be run, and running them in sequence. Each of these atomistic operations are
+represented by a `bluesky.Msg` object. Thus, every plan designed for use by the
+`RunEngine` is a list of `Msg` objects. To fully capture the provenance of a
+command, four items are needed:
 
 - command
 - obj
 - args
 - kwargs
 
-``command`` must be one of a controlled list of commands, ``obj`` is the
-object to apply the command to and ``args`` and ``kwargs`` are arguments to
-the command.  Any ``args`` or ``kwargs`` not consumed by the run engine are
-passed through to the calls on the objects.
+where ``command`` must be one of a controlled list of commands, ``obj`` is the
+object to apply the command to and ``args`` and ``kwargs`` are arguments to the
+command. For convenience, the `bluesky.Msg` object subclasses the `namedtuple`
+class so that these members may be accessed as attributes (ie.  ``msg.command``
+where ``msg`` is an instance of `bluesky.Msg`). Any ``args`` or ``kwargs`` not
+consumed by the run engine are passed through to the calls on the objects.
 
 The `RunEngine` has a registry which is used to dispatch the `Msg` objects
-based on the value of the `Msg.cmd`.  By default a basic set of commands are
+based on the value of the `Msg.cmd`. By default a basic set of commands are
 registered, but users can register their own functions to add custom commands.
+As of the time of writing of this code, the convention currently used is that
+for any message string ``'name'`` is a reference to the `RunEngine` command
+``RE._name(obj, *args, **kwargs)`` where ``RE`` is an instance of
+``RunEngine``.
 
 .. _commands:
 
