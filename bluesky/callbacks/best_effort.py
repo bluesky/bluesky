@@ -22,7 +22,7 @@ from .fitting import PeakStats
 
 
 class BestEffortCallback(CallbackBase):
-    def __init__(self, fig_factory=None, table_enabled=True):
+    def __init__(self, *, fig_factory=None, table_enabled=True):
         # internal state
         self._start_doc = None
         self._descriptors = {}
