@@ -22,7 +22,7 @@ from .fitting import PeakStats
 
 
 class BestEffortCallback(CallbackBase):
-    def __init__(self, ax=None, table_enabled=True):
+    def __init__(self, fig_factory=None, table_enabled=True):
         # internal state
         self._start_doc = None
         self._descriptors = {}
@@ -32,7 +32,7 @@ class BestEffortCallback(CallbackBase):
         self._baseline_enabled = True
         self._plots_enabled = True
         # axes supplied from outside
-        self._axis = ax
+        self._fig_factory = fig_factory
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
         self._live_grids = {}
@@ -233,10 +233,24 @@ class BestEffortCallback(CallbackBase):
             # we need 1 or 2 dims to do anything, do not make empty figures
             return
 
-        if self._axis:
-            axes = self._axis.figure.axes
-            ax = self._axis
-            fig = ax.figure
+        if self._fig_factory:
+            fig = self._fig_factory(fig_name)
+            fig.clf()
+            # if figure is given, assume we always need to redraw from scratch
+            # TODO : de-duplicate this code (same as further below)
+            fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
+            for i in range(len(columns)):
+                if i == 0:
+                    ax = fig.add_subplot(len(columns), 1, 1 + i)
+                    if ndims == 1:
+                        share_kwargs = {'sharex': ax}
+                    elif ndims == 2:
+                        share_kwargs = {'sharex': ax, 'sharey': ax}
+                    else:
+                        raise NotImplementedError("we now support 3D?!")
+                else:
+                    ax = fig.add_subplot(len(columns), 1, 1 + i,
+                                         **share_kwargs)
         else:
             fig = plt.figure(fig_name)
             if not fig.axes:
@@ -257,7 +271,7 @@ class BestEffortCallback(CallbackBase):
                     else:
                         ax = fig.add_subplot(len(columns), 1, 1 + i,
                                              **share_kwargs)
-            axes = fig.axes
+        axes = fig.axes
 
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
