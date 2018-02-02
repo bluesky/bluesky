@@ -12,7 +12,7 @@ from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.callbacks import CallbackBase
-from bluesky.tests.utils import _print_redirect, MsgCollector
+from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
 import multiprocessing
 import os
 import signal
@@ -595,22 +595,15 @@ def test_plotting_hints(RE, hw, db):
         data.
         Use a callback to do the checking.
     '''
-    class HintChecker(CallbackBase):
-        '''
-            Checks to be sure that the hints in the start document are as
-            expected.
-        '''
-        def __init__(self, hint):
-            self._hint = hint
-
-        def start(self, doc):
-            assert doc['hints'] == self._hint
+    dc = DocCollector()
+    RE.subscribe(dc.insert)
 
     # check that the inner product hints are passed correctly
     hint = {'dimensions': [([hw.motor1.name, hw.motor2.name, hw.motor3.name],
                             'primary')]}
     RE(inner_product_scan([hw.det], 20, hw.motor1, -1, 1, hw.motor2, -1, 1,
-                          hw.motor3, -2, 0), HintChecker(hint))
+                          hw.motor3, -2, 0))
+    assert dc.start[-1]['hints'] == hint
 
     # check that the outer product (grid_scan) hints are passed correctly
     hint = {'dimensions': [(['motor1'], 'primary'),
@@ -621,7 +614,9 @@ def test_plotting_hints(RE, hw, db):
     output_hint = hint.copy()
     output_hint['gridding'] = 'rectilinear'
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
-                 True, hw.motor3, -2, 0, 2, True), HintChecker(output_hint))
+                 True, hw.motor3, -2, 0, 2, True))
+
+    assert dc.start[-1]['hints'] == output_hint
 
     # check that if gridding is supplied, it's not overwritten by grid_scan
     # check that the outer product (grid_scan) hints are passed correctly
@@ -630,4 +625,5 @@ def test_plotting_hints(RE, hw, db):
                            (['motor3'], 'primary')],
             'gridding': 'rectilinear'}
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
-                 True, hw.motor3, -2, 0, 2, True), HintChecker(hint))
+                 True, hw.motor3, -2, 0, 2, True))
+    assert dc.start[-1]['hints'] == hint
