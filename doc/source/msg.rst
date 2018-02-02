@@ -14,6 +14,8 @@ object. A plan may be implemented as a simple list of messages:
 
 .. code-block:: python
 
+    from bluesky import Msg
+
     # (Behold, the most boring data acquisition ever conducted!)
     plan = [Msg('open_run'), Msg('close_run')]
 
@@ -75,7 +77,12 @@ receives the message ``Msg('set', motor, 5)``, the RunEngine will:
    communication with hardware occurs.)
 5. Update some internal caches that will be useful later. For example, it will
    keep track of that fact that ``motor`` may be in motion so that it can stop
-   it safely if an error occurs.
+   it safely if an error occurs. This illustrates another important reason that
+   plans must always yield messages to interact with hardware and absolutely
+   never communicate with hardware directly. Calling ``epics.caput`` inside a
+   plan prevents the RunEngine from knowing about it and thus circumvents
+   its facilities for putting devices in a safe state in the event of an
+   unexpected exit or error.
 
 A standard set of commands are registered by default.  By convention, a ``Msg``
 with the command ``'name'`` is mapped to a coroutine method on the RunEngine
