@@ -55,6 +55,7 @@ documentation.
    rel_adaptive_scan
    tune_centroid
    tweak
+   ramp_plan
    fly
 
 
