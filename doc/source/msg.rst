@@ -99,7 +99,7 @@ Other commands are used to control metadata and I/O. For example,
 Any keyword arguments to passed the ``'open_run'`` message are interpreted as
 metadata, encoded into the RunStart document.
 
-The following in a comprehensive overview of the built-in commands.
+The following is a comprehensive overview of the built-in commands.
 
 .. _commands:
 
