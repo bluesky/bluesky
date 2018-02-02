@@ -83,7 +83,7 @@ named ``_name``, as in ``'set'`` -> ``RunEngine._set`` in the example above.
 Users can register their own coroutines to add custom commands, though this is
 very rarely necessary.
 
-Some message types do not involve communication with hardware. For example,
+Some commands do not involve communication with hardware. For example,
 ``Msg('sleep', None, 5)`` causes the RunEngine to sleep for 5 seconds. ``None``
 is a placeholder for the "object" (Device) which is not applicable for a
 ``'sleep'`` command. Just as plans should never communicate with hardware
@@ -94,7 +94,7 @@ non-blocking way that allows for the RunEngine to stay responsive in the
 meantime --- watching for user interruptions and possibility collecting data
 asynchronously in the background.
 
-Other messages types are used to control metadata and I/O. For example,
+Other commands are used to control metadata and I/O. For example,
 ``Msg('open_run')`` and ``Msg('close_run')`` delineate the scope of one run.
 Any keyword arguments to passed the ``'open_run'`` message are interpreted as
 metadata, encoded into the RunStart document.
