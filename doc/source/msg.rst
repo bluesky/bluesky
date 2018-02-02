@@ -8,13 +8,43 @@ Message Protocol
 Overview
 --------
 
-The `RunEngine` oversees all commands of a run, intelligently rewinding and
-re-running commands during a run in order to produce a clean result. How does
-it work? On the basic level, it works by storing a list of atomistic operations
-to be run, and running them in sequence. Each of these atomistic operations are
-represented by a `bluesky.Msg` object. Thus, every plan designed for use by the
-`RunEngine` is a list of `Msg` objects. To fully capture the provenance of a
-command, four items are needed:
+A *plan* is a sequence of atomic operations describing a data acquisition
+procedure. Each operation is represented by a ``bluesky.Msg`` ("message")
+object. A plan may be implemented as a simple list of messages:
+
+.. code-block:: python
+
+    # (Behold, the most boring data acquisition ever conducted!)
+    plan = [Msg('open_run'), Msg('close_run')]
+
+or as a generator the yields messages one at time:
+
+.. code-block:: python
+
+    def plan():
+        yield Msg('open_run')
+        yield Msg('close_run')
+
+The above examples are equivalent. For more sophisticated uses, the second one
+is more powerful, as it can incorporate loops, conditionals, adaptive logic ---
+generally any Python code.
+
+But, crucially, the plan code itself must not communicate with hardware.
+(You should never put ``epics.caput(...)`` in a plan!) Rather, each operation
+is represented by a ``Msg`` object that *describes* what should be done. This
+makes it safe to introspect the plan for error-checking, simulation, and
+visualization purposes --- without touching real hardware. For example, we
+could print each message in the plan like so:
+
+.. code-block:: python
+
+    plan = [Msg('open_run'), Msg('close_run')]
+
+    # a very, very simple 'plan simulator'
+    for msg in plan:
+        print(msg)
+
+A ``Msg`` has four members, accessible as attributes:
 
 - command
 - obj
@@ -22,22 +52,56 @@ command, four items are needed:
 - kwargs
 
 where ``command`` must be one of a controlled list of commands, ``obj`` is the
-object to apply the command to and ``args`` and ``kwargs`` are arguments to the
-command. For convenience, the `bluesky.Msg` object subclasses the `namedtuple`
-class so that these members may be accessed as attributes (ie.  ``msg.command``
-where ``msg`` is an instance of `bluesky.Msg`). Any ``args`` or ``kwargs`` not
-consumed by the run engine are passed through to the calls on the objects.
+object (i.e. Device) to apply the command to, if applicable, and ``args`` and
+``kwargs`` are arguments to the command.
 
-The `RunEngine` has a registry which is used to dispatch the `Msg` objects
-based on the value of the `Msg.cmd`. By default a basic set of commands are
-registered, but users can register their own functions to add custom commands.
-As of the time of writing of this code, the convention currently used is that
-for any message string ``'name'`` is a reference to the `RunEngine` command
-``RE._name(obj, *args, **kwargs)`` where ``RE`` is an instance of
-``RunEngine``.
+The execute the plan, the RunEngine consumes it, one message at a time.
+
+.. code-block:: python
+
+    def very_simple_run_engine(plan):
+        for msg in plan:
+            # Process the msg.
+
+The ``RunEngine`` has a registry which is used to dispatch the ``Msg`` objects
+based on the value of the ``Msg.command``. For example, the if the RunEngine
+receives the message ``Msg('set', motor, 5)``, the RunEngine will:
+
+1. Identify that the command for this message is ``'set'``.
+2. Look up ``'set'`` in its command registry and find that it is mapped to
+   ``RunEngine._set``.
+3. Pass ``Msg('set', motor, 5)`` to its ``_set`` method.
+4. Inside ``_set``, call ``motor.set(5)``. (This is where the actual
+   communication with hardware occurs.)
+5. Update some internal caches that will be useful later. For example, it will
+   keep track of that fact that ``motor`` may be in motion so that it can stop
+   it safely if an error occurs.
+
+A standard set of commands are registered by default. Users can register
+their own coroutines to add custom commands, though this is very rarely called
+for. By convention, a ``Msg`` with the command ``'name'`` is mapped to a
+coroutine method on the RunEngine with the same name (as in ``'set'`` ->
+``RunEngine._set``, above).
+
+Some message types do not involve communication with hardware. For example,
+``Msg('sleep', None, 5)`` causes the RunEngine to sleep for 5 seconds. ``None``
+is a placeholder for the "object" (Device) which is not applicable for a
+``'sleep'`` command. Just as plans should never communicate with hardware
+directly, they should also never employ long blocking calls like
+``time.sleep()``. Instead, the ``'sleep'`` command, mapped to
+``RunEngine._sleep``, integrates with the RunEngine's event loop to sleep in a
+non-blocking way that allows for the RunEngine to stay responsive in the
+meantime --- watching for user interruptions and possibility collecting data
+asynchronously in the background.
+
+Other messages types are used to control metadata and I/O. For example,
+``Msg('open_run')`` and ``Msg('close_run')`` delineate the scope of one run.
+Any keyword arguments to passed the ``'open_run'`` message are interpreted as
+metadata, encoded into the RunStart document.
+
+The following in a comprehensive overview of the built-in commands.
 
 .. _commands:
-
 
 Commands
 --------
