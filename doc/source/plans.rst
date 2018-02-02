@@ -508,6 +508,15 @@ Combinations of the above that are often convenient:
     one_1d_step
     one_nd_step
 
+Special utilities:
+
+.. autosummary::
+
+   repeat
+   repeater
+   caching_repeater
+   broadcast_msg
+
 We also provide :ref:`wrapper and decorator functions <preprocessors>` and
 :ref:`utility functions <plan_utils>`, documented below, that make building
 these easier.
