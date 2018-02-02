@@ -64,7 +64,7 @@ The execute the plan, the RunEngine consumes it, one message at a time.
             # Process the msg.
 
 The ``RunEngine`` has a registry which is used to dispatch the ``Msg`` objects
-based on the value of the ``Msg.command``. For example, the if the RunEngine
+based on the value of the ``Msg.command``. For example, if the RunEngine
 receives the message ``Msg('set', motor, 5)``, the RunEngine will:
 
 1. Identify that the command for this message is ``'set'``.
@@ -77,11 +77,11 @@ receives the message ``Msg('set', motor, 5)``, the RunEngine will:
    keep track of that fact that ``motor`` may be in motion so that it can stop
    it safely if an error occurs.
 
-A standard set of commands are registered by default. Users can register
-their own coroutines to add custom commands, though this is very rarely called
-for. By convention, a ``Msg`` with the command ``'name'`` is mapped to a
-coroutine method on the RunEngine with the same name (as in ``'set'`` ->
-``RunEngine._set``, above).
+A standard set of commands are registered by default.  By convention, a ``Msg``
+with the command ``'name'`` is mapped to a coroutine method on the RunEngine
+named ``_name``, as in ``'set'`` -> ``RunEngine._set`` in the example above.
+Users can register their own coroutines to add custom commands, though this is
+very rarely necessary.
 
 Some message types do not involve communication with hardware. For example,
 ``Msg('sleep', None, 5)`` causes the RunEngine to sleep for 5 seconds. ``None``
