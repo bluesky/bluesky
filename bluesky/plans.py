@@ -755,6 +755,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
                            for motor, start, stop in partition(3, args))))
     motor_names = tuple(motor.name for motor, start, stop
                         in partition(3, args))
+    md = md or {}
     _md = {'plan_args': {'detectors': list(map(repr, detectors)),
                          'num': num, 'args': md_args,
                          'per_step': repr(per_step)},
@@ -764,7 +765,29 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
            'plan_pattern_args': dict(num=num, args=md_args),
            'motors': motor_names
            }
-    _md.update(md or {})
+    _md.update(md)
+
+    # get hints for best effort callback
+    motors = [motor for motor, start, stop in partition(3, args)]
+
+    # Give a hint that the motors all lie along the same axis
+    # [(['motor1', 'motor2', ...], 'primary'), ] is 1D (this case)
+    # [ ('motor1', 'primary'), ('motor2', 'primary'), ... ] is 2D for example
+    # call x_fields because these are meant to be the x (independent) axis
+    x_fields = []
+    for motor in motors:
+        x_fields.extend(getattr(motor, 'hints', {}).get('fields', []))
+
+    default_dimensions = [(x_fields, 'primary')]
+
+    default_hints = {}
+    if len(x_fields) > 0:
+        default_hints.update(dimensions=default_dimensions)
+
+    # now add default_hints and override any hints from the original md (if
+    # exists)
+    _md['hints'] = default_hints
+    _md['hints'].update(md.get('hints', {}) or {})
 
     full_cycler = plan_patterns.inner_product(num=num, args=args)
 
@@ -920,24 +943,6 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     md = md or {}
     _md.update(md)
     motors = [motor for motor, start, stop in partition(3, args)]
-
-    # Give a hint that the motors all lie along the same axis
-    # [(['motor1', 'motor2', ...], 'primary'), ] is 1D (this case)
-    # [ ('motor1', 'primary'), ('motor2', 'primary'), ... ] is 2D for example
-    fields = []
-    for motor in motors:
-        fields.extend(getattr(motor, 'hints', {}).get('fields', []))
-
-    default_dimensions = [(fields, 'primary')]
-
-    default_hints = {}
-    if len(fields) > 0:
-        default_hints.update(dimensions=default_dimensions)
-
-    # now add default_hints and override any hints from the original md (if
-    # exists)
-    _md['hints'] = default_hints
-    _md['hints'].update(md.get('hints', {}) or {})
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)

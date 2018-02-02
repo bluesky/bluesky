@@ -1,7 +1,7 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.examples import stepscan
-from bluesky.plans import (scan, grid_scan, count)
+from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
 from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.plan_stubs import pause
@@ -11,7 +11,8 @@ from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
-from bluesky.tests.utils import _print_redirect, MsgCollector
+from bluesky.callbacks import CallbackBase
+from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
 import multiprocessing
 import os
 import signal
@@ -586,3 +587,43 @@ def test_broker_base_no_unpack(RE, hw, db):
     bc = BrokerChecker(('img',), db=db)
     RE.subscribe(bc)
     RE(count([hw.direct_img]))
+
+
+def test_plotting_hints(RE, hw, db):
+    ''' This tests the run and checks that the correct hints are created.
+        Hints are mainly created to help the BestEffortCallback in plotting the
+        data.
+        Use a callback to do the checking.
+    '''
+    dc = DocCollector()
+    RE.subscribe(dc.insert)
+
+    # check that the inner product hints are passed correctly
+    hint = {'dimensions': [([hw.motor1.name, hw.motor2.name, hw.motor3.name],
+                            'primary')]}
+    RE(inner_product_scan([hw.det], 20, hw.motor1, -1, 1, hw.motor2, -1, 1,
+                          hw.motor3, -2, 0))
+    assert dc.start[-1]['hints'] == hint
+
+    # check that the outer product (grid_scan) hints are passed correctly
+    hint = {'dimensions': [(['motor1'], 'primary'),
+                           (['motor2'], 'primary'),
+                           (['motor3'], 'primary')]}
+    # grid_scan passes "rectilinear" gridding as well
+    # make sure this is also passed
+    output_hint = hint.copy()
+    output_hint['gridding'] = 'rectilinear'
+    RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
+                 True, hw.motor3, -2, 0, 2, True))
+
+    assert dc.start[-1]['hints'] == output_hint
+
+    # check that if gridding is supplied, it's not overwritten by grid_scan
+    # check that the outer product (grid_scan) hints are passed correctly
+    hint = {'dimensions': [(['motor1'], 'primary'),
+                           (['motor2'], 'primary'),
+                           (['motor3'], 'primary')],
+            'gridding': 'rectilinear'}
+    RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
+                 True, hw.motor3, -2, 0, 2, True))
+    assert dc.start[-1]['hints'] == hint
