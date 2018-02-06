@@ -187,26 +187,43 @@ of immediate motion
 trigger
 +++++++
 
+.. automethod:: bluesky.run_engine.RunEngine._trigger
+
+
 sleep
 +++++
+
+.. automethod:: bluesky.run_engine.RunEngine._sleep
 
 wait
 ++++
 
+.. automethod:: bluesky.run_engine.RunEngine._wait
+
 checkpoint
 ++++++++++
+
+.. automethod:: bluesky.run_engine.RunEngine._checkpoint
 
 pause
 +++++
 
+.. automethod:: bluesky.run_engine.RunEngine._pause
+
 collect
 +++++++
+
+.. automethod:: bluesky.run_engine.RunEngine._collect
 
 kickoff
 +++++++
 
+.. automethod:: bluesky.run_engine.RunEngine._kickoff
+
 drop
 ++++
+
+.. automethod:: bluesky.run_engine.RunEngine._drop
 
 This is a command that abandons previous ``create`` and ``read`` commands
 without emitting an event. This can be used to drop known bad events
