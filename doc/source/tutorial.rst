@@ -70,7 +70,7 @@ used in data acquisition.
   change its temperature. Setting the exposure time on some detector promptly
   updates its configuration.
 * Some devices produce data at a rate too high to be read out in real time, and
-  instead buffer their data temporarily on a device or separate software.
+  instead buffer their data temporarily in separate hardware or software.
 
 Bluesky interacts with all devices via a :doc:`specified interface <hardware>`.
 Each device is represented by a Python object with certain methods and
@@ -299,7 +299,7 @@ including a temperature controller, a sample changer, or some pseudo-axis. From
 the point of view of bluesky and the RunEngine, all of these are just objects
 in Python with certain methods.
 
-Use :func:`~bluesky.plans.rel_scan` to scan from ``-1`` to ``-1`` *relative to
+Use :func:`~bluesky.plans.rel_scan` to scan from ``-1`` to ``1`` *relative to
 the current position*.
 
 .. code-block:: python
@@ -328,6 +328,8 @@ Scan Multiple Motors in a Grid
 
 What is a "Plan" Really?
 ========================
+
+Borrow from the msg documentation here, and eventually refer to it.
 
 Compose a Series of Plans
 =========================
@@ -529,11 +531,3 @@ Visualization
 
 Fitting
 -------
-===========================   ======================================
-interactive (blocking)        re-write for BlueSky plan()
-===========================   ======================================
-some.device.put("config")     yield from mv(some.device, "config")
-motor.move(52)                yield from mv(motor, 52)
-motor.velocity.put(5)         yield from mv(motor.velocity, 5)
-===========================   ======================================
-
