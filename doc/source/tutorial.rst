@@ -50,6 +50,9 @@ where our documentation could be made more clear.
 Devices
 =======
 
+Theory
+------
+
 The notion of a "Device" serves two goals:
 
 * Provide a standard interface to all hardware for the sake of generality
@@ -74,6 +77,9 @@ Each device is represented by a Python object with certain methods and
 attributes (with names like ``read`` and ``set``). Some of these methods are
 asynchronous, such as ``set``, which allows for the concurrent movement of
 multiple devices.
+
+Implementation
+--------------
 
 `Ophyd <https://nsls-ii.github.io/ophyd>`_, a Python library that was
 developed in tandem with bluesky, implements this interface for devices that
