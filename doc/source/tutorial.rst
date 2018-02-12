@@ -5,7 +5,8 @@ Tutorial
 Before You Begin
 ================
 
-* You will need Python 3.5 or newer. Check your current version:
+* You will need Python 3.5 or newer. From a shell ("Terminal" on OSX,
+  "Command Prompt" on Windows), check your current Python version.
 
   .. code-block:: bash
 
@@ -36,8 +37,7 @@ Before You Begin
 
      python -m pip install --upgrade bluesky ophyd ipython
 
-* Start ``python`` or ``ipython``. Can you ``import bluesky``? If so, you are
-  ready to go.
+* Start ``ipython``. Can you ``import bluesky``? If so, you are ready to go.
 
 If you get lost or confused...
 ==============================
@@ -49,6 +49,13 @@ where our documentation could be made more clear.
 
 Devices
 =======
+
+The notion of a "Device" serves two goals:
+
+* Provide a standard interface to all hardware for the sake of generality
+  and code reuse.
+* Logically group individual signals into composite "Devices" that can be read
+  together, as a unit, and configured in a coordinated way.
 
 In bluesky's view of the world, there are only three different kinds of devices
 used in data acquisition.
@@ -76,9 +83,70 @@ specified methods and attributes that bluesky expects. For example, a
 separately-developed library has experimentally implemented the bluesky
 interface for LabView.
 
+For example, to get a flavor for what it looks like to configure hardware in
+ophyd, connecting to an EPICS motor looks like this:
+
+.. code-block:: python
+
+    from ophyd import EpicsMotor
+
+    nano_top_x = EpicsMotor('XF:23ID1-ES{Dif:Nano-Ax:TopX}Mtr', name='nano_top_x')
+
+The ``EpicsMotor`` device is a logical grouping of many signals. The most
+important are the readback (actual position) and setpoint (target position).
+All of the signals are summarized thus. The details here aren't important: the
+take-away message is, "There is a lot of stuff to keep track of about a motor,
+and a Device helpfully groups that stuff for us."
+
+.. code-block:: none
+
+    In [3]: nano_top_x.summary()
+    data keys (* hints)
+    -------------------
+    *nano_top_x
+    nano_top_x_user_setpoint
+
+    read attrs
+    ----------
+    user_readback        EpicsSignalRO       ('nano_top_x')
+    user_setpoint        EpicsSignal         ('nano_top_x_user_setpoint')
+
+    config keys
+    -----------
+    nano_top_x_acceleration
+    nano_top_x_motor_egu
+    nano_top_x_user_offset
+    nano_top_x_user_offset_dir
+    nano_top_x_velocity
+
+    configuration attrs
+    ----------
+    motor_egu            EpicsSignal         ('nano_top_x_motor_egu')
+    velocity             EpicsSignal         ('nano_top_x_velocity')
+    acceleration         EpicsSignal         ('nano_top_x_acceleration')
+    user_offset          EpicsSignal         ('nano_top_x_user_offset')
+    user_offset_dir      EpicsSignal         ('nano_top_x_user_offset_dir')
+
+    Unused attrs
+    ------------
+    offset_freeze_switch EpicsSignal         ('nano_top_x_offset_freeze_switch')
+    set_use_switch       EpicsSignal         ('nano_top_x_set_use_switch')
+    motor_is_moving      EpicsSignalRO       ('nano_top_x_motor_is_moving')
+    motor_done_move      EpicsSignalRO       ('nano_top_x_motor_done_move')
+    high_limit_switch    EpicsSignal         ('nano_top_x_high_limit_switch')
+    low_limit_switch     EpicsSignal         ('nano_top_x_low_limit_switch')
+    direction_of_travel  EpicsSignal         ('nano_top_x_direction_of_travel')
+    motor_stop           EpicsSignal         ('nano_top_x_motor_stop')
+    home_forward         EpicsSignal         ('nano_top_x_home_forward')
+    home_reverse         EpicsSignal         ('nano_top_x_home_reverse')
+
 For this tutorial, we will not assume that you have access to real detectors or
-motors; instead we will use simulated hardware, which is also provided by
-ophyd.
+motors. In the examples that follow, we will use simulated hardware from
+ophyd's module ``ophyd.sim``, such as:
+
+.. code-block:: python
+
+    from ophyd.sim import det, motor
 
 The RunEngine
 =============
@@ -100,8 +168,8 @@ Prepare Live Visualization
 
 The RunEngine dispatches a live stream of metadata and data to one or more
 consumers ("callbacks") for in-line data processing and visualization and
-long-term storage. Examples might include a live-updating plot, a curve-fitting
-algorithm, a database, or a file in your preferred format.
+long-term storage. Example consumers include a live-updating plot, a curve-fitting
+algorithm, a database, a message queue, or a file in your preferred format.
 
 To start, let's use the all-purpose "Best-Effort Callback".
 
@@ -119,7 +187,7 @@ To start, let's use the all-purpose "Best-Effort Callback".
 
 The Best-Effort Callback will receive the metadata/data in real time and
 produce plots and text, doing its best to provide live feedback that strikes
-the right balance between comprehensive and overwhelming. For more tailored
+the right balance between "comprehensive" and "overwhelming." For more tailored
 feeback, taking account of the details of the experiment, you may configure
 custom callbacks.
 
@@ -150,7 +218,7 @@ For this tutorial, we will spin up a databroker backed by a temporary database.
     creates a fresh, separate temporary database.
 
 The RunEngine can do a lot more than this, but let's hold that thought for
-later in the tutorial (:ref:`things_the_run_engine_can_do_for_free`) and
+later in the tutorial (:ref:`things_the_run_engine_can_do_for_free`). Let's
 take some data!
 
 Common Experiments ("Plans")
@@ -159,26 +227,15 @@ Common Experiments ("Plans")
 Read Some Detectors
 -------------------
 
-Let's trigger and read some detectors.
+Begin with a very simple experiment: trigger and read some detectors.
  
-Bluesky calls this "counting" detectors (a term of art in the synchrotron
-community, which is bluesky's hometown). Before we begin, we'll need some
-simulated detectors from ophyd's module of simulated hardware.
+Bluesky calls this "counting" detectors---a term of art inherited from the
+spectroscopy community. Before we begin, we'll need some simulated detectors
+from ophyd's module of simulated hardware.
 
 .. code-block:: python
 
     from ophyd.sim import det1, det2
-
-.. note::
-
-    If we had access to *real* detector available via EPICS, we could instead
-    do:
-
-    .. code-block:: python
-
-        from ophyd import EpicsSignal
-
-        det = EpicsSignal('<SOME_PV>', name='det')
 
 Using the RunEngine, configured in the previous section, "count" the detectors:
 
@@ -189,8 +246,39 @@ Using the RunEngine, configured in the previous section, "count" the detectors:
  
     RE(count(dets))
 
-Scan Around a Peak
-------------------
+A key feature of bluesky is that these detectors could simple photodiodes or
+complex CCDs. All of those details are captured in the implementation of the
+Device. From the point of view of bluesky, detectors are just Python objects
+with certain methods.
+
+See :func:`~bluesky.plans.count` for more options. You can also view this
+documentation in IPython by typing ``count?``.
+
+Try the following variations:
+
+.. code-block:: python
+
+    # five consecutive readings
+    RE(count(dets, num=5))
+
+    # five sequential readings separated by a 1-second delay
+    RE(count(dets, num=5, delay=1))
+
+    # a variable delay
+    RE(count(dets, num=5, delay=[1, 2, 3, 4]))
+
+    # Take readings forever, until interrupted (e.g., with Ctrl+C)
+    RE(count(dets, num=None))
+    # RunEngine is paused by Ctrl+C. It now needs to be 'stopped'.
+    # See later section of tutorial for more on this....
+    RE.stop()
+
+Scan
+----
+
+Use :func:`~bluesky.plans.scan` to scan ``motor`` from ``-1`` to ``1`` in ten
+equally-spaced steps, wait for it to arrive at each step, and then trigger and
+read some detector, ``det``.
 
 .. code-block:: python
 
@@ -200,27 +288,40 @@ Scan Around a Peak
 
     RE(scan(dets, motor, -1, 1, 10))
 
-To scan relative to the current position, use :func:`rel_scan`.
+A key feature of bluesky is that ``motor`` may be any "movable" devices,
+including a temperature controller, a sample changer, or some pseudo-axis. From
+the point of view of bluesky and the RunEngine, all of these are just objects
+in Python with certain methods.
+
+Use :func:`~bluesky.plans.rel_scan` to scan from ``-1`` to ``-1`` *relative to
+the current position*.
 
 .. code-block:: python
 
-    RE(scan(dets, motor, -1, 1, 10))
+    RE(rel_scan(dets, motor, -1, 1, 10))
 
-To scan points with some arbitrary spacing, use  :func:`list_scan`.
+Use :func:`~bluesky.plans.list_scan` to scan points with some arbitrary
+spacing.
 
 .. code-block:: python
 
     points = [1, 1, 2, 3, 5, 8, 13]
 
-    RE(scan(dets, motor, points))
+    RE(list_scan(dets, motor, points))
 
-For a complete list of scan variations see ????
+For a complete list of scan variations see :doc:`plans`.
 
 Scan Multiple Motors Together
 -----------------------------
 
+Again, we emphasize that these "motors" could be anything that can be set
+(temperature controller, pseudo-axis, sample changer).
+
 Scan Multiple Motors in a Grid
 ------------------------------
+
+What is a "Plan" Really?
+========================
 
 Compose a Series of Plans
 =========================
@@ -234,14 +335,144 @@ some plan stubs
 Things the RunEngine Can Do For Free
 ====================================
 
-Safe Error Handling
--------------------
+Interactive Pause & Resume
+--------------------------
 
-User-Initiated Pause & Resume
------------------------------
+Sometimes it is convenient to pause data collection, check on some things, and
+then either resume from where you left off or quit. The RunEngine makes it
+possible to do this cleanly and safely on *every* plan, including user-defined
+ones, with no special effort by the user.
+
+(Of course, experiments on systems that evolve with time can't be arbitrarily
+paused and resumed. It's up to the user to know that and use this feature only
+when applicable.)
+
+Take this example, a step scan over ten points.
+
+.. code-block:: python
+
+    from ophyd.sim import det, motor
+    from bluesky.plans import scan
+
+    motor.delay = 1  # simulate slow motor movement
+    RE(scan([det], motor, 1, 10, 10))
+
+Demo:
+
+.. ipython::
+    :verbatim:
+
+    In [1]: RE(scan([det], motor, 1, 10, 10))
+    Transient Scan ID: 1     Time: 2018/02/12 12:40:36
+    Persistent Unique Scan ID: 'c5db9bb4-fb7f-49f4-948b-72fb716d1f67'
+    New stream: 'primary'
+    +-----------+------------+------------+------------+
+    |   seq_num |       time |      motor |        det |
+    +-----------+------------+------------+------------+
+    |         1 | 12:40:37.6 |      1.000 |      0.607 |
+    |         2 | 12:40:38.7 |      2.000 |      0.135 |
+    |         3 | 12:40:39.7 |      3.000 |      0.011 |
+
+At this point we decide to hit **Ctrl+C** (SIGINT). The RunEngine will catch
+this signal and react like so.
+
+.. code-block:: none
+
+    ^C
+    A 'deferred pause' has been requested.The RunEngine will pause at the next
+    checkpoint. To pause immediately, hit Ctrl+C again in the next 10 seconds.
+    Deferred pause acknowledged. Continuing to checkpoint.
+    <...a few seconds later...>
+    |         4 | 12:40:40.7 |      4.000 |      0.000 |
+    Pausing...
+
+    ---------------------------------------------------------------------------
+    RunEngineInterrupted                      Traceback (most recent call last)
+    <ipython-input-14-826ee9dfb918> in <module>()
+    ----> 1 RE(scan([det], motor, 1, 10, 10))
+    <...snipped details...>
+
+    RunEngineInterrupted:
+    Your RunEngine is entering a paused state. These are your options for changing
+    the state of the RunEngine:
+    RE.resume()    Resume the plan.
+    RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+    RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
+    RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
+
+When it pauses, the RunEngine immediately tells all Devices that is has touched
+to "stop". (Devices define what that means to them in their ``stop()`` method.)
+Now, all the hardware should be safe. At our leisure, we may:
+
+* pause to think
+* investigate the state of our hardware, such as the detector's exposure time
+* turn on more verbose logging  (see :doc:`debugging`)
+* decide whether to stop here or resume
+
+Suppose we decide to resume.
+
+.. ipython::
+    :verbatim:
+
+    In [13]: RE.resume()
+    |         5 | 12:40:50.1 |      5.000 |      0.000 |
+    |         6 | 12:40:51.1 |      6.000 |      0.000 |
+    |         7 | 12:40:52.1 |      7.000 |      0.000 |
+    |         8 | 12:40:53.1 |      8.000 |      0.000 |
+    |         9 | 12:40:54.1 |      9.000 |      0.000 |
+    |        10 | 12:40:55.1 |     10.000 |      0.000 |
+    +-----------+------------+------------+------------+
+    generator scan ['c5db9bb4'] (scan num: 1)
+
+If you read the demo above closely, you will see that the RunEngine didn't
+pause immediately: it finished the current step of the scan first. Quoting an
+excerpt from the demo above:
+
+
+.. code-block:: none
+
+    ^C
+    A 'deferred pause' has been requested.The RunEngine will pause at the next
+    checkpoint. To pause immediately, hit Ctrl+C again in the next 10 seconds.
+    Deferred pause acknowledged. Continuing to checkpoint.
+    <...a few seconds later...>
+    |         4 | 12:40:40.7 |      4.000 |      0.000 |
+    Pausing...
+
+To pause immediately without waiting for the next "checkpoint" (e.g. the
+beginning of the next step) hit Ctrl+C *twice*.
+
+Quoting again from the demo, notice that ``RE.resume()`` was only one of our
+options. If we decide not to continue we can quit in three different ways:
+
+.. code-block:: none
+
+    Your RunEngine is entering a paused state. These are your options for changing
+    the state of the RunEngine:
+    RE.resume()    Resume the plan.
+    RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+    RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
+    RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
+
+"Aborting" and "stopping" are almost the same thing: they just record different
+metadata about why the experiment was ended. Both signal to the plan that it
+should end early, but they still let it specify more instructions so that it
+can "clean up." For example, a :func:`~bluesky.plans.rel_scan` moves the motor
+back to its starting position before quitting.
+
+In rare cases, if we are worried that the plan's cleanup procedure might be
+dangerous, we can "halt". Halting circumvents the cleanup instructions.
 
 Automated Suspend & Resume
 --------------------------
+
+The RunEngine can be configured in advance to *automatically* pause and resume
+in response to external signals. To distinguish automatic pause/resume for
+interactive, user-initiated pause and resume, we call this behavior
+"suspending."
+
+Safe Error Handling
+-------------------
 
 Progress Bar
 ------------
@@ -292,3 +523,11 @@ Visualization
 
 Fitting
 -------
+===========================   ======================================
+interactive (blocking)        re-write for BlueSky plan()
+===========================   ======================================
+some.device.put("config")     yield from mv(some.device, "config")
+motor.move(52)                yield from mv(motor, 52)
+motor.velocity.put(5)         yield from mv(motor.velocity, 5)
+===========================   ======================================
+
