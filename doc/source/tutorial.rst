@@ -5,13 +5,36 @@ Tutorial
 Before You Begin
 ================
 
-* You will need Python 3.5 or newer.
+* You will need Python 3.5 or newer. Check your current version:
+
+  .. code-block:: bash
+
+    python --version
+
+  If that version is less than 3.5, you can easily install a new version of
+  Python into "virtual environment". It will not interfere with any existing
+  Python software:
+
+  .. code-block:: bash
+
+    python -m venv ~/bluesky-tutorial
+    source ~/bluesky-tutorial/bin/activate
+
+  Alternatively, if you are a
+  `conda <https://conda.io/docs/user-guide/install/download.html>`_ user,
+  you can create a conda environment:
+
+  .. code-block:: bash
+
+    conda create -n bluesky-tutorial "python>=3.5"
+    conda activate bluesky-tutorial
+
 * Install the latest versions of bluesky and ophyd. And, optionally, ipython (a
   Python interpreter designed by scientists for scientists).
 
   .. code-block:: bash
 
-     python3 -m pip install --upgrade bluesky ophyd ipython
+     python -m pip install --upgrade bluesky ophyd ipython
 
 * Start ``python`` or ``ipython``. Can you ``import bluesky``? If so, you are
   ready to go.
