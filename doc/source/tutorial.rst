@@ -493,7 +493,7 @@ Optional but nice to have. Add one like so:
     
     RE.waiting_hook = ProgressBarManager()
 
-For example, two motors ``phi`` and ``theat`` moving simultaneously make a
+For example, two motors ``phi`` and ``theta`` moving simultaneously make a
 display like this:
 
 .. code-block:: none
