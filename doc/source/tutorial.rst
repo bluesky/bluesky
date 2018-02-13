@@ -453,12 +453,86 @@ And the ("primary") stream of data is accessible like so:
 From here we refer to the
 `databroker tutorial <https://nsls-ii.github.io/databroker/tutorial.html>`_.
 
-Compose a Series of Plans
-=========================
+Simple Customization
+====================
 
-condensed aside on yield from
+Using 'Partial'
+---------------
 
-some plan stubs
+Suppose we nearly always use the same detector(s) and we tire of typing out
+``count(dets)``. We can write a custom variant of :func:`~bluesky.plans.count`
+that knows which detectors to use.
+
+.. code-block:: python
+
+    from functools import partial
+    from bluesky.plans import count
+    from ophyd.sim import det
+
+    dets = [det]
+
+    my_count = partial(count, dets)
+    RE(my_count())  # equivalent to RE(count(dets))
+
+    # Additional arguments to my_count() are passed through to count().
+    RE(my_count(num=3, delay=1))
+
+Plans in Series
+---------------
+
+A custom plan can dispatch out to other plans using the Python syntax
+``yield from``. Examples:
+
+.. code-block:: python
+
+    from bluesky.plans import scan
+
+    def coarse_and_fine(detectors, start, stop):
+        "Scan from 'start' to 'stop' in 10 steps and then again in 100 steps."
+        yield from scan(detectors, start, stop, 10)
+        yield from scan(detectors, start, stop, 100)
+
+    RE(coarse_and_fine(dets, -1, 1))
+
+All of the plans introduced thus far, which we imported from
+:mod:`bluesky.plans`, generate data sets ("runs"). Plans in the
+:mod:`bluesky.plan_stubs` module do smaller operations. They can be used alone
+or combined to build custom plans.
+
+The :func:`~bluesky.plan_stubs.mv` plan moves one or more devices and waits for
+them all to arrive.
+
+.. code-block:: python
+
+    from bluesky.plan_stubs import mv
+    from ophyd.sim import motor1, motor2
+
+    # Move motor1 to 1 and motor2 to 10, simultaneously. Wait for both to arrive.
+    RE(mv(motor1, 1, motor2, 10))
+
+We can combine :func:`~bluesky.plan_stubs.mv` and :func:`~bluesky.plans.count`
+into one plan like so:
+
+.. code-block:: python
+
+    def move_then_count():
+        "Move motor1 and motor2 into position; then count det."
+        yield from mv(motor1, 1, motor2, 10)
+        yield from count(dets)
+
+    RE(move_then_count())
+
+It's very important to remember the ``yield from``. This plan does nothing at
+all! (The plans will be *defined* but never executed.)
+
+.. code-block:: python
+
+    # WRONG EXAMPLE!
+
+    def oops():
+        "Forgot 'yield from'!"
+        mv(motor1, 1, motor2, 10)
+        count(dets)
 
 "Baseline" Readings (and other Supplemental Data)
 =================================================
