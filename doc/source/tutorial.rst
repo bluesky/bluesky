@@ -192,8 +192,7 @@ like to configure *real* hardware with ophyd.
 
     from ophyd.sim import det1, det2  # two simulated detectors
 
-Using the RunEngine, ``RE``, configured in the previous section, "count" the
-detectors:
+Using the RunEngine, ``RE``, "count" the detectors:
 
 .. code-block:: python
 
