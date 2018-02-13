@@ -289,6 +289,11 @@ Try the following variations:
     # See later section of tutorial for more on this....
     RE.stop()
 
+The :func:`~bluesky.plans.count` function (more precisely, Python *generator
+function*) is an example of a *plan*, a sequence of instructions to be consumed
+encoding an experimental procedure. We'll get a better sense for why this
+design is useful as we continue.
+
 Scan
 ----
 
@@ -462,8 +467,135 @@ axes do. Example:
                  motor2, -10, -10, 5, False),
                  motor3, , -2, 2, 5, False))
 
-Aside: Accessing Saved Data
-===========================
+Simulate and Introspect Plans
+=============================
+
+We have referred to plan as a "sequence of instructions encoding an
+experimental procedure." But what's inside a plan really? Bluesky calls each
+atomic instruction inside a plan a "message". As a scientist conducting an
+experiment, we rarely need to get this far into the weeds of bluesky, but it's
+useful to visit just once. Try printing out every message in a couple simple
+plans:
+
+.. code-block:: python
+
+    from bluesky.plans import count
+    from ophyd.sim import det
+
+    for msg in count([]):
+        print(msg)
+
+    for msg in count([det]):
+        print(msg)
+
+Again, handling the messages directly is usually only necessary for serious
+debugging or deep customization. You can learn more in the :doc:`msg` section.
+
+Building up from simple introspection like the loop above, bluesky includes
+some tools for producing more useful, human-readable summaries to answer the
+question, "What will this plan do?"
+
+.. ipython:: python
+
+    from bluesky.simulators import summarize_plan
+    from bluesky.plans import count, rel_scan
+    from ophyd.sim import det, motor
+    # Count a detector 3 times.
+    summarize_plan(count([det], 3))
+    # A 3-step scan.
+    summarize_plan(rel_scan([det], motor, -1, 1, 3))
+
+Borrow from the msg documentation here, and eventually refer to it.
+
+"Baseline" Readings (and other Supplemental Data)
+=================================================
+
+In addition to the detector(s) and motor(s) of primary interest during an
+experiment, it is commonly useful to take a snapshot of other hardware. This
+information is typically used to check consistency over time. ("Is the
+temperature of the sample mount roughly the same as it was last week?")
+
+You can solve this problem in an obvious but tedious way using what we have
+already learned above, or in a slicker way enabled by the RunEngine.
+
+We'll start with some simulated detectors and motors.
+
+.. code-block:: python
+
+    from ophyd.sim import det1, det2, det3, motor1, motor2
+
+The Obvious But Tedious and Inefficient Way
+-------------------------------------------
+
+
+Define a list of "baseline" detectors.
+
+.. code-block:: python
+
+    baseline = [det1, det2, motor1]
+
+Notice that we can put a mixture of detectors and motors in this list. It
+doesn't matter to bluesky that some are movable and some are not because it's
+just going to be *reading* them, and both detectors and motors can be read.
+
+Now we'll run a step scan like so:
+
+.. code-block:: python
+
+    RE(scan([det3] + baseline, motor2, -1, 1, 10))
+
+In each step of the scan, ``det3`` (the detector of primary interest) and
+``motor2`` (the motor moved by this scan), *and* all of the detectors/motors in
+``baseline``, will all be read.
+
+This is (1) tedious because we have to remember to type ``+ baseline`` every
+time and (2) inefficient because we only wanted to read the baseline
+detectors/motors at the beginning and end of the scan, not for every step. This
+is just a snapshot --- a sanity check --- of things that we don't expect to
+change much.
+
+The Slicker Way
+---------------
+
+Before we use the slicker way we have to do a little more RunEngine
+configuration, like what we did at the beginning with ``RE.subscribe``.
+
+.. code-block:: python
+
+    from bluesky.preprocessors import SupplementalData
+
+    sd = SupplementalData()
+    RE.preprocessors.append(sd)
+
+We have installed a "preprocessor" on the RunEngine. A preprocessor modifies
+plans, supplementing or altering their instructions in some way. From now on,
+every time we type ``RE(some_plan())``, the RunEngine will silently change
+``some_plan()`` to ``sd(some_plan())``, where ``sd`` may insert some extra
+instructions. Envision the instructions flow from ``some_plan`` to ``sd`` and
+finally to ``RE``. The ``sd`` preprocessors has the opportunity to inspect the
+instructions as they go by and modify them as it sees fit before they get
+processed by the RunEngine.
+
+Returning to our example above, we'll configure ``sd`` with our list of
+detectors/motors:
+
+.. code-block:: python
+
+    sd.baseline = [det1, det2, motor1]
+
+Now we can just do a scan with the detector and motor of primary interest. The
+RunEngine will automatically take baseline readings before and after each run.
+
+.. code-block:: python
+
+    RE(scan([det3], motor2, -1, 1, 10))
+
+Above, we used ``sd.baseline``. There is also ``sd.monitors`` for signals to
+monitor asynchronously during a run and ``sd.flyers`` for devices to "fly-scan"
+during a run. See :ref:`supplemental_data` for details.
+
+Aside: Access Saved Data
+========================
 
 At this point it is natural to wonder, "OK, how do I access my saved data?"
 From the point of view of *bluesky*, that's really not bluesky's concern, but
@@ -511,11 +643,6 @@ And the ("primary") stream of data is accessible like so:
 
 From here we refer to the
 `databroker tutorial <https://nsls-ii.github.io/databroker/tutorial.html>`_.
-
-What is a "Plan" Really?
-========================
-
-Borrow from the msg documentation here, and eventually refer to it.
 
 Compose a Series of Plans
 =========================
@@ -696,9 +823,6 @@ available:
 * estimated time remaining and the of progress (determined empirically)
 
 See :doc:`progress-bar` for more details and configuration.
-
-Supplemental Data
------------------
 
 Persistent Metadata
 -------------------

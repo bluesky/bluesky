@@ -40,6 +40,7 @@ Index
    debugging
    run_engine_api
    magics
+   from-pyepics-to-bluesky
    comparison-with-spec
 
 .. toctree::
