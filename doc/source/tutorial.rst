@@ -52,11 +52,18 @@ where our documentation could be made more clear.
 The RunEngine
 =============
 
+Bluesky encodes an experimental procedure as a *plan*, a sequence of
+atomic instructions. The *RunEngine* is an interpreter for plans. It lets
+us focus on the logic of our experimental procedure while it handles important
+technical details for free: it communicates with hardware, monitors for
+interruptions, organizes metadata and data, coordinates I/O, and ensures that
+the hardware is left in a safe state at exit time.
+
 .. note::
 
     If you are a visiting user at a facility that runs bluesky, you can skip
     this section and go straight to :ref:`common_experiments`. A RunEngine will
-    have been already configured for you.
+    have already been configured for you.
 
     You can type ``RE`` to check. You should get something like:
 
@@ -66,8 +73,9 @@ The RunEngine
         In [1]: RE
         Out[1]: <bluesky.run_engine.RunEngine at 0x10fd1d978>
 
-The RunEngine is the heart of bluesky, and we'll understand it better through
-the examples that follow.
+    If this gives you a ``NameError``, you'll need to finish this section.
+
+Create a RunEngine:
 
 .. code-block:: python
 
@@ -225,6 +233,31 @@ The :func:`~bluesky.plans.count` function (more precisely, Python *generator
 function*) is an example of a *plan*, a sequence of instructions to be consumed
 encoding an experimental procedure. We'll get a better sense for why this
 design is useful as we continue.
+
+.. warning::
+
+    Notice that typing that entering a plan by itself doesn't do anything:
+
+    .. ipython:: python
+        :suppress:
+
+        from bluesky.plans import count
+        from ophyd.sim import det
+        dets = [det]
+
+    .. ipython:: python
+
+        count(dets, num=3)
+
+    If we mean to *execute* the plan, we must use the RunEngine:
+
+    .. ipython:: python
+
+        RE(count(dets, num=3))
+
+    If this strikes you as a bit onerous, we beg your patience. The RunEngine
+    does a lot of work for free, and it more than earns its keep. Stick with
+    us....
 
 Scan
 ----
@@ -456,12 +489,12 @@ From here we refer to the
 Simple Customization
 ====================
 
-Using 'Partial'
----------------
+Save Some Typing with 'Partial'
+-------------------------------
 
 Suppose we nearly always use the same detector(s) and we tire of typing out
 ``count(dets)``. We can write a custom variant of :func:`~bluesky.plans.count`
-that knows which detectors to use.
+using a built-in function provided by Python itself, :func:`functools.partial`.
 
 .. code-block:: python
 
@@ -523,7 +556,7 @@ into one plan like so:
     RE(move_then_count())
 
 It's very important to remember the ``yield from``. This plan does nothing at
-all! (The plans will be *defined* but never executed.)
+all! (The plans inside it will be *defined* but never executed.)
 
 .. code-block:: python
 
@@ -533,6 +566,10 @@ all! (The plans will be *defined* but never executed.)
         "Forgot 'yield from'!"
         mv(motor1, 1, motor2, 10)
         count(dets)
+
+Much richer customization is possible, but we'll leave that for a
+:ref:`a later section of this tutorial <tutorial_custom_plans>`. See also the
+complete list of :ref:`plan stubs <stub_plans>`.
 
 "Baseline" Readings (and other Supplemental Data)
 =================================================
@@ -1040,6 +1077,9 @@ about a motor, and a Device helpfully groups that stuff for us."
     motor_stop           EpicsSignal         ('nano_top_x_motor_stop')
     home_forward         EpicsSignal         ('nano_top_x_home_forward')
     home_reverse         EpicsSignal         ('nano_top_x_home_reverse')
+
+
+.. _tutorial_custom_plans:
 
 Write Custom Plans
 ==================
