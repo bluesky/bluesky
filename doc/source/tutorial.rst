@@ -742,7 +742,12 @@ Safe Error Handling
 Progress Bar
 ------------
 
-Optional but nice to have. Add one like so:
+.. note::
+
+    This is another example of RunEngine configuration. If you're already
+    seeing progress bars, there's not need to add one!
+
+Add one like so:
 
 .. code-block:: python
 
@@ -768,8 +773,51 @@ available:
 
 See :doc:`progress-bar` for more details and configuration.
 
-Persistent Metadata
--------------------
+Metadata
+--------
+
+If users pass extra keyword arguments to ``RE``, they are interpreted as
+metadata
+
+.. code-block:: python
+
+    RE(count([det]), user='Dan', mood='skeptical')
+    RE(count([det]), user='Dan', mood='optimistic')
+
+and they can be use for searching later:
+
+.. code-block:: python
+
+    headers = db(user='Dan')
+    headers = db(mood='skeptical')
+
+Metadata can also be added *persistently* (i.e. applied to all future runs
+until removed) by editing the dictionary ``RE.md``.
+
+.. code-block:: python
+
+    RE.md
+    RE.md['user'] = 'Dan'
+
+No need to specify user every time now....
+
+.. code-block:: python
+
+    RE(count([det]))  # automatically includes user='Dan'
+
+The key can be temporarily overridden:
+
+.. code-block:: python
+
+    RE(count([det]), user='Tom')  # overrides the setting in RE.md, just once
+
+or deleted:
+
+.. code-block:: python
+
+    del RE.md['user']
+
+For more see, :doc:`metadata`.
 
 Simulate and Introspect Plans
 =============================
