@@ -511,7 +511,7 @@ def test_caching_repeater():
     assert next(p) == 1
 
 
-def test_repeat():
+def test_repeat(RE):
     # Check if lists and callables both work
     messages = [1, 2, 3]
 
@@ -523,6 +523,13 @@ def test_repeat():
     assert list(repeat(plan, num=num)) == expected
     assert list(repeat(plan(), num=num)) == expected
     assert list(repeat(messages, num=num)) == expected
+
+
+def test_repeat_using_RE(RE):
+    def plan():
+        yield Msg('open_run')
+        yield Msg('close_run')
+    RE(repeat(plan(), 2))
 
 
 def test_trigger_and_read(hw):

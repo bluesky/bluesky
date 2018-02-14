@@ -949,8 +949,8 @@ def repeat(plan, num=1, delay=None):
                 yield from ensure_generator(plan())
             else:
                 # Stash plan for our next trip through the loop; use plan_copy.
-                plan, plan_copy = itertools.tee(ensure_generator(plan))
-                yield from plan_copy
+                plan, plan_copy = itertools.tee(plan)
+                yield from ensure_generator(plan_copy)
             try:
                 d = next(delay)
             except StopIteration:
