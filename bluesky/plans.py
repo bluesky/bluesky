@@ -155,7 +155,7 @@ def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     return (yield from inner_relative_list_scan())
 
 
-def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     Scan over one variable in equally spaced steps.
 
@@ -217,8 +217,8 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_scan())
 
 
-def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
-             md=None):
+def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None,
+                 md=None):
     """
     Scan over one variable in equally spaced steps relative to current positon.
 
@@ -251,8 +251,8 @@ def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
     @bpp.reset_positions_decorator([motor])
     @bpp.relative_set_decorator([motor])
     def inner_relative_scan():
-        return (yield from scan(detectors, motor, start, stop,
-                                num, per_step=per_step, md=_md))
+        return (yield from _scan_1d(detectors, motor, start, stop,
+                                    num, per_step=per_step, md=_md))
 
     return (yield from inner_relative_scan())
 
@@ -726,6 +726,12 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
 
 
 def inner_product_scan(detectors, num, *args, per_step=None, md=None):
+    # For scan, num is the _last_ positional arg instead of the first one.
+    # Notice the swapped order here.
+    yield from scan(detectors, *args, num, per_step=None, md=None)
+
+
+def scan(detectors, *args, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory.
 
@@ -733,10 +739,18 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     ----------
     detectors : list
         list of 'readable' objects
-    num : integer
-        number of steps
-    ``*args`` : {Positioner, Positioner, int}
-        patterned like (``motor1, start1, stop1, ..., motorN, startN, stopN``)
+    *args :
+        For one dimension, ``motor, start, stop, num_points``.
+        In general:
+
+        .. code-block:: 
+
+            motor1, start1, stop1,
+            motor2, start2, start2,
+            ...,
+            motorN, startN, stopN,
+            num_points
+
         Motors can be any 'setable' object (motor, temp controller, etc.)
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
@@ -751,15 +765,17 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
+    num = args[-1]
     md_args = list(chain(*((repr(motor), start, stop)
                            for motor, start, stop in partition(3, args))))
+    md_args.append(num)
     motor_names = tuple(motor.name for motor, start, stop
                         in partition(3, args))
     md = md or {}
     _md = {'plan_args': {'detectors': list(map(repr, detectors)),
                          'num': num, 'args': md_args,
                          'per_step': repr(per_step)},
-           'plan_name': 'inner_product_scan',
+           'plan_name': 'scan',
            'plan_pattern': 'inner_product',
            'plan_pattern_module': plan_patterns.__name__,
            'plan_pattern_args': dict(num=num, args=md_args),
@@ -789,7 +805,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     _md['hints'] = default_hints
     _md['hints'].update(md.get('hints', {}) or {})
 
-    full_cycler = plan_patterns.inner_product(num=num, args=args)
+    full_cycler = plan_patterns.inner_product(num=num, args=args[:-1])
 
     return (yield from scan_nd(detectors, full_cycler,
                                per_step=per_step, md=_md))
@@ -913,6 +929,12 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
 
 
 def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
+    # For rel_scan, num is the _last_ positional arg instead of the first one.
+    # Notice the swapped order here.
+    yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
+
+
+def rel_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current position.
 
@@ -920,10 +942,18 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     ----------
     detectors : list
         list of 'readable' objects
-    num : integer
-        number of steps
-    ``*args``
-        patterned like (``motor1, start1, stop1, ..., motorN, startN, stopN``)
+    *args :
+        For one dimension, ``motor, start, stop, num_points``.
+        In general:
+
+        .. code-block:: 
+
+            motor1, start1, stop1,
+            motor2, start2, start2,
+            ...,
+            motorN, startN, stopN,
+            num_points
+
         Motors can be any 'setable' object (motor, temp controller, etc.)
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
@@ -938,7 +968,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    _md = {'plan_name': 'relative_inner_product_scan',
+    _md = {'plan_name': 'rel_scan',
            }
     md = md or {}
     _md.update(md)
@@ -946,11 +976,10 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
-    def inner_relative_inner_product_scan():
-        return (yield from inner_product_scan(detectors, num, *args,
-                                              per_step=per_step, md=_md))
+    def inner_rel_scan():
+        return (yield from scan(detectors, *args, per_step=per_step, md=_md))
 
-    return (yield from inner_relative_inner_product_scan())
+    return (yield from inner_rel_scan())
 
 
 def tweak(detector, target_field, motor, step, *, md=None):
