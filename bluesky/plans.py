@@ -733,7 +733,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     yield from scan(detectors, *args, num, per_step=None, md=md)
 
 
-def scan(detectors, *args, per_step=None, md=None):
+def scan(detectors, *args, num=None, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory.
 
@@ -742,7 +742,7 @@ def scan(detectors, *args, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     *args :
-        For one dimension, ``motor, start, stop, num_points``.
+        For one dimension, ``motor, start, stop``.
         In general:
 
         .. code-block:: 
@@ -750,10 +750,11 @@ def scan(detectors, *args, per_step=None, md=None):
             motor1, start1, stop1,
             motor2, start2, start2,
             ...,
-            motorN, startN, stopN,
-            num_points
+            motorN, startN, stopN
 
         Motors can be any 'setable' object (motor, temp controller, etc.)
+    num : integer
+        number of points
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
@@ -767,10 +768,20 @@ def scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    num = args[-1]
+    # For back-compat reasons, we accept 'num' as the last positional argument:
+    # scan(detectors, motor, -1, 1, 3)
+    # or by keyword:
+    # scan(detectors, motor, -1, 1, num=3)
+    # ... which requires some special processing.
+    if num is None:
+        if len(args) % 3 != 1:
+            raise ValueError("The number of points to scan must be provided "
+                             "as the last positional argument or as keyword "
+                             "argument 'num'.")
+        num = args[-1]
+        args = args[:-1]
     md_args = list(chain(*((repr(motor), start, stop)
                            for motor, start, stop in partition(3, args))))
-    md_args.append(num)
     motor_names = tuple(motor.name for motor, start, stop
                         in partition(3, args))
     md = md or {}
@@ -807,7 +818,7 @@ def scan(detectors, *args, per_step=None, md=None):
     _md['hints'] = default_hints
     _md['hints'].update(md.get('hints', {}) or {})
 
-    full_cycler = plan_patterns.inner_product(num=num, args=args[:-1])
+    full_cycler = plan_patterns.inner_product(num=num, args=args)
 
     return (yield from scan_nd(detectors, full_cycler,
                                per_step=per_step, md=_md))
@@ -938,7 +949,7 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
 
 
-def rel_scan(detectors, *args, per_step=None, md=None):
+def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current position.
 
@@ -947,7 +958,7 @@ def rel_scan(detectors, *args, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     *args :
-        For one dimension, ``motor, start, stop, num_points``.
+        For one dimension, ``motor, start, stop``.
         In general:
 
         .. code-block:: 
@@ -956,9 +967,10 @@ def rel_scan(detectors, *args, per_step=None, md=None):
             motor2, start2, start2,
             ...,
             motorN, startN, stopN,
-            num_points
 
         Motors can be any 'setable' object (motor, temp controller, etc.)
+    num : integer
+        number of points
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
@@ -981,7 +993,8 @@ def rel_scan(detectors, *args, per_step=None, md=None):
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_rel_scan():
-        return (yield from scan(detectors, *args, per_step=per_step, md=_md))
+        return (yield from scan(detectors, *args, num=num,
+                                per_step=per_step, md=_md))
 
     return (yield from inner_rel_scan())
 
