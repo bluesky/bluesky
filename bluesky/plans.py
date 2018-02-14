@@ -728,7 +728,9 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
 def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
-    yield from scan(detectors, *args, num, per_step=None, md=None)
+    md = md or {}
+    md.setdefault('plan_name', 'inner_product_scan')
+    yield from scan(detectors, *args, num, per_step=None, md=md)
 
 
 def scan(detectors, *args, per_step=None, md=None):
@@ -931,6 +933,8 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
 def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
+    md = md or {}
+    md.setdefault('plan_name', 'relative_inner_product_scan')
     yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
 
 
