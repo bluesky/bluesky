@@ -166,9 +166,19 @@ For this tutorial, we will spin up a databroker backed by a temporary database.
     variable ``db`` is deleted. Running ``Broker.named('temp')`` a second time
     creates a fresh, separate temporary database.
 
-The RunEngine can do a lot more than this, but let's hold that thought for
-later in the tutorial (:ref:`things_the_run_engine_can_do_for_free`). Let's
-take some data!
+Add a Progress Bar
+------------------
+
+Optionally, you can configure a progress bar.
+
+.. code-block:: python
+
+    from bluesky.utils import ProgressBarManager
+    RE.waiting_hook = ProgressBarManager()
+
+See :doc:`progress-bar` for more details and configuration.
+
+Let's take some data!
 
 .. _common_experiments:
 
@@ -427,6 +437,9 @@ axes do. Example:
                  motor2, -10, -10, 5, False),
                  motor3, , -2, 2, 5, False))
 
+For plans incorporating adaptive logic, more specialized trajectories such as
+spirals, and more, see :doc:`plans`.
+
 Aside: Access Saved Data
 ========================
 
@@ -513,7 +526,8 @@ Plans in Series
 ---------------
 
 A custom plan can dispatch out to other plans using the Python syntax
-``yield from``. Examples:
+``yield from``. (See :ref:`appendix <yield_from_primer>` if you want to know
+why.) Examples:
 
 .. code-block:: python
 
@@ -569,6 +583,47 @@ all! (The plans inside it will be *defined* but never executed.)
 Much richer customization is possible, but we'll leave that for a
 :ref:`a later section of this tutorial <tutorial_custom_plans>`. See also the
 complete list of :ref:`plan stubs <stub_plans>`.
+
+.. warning::
+
+    **Never put ``RE(...)`` inside a loop or a function. You should always call
+    it manually, and only once.**
+
+    You might be tempted to write a script like this:
+
+    .. code-block:: python
+
+        from bluesky.plans import scan
+        from ophyd.sim import motor, det
+
+        # Don't do this!
+        for j in [1, 2, 3]:
+            print(j, 'steps')
+            RE(scan([det], motor, 5, 10, j)))
+
+    Or a function like this:
+
+    .. code-block:: python
+
+        # Don't do this!
+        def bad_function():
+            for j in [1, 2, 3]:
+                print(j, 'steps')
+                RE(scan([det], motor, 5, 10, j)))
+
+    But, instead, you should do this:
+
+    .. code-block:: python
+
+        from bluesky.plans import scan
+        from ophyd.sim import motor, det
+
+        def good_plan():
+            for j in [1, 2, 3]:
+                print(j, 'steps')
+                yield from scan([det], motor, 5, 10, j)
+
+        RE(my_plan())
 
 "Baseline" Readings (and other Supplemental Data)
 =================================================
@@ -842,50 +897,10 @@ in response to external signals. To distinguish automatic pause/resume for
 interactive, user-initiated pause and resume, we call this behavior
 "suspending."
 
-.. _things_the_run_engine_can_do_for_free:
-
-More That RE Does for Free
-==========================
-
-Safe Error Handling
--------------------
-
-Progress Bar
-------------
-
-.. note::
-
-    This is another example of RunEngine configuration. If you're already
-    seeing progress bars, there's not need to add one!
-
-Add one like so:
-
-.. code-block:: python
-
-    from bluesky.utils import ProgressBarManager
-    
-    RE.waiting_hook = ProgressBarManager()
-
-For example, two motors ``phi`` and ``theta`` moving simultaneously make a
-display like this:
-
-.. code-block:: none
-
-    phi    9%|███▊                                       | 0.09/1.0 [00:00<00:01,  1.36s/deg]
-    theta100%|████████████████████████████████████████████| 1.0/1.0 [00:01<00:00,  1.12s/deg]
-
-The display includes the name of the device(s) being waited on and, if
-available:
-
-* distance (or degrees, etc.) traveled so far
-* total distance to be covered
-* time elapsed
-* estimated time remaining and the of progress (determined empirically)
-
-See :doc:`progress-bar` for more details and configuration.
+For details, see :ref:`suspenders`.
 
 Metadata
---------
+========
 
 If users pass extra keyword arguments to ``RE``, they are interpreted as
 metadata
@@ -928,7 +943,8 @@ or deleted:
 
     del RE.md['user']
 
-For more see, :doc:`metadata`.
+In addition to any user-provided metadata, the RunEngine, the devices, and the
+plan capture some metadata automatically. For more see, :doc:`metadata`.
 
 Simulate and Introspect Plans
 =============================
@@ -967,6 +983,8 @@ question, "What will this plan do?"
     summarize_plan(count([det], 3))
     # A 3-step scan.
     summarize_plan(rel_scan([det], motor, -1, 1, 3))
+
+For more possibilities, see :doc:`simulation`.
 
 .. _tutorial_device:
 

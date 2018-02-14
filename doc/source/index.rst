@@ -19,6 +19,18 @@ and metadata. It emphasizes the following virtues:
 * **Integration with Scientific Python:** Interface naturally with numpy and
   Python scientific stack.
 
+How to Use This Documentation
+-----------------------------
+
+Start with the :doc:`tutorial`. It's a good place to start for everyone, and it
+gives a good overview of the project in a narrative style. Read as far as you
+need to solve your problem. The tutorial is lengthy, but if your needs are
+straightforward you may not need to read very far to meet them.
+
+The remaining sections document bluesky's behavior in a less narrative style,
+providing clear API documentation intermixed with some examples and explanation
+of design and intent.
+
 Index
 -----
 
@@ -27,7 +39,6 @@ Index
    :maxdepth: 1
 
    tutorial
-   plans_intro
    documents
    metadata
    plans
@@ -42,6 +53,7 @@ Index
    magics
    from-pyepics-to-bluesky
    comparison-with-spec
+   appendix
 
 .. toctree::
    :caption: Developer Documentation
