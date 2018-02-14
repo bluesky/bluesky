@@ -1,32 +1,36 @@
 .. currentmodule:: bluesky.plans
 
-=======
- Plans
-=======
+=====
+Plans
+=====
 
-A *plan* is bluesky's concept of an experimental procedure. A
-:doc:`previous section <plans_intro>` introduced some built-in plans like
-:func:`count`, :func:`scan`, and :func:`rel_scan`. This section covers all
-of the plans and plan-related tools in bluesky with examples showing how to
-combine and customize them.
+A *plan* is bluesky's concept of an experimental procedure. A plan may be any
+iterable object (list, tuple, custom iterable class, ...) but most commonly it
+is implemented as a Python generator. For a more technical discussion we refer
+you :doc:`msg`.
 
 A variety of pre-assembled plans are provided. Like sandwiches on a deli menu,
 you can use our pre-assembled plans or assemble your own from the same
 ingredients, catalogued under the heading :ref:`stub_plans` below.
 
-Built-in Plans
-==============
+.. note:: 
+
+    In the examples that follow, we will assume that you have a RunEngine
+    instance named ``RE``. This may have already been configured for you if you
+    are a user at a facility that runs bluesky. See
+    :ref:`this section of the tutorial <tutorial_run_engine_setup>` to sort out
+    if you already have a RunEngine and to quickly make one if needed.
 
 .. _preassembled_plans:
 
 Pre-assembled Plans
--------------------
+===================
 
 Below this summary table, we break the down the plans by category and show
 examples with figures.
 
 Summary
-~~~~~~~
+-------
 
 Notice that the names in the left column are links to detailed API
 documentation.
@@ -60,7 +64,7 @@ documentation.
 
 
 Time series ("count")
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 Examples:
 
@@ -84,17 +88,12 @@ Examples:
     # Take readings forever, until interrupted (e.g., with Ctrl+C)
     RE(count([det], num=None))
 
-We can use ``LivePlot`` to visualize this data. It is documented in the
-:ref:`next section <liveplot>`.
-
 .. code-block:: python
-
-    from bluesky.callbacks import LivePlot
 
     # We'll use the 'noisy_det' example detector for a more interesting plot.
     from ophyd.sim import noisy_det
 
-    RE(count([noisy_det], num=5), LivePlot('noisy_det'))
+    RE(count([noisy_det], num=5))
 
 
 .. plot::
@@ -102,9 +101,11 @@ We can use ``LivePlot`` to visualize this data. It is documented in the
     from bluesky import RunEngine
     from bluesky.plans import count
     from ophyd.sim import noisy_det
-    from bluesky.callbacks import LivePlot
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    bec = BestEffortCallback()
     RE = RunEngine({})
-    RE(count([noisy_det], num=5), LivePlot('noisy_det'))
+    RE.subscribe(bec)
+    RE(count([noisy_det], num=5))
 
 .. autosummary::
    :toctree: generated
@@ -113,7 +114,7 @@ We can use ``LivePlot`` to visualize this data. It is documented in the
    count
 
 Scans over one dimension
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 The "dimension" might be a physical motor position, a temperature, or a
 pseudo-axis. It's all the same to the plans. Examples:
@@ -132,27 +133,20 @@ pseudo-axis. It's all the same to the plans. Examples:
     # scan a motor through a list of user-specified positions
     RE(list_scan([det], motor, [1, 1, 2, 3, 5, 8]))
 
-Again, we can use ``LivePlot`` to visualize this data. It is documented in the
-:ref:`next section <liveplot>`.
-
 .. code-block:: python
 
-    from bluesky.callbacks import LivePlot
-
-    RE(scan([det], motor, 1, 5, 5), LivePlot('det', 'motor'))
-
-Or, again, to save some typing for repeated use,
-:ref:`define a custom plan with the plot incorporated <subs_decorator>`.
-(LivePlot itself is documented :ref:`here <liveplot>`.)
+    RE(scan([det], motor, 1, 5, 5))
 
 .. plot::
 
     from bluesky import RunEngine
     from bluesky.plans import scan
     from ophyd.sim import det, motor
-    from bluesky.callbacks import LivePlot
     RE = RunEngine({})
-    RE(scan([det], motor, 1, 5, 5), LivePlot('det', 'motor'))
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    RE(scan([det], motor, 1, 5, 5))
 
 .. autosummary::
    :toctree: generated
@@ -168,7 +162,7 @@ Or, again, to save some typing for repeated use,
 .. _multi-dimensional_scans:
 
 Multi-dimensional scans
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 Here, "dimensions" are things independently scanned. They may be physical
 position (stepping motor), temperature, etc.
@@ -193,15 +187,13 @@ Demo:
     :suppress:
 
     from ophyd.sim import det, motor1, motor2
-    from bluesky.callbacks import LiveTable
     from bluesky import RunEngine
     from bluesky.plans import grid_scan, inner_product_scan
     RE = RunEngine({})
 
 .. ipython:: python
 
-    RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50),
-       LiveTable(['det', 'motor1', 'motor2']))
+    RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50))
 
 .. plot::
 
@@ -233,8 +225,7 @@ Demo:
 
 .. ipython:: python
 
-    RE(grid_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False),
-       LiveTable(['det', 'motor1', 'motor2']))
+    RE(grid_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
 
 The final parameter designates whether motor2 should "snake" back and forth
 along motor1's trajectory (``True``) or retread its positions in the same
@@ -261,32 +252,25 @@ direction each time (``False``), as illustrated.
 Both :func:`inner_product_scan` and :func:`grid_scan` support an
 unlimited number of motors/dimensions.
 
-To visualize 2-dimensional data, we can use ``LiveGrid``, which is documented
-in :ref:`in the next section <liveraster>`. In previous examples we used
-``LivePlot`` to visualize readings as a function of one variable;
-``LiveGrid`` is appropriate for functions of two variables.
-
 .. code-block:: python
-
-    from bluesky.callbacks import LiveGrid
 
     # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
     from ophyd.sim import det4
 
-    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveGrid((6, 10), 'det4'))
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False))
 
 .. plot::
 
     from bluesky import RunEngine
     from bluesky.plans import grid_scan
     from ophyd.sim import det4, motor1, motor2
-    from bluesky.callbacks import LiveGrid
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    bec = BestEffortCallback()
     motor1.delay = 0
     motor2.delay = 0
     RE = RunEngine({})
-    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
-       LiveGrid((6, 10), 'det4'))
+    RE.subscribe(bec)
+    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False))
 
 The general case, moving some motors together in an "inner product" against
 another (or motors) in an "outer product," can be addressed using a ``cycler``.
@@ -332,7 +316,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    scan_nd
 
 Spiral trajectories
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 We provide two-dimensional scans that trace out spiral trajectories.
 
@@ -374,7 +358,7 @@ A fermat spiral:
    rel_spiral_fermat
 
 Adaptive scans
-~~~~~~~~~~~~~~
+--------------
 
 These are one-dimension scans with an adaptive step size tuned to move quickly
 over flat regions can concentrate readings in areas of high variation by
@@ -386,7 +370,6 @@ This is a basic example of the power of adaptive plan logic.
 .. code-block:: python
 
     from bluesky.plans import adaptive_scan
-    from bluesky.callbacks import LivePlot
     from ophyd.sim import motor, det
 
     RE(adaptive_scan([det], 'det', motor,
@@ -395,17 +378,18 @@ This is a basic example of the power of adaptive plan logic.
                      min_step=0.01,
                      max_step=5,
                      target_delta=.05,
-                     backstep=True),
-       LivePlot('det', 'motor', markersize=10, marker='o'))
+                     backstep=True))
 
 .. plot::
 
     from bluesky import RunEngine
     from bluesky.plans import adaptive_scan
-    from bluesky.callbacks import LivePlot
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    bec = BestEffortCallback()
     from ophyd.sim import motor, det
 
     RE = RunEngine({})
+    RE.subscribe(bec)
 
     RE(adaptive_scan([det], 'det', motor,
                      start=-15,
@@ -413,8 +397,7 @@ This is a basic example of the power of adaptive plan logic.
                      min_step=0.01,
                      max_step=5,
                      target_delta=.05,
-                     backstep=True),
-       LivePlot('det', 'motor', markersize=10, marker='o'))
+                     backstep=True))
 
 From left to right, the scan lengthens its stride through the flat region. At
 first, it steps past the peak. The large jump causes it to double back and then
@@ -429,7 +412,7 @@ stride again.
    rel_adaptive_scan
 
 Misc.
-~~~~~
+-----
 
 .. autosummary::
    :toctree: generated
@@ -441,7 +424,7 @@ Misc.
 .. _stub_plans:
 
 Stub Plans
-----------
+==========
 .. currentmodule:: bluesky.plan_stubs
 
 These are the aforementioned "ingredients" for remixing, the pieces from which
@@ -522,100 +505,12 @@ We also provide :ref:`wrapper and decorator functions <preprocessors>` and
 these easier.
 
 
-.. _plan_examples1:
+Before writing a custom plan to coordinate the motion of multiple devices,
+consider whether your use case could be addressed with one of the built-in
+:ref:`multi-dimensional_scans`.
 
-Examples
-========
-
-Changing a Parameter Between Runs
----------------------------------
-
-Produce several runs, changing a parameter each time.
-
-.. code-block:: python
-
-    from bluesky.plans import scan
-    from ophyd.sim import det, motor
-
-    def scan_varying_density():
-        "Run a scan several times, changing the step size each time."
-        for num in range(5, 10):
-            # Scan motor from -1 to 1, sampling more densely in each
-            # iteration.
-            yield from scan([det], motor, -1, 1, num)
-
-Setting Devices to a Set Point
-------------------------------
-
-Next, we introduce :func:`abs_set`, which sets a motor to a position (or a
-temperature controller to a temperature, etc.). See also :func:`rel_set`, which
-sets *relative* to the current value.
-
-.. code-block:: python
-
-    from bluesky.plans import count
-    from bluesky.plan_stubs import abs_set
-    from ophyd.sim import det, motor
-
-    def move_and_count():
-        "Move a motor into place, then take a reading from detectors."
-        yield from abs_set(motor, 3, wait=True)
-        yield from count([det])
-
-The argument ``wait=True`` blocks progress until the device reports that it is
-ready (e.g., done moving or done triggering). Alternatively, use a :func:`wait`
-plan, which is more flexible. Here, we move two motors at once and wait for
-them both to finish.
-
-.. code-block:: python
-
-    from bluesky.plan_stubs import abs_set, wait
-    from ophyd.sim import motor1, motor2
-
-    def set_two_motors():
-        "Set, trigger, read"
-        yield from abs_set(motor1, 5, group='A')  # Start moving motor1.
-        yield from abs_set(motor2, 5, group='A')  # Start moving motor2.
-        yield from wait('A')  # Now wait for both to finish.
-
-The ``group`` is just temporary label that we can use to refer to groups of
-devices that we want to move or trigger simulataneously and then wait for them
-as a group.  This plan will continue once both motors have reported that they
-have finished moving successfully.
-
-We could have written this some logic with a loop:
-
-.. code-block:: python
-
-    def set_multiple_motors(motors):
-        "Set all motors moving; then wait for all motors to finish."
-        for motor in motors:
-            yield from abs_set(motor, 5, group='A')
-        yield from wait('A')
-
-Two convenient shortcuts are available for common cases. As shown at the
-beginning of this section, if you are setting one motor at a time, use the
-``wait`` keyword argument.
-
-.. code-block:: python
-
-    def set_one_motor():
-        yield from abs_set(motor1, wait=True)
-        # `wait=True` implicitly adds a group and `wait` plan to match.
-
-The same works for :func:`rel_set` and :func:`trigger`. Also, if you are only
-dealing with one group at a time, you do not actually need to label the group:
-
-.. code-block:: python
-
-    def set_multiple_motors(motors):
-        "Set all motors moving; then wait for all motors to finish."
-        for motor in motors:
-            yield from abs_set(motor, 5)
-        yield from wait()
-
-But by using labels you can express complex logic, waiting for different groups
-at different points in the plan:
+Motion in Parallel
+------------------
 
 .. code-block:: python
 
@@ -634,10 +529,6 @@ at different points in the plan:
 
         # Then wait for the slow motor.
         yield from wait('B')
-
-Before writing a custom plan to coordinate the motion of multiple devices,
-consider whether your use case could be addressed with one of the built-in
-:ref:`multi-dimensional_scans`.
 
 Sleeping
 --------
@@ -744,6 +635,8 @@ Plan Preprocessors
 ==================
 .. currentmodule:: bluesky.preprocessors
 
+
+
 .. _supplemental_data:
 
 Supplemental Data
@@ -756,6 +649,17 @@ executed by a RunEngine using the :class:`SupplementalData`.
 
 .. autoclass:: SupplementalData
     :members:
+
+
+We have installed a "preprocessor" on the RunEngine. A preprocessor modifies
+plans, supplementing or altering their instructions in some way. From now on,
+every time we type ``RE(some_plan())``, the RunEngine will silently change
+``some_plan()`` to ``sd(some_plan())``, where ``sd`` may insert some extra
+instructions. Envision the instructions flow from ``some_plan`` to ``sd`` and
+finally to ``RE``. The ``sd`` preprocessors has the opportunity to inspect
+he
+instructions as they go by and modify them as it sees fit before they get
+processed by the RunEngine.
 
 Preprocessor Wrappers and Decorators
 ------------------------------------

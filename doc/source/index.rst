@@ -39,9 +39,9 @@ Index
    :maxdepth: 1
 
    tutorial
+   plans
    documents
    metadata
-   plans
    callbacks
    state-machine
    simulation

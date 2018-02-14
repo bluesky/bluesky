@@ -308,7 +308,7 @@ spacing.
 
     RE(list_scan(dets, motor, points))
 
-For a complete list of scan variations see :doc:`plans`.
+For a complete list of scan variations and other plans, see :doc:`plans`.
 
 Scan Multiple Motors Together
 -----------------------------

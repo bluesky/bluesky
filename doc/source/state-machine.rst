@@ -21,16 +21,41 @@ Pause Now: Ctrl+C twice
 
 .. code-block:: python
 
-    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor, det]))
+    In [14]: RE(scan([det], motor, 1, 10, 10))
+    Transient Scan ID: 2     Time: 2018/02/12 12:43:12
+    Persistent Unique Scan ID: '33a16823-e214-4952-abdd-032a78b8478f'
+    New stream: 'primary'
     +-----------+------------+------------+------------+
     |   seq_num |       time |      motor |        det |
     +-----------+------------+------------+------------+
-    |         1 | 07:21:29.2 |    -10.000 |      0.000 |
-    |         2 | 07:21:29.3 |     -8.571 |      0.000 |
-    |         3 | 07:21:29.4 |     -7.143 |      0.000 |
-    ^C^C
+    |         1 | 12:43:13.3 |      1.000 |      0.607 |
+    |         2 | 12:43:14.3 |      2.000 |      0.135 |
+    |         3 | 12:43:15.3 |      3.000 |      0.011 |
+    ^C
+    A 'deferred pause' has been requested. The RunEngine will pause at the next checkpoint. To pause immediately, hit Ctrl+C again in the next 10 seconds.
+    Deferred pause acknowledged. Continuing to checkpoint.
+    ^C
     Pausing...
-    In [2]:
+    ---------------------------------------------------------------------------
+    RunEngineInterrupted                      Traceback (most recent call last)
+    <ipython-input-14-826ee9dfb918> in <module>()
+    ----> 1 RE(scan([det], motor, 1, 10, 10))
+
+    ~/Documents/Repos/bluesky/bluesky/run_engine.py in __call__(self, *args, **metadata_kw)
+        670
+        671             if self._interrupted:
+    --> 672                 raise RunEngineInterrupted(self.pause_msg) from None
+        673
+        674         return tuple(self._run_start_uids)
+
+    RunEngineInterrupted:
+    Your RunEngine is entering a paused state. These are your options for changing
+    the state of the RunEngine:
+
+    RE.resume()    Resume the plan.
+    RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+    RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
+    RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 
 Before returning the prompt to the user, the RunEngine ensures that all motors
 that it has touched are stopped. It also performs any device-specific cleanup
@@ -51,20 +76,40 @@ to complete before execution is paused.
 
 .. code-block:: python
 
-    In [1]: RE(scan([det], motor, -10, 10, 15), LiveTable([motor, det]))
+    In [12]: RE(scan([det], motor, 1, 10, 10))
+    Transient Scan ID: 1     Time: 2018/02/12 12:40:36
+    Persistent Unique Scan ID: 'c5db9bb4-fb7f-49f4-948b-72fb716d1f67'
+    New stream: 'primary'
     +-----------+------------+------------+------------+
     |   seq_num |       time |      motor |        det |
     +-----------+------------+------------+------------+
-    |         1 | 07:21:29.2 |    -10.000 |      0.000 |
-    |         2 | 07:21:29.3 |     -8.571 |      0.000 |
-    |         3 | 07:21:29.4 |     -7.143 |      0.000 |
-    ^C
-    A 'deferred pause' has been requested. The RunEngine will pause at the next
-    checkpoint. To pause immediately, hit Ctrl+C again in the next 10 seconds.
+    |         1 | 12:40:37.6 |      1.000 |      0.607 |
+    |         2 | 12:40:38.7 |      2.000 |      0.135 |
+    |         3 | 12:40:39.7 |      3.000 |      0.011 |
+    ^CA 'deferred pause' has been requested. The RunEngine will pause at the next checkpoint. To pause immediately, hit Ctrl+C again in the next 10 seconds.
     Deferred pause acknowledged. Continuing to checkpoint.
-    |         4 | 07:21:29.5 |     -5.728 |      0.000 |
+    |         4 | 12:40:40.7 |      4.000 |      0.000 |
     Pausing...
-    In [2]:
+    ---------------------------------------------------------------------------
+    RunEngineInterrupted                      Traceback (most recent call last)
+    <ipython-input-12-826ee9dfb918> in <module>()
+    ----> 1 RE(scan([det], motor, 1, 10, 10))
+
+    ~/Documents/Repos/bluesky/bluesky/run_engine.py in __call__(self, *args, **metadata_kw)
+        670
+        671             if self._interrupted:
+    --> 672                 raise RunEngineInterrupted(self.pause_msg) from None
+        673
+        674         return tuple(self._run_start_uids)
+
+    RunEngineInterrupted:
+    Your RunEngine is entering a paused state. These are your options for changing
+    the state of the RunEngine:
+
+    RE.resume()    Resume the plan.
+    RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+    RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
+    RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 
 What to do after pausing
 ------------------------
