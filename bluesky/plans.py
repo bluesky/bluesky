@@ -984,8 +984,7 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    _md = {'plan_name': 'rel_scan',
-           }
+    _md = {'plan_name': 'rel_scan'}
     md = md or {}
     _md.update(md)
     motors = [motor for motor, start, stop in partition(3, args)]
