@@ -223,6 +223,19 @@ Using the RunEngine, ``RE``, "count" the detectors:
  
     RE(count(dets))
 
+Demo:
+
+.. ipython:: python
+    :suppress:
+
+    from bluesky.plans import count
+    from ophyd.sim import det1, det2
+    dets = [det1, det2]
+
+.. ipython:: python
+
+    RE(count(dets))
+
 A key feature of bluesky is that these detectors could simple photodiodes or
 complex CCDs. All of those details are captured in the implementation of the
 Device. From the point of view of bluesky, detectors are just Python objects
@@ -290,6 +303,23 @@ read some detector, ``det``.
     dets = [det]   # just one in this case, but it could be more than one
 
     RE(scan(dets, motor, -1, 1, 10))
+
+.. ipython:: python
+    :suppress:
+
+    from bluesky.plans import scan
+    from ophyd.sim import det, motor
+    dets = [det1, det2]
+
+.. ipython:: python
+
+    RE(scan(dets, motor, -1, 1, 10))
+
+.. plot::
+
+    from bluesky.plans import scan
+    from ophyd.sim import det, motor
+    RE(scan(dets, motor, -1, 1))
 
 A key feature of bluesky is that ``motor`` may be any "movable" devices,
 including a temperature controller, a sample changer, or some pseudo-axis. From
