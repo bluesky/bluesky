@@ -5,20 +5,27 @@ Tutorial
 Before You Begin
 ================
 
+.. note::
+
+    NSLS-II deploys a free, public "sandbox" for trying the software in the
+    browser using Jupyter notebooks. There is no need to install any software.
+    Go to `https://try.nsls2.bnl.gov <https://try.nsls2.bnl.gov>`_.
+
 * You will need Python 3.5 or newer. From a shell ("Terminal" on OSX,
   "Command Prompt" on Windows), check your current Python version.
 
   .. code-block:: bash
 
-    python --version
+    python3 --version
 
-  If that version is less than 3.5, you can easily install a new version of
-  Python into "virtual environment". It will not interfere with any existing
-  Python software:
+  If that version is less than 3.5, you must update it.
+
+  We recommend install bluesky into a "virtual environment" so this
+  installation will not interfere with any existing Python software:
 
   .. code-block:: bash
 
-    python -m venv ~/bluesky-tutorial
+    python3 -m venv ~/bluesky-tutorial
     source ~/bluesky-tutorial/bin/activate
 
   Alternatively, if you are a
@@ -35,7 +42,7 @@ Before You Begin
 
   .. code-block:: bash
 
-     python -m pip install --upgrade bluesky ophyd ipython
+     python3 -m pip install --upgrade bluesky ophyd ipython
 
 * Start ``ipython``. Can you ``import bluesky``? If so, you are ready to go.
 
