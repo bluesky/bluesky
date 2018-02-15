@@ -1057,12 +1057,14 @@ plan capture some metadata automatically. For more see, :doc:`metadata`.
 Simulate and Introspect Plans
 =============================
 
-We have referred to plan as a "sequence of instructions encoding an
+We have referred to a *plan* as a "sequence of instructions encoding an
 experimental procedure." But what's inside a plan really? Bluesky calls each
-atomic instruction inside a plan a "message". As a scientist conducting an
-experiment, we rarely need to get this far into the weeds of bluesky, but it's
-useful to visit just once. Try printing out every message in a couple simple
-plans:
+atomic instruction inside a plan a *message*.  Handling the messages directly
+is only necessary when debugging or doing unusually deep customization, but
+it's helpful to see them at least once before moving on to more practical
+tools.
+
+Try printing out every message in a couple simple plans:
 
 .. code-block:: python
 
@@ -1075,12 +1077,10 @@ plans:
     for msg in count([det]):
         print(msg)
 
-Again, handling the messages directly is usually only necessary for serious
-debugging or deep customization. You can learn more in the :doc:`msg` section.
+See the :doc:`msg` section for more.
 
-Building up from simple introspection like the loop above, bluesky includes
-some tools for producing more useful, human-readable summaries to answer the
-question, "What will this plan do?"
+Bluesky includes some tools for producing more useful, human-readable summaries
+to answer the question, "What will this plan do?"
 
 .. ipython:: python
 
