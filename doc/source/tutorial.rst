@@ -1369,7 +1369,8 @@ every Device to implement an optional ``stage()`` method, with a corresponding
 one and unstage every device at the end. If a Device does not have a
 ``stage()`` method the RunEngine will just skip over it.
 
-Revising our simplest example above, ``one_run_one_event``, adding these steps:
+Revising our simplest example above, ``one_run_one_event``, we incorporate
+staging like so:
 
 .. code-block:: python
 
@@ -1381,24 +1382,56 @@ Revising our simplest example above, ``one_run_one_event``, adding these steps:
         for det in detectors:
             yield from bps.stage(det)
 
-        # Declare the beginning of a new run.
         yield from bps.open_run()
-
-        # Trigger each detector and wait for triggering to complete.
-        # Then read the detectors and bundle these readings into an Event
-        # (i.e. one row in a table.)
         yield from bps.trigger_and_read(detectors)
-
-        # Declare the end of the run.
         yield from bps.close_run()
 
         # 'Unstage' every device.
         for det in detectors:
             yield from bps.unstage(det)
 
-This is starting to get verbose!
+This is starting to get verbose. At this point, we might want to accept some
+additional complexity in exchange for brevity. This plan is equivalent:
 
-TODO introduce `stage_decorator` and then `run_decorator`.
+.. code-block:: python
+
+    import bluesky.preprocessors as bpp
+
+    def one_run_one_event(detectors):
+
+        @bpp.stage_decorator(detectors)
+        def inner():
+            yield from bps.open_run()
+            yield from bps.trigger_and_read(detectors)
+            yield from bps.close_run()
+
+        return yield from inner()
+
+The :func:`~bluesky.preprocessors.stage_decorator` is a *plan preprocessor*, a
+plan which consumes another plan and modifies its instructions. In this case,
+it adds inserts 'stage' and 'unstage' messages, supplanting
+:func:`~bluesky.plan_stubs.stage` and :func:`~bluesky.plan_stubs.unstage`.
+
+We can trim the verbosity down yet more by employing
+:func:`~bluesky.preprocessors.run_decorator`, supplanting `
+:func:`~bluesky.plan_stubs.open_run` and :func:`~bluesky.plan_stubs.close_run`.
+
+.. code-block:: python
+
+    import bluesky.preprocessors as bpp
+
+    def one_run_one_event(detectors):
+
+        @bpp.stage_decorator(detectors)
+        @bpp.run_decorator()
+        def inner():
+            yield from bps.trigger_and_read(detectors)
+
+        return yield from inner()
+
+We have already seen a preprocessor earlier in this tutorial in the section on
+baseline readings. :class:`~bluesky.preprocessors.SupplementalData` is also a
+preprocessor.
 
 Add Metadata
 ------------
