@@ -73,6 +73,9 @@ technical details for free: it communicates with hardware, monitors for
 interruptions, organizes metadata and data, coordinates I/O, and ensures that
 the hardware is left in a safe state at exit time.
 
+This separation of the executor (the RunEngine) from the instruction set (the
+plan) pays off in several ways, as we will see in the examples that follow.
+
 .. note::
 
     If you are a visiting user at a facility that runs bluesky, you can skip
@@ -790,6 +793,11 @@ We can clear or update the list of baseline detectors at any time.
 
     sd.baseline = []
 
+As an aside, this is one place where the design of bluesky really pays off. By
+separating the executor (the RunEngine) from the instruction sets (the plans)
+it's easy to apply global configuration without updating every plan
+individually.
+
 Access Baseline Data
 --------------------
 
@@ -840,12 +848,10 @@ Interactive Pause & Resume
 
 Sometimes it is convenient to pause data collection, check on some things, and
 then either resume from where you left off or quit. The RunEngine makes it
-possible to do this cleanly and safely on *every* plan, including user-defined
-ones, with no special effort by the user.
-
-(Of course, experiments on systems that evolve with time can't be arbitrarily
-paused and resumed. It's up to the user to know that and use this feature only
-when applicable.)
+possible to do this cleanly and safely on *any* plan, including user-defined
+plans, with no special effort by the user. Of course, experiments on systems
+that evolve with time can't be arbitrarily paused and resumed. It's up to the
+user to know that and use this feature only when applicable.
 
 Take this example, a step scan over ten points.
 
@@ -874,7 +880,7 @@ Demo:
     |         3 | 12:40:39.7 |      3.000 |      0.011 |
 
 At this point we decide to hit **Ctrl+C** (SIGINT). The RunEngine will catch
-this signal and react like so.
+this signal and react like so. We will examine this output piece by piece.
 
 .. code-block:: none
 
@@ -900,16 +906,21 @@ this signal and react like so.
     RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
     RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 
-When it pauses, the RunEngine immediately tells all Devices that is has touched
-to "stop". (Devices define what that means to them in their ``stop()`` method.)
-Now, all the hardware should be safe. At our leisure, we may:
+When it pauses, the RunEngine immediately tells all Devices that it has touched
+so far to "stop". (Devices define what that means to them in their ``stop()``
+method.) This is not a replacement for proper equipment protection; it is just
+a convenience.
+
+Now, at our leisure, we may:
 
 * pause to think
 * investigate the state of our hardware, such as the detector's exposure time
 * turn on more verbose logging  (see :doc:`debugging`)
 * decide whether to stop here or resume
 
-Suppose we decide to resume.
+Suppose we decide to resume. The RunEngine will pick up from the last
+"checkpoint". Typically, this means beginning of each step in a scan, but
+plans may specify checkpoints anywhere they like.
 
 .. ipython::
     :verbatim:
@@ -924,10 +935,11 @@ Suppose we decide to resume.
     +-----------+------------+------------+------------+
     generator scan ['c5db9bb4'] (scan num: 1)
 
-If you read the demo above closely, you will see that the RunEngine didn't
-pause immediately: it finished the current step of the scan first. Quoting an
-excerpt from the demo above:
+The scan has completed successfully.
 
+If you go back and read the output from when we hit Ctrl+C, you will notice
+that the RunEngine didn't pause immediately: it finished the current step of
+the scan first. Quoting an excerpt from the demo above:
 
 .. code-block:: none
 
@@ -939,8 +951,26 @@ excerpt from the demo above:
     |         4 | 12:40:40.7 |      4.000 |      0.000 |
     Pausing...
 
-To pause immediately without waiting for the next "checkpoint" (e.g. the
-beginning of the next step) hit Ctrl+C *twice*.
+Observe that hitting Ctrl+C *twice* pauses immediately, without waiting to
+finish the current step.
+
+.. code-block:: none
+
+    In [2]: RE(scan([det], motor, 1, 10, 10))
+    Transient Scan ID: 2     Time: 2018/02/15 12:31:14
+    Persistent Unique Scan ID: 'b342448f-6a64-4f26-91a6-37f559cb5537'
+    New stream: 'primary'
+    +-----------+------------+------------+------------+
+    |   seq_num |       time |      motor |        det |
+    +-----------+------------+------------+------------+
+    |         1 | 12:31:15.8 |      1.000 |      0.607 |
+    |         2 | 12:31:16.8 |      2.000 |      0.135 |
+    |         3 | 12:31:17.8 |      3.000 |      0.011 |
+    ^C^C
+    Pausing...
+
+When resumed, the RunEngine will *rewind* to the last checkpoint (the beginning
+of the fourth step in the scan) and repeat instructions as needed.
 
 Quoting again from the demo, notice that ``RE.resume()`` was only one of our
 options. If we decide not to continue we can quit in three different ways:
@@ -962,6 +992,10 @@ back to its starting position before quitting.
 
 In rare cases, if we are worried that the plan's cleanup procedure might be
 dangerous, we can "halt". Halting circumvents the cleanup instructions.
+
+Try executing ``RE(scan([det], motor, 1, 10, 10))``, pausing, and exiting in
+these various ways. Observe that the RunEngine won't let you run a new plan
+until you have resolved the paused plan using one of these methods.
 
 Automated Suspend & Resume
 --------------------------
