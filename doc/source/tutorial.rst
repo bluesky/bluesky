@@ -345,8 +345,8 @@ accept multiple motors.
 .. code-block:: python
 
     RE(scan(dets,
-            motor1, -1, -1,  # scan motor1 from -1 to 1
-            motor2, -10, 10,  # ...while scanning motor2 from -10 to 10
+            motor1, -1, 1,  # scan motor1 from -1 to 1
+            motor2, -0.1, 0.1,  # ...while scanning motor2 from -0.1 to 0.1
             11))  # ...both in 11 steps
 
 The line breaks are intended to make the command easier to visually parse. They
@@ -357,18 +357,25 @@ Demo:
 .. ipython:: python
     :suppress:
 
-    from bluesky import RunEngine
     from bluesky.plans import scan
     from ophyd.sim import det4, motor1, motor2
     dets = [det4]
 
-.. ipython::
-    :verbatim:
+.. ipython:: python
     
-    # TODO Remove verbatim once `scan` support this usage.
     RE(scan(dets,
-            motor1, 1, 5,  # scan motor1 from 1 to 5
-            motor2, 10, 50,  # ...while scanning motor2 from 10 to 50
+            motor1, -1, 1,  # scan motor1 from -1 to 1
+            motor2, -0.1, 0.1,  # ...while scanning motor2 from -0.1 to 0.1
+            11))  # ...both in 11 steps
+
+.. plot::
+
+    from bluesky.plans import scan
+    from ophyd.sim import det4, motor1, motor2
+    dets = [det4]
+    RE(scan(dets,
+            motor1, -1, 1,  # scan motor1 from -1 to 1
+            motor2, -0.1, 0.1,  # ...while scanning motor2 from -0.1 to 0.1
             11))  # ...both in 11 steps
 
 This works for any number of motors, not just two. Try importing ``motor3``
@@ -396,8 +403,8 @@ Let's start with a 3x5 grid.
 .. code-block:: python
 
     RE(grid_scan(dets,
-                 motor1, -1, -1, 3,  # scan motor1 from -1 to 1 in 3 steps
-                 motor2, -10, -10, 5, False))  # scan motor2 from -10 to 10 in 5
+                 motor1, -1, 1, 3,  # scan motor1 from -1 to 1 in 3 steps
+                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1in 5
 
 That final parameter --- ``False`` --- designates whether ``motor2`` should
 "snake" back and forth along ``motor1``'s trajectory (``True``) or retread its
@@ -421,10 +428,34 @@ positions in the same direction each time (``False``), as illustrated.
     ax1.set_xlim(-6, 6)
     ax2.set_xlim(-6, 6)
 
+Demo:
+
+.. ipython:: python
+    :suppress:
+
+    from bluesky.plans import grid_scan
+    from ophyd.sim import motor1, motor2, det4
+    dets = [det4]
+
+.. ipython:: python
+
+    RE(grid_scan(dets,
+                 motor1, -1, 1, 3,  # scan motor1 from -1 to 1 in 3 steps
+                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1in 5
+
+.. plot::
+
+    from bluesky.plans import grid_scan
+    from ophyd.sim import motor1, motor2, det4
+    dets = [det4]
+    RE(grid_scan(dets,
+                 motor1, -1, 1, 3,  # scan motor1 from -1 to 1 in 3 steps
+                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1in 5
+
 The order of the motors controls how the grid is traversed. The "slowest" axis
 comes first. Numpy users will appreciate that this is consistent with numpy's
 convention for indexing multidimensional arrays. Since the first (slowest) axis
-is only traversed once, it does not need a "snake" option. All subsequent
+is only traversed once, it does not need a "snake" parameter. All subsequent
 axes do. Example:
 
 .. code-block:: python
@@ -433,8 +464,8 @@ axes do. Example:
 
     # a 3 x 5 x 2 grid
     RE(grid_scan(dets,
-                 motor1, -1, 1, 3,  # no snake parameter
-                 motor2, -10, -10, 5, False),
+                 motor1, -1, 1, 3,  # no snake parameter for first motor
+                 motor2, -0.1, 0.1, 5, False))
                  motor3, , -2, 2, 5, False))
 
 For plans incorporating adaptive logic, more specialized trajectories such as

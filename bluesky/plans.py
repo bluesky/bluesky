@@ -745,7 +745,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
         For one dimension, ``motor, start, stop``.
         In general:
 
-        .. code-block:: 
+        .. code-block:: python
 
             motor1, start1, stop1,
             motor2, start2, start2,
@@ -961,7 +961,7 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
         For one dimension, ``motor, start, stop``.
         In general:
 
-        .. code-block:: 
+        .. code-block:: python
 
             motor1, start1, stop1,
             motor2, start2, start2,
