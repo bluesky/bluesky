@@ -24,8 +24,9 @@ How to Use This Documentation
 
 Start with the :doc:`tutorial`. It's a good place to start for everyone, and it
 gives a good overview of the project in a narrative style. Read as far as you
-need to solve your problem. The tutorial is lengthy, but if your needs are
-straightforward you may not need to read very far to meet them.
+need to solve your problem, and come back again if your needs change. Each
+section of the tutorial adds a piece of complexity in exchange for deeper
+customization.
 
 The remaining sections document bluesky's behavior in a less narrative style,
 providing clear API documentation intermixed with some examples and explanation
