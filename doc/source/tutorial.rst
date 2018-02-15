@@ -77,7 +77,9 @@ the hardware is left in a safe state at exit time.
 
     If you are a visiting user at a facility that runs bluesky, you can skip
     this section and go straight to :ref:`common_experiments`. A RunEngine will
-    have already been configured for you.
+    have already been configured for you. **If you ignore this and define your
+    own, you may be overriding pre-configured defaults, which can result in
+    data loss.**
 
     You can type ``RE`` to check. You should get something like:
 
