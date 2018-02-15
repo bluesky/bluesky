@@ -75,11 +75,11 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     steps : list
         list of positions
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature:
         ``f(detectors, motor, step) -> plan (a generator)``
     md : dict, optional
@@ -130,11 +130,11 @@ def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     steps : list
         list of positions relative to current position
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -155,7 +155,7 @@ def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     return (yield from inner_relative_list_scan())
 
 
-def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     """
     Scan over one variable in equally spaced steps.
 
@@ -164,7 +164,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -172,7 +172,7 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     num : int
         number of steps
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -217,8 +217,8 @@ def scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_scan())
 
 
-def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
-             md=None):
+def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None,
+                 md=None):
     """
     Scan over one variable in equally spaced steps relative to current positon.
 
@@ -227,7 +227,7 @@ def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -235,7 +235,7 @@ def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
     num : int
         number of steps
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -251,8 +251,8 @@ def rel_scan(detectors, motor, start, stop, num, *, per_step=None,
     @bpp.reset_positions_decorator([motor])
     @bpp.relative_set_decorator([motor])
     def inner_relative_scan():
-        return (yield from scan(detectors, motor, start, stop,
-                                num, per_step=per_step, md=_md))
+        return (yield from _scan_1d(detectors, motor, start, stop,
+                                    num, per_step=per_step, md=_md))
 
     return (yield from inner_relative_scan())
 
@@ -266,7 +266,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -274,7 +274,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     num : int
         number of steps
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -329,7 +329,7 @@ def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -337,7 +337,7 @@ def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     num : int
         number of steps
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -372,7 +372,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     target_field : string
         data field whose output is the focus of the adaptive tuning
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -484,7 +484,7 @@ def rel_adaptive_scan(detectors, target_field, motor, start, stop,
     target_field : string
         data field whose output is the focus of the adaptive tuning
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -557,7 +557,7 @@ def tune_centroid(
     signal : string
         detector field whose output is to maximize
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         start of range
     stop : float
@@ -674,7 +674,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     cycler : Cycler
         list of dictionaries mapping motors to positions
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -726,6 +726,14 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
 
 
 def inner_product_scan(detectors, num, *args, per_step=None, md=None):
+    # For scan, num is the _last_ positional arg instead of the first one.
+    # Notice the swapped order here.
+    md = md or {}
+    md.setdefault('plan_name', 'inner_product_scan')
+    yield from scan(detectors, *args, num, per_step=None, md=md)
+
+
+def scan(detectors, *args, num=None, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory.
 
@@ -733,13 +741,22 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     ----------
     detectors : list
         list of 'readable' objects
+    *args :
+        For one dimension, ``motor, start, stop``.
+        In general:
+
+        .. code-block:: 
+
+            motor1, start1, stop1,
+            motor2, start2, start2,
+            ...,
+            motorN, startN, stopN
+
+        Motors can be any 'settable' object (motor, temp controller, etc.)
     num : integer
-        number of steps
-    ``*args`` : {Positioner, Positioner, int}
-        patterned like (``motor1, start1, stop1, ..., motorN, startN, stopN``)
-        Motors can be any 'setable' object (motor, temp controller, etc.)
+        number of points
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -751,6 +768,18 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
+    # For back-compat reasons, we accept 'num' as the last positional argument:
+    # scan(detectors, motor, -1, 1, 3)
+    # or by keyword:
+    # scan(detectors, motor, -1, 1, num=3)
+    # ... which requires some special processing.
+    if num is None:
+        if len(args) % 3 != 1:
+            raise ValueError("The number of points to scan must be provided "
+                             "as the last positional argument or as keyword "
+                             "argument 'num'.")
+        num = args[-1]
+        args = args[:-1]
     md_args = list(chain(*((repr(motor), start, stop)
                            for motor, start, stop in partition(3, args))))
     motor_names = tuple(motor.name for motor, start, stop
@@ -759,7 +788,7 @@ def inner_product_scan(detectors, num, *args, per_step=None, md=None):
     _md = {'plan_args': {'detectors': list(map(repr, detectors)),
                          'num': num, 'args': md_args,
                          'per_step': repr(per_step)},
-           'plan_name': 'inner_product_scan',
+           'plan_name': 'scan',
            'plan_pattern': 'inner_product',
            'plan_pattern_module': plan_patterns.__name__,
            'plan_pattern_args': dict(num=num, args=md_args),
@@ -814,7 +843,7 @@ def grid_scan(detectors, *args, per_step=None, md=None):
         indicating whether to following snake-like, winding trajectory or a
         simple left-to-right trajectory.
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -880,13 +909,13 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
     ``*args``
         patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
         num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
-        Motors can be any 'setable' object (motor, temp controller, etc.)
+        Motors can be any 'settable' object (motor, temp controller, etc.)
         Notice that the first motor is followed by start, stop, num.
         All other motors are followed by start, stop, num, snake where snake
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -913,6 +942,14 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
 
 
 def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
+    # For rel_scan, num is the _last_ positional arg instead of the first one.
+    # Notice the swapped order here.
+    md = md or {}
+    md.setdefault('plan_name', 'relative_inner_product_scan')
+    yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
+
+
+def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     """
     Scan over one multi-motor trajectory relative to current position.
 
@@ -920,13 +957,22 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     ----------
     detectors : list
         list of 'readable' objects
+    *args :
+        For one dimension, ``motor, start, stop``.
+        In general:
+
+        .. code-block:: 
+
+            motor1, start1, stop1,
+            motor2, start2, start2,
+            ...,
+            motorN, startN, stopN,
+
+        Motors can be any 'settable' object (motor, temp controller, etc.)
     num : integer
-        number of steps
-    ``*args``
-        patterned like (``motor1, start1, stop1, ..., motorN, startN, stopN``)
-        Motors can be any 'setable' object (motor, temp controller, etc.)
+        number of points
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -938,19 +984,18 @@ def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    _md = {'plan_name': 'relative_inner_product_scan',
-           }
+    _md = {'plan_name': 'rel_scan'}
     md = md or {}
     _md.update(md)
     motors = [motor for motor, start, stop in partition(3, args)]
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
-    def inner_relative_inner_product_scan():
-        return (yield from inner_product_scan(detectors, num, *args,
-                                              per_step=per_step, md=_md))
+    def inner_rel_scan():
+        return (yield from scan(detectors, *args, num=num,
+                                per_step=per_step, md=_md))
 
-    return (yield from inner_relative_inner_product_scan())
+    return (yield from inner_rel_scan())
 
 
 def tweak(detector, target_field, motor, step, *, md=None):
@@ -1039,9 +1084,9 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     detectors : list
         list of 'readable' objects
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_start : float
         x center
     y_start : float
@@ -1057,7 +1102,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1112,9 +1157,9 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     detectors : list
         list of 'readable' objects
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_range : float
         x width of spiral
     y_range : float
@@ -1126,7 +1171,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1154,9 +1199,9 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     Parameters
     ----------
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_start : float
         x center
     y_start : float
@@ -1172,7 +1217,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1225,9 +1270,9 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     Parameters
     ----------
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_start : float
         x center
     y_start : float
@@ -1243,7 +1288,7 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1300,7 +1345,7 @@ def ramp_plan(go_plan,
 
         In seconds
 
-    period : fload, optional
+    period : float, optional
         If not None, take data no faster than this.  If None, take
         data as fast as possible
 
