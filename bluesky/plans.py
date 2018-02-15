@@ -833,7 +833,7 @@ def grid_scan(detectors, *args, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     ``*args``
-        patterned like (``motor1, start1, stop1, num1,```
+        patterned like (``motor1, start1, stop1, num1,``
                         ``motor2, start2, stop2, num2, snake2,``
                         ``motor3, start3, stop3, num3, snake3,`` ...
                         ``motorN, startN, stopN, numN, snakeN``)

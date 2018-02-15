@@ -1,14 +1,14 @@
-Release Notes
-=============
+Release History
+===============
 
-v1.1.0
-------
+v1.1.0 (2017-12-19)
+-------------------
 
 This release fixes small bugs in v1.0.0 and introduces one new feature. The
 API changes or deprecations are not expected to affect many users.
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
 
 * Add a new command to the :class:`~bluesky.run_engine.RunEngine`, ``'drop'``,
   which jettisons the currently active event bundle without saving. This is
@@ -25,8 +25,8 @@ Bug Fixes
 * Fix the hint for :func:`~bluesky.plans.inner_product_scan`, which previously
   used a default hint that was incorrect.
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes and Deprecations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * In :func:`~bluesky.plans.tune_centroid`, change the meaning of the
   ``step_factor`` parameter to be the factor to reduce the range of each
@@ -35,10 +35,6 @@ API Changes
 * The :class:`~bluesky.preprocessors.SupplementalData` preprocessor inserts its
   instructions in a more logical order: first baseline readings, then
   monitors, then flyers. Previously, the order was reversed.
-
-Deprecations
-^^^^^^^^^^^^
-
 * The suspender :class:`~bluesky.suspenders.SuspendInBand` has been renamed to
   :class:`~bluesky.suspenders.SuspendWhenOutsideBand` to make its meaning more
   clear. Its behavior has not changed: it suspends when a value exits a given
@@ -48,8 +44,8 @@ Deprecations
   deprecated. (If some application is found for this unusual scenario, the user
   can always implement a custom suspender to handle it.)
 
-v1.0.0
-------
+v1.0.0 (2017-11-07)
+-------------------
 
 This tag marks an important release for bluesky, signifying the conclusion of
 the early development phase. From this point on, we intend that this project
@@ -66,14 +62,14 @@ Bug Fixes
 * Plans given an empty detectors list, such as ``count([])``, no longer break
   the :class:`~bluesky.callbacks.best_effort.BestEffortCallback`.
 
-v0.11.0
--------
+v0.11.0 (2017-11-01)
+--------------------
 
 This is the last release before 1.0.0. It contains major restructurings and
 general clean-up.
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes and Deprecations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 * The :mod:`bluesky.plans` module has been split into
 
@@ -93,18 +89,14 @@ API Changes
 * The module :mod:`bluesky.callbacks.scientific` has been removed.
 * ``PeakStats`` has been moved to :mod:`bluesky.callbacks.fitting`, and
   :func:`plot_peak_stats` has been moved to `bluesky.callbacks.mpl_plotting`.
-
-Deprecations
-^^^^^^^^^^^^
-
 * The synthetic 'hardware' objects in ``bluesky.examples`` have been relocated
   to ophyd (bluesky's sister package) and aggressively refactored to be more
   closely aligned with the behavior of real hardware. The ``Reader`` and
   ``Mover`` classes have been removed in favor of ``SynSignal``,
   ``SynPeriodicSignal``, ``SynAxis``, ``SynSignalWithRegistry``.
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
 
 * Add :func:`stub_wrapper` and :func:`stub_decorator` that strips
   open_run/close_run and stage/unstage messages out of a plan, so that it can
@@ -118,7 +110,6 @@ Enhancements
   under the key 'num_events'.
 * Make the message shown when the RunEngine is paused configurable via the
   attribute ``RunEngine.pause_msg``.
-* Make :func:`plan_mutator` more flexible. (See docstring.)
 
 Bug Fixes
 ^^^^^^^^^
@@ -131,9 +122,8 @@ Bug Fixes
 * Correctly mark ``exit_status`` field in RunStop metadata based on which
   termination method was called (abort, stop, halt).
 * ``LiveFitPlot`` handles updates more carefully.
-* Fix critical :func:`baseline_wrapper` bug.
 
-Internal Chnages
+Internal Changes
 ^^^^^^^^^^^^^^^^
 
 * The :mod:`bluesky.callbacks` package has been split up into more modules.
@@ -144,8 +134,17 @@ Internal Chnages
 * An internal change to the RunEngine supports ophyd's new Status object API
   for adding callbacks.
 
-v0.10.2
--------
+v0.10.3 (2017-09-12)
+--------------------
+
+Bug Fixes
+^^^^^^^^^
+
+* Fix critical :func:`baseline_wrapper` bug.
+* Make :func:`plan_mutator` more flexible. (See docstring.)
+
+v0.10.2 (2017-09-11)
+--------------------
 
 This is a small release with bug fixes and UI improvements.
 
@@ -155,23 +154,23 @@ Bug Fixes
 * Fix bug wherein BestEffortCallback tried to plot strings as floats. The
   intended behavior is to skip them and warn.
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
 
-* Include a more informate header in BestEffortCallback.
+* Include a more informative header in BestEffortCallback.
 * Include an 'Offset' column in %wa output.
 
-v0.10.1
--------
+v0.10.1 (2017-09-11)
+--------------------
 
 This release is equivalent to v0.10.2. The number was skipped due to packaging
 problems.
 
-v0.10.0
--------
+v0.10.0 (2017-09-06)
+--------------------
 
-Overview
-^^^^^^^^
+Highlights
+^^^^^^^^^^
 
 * Automatic best-effort visualization and peak-fitting is available for all
   plans, including user-defined ones.
@@ -181,8 +180,8 @@ Overview
 * Improved tooling for streaming documents over a network for live processing
   and visualization in a different process or on a different machine.
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes
+^^^^^^^^^^^^^^^^
 
 * The modules implementing what was loosely dubbed a "SPEC-like" interface
   (``bluesky.spec_api`` and ``bluesky.global_state``) have been entirely
@@ -385,8 +384,8 @@ Deprecations
   unambigious (they must be a callable and a string, respectively) the old
   order will be supported indefeinitely, with a warning.
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
 
 * A :doc:`progress bar <progress-bar>` add-on is available.
 * As addressed above:
@@ -422,11 +421,11 @@ Bug Fixes
   break.
 * The ``requirements.txt`` failed to declare that bluesky requires matplotlib.
 
-v0.9.0
-------
+v0.9.0 (2017-05-08)
+-------------------
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes
+^^^^^^^^^^^^^^^^
 
 * Moved ``configure_count_time_wrapper`` and
   ``configure_count_time_decorator`` to ``bluesky.spec_api`` from
@@ -437,11 +436,11 @@ API Changes
   meant by ``num_steps``) is also stored.
 
 
-v0.8.0
-------
+v0.8.0 (2017-01-03)
+-------------------
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
 
 * If some plan or callback has hung the RunEngine and blocked its normal
   ability to respond to Ctrl+C by pausing, it is not possible to trigger a
@@ -458,19 +457,20 @@ Bug Fixes
 * Fix bug in ``LiveFit`` that broke multivariate fits.
 * Minor fixes to example detectors.
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes
+^^^^^^^^^^^^^^^^
 
 * A ``KeyboardInterrupt`` exception captured during a run used to cause the
   RunEngine to pause. Now it halts instead.
 
-v0.7.0
-------
+v0.7.0 (2016-11-01)
+-------------------
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
 
-* Nonlinear least-squares minimzation callback ``LiveFit`` with ``LiveFitPlot``
+* Nonlinear least-squares minimization callback ``LiveFit`` with
+  ``LiveFitPlot``
 * Added ``RunEngine.clear_suspenders()`` convenience method.
 * New ``RunEngine.preprocessors`` list that modifies all plans passed to the
   RunEngine.
@@ -497,8 +497,8 @@ Bug Fixes
   multiple inheritance in user code.
 
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes
+^^^^^^^^^^^^^^^^
 
 * The flag ``RunEngine.ignore_callback_exceptions`` now defaults to False.
 * The plan ``complete``, related to fly scans, previously had ``wait=True`` by
@@ -521,11 +521,11 @@ API Changes
   minimal because, as noted above, the monitor functionality was completely
   broken in previous releases.
 
-v0.6.4
-------
+v0.6.4 (2016-09-07)
+-------------------
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
 
 * Much-expanded and overhauled documentation.
 * Add ``aspect`` argument to ``LiveGrid``.
@@ -534,6 +534,8 @@ Enhancements
 * Simulated hardware devices ``Reader`` and ``Mover`` can be easily customized
   to mock a wider range of behaviors, for testing and demos.
 * Integrate the SPEC API with mew global state attribute ``gs.MONITORS``.
+* Callbacks that use the databroker accept an optional ``Broker`` instance
+  as an argument.
 
 Bug Fixes
 ^^^^^^^^^
@@ -545,20 +547,19 @@ Bug Fixes
   and does not accept an iterable (e.g., generator instance)
 * Restore ``gs.FLYERS`` integration to the SPEC API (accidentally removed).
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes
+^^^^^^^^^^^^^^^^
 
 * The API for the simulated hardware example devices ``Reader`` and ``Mover``
   has been changed to make them more general.
 * Remove ``register_mds`` metadatastore integration.
-* Callbacks that use the databroker accept an optional ``Broker`` instance
-  as an argument.
 
-v0.6.3
-------
+v0.6.3 (2016-08-16)
+-------------------
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
+
 * Change how "subscription factories" are handled, making them configurable
   through global state.
 * Make PeakStats configurable through global state.
@@ -572,36 +573,40 @@ Enhancements
 
 Bug Fixes
 ^^^^^^^^^
+
 * Boost performance by removing unneeded "sleep" step in message processing.
 * Fix bug related to rewinding in preparation for resuming.
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes
+^^^^^^^^^^^^^^^^
+
 * Remove the ``planify`` decorator and the plan context managers. These were
   experimental and ultimately proved problematic because they make it difficult
   to pass through return values cleanly.
 * Remove "lossy" subscriptions feature, rendered unnecessary by the utility for
   processing documents in separate processes (see Enhancements, above).
 
-v0.6.2
-------
+v0.6.2 (2016-07-26)
+-------------------
 
 Bug Fixes
 ^^^^^^^^^
+
 * Make ``make_decorator`` return proper decorators. The original implementation
   returned functions that could not actually be used as decorators.
 
-v0.6.1
-------
+v0.6.1 (2016-07-25)
+-------------------
 
 This release contained only a minor UX fix involving more informative error
-reporting.
+reporting related to Area Detector plugin port configuration.
 
-v0.6.0
-------
+v0.6.0 (2016-07-25)
+-------------------
 
-Enhancements
-^^^^^^^^^^^^
+Features
+^^^^^^^^
+
 * Address the situation where plan "rewinding" after a pause or suspension
   interacted badly with some devices. There are now three ways to temporarily
   turn off rewinding: a Msg with a new 'rewindable' command; a special
@@ -615,7 +620,8 @@ Enhancements
 
 Bug Fixes
 ^^^^^^^^^
-* Fix bug where RUnEngine was put in the "running" state, encountered an
+
+* Fix bug where RunEngine was put in the "running" state, encountered an
   error before starting the ``_run`` coroutine, and thus never switch back to
   "idle."
 * Ensure that plans are closed correctly and that, if they fail to close
@@ -629,22 +635,25 @@ Bug Fixes
 * Silenced un-needed suspenders warnings
 * Fix bug in separating devices
 
-Cleanup
-^^^^^^^
+Internal Changes
+^^^^^^^^^^^^^^^^
+
 * Reduce unneeded usage of ``bluesky.plans.single_gen``.
 * Don't emit create/save messages with no reads in between.
 * Re-work exception handling in main run engine event loop.
 
-v0.5.3
-------
+v0.5.3 (2016-06-06)
+-------------------
 
-API Changes
-^^^^^^^^^^^
+Breaking Changes
+^^^^^^^^^^^^^^^^
+
 * ``LiveTable`` only displays data from one event stream.
 * Remove used global state attribute ``gs.COUNT_TIME``.
 
 Bug Fixes
 ^^^^^^^^^
+
 * Fix "infinite count", ``ct(num=None)``.
 * Allow the same data keys to be present in different event streams. But, as
   before, a given data key can only appear once per event.
@@ -653,15 +662,26 @@ Bug Fixes
 * Upon resuming after a deferred pause, clear the deferred pause request.
 * Make ``bluesky.utils.register_transform`` character configurable.
 
-v0.5.2
-------
-* Plans were completely refactored. The API of the exist plans is supported
-  for back-compatibility. See plans documentation to review new capabilities.
+v0.5.2 (2016-05-25)
+-------------------
+
+Features
+^^^^^^^^
+
+* Plans were reimplemented as simple Python generators instead of custom Python
+  classes. The old "object-oriented" plans are maintained for
+  back-compatibility. See plans documentation to review new capabilities.
+
+Breaking Changes
+^^^^^^^^^^^^^^^^
+
 * SPEC-style plans are now proper generators, not bound to the RunEngine.
 
+v0.5.0 (2016-05-11)
+-------------------
 
-v0.5.0
-------
+Breaking Changes
+^^^^^^^^^^^^^^^^
 
 * Move ``bluesky.scientific_callbacks`` to ``bluesky.callbacks.scientific``
   and ``bluesky.broker_callbacks`` to ``bluesky.callbacks.broker``.
@@ -696,8 +716,60 @@ v0.5.0
 * An obscure feature in ``RunEngine.request_pause`` has been removed, which
   involved removing the optional arguments ``callback`` and ``name``.
 
-v0.3.0
-------
+v0.4.3 (2016-03-03)
+-------------------
+
+Bug Fixes
+^^^^^^^^^
+
+* Address serious performance problem in ``LiveTable``.
+
+v0.4.2 (2016-03-02)
+-------------------
+
+Breaking Changes
+^^^^^^^^^^^^^^^^
+
+* Stage the ultimate parent ("root") when a device is staging its child, making
+  it impossible to leave a device in a partially-staged state.
+
+v0.4.1 (2016-02-29)
+-------------------
+
+Features
+^^^^^^^^
+
+* Give every event stream a ``name``, using ``'primary'`` by default.
+* Record a mapping of device/signal names to ordered data keys in the
+  EventDescriptor.
+* Let ``LiveRaster`` account for "snaked" trajectories. 
+
+Bug Fixes
+^^^^^^^^^
+
+* ``PeakStats.com`` is a scalar, not a single-element array.
+* Restore Python 3.4 compatibility.
+
+v0.4.0 (2016-02-23)
+-------------------
+
+(TO DO)
+
+v0.3.2 (2015-10-28)
+-------------------
+
+(TO DO)
+
+v0.3.1 (2015-10-15)
+-------------------
+
+(TO DO)
+
+v0.3.0 (2015-10-14)
+-------------------
+
+Breaking Changes
+^^^^^^^^^^^^^^^^
 
 * Removed ``RunEngine.persistent_fields``; all fields in ``RE.md`` persist
   between runs by default.
@@ -722,5 +794,30 @@ v0.3.0
     - an object with ``start``, ``descriptor``, ``event`` and ``stop``
       methods (as implemented).
 
-  If classes derived from `CallbackBase` are being used this will not
+  If classes derived from ``CallbackBase`` are being used this will not
   not have any effect on user code.
+
+v0.2.3 (2015-09-29)
+-------------------
+
+(TO DO)
+
+v0.2.2 (2015-09-24)
+-------------------
+
+(TO DO)
+
+v0.2.1 (2015-09-24)
+-------------------
+
+(TO DO)
+
+v0.2.0 (2015-09-22)
+-------------------
+
+(TO DO)
+
+v0.1.0 (2015-06-25)
+-------------------
+
+Initial release
