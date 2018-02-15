@@ -311,7 +311,7 @@ read some detector, ``det``.
 
     from bluesky.plans import scan
     from ophyd.sim import det, motor
-    dets = [det1, det2]
+    dets = [det]
 
 .. ipython:: python
 
@@ -321,9 +321,10 @@ read some detector, ``det``.
 
     from bluesky.plans import scan
     from ophyd.sim import det, motor
-    RE(scan(dets, motor, -1, 1))
+    dets = [det]
+    RE(scan(dets, motor, -1, 1, 10))
 
-A key feature of bluesky is that ``motor`` may be any "movable" devices,
+A key feature of bluesky is that ``motor`` may be any "movable" device,
 including a temperature controller, a sample changer, or some pseudo-axis. From
 the point of view of bluesky and the RunEngine, all of these are just objects
 in Python with certain methods.
@@ -385,7 +386,7 @@ accept multiple motors.
 .. code-block:: python
 
     RE(scan(dets,
-            motor1, -1, 1,  # scan motor1 from -1 to 1
+            motor1, -1.5, 1.5,  # scan motor1 from -1.5 to 1.5
             motor2, -0.1, 0.1,  # ...while scanning motor2 from -0.1 to 0.1
             11))  # ...both in 11 steps
 
@@ -404,7 +405,7 @@ Demo:
 .. ipython:: python
     
     RE(scan(dets,
-            motor1, -1, 1,  # scan motor1 from -1 to 1
+            motor1, -1.5, 1.5,  # scan motor1 from -1.5 to 1.5
             motor2, -0.1, 0.1,  # ...while scanning motor2 from -0.1 to 0.1
             11))  # ...both in 11 steps
 
@@ -414,7 +415,7 @@ Demo:
     from ophyd.sim import det4, motor1, motor2
     dets = [det4]
     RE(scan(dets,
-            motor1, -1, 1,  # scan motor1 from -1 to 1
+            motor1, -1.5, 1.5,  # scan motor1 from -1.5 to 1.5
             motor2, -0.1, 0.1,  # ...while scanning motor2 from -0.1 to 0.1
             11))  # ...both in 11 steps
 
@@ -443,7 +444,7 @@ Let's start with a 3x5 grid.
 .. code-block:: python
 
     RE(grid_scan(dets,
-                 motor1, -1, 1, 3,  # scan motor1 from -1 to 1 in 3 steps
+                 motor1, -1.5, 1.5, 3,  # scan motor1 from -1.5 to 1.5 in 3 steps
                  motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1in 5
 
 That final parameter --- ``False`` --- designates whether ``motor2`` should
@@ -480,8 +481,8 @@ Demo:
 .. ipython:: python
 
     RE(grid_scan(dets,
-                 motor1, -1, 1, 3,  # scan motor1 from -1 to 1 in 3 steps
-                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1in 5
+                 motor1, -1.5, 1.5, 3,  # scan motor1 from -1.5 to 1.5 in 3 steps
+                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1 in 5 steps
 
 .. plot::
 
@@ -489,8 +490,8 @@ Demo:
     from ophyd.sim import motor1, motor2, det4
     dets = [det4]
     RE(grid_scan(dets,
-                 motor1, -1, 1, 3,  # scan motor1 from -1 to 1 in 3 steps
-                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1in 5
+                 motor1, -1.5, 1.5, 3,  # scan motor1 from -1.5 to 1.5 in 3 steps
+                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1 in 5 steps
 
 The order of the motors controls how the grid is traversed. The "slowest" axis
 comes first. Numpy users will appreciate that this is consistent with numpy's
@@ -504,9 +505,9 @@ axes do. Example:
 
     # a 3 x 5 x 2 grid
     RE(grid_scan(dets,
-                 motor1, -1, 1, 3,  # no snake parameter for first motor
+                 motor1, -1.5, 1.5, 3,  # no snake parameter for first motor
                  motor2, -0.1, 0.1, 5, False))
-                 motor3, , -2, 2, 5, False))
+                 motor3, -200, 200, 5, False))
 
 For plans incorporating adaptive logic, more specialized trajectories such as
 spirals, and more, see :doc:`plans`.
@@ -514,7 +515,7 @@ spirals, and more, see :doc:`plans`.
 Aside: Access Saved Data
 ========================
 
-At this point it is natural to wonder, "OK, how do I access my saved data?"
+At this point it is natural to wonder, "How do I access my saved data?"
 From the point of view of *bluesky*, that's really not bluesky's concern, but
 it's a reasonable question, so we'll address a typical scenario.
 
@@ -551,7 +552,7 @@ Alternatively, perhaps more conveniently, you can access it by recently:
 
     .. code-block:: python
 
-        uids = RE(some__plan(...))
+        uids = RE(some_plan(...))
         headers = db[uids]  # list of Headers
 
 Most of the useful metadata is in this dictionary:
@@ -576,7 +577,7 @@ Save Some Typing with 'Partial'
 -------------------------------
 
 Suppose we nearly always use the same detector(s) and we tire of typing out
-``count(dets)``. We can write a custom variant of :func:`~bluesky.plans.count`
+``count([det])``. We can write a custom variant of :func:`~bluesky.plans.count`
 using a built-in function provided by Python itself, :func:`functools.partial`.
 
 .. code-block:: python
@@ -585,10 +586,8 @@ using a built-in function provided by Python itself, :func:`functools.partial`.
     from bluesky.plans import count
     from ophyd.sim import det
 
-    dets = [det]
-
-    my_count = partial(count, dets)
-    RE(my_count())  # equivalent to RE(count(dets))
+    my_count = partial(count, [det])
+    RE(my_count())  # equivalent to RE(count([det]))
 
     # Additional arguments to my_count() are passed through to count().
     RE(my_count(num=3, delay=1))
