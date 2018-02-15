@@ -500,36 +500,6 @@ Special utilities:
    caching_repeater
    broadcast_msg
 
-We also provide :ref:`wrapper and decorator functions <preprocessors>` and
-:ref:`utility functions <plan_utils>`, documented below, that make building
-these easier.
-
-
-Before writing a custom plan to coordinate the motion of multiple devices,
-consider whether your use case could be addressed with one of the built-in
-:ref:`multi-dimensional_scans`.
-
-Motion in Parallel
-------------------
-
-.. code-block:: python
-
-    def staggered_wait(det, fast_motors, slow_motor):
-        # Start all the motors, fast and slow, moving at once.
-        # Put all the fast_motors in one group...
-        for motor in fast_motors:
-            yield from abs_set(motor, 5, group='A')
-        # ...but put the slow motor is separate group.
-        yield from abs_set(slow_motor, 5, group='B')
-
-        # Wait for all the fast motors.
-        yield from wait('A')
-
-        # Do some stuff that doesn't require the slow motor to be finished.
-
-        # Then wait for the slow motor.
-        yield from wait('B')
-
 Sleeping
 --------
 
