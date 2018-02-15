@@ -75,11 +75,11 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     steps : list
         list of positions
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature:
         ``f(detectors, motor, step) -> plan (a generator)``
     md : dict, optional
@@ -130,11 +130,11 @@ def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     steps : list
         list of positions relative to current position
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -164,7 +164,7 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -172,7 +172,7 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     num : int
         number of steps
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -227,7 +227,7 @@ def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None,
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -235,7 +235,7 @@ def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None,
     num : int
         number of steps
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -266,7 +266,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -274,7 +274,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     num : int
         number of steps
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -329,7 +329,7 @@ def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     detectors : list
         list of 'readable' objects
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -337,7 +337,7 @@ def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     num : int
         number of steps
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
     md : dict, optional
         metadata
@@ -372,7 +372,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     target_field : string
         data field whose output is the focus of the adaptive tuning
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -484,7 +484,7 @@ def rel_adaptive_scan(detectors, target_field, motor, start, stop,
     target_field : string
         data field whose output is the focus of the adaptive tuning
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         starting position of motor
     stop : float
@@ -557,7 +557,7 @@ def tune_centroid(
     signal : string
         detector field whose output is to maximize
     motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     start : float
         start of range
     stop : float
@@ -674,7 +674,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     cycler : Cycler
         list of dictionaries mapping motors to positions
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -752,11 +752,11 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
             ...,
             motorN, startN, stopN
 
-        Motors can be any 'setable' object (motor, temp controller, etc.)
+        Motors can be any 'settable' object (motor, temp controller, etc.)
     num : integer
         number of points
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -843,7 +843,7 @@ def grid_scan(detectors, *args, per_step=None, md=None):
         indicating whether to following snake-like, winding trajectory or a
         simple left-to-right trajectory.
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -909,13 +909,13 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
     ``*args``
         patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
         num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
-        Motors can be any 'setable' object (motor, temp controller, etc.)
+        Motors can be any 'settable' object (motor, temp controller, etc.)
         Notice that the first motor is followed by start, stop, num.
         All other motors are followed by start, stop, num, snake where snake
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -968,11 +968,11 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
             ...,
             motorN, startN, stopN,
 
-        Motors can be any 'setable' object (motor, temp controller, etc.)
+        Motors can be any 'settable' object (motor, temp controller, etc.)
     num : integer
         number of points
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1084,9 +1084,9 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     detectors : list
         list of 'readable' objects
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_start : float
         x center
     y_start : float
@@ -1102,7 +1102,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1157,9 +1157,9 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     detectors : list
         list of 'readable' objects
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_range : float
         x width of spiral
     y_range : float
@@ -1171,7 +1171,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1199,9 +1199,9 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     Parameters
     ----------
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_start : float
         x center
     y_start : float
@@ -1217,7 +1217,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1270,9 +1270,9 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     Parameters
     ----------
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_start : float
         x center
     y_start : float
@@ -1288,7 +1288,7 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step)
         See docstring of bluesky.plan_stubs.one_nd_step (the default) for
         details.
     md : dict, optional
@@ -1345,7 +1345,7 @@ def ramp_plan(go_plan,
 
         In seconds
 
-    period : fload, optional
+    period : float, optional
         If not None, take data no faster than this.  If None, take
         data as fast as possible
 
