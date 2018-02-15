@@ -276,10 +276,6 @@ design is useful as we continue.
 
         RE(count(dets, num=3))
 
-    If this strikes you as a bit onerous, we beg your patience. The RunEngine
-    does a lot of work for free, and it more than earns its keep. Stick with
-    us....
-
 Scan
 ----
 
@@ -327,9 +323,9 @@ Scan Multiple Motors Together
 
 There are two different things we might mean by the phrase "scan multiple
 motors 'together'". In this case we mean that we move N motors along a line in
-M steps, such as moving X and Y motors along a diagonal. (In the other case, we
+M steps, such as moving X and Y motors along a diagonal. In the other case, we
 move N motors through an (M_1 x M_2 x ... x M_N) grid; that is addressed in the
-next section.)
+next section.
 
 SPEC users may recognize this case as analogous to an "a2scan" or "d2scan", but
 with an arbitrary number of dimensions, not just two.
