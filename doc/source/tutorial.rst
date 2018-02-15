@@ -37,14 +37,21 @@ Before You Begin
     conda create -n bluesky-tutorial "python>=3.5"
     conda activate bluesky-tutorial
 
-* Install the latest versions of bluesky and ophyd. And, optionally, ipython (a
-  Python interpreter designed by scientists for scientists).
+* Install the latest versions of bluesky and ophyd. Also install the databroker
+  unless you plan to skip the sections about accessing saved data. Finally,
+  install ipython (a Python interpreter designed by scientists for scientists).
 
   .. code-block:: bash
 
-     python3 -m pip install --upgrade bluesky ophyd ipython
+     python3 -m pip install --upgrade bluesky ophyd databroker ipython
 
-* Start ``ipython``. Can you ``import bluesky``? If so, you are ready to go.
+* Start IPython:
+
+  .. code-block:: python
+
+    ipython --matplotlib=qt5
+
+  The flag ``--matplotlib=qt5`` is necessary for live-updating plots to work.
 
 If you get lost or confused...
 ==============================
