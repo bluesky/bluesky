@@ -45,6 +45,13 @@ Before You Begin
 
      python3 -m pip install --upgrade bluesky ophyd databroker ipython
 
+  Alternatively, if you are a conda user and you prefer conda packages, you can
+  use:
+
+  .. code-block:: bash
+
+    conda install -c lightsoure2-tag bluesky ophyd databroker ipython
+
 * Start IPython:
 
   .. code-block:: python
@@ -122,7 +129,8 @@ preferred format.
 Prepare Live Visualization
 --------------------------
 
-To start, let's use the all-purpose "Best-Effort Callback".
+To start, let's use the all-purpose
+:class:`~bluesky.callback.best_effort.BestEffortCallback`.
 
 .. code-block:: python
 
@@ -144,7 +152,8 @@ To start, let's use the all-purpose "Best-Effort Callback".
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
-The Best-Effort Callback will receive the metadata/data in real time and
+The :class:`~bluesky.callback.best_effort.BestEffortCallback`
+will receive the metadata/data in real time and
 produce plots and text, doing its best to provide live feedback that strikes
 the right balance between "comprehensive" and "overwhelming." For more tailored
 feeback, taking account of the details of the experiment, you may configure
@@ -326,6 +335,10 @@ read some detector, ``det``.
     from ophyd.sim import det, motor
     dets = [det]
     RE(scan(dets, motor, -1, 1, 10))
+
+In the background, the
+:class:`~bluesky.callback.best_effort.BestEffortCallback` is computing basic
+peak statistics.
 
 A key feature of bluesky is that ``motor`` may be any "movable" device,
 including a temperature controller, a sample changer, or some pseudo-axis. From
@@ -1009,6 +1022,8 @@ interactive, user-initiated pause and resume, we call this behavior
 
 For details, see :ref:`suspenders`.
 
+.. _tutorial_metadata:
+
 Metadata
 ========
 
@@ -1223,12 +1238,14 @@ work with that.
 
     import bluesky.plan_stubs as bps
 
-Motion in Parallel
-------------------
+Move in Parallel
+----------------
 
 Before writing a custom plan to coordinate the motion of multiple devices,
 consider whether your use case could be addressed with one of the built-in
 :ref:`multi-dimensional_scans`.
+
+TODO Comparison of mv, mvr, abs_set, rel_set
 
 Here is a scenario that does require a custom solution: we want to move
 set several motors in motion at once, including many fast motors and one slow
@@ -1254,9 +1271,29 @@ wait for the slow motor to arrive, and print a second message.
         yield from bps.wait('B')
         print('Slow motor is in place.')
 
-Capturing Data
---------------
+Sleeping (Delays)
+-----------------
 
+For sleeps, bluesky has a special plan, which allows the RunEngine to continue
+its business during the sleep.
+
+.. code-block:: python
+
+    def sleepy_plan(motor, positions):
+        "Step a motor through a list of positions with 1-second delays between steps.")
+        for position in positions:
+            yield from bps.mv(motor, position)
+            yield from bps.sleep(1)
+
+**You should always use this plan, *never* Python's built-in function
+:func:`time.sleep`.** Why?
+The RunEngine uses an event loop to concurrently management many tasks. It
+assumes that none of those tasks blocks for very long. (A good figure for "very
+long" is 0.2 seconds.) Therefore, you should never incorporate long blocking
+function calls in your plan, such as ``time.sleep(1)``.
+
+Capture Data
+------------
 
 .. ipython:: python
     :suppress:
@@ -1358,8 +1395,8 @@ In order to focus on the scope of an Event and a Run, we have left out an
 important detail, addressed in the next section, which may be necessary to
 incorporate before trying these plans on real devices.
 
-Staging
--------
+Stage and Unstage
+-----------------
 
 Complex devices often require some preliminary setup before they can be used
 for data collection, moving them from a resting state into a state where they
@@ -1369,12 +1406,20 @@ every Device to implement an optional ``stage()`` method, with a corresponding
 one and unstage every device at the end. If a Device does not have a
 ``stage()`` method the RunEngine will just skip over it.
 
-Revising our simplest example above, ``one_run_one_event``, we incorporate
-staging like so:
+Revising our simplest example above, ``one_run_one_event``,
 
 .. code-block:: python
 
     import bluesky.plan_stubs as bps
+
+    def one_run_one_event(detectors):
+        yield from bps.open_run()
+        yield from bps.trigger_and_read(detectors)
+        yield from bps.close_run()
+
+we incorporate staging like so:
+
+.. code-block:: python
 
     def one_run_one_event(detectors):
 
@@ -1410,11 +1455,11 @@ additional complexity in exchange for brevity. This plan is equivalent:
 The :func:`~bluesky.preprocessors.stage_decorator` is a *plan preprocessor*, a
 plan which consumes another plan and modifies its instructions. In this case,
 it adds inserts 'stage' and 'unstage' messages, supplanting
-:func:`~bluesky.plan_stubs.stage` and :func:`~bluesky.plan_stubs.unstage`.
-
-We can trim the verbosity down yet more by employing
-:func:`~bluesky.preprocessors.run_decorator`, supplanting `
+:func:`~bluesky.plan_stubs.stage` and :func:`~bluesky.plan_stubs.unstage`. We
+can trim the verbosity down yet more by employing
+:func:`~bluesky.preprocessors.run_decorator`, supplanting
 :func:`~bluesky.plan_stubs.open_run` and :func:`~bluesky.plan_stubs.close_run`.
+The result:
 
 .. code-block:: python
 
@@ -1429,38 +1474,79 @@ We can trim the verbosity down yet more by employing
 
         return yield from inner()
 
-We have already seen a preprocessor earlier in this tutorial in the section on
-baseline readings. :class:`~bluesky.preprocessors.SupplementalData` is also a
-preprocessor.
+Incidentally, recall that we have already encountered a preprocessor in this
+tutorial, in the section on baseline readings.
+:class:`~bluesky.preprocessors.SupplementalData` is a preprocessor.
 
 Add Metadata
 ------------
 
+To make it easier to search for data generated by the plan and to inspect what
+was done afterward, we should include some metadata. We create a dictionary and
+pass it to :func:`~bluesky.preprocessors.run_decorator` (or, in the more
+verbose formation to :func:`~bluesky.plan_stubs.open_run`). The RunEngine will
+combine this metadata with any information provided by the user, as shown in
+the :ref:`the earlier section on metadata <tutorial_metadata>`.
+
 .. code-block:: python
 
     def one_run_one_event(detectors):
-        # Declare the beginning of a new run.
-        yield from bps.open_run()
 
-        # Trigger each detector and wait for triggering to complete.
-        # Then read the detectors and bundle these readings into an Event
-        # (i.e. one row in a table.)
-        yield from bps.trigger_and_read(detectors)
+        md = {
+            # Human-friendly names of detector Devices (useful for searching)
+            'detectors': [det.name for det in detectors],
 
-        # Declare the end of the run.
-        yield from bps.close_run()
+            # The Python 'repr's each argument to the plan
+            'plan_args': {'detectors': list(map(repr, detectors))},
 
-Add Hints
----------
+            # The name of this plan
+            'plan_name': 'one_run_one_event',
+        }
 
-Write Custom Callbacks
-======================
+        @bpp.stage_decorator(detectors)
+        @bpp.run_decorator(md)
+        def inner():
+            yield from bps.trigger_and_read(detectors)
 
-Export
-------
+        return yield from inner()
 
-Visualization
--------------
+.. warning::
 
-Fitting
--------
+    Notice that all of the values in this metadata dictionary are strings. They
+    must be either strings, numbers, lists/arrays, or dictionaries only.
+    Metadata cannot contain arbitrary Python types because downstream consumers
+    (like databases) do not know what to do with those and will error.
+
+To be polite, we should allow the user to override this metadata. All of
+bluesky's "pre-assembled" plans (:func:`~bluesky.plans.count`,
+:func:`~bluesky.plans.scan`, etc.) provide an optional ``md`` argument for this
+purpose, implemented like so:
+
+.. code-block:: python
+
+    def one_run_one_event(detectors, md=None):
+
+        _md = {
+            'detectors': [det.name for det in detectors],
+            'plan_args': {'detectors': list(map(repr, detectors))},
+            'plan_name': 'one_run_one_event',
+        }
+
+        # If a key exists in md, it overwrites over the default in _md.
+        _md.update(md or {})
+
+        @bpp.stage_decorator(detectors)
+        @bpp.run_decorator(_md)
+        def inner():
+            yield from bps.trigger_and_read(detectors)
+
+        return yield from inner()
+
+Add "Hints"
+-----------
+
+The plan can help
+:class:`~bluesky.callback.best_effort.BestEffortCallback` (and potentially
+other downstream consumers) infer appropriate automated visualization and
+processing by provided *structured* metadata about the what important fields
+are and which are of these are dependent and independent axes.
