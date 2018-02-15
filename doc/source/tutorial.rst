@@ -657,7 +657,7 @@ complete list of :ref:`plan stubs <stub_plans>`.
 .. warning::
 
     **Never put ``RE(...)`` inside a loop or a function. You should always call
-    it manually, and only once.**
+    it directly --- typed by the user at the terminal --- and only once.**
 
     You might be tempted to write a script like this:
 
@@ -694,6 +694,10 @@ complete list of :ref:`plan stubs <stub_plans>`.
                 yield from scan([det], motor, 5, 10, j)
 
         RE(my_plan())
+
+    To indulge a musical metaphor, the plan is the sheet music, the hardware is
+    the orchestra, and the RunEngine is the conductor. There should be only
+    conductor!
 
 "Baseline" Readings (and other Supplemental Data)
 =================================================
