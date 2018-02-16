@@ -336,14 +336,17 @@ read some detector, ``det``.
     dets = [det]
     RE(scan(dets, motor, -1, 1, 10))
 
-In the background, the
-:class:`~bluesky.callback.best_effort.BestEffortCallback` is computing basic
-peak statistics.
-
 A key feature of bluesky is that ``motor`` may be any "movable" device,
 including a temperature controller, a sample changer, or some pseudo-axis. From
 the point of view of bluesky and the RunEngine, all of these are just objects
 in Python with certain methods.
+
+In addition the producing a table and plot, the
+:class:`~bluesky.callback.best_effort.BestEffortCallback` computes basic peak
+statistics. Click on the plot area and press P ("peaks") to visualize them over
+the data. The numbers (center of mass, max, etc.) are available in a dictionary
+stashed as ``bec.peaks``. This is updated at the end of each run.  Of course,
+if peak statistics are not applicable, you may just ignore this feature.
 
 Use :func:`~bluesky.plans.rel_scan` to scan from ``-1`` to ``1`` *relative to
 the current position*.
