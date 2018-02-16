@@ -8,8 +8,9 @@ Before You Begin
 .. note::
 
     NSLS-II deploys a free, public "sandbox" for trying the software in the
-    browser using Jupyter notebooks. There is no need to install any software.
-    Go to `https://try.nsls2.bnl.gov <https://try.nsls2.bnl.gov>`_.
+    browser using Jupyter notebooks. There will be no need to install any
+    software, and you can skip the rest of this section.  Go to
+    `https://try.nsls2.bnl.gov <https://try.nsls2.bnl.gov>`_.
 
 * You will need Python 3.5 or newer. From a shell ("Terminal" on OSX,
   "Command Prompt" on Windows), check your current Python version.
@@ -370,6 +371,8 @@ spacing.
 
 For a complete list of scan variations and other plans, see :doc:`plans`.
 
+.. _tutorial_multiple_motors:
+
 Scan Multiple Motors Together
 -----------------------------
 
@@ -528,8 +531,13 @@ axes do. Example:
                  motor2, -0.1, 0.1, 5, False))
                  motor3, -200, 200, 5, False))
 
-For plans incorporating adaptive logic, more specialized trajectories such as
-spirals, and more, see :doc:`plans`.
+See :ref:`multi_dimensional_scan` to handle more specialized cases, including
+unequal step spacing and combinations of :func:`~bluesky.plans.scan`-like and
+:func:`~bluesky.plans.grid_scan`-like movement.
+
+More generally, the :doc:`plans` documentation includes more exotic
+trajectories, such as spirals, and plans with adaptive logic, such as
+efficient peak-finders.
 
 Aside: Access Saved Data
 ========================
@@ -857,6 +865,8 @@ Other Supplemental Data
 Above, we used ``sd.baseline``. There is also ``sd.monitors`` for signals to
 monitor asynchronously during a run and ``sd.flyers`` for devices to "fly-scan"
 during a run. See :ref:`supplemental_data` for details.
+
+.. _tutorial_pause_resume_suspend:
 
 Pause, Resume, Suspend
 ======================
@@ -1656,11 +1666,125 @@ provided by the Device:
 Finally, by using ``setdefault``, we have allowed user to override these hints
 if they know better by passing in ``scan(..., md={'hints': ...})``.
 
+.. _tutorial_adaptive:
+
 Adaptive Logic in a Plan
 ------------------------
 
+Two-way communication is possible between the generator and the RunEngine.
+For example, the 'read' command responds with its reading. We can use it to
+make an on-the-fly decision about whether to continue or stop.
+
+.. code-block:: python
+
+    import bluesky.preprocessors as bpp
+    import bluesky.plan_stubs as bps
+    from ophyd.sim import det, motor
+
+    def conditional_break(threshold):
+        """Set, trigger, read until the detector reads intensity < threshold"""
+
+        bpp.stage_decorator()
+        bpp.run_decorator()
+        def inner():
+            i = 0
+            while True:
+                print("LOOP %d" % i)
+                yield from bps.mv(motor, i)
+                reading = yield from bps.trigger_and_read([det])
+                if reading['det']['value'] < threshold:
+                    print('DONE')
+                    break
+                i += 1
+
+Demo:
+
+.. code-block:: python
+
+    In [5]: RE(conditional_break(0.2))
+    LOOP 0
+    LOOP 1
+    LOOP 2
+    DONE
+    Out[5]: []
+
+The important line in this example is
+
+.. code-block:: python
+
+    reading = yield from bps.trigger_and_read([det])
+
+The action proceeds like this:
+
+1. The plan yields a 'read' message to the RunEngine.
+2. The RunEngine reads the detector.
+3. The RunEngine sends that reading *back to the plan*, and that response is
+   assigned to the variable ``reading``.
+
+The response, ``reading``, is formatted like:
+
+.. code-block:: python
+
+     {<name>: {'value': <value>, 'timestamp': <timestamp>}, ...}
+
+For a detailed technical description of the messages and their responses,
+see :ref:`msg`.
+
+.. _tutorial_exception_handling:
+
 Specifying "Cleanup" in a Plan
 ------------------------------
+
+If an exception is raised, the RunEngine gives the plan the opportunity to
+catch the exception and either handle it or merely yield some "clean up"
+messages before re-raising the exception and killing plan execution. (Recall
+this from :ref:`tutorial_pause_resume_suspend` above.)
+
+This is the general idea:
+
+.. code-block:: python
+
+    # This example is illustrative, but it is not completely correct.
+    # Use `finalize_wrapper` instead (or read its source code).
+
+    def plan_with_cleanup():
+        def main_plan():
+            # do stuff...
+
+        def cleanup_plan():
+            # do other stuff...
+
+        try:
+            yield from main_plan()
+        except Exception:
+            # Catch the exception long enough to clean up.
+            yield from cleanup_plan()
+            raise  # Re-raise the exception.
+
+The exception in question may originate from the plan itself or from the
+RunEngine when it attempts to execute a given command.
+
+The :func:`finalize_wrapper` preprocessor provides a succinct and fully correct
+way of applying this general pattern.
+
+.. code-block:: python
+
+    import bluesky.preprocessors as bpp
+
+    def plan_with_cleanup():
+        yield from bpp.finalize_wrapper(main_plan(), cleanup_plan())
+
+Or, at your preference, the same logic is available as a decorator:
+
+.. code-block:: python
+
+    plan_with_cleanup = bpp.finalize_decorator(cleanup_plan)(main_plan)
+
+    # or, equivalently:
+
+    @bpp.finalize_decorator(cleanup_plan)
+    def plan_with_cleanup():
+        yield from main_plan()
 
 Further Reading
 ---------------

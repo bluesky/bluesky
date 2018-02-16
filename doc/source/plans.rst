@@ -46,9 +46,7 @@ documentation.
    rel_list_scan
    log_scan
    rel_log_scan
-   inner_product_scan
    grid_scan
-   relative_inner_product_scan
    rel_grid_scan
    scan_nd
    spiral
@@ -164,117 +162,24 @@ pseudo-axis. It's all the same to the plans. Examples:
 Multi-dimensional scans
 -----------------------
 
-Here, "dimensions" are things independently scanned. They may be physical
-position (stepping motor), temperature, etc.
+See :ref:`tutorial_multiple_motors` in the tutorial for an introduction to the
+common cases of moving multiple motors in coordination (i.e. moving X and Y
+along a diagonal) with :func:`~bluesky.plans.scan` or in a grid with
+:func:`~bluesky.plans.grid_scan` with equal spacing.
 
-We introduce jargon for two different kinds of a multi-dimensional
-(multi-"motor") scan. Moving motors together in a joint trajectory is an "inner
-product scan." This is like moving an object along a diagonal by moving the x
-and y motors simultaneously.
+Both :func:`~bluesky.plan.scan` and :func:`~bluesky.plans.grid_scan` are built
+on a more general-purpose plan, :func:`~bluesky.plan.scan_nd`, which we can use
+for more specialized cases, such as:
 
-.. code-block:: python
+* grids or trajectories with unequally-spaced steps
+* moving some motors together
 
-    from ophyd.sim import det, motor1, motor2
-    from bluesky.plans import inner_product_scan
-
-    # Inner product: move motors together.
-    # Move motor1 from 1-5 while moving motor2 from 10-50 -- both in 5 steps.
-    RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50))
-
-Demo:
-
-.. ipython:: python
-    :suppress:
-
-    from ophyd.sim import det, motor1, motor2
-    from bluesky import RunEngine
-    from bluesky.plans import grid_scan, inner_product_scan
-    RE = RunEngine({})
-
-.. ipython:: python
-
-    RE(inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50))
-
-.. plot::
-
-    from bluesky.simulators import plot_raster_path
-    from ophyd.sim import motor1, motor2, det
-    from bluesky.plans import inner_product_scan
-    import matplotlib.pyplot as plt
-
-    plan = inner_product_scan([det], 5, motor1, 1, 5, motor2, 10, 50)
-    plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
-
-Notice that, in an inner product scan, each motor moves the same number
-of steps (in the example above, 5).
-
-Moving motors separately, exploring every combination, is an "outer product
-scan". This is like moving x and y to draw a mesh. The mesh does not have to be
-square: each motor can move a different number of steps.
-
-.. code-block:: python
-
-    from ophyd.sim import det, motor1, motor2
-    from bluesky.plans import grid_scan
-
-    # Outer product: move motors in a mesh.
-    # Move motor1 from 1-3 in 3 steps and motor2 from 10-50 in 5 steps.
-    RE(grid_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
-
-Demo:
-
-.. ipython:: python
-
-    RE(grid_scan([det], motor1, 1, 3, 3, motor2, 10, 50, 5, False))
-
-The final parameter designates whether motor2 should "snake" back and forth
-along motor1's trajectory (``True``) or retread its positions in the same
-direction each time (``False``), as illustrated.
-
-.. plot::
-
-    from bluesky.simulators import plot_raster_path
-    from ophyd.sim import motor1, motor2, det
-    from bluesky.plans import grid_scan
-    import matplotlib.pyplot as plt
-
-    true_plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
-    false_plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, False)
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
-    plot_raster_path(true_plan, 'motor1', 'motor2', probe_size=.3, ax=ax1)
-    plot_raster_path(false_plan, 'motor1', 'motor2', probe_size=.3, ax=ax2)
-    ax1.set_title('True')
-    ax2.set_title('False')
-    ax1.set_xlim(-6, 6)
-    ax2.set_xlim(-6, 6)
-
-Both :func:`inner_product_scan` and :func:`grid_scan` support an
-unlimited number of motors/dimensions.
-
-.. code-block:: python
-
-    # The 'det4' example detector a 2D Gaussian function of motor1, motor2.
-    from ophyd.sim import det4
-
-    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False))
-
-.. plot::
-
-    from bluesky import RunEngine
-    from bluesky.plans import grid_scan
-    from ophyd.sim import det4, motor1, motor2
-    from bluesky.callbacks.best_effort import BestEffortCallback
-    bec = BestEffortCallback()
-    motor1.delay = 0
-    motor2.delay = 0
-    RE = RunEngine({})
-    RE.subscribe(bec)
-    RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False))
-
-The general case, moving some motors together in an "inner product" against
-another (or motors) in an "outer product," can be addressed using a ``cycler``.
-Notice what happens when we add or multiply ``cycler`` objects.
+Some jargon: we speak of :func:`~bluesky.plans.scan`-like joint movement as an
+"inner product" of trajectories and :func:`~bluesky.plans.grid_scan`-like
+movement as an "outer product" of trajectories. The general case, moving some
+motors together in an "inner product" against another motor (or motors) in an
+"outer product," can be addressed using a ``cycler``.  Notice what happens when
+we add or multiply ``cycler`` objects.
 
 .. ipython:: python
 
@@ -309,9 +214,7 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    :toctree: generated
    :nosignatures:
 
-   inner_product_scan
    grid_scan
-   relative_inner_product_scan
    rel_grid_scan
    scan_nd
 
@@ -428,8 +331,8 @@ Stub Plans
 .. currentmodule:: bluesky.plan_stubs
 
 These are the aforementioned "ingredients" for remixing, the pieces from which
-the pre-assembled plans above were made. The next section provides many
-examples.
+the pre-assembled plans above were made. See :ref:`tutorial_custom_plans` in
+the tutorial for a practical introduction to these components.
 
 Plans for interacting with hardware:
 
@@ -500,112 +403,9 @@ Special utilities:
    caching_repeater
    broadcast_msg
 
-Sleeping
---------
-
-A "sleep" is a timed delay.
-
-.. code-block:: python
-
-    from bluesky.plan_stubs import sleep, abs_set
-    from ophyd.sim import motor
-
-    def sleepy():
-        "Set motor; sleep for a fixed time; set it to a new position."
-        yield from abs_set(motor, 5)
-        yield from sleep(2)  # units: seconds
-        yield from abs_set(motor, 10)
-
-The :func:`sleep` plan is not the same as Python's built-in sleep function,
-``time.sleep(...)``. Never use ``time.sleep(...)`` in a plan; use ``yield from
-sleep(...)`` instead. It allows other tasks --- such as watching for Ctrl+C,
-updating plots --- to be executed while the clock runs.
-
-.. _planned_pauses:
-
-Planned Pauses
---------------
-
-Pausing is typically done :ref:`interactively <pausing_interactively>` (Ctrl+C)
-but it can also be incorporated into a plan. The plan can pause the RunEngine,
-requiring the user to type ``RE.resume()`` to continue or ``RE.stop()`` to
-clean up and stop.
-
-Pauses can be incorporated in a plan like so:
-
-.. code-block:: python
-
-    from bluesky.plan_stubs import pause, checkpoint
-
-    def pausing_plan():
-        while True:
-            yield from some_plan(...)
-            print("Type RE.resume() to go again or RE.stop() to stop.")
-            yield from checkpoint()  # marking where to resume from
-            yield from pause()
-
-.. _customizing_metadata:
-
-Customizing metadata
-====================
-
-Metadata can be loaded from a persistent file, specified by the user
-interactively at execution time, or incorporated in a plan.
-
-All of the pre-assembled plans also accept an ``md`` ("metadata") argument,
-which makes it easy for a user-defined plan to pass in extra metadata.
-
-.. code-block:: python
-
-    from bluesky.plans import count
-    from ophyd.sim import det
-
-    def master_plan():
-        "Read a detector with the shutter closed and then open."
-        # ... insert code here to close shutter ...
-        yield from count([det], md={'is_dark_frame': True})
-        # ... insert code here to open shutter ...
-        yield from count([det], md={'is_dark_frame': False})
-
-By default, the :func:`count` plan records ``{'plan_name': 'count'}``. To
-customize the ``plan_name`` --- say, to differentiate separate *reasons* for
-running a count --- you can override this behavior.
-
-.. code-block:: python
-
-    def calib_count(dets, num=3):
-        "A count whose data will be designated 'calibration'."
-        md = {'plan_name': 'calib_count'}
-        yield from count(dets, num=num, md=md)
-
-The above records the ``{'plan_name': 'calib_count'}``.  To enable users to
-pass in metadata that combines with and potentially overrides the hard-coded
-metadata, use the following pattern:
-
-.. code-block:: python
-
-    def calib_count(dets, num=3, *, md=None):
-        "A count whose data will be designated 'calibration'."
-        _md = {'plan_name': 'calib_count'}  # default
-        _md.update(md or {})  # supplemented/overridden by argument passed in
-        yield from count(dets, num=num, md=_md)
-
-For example, if the plan is called with the arguments:
-
-.. code-block:: python
-
-    calib_count([det], md={'plan_name': 'watermelon'})
-
-then ``'watermelon'`` will override ``'calib_count'`` as the recorded plan
-name.
-
-.. _preprocessors:
-
 Plan Preprocessors
 ==================
 .. currentmodule:: bluesky.preprocessors
-
-
 
 .. _supplemental_data:
 
@@ -619,7 +419,6 @@ executed by a RunEngine using the :class:`SupplementalData`.
 
 .. autoclass:: SupplementalData
     :members:
-
 
 We have installed a "preprocessor" on the RunEngine. A preprocessor modifies
 plans, supplementing or altering their instructions in some way. From now on,
@@ -736,55 +535,6 @@ It's easiest to learn this by example, studying the implementations of the built
 processors (catalogued above) in the
 `the source of the plans module <https://github.com/NSLS-II/bluesky/blob/master/bluesky/plans.py>`_.
 
-.. _exception_handling:
-
-How Plans Handle Exceptions
-===========================
-
-If an exception is raised, the RunEngine gives the plan the opportunity to
-catch the exception and either handle it or merely yield some "clean up"
-messsages before re-raising the exception and killing plan execution.
-
-The exception in question may originate from the plan itself or from the
-RunEngine when it attempts to execute a given command.
-
-.. code-block:: python
-
-    # This example is illustrative, but it is not completely correct.
-    # Use `finalize_wrapper` instead (or read its source code).
-
-    def plan_with_cleanup():
-        try:
-            yield from main_plan()
-        except Exception:
-            # Catch the exception long enough to clean up.
-            yield from cleanup_plan()
-            raise  # Re-raise the exception.
-
-The :func:`finalize_wrapper` preprocessor provides a succinct and fully correct
-way of applying this general pattern.
-
-.. code-block:: python
-
-    from bluesky.preprocessors import finalize_wrapper
-
-    def plan_with_cleanup():
-        yield from finalize_wrapper(main_plan(), cleanup_plan())
-
-Or, at your preference, the same logic is available as a decorator:
-
-.. code-block:: python
-
-    from bluesky.preprocessors import finalize_decorator
-
-    plan_with_cleanup = finalize_decorator(cleanup_plan)(main_plan)
-
-    # or, equivalently:
-
-    @finalize_decorator(cleanup_plan)
-    def plan_with_cleanup():
-        yield from main_plan()
-
 Customize Step Scans with ``per_step``
 ======================================
 
@@ -864,151 +614,6 @@ For multi-dimensional plans, the default inner loop is:
 
 Likewise, a custom function with the same signature may be passed into the
 ``per_step`` argument of any of the multi-dimensional plans.
-
-.. _reimplementing_count:
-
-Controlling the Scope of a "Run"
-================================
-
-By default, the :func:`count` plan generates one "run" (i.e., dataset)
-with one "event" (i.e., one bundle of readings from the detectors, one row in
-a table of the data).
-
-.. code-block:: python
-
-    from ophyd.sim import det1, det2
-    from bluesky.plans import count
-
-    dets = [det1, det2]
-    RE(count(dets))
-
-The ``num`` argument enables multiple events (rows) in one run.
-
-.. code-block:: python
-
-    # one 'run' with three 'events'
-    RE(count(dets, num=3))
-
-If we didn't provide a num option, how could you make one yourself?
-
-A tempting --- but wrong! --- possibility is to loop over calls to
-``RE(count(dets))``.
-
-.. code-block:: python
-
-    # Don't do this!
-    for _ in range(3):
-        RE(count(dets))
-
-As stated earlier, this ruins error-recovery and interruption recovery. It's
-much better to do the loop inside a custom plan, which we'll dub
-``multicount``.
-
-.. code-block:: python
-
-    def multicount(dets):
-        for _ in range(3):
-            yield from count(dets)
-
-    RE(multicount(dets))
-
-In fact, instead of hard-coding 3, we could make it an argument configurable
-by the user. We can make the configuration optional by providing 3 as a
-default.
-
-.. code-block:: python
-
-    def multicount(dets, num=3):
-        for _ in range(num):
-            yield from count(dets)
-
-But this still creates three runs --- three datasets --- for what we'd rather
-think of as three events (rows) in one run. To fix that, we'll have to dive
-deeper, re-implementing :func:`count` from scratch.
-
-.. code-block:: python
-
-    from bluesky.preprocessors import run_decorator, stage_decorator
-    from bluesky.plan_stubs import trigger_and_read
-
-    def multicount(dets, num=3, *, md=None):
-
-        @stage_decorator(dets)
-        @run_decorator(md=md)
-        def inner_multicount():
-            for _ in range(num):
-                yield from trigger_and_read(dets)
-
-        yield from inner_multicount()
-
-
-Starting from the middle and explaining outward:
-
-* The :func:`trigger_and_read` plan generates an "event" (a row of data) from
-  reading ``dets``. This happens inside of a loop, ``num`` times.
-* The :func:`run_decorator` preprocessor designates the scope of one run.
-* The :func:`stage_decorator` preprocessor addresses some hardware details. It
-  primes the hardware for data collection.  For some devices, this has no
-  effect at all. But for others, it ensures that the device is put into a
-  ready, triggerable state and then restored to standby at the end of the plan.
-
-Plans with Adaptive Logic
-=========================
-
-Two-way communication is possible between the generator and the RunEngine.
-For example, the 'read' command responds with its reading. We can use it to
-make an on-the-fly decision about whether to continue or stop.
-
-.. code-block:: python
-
-    from bluesky.plan_stubs import abs_set, trigger, read
-    from ophyd.sim import det, motor
-
-    def conditional_break(threshold):
-        """Set, trigger, read until the detector reads intensity < threshold"""
-        i = 0
-        while True:
-            print("LOOP %d" % i)
-            yield from abs_set(motor, i)
-            yield from trigger(det, wait=True)
-            reading = yield from read(det)
-            if reading['det']['value'] < threshold:
-                print('DONE')
-                break
-            i += 1
-
-Demo:
-
-.. code-block:: python
-
-    In [5]: RE(conditional_break(0.2))
-    LOOP 0
-    LOOP 1
-    LOOP 2
-    DONE
-    Out[5]: []
-
-The important line in this example is
-
-.. code-block:: python
-
-    reading = yield from read(det)
-
-The action proceeds like this:
-
-1. The plan yields a 'read' message to the RunEngine.
-2. The RunEngine reads the detector.
-3. The RunEngine sends that reading *back to the plan*, and that response is
-   assigned to the variable ``reading``.
-
-The response, ``reading``, is formatted like:
-
-.. code-block:: python
-
-     {<name>: {'value': <value>, 'timestamp': <timestamp>}, ...}
-
-For a detailed technical description of the messages and their responses,
-see :ref:`msg`.
 
 Asynchronous Plans: "Fly Scans" and "Monitoring"
 ================================================
