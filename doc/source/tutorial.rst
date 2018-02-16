@@ -715,7 +715,7 @@ complete list of :ref:`plan stubs <stub_plans>`.
 
     To indulge a musical metaphor, the plan is the sheet music, the hardware is
     the orchestra, and the RunEngine is the conductor. There should be only
-    conductor!
+    one conductor!
 
 "Baseline" Readings (and other Supplemental Data)
 =================================================
@@ -1226,7 +1226,7 @@ about a motor, and a Device helpfully groups that stuff for us."
 Write Custom Plans
 ==================
 
-As mentioned in the :ref:` tutorial_simple_customization` section above, the
+As mentioned in the :ref:`tutorial_simple_customization` section above, the
 "pre-assembled" plans with :func:`~bluesky.plans.count` and
 :func:`~bluesky.plans.scan` are built from smaller "plan stubs". We can
 mix and match the "stubs" and/or "pre-assembled" plans to build custom plans.
@@ -1271,11 +1271,20 @@ wait for the slow motor to arrive, and print a second message.
         yield from bps.wait('B')
         print('Slow motor is in place.')
 
-Sleeping (Delays)
------------------
+Sleeping (Timed Delays)
+-----------------------
 
-For sleeps, bluesky has a special plan, which allows the RunEngine to continue
-its business during the sleep.
+.. info::
+
+    If you you need to wait for your motor to finish moving, temperature to
+    finish equilibrating, or shutter to finish opening, inserting delays into
+    plans isn't the best way to do that. It should be the *Device's* business
+    to report accurately when it is done, including any extra padding to
+    settling or equilibration. On some devices, such as ``EpicsMotor``, this
+    can be set like  ``motor.settle_time = 3``.
+
+For timed delays, bluesky has a special plan, which allows the RunEngine to
+continue its business during the sleep.
 
 .. code-block:: python
 
@@ -1345,8 +1354,8 @@ We observe:
 * one row (one Event)
 * two columns (a column for each detector)
 
-Here's the same plan again, with :func:`trigger_and_read` moved inside a for
-loop.
+Here's the same plan again, with :func:`~bluesky.plan_stubs.trigger_and_read`
+moved inside a for loop.
 
 .. code-block:: python
 
@@ -1512,10 +1521,10 @@ the :ref:`the earlier section on metadata <tutorial_metadata>`.
 
 .. warning::
 
-    Notice that all of the values in this metadata dictionary are strings. They
-    must be either strings, numbers, lists/arrays, or dictionaries only.
-    Metadata cannot contain arbitrary Python types because downstream consumers
-    (like databases) do not know what to do with those and will error.
+    The values in the metadata dictionary must be strings, numbers,
+    lists/arrays, or dictionaries only. Metadata cannot contain arbitrary
+    Python types because downstream consumers (like databases) do not know what
+    to do with those and will error.
 
 To be polite, we should allow the user to override this metadata. All of
 bluesky's "pre-assembled" plans (:func:`~bluesky.plans.count`,
@@ -1542,11 +1551,121 @@ purpose, implemented like so:
 
         return yield from inner()
 
-Add "Hints"
------------
+Add "Hints" in Metadata
+-----------------------
 
-The plan can help
-:class:`~bluesky.callback.best_effort.BestEffortCallback` (and potentially
-other downstream consumers) infer appropriate automated visualization and
-processing by provided *structured* metadata about the what important fields
-are and which are of these are dependent and independent axes.
+The metadata dictionary may optionally include a key named ``'hints'``. This
+key has special significance to the
+:class:`~bluesky.callback.best_effort.BestEffortCallback` and potentially
+other downstream consumers, which use it to try to infer useful ways to
+present the data. Currently, it solves two specific problems.
+
+1. Narrow the potentially large set of readings to a manageable number of most
+   important ones that fit into a table.
+2. Identify the dimensionality of the data (1D scan? 2D grid? N-D grid?) and
+   the dependent and independent parameters, for visualization and peak-fitting
+   purposes.
+
+It's up to each device to address (1). The plan has no role in that.
+Each device has an optional ``hints`` attribute with a value like
+``{'fields': [...]}`` to answers the question, "Of all the readings you
+produce, what are the names of the most important ones?"
+
+We need the plan to help us with (2). Only the plan can sort out which device
+are being employed as "independent" axes and which are being measured as
+dependent variables. This isn't clear just from looking at the Devices alone
+because any given movable device can be used as an axis or as a "detector"
+depending on the context --- ``count([motor])`` is a perfectly valid thing to
+do!
+
+The schema of the plan's hint metadata is:
+
+.. code-block:: python
+
+    {'dimensions': [([<FIELD>, ...], <STREAM_NAME>),
+                    ([<FIELD>, ...], <STREAM_NAME>),
+                    ...
+                   ]}
+
+Examples:
+
+.. code-block:: python
+
+    # a 1-D scan over x
+    {'dimensions': [(['x'], 'primary')]}
+
+    # a 2-D grid_scan over x and y
+    {'dimensions': [(['x'], 'primary'),
+                    (['y'], 'primary')]}
+
+    # a scan moving x and y together along a diagonal
+    {'dimensions': [(['x', 'y'], 'primary')]}
+
+    # a 1-D scan over temperature, represented in C and K units
+    {'dimensions': [(['C', 'K'], 'primary')]}
+
+    # a 1-D scan over energy, as measured in energy and diffractometer position
+    {'dimensions': [(['dcm', 'E'], 'primary')]}
+
+    # special case: a sequence of readings where the independent axis is just time
+    {'dimensions': [(['time'], 'primary')]}
+
+Each entry in the outer list represents one independent dimension. A dimension
+might be represented by multiple fields, either from different devices moved in
+a coordinated fashion by the plan (``['x', 'y']``), presented as fully redundant
+information from one device (``['C', 'K']``), or coupled information from two
+sub-devices (``['dcm', 'E']``).
+
+The second element in each entry is the stream name: ``'primary'`` in every
+example above.  This should correspond to the ``name`` passed into
+:func:`~bluesky.plan_stubs.trigger_and_read` or
+:func:`~bluesky.plan_stubs.create` inside the plan. The default name is
+``primary``.
+
+Putting it all together, the plan asks the device(s) being used as independent
+axes for their important field(s) and builds a list of dimensions list so.
+
+.. code-block:: python
+
+   dimensions = [(motor.hints['fields'], 'primary')]
+
+We must account for the fact that ``hints`` is optional. A given Device
+might not have a ``hints`` attribute at all and, even if it does, the
+hints might not contain the ``'fields'`` key that we are interested in. This
+pattern silently omits the dimensions hint if the necessary information is not
+provided by the Device:
+
+.. code-block:: python
+
+    def scan(..., md=None):
+        _md = {...}
+        _md.update(md or {})
+
+        try:
+            dimensions = [(motor.hints['fields'], 'primary')]
+        except (AttributeError, KeyError):
+            pass
+        else:
+            _md['hints'].setdefault('dimensions', dimensions)
+
+        ...
+
+Finally, by using ``setdefault``, we have allowed user to override these hints
+if they know better by passing in ``scan(..., md={'hints': ...})``.
+
+Adaptive Logic in a Plan
+------------------------
+
+Specifying "Cleanup" in a Plan
+------------------------------
+
+Further Reading
+---------------
+
+* Specifying checkpoints
+* Monitoring
+* Fly Scanning
+* Pausing from a plan
+* :func:`~bluesky.plans.input_plan`
+* Going deeper than :func:`~bluesky.plan_stubs.trigger_and_read`
+* The per_step hook
