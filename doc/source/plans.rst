@@ -403,6 +403,8 @@ Special utilities:
    caching_repeater
    broadcast_msg
 
+.. _preprocessors:
+
 Plan Preprocessors
 ==================
 .. currentmodule:: bluesky.preprocessors
@@ -534,6 +536,8 @@ messages into the plan or removing messages).
 It's easiest to learn this by example, studying the implementations of the built-in
 processors (catalogued above) in the
 `the source of the plans module <https://github.com/NSLS-II/bluesky/blob/master/bluesky/plans.py>`_.
+
+.. _per_step_hook:
 
 Customize Step Scans with ``per_step``
 ======================================

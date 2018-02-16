@@ -331,13 +331,26 @@ abort instead.
     actions that it is not safe to replay: staging a device, adding a
     monitor, or adding a subscription.
 
+.. _planned_pauses:
+
 Planned Pauses
 ==============
 
-It's possible to write a custom *plan* that pauses at certain points, requiring
-the user to manually resume or abort.
+Pausing is typically done :ref:`interactively <pausing_interactively>` (Ctrl+C)
+but it can also be incorporated into a plan. The plan can pause the RunEngine,
+requiring the user to type ``RE.resume()`` to continue or ``RE.stop()``
+(or similar) to clean up and stop.
 
-See the :ref:`planned_pauses` subsection of the documentation on *Plans*.
+.. code-block:: python
+
+    import bluesky.plan_stubs as bps
+
+    def pausing_plan():
+        while True:
+            yield from some_plan(...)
+            print("Type RE.resume() to go again or RE.stop() to stop.")
+            yield from bps.checkpoint()  # marking where to resume from
+            yield from bps.pause()
 
 Associated RunEngine Interface
 ==============================

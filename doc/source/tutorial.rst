@@ -531,7 +531,7 @@ axes do. Example:
                  motor2, -0.1, 0.1, 5, False))
                  motor3, -200, 200, 5, False))
 
-See :ref:`multi_dimensional_scan` to handle more specialized cases, including
+See :ref:`multi-dimensional_scans` to handle more specialized cases, including
 unequal step spacing and combinations of :func:`~bluesky.plans.scan`-like and
 :func:`~bluesky.plans.grid_scan`-like movement.
 
@@ -1287,14 +1287,14 @@ wait for the slow motor to arrive, and print a second message.
 Sleeping (Timed Delays)
 -----------------------
 
-.. info::
+.. note::
 
     If you you need to wait for your motor to finish moving, temperature to
     finish equilibrating, or shutter to finish opening, inserting delays into
     plans isn't the best way to do that. It should be the *Device's* business
-    to report accurately when it is done, including any extra padding to
+    to report accurately when it is done, including any extra padding for
     settling or equilibration. On some devices, such as ``EpicsMotor``, this
-    can be set like  ``motor.settle_time = 3``.
+    can be configured like ``motor.settle_time = 3``.
 
 For timed delays, bluesky has a special plan, which allows the RunEngine to
 continue its business during the sleep.
@@ -1313,6 +1313,8 @@ The RunEngine uses an event loop to concurrently management many tasks. It
 assumes that none of those tasks blocks for very long. (A good figure for "very
 long" is 0.2 seconds.) Therefore, you should never incorporate long blocking
 function calls in your plan, such as ``time.sleep(1)``.
+
+.. _tutorial_capture_data:
 
 Capture Data
 ------------
@@ -1499,6 +1501,8 @@ The result:
 Incidentally, recall that we have already encountered a preprocessor in this
 tutorial, in the section on baseline readings.
 :class:`~bluesky.preprocessors.SupplementalData` is a preprocessor.
+
+.. _tutorial_plan_metadata:
 
 Add Metadata
 ------------
@@ -1732,8 +1736,8 @@ see :ref:`msg`.
 
 .. _tutorial_exception_handling:
 
-Specifying "Cleanup" in a Plan
-------------------------------
+Plan "Cleanup" (Exception Handling)
+-----------------------------------
 
 If an exception is raised, the RunEngine gives the plan the opportunity to
 catch the exception and either handle it or merely yield some "clean up"
@@ -1789,10 +1793,10 @@ Or, at your preference, the same logic is available as a decorator:
 Further Reading
 ---------------
 
-* Specifying checkpoints
-* Monitoring
-* Fly Scanning
-* Pausing from a plan
-* :func:`~bluesky.plans.input_plan`
-* Going deeper than :func:`~bluesky.plan_stubs.trigger_and_read`
-* The per_step hook
+* :ref:`per_step_hook`
+* Specifying checkpoints (TODO)
+* Monitoring (TODO)
+* Fly Scanning (TODO)
+* :ref:`Pausing from a plan <planned_pauses>`
+* :func:`~bluesky.plans.input_plan` (TODO)
+* Going deeper than :func:`~bluesky.plan_stubs.trigger_and_read` (TODO)
