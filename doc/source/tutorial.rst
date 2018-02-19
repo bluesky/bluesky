@@ -1792,8 +1792,8 @@ This is the general idea:
 The exception in question may originate from the plan itself or from the
 RunEngine when it attempts to execute a given command.
 
-The :func:`finalize_wrapper` preprocessor provides a succinct and fully correct
-way of applying this general pattern.
+The :func:`~bluesky.preprocessors.finalize_wrapper` preprocessor provides a
+succinct and fully correct way of applying this general pattern.
 
 .. code-block:: python
 
