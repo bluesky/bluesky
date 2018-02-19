@@ -1274,8 +1274,8 @@ or more devices and waits for them all to arrive. There is also
 
     from ophyd.sim import motor1, motor2
 
-    # Move motor1 to 1 and motor2 10 units to the right of their current
-    # positions. Wait for both to arrive.
+    # Move motor1 to 1 and motor2 10 units in the positive direction relative
+    # to their current positions. Wait for both to arrive.
     RE(bps.mvr(motor1, 1, motor2, 10))
 
 Some scenarios require more low-level control over when the waiting occurs.
@@ -1483,7 +1483,9 @@ we incorporate staging like so:
             yield from bps.unstage(det)
 
 This is starting to get verbose. At this point, we might want to accept some
-additional complexity in exchange for brevity. This plan is equivalent:
+additional complexity in exchange for brevity --- and some assurance that we
+don't forget to use these plans in matching pairs. To that end, this plan is
+equivalent:
 
 .. code-block:: python
 
