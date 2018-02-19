@@ -1281,7 +1281,7 @@ or more devices and waits for them all to arrive. There is also
 Some scenarios require more low-level control over when the waiting occurs.
 For these, we employ :func:`~bluesky.plan_stubs.wait` and
 :func:`~bluesky.plan_stubs.abs_set` ("absolute set") or 
-:ref:`~bluesky.plan_stubs.rel_set` ("relative set").
+:func:`~bluesky.plan_stubs.rel_set` ("relative set").
 
 Here is a scenario that does require a custom solution: we want to move
 set several motors in motion at once, including many fast motors and one slow
