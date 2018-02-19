@@ -732,6 +732,8 @@ Plans may also hint that their data is sampled on a regular rectangular grid
 via the hint ``{'gridding': 'rectilinear'}``. This is useful, for example, for
 decided whether to visualize 2D data with LiveGrid or with LiveScatter.
 
+.. _export:
+
 Callback for Export
 -------------------
 

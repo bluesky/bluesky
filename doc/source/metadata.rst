@@ -130,7 +130,8 @@ If there is a conflict, ``RE`` keywords takes precedence. So
 would override the individual 'purpose' metadata from the plan, marking all
 three as purpose=test.
 
-For more on injecting metadata via plans, refer to :ref:`customizing_metadata`.
+For more on injecting metadata via plans, refer to
+:ref:`this section <tutorial_plan_metadata>` of the tutorial.
 
 .. note::
 

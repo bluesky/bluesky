@@ -49,7 +49,11 @@ plot_html_show_source_link = False
 plot_html_show_formats = False
 plot_pre_code = ("from matplotlib import pyplot as plt\n"
                  "from bluesky import RunEngine\n"
-                 "RE = RunEngine({})")
+                 "from bluesky.callbacks.best_effort import BestEffortCallback\n"
+                 "RE = RunEngine({})\n"
+                 "bec = BestEffortCallback()\n"
+                 "RE.subscribe(bec)\n"
+                 )
 
 # Generate the API documentation when building
 autosummary_generate = True

@@ -19,16 +19,18 @@ and metadata. It emphasizes the following virtues:
 * **Integration with Scientific Python:** Interface naturally with numpy and
   Python scientific stack.
 
-Bluesky interacts with hardware through Python objects that are expected to
-have a specified interface. This interface is implemented for "simulated"
-motors and detectors included in the ``ophyd.sim`` module, which we use
-here in documented examples and tests.
+How to Use This Documentation
+-----------------------------
 
-To control actual hardware, an additional package is required. The `ophyd
-<https://nsls-ii.github.io/ophyd>`_ package implements the bluesky interface
-for controlling motors, detectors, etc. via
-`EPICS <http://www.aps.anl.gov/epics/>`_. Other control systems could be
-integrated with bluesky in the future by presenting this same interface.
+Start with the :doc:`tutorial`. It's a good place to start for everyone, and it
+gives a good overview of the project in a narrative style. Read as far as you
+need to solve your problem, and come back again if your needs change. Each
+section of the tutorial adds a piece of complexity in exchange for deeper
+customization.
+
+The remaining sections document bluesky's behavior in a less narrative style,
+providing clear API documentation intermixed with some examples and explanation
+of design and intent.
 
 Index
 -----
@@ -37,10 +39,10 @@ Index
    :caption: User Documentation
    :maxdepth: 1
 
-   plans_intro
+   tutorial
+   plans
    documents
    metadata
-   plans
    callbacks
    state-machine
    simulation
@@ -50,7 +52,9 @@ Index
    debugging
    run_engine_api
    magics
+   from-pyepics-to-bluesky
    comparison-with-spec
+   appendix
 
 .. toctree::
    :caption: Developer Documentation
