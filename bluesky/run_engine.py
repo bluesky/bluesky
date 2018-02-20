@@ -318,6 +318,25 @@ class RunEngine:
         self._subscribe_lossless = self.dispatcher.subscribe
         self._unsubscribe_lossless = self.dispatcher.unsubscribe
 
+        self.loop.call_soon(self._check_for_signals)
+
+    def print_command_registry(self, verbose=False):
+        '''
+            This conveniently prints the command registry of available
+            commands.
+
+            Parameters
+            ----------
+            Verbose : bool, optional
+                verbose print. Default is False
+        '''
+        print("List of available commands")
+        for command, func in self._command_registry.items():
+            docstring = func.__doc__
+            if verbose is False:
+                docstring = doctsring.split("\n")[0]
+            print(f"{command} : {docstring}")
+
     def subscribe(self, func, name='all'):
         """
         Register a callback function to consume documents.
