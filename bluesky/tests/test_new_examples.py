@@ -521,15 +521,13 @@ def test_repeat(RE):
     num = 3
     expected = [Msg('checkpoint'), 1, 2, 3] * num
     assert list(repeat(plan, num=num)) == expected
-    assert list(repeat(plan(), num=num)) == expected
-    assert list(repeat(messages, num=num)) == expected
 
 
 def test_repeat_using_RE(RE):
     def plan():
         yield Msg('open_run')
         yield Msg('close_run')
-    RE(repeat(plan(), 2))
+    RE(repeat(plan, 2))
 
 
 def test_trigger_and_read(hw):

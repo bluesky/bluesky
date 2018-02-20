@@ -1,6 +1,24 @@
 Release History
 ===============
 
+v1.2.0 (in progress)
+--------------------
+
+Features
+^^^^^^^^
+
+* A new plan stub, :func:`~bluesky.plan_stubs.repeat`, repeats another plan N
+  times with optional interleaved delays --- a kind of customizable version of
+  :func:`~bluesky.plans.count`.
+
+Deprecations
+^^^^^^^^^^^^
+
+* The :func:`~bluesky.plan_stubs.caching_repeater` plan has been deprecated
+  because it is incompatible with some preprocessors. It will be removed in
+  a future release of bluesky. It was not documented in any previous releases
+  and rarely if ever used, so the impact of this removal is expected to be low.
+
 v1.1.0 (2017-12-19)
 -------------------
 

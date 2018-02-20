@@ -649,6 +649,4 @@ These are useful utilities for defining custom plans and plan preprocessors.
    :nosignatures:
 
     broadcast_msg
-    repeater
-    caching_repeater
     repeat
