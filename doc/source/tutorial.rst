@@ -127,7 +127,7 @@ During data acquisition, the RunEngine dispatches a live stream of metadata and
 data to one or more consumers ("callbacks") for in-line data processing and
 visualization and long-term storage. Example consumers include a live-updating
 plot, a curve-fitting algorithm, a database, a message queue, or a file in your
-preferred format.
+preferred format. See :doc:`callbacks` for more detail.
 
 Prepare Live Visualization
 --------------------------
