@@ -320,6 +320,15 @@ class RunEngine:
 
         self.loop.call_soon(self._check_for_signals)
 
+    def commands(self):
+        '''
+            Return the list of commands available to Msg.
+            Usage:
+                RunEngine.commands
+        '''
+        # return as a list, not lazy loader, no surprises...
+        return list(self._command_registry.keys())
+
     def print_command_registry(self, verbose=False):
         '''
             This conveniently prints the command registry of available
