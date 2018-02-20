@@ -7,7 +7,7 @@ v1.2.0 (in progress)
 Features
 ^^^^^^^^
 
-* Refresh documentation with a new :doc:`tutorial` section.
+* Refreshed documentation with a new :doc:`tutorial` section.
 * Extend :func:`.scan` and :func:`.rel_scan` to
   handle multiple motors, rendering :func:`.inner_product_scan` and
   :func:`relative_inner_product_scan` redundant.
