@@ -34,7 +34,9 @@ from bluesky.plan_stubs import (
     stop,
     repeater,
     caching_repeater,
-    repeat)
+    repeat,
+    one_1d_step,
+    one_nd_step)
 from bluesky.preprocessors import (
     finalize_wrapper,
     fly_during_wrapper,
@@ -50,7 +52,7 @@ from bluesky.preprocessors import (
     finalize_decorator,
     configure_count_time_wrapper)
 
-from bluesky.plans import count
+from bluesky.plans import count, scan, rel_scan, inner_product_scan
 
 import bluesky.plans as bp
 
@@ -623,3 +625,43 @@ def test_no_rewind_device(hw):
 
 def test_monitor(RE, hw):
     RE(monitor_during_wrapper(count([hw.det], 5), [hw.det1]))
+
+
+def test_per_step(RE, hw):
+    # Check default behavior, using one motor and then two.
+    RE(scan([hw.det], hw.motor, -1, 1, 3, per_step=one_nd_step))
+    RE(scan([hw.det],
+            hw.motor, -1, 1,
+            hw.motor2, -1, 1,
+            3,
+            per_step=one_nd_step))
+    RE(inner_product_scan([hw.det], 3, hw.motor, -1, 1, per_step=one_nd_step))
+    RE(inner_product_scan([hw.det],
+                          3,
+                          hw.motor, -1, 1,
+                          hw.motor2, -1, 1,
+                          per_step=one_nd_step))
+
+    # Check that scan still accepts old one_1d_step signature:
+    RE(scan([hw.det], hw.motor, -1, 1, 3, per_step=one_1d_step))
+    RE(rel_scan([hw.det], hw.motor, -1, 1, 3, per_step=one_1d_step))
+
+    # Test that various error paths include a useful error message identifying
+    # that the problem is with 'per_step':
+
+    # You can't usage one_1d_step signature with more than one motor.
+    with pytest.raises(TypeError) as exc:
+        RE(scan([hw.det],
+                hw.motor, -1, 1,
+                hw.motor2, -1, 1,
+                3,
+                per_step=one_1d_step))
+    assert "Signature of per_step assumes 1D trajectory" in str(exc)
+
+    # The signature must be either like one_1d_step or one_nd_step:
+    def bad_sig(detectors, mtr, step):
+        ...
+
+    with pytest.raises(TypeError) as exc:
+        RE(scan([hw.det], hw.motor, -1, 1, 3, per_step=bad_sig))
+    assert "per_step must be a callable with the signature" in str(exc)
