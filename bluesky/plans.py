@@ -1,4 +1,5 @@
 import sys
+import inspect
 from itertools import chain
 from functools import partial
 
@@ -712,6 +713,30 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
 
     if per_step is None:
         per_step = bps.one_nd_step
+    else:
+        # Ensure that the user-defined per-step has the expected signature.
+        sig = inspect.signature(per_step)
+        if sig == inspect.signature(bps.one_nd_step):
+            pass
+        elif sig == inspect.signature(bps.one_1d_step):
+            # Accept this signature for back-compat reasons (because
+            # inner_product_scan was renamed scan).
+            dims = len(list(cycler.keys))
+            if dims != 1:
+                raise TypeError("Signature of per_step assumes 1D trajectory "
+                                "but {} motors are specified.".format(dims))
+            motor, = cycler.keys
+            user_per_step = per_step
+            def adapter(detectors, step, pos_cache):
+                # one_nd_step 'step' parameter is a dict; one_id_step 'step'
+                # parameter is a value
+                step, = step.values()
+                return (yield from user_per_step(detectors, motor, step))
+            per_step = adapter
+        else:
+            raise TypeError("per_step must be a callable with the signature "
+                            "<Signature (detectors, step, pos_cache)> or "
+                            "<Signature (detectors, motor, step)>.")
     pos_cache = defaultdict(lambda: None)  # where last position is stashed
     cycler = utils.merge_cycler(cycler)
     motors = list(cycler.keys)
