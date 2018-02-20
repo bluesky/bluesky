@@ -6,6 +6,7 @@ import operator
 from functools import reduce
 from collections import Iterable
 import time
+import warnings
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -837,6 +838,8 @@ def caching_repeater(n, plan):
     --------
     :func:`bluesky.plans.repeater`
     """
+    warnings.warn("The caching_repeater will be removed in a future version "
+                  "of bluesky.")
     it = range
     if n is None:
         n = 0
@@ -905,8 +908,8 @@ def repeat(plan, num=1, delay=None):
 
     Parameters
     ----------
-    plan: callable or list
-        Callable that returns a valid plan, or a list of Message objects
+    plan: callable
+        Callable that returns an iterable of Msg objects
     num : integer, optional
         number of readings to take; default is 1
 
@@ -941,16 +944,10 @@ def repeat(plan, num=1, delay=None):
         delay = iter(delay)
 
     def repeated_plan():
-        nonlocal plan
         for i in iterator:
             now = time.time()  # Intercept the flow in its earliest moment.
             yield Msg('checkpoint')
-            if callable(plan):
-                yield from ensure_generator(plan())
-            else:
-                # Stash plan for our next trip through the loop; use plan_copy.
-                plan, plan_copy = itertools.tee(plan)
-                yield from ensure_generator(plan_copy)
+            yield from ensure_generator(plan())
             try:
                 d = next(delay)
             except StopIteration:

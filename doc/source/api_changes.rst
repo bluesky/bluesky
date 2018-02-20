@@ -1,6 +1,42 @@
 Release History
 ===============
 
+v1.2.0 (in progress)
+--------------------
+
+Features
+^^^^^^^^
+
+* Refresh documentation with a new :doc:`tutorial` section.
+* Extend :func:`.scan` and :func:`.rel_scan` to
+  handle multiple motors, rendering :func:`.inner_product_scan` and
+  :func:`relative_inner_product_scan` redundant.
+* A new plan stub, :func:`~bluesky.plan_stubs.repeat`, repeats another plan N
+  times with optional interleaved delays --- a kind of customizable version of
+  :func:`~bluesky.plans.count`.
+
+Bug Fixes
+^^^^^^^^^
+
+* Fix axes orientation in :class:`.LiveRaster`.
+* Make :class:`.BestEffortCallback` display multi-motor scans properly.
+* Fix bug in :func:`.ts_msg_hook` where it conflated month and minute. Also,
+  include sub-second precision.
+* Avoid situation where plan without hints caused the
+  :class:`.BestEffortCallback` to error instead of do its best to guess useful
+  behavior.
+* Skip un-filled externally-stored data in :class:`.LiveTable`. This fixes a
+  bug where it is expecting array data but gets UUID (``datum_id``) and errors
+  out.
+
+Deprecations
+^^^^^^^^^^^^
+
+* The :func:`~bluesky.plan_stubs.caching_repeater` plan has been deprecated
+  because it is incompatible with some preprocessors. It will be removed in
+  a future release of bluesky. It was not documented in any previous releases
+  and rarely if ever used, so the impact of this removal is expected to be low.
+
 v1.1.0 (2017-12-19)
 -------------------
 
