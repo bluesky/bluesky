@@ -14,6 +14,8 @@ Features
 * A new plan stub, :func:`~bluesky.plan_stubs.repeat`, repeats another plan N
   times with optional interleaved delays --- a kind of customizable version of
   :func:`~bluesky.plans.count`.
+* Better validation of user-defined ``per_step`` functions and more informative
+  error messages to match.
 
 Bug Fixes
 ^^^^^^^^^
