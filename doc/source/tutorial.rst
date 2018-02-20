@@ -287,7 +287,15 @@ Try the following variations:
 The :func:`~bluesky.plans.count` function (more precisely, Python *generator
 function*) is an example of a *plan*, a sequence of instructions encoding an
 experimental procedure. We'll get a better sense for why this design is useful
-as we continue.
+as we continue. Briefly, it empowers us to:
+
+* Introspect the instructions before we execute them, checking for accuracy,
+  safety, estimated duration, etc.
+* Interrupt and "rewind" the instructions to a safe point to resume from,
+  both interactively and automatically (e.g. in the middle of the night).
+* Reuse a generic set of instructions on different hardware.
+* Modify the instructions programmatically, such as inserting a set of
+  baseline readings to be taken automatically before every experiment.
 
 .. warning::
 
