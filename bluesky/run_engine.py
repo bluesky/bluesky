@@ -334,7 +334,7 @@ class RunEngine:
         for command, func in self._command_registry.items():
             docstring = func.__doc__
             if verbose is False:
-                docstring = doctsring.split("\n")[0]
+                docstring = docstring.split("\n")[0]
             print(f"{command} : {docstring}")
 
     def subscribe(self, func, name='all'):
