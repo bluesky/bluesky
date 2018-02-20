@@ -40,7 +40,7 @@ Before You Begin
 
 * Install the latest versions of bluesky and ophyd. Also install the databroker
   unless you plan to skip the sections about accessing saved data. Finally,
-  install ipython (a Python interpreter designed by scientists for scientists).
+  install IPython (a Python interpreter designed by scientists for scientists).
 
   .. code-block:: bash
 
@@ -77,7 +77,7 @@ The RunEngine
 Bluesky encodes an experimental procedure as a *plan*, a sequence of
 atomic instructions. The *RunEngine* is an interpreter for plans. It lets
 us focus on the logic of our experimental procedure while it handles important
-technical details for free: it communicates with hardware, monitors for
+technical details consistently: it communicates with hardware, monitors for
 interruptions, organizes metadata and data, coordinates I/O, and ensures that
 the hardware is left in a safe state at exit time.
 
@@ -92,7 +92,8 @@ plan) pays off in several ways, as we will see in the examples that follow.
     own, you may be overriding pre-configured defaults, which can result in
     data loss.**
 
-    You can type ``RE`` to check. You should get something like:
+    To check, type ``RE``. If a RunEngine has already been configured, you
+    should get something like:
 
     .. ipython::
         :verbatim:
@@ -100,7 +101,8 @@ plan) pays off in several ways, as we will see in the examples that follow.
         In [1]: RE
         Out[1]: <bluesky.run_engine.RunEngine at 0x10fd1d978>
 
-    If this gives you a ``NameError``, you'll need to finish this section.
+    and you should skip the rest of this section. But if this gives you a
+    ``NameError``, you'll need to finish this section.
 
 Create a RunEngine:
 
@@ -121,11 +123,11 @@ Create a RunEngine:
 This RunEngine is ready to use --- but if you care about visualizing or saving
 your data, there is more to do first....
 
-The RunEngine dispatches a live stream of metadata and data to one or more
-consumers ("callbacks") for in-line data processing and visualization and
-long-term storage. Example consumers include a live-updating plot, a
-curve-fitting algorithm, a database, a message queue, or a file in your
-preferred format.
+During data acquisition, the RunEngine dispatches a live stream of metadata and
+data to one or more consumers ("callbacks") for in-line data processing and
+visualization and long-term storage. Example consumers include a live-updating
+plot, a curve-fitting algorithm, a database, a message queue, or a file in your
+preferred format. See :doc:`callbacks` for more detail.
 
 Prepare Live Visualization
 --------------------------
@@ -153,12 +155,16 @@ To start, let's use the all-purpose
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
-The :class:`~bluesky.callback.best_effort.BestEffortCallback`
-will receive the metadata/data in real time and
-produce plots and text, doing its best to provide live feedback that strikes
-the right balance between "comprehensive" and "overwhelming." For more tailored
-feeback, taking account of the details of the experiment, you may configure
-custom callbacks.
+The :class:`~bluesky.callback.best_effort.BestEffortCallback` will receive the
+metadata/data in real time and produce plots and text, doing its best to
+provide live feedback that strikes the right balance between "comprehensive"
+and "overwhelming."
+
+For more tailored feedback, customized to a particular experiment, you may
+configure custom callbacks. Start by reading up on :doc:`documents`, the
+structure into which bluesky organized metadata and data captured during an
+experiment. But for this tutorial and for many real experiments, the
+:class:`~bluesky.callback.best_effort.BestEffortCallback` will suffice.
 
 Prepare Data Storage
 --------------------
@@ -279,13 +285,13 @@ Try the following variations:
     RE.stop()
 
 The :func:`~bluesky.plans.count` function (more precisely, Python *generator
-function*) is an example of a *plan*, a sequence of instructions to be consumed
-encoding an experimental procedure. We'll get a better sense for why this
-design is useful as we continue.
+function*) is an example of a *plan*, a sequence of instructions encoding an
+experimental procedure. We'll get a better sense for why this design is useful
+as we continue.
 
 .. warning::
 
-    Notice that typing that entering a plan by itself doesn't do anything:
+    Notice that entering a plan by itself doesn't do anything:
 
     .. ipython:: python
         :suppress:
@@ -344,10 +350,11 @@ in Python with certain methods.
 
 In addition the producing a table and plot, the
 :class:`~bluesky.callback.best_effort.BestEffortCallback` computes basic peak
-statistics. Click on the plot area and press P ("peaks") to visualize them over
-the data. The numbers (center of mass, max, etc.) are available in a dictionary
-stashed as ``bec.peaks``. This is updated at the end of each run.  Of course,
-if peak statistics are not applicable, you may just ignore this feature.
+statistics. Click on the plot area and press Shift+P ("peaks") to visualize
+them over the data. The numbers (center of mass, max, etc.) are available in a
+dictionary stashed as ``bec.peaks``. This is updated at the end of each run.
+Of course, if peak statistics are not applicable, you may just ignore this
+feature.
 
 Use :func:`~bluesky.plans.rel_scan` to scan from ``-1`` to ``1`` *relative to
 the current position*.

@@ -14,17 +14,26 @@ Overview of Callbacks
 ---------------------
 
 As the RunEngine executes a plan, it organizes metadata and data into
-*Documents,* Python dictionaries organized in a `specified but flexible
-<http://nsls-ii.github.io/architecture-overview.html>`__ way.
-Each time a new Document is created, the RunEngine passes it to a list of
-functions. These functions can do anything: store the data to disk, print a
-line of text to the screen, add a point to a plot, or even transfer the data to
-a cluster for immediate processing. These functions are called "callbacks."
+*Documents,* Python dictionaries organized in a
+:doc:`specified but flexible <documents>` way. Each time a new Document is
+created, the RunEngine passes it to a list of functions. These functions can do
+anything: store the data to disk, print a line of text to the screen, add a
+point to a plot, or even transfer the data to a cluster for immediate
+processing. These functions are called "callbacks."
 
 We "subscribe" callbacks to the live stream of Documents coming from the
 RunEngine. You can think of a callback as a self-addressed stamped envelope: it
 tells the RunEngine, "When you create a Document, send it to this function for
 processing."
+
+Callback functions are run in a blocking fashion: data acquisition cannot
+continue until they return. For light tasks like simple plotting or critical
+tasks like sending the data to a long-term storage medium, this behavior is
+desirable. It is easy to debug and it guarantees that critical errors will be
+noticed immediately. But heavy computational tasks --- anything that takes more
+than about 0.2 seconds to finish --- should be executed in a separate process
+or server so that they do not hold up data acquisition. Bluesky provides nice
+tooling for this use case --- see :ref:`zmq_callback`.
 
 Simplest Working Example
 ------------------------
@@ -1057,6 +1066,8 @@ for each Document type.
 The base class, ``CallbackBase``, takes care of dispatching each Document to
 the corresponding method. If your application does not need all four, you may
 simple omit methods that aren't required.
+
+.. _zmq_callback:
 
 Subscriptions in Separate Processes or Host with 0MQ
 ----------------------------------------------------
