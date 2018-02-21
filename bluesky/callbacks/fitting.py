@@ -273,8 +273,8 @@ class PeakStats(CollectThenCompute):
             _x = x[cr:cr+2]
             _y = y[cr:cr+2] - mid
 
-            dx = np.diff(_x)
-            dy = np.diff(_y)
+            dx = np.diff(_x)[0]
+            dy = np.diff(_y)[0]
             m = dy / dx
             _cen_list.append((-_y[0] / m) + _x[0])
 
