@@ -713,7 +713,7 @@ def wait_for(futures, **kwargs):
     return (yield Msg('wait_for', None, futures, **kwargs))
 
 
-def trigger_and_read(devices, name='primary'):
+def trigger_and_read(devices, name='primary', stream_data=False):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -724,6 +724,9 @@ def trigger_and_read(devices, name='primary'):
     name : string, optional
         event stream name, a convenient human-friendly identifier; default
         name is 'primary'
+    stream_data : bool, optional
+        if True, emit the event before the data has complete (streaming mode)
+        This requires for the event to be a datum rather than actual data
 
     Yields
     ------
@@ -744,7 +747,7 @@ def trigger_and_read(devices, name='primary'):
                 no_wait = False
                 yield from trigger(obj, group=grp)
         # Skip 'wait' if none of the devices implemented a trigger method.
-        if not no_wait:
+        if not no_wait and not stream_data:
             yield from wait(group=grp)
         yield from create(name)
         ret = {}  # collect and return readings to give plan access to them
@@ -753,6 +756,9 @@ def trigger_and_read(devices, name='primary'):
             if reading is not None:
                 ret.update(reading)
         yield from save()
+        # do the wait after the save if we didn't do it before
+        if not no_wait and stream_data:
+            yield from wait(group=grp)
         return ret
     from .preprocessors import rewindable_wrapper
     return (yield from rewindable_wrapper(inner_trigger_and_read(),
