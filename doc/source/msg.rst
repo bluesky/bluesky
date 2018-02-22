@@ -103,7 +103,7 @@ asynchronously in the background.
 
 Other commands are used to control metadata and I/O. For example,
 ``Msg('open_run')`` and ``Msg('close_run')`` delineate the scope of one run.
-Any keyword arguments to passed the ``'open_run'`` message are interpreted as
+Any keyword arguments passed to the ``'open_run'`` message are interpreted as
 metadata, encoded into the RunStart document.
 
 The following is a comprehensive overview of the built-in commands.
