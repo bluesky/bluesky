@@ -733,7 +733,7 @@ def trigger_and_read(devices, name='primary',
     Yields
     ------
     msg : Msg
-        messages to 'trigger', 'wait' and 'read'
+        messages to 'trigger', 'read_streaming', 'wait' and 'read'
     """
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
@@ -750,7 +750,7 @@ def trigger_and_read(devices, name='primary',
                 yield from trigger(obj, group=grp)
         yield from create(streaming_name)
         for obj in devices:
-            reading = (yield from streaming_read(obj))
+            reading = (yield from read_streaming(obj))
             if reading is not None:
                 ret.update(reading)
         yield from save()
