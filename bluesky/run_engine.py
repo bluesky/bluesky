@@ -320,11 +320,19 @@ class RunEngine:
 
         self.loop.call_soon(self._check_for_signals)
 
+    @property
     def commands(self):
         '''
-            Return the list of commands available to Msg.
-            Usage:
-                RunEngine.commands
+            The list of commands available to Msg.
+            Usage (instantiate RunEngine first):
+                RE = RunEngine()
+                RE.commands
+
+            See Also
+            --------
+            :meth:`RunEngine.register_command`
+            :meth:`RunEngine.unregister_command`
+            :meth:`RunEngine.print_command_registry`
         '''
         # return as a list, not lazy loader, no surprises...
         return list(self._command_registry.keys())
@@ -338,6 +346,12 @@ class RunEngine:
             ----------
             Verbose : bool, optional
                 verbose print. Default is False
+
+            See Also
+            --------
+            :meth:`RunEngine.register_command`
+            :meth:`RunEngine.unregister_command`
+            :meth:`RunEngine.commands`
         '''
         print("List of available commands")
         for command, func in self._command_registry.items():
