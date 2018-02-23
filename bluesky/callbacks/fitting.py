@@ -199,6 +199,10 @@ class PeakStats(CollectThenCompute):
     cen : mid-point between half-max points on each side of the peak
     max : x location of y maximum
     min : x location of y minimum
+    fwhm : the computed full width half maximum (fwhm) of a peak.
+    This is done by computing the number of times the data crosses the median.
+    More than two crosses may exist for multiple peaks or very noisy data.
+    The distance between the first and last crossing is taken to be the fwhm.
     """
 
     def __init__(self, x, y, edge_count=None):
@@ -286,4 +290,3 @@ class PeakStats(CollectThenCompute):
 
         # reset y data
         y = self.y_data
-        # insert lmfit
