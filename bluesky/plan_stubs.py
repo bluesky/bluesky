@@ -713,7 +713,8 @@ def wait_for(futures, **kwargs):
     return (yield Msg('wait_for', None, futures, **kwargs))
 
 
-def trigger_and_read(devices, name='primary'):
+def trigger_and_read(devices, name='primary',
+                     streaming_name='streaming_primary'):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -724,6 +725,10 @@ def trigger_and_read(devices, name='primary'):
     name : string, optional
         event stream name, a convenient human-friendly identifier; default
         name is 'primary'
+    streaming_name : string, optional
+        the streaming event stream name. This should create a stream only if
+        streaming methods are found (i.e. ohpyd objects that contain a
+        streaming_read() method).
 
     Yields
     ------
@@ -743,6 +748,12 @@ def trigger_and_read(devices, name='primary'):
             if hasattr(obj, 'trigger'):
                 no_wait = False
                 yield from trigger(obj, group=grp)
+        yield from create(streaming_name)
+        for obj in devices:
+            reading = (yield from streaming_read(obj))
+            if reading is not None:
+                ret.update(reading)
+        yield from save()
         # Skip 'wait' if none of the devices implemented a trigger method.
         if not no_wait:
             yield from wait(group=grp)
