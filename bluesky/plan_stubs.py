@@ -89,6 +89,26 @@ def read(obj):
     return (yield Msg('read', obj))
 
 
+def read_streaming(obj):
+    """
+    Take a reading from streaming devices and add it to the current bundle of
+    readings.
+
+    A reading from a streaming devices amounts to calling obj.read_streaming()
+    from the object (which should be a Device or Signal).
+
+    Parameters
+    ----------
+    obj : Device or Signal
+
+    Yields
+    ------
+    msg : Msg
+        Msg('read_streaming', obj)
+    """
+    return (yield Msg('read_streaming', obj))
+
+
 def monitor(obj, *, name=None, **kwargs):
     """
     Asynchronously monitor for new values and emit Event documents.
@@ -748,15 +768,19 @@ def trigger_and_read(devices, name='primary',
             if hasattr(obj, 'trigger'):
                 no_wait = False
                 yield from trigger(obj, group=grp)
+        # read from the streaming devices
         yield from create(streaming_name)
         for obj in devices:
             reading = (yield from read_streaming(obj))
-            if reading is not None:
-                ret.update(reading)
+        # this will create an event (and descriptor if first event)
+        # *only* if information is read
         yield from save()
+
         # Skip 'wait' if none of the devices implemented a trigger method.
         if not no_wait:
             yield from wait(group=grp)
+
+        # now read from the devices once trigger is complete
         yield from create(name)
         ret = {}  # collect and return readings to give plan access to them
         for obj in devices:
