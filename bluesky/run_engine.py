@@ -137,6 +137,9 @@ class RunEngine:
     md
         Direct access to the dict-like persistent storage described above
 
+    commands
+        The list of commands available to Msg.
+
     record_interruptions
         False by default. Set to True to generate an extra event stream
         that records any interruptions (pauses, suspensions).
