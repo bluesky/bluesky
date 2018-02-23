@@ -771,7 +771,7 @@ def trigger_and_read(devices, name='primary',
         # read from the streaming devices
         yield from create(streaming_name)
         for obj in devices:
-            reading = (yield from read_streaming(obj))
+            yield from read_streaming(obj))
         # this will create an event (and descriptor if first event)
         # *only* if information is read
         yield from save()
