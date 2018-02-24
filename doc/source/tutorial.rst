@@ -1712,8 +1712,8 @@ Adaptive Logic in a Plan
 ------------------------
 
 Two-way communication is possible between the generator and the RunEngine.
-For example, the 'read' command responds with its reading. We can use it to
-make an on-the-fly decision about whether to continue or stop.
+For example, the :func:`~trigger_and_read` plan responds with its readings. We
+can use it to make an on-the-fly decision about whether to continue or stop.
 
 .. code-block:: python
 
@@ -1731,8 +1731,8 @@ make an on-the-fly decision about whether to continue or stop.
             while True:
                 print("LOOP %d" % i)
                 yield from bps.mv(motor, i)
-                reading = yield from bps.trigger_and_read([det])
-                if reading['det']['value'] < threshold:
+                readings = yield from bps.trigger_and_read([det])
+                if readings['det']['value'] < threshold:
                     print('DONE')
                     break
                 i += 1
