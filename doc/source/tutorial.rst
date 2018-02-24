@@ -278,12 +278,6 @@ Try the following variations:
     # a variable delay
     RE(count(dets, num=5, delay=[1, 2, 3, 4]))
 
-    # Take readings forever, until interrupted (e.g., with Ctrl+C)
-    RE(count(dets, num=None))
-    # RunEngine is paused by Ctrl+C. It now needs to be 'stopped'.
-    # See later section of tutorial for more on this....
-    RE.stop()
-
 The :func:`~bluesky.plans.count` function (more precisely, Python *generator
 function*) is an example of a *plan*, a sequence of instructions encoding an
 experimental procedure. We'll get a better sense for why this design is useful
