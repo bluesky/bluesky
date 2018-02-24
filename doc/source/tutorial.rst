@@ -1720,33 +1720,46 @@ can use it to make an on-the-fly decision about whether to continue or stop.
     import bluesky.preprocessors as bpp
     import bluesky.plan_stubs as bps
     from ophyd.sim import det, motor
-
     def conditional_break(threshold):
         """Set, trigger, read until the detector reads intensity < threshold"""
 
-        bpp.stage_decorator()
-        bpp.run_decorator()
+        @bpp.stage_decorator([det, motor])
+        @bpp.run_decorator()
         def inner():
             i = 0
             while True:
-                print("LOOP %d" % i)
                 yield from bps.mv(motor, i)
                 readings = yield from bps.trigger_and_read([det])
                 if readings['det']['value'] < threshold:
-                    print('DONE')
                     break
                 i += 1
+        return (yield from inner())
+
+.. ipython:: python
+    :suppress:
+
+    import bluesky.preprocessors as bpp
+    import bluesky.plan_stubs as bps
+    from bluesky import Msg
+    from ophyd.sim import det, motor
+    def conditional_break(threshold):
+        def inner():
+            i = 0
+            while True:
+                yield from bps.mv(motor, i)
+                readings = yield from bps.trigger_and_read([det])
+                if readings['det']['value'] < threshold:
+                    break
+                i += 1
+        # Decorators do not work in IPython sphinx directive!
+        # Using wrapper instead...
+        return (yield from bpp.stage_wrapper(bpp.run_wrapper(inner()), [det, motor]))
 
 Demo:
 
-.. code-block:: python
+.. ipython:: python
 
-    In [5]: RE(conditional_break(0.2))
-    LOOP 0
-    LOOP 1
-    LOOP 2
-    DONE
-    Out[5]: []
+    RE(conditional_break(0.2))
 
 The important line in this example is
 
