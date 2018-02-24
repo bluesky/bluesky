@@ -682,8 +682,8 @@ into one plan like so:
 
     RE(move_then_count())
 
-It's very important to remember the ``yield from``. This plan does nothing at
-all! (The plans inside it will be *defined* but never executed.)
+It's very important to remember the ``yield from``. The following plan does
+nothing at all! (The plans inside it will be *defined* but never executed.)
 
 .. code-block:: python
 
@@ -1329,12 +1329,12 @@ Sleeping (Timed Delays)
 
 .. note::
 
-    If you you need to wait for your motor to finish moving, temperature to
-    finish equilibrating, or shutter to finish opening, inserting delays into
-    plans isn't the best way to do that. It should be the *Device's* business
-    to report accurately when it is done, including any extra padding for
-    settling or equilibration. On some devices, such as ``EpicsMotor``, this
-    can be configured like ``motor.settle_time = 3``.
+    If you need to wait for your motor to finish moving, temperature to finish
+    equilibrating, or shutter to finish opening, inserting delays into plans
+    isn't the best way to do that. It should be the *Device's* business to
+    report accurately when it is done, including any extra padding for settling
+    or equilibration. On some devices, such as ``EpicsMotor``, this can be
+    configured like ``motor.settle_time = 3``.
 
 For timed delays, bluesky has a special plan, which allows the RunEngine to
 continue its business during the sleep.
@@ -1349,10 +1349,10 @@ continue its business during the sleep.
 
 **You should always use this plan, *never* Python's built-in function
 :func:`time.sleep`.** Why?
-The RunEngine uses an event loop to concurrently management many tasks. It
-assumes that none of those tasks blocks for very long. (A good figure for "very
-long" is 0.2 seconds.) Therefore, you should never incorporate long blocking
-function calls in your plan, such as ``time.sleep(1)``.
+The RunEngine uses an event loop to concurrently manage many tasks. It assumes
+that none of those tasks blocks for very long. (A good figure for "very long"
+is 0.2 seconds.) Therefore, you should never incorporate long blocking function
+calls in your plan, such as ``time.sleep(1)``.
 
 .. _tutorial_capture_data:
 
@@ -1378,7 +1378,7 @@ Capture Data
             yield from one_run_multi_events(detectors, num)
 
 Any plan that generates data must include instructions for grouping readings
-nto *Events* (i.e. rows in a table) and grouping those Events into *Runs*
+into *Events* (i.e. rows in a table) and grouping those Events into *Runs*
 (datasets that are given a "scan ID"). This is best explained by example.
 
 .. code-block:: python
@@ -1467,7 +1467,7 @@ for data collection, moving them from a resting state into a state where they
 are ready to acquire data. Bluesky accommodates this in a general way by
 allowing every Device to implement an optional ``stage()`` method, with a
 corresponding ``unstage()`` method. Plans should stage every device that they
-touch exactly one and unstage every device at the end. If a Device does not
+touch exactly once and unstage every device at the end. If a Device does not
 have a ``stage()`` method the RunEngine will just skip over it.
 
 Revising our simplest example above, ``one_run_one_event``,
@@ -1516,7 +1516,7 @@ equivalent:
             yield from bps.trigger_and_read(detectors)
             yield from bps.close_run()
 
-        return yield from inner()
+        return (yield from inner())
 
 The :func:`~bluesky.preprocessors.stage_decorator` is a *plan preprocessor*, a
 plan which consumes another plan and modifies its instructions. In this case,
@@ -1538,7 +1538,7 @@ The result:
         def inner():
             yield from bps.trigger_and_read(detectors)
 
-        return yield from inner()
+        return (yield from inner())
 
 Incidentally, recall that we have already encountered a preprocessor in this
 tutorial, in the section on baseline readings.
@@ -1576,7 +1576,7 @@ in the :ref:`the earlier section on metadata <tutorial_metadata>`.
         def inner():
             yield from bps.trigger_and_read(detectors)
 
-        return yield from inner()
+        return (yield from inner())
 
 .. warning::
 
@@ -1600,7 +1600,7 @@ purpose, implemented like so:
             'plan_name': 'one_run_one_event',
         }
 
-        # If a key exists in md, it overwrites over the default in _md.
+        # If a key exists in md, it overwrites the default in _md.
         _md.update(md or {})
 
         @bpp.stage_decorator(detectors)
@@ -1608,7 +1608,7 @@ purpose, implemented like so:
         def inner():
             yield from bps.trigger_and_read(detectors)
 
-        return yield from inner()
+        return (yield from inner())
 
 Add "Hints" in Metadata
 -----------------------
@@ -1627,7 +1627,7 @@ present the data. Currently, it solves two specific problems.
 
 It's up to each device to address (1). The plan has no role in that.
 Each device has an optional ``hints`` attribute with a value like
-``{'fields': [...]}`` to answers the question, "Of all the readings you
+``{'fields': [...]}`` to answer the question, "Of all the readings you
 produce, what are the names of the most important ones?"
 
 We need the plan to help us with (2). Only the plan can sort out which devices
@@ -1682,7 +1682,7 @@ example above.  This should correspond to the ``name`` passed into
 ``primary``.
 
 Putting it all together, the plan asks the device(s) being used as independent
-axes for their important field(s) and builds a list of dimensions list so.
+axes for their important field(s) and builds a list of dimensions like so:
 
 .. code-block:: python
 
