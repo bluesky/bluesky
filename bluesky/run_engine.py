@@ -336,6 +336,13 @@ class RunEngine:
         :meth:`RunEngine.register_command`
         :meth:`RunEngine.unregister_command`
         :meth:`RunEngine.print_command_registry`
+
+        Examples
+        --------
+        >>> from bluesky import RunEngine
+        >>> RE = RunEngine()
+        >>> # to list commands
+        >>> RE.commands
         '''
         # return as a list, not lazy loader, no surprises...
         return list(self._command_registry.keys())
@@ -355,6 +362,13 @@ class RunEngine:
         :meth:`RunEngine.register_command`
         :meth:`RunEngine.unregister_command`
         :attr:`RunEngine.commands`
+
+        Examples
+        --------
+        >>> from bluesky import RunEngine
+        >>> RE = RunEngine()
+        >>> # Print a very verbose list of currently registered commands
+        >>> RE.print_command_registry(verbose=True)
         '''
         print("List of available commands")
         for command, func in self._command_registry.items():
