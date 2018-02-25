@@ -375,7 +375,7 @@ class RunEngine:
             docstring = func.__doc__
             if verbose is False:
                 docstring = docstring.split("\n")[0]
-            print(f"{command} : {docstring}")
+            print("{} : {}".format(command, docstring))
 
     def subscribe(self, func, name='all'):
         """
