@@ -35,7 +35,7 @@ Commands
     This section of the documentation is incomplete.
 
 These are the 'built in' commands, some of which are deeply tied to the
-state of the `RunEnigne` instance.
+state of the `RunEngine` instance.
 
 create
 ++++++
@@ -147,4 +147,10 @@ following methods.
     :noindex:
 
 .. automethod:: bluesky.run_engine.RunEngine.unregister_command
+    :noindex:
+
+.. autoattribute:: bluesky.run_engine.RunEngine.commands
+    :noindex:
+
+.. automethod:: bluesky.run_engine.RunEngine.print_command_registry
     :noindex:

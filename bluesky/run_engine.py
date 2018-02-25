@@ -137,9 +137,6 @@ class RunEngine:
     md
         Direct access to the dict-like persistent storage described above
 
-    commands
-        The list of commands available to Msg.
-
     record_interruptions
         False by default. Set to True to generate an extra event stream
         that records any interruptions (pauses, suspensions).
@@ -193,6 +190,12 @@ class RunEngine:
         includes instructions of changing the state of the RunEngine.
         It is set to ``bluesky.run_engine.PAUSE_MSG`` by default and
         can be modified based on needs.
+
+    Properties
+    ----------
+
+    commands:
+        The list of commands available to Msg.
 
     """
 
@@ -326,35 +329,32 @@ class RunEngine:
     @property
     def commands(self):
         '''
-            The list of commands available to Msg.
-            Usage (instantiate RunEngine first):
-                RE = RunEngine()
-                RE.commands
+        The list of commands available to Msg.
 
-            See Also
-            --------
-            :meth:`RunEngine.register_command`
-            :meth:`RunEngine.unregister_command`
-            :meth:`RunEngine.print_command_registry`
+        See Also
+        --------
+        :meth:`RunEngine.register_command`
+        :meth:`RunEngine.unregister_command`
+        :meth:`RunEngine.print_command_registry`
         '''
         # return as a list, not lazy loader, no surprises...
         return list(self._command_registry.keys())
 
     def print_command_registry(self, verbose=False):
         '''
-            This conveniently prints the command registry of available
-            commands.
+        This conveniently prints the command registry of available
+        commands.
 
-            Parameters
-            ----------
-            Verbose : bool, optional
-                verbose print. Default is False
+        Parameters
+        ----------
+        Verbose : bool, optional
+        verbose print. Default is False
 
-            See Also
-            --------
-            :meth:`RunEngine.register_command`
-            :meth:`RunEngine.unregister_command`
-            :meth:`RunEngine.commands`
+        See Also
+        --------
+        :meth:`RunEngine.register_command`
+        :meth:`RunEngine.unregister_command`
+        :attr:`RunEngine.commands`
         '''
         print("List of available commands")
         for command, func in self._command_registry.items():
@@ -527,6 +527,8 @@ class RunEngine:
         See Also
         --------
         :meth:`RunEngine.unregister_command`
+        :meth:`RunEngine.print_command_registry`
+        :attr:`RunEngine.commands`
         """
         self._command_registry[name] = func
 
@@ -541,6 +543,8 @@ class RunEngine:
         See Also
         --------
         :meth:`RunEngine.register_command`
+        :meth:`RunEngine.print_command_registry`
+        :attr:`RunEngine.commands`
         """
         del self._command_registry[name]
 
