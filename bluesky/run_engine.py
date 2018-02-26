@@ -370,12 +370,16 @@ class RunEngine:
         >>> # Print a very verbose list of currently registered commands
         >>> RE.print_command_registry(verbose=True)
         '''
-        print("List of available commands")
+        commands = "List of available commands\n"
+
         for command, func in self._command_registry.items():
             docstring = func.__doc__
             if verbose is False:
                 docstring = docstring.split("\n")[0]
-            print("{} : {}".format(command, docstring))
+            commands = commands + "{} : {}\n".format(command, docstring)
+        print(commands)
+
+        return commands
 
     def subscribe(self, func, name='all'):
         """
