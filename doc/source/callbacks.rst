@@ -698,7 +698,7 @@ The ``hints`` attribute or property on devices is a dictionary with the key
 On movable devices such as motors or temperature controllers, these fields are
 expected to comprise the independent axes of the device. A motor that reads
 the fields ``['x', 'x_setpoint']`` might provide the hint ``{'fields': ['x']}``
-to indicate that it has one dependent axis and that the field ``x`` is the best
+to indicate that it has one independent axis and that the field ``x`` is the best
 representation of its value.
 
 A readable device might report many fields like
