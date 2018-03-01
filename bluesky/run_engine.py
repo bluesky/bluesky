@@ -1582,6 +1582,9 @@ class RunEngine:
 
         # Resource and Datum documents
         for name, doc in self._asset_docs_cache:
+            # Add a 'run_start' field to the resource document on its way out.
+            if name == 'resource':
+                doc['run_start'] = self._run_start_uid
             yield from self.emit(DocumentNames(name), doc)
 
         # Event documents
