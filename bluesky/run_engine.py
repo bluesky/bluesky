@@ -231,6 +231,7 @@ class RunEngine:
         self._interrupted = False  # True if paused, aborted, or failed
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
+        self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
         self._staged = set()  # objects staged, not yet unstaged
         self._objs_seen = set()  # all objects seen
         self._movable_objs_touched = set()  # objects we moved at any point
@@ -392,6 +393,7 @@ class RunEngine:
         self._bundling = False
         self._objs_read.clear()
         self._read_cache.clear()
+        self._asset_docs_cache.clear()
         self._uncollected.clear()
         self._describe_cache.clear()
         self._config_desc_cache.clear()
@@ -1351,6 +1353,7 @@ class RunEngine:
                                          "bundle is closed with a 'save' or "
                                          'drop' "message.")
         self._read_cache.clear()
+        self._asset_docs_cache.clear()
         self._objs_read.clear()
         self._bundling = True
         self._bundle_name = None  # default
@@ -1373,6 +1376,11 @@ class RunEngine:
         obj = msg.obj
         # actually _read_ the object
         ret = obj.read(*msg.args, **msg.kwargs)
+        # Ask the object for any datum documents is has cached.
+        if hasattr(obj, 'collect_asset_docs'):
+            datum_docs = list(obj.collect_asset_docs(*msg.args, **msg.kwargs))
+        else:
+            datum_docs = []
 
         if self._bundling:
             # if the object is not in the _describe_cache, cache it
@@ -1399,6 +1407,7 @@ class RunEngine:
 
             # stash the results
             self._read_cache.append(ret)
+            self._asset_docs_cache.extend(datum_docs)
 
         return ret
 
@@ -1522,7 +1531,7 @@ class RunEngine:
         # read in this Event grouping.
         objs_read = frozenset(self._objs_read)
 
-        # Event Descriptor
+        # Event Descriptor documents
         desc_key = self._bundle_name
         d_objs, doc = self._descriptors.get(desc_key, (None, None))
         if d_objs is not None and d_objs != objs_read:
@@ -1571,7 +1580,14 @@ class RunEngine:
         self._bundling = False
         self._bundle_name = None
 
-        # Events
+        # Resource and Datum documents
+        for name, doc in self._asset_docs_cache:
+            # Add a 'run_start' field to the resource document on its way out.
+            if name == 'resource':
+                doc['run_start'] = self._run_start_uid
+            yield from self.emit(DocumentNames(name), doc)
+
+        # Event documents
         seq_num = next(self._sequence_counters[seq_num_key])
         event_uid = new_uid()
         # Merge list of readings into single dict.
@@ -1580,7 +1596,8 @@ class RunEngine:
             readings[key]['value'] = readings[key]['value']
         data, timestamps = _rearrange_into_parallel_dicts(readings)
         # Mark all externally-stored data as not filled so that consumers
-        # know that the corresponding data are identifies, not deferenced data.
+        # know that the corresponding data are identifies, not dereferenced
+        # data.
         filled = {k: False
                   for k, v in
                   self._descriptors[desc_key][1]['data_keys'].items()
