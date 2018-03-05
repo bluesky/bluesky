@@ -565,7 +565,10 @@ square_spiral_data = [{'det': 1.0, 'motor1': 1, 'motor2': 2},
  {'det': 1.0, 'motor1': -0.5, 'motor2': 4.0}]
 
 
-def test_spiral_square(fresh_RE):
+def test_spiral_square(RE, hw):
+    motor1 = hw.motor1
+    motor2 = hw.motor2
+    det = hw.det
     motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 0})
     motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 0})
     det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
@@ -575,18 +578,18 @@ def test_spiral_square(fresh_RE):
                          x_range=3, y_range=4,
                          x_num=3 * 2 + 1, y_num= 4 * 2 + 1)
 
-    approx_multi_traj_checker(fresh_RE, plan,
+    approx_multi_traj_checker(RE, plan,
                               square_spiral_data, decimal=2)
                               
 
-def test_relative_spiral_square(fresh_RE):
-    motor1 = Mover('motor1', {'motor1': lambda x: x}, {'x': 1})
-    motor2 = Mover('motor2', {'motor2': lambda x: x}, {'x': 2})
-    det = SynGauss('det', motor, 'motor', center=0, Imax=1, sigma=1)
+def test_relative_spiral_square(RE, hw):
+    motor1 = hw.motor1
+    motor2 = hw.motor2
+    det = hw.det
 
     plan = bp.relative_spiral_square(
         [det], motor1, motor2, x_range=3, y_range=4,
         x_num=3 * 2 + 1, y_num= 4 * 2 + 1)
 
-    approx_multi_traj_checker(fresh_RE, plan,
+    approx_multi_traj_checker(RE, plan,
                               square_spiral_data, decimal=2)
