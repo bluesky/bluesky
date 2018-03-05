@@ -1367,8 +1367,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     x_num : float
         number of x axis points
     y_num : float
-        Number of y axis points.  Must be even if x_num is even and must be odd
-        if x_num is odd; if not it is increased by 1 to ensure this.
+        Number of y axis points. 
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -1425,8 +1424,7 @@ def relative_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
     x_num : float
         number of x axis points
     y_num : float
-        Number of y axis points.  Must be even if x_num is even and must be odd
-        if x_num is odd; if not it is increased by 1 to ensure this.
+        Number of y axis points. 
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
