@@ -1211,8 +1211,8 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     _md = {'plan_name': 'rel_spiral_fermat'}
     _md.update(md or {})
 
-    @reset_positions_decorator([x_motor, y_motor])
-    @relative_set_decorator([x_motor, y_motor])
+    @bpp.reset_positions_decorator([x_motor, y_motor])
+    @bpp.relative_set_decorator([x_motor, y_motor])
     def inner_relative_spiral_fermat():
         return (yield from spiral_fermat(detectors, x_motor, y_motor,
                                          0, 0,
@@ -1333,8 +1333,8 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     _md = {'plan_name': 'relative_spiral'}
     _md.update(md or {})
 
-    @reset_positions_decorator([x_motor, y_motor])
-    @relative_set_decorator([x_motor, y_motor])
+    @bpp.reset_positions_decorator([x_motor, y_motor])
+    @bpp.relative_set_decorator([x_motor, y_motor])
     def inner_relative_spiral():
         return (yield from spiral(detectors, x_motor, y_motor,
                                   0, 0,
@@ -1443,8 +1443,8 @@ def relative_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
     _md = {'plan_name': 'relative_spiral_square'}
     _md.update(md or {})
 
-    @reset_positions_decorator([x_motor, y_motor])
-    @relative_set_decorator([x_motor, y_motor])
+    @bpp.reset_positions_decorator([x_motor, y_motor])
+    @bpp.relative_set_decorator([x_motor, y_motor])
     def inner_relative_spiral():
         return (yield from spiral_square(detectors, x_motor, y_motor,
                                          0, 0,
