@@ -67,10 +67,11 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     return cyc
 
 
-def spiral_square_pattern(x_motor, y_motor, x_center, y_center, x_range, y_range, x_num, y_num):
+def spiral_square_pattern(x_motor, y_motor, x_center, y_center,
+                          x_range, y_range, x_num, y_num):
     '''
     Square spiral scan, centered around (x_start, y_start)
-    
+
     Parameters
     ----------
     x_motor : object, optional
@@ -87,7 +88,7 @@ def spiral_square_pattern(x_motor, y_motor, x_center, y_center, x_range, y_range
         y width of spiral
     x_num : float
         number of x axis points
-    y_num : float 
+    y_num : float
         number of y axis points
     Returns
     -------
@@ -95,99 +96,109 @@ def spiral_square_pattern(x_motor, y_motor, x_center, y_center, x_range, y_range
     '''
     x_points, y_points = [], []
 
-    #checks if x_num/y_num is even or odd and sets the required offset parameter for the start point from the centre point.
-    if x_num%2==0:
-        x_offset=0.5 
+    # checks if x_num/y_num is even or odd and sets the required offset
+    # parameter for the start point from the centre point.
+    if x_num % 2 == 0:
+        x_offset = 0.5
     else:
-        x_offset=0
+        x_offset = 0
 
-    if y_num%2==0:
-        y_offset=-0.5
+    if y_num % 2 == 0:
+        y_offset = -0.5
     else:
-        y_offset=0
+        y_offset = 0
 
-    num_ring = max(x_num,y_num)
-    x_delta = x_range/(x_num-1)
-    y_delta = y_range/(y_num-1)  
+    num_ring = max(x_num, y_num)
+    x_delta = x_range / (x_num - 1)
+    y_delta = y_range / (y_num - 1)
 
-    #include the first point, as it is the first 'ring' to include.
-    x_points.append(x_center-x_delta*x_offset)
-    y_points.append(y_center-y_delta*y_offset)
-    
-    #set the number of found points to 0
-    num_pnts_fnd=1   
+    # include the first point, as it is the first 'ring' to include.
+    x_points.append(x_center - x_delta * x_offset)
+    y_points.append(y_center - y_delta * y_offset)
 
-    #step through each of the rings required to map out the entire area.
-    for i_ring in range(2,num_ring+1,1):
+    # set the number of found points to 0
+    num_pnts_fnd = 1
 
-        #step through each of the 'sides' of the ring if the constant value for each side is within the range to plot and
-        #that we have not already found all the required points.
-        #SIDE 1
-        if( (abs(i_ring-1-x_offset)<=x_num/2) and (num_pnts_fnd<x_num*y_num) ):
-            for n in range(i_ring-2, -i_ring,-1):
-                #Ensure that the variable value for this side is within the range to plot and that we have not already 
-                #found all the required points.
-                if( (abs(n-y_offset)<y_num/2) and (num_pnts_fnd<y_num*x_num) ):
+    # step through each of the rings required to map out the entire area.
+    for i_ring in range(2, num_ring+1, 1):
+        # step through each of the 'sides' of the ring if the constant value
+        # for each side is within the range to plot and
+        # that we have not already found all the required points.
+        # SIDE 1
+        if (abs(i_ring - 1 - x_offset) <= x_num / 2) and \
+           (num_pnts_fnd < x_num * y_num):
+            for n in range(i_ring-2, -i_ring, -1):
+                # Ensure that the variable value for this side is within the
+                # range to plot and that we have not already
+                # found all the required points.
+                if (abs(n - y_offset) < y_num / 2) and \
+                   (num_pnts_fnd < y_num * x_num):
 
-                    x = (x_center-x_delta*x_offset)+x_delta*(i_ring-1) 
-                    y = (y_center-y_delta*y_offset)+y_delta*n
-                    num_pnts_fnd+=1                    
-
-                    x_points.append(x)
-                    y_points.append(y)
-
-                    
-        #SIDE 2
-        if( (abs(-i_ring+1-y_offset)<y_num/2) and (num_pnts_fnd<x_num*y_num) ):
-            for n in range(i_ring-2, -i_ring,-1):
-                #Ensure that the variable value for this side is within the range to plot and that we have not already 
-                #found all the required points.
-                if( (abs(n-x_offset)<x_num/2) and (num_pnts_fnd<y_num*x_num) ):
-
-                    x = (x_center-x_delta*x_offset)+x_delta*n
-                    y = (y_center-y_delta*y_offset)+y_delta*(-i_ring+1) 
-
-                    num_pnts_fnd+=1                    
-
-
-                    x_points.append(x)
-                    y_points.append(y)                   
-
-        #SIDE 3
-        if( (abs(-i_ring+1-x_offset)<x_num/2) and (num_pnts_fnd<x_num*y_num) ):
-            for n in range(-i_ring+2, i_ring,1):
-                #Ensure that the variable value for this side is within the range to plot and that we have not already 
-                #found all the required points.
-                if( (abs(n-y_offset)<y_num/2) and (num_pnts_fnd<y_num*x_num) ):
-
-                    x = (x_center-x_delta*x_offset)+x_delta*(-i_ring+1) 
-                    y = (y_center-y_delta*y_offset)+y_delta*n
-                    num_pnts_fnd+=1                    
+                    x = x_center - x_delta * x_offset + x_delta * (i_ring - 1)
+                    y = y_center - y_delta * y_offset + y_delta * n
+                    num_pnts_fnd += 1
 
                     x_points.append(x)
                     y_points.append(y)
 
-                    
-        #SIDE 4
-        if( (abs(i_ring-1-y_offset)<y_num/2) and (num_pnts_fnd<x_num*y_num) ):
-            for n in range(-i_ring+2, i_ring,1):
-                #Ensure that the variable value for this side is within the range to plot and that we have not already 
-                #found all the required points.
-                if( (abs(n-x_offset)<x_num/2) and (num_pnts_fnd<y_num*x_num) ):
+        # SIDE 2
+        if (abs(-i_ring + 1 - y_offset) < y_num / 2) and \
+           (num_pnts_fnd < x_num * y_num):
+            for n in range(i_ring - 2, -i_ring, -1):
+                # Ensure that the variable value for this side is within the
+                # range to plot and that we have not already
+                # found all the required points.
+                if (abs(n - x_offset) < x_num / 2) and \
+                   (num_pnts_fnd < y_num * x_num):
 
-                    x = (x_center-x_delta*x_offset)+x_delta*n
-                    y = (y_center-y_delta*y_offset)+y_delta*(i_ring-1) 
+                    x = x_center - x_delta * x_offset + x_delta * n
+                    y = y_center - y_delta * y_offset + y_delta * (-i_ring + 1)
 
-                    num_pnts_fnd+=1                    
+                    num_pnts_fnd += 1
 
                     x_points.append(x)
                     y_points.append(y)
-        
-                    
+
+        # SIDE 3
+        if (abs(-i_ring + 1 - x_offset) < x_num / 2) and \
+           (num_pnts_fnd < x_num * y_num):
+            for n in range(-i_ring + 2, i_ring, 1):
+                # Ensure that the variable value for this side is within the
+                # range to plot and that we have not already
+                # found all the required points.
+                if (abs(n - y_offset) < y_num / 2) and \
+                   (num_pnts_fnd < y_num * x_num):
+
+                    x = x_center - x_delta * x_offset + x_delta * (-i_ring + 1)
+                    y = y_center - y_delta * y_offset + y_delta * n
+                    num_pnts_fnd += 1
+
+                    x_points.append(x)
+                    y_points.append(y)
+
+        # SIDE 4
+        if (abs(i_ring - 1 - y_offset) < y_num / 2) and \
+           (num_pnts_fnd < x_num * y_num):
+            for n in range(-i_ring + 2, i_ring, 1):
+                # Ensure that the variable value for this side is within the
+                # range to plot and that we have not already
+                # found all the required points.
+                if (abs(n - x_offset) < x_num / 2) and \
+                   (num_pnts_fnd < y_num * x_num):
+
+                    x = x_center - x_delta * x_offset + x_delta * n
+                    y = y_center - y_delta * y_offset + y_delta * (i_ring - 1)
+
+                    num_pnts_fnd += 1
+
+                    x_points.append(x)
+                    y_points.append(y)
+
     cyc = cycler(x_motor, x_points)
     cyc += cycler(y_motor, y_points)
-    
+
     return cyc
+
 
 def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
                   factor, *, tilt=0.0):
