@@ -1367,7 +1367,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     x_num : float
         number of x axis points
     y_num : float
-        Number of y axis points. 
+        Number of y axis points.
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
@@ -1385,7 +1385,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_center=x_center,
                         y_center=y_center, x_range=x_range, y_range=y_range,
-                        x_num = x_num, y_num = y_num)
+                        x_num=x_num, y_num=y_num)
     cyc = plan_patterns.spiral_square_pattern(**pattern_args)
 
     # Before including pattern_args in metadata, replace objects with reprs.
@@ -1399,7 +1399,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
                          'per_step': repr(per_step)},
            'plan_name': 'spiral_square',
            'plan_pattern': 'spiral_square',
-          }
+           }
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
@@ -1424,7 +1424,7 @@ def relative_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
     x_num : float
         number of x axis points
     y_num : float
-        Number of y axis points. 
+        Number of y axis points.
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step)
         See docstring of bluesky.plans.one_nd_step (the default) for
