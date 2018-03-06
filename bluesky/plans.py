@@ -1330,7 +1330,7 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
-    _md = {'plan_name': 'relative_spiral'}
+    _md = {'plan_name': 'rel_spiral'}
     _md.update(md or {})
 
     @bpp.reset_positions_decorator([x_motor, y_motor])
