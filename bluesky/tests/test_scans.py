@@ -575,10 +575,11 @@ def test_spiral_square(RE, hw):
     motor2 = hw.motor2
     det = hw.det
 
-    plan = bp.spiral_square([det], motor1, motor2,
-                         x_center=0, y_center=0,
-                         x_range=3, y_range=4,
-                         x_num=3 * 2 + 1, y_num= 4 * 2 + 1)
+    plan = bp.spiral_square(
+        [det], motor1, motor2,
+        x_center=0, y_center=0,
+        x_range=3, y_range=4,
+        x_num=3*2+1, y_num=4*2+1)
 
     approx_multi_traj_checker(RE, plan,
                               square_spiral_data, decimal=2)
@@ -590,8 +591,9 @@ def test_rel_spiral_square(RE, hw):
     det = hw.det
 
     plan = bp.rel_spiral_square(
-        [det], motor1, motor2, x_range=3, y_range=4,
-        x_num=3 * 2 + 1, y_num= 4 * 2 + 1)
+        [det], motor1, motor2,
+        x_range=3, y_range=4,
+        x_num=3*2+1, y_num=4*2+1)
 
     approx_multi_traj_checker(RE, plan,
                               square_spiral_data, decimal=2)
