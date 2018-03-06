@@ -1399,6 +1399,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
                          'per_step': repr(per_step)},
            'plan_name': 'spiral_square',
            'plan_pattern': 'spiral_square',
+           'hints': {},
            }
     _md.update(md or {})
     _md['hints'].setdefault('gridding', 'rectilinear')
