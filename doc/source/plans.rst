@@ -51,8 +51,10 @@ documentation.
    scan_nd
    spiral
    spiral_fermat
+   spiral_square
    rel_spiral
    rel_spiral_fermat
+   rel_spiral_square
    adaptive_scan
    rel_adaptive_scan
    tune_centroid
@@ -251,14 +253,30 @@ A fermat spiral:
     plot_raster_path(plan, 'motor1', 'motor2', probe_size=.01, lw=0.1)
 
 
+A square spiral:
+
+.. plot::
+   :include-source:
+
+    from bluesky.simulators import plot_raster_path
+    from ophyd.sim import motor1, motor2, det
+    from bluesky.plans import spiral_square
+
+    plan = spiral_square([det], motor1, motor2, x_center=0.0, y_center=0.0,
+                         x_range=2.0, y_range=2.0, x_num=5, y_num=5)
+    plot_raster_path(plan, 'motor1', 'motor2', probe_size=.01, lw=0.1)
+
+
 .. autosummary::
    :toctree: generated
    :nosignatures:
 
    spiral
    spiral_fermat
+   spiral_square
    rel_spiral
    rel_spiral_fermat
+   rel_spiral_square
 
 Adaptive scans
 --------------

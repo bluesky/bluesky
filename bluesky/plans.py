@@ -1405,7 +1405,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def relative_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
+def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
                            x_num, y_num, *, per_step=None, md=None):
     '''Relative square spiral scan, centered around current (x, y) position.
 
