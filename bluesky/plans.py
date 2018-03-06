@@ -1401,6 +1401,12 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
            'plan_pattern': 'spiral_square',
            }
     _md.update(md or {})
+    _md['hints'].setdefault('gridding', 'rectilinear')
+    try:
+        _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
+                                               for m in motors])
+    except (AttributeError, KeyError):
+        ...
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
