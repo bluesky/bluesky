@@ -1405,7 +1405,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     _md['hints'].setdefault('gridding', 'rectilinear')
     try:
         _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
-                                               for m in motors])
+                                               for m in [x_motor, y_motor]])
     except (AttributeError, KeyError):
         ...
 
