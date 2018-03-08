@@ -57,7 +57,7 @@ where ``command`` must be one of a controlled list of commands, ``obj`` is the
 object (i.e. Device) to apply the command to, if applicable, and ``args`` and
 ``kwargs`` are arguments to the command.
 
-To execute the plan, the RunEngine consumes it, one message at a time.
+To execute the plan, the :doc:`RunEngine <run_engine>` consumes it, one message at a time.
 
 .. code-block:: python
 
