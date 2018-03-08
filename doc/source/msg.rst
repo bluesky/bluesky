@@ -184,9 +184,41 @@ set
 Tells a ``Mover`` object to move.  Currently this mimics the epics-like logic
 of immediate motion.
 
-stage
-+++++
-Instruct the RunEngine to stage the object. This calls ``obj.stage()``.
+stage and unstage
++++++++++++++++++
+Instruct the RunEngine to stage/unstage the object. This calls
+``obj.stage()``/``obj.unstage``.
+
+Expected message objects are::
+
+    Msg('stage', object)
+    Msg('unstage', object)
+
+which results in these calls::
+
+    staged_devices = object.stage()
+    unstaged_devices = object.unstage()
+
+where ``staged_devices``/``unstaged_devices`` are a list of the
+``ophyd.Device`` (s) that were (un)staged, not status objects.
+
+One may wonder why the return is a list of Devices as opposed to Status
+objects, such as in ``set`` and similar ``Msg`` s.
+This was debated for awhile. Operations performed during staging are supposed
+to involve twiddling configuration, and should happen fast. Staging should not
+involve lengthy set calls.
+
+Why a list of the objects staged? Staging a Device causes that Device's
+component Devices (if any) to also be staged. All of these children are added
+to a list, along with [self], and returned by Device.stage(), so that the plan
+can keep track of what has been staged, like so::
+
+    devices_staged = yield Msg('stage', device)
+
+Why would the plan want to know that? It needs to avoid accidentally trying to
+stage something twice, such as a staging a parent and then trying to also stage
+its child. It's important to avoid that because staging something redundantly
+raises an error.
 
 
 trigger
@@ -195,11 +227,6 @@ trigger
 This will call the ``obj.trigger`` method and cache the returned status object
 and caches the returned status object.
 
-
-unstage
-+++++++
-Instruct the RunEngine to unstage the object. This calls ``obj.unstage()`` and
-caches the returned status object.
 
 sleep
 +++++
