@@ -504,12 +504,13 @@ class LivePlotPlusPeaks(LivePlot):
                 for artist in self.__arts:
                     artist.set_visible(True)
         elif self.__arts is not None:
-                for artist in self.__arts:
-                    artist.set_visible(False)
+            for artist in self.__arts:
+                artist.set_visible(False)
         self.ax.legend(loc='best')
         self.ax.figure.canvas.draw_idle()
 
     def plot_annotations(self):
+        # Vertical lines:
         styles = iter(cycler('color', 'kr'))
         vlines = []
         for style, attr in zip(styles, ['cen', 'com']):
@@ -518,10 +519,42 @@ class LivePlotPlusPeaks(LivePlot):
             if self.ax in self.__labeled:
                 label = '_no_legend_'
             else:
-                label = attr
+                label = f'{attr}={val:.2f}'
             vlines.append(self.ax.axvline(val, label=label, **style))
+
+        # Horizontal lines:
+        styles = iter(cycler('color', 'bm'))
+        hlines = []
+        for style, attr in zip(styles, ['min', 'max']):
+            val = self.peak_results[attr][self.y]
+            # Only put labels in this legend once per axis.
+            if self.ax in self.__labeled:
+                label = '_no_legend_'
+            else:
+                label = f'{attr}={val[1]:.2f}'
+            hlines.append(self.ax.axhline(val[1], label=label, **style))
+
+        # Horizontal arrows (e.g., FWHM):
+        attr = 'fwhm'
+        val = self.peak_results[attr][self.y]
+        harrows = []
+        if val:
+            max_crds = self.peak_results['max'][self.y]
+            min_crds = self.peak_results['min'][self.y]
+            style = {'color': 'g'}
+            fwhm = val['fwhm']
+            fwhm_x = val['cen_list']
+            fwhm_y = (max_crds[1] + min_crds[1]) / 2
+            label = f'{attr}={fwhm:.2f}'
+            # Fake line for the legend:
+            hlines = self.ax.plot([], [], label=label, **style)
+            harrows.append(self.ax.annotate(
+                '', xytext=(fwhm_x[0], fwhm_y),
+                xy=(fwhm_x[1], fwhm_y),
+                arrowprops=dict(arrowstyle="<->", **style)))
+
         self.__labeled[self.ax] = None
-        self.__arts = vlines
+        self.__arts = vlines + hlines + harrows
 
     def stop(self, doc):
         self.check_visibility()
