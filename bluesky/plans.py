@@ -1397,12 +1397,13 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
                          'x_range': x_range, 'y_range': y_range,
                          'x_num': x_num, 'y_num': y_num,
                          'per_step': repr(per_step)},
-                         'plan_name': 'spiral_square',
-                         'plan_pattern': 'spiral_square',
-                         'shape': (y_num,x_num),
-                         'extents': ((y_center - y_range, y_center + y_range),
-                                     (x_center - x_range, x_center + x_range)),
-                         'hints': {},
+                        'plan_name': 'spiral_square',
+                        'plan_pattern': 'spiral_square',
+                        'shape': (y_num, x_num),
+                        'extents': (
+                            (y_center - y_range / 2, y_center + y_range / 2),
+                            (x_center - x_range / 2, x_center + x_range / 2)),
+                        'hints': {},
            }
     _md.update(md or {})
     _md['hints'].setdefault('gridding', 'rectilinear')
@@ -1416,7 +1417,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
 
 
 def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
-                           x_num, y_num, *, per_step=None, md=None):
+                      x_num, y_num, *, per_step=None, md=None):
     '''Relative square spiral scan, centered around current (x, y) position.
 
     Parameters
