@@ -547,7 +547,7 @@ class LivePlotPlusPeaks(LivePlot):
             fwhm_y = (max_crds[1] + min_crds[1]) / 2
             label = f'{attr}={fwhm:.2f}'
             # Fake line for the legend:
-            hlines = self.ax.plot([], [], label=label, **style)
+            hlines += self.ax.plot([], [], label=label, **style)
             harrows.append(self.ax.annotate(
                 '', xytext=(fwhm_x[0], fwhm_y),
                 xy=(fwhm_x[1], fwhm_y),
