@@ -182,48 +182,103 @@ set
 +++
 
 Tells a ``Mover`` object to move.  Currently this mimics the epics-like logic
-of immediate motion
+of immediate motion.
+
+stage
++++++
+
 
 trigger
 +++++++
 
-.. automethod:: bluesky.run_engine.RunEngine._trigger
+This will call the ``obj.trigger`` method and cache the returned status object.
 
+
+unstage
++++++++
 
 sleep
 +++++
 
-.. automethod:: bluesky.run_engine.RunEngine._sleep
+Sleep the event loop.
 
 wait
 ++++
 
-.. automethod:: bluesky.run_engine.RunEngine._wait
+Block progress until every object that was triggered or set the keyword
+argument `group=<GROUP>` is done.
+
+Expected message object is:
+
+Msg('wait', group=<GROUP>)
+
+where ``<GROUP>`` is any hashable key.
+
+wait_for
+++++++++
+
+
+input
++++++
 
 checkpoint
 ++++++++++
 
-.. automethod:: bluesky.run_engine.RunEngine._checkpoint
+Instruct the RunEngine to create a checkpoint so that we can rewind to this
+point if necessary.
+
+clear_checkpoint
+++++++++++++++++
+
+rewindable
+++++++++++
 
 pause
 +++++
 
-.. automethod:: bluesky.run_engine.RunEngine._pause
+Request the run engine to pause
 
-collect
-+++++++
+Expected message object is::
 
-.. automethod:: bluesky.run_engine.RunEngine._collect
+    Msg('pause', defer=False, name=None, callback=None)
+
 
 kickoff
 +++++++
 
-.. automethod:: bluesky.run_engine.RunEngine._kickoff
+Start a flyscan object.
+
+collect
++++++++
+
+Collect data cached by a flyer and emit descriptor and event documents.
+This calls the ``obj.collect()`` method.
+
+complete
+++++++++
+
+
+configure
++++++++++
+
+
+subscribe
++++++++++
+
+unsubscribe
++++++++++++
+
+open_run
+++++++++
+
+close_run
++++++++++
+
 
 drop
 ++++
 
-.. automethod:: bluesky.run_engine.RunEngine._drop
+Drop a bundle of readings without emitting a completed Event document.
 
 This is a command that abandons previous ``create`` and ``read`` commands
 without emitting an event. This can be used to drop known bad events
@@ -236,6 +291,19 @@ This must be called after a ``create`` or a the scan will die and raise
 This call returns `None` back to the co-routine.
 
 This ignores all parts of the `Msg` except the command.
+
+
+monitor
++++++++
+
+
+unmonitor
++++++++++
+
+
+stop
+++++
+
 
 Registering Custom Commands
 ---------------------------
