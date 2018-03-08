@@ -1405,7 +1405,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
            'hints': {},
            }
     _md.update(md or {})
-    _md['hints'].setdefault('raster', 'rectilinear')
+    _md['hints'].setdefault('gridding', 'rectilinear_nonsequential')
     try:
         _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
                                                for m in [y_motor, x_motor]])
