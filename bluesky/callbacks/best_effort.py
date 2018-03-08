@@ -519,7 +519,7 @@ class LivePlotPlusPeaks(LivePlot):
             if self.ax in self.__labeled:
                 label = '_no_legend_'
             else:
-                label = f'{attr}={val:.2f}'
+                label = '{}={:.2f}'.format(attr, val)
             vlines.append(self.ax.axvline(val, label=label, **style))
 
         # Horizontal lines:
@@ -531,7 +531,7 @@ class LivePlotPlusPeaks(LivePlot):
             if self.ax in self.__labeled:
                 label = '_no_legend_'
             else:
-                label = f'{attr}={val[1]:.2f}'
+                label = '{}={:.2f}'.format(attr, val[1])
             hlines.append(self.ax.axhline(val[1], label=label, **style))
 
         # Horizontal arrows (e.g., FWHM):
@@ -545,7 +545,7 @@ class LivePlotPlusPeaks(LivePlot):
             fwhm = val['fwhm']
             fwhm_x = val['cen_list']
             fwhm_y = (max_crds[1] + min_crds[1]) / 2
-            label = f'{attr}={fwhm:.2f}'
+            label = '{}={:.2f}'.format(attr, fwhm)
             # Fake line for the legend:
             hlines += self.ax.plot([], [], label=label, **style)
             harrows.append(self.ax.annotate(
