@@ -186,16 +186,20 @@ of immediate motion.
 
 stage
 +++++
+Instruct the RunEngine to stage the object. This calls ``obj.stage()``.
 
 
 trigger
 +++++++
 
-This will call the ``obj.trigger`` method and cache the returned status object.
+This will call the ``obj.trigger`` method and cache the returned status object
+and caches the returned status object.
 
 
 unstage
 +++++++
+Instruct the RunEngine to unstage the object. This calls ``obj.unstage()`` and
+caches the returned status object.
 
 sleep
 +++++
@@ -216,10 +220,28 @@ where ``<GROUP>`` is any hashable key.
 
 wait_for
 ++++++++
+Instruct the ``RunEngine`` to wait for this ``asyncio.Future`` object to be
+done. This allows for external arbitrary control of the ``RunEngine``.
+Ex ::
+
+    from asyncio.futures import Future
+    future = Future()
+    future.done() # will give false
+    RE(Msg('wait_for', future))
+    # this sets the future to done
+    future.set_result(3)
+    future.done() # will give True
 
 
 input
 +++++
+Process an input. Allows for user input during a run.
+
+Examples::
+
+    Msg('input', None)
+    Msg('input', None, prompt='>')  # customize prompt
+
 
 checkpoint
 ++++++++++
@@ -229,6 +251,7 @@ point if necessary.
 
 clear_checkpoint
 ++++++++++++++++
+Clear a set checkpoint.
 
 rewindable
 ++++++++++
@@ -257,22 +280,89 @@ This calls the ``obj.collect()`` method.
 complete
 ++++++++
 
+Tell a flyer, 'stop collecting, whenever you are ready'.
+
+This calls the method ``obj.complete()`` of the given object. The flyer returns
+a status object. Some flyers respond to this command by stopping collection and
+returning a finished status object immediately. Other flyers finish their given
+course and finish whenever they finish, irrespective of when this command is
+issued.
+
 
 configure
 +++++++++
 
+Configure an object.
+
+Expected message object is::
+
+    Msg('configure', object, *args, **kwargs)
+
+which results in this call::
+
+    object.configure(*args, **kwargs)
+
 
 subscribe
 +++++++++
+Add a subscription after the run has started.
+
+This, like subscriptions passed to __call__, will be removed at the
+end by the RunEngine.
+
+Expected message object is:
+
+    Msg('subscribe', None, callback_function, document_name)
+
+where `document_name` is one of:
+
+    {'start', 'descriptor', 'event', 'stop', 'all'}
+
+and `callback_function` is expected to have a signature of:
+
+    ``f(name, document)``
+
+    where name is one of the ``document_name`` options and ``document``
+    is one of the document dictionaries in the event model.
+
+See the docstring of bluesky.run_engine.Dispatcher.subscribe() for more
+information.
 
 unsubscribe
 +++++++++++
 
+Remove a subscription during a call -- useful for a multi-run call
+where subscriptions are wanted for some runs but not others.
+
+Expected message object is::
+
+    Msg('unsubscribe', None, TOKEN)
+    Msg('unsubscribe', token=TOKEN)
+
+where ``TOKEN`` is the return value from ``RunEngine._subscribe()``
+
 open_run
 ++++++++
+Instruct the RunEngine to start a new "run"
+
+Expected message object is::
+
+    Msg('open_run', None, **kwargs)
+
+where ``**kwargs`` are any additional metadata that should go into the RunStart
+document
 
 close_run
 +++++++++
+
+Instruct the RunEngine to write the RunStop document
+
+Expected message object is::
+
+    Msg('close_run', None, exit_status=None, reason=None)
+
+if *exit_stats* and *reason* are not provided, use the values
+stashed on the RE.
 
 
 drop
@@ -295,14 +385,41 @@ This ignores all parts of the `Msg` except the command.
 
 monitor
 +++++++
+Monitor a signal. Emit event documents asynchronously.
+
+A descriptor document is emitted immediately. Then, a closure is
+defined that emits Event documents associated with that descriptor
+from a separate thread. This process is not related to the main
+bundling process (create/read/save).
+
+Expected message object is::
+
+    Msg('monitor', obj, **kwargs)
+    Msg('monitor', obj, name='event-stream-name', **kwargs)
+
+where kwargs are passed through to ``obj.subscribe()``
 
 
 unmonitor
 +++++++++
 
+Stop monitoring; i.e., remove the callback emitting event documents.
+
+Expected message object is::
+
+    Msg('unmonitor', obj)
+
 
 stop
 ++++
+
+Stop a device.
+
+Expected message object is::
+
+    Msg('stop', obj)
+
+This amounts to calling ``obj.stop()``. 
 
 
 Registering Custom Commands
