@@ -1259,6 +1259,7 @@ class RunEngine:
         # The metadata is final. Validate it now, at the last moment.
         # Use copy for some reasonable (admittedly not total) protection
         # against users mutating the md with their validator.
+        md = dict(md)
         self.md_validator(dict(md))
 
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
