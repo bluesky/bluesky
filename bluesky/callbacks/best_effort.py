@@ -472,9 +472,11 @@ class LivePlotPlusPeaks(LivePlot):
     __visible = weakref.WeakKeyDictionary()  # map ax to True/False
     __instances = weakref.WeakKeyDictionary()  # map ax to list of instances
 
-    def __init__(self, *args, peak_results, **kwargs):
+    def __init__(self, *args, peak_results,
+                 label_format='{attr}={val:.2f}', **kwargs):
         super().__init__(*args, **kwargs)
         self.peak_results = peak_results
+        self.label_format = label_format
 
         ax = self.ax  # for brevity
         if ax not in self.__visible:
@@ -503,41 +505,36 @@ class LivePlotPlusPeaks(LivePlot):
             else:
                 for artist in self.__arts:
                     artist.set_visible(True)
+                    label = artist.get_label()
+                    if label.startswith('_'):
+                        artist.set_label(label[1:])
         elif self.__arts is not None:
             for artist in self.__arts:
                 artist.set_visible(False)
+                label = artist.get_label()
+                artist.set_label('_' + label)
         self.ax.legend(loc='best')
         self.ax.figure.canvas.draw_idle()
 
     def plot_annotations(self):
-        # Vertical lines:
-        styles = iter(cycler('color', 'kr'))
-        vlines = []
-        for style, attr in zip(styles, ['cen', 'com']):
+        # Vertical and horizontal lines:
+        styles = iter(cycler('color', 'krbm'))
+        lines = []
+        for style, attr, meth, ind in zip(styles,
+                                          ['cen', 'com', 'min', 'max'],
+                                          ['axvline', 'axvline',
+                                           'axhline', 'axhline'],
+                                          [None, None, 1, 1]):
             val = self.peak_results[attr][self.y]
-            # Only put labels in this legend once per axis.
-            if self.ax in self.__labeled:
-                label = '_no_legend_'
-            else:
-                label = '{}={:.2f}'.format(attr, val)
-            vlines.append(self.ax.axvline(val, label=label, **style))
+            if ind is not None:
+                val = val[ind]
+            label = self.label_format.format(attr=attr, val=val)
+            lines.append(getattr(self.ax, meth)(val, label=label, **style))
 
-        # Horizontal lines:
-        styles = iter(cycler('color', 'bm'))
-        hlines = []
-        for style, attr in zip(styles, ['min', 'max']):
-            val = self.peak_results[attr][self.y]
-            # Only put labels in this legend once per axis.
-            if self.ax in self.__labeled:
-                label = '_no_legend_'
-            else:
-                label = '{}={:.2f}'.format(attr, val[1])
-            hlines.append(self.ax.axhline(val[1], label=label, **style))
-
-        # Horizontal arrows (e.g., FWHM):
+        # Arrows (e.g., FWHM):
         attr = 'fwhm'
         val = self.peak_results[attr][self.y]
-        harrows = []
+        arrows = []
         if val:
             max_crds = self.peak_results['max'][self.y]
             min_crds = self.peak_results['min'][self.y]
@@ -545,16 +542,16 @@ class LivePlotPlusPeaks(LivePlot):
             fwhm = val['fwhm']
             fwhm_x = val['cen_list']
             fwhm_y = (max_crds[1] + min_crds[1]) / 2
-            label = '{}={:.2f}'.format(attr, fwhm)
+            label = self.label_format.format(attr=attr, val=fwhm)
             # Fake line for the legend:
-            hlines += self.ax.plot([], [], label=label, **style)
-            harrows.append(self.ax.annotate(
+            lines += self.ax.plot([], [], label=label, **style)
+            arrows.append(self.ax.annotate(
                 '', xytext=(fwhm_x[0], fwhm_y),
                 xy=(fwhm_x[1], fwhm_y),
                 arrowprops=dict(arrowstyle="<->", **style)))
 
         self.__labeled[self.ax] = None
-        self.__arts = vlines + hlines + harrows
+        self.__arts = lines + arrows
 
     def stop(self, doc):
         self.check_visibility()
