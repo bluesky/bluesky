@@ -377,7 +377,6 @@ class RunEngine:
             if verbose is False:
                 docstring = docstring.split("\n")[0]
             commands = commands + "{} : {}\n".format(command, docstring)
-        print(commands)
 
         return commands
 
