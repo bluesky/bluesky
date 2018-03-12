@@ -1418,7 +1418,7 @@ class RunEngine:
         """
         obj = msg.obj
         # actually _read_ the object
-        ret = obj.read_streaming(*msg.args, **msg.kwargs)
+        ret = obj.read(*msg.args, streaming=True, **msg.kwargs)
 
         if self._bundling:
             # if the object is not in the _describe_cache, cache it
