@@ -199,6 +199,12 @@ class PeakStats(CollectThenCompute):
     cen : mid-point between half-max points on each side of the peak
     max : x location of y maximum
     min : x location of y minimum
+    crossings : crosses between y and middle line, which is
+          ((np.max(y) + np.min(y)) / 2). Users can estimate FWHM based
+          on those info.
+    fwhm : the computed full width half maximum (fwhm) of a peak.
+           The distance between the first and last crossing is taken to
+           be the fwhm.
     """
 
     def __init__(self, x, y, edge_count=None):
@@ -209,6 +215,7 @@ class PeakStats(CollectThenCompute):
         self.max = None
         self.min = None
         self.nlls = None
+        self.crossings = None
         self.fwhm = None
         self.lin_bkg = None
         self._edge_count = edge_count
@@ -228,6 +235,7 @@ class PeakStats(CollectThenCompute):
         self.max = None
         self.min = None
         self.nlls = None
+        self.crossings = None
         self.fwhm = None
         self.lin_bkg = None
 
@@ -273,17 +281,16 @@ class PeakStats(CollectThenCompute):
             _x = x[cr:cr+2]
             _y = y[cr:cr+2] - mid
 
-            dx = np.diff(_x)
-            dy = np.diff(_y)
+            dx = np.diff(_x)[0]
+            dy = np.diff(_y)[0]
             m = dy / dx
             _cen_list.append((-_y[0] / m) + _x[0])
 
         if _cen_list:
             self.cen = np.mean(_cen_list)
-
-        if len(_cen_list) == 2:
-            self.fwhm = float(_cen_list[1] - _cen_list[0])
-
+            self.crossings = np.array(_cen_list)
+            if len(_cen_list) >= 2:
+                self.fwhm = np.abs(self.crossings[-1] - self.crossings[0],
+                                   dtype=float)
         # reset y data
         y = self.y_data
-        # insert lmfit
