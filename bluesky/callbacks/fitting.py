@@ -199,7 +199,7 @@ class PeakStats(CollectThenCompute):
     cen : mid-point between half-max points on each side of the peak
     max : x location of y maximum
     min : x location of y minimum
-          crossings : crosses between y and middle line, which is
+    crossings : crosses between y and middle line, which is
           ((np.max(y) + np.min(y)) / 2). Users can estimate FWHM based
           on those info.
     fwhm : the computed full width half maximum (fwhm) of a peak.
