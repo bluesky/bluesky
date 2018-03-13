@@ -289,7 +289,7 @@ class PeakStats(CollectThenCompute):
 
         if _cen_list:
             self.cen = np.mean(_cen_list)
-            self.crossings = np.array(_cen_list)
+            self.crossings = list(_cen_list)
             if len(_cen_list) >= 2:
                 self.fwhm = np.abs(self.crossings[-1] - self.crossings[0],
                                    dtype=float)
