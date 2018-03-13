@@ -432,7 +432,7 @@ class BestEffortCallback(CallbackBase):
 
 
 class PeakResults:
-    ATTRS = ('com', 'cen', 'max', 'min', 'fwhm', 'nlls')
+    ATTRS = ('com', 'cen', 'max', 'min', 'fwhm', 'nlls', 'crossings')
 
     def __init__(self):
         for attr in self.ATTRS:
@@ -538,16 +538,15 @@ class LivePlotPlusPeaks(LivePlot):
         if val:
             max_crds = self.peak_results['max'][self.y]
             min_crds = self.peak_results['min'][self.y]
+            crossings = self.peak_results['crossings'][self.y]
             style = {'color': 'g'}
-            fwhm = val['fwhm']
-            fwhm_x = val['cen_list']
-            fwhm_y = (max_crds[1] + min_crds[1]) / 2
-            label = self.label_format.format(attr=attr, val=fwhm)
+            arrow_y_pos = (max_crds[1] + min_crds[1]) / 2
+            label = self.label_format.format(attr=attr, val=val)
             # Fake line for the legend:
             lines += self.ax.plot([], [], label=label, **style)
             arrows.append(self.ax.annotate(
-                '', xytext=(fwhm_x[0], fwhm_y),
-                xy=(fwhm_x[1], fwhm_y),
+                '', xytext=(crossings[0], arrow_y_pos),
+                xy=(crossings[-1], arrow_y_pos),
                 arrowprops=dict(arrowstyle="<->", **style)))
 
         self.__labeled[self.ax] = None
