@@ -38,6 +38,7 @@ class BestEffortCallback(CallbackBase):
         self._live_grids = {}
         self._live_scatters = {}
         self._peak_stats = {}  # same structure as live_plots
+        self._label_format = None
         self._cleanup_motor_heuristic = False
         self._stream_names_seen = set()
 
@@ -84,6 +85,10 @@ class BestEffortCallback(CallbackBase):
     def disable_plots(self):
         "Do not plot anything."
         self._plots_enabled = False
+
+    def format_labels(self, fmt):
+        "Format peak stats labels in a legend of LivePlot."
+        self._label_format = validate_label_format(fmt)
 
     def __call__(self, name, doc):
         if not (self._table_enabled or self._baseline_enabled or
@@ -271,7 +276,8 @@ class BestEffortCallback(CallbackBase):
                     continue
                 # Create an instance of LivePlot and an instance of PeakStats.
                 live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
-                                              peak_results=self.peaks)
+                                              peak_results=self.peaks,
+                                              label_format=self._label_format)
                 live_plot('start', self._start_doc)
                 live_plot('descriptor', doc)
                 peak_stats = PeakStats(x=x_key, y=y_key)
@@ -473,16 +479,17 @@ class LivePlotPlusPeaks(LivePlot):
     __instances = weakref.WeakKeyDictionary()  # map ax to list of instances
 
     def __init__(self, *args, peak_results,
-                 label_format='{attr}={val:.2f}', **kwargs):
+                 label_format=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.peak_results = peak_results
-        self.label_format = label_format
+        self.label_format = validate_label_format(label_format)
 
         ax = self.ax  # for brevity
         if ax not in self.__visible:
             # This is the first instance of LivePlotPlusPeaks on these axes.
             # Set up matplotlib event handling.
 
+            # TODO: make it configurable, requested by beamline scientists:
             self.__visible[ax] = False
 
             def toggle(event):
@@ -573,3 +580,16 @@ def hinted_fields(descriptor):
             fields = descriptor['object_keys'][obj_name]
         columns.extend(fields)
     return columns
+
+
+def validate_label_format(label_format):
+    """Validate label format for a legend in LivePlot"""
+    default_label_format = '{attr}={val:.3f}'
+    assert (label_format is None) or \
+        ('attr' in label_format and 'val' in label_format), \
+        'Label format string must either be "None" or \n' \
+        'contain named placeholders "attr" and "val", e.g. "{}"'\
+        .format(default_label_format)
+    if not label_format:
+        return default_label_format
+    return label_format

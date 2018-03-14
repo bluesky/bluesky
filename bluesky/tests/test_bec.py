@@ -4,6 +4,7 @@ import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
+import pytest
 
 
 def test_hints(RE, hw):
@@ -86,3 +87,21 @@ def test_live_grid(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
+
+
+def test_format_labels(RE, hw):
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+    bec.format_labels('{attr}: {val:.3f}')
+    RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
+
+    bec.format_labels('{attr}: {val:.2e}')
+    RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
+
+    bec.format_labels(None)
+    RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
+
+    with pytest.raises(AssertionError):
+        bec.format_labels('{} {}')
+        RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
