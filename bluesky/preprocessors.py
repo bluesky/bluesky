@@ -352,6 +352,42 @@ def subs_wrapper(plan, subs):
                                         _unsubscribe()))
 
 
+def suspend_wrapper(plan, suspenders):
+    """
+    Install suspenders to the RunEngine, and remove them at the end.
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    suspenders : suspender or list of suspenders
+        Suspenders to use for the duration of the wrapper
+
+    Yields
+    ------
+    msg : Msg
+        messages from plan, with 'install_suspender' and 'remove_suspender'
+        messages inserted and appended
+    """
+    if not isinstance(suspenders, list):
+        suspenders = [suspenders]
+
+    def _install():
+        for susp in suspenders:
+            yield Msg('install_suspender', susp)
+
+    def _remove():
+        for susp in suspenders:
+            yield Msg('remove_suspender', susp)
+
+    def _inner_plan():
+        yield from _install()
+        return (yield from plan)
+
+    return (yield from finalize_wrapper(_inner_plan(),
+                                        _remove()))
+
+
 def configure_count_time_wrapper(plan, time):
     """
     Preprocessor that sets all devices with a `count_time` to the same time.
@@ -1097,6 +1133,7 @@ def baseline_wrapper(plan, devices, name='baseline'):
 # Make generator function decorator for each generator instance wrapper.
 baseline_decorator = make_decorator(baseline_wrapper)
 subs_decorator = make_decorator(subs_wrapper)
+suspend_decorator = make_decorator(suspend_wrapper)
 relative_set_decorator = make_decorator(relative_set_wrapper)
 reset_positions_decorator = make_decorator(reset_positions_wrapper)
 # finalize_decorator is custom-made since it takes a plan as its
