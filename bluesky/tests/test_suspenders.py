@@ -1,6 +1,7 @@
 import pytest
 import asyncio
 from functools import partial
+from bluesky.preprocessors import suspend_wrapper
 from bluesky.suspenders import (SuspendBoolHigh,
                                 SuspendBoolLow,
                                 SuspendFloor,
@@ -183,3 +184,52 @@ def test_unresumable_suspend_fail(RE):
         RE(scan)
     stop = time.time()
     assert .1 < stop - start < 1
+
+
+def test_suspender_plans(RE, hw):
+    'Tests that the suspenders can be installed via Msg'
+    loop = RE._loop
+    sig = hw.bool_sig
+    my_suspender = SuspendBoolHigh(sig, sleep=0.2)
+
+    def putter(val):
+        sig.put(val)
+
+    putter(0)
+
+    # Do the messages work?
+    RE([Msg('install_suspender', my_suspender)])
+    assert my_suspender in RE.suspenders
+    RE([Msg('remove_suspender', my_suspender)])
+    assert my_suspender not in RE.suspenders
+
+    # Can we call both in a plan?
+    RE([Msg('install_suspender', my_suspender),
+        Msg('remove_suspender', my_suspender)])
+
+    scan = [Msg('checkpoint'), Msg('sleep', None, .2)]
+
+    # No suspend scan: does the wrapper error out?
+    start = ttime.time()
+    RE(suspend_wrapper(scan, my_suspender))
+    stop = ttime.time()
+    delta = stop - start
+    assert delta < .9
+
+    # Suspend scan
+    start = ttime.time()
+    loop.call_later(.1, putter, 1)
+    loop.call_later(.5, putter, 0)
+    RE(suspend_wrapper(scan, my_suspender))
+    stop = ttime.time()
+    delta = stop - start
+    assert delta > .9
+
+    # Did we clean up?
+    start = ttime.time()
+    loop.call_later(.1, putter, 1)
+    loop.call_later(.5, putter, 0)
+    RE(scan)
+    stop = ttime.time()
+    delta = stop - start
+    assert delta < .9
