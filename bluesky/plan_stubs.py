@@ -760,7 +760,7 @@ def wait_for(futures, **kwargs):
 
 
 def trigger_and_read(devices, name='primary',
-                     streaming_name='streaming_primary'):
+                     streaming_prefix='streaming_'):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -771,10 +771,11 @@ def trigger_and_read(devices, name='primary',
     name : string, optional
         event stream name, a convenient human-friendly identifier; default
         name is 'primary'
-    streaming_name : string, optional
+    streaming_prefix : string, optional
         the streaming event stream name. This should create a stream only if
         streaming methods are found (i.e. ohpyd objects that contain a
         streaming_read() method).
+        Treated as a prefix to the original stream name.
 
     Yields
     ------
@@ -796,7 +797,7 @@ def trigger_and_read(devices, name='primary',
                 yield from trigger(obj, group=grp)
 
         # read from the streaming devices
-        yield from create(streaming_name)
+        yield from create(streaming_prefix + name)
         for obj in devices:
             yield from read(obj, streaming=True)
         # this will create an event (and descriptor if first event)
