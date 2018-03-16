@@ -58,14 +58,16 @@ def test_baseline(hw):
     D = SupplementalData(baseline=[hw.det2])
     original = list(count([hw.det]))
     processed = list(D(count([hw.det])))
-    # should add 2X (trigger, wait, create, read, save)
-    assert len(processed) == 10 + len(original)
+    # should add 2X (trigger, create, read, save, wait, create, read, save)
+    # (first create, read, save is for streaming devices)
+    assert len(processed) == 16 + len(original)
 
     # two baseline detectors
     D.baseline.append(hw.det3)
     processed = list(D(count([hw.det])))
-    # should add 2X (trigger, triger, wait, create, read, read, save)
-    assert len(processed) == 14 + len(original)
+    # should add 2X (trigger, trigger, create, read, read, save, wait, create, read,
+    # read, save)
+    assert len(processed) == 22 + len(original)
 
     # two baseline detectors applied to a plan with two consecutive runs
     original = list(list(count([hw.det])) + list(count([hw.det])))
