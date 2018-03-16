@@ -74,20 +74,23 @@ def drop():
     return (yield Msg('drop'))
 
 
-def read(obj):
+def read(obj, streaming=False):
     """
     Take a reading and add it to the current bundle of readings.
 
     Parameters
     ----------
     obj : Device or Signal
+    streaming : bool, optional
+        whether to read from the streaming devices only or not
+        results in obj.read(streaming=True)
 
     Yields
     ------
     msg : Msg
-        Msg('read', obj)
+        Msg('read', obj, streaming=False)
     """
-    return (yield Msg('read', obj))
+    return (yield Msg('read', obj, streaming=streaming))
 
 
 def monitor(obj, *, name=None, **kwargs):
@@ -756,7 +759,8 @@ def wait_for(futures, **kwargs):
     return (yield Msg('wait_for', None, futures, **kwargs))
 
 
-def trigger_and_read(devices, name='primary'):
+def trigger_and_read(devices, name='primary',
+                     streaming_name='streaming_primary'):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -767,11 +771,15 @@ def trigger_and_read(devices, name='primary'):
     name : string, optional
         event stream name, a convenient human-friendly identifier; default
         name is 'primary'
+    streaming_name : string, optional
+        the streaming event stream name. This should create a stream only if
+        streaming methods are found (i.e. ohpyd objects that contain a
+        streaming_read() method).
 
     Yields
     ------
     msg : Msg
-        messages to 'trigger', 'wait' and 'read'
+        messages to 'trigger', 'create', 'read', 'wait', 'create' and 'read'
     """
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
@@ -786,9 +794,20 @@ def trigger_and_read(devices, name='primary'):
             if hasattr(obj, 'trigger'):
                 no_wait = False
                 yield from trigger(obj, group=grp)
+
+        # read from the streaming devices
+        yield from create(streaming_name)
+        for obj in devices:
+            yield from read(obj, streaming=True)
+        # this will create an event (and descriptor if first event)
+        # *only* if information is read
+        yield from save()
+
         # Skip 'wait' if none of the devices implemented a trigger method.
         if not no_wait:
             yield from wait(group=grp)
+
+        # now read from the devices once trigger is complete
         yield from create(name)
         ret = {}  # collect and return readings to give plan access to them
         for obj in devices:
