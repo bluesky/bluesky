@@ -68,7 +68,8 @@ from bluesky.utils import all_safe_rewind
      (create, ('custom_name',), {}, [Msg('create', name='custom_name')]),
      (save, (), {}, [Msg('save')]),
      (drop, (), {}, [Msg('drop')]),
-     (read, ('det',), {}, [Msg('read', 'det')]),
+     (read, ('det',), {}, [Msg('read', 'det', streaming=False)]),
+     (read, ('det',), {'streaming' : True}, [Msg('read', 'det', streaming=True)]),
      (monitor, ('foo',), {}, [Msg('monitor', 'foo', name=None)]),
      (monitor, ('foo',), {'name': 'c'}, [Msg('monitor', 'foo', name='c')]),
      (unmonitor, ('foo',), {}, [Msg('unmonitor', 'foo')]),
@@ -78,6 +79,7 @@ from bluesky.utils import all_safe_rewind
      (abs_set, ('det', 5), {'group': 'A'}, [Msg('set', 'det', 5, group='A')]),
      (abs_set, ('det', 5), {'group': 'A', 'wait': True},
       [Msg('set', 'det', 5, group='A'), Msg('wait', None, group='A')]),
+     # rel_set should not give a streaming kwarg
      (rel_set, ('det', 5), {}, [Msg('read', 'det'),
                                 Msg('set', 'det', 5, group=None)]),
      (rel_set, ('det', 5), {'group': 'A'}, [Msg('read', 'det'),
@@ -552,15 +554,27 @@ def test_repeat_using_RE(RE):
 def test_trigger_and_read(hw):
     det = hw.det
     msgs = list(trigger_and_read([det]))
-    expected = [Msg('trigger', det), Msg('wait'),
-                Msg('create', name='primary'), Msg('read', det), Msg('save')]
+    expected = [Msg('trigger', det),
+                Msg('create', name="streaming_" + 'primary'),
+                Msg('read', det, streaming=True),
+                Msg('save'),
+                Msg('wait'),
+                Msg('create', name='primary'),
+                Msg('read', det, streaming=False),
+                Msg('save')]
     for msg in msgs:
         msg.kwargs.pop('group', None)
     assert msgs == expected
 
-    msgs = list(trigger_and_read([det], 'custom'))
-    expected = [Msg('trigger', det), Msg('wait'), Msg('create', name='custom'),
-                Msg('read', det), Msg('save')]
+    msgs = list(trigger_and_read([det], 'custom', streaming_prefix="partial_"))
+    expected = [Msg('trigger', det),
+                Msg('create', name='partial_' + 'custom'),
+                Msg('read', det, streaming=True),
+                Msg('save'),
+                Msg('wait'),
+                Msg('create', name='custom'),
+                Msg('read', det, streaming=False),
+                Msg('save')]
     for msg in msgs:
         msg.kwargs.pop('group', None)
     assert msgs == expected
@@ -572,25 +586,27 @@ def test_count_delay_argument(hw):
         # count raises ValueError when delay generator is expired
         list(count([hw.det], num=7, delay=(2**i for i in range(5))))
 
-    # num=6 with 5 delays between should product 6 readings
+    # num=6 with 5 delays between should product 12 readings
+    # should be double because trigger and read reads from streaming
+    # devices first, waits, then non-streaming
     msgs = count([hw.det], num=6, delay=(2**i for i in range(5)))
     read_count = len([msg for msg in msgs if msg.command == 'read'])
-    assert read_count == 6
+    assert read_count == 12
 
-    # num=5 with 5 delays should produce 5 readings
+    # num=5 with 5 delays should produce 10 readings
     msgs = count([hw.det], num=5, delay=(2**i for i in range(5)))
     read_count = len([msg for msg in msgs if msg.command == 'read'])
-    assert read_count == 5
+    assert read_count == 10
 
-    # num=4 with 5 delays should produce 4 readings
+    # num=4 with 5 delays should produce 8 readings
     msgs = count([hw.det], num=4, delay=(2**i for i in range(5)))
     read_count = len([msg for msg in msgs if msg.command == 'read'])
-    assert read_count == 4
+    assert read_count == 8
 
-    # num=None with 5 delays should produce 6 readings
+    # num=None with 5 delays should produce 12 readings
     msgs = count([hw.det], num=None, delay=(2**i for i in range(5)))
     read_count = len([msg for msg in msgs if msg.command == 'read'])
-    assert read_count == 6
+    assert read_count == 12
 
 
 def test_plan_md(RE, hw):

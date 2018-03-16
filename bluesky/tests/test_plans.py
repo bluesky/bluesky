@@ -171,13 +171,22 @@ def test_reset_wrapper(hw, RE):
     RE(bp.relative_inner_product_scan([], 1,
                                       p.pseudo1, 0, 1,
                                       p.pseudo2, 0, 1))
-    expecte_objs = [p, None, None,
-                    p, None, p,
-                    None, None, p,
-                    None, None, p,
-                    p, None]
-    assert len(m_col.msgs) == 14
-    assert [m.obj for m in m_col.msgs] == expecte_objs
+    # stage, open_run, checkpoint
+    # set, wait, trigger
+    # create, read, save,  (for streaming)
+    # wait
+    # create, read, save,  (for non-streaming)
+    # close_run, unstage
+    # set, wait
+    expected_objs = [p, None, None,
+                     p, None, p,
+                     None, p, None,
+                     None,
+                     None, p, None,
+                     None, p,
+                     p, None]
+    assert len(m_col.msgs) == len(expected_objs)
+    assert [m.obj for m in m_col.msgs] == expected_objs
 
 
 @pytest.mark.parametrize('pln', [bps.mv, bps.mvr])
@@ -188,6 +197,6 @@ def test_pseudo_mv(hw, RE, pln):
 
     RE(pln(p.pseudo1, 1,
            p.pseudo2, 1))
-    expecte_objs = [p, None]
+    expected_objs = [p, None]
     assert len(m_col.msgs) == 2
-    assert [m.obj for m in m_col.msgs] == expecte_objs
+    assert [m.obj for m in m_col.msgs] == expected_objs

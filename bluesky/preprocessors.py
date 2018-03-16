@@ -946,6 +946,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
     except AttributeError:
         # ... but as a fallback we can read obj and grab the value of the
         # first key
+        # TODO : should this just call read() plan stub?
         reading = yield Msg('read', obj)
         if reading is None:
             # this plan may be being list-ified
