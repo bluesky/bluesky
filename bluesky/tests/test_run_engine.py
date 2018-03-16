@@ -874,6 +874,10 @@ def test_rewindable_state_retrival(RE, start_state):
                                                          'rewindable',
                                                          'trigger',
                                                          'trigger',
+                                                         'create',
+                                                         'read',
+                                                         'read',
+                                                         'save',
                                                          'wait',
                                                          'create',
                                                          'read',
@@ -885,6 +889,10 @@ def test_rewindable_state_retrival(RE, start_state):
                                                           'rewindable',
                                                           'trigger',
                                                           'trigger',
+                                                         'create',
+                                                         'read',
+                                                         'read',
+                                                         'save',
                                                           'wait',
                                                           'create',
                                                           'read',
@@ -1258,8 +1266,10 @@ def test_filled(RE, hw, db):
 
     hw.img.reg = db.reg
     RE(count([hw.img]), collect)
-    event, = collector
-    assert event['filled'] == {'img': False}
+    # two events from streaming read and read
+    event_streaming, event_nonstreaming = collector
+    assert event_streaming['filled'] == {'img': False}
+    assert event_nonstreaming['filled'] == {'img': False}
 
 
 def test_double_call(RE):
