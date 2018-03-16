@@ -724,12 +724,14 @@ def trigger_and_read(devices, streaming_devices=[], name='primary',
     devices : iterable
         devices to trigger (if they have a trigger method) and then read
         *after* waiting
-    stream_devices : iterable
-        devices to trigger (if they have a trigger method) and then read
-        *before* waiting. Useful for detectors that report filenames
     name : string, optional
         event stream name, a convenient human-friendly identifier; default
         name is 'primary'
+    stream_devices : iterable
+        devices to trigger (if they have a trigger method) and then read
+        *before* waiting. Useful for detectors that report filenames
+    streaming_name : string, optional
+        name of the streaming stream
 
     Yields
     ------
