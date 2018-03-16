@@ -756,7 +756,8 @@ def wait_for(futures, **kwargs):
     return (yield Msg('wait_for', None, futures, **kwargs))
 
 
-def trigger_and_read(devices, name='primary'):
+def trigger_and_read(devices, streaming_devices=[], name='primary',
+                     streaming_name="streaming_primary"):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -764,9 +765,15 @@ def trigger_and_read(devices, name='primary'):
     ----------
     devices : iterable
         devices to trigger (if they have a trigger method) and then read
+        *after* waiting
     name : string, optional
         event stream name, a convenient human-friendly identifier; default
         name is 'primary'
+    stream_devices : iterable
+        devices to trigger (if they have a trigger method) and then read
+        *before* waiting. Useful for detectors that report filenames
+    streaming_name : string, optional
+        name of the streaming stream
 
     Yields
     ------
@@ -774,7 +781,7 @@ def trigger_and_read(devices, name='primary'):
         messages to 'trigger', 'wait' and 'read'
     """
     # If devices is empty, don't emit 'create'/'save' messages.
-    if not devices:
+    if not devices and not streaming_devices:
         yield from null()
     devices = separate_devices(devices)  # remove redundant entries
     rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
@@ -786,11 +793,23 @@ def trigger_and_read(devices, name='primary'):
             if hasattr(obj, 'trigger'):
                 no_wait = False
                 yield from trigger(obj, group=grp)
+        ret = {}  # collect and return readings to give plan access to them
+
+        # first read the streaming_devices
+        yield from create(streaming_name)
+        for obj in streaming_devices:
+            reading = (yield from read(obj))
+            if reading is not None:
+                ret.update(reading)
+        yield from save()
+
+        # wait for triggering to complete
         # Skip 'wait' if none of the devices implemented a trigger method.
         if not no_wait:
             yield from wait(group=grp)
+
+        # finally read the rest of the devices
         yield from create(name)
-        ret = {}  # collect and return readings to give plan access to them
         for obj in devices:
             reading = (yield from read(obj))
             if reading is not None:

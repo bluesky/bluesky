@@ -22,7 +22,7 @@ from . import preprocessors as bpp
 from . import plan_stubs as bps
 
 
-def count(detectors, num=1, delay=None, *, md=None):
+def count(detectors, streaming_detectors=[], num=1, delay=None, *, md=None):
     """
     Take one or more readings from detectors.
 
@@ -61,7 +61,8 @@ def count(detectors, num=1, delay=None, *, md=None):
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
     def inner_count():
-        return (yield from bps.repeat(partial(bps.trigger_and_read, detectors),
+        return (yield from bps.repeat(partial(bps.trigger_and_read, detectors,
+                                             streaming_detectors),
                                       num=num, delay=delay))
 
     return (yield from inner_count())
