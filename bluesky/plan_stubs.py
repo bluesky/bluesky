@@ -650,6 +650,48 @@ def unsubscribe(token):
     return (yield Msg('unsubscribe', token=token))
 
 
+def install_suspender(suspender):
+    """
+    Install a suspender during a plan.
+
+    Parameters
+    ----------
+    suspender : :class:`bluesky.suspenders.SuspenderBase`
+        The suspender to install
+
+    Yields
+    ------
+    msg : Msg
+        Msg('install_suspender', None, suspender)
+
+    See Also
+    --------
+    :func:`bluesky.plan_subs.remove_suspender`
+    """
+    return (yield Msg('install_suspender', None, suspender))
+
+
+def remove_suspender(suspender):
+    """
+    Remove a suspender during a plan.
+
+    Parameters
+    ----------
+    suspender : :class:`bluesky.suspenders.SuspenderBase`
+        The suspender to remove
+
+    Yields
+    ------
+    msg : Msg
+        Msg('remove_suspender', None, suspender)
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.install_suspender`
+    """
+    return (yield Msg('remove_suspender', None, suspender))
+
+
 def open_run(md=None):
     """
     Mark the beginning of a new 'run'. Emit a RunStart document.

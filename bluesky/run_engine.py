@@ -186,7 +186,8 @@ class RunEngine:
     state = LoggingPropertyMachine(RunEngineStateMachine)
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage',
                              'unstage', 'monitor', 'unmonitor', 'open_run',
-                             'close_run']
+                             'close_run', 'install_suspender',
+                             'remove_suspender']
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  md_validator=None):
@@ -290,7 +291,9 @@ class RunEngine:
             'open_run': self._open_run,
             'close_run': self._close_run,
             'wait_for': self._wait_for,
-            'input': self._input, }
+            'input': self._input,
+            'install_suspender': self._install_suspender,
+            'remove_suspender': self._remove_suspender, }
 
         # public dispatcher for callbacks
         # The Dispatcher's public methods are exposed through the
@@ -768,6 +771,18 @@ class RunEngine:
         self._suspenders.add(suspender)
         suspender.install(self)
 
+    @asyncio.coroutine
+    def _install_suspender(self, msg):
+        """
+        See :meth: `RunEngine.install_suspender`
+
+        Expected message object is:
+
+            Msg('install_suspender', None, suspender)
+        """
+        suspender = msg.args[0]
+        self.install_suspender(suspender)
+
     def remove_suspender(self, suspender):
         """
         Uninstall a suspender.
@@ -784,6 +799,18 @@ class RunEngine:
         if suspender in self._suspenders:
             suspender.remove()
         self._suspenders.discard(suspender)
+
+    @asyncio.coroutine
+    def _remove_suspender(self, msg):
+        """
+        See :meth: `RunEngine.remove_suspender`
+
+        Expected message object is:
+
+            Msg('remove_suspender', None, suspender)
+        """
+        suspender = msg.args[0]
+        self.remove_suspender(suspender)
 
     def clear_suspenders(self):
         """
