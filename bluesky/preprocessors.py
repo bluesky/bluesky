@@ -1,4 +1,4 @@
-from collections import OrderedDict, deque, ChainMap
+from collections import OrderedDict, deque, ChainMap, Iterable
 import uuid
 from .utils import (normalize_subs_input, root_ancestor,
                     separate_devices,
@@ -369,16 +369,16 @@ def suspend_wrapper(plan, suspenders):
         messages from plan, with 'install_suspender' and 'remove_suspender'
         messages inserted and appended
     """
-    if not isinstance(suspenders, list):
+    if not isinstance(suspenders, Iterable):
         suspenders = [suspenders]
 
     def _install():
         for susp in suspenders:
-            yield Msg('install_suspender', susp)
+            yield Msg('install_suspender', None, susp)
 
     def _remove():
         for susp in suspenders:
-            yield Msg('remove_suspender', susp)
+            yield Msg('remove_suspender', None, susp)
 
     def _inner_plan():
         yield from _install()

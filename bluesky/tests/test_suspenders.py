@@ -198,14 +198,14 @@ def test_suspender_plans(RE, hw):
     putter(0)
 
     # Do the messages work?
-    RE([Msg('install_suspender', my_suspender)])
+    RE([Msg('install_suspender', None, my_suspender)])
     assert my_suspender in RE.suspenders
-    RE([Msg('remove_suspender', my_suspender)])
+    RE([Msg('remove_suspender', None, my_suspender)])
     assert my_suspender not in RE.suspenders
 
     # Can we call both in a plan?
-    RE([Msg('install_suspender', my_suspender),
-        Msg('remove_suspender', my_suspender)])
+    RE([Msg('install_suspender', None, my_suspender),
+        Msg('remove_suspender', None, my_suspender)])
 
     scan = [Msg('checkpoint'), Msg('sleep', None, .2)]
 

@@ -105,8 +105,8 @@ from bluesky.utils import all_safe_rewind
                                                        'func_placeholder',
                                                        'all')]),
      (unsubscribe, (1,), {}, [Msg('unsubscribe', None, token=1)]),
-     (install_suspender, (1,), {}, [Msg('install_suspender', 1)]),
-     (remove_suspender, (1,), {}, [Msg('remove_suspender', 1)]),
+     (install_suspender, (1,), {}, [Msg('install_suspender', None, 1)]),
+     (remove_suspender, (1,), {}, [Msg('remove_suspender', None, 1)]),
      (open_run, (), {}, [Msg('open_run')]),
      (open_run, (), {'md': {'a': 1}}, [Msg('open_run', a=1)]),
      (close_run, (), {}, [Msg('close_run', reason=None, exit_status=None)]),
@@ -277,9 +277,9 @@ def test_suspend():
 
     processed_plan = list(suspend_wrapper(plan, 1))
 
-    expected = [Msg('install_suspender', 1),
+    expected = [Msg('install_suspender', None, 1),
                 Msg('null'),
-                Msg('remove_suspender', 1)]
+                Msg('remove_suspender', None, 1)]
 
     assert processed_plan == expected
 

@@ -778,9 +778,9 @@ class RunEngine:
 
         Expected message object is:
 
-            Msg('install_suspender', suspender)
+            Msg('install_suspender', None, suspender)
         """
-        suspender = msg.obj
+        suspender = msg.args[0]
         self.install_suspender(suspender)
 
     def remove_suspender(self, suspender):
@@ -807,9 +807,9 @@ class RunEngine:
 
         Expected message object is:
 
-            Msg('remove_suspender', suspender)
+            Msg('remove_suspender', None, suspender)
         """
-        suspender = msg.obj
+        suspender = msg.args[0]
         self.remove_suspender(suspender)
 
     def clear_suspenders(self):

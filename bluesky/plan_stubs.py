@@ -662,13 +662,13 @@ def install_suspender(suspender):
     Yields
     ------
     msg : Msg
-        Msg('install_suspender', suspender)
+        Msg('install_suspender', None, suspender)
 
     See Also
     --------
     :func:`bluesky.plan_subs.remove_suspender`
     """
-    return (yield Msg('install_suspender', suspender))
+    return (yield Msg('install_suspender', None, suspender))
 
 
 def remove_suspender(suspender):
@@ -683,13 +683,13 @@ def remove_suspender(suspender):
     Yields
     ------
     msg : Msg
-        Msg('remove_suspender', suspender)
+        Msg('remove_suspender', None, suspender)
 
     See Also
     --------
     :func:`bluesky.plan_stubs.install_suspender`
     """
-    return (yield Msg('remove_suspender', suspender))
+    return (yield Msg('remove_suspender', None, suspender))
 
 
 def open_run(md=None):
