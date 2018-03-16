@@ -382,6 +382,8 @@ Plans that control the RunEngine:
     input_plan
     subscribe
     unsubscribe
+    install_suspender
+    remove_suspender
     wait
     wait_for
     null
@@ -525,6 +527,8 @@ a generator instance. The corresponding functions named
     stage_wrapper
     subs_decorator
     subs_wrapper
+    suspend_decorator
+    suspend_wrapper
 
 Custom Preprocessors
 --------------------
