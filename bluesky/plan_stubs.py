@@ -81,13 +81,11 @@ def read(obj):
     Parameters
     ----------
     obj : Device or Signal
-    name : str, optional
-        the stream name of the device
 
     Yields
     ------
     msg : Msg
-        Msg('read', obj, name="primary")
+        Msg('read', obj)
     """
     return (yield Msg('read', obj))
 
