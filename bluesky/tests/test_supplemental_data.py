@@ -70,9 +70,11 @@ def test_baseline(hw):
     assert len(processed) == 22 + len(original)
 
     # two baseline detectors applied to a plan with two consecutive runs
+    # should be 4X (trigger, trigger, create, read, read, save, wait, create,
+    # read, read, save)
     original = list(list(count([hw.det])) + list(count([hw.det])))
     processed = list(D(pchain(count([hw.det]), count([hw.det]))))
-    assert len(processed) == 28 + len(original)
+    assert len(processed) == 44 + len(original)
 
 
 def test_mixture(hw):
@@ -82,7 +84,8 @@ def test_mixture(hw):
 
     original = list(count([hw.det]))
     processed = list(D(count([hw.det])))
-    assert len(processed) == 2 + 5 + 10 + len(original)
+    # nbaseline, nflyers, nmonitors
+    assert len(processed) == 16 + 5 + 2 + len(original)
 
 
 def test_order(hw):
@@ -99,6 +102,9 @@ def test_order(hw):
     expected = ['open_run',
                 # baseline
                 'trigger',
+                'create',
+                'read',
+                'save',
                 'wait',
                 'create',
                 'read',
@@ -118,6 +124,9 @@ def test_order(hw):
                 'unmonitor',
                 # baseline
                 'trigger',
+                'create',
+                'read',
+                'save',
                 'wait',
                 'create',
                 'read',
