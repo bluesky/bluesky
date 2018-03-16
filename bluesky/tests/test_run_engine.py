@@ -1266,10 +1266,11 @@ def test_filled(RE, hw, db):
 
     hw.img.reg = db.reg
     RE(count([hw.img]), collect)
-    # two events from streaming read and read
-    event_streaming, event_nonstreaming = collector
-    assert event_streaming['filled'] == {'img': False}
-    assert event_nonstreaming['filled'] == {'img': False}
+    # note: two event descriptors would be expected if img
+    # is changed to return data upon img.read(streaming=True)
+    # (something we may add in the future)
+    event, = collector
+    assert event['filled'] == {'img': False}
 
 
 def test_double_call(RE):
