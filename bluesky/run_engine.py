@@ -225,9 +225,6 @@ class RunEngineBase:
         self._bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
         self._deferred_pause_requested = False  # pause at next 'checkpoint'
-        self._sigint_handler = None  # intercepts Ctrl+C
-        self._last_sigint_time = None  # time most recent SIGINT was processed
-        self._num_sigints_processed = 0  # count SIGINTs processed
         self._exception = None  # stored and then raised in the _run loop
         self._interrupted = False  # True if paused, aborted, or failed
         self._objs_read = deque()  # objects read in one Event
@@ -427,8 +424,6 @@ class RunEngineBase:
         self._pardon_failures = asyncio.Event(loop=self.loop)
         self._plan = None
         self._interrupted = False
-        self._last_sigint_time = None
-        self._num_sigints_processed = 0
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -731,25 +726,21 @@ class RunEngineBase:
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
         self.state = 'running'
-        self._last_sigint_time = None
-        self._num_sigints_processed = 0
-        # Intercept ^C
-        with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
+        if self._task.done():
+            return
+        try:
+            self.loop.run_forever()
+        finally:
             if self._task.done():
-                return
-            try:
-                self.loop.run_forever()
-            finally:
-                if self._task.done():
-                    # get exceptions from the main task
-                    try:
-                        exc = self._task.exception()
-                    except asyncio.CancelledError:
-                        exc = None
-                    # if the main task exception is not None, re-raise
-                    # it (unless it is a canceled error)
-                    if exc is not None:
-                        raise exc
+                # get exceptions from the main task
+                try:
+                    exc = self._task.exception()
+                except asyncio.CancelledError:
+                    exc = None
+                # if the main task exception is not None, re-raise
+                # it (unless it is a canceled error)
+                if exc is not None:
+                    raise exc
 
     def install_suspender(self, suspender):
         """
@@ -852,7 +843,6 @@ class RunEngineBase:
             self._exception = FailedPause()
             self._task.cancel()
         else:
-            print("Suspending....To get prompt hit Ctrl-C twice to pause.")
             ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             print("Suspension occurred at {}.".format(ts))
             if justification is not None:
@@ -2172,8 +2162,16 @@ class RunEngineBase:
 
 
 class RunEngine(RunEngineBase):
+    __doc__ = RunEngineBase.__doc__
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # Extensions to RunEngineBase state tracking
+        self._sigint_handler = None  # intercepts Ctrl+C
+        self._last_sigint_time = None  # time most recent SIGINT was processed
+        self._num_sigints_processed = 0  # count SIGINTs processed
+
         self.loop.call_soon(self._check_for_signals)
 
     def __call__(self, *args, **metadata_kw):
@@ -2182,6 +2180,13 @@ class RunEngine(RunEngineBase):
             return super().__call__(*args, **metadata_kw)
 
     __call__.__signature__ = RunEngineBase.__call__.__signature__
+    __call__.__doc__ = RunEngineBase.__call__.__doc__
+
+    def _clear_call_cache(self):
+        "Extend _clear_call_cache for our sigint state"
+        super()._clear_call_cache()
+        self._last_sigint_time = None
+        self._num_sigints_processed = 0
 
     def _check_for_signals(self):
         # Check for pause requests from keyboard.
@@ -2220,6 +2225,19 @@ class RunEngine(RunEngineBase):
 
         self.loop.call_later(0.1, self._check_for_signals)
 
+    def request_suspend(self, *args, **kwargs):
+        super().request_suspend(*args, **kwargs)
+        if self.resumable:
+            print("Suspended....To get prompt hit Ctrl-C twice to pause.")
+
+    request_suspend.__doc__ = RunEngineBase.request_suspend.__doc__
+
+    def _resume_event_loop(self):
+        self._last_sigint_time = None
+        self._num_sigints_processed = 0
+        # Intercept ^C
+        with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
+            return super()._resume_event_loop()
 
 
 class Dispatcher:
