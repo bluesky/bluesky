@@ -91,7 +91,7 @@ _call_sig = Signature(
      Parameter('metadata_kw', Parameter.VAR_KEYWORD)])
 
 
-class RunEngine:
+class RunEngineBase:
     """The Run Engine execute messages and emits Documents.
 
     Parameters
@@ -306,8 +306,6 @@ class RunEngine:
         self.unsubscribe_lossless = self.dispatcher.unsubscribe
         self._subscribe_lossless = self.dispatcher.subscribe
         self._unsubscribe_lossless = self.dispatcher.unsubscribe
-
-        self.loop.call_soon(self._check_for_signals)
 
     def subscribe(self, func, name='all'):
         """
@@ -656,25 +654,23 @@ class RunEngine:
             self._plan_stack.append(single_gen(Msg('wait_for', None, futs)))
             self._response_stack.append(None)
 
-        # Intercept ^C.
-        with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
-            self._task = self.loop.create_task(self._run())
-            try:
-                self.loop.run_forever()
-            finally:
-                if self._task.done():
-                    # get exceptions from the main task
-                    try:
-                        exc = self._task.exception()
-                    except asyncio.CancelledError:
-                        exc = None
-                    # if the main task exception is not None, re-raise
-                    # it (unless it is a canceled error)
-                    if exc is not None:
-                        raise exc
+        self._task = self.loop.create_task(self._run())
+        try:
+            self.loop.run_forever()
+        finally:
+            if self._task.done():
+                # get exceptions from the main task
+                try:
+                    exc = self._task.exception()
+                except asyncio.CancelledError:
+                    exc = None
+                # if the main task exception is not None, re-raise
+                # it (unless it is a canceled error)
+                if exc is not None:
+                    raise exc
 
-            if self._interrupted:
-                raise RunEngineInterrupted(self.pause_msg) from None
+        if self._interrupted:
+            raise RunEngineInterrupted(self.pause_msg) from None
 
         return tuple(self._run_start_uids)
 
@@ -1194,43 +1190,6 @@ class RunEngine:
         # if the task was cancelled
         if pending_cancel_exception is not None:
             raise pending_cancel_exception
-
-    def _check_for_signals(self):
-        # Check for pause requests from keyboard.
-        if self.state.is_running and (not self._interrupted):
-            count = self._sigint_handler.count
-            if count > self._num_sigints_processed:
-                self._num_sigints_processed = count
-                self.log.debug("RunEngine caught a new SIGINT")
-                self._last_sigint_time = ttime.time()
-
-                if count == 1:
-                    # Ctrl-C once -> request a deferred pause
-                    if not self._deferred_pause_requested:
-                        self.loop.call_soon(self.request_pause, True)
-                        print("A 'deferred pause' has been requested. The "
-                              "RunEngine will pause at the next checkpoint. "
-                              "To pause immediately, hit Ctrl+C again in the "
-                              "next 10 seconds.")
-                elif count > 1:
-                    # - Ctrl-C twice within 10 seconds -> hard pause
-                    self.log.debug("RunEngine detected two SIGINTs. "
-                                   "A hard pause will be requested.")
-                    self.loop.call_soon(self.request_pause, False)
-            else:
-                # No new SIGINTs to process.
-                if self._num_sigints_processed > 0:
-                    if ttime.time() - self._last_sigint_time > 10:
-                        self.log.debug("It has been 10 seconds since the "
-                                       "last SIGINT. Resetting SIGINT "
-                                       "handler.")
-                        # It's been 10 seconds since the last SIGINT. Reset.
-                        self._num_sigints_processed = 0
-                        self._sigint_handler.count = 0
-                        self._sigint_handler.interrupted = False
-                        self._last_sigint_time = None
-
-        self.loop.call_later(0.1, self._check_for_signals)
 
     @asyncio.coroutine
     def _wait_for(self, msg):
@@ -2210,6 +2169,57 @@ class RunEngine:
         "Process blocking callbacks and schedule non-blocking callbacks."
         jsonschema.validate(doc, schemas[name])
         self.dispatcher.process(name, doc)
+
+
+class RunEngine(RunEngineBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.loop.call_soon(self._check_for_signals)
+
+    def __call__(self, *args, **metadata_kw):
+        # Intercept ^C.
+        with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
+            return super().__call__(*args, **metadata_kw)
+
+    __call__.__signature__ = RunEngineBase.__call__.__signature__
+
+    def _check_for_signals(self):
+        # Check for pause requests from keyboard.
+        if self.state.is_running and (not self._interrupted):
+            count = self._sigint_handler.count
+            if count > self._num_sigints_processed:
+                self._num_sigints_processed = count
+                self.log.debug("RunEngine caught a new SIGINT")
+                self._last_sigint_time = ttime.time()
+
+                if count == 1:
+                    # Ctrl-C once -> request a deferred pause
+                    if not self._deferred_pause_requested:
+                        self.loop.call_soon(self.request_pause, True)
+                        print("A 'deferred pause' has been requested. The "
+                              "RunEngine will pause at the next checkpoint. "
+                              "To pause immediately, hit Ctrl+C again in the "
+                              "next 10 seconds.")
+                elif count > 1:
+                    # - Ctrl-C twice within 10 seconds -> hard pause
+                    self.log.debug("RunEngine detected two SIGINTs. "
+                                   "A hard pause will be requested.")
+                    self.loop.call_soon(self.request_pause, False)
+            else:
+                # No new SIGINTs to process.
+                if self._num_sigints_processed > 0:
+                    if ttime.time() - self._last_sigint_time > 10:
+                        self.log.debug("It has been 10 seconds since the "
+                                       "last SIGINT. Resetting SIGINT "
+                                       "handler.")
+                        # It's been 10 seconds since the last SIGINT. Reset.
+                        self._num_sigints_processed = 0
+                        self._sigint_handler.count = 0
+                        self._sigint_handler.interrupted = False
+                        self._last_sigint_time = None
+
+        self.loop.call_later(0.1, self._check_for_signals)
+
 
 
 class Dispatcher:
