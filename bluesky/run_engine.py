@@ -117,8 +117,10 @@ class RunEngine:
         Context managers that will be entered when we run a plan. The context
         managers will be composed in order, much like the preprocessors. If
         this argument is omitted, we will use a user-oriented handler for
-        SIGINT. The elements of this list will be passed this RunEngine
-        instance as their only argument.
+        SIGINT. The elements of this list will be passed this ``RunEngine``
+        instance as their only argument. You may pass an empty list if you
+        would like a ``RunEngine`` with no signal handling and no context
+        managers.
 
     md_validator : callable, optional
         a function that raises and prevents starting a run if it deems
