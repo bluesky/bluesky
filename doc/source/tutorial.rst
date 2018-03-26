@@ -137,6 +137,8 @@ To start, let's use the all-purpose
 
 .. code-block:: python
 
+    %matplotlib notebook
+
     from bluesky.callbacks.best_effort import BestEffortCallback
     bec = BestEffortCallback()
 
