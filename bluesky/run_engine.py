@@ -892,8 +892,10 @@ class RunEngine:
                     post_plan = post_plan()
                 self._plan_stack.append(ensure_generator(post_plan))
                 self._response_stack.append(None)
-            # add the wait on the future to the stack
+            # tell the devices they are ready to go again
             self._plan_stack.append(single_gen(Msg('resume', None, )))
+            self._response_stack.append(None)
+            # add the wait on the future to the stack
             self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
             self._response_stack.append(None)
             # if there is a pre plan add on top of the wait
