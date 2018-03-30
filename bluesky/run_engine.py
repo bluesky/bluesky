@@ -280,6 +280,7 @@ class RunEngine:
             'clear_checkpoint': self._clear_checkpoint,
             'rewindable': self._rewindable,
             'pause': self._pause,
+            'resume': self._resume,
             'collect': self._collect,
             'kickoff': self._kickoff,
             'complete': self._complete,
@@ -892,6 +893,7 @@ class RunEngine:
                 self._plan_stack.append(ensure_generator(post_plan))
                 self._response_stack.append(None)
             # add the wait on the future to the stack
+            self._plan_stack.append(single_gen(Msg('resume', None, )))
             self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
             self._response_stack.append(None)
             # if there is a pre plan add on top of the wait
@@ -1990,6 +1992,25 @@ class RunEngine:
         keyword arguments in the `Msg` signature
         """
         self.request_pause(*msg.args, **msg.kwargs)
+
+    @asyncio.coroutine
+    def _resume(self, msg):
+        """Request the run engine to resume
+
+        Expected message object is:
+
+            Msg('resume', defer=False, name=None, callback=None)
+
+        See RunEngine.resume() docstring for explanation of the three
+        keyword arguments in the `Msg` signature
+        """
+        # Re-instate monitoring callbacks.
+        for obj, (cb, kwargs) in self._monitor_params.items():
+            obj.subscribe(cb, **kwargs)
+        # Notify Devices of the resume in case they want to clean up.
+        for obj in self._objs_seen:
+            if hasattr(obj, 'resume'):
+                obj.resume()
 
     @asyncio.coroutine
     def _checkpoint(self, msg):
