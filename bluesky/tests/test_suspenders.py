@@ -80,16 +80,19 @@ def test_pretripped(RE, hw):
 @pytest.mark.parametrize('pre_plan,post_plan,expected_list',
                          [([Msg('null')], None,
                            ['checkpoint', 'sleep', 'rewindable', 'null',
-                            'wait_for', 'rewindable', 'sleep']),
+                            'wait_for', 'resume', 'rewindable', 'sleep']),
                           (None, [Msg('null')],
                            ['checkpoint', 'sleep', 'rewindable',
-                            'wait_for', 'null', 'rewindable', 'sleep']),
+                            'wait_for', 'resume', 'null', 'rewindable',
+                            'sleep']),
                           ([Msg('null')], [Msg('null')],
                            ['checkpoint', 'sleep', 'rewindable', 'null',
-                            'wait_for', 'null', 'rewindable', 'sleep']),
+                            'wait_for', 'resume', 'null', 'rewindable',
+                            'sleep']),
                           (lambda: [Msg('null')], lambda: [Msg('null')],
                            ['checkpoint', 'sleep', 'rewindable', 'null',
-                            'wait_for', 'null', 'rewindable', 'sleep'])])
+                            'wait_for', 'resume', 'null', 'rewindable',
+                            'sleep'])])
 def test_pre_suspend_plan(RE, pre_plan, post_plan, expected_list, hw):
     sig = hw.bool_sig
     scan = [Msg('checkpoint'), Msg('sleep', None, .2)]
