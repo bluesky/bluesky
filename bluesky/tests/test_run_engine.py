@@ -475,14 +475,14 @@ def _make_unrewindable_suspender_marker():
                  motor,
                  UnReplayableSynGauss('det', motor, 'motor', center=0, Imax=1),
                  ['set', 'trigger', 'sleep',
-                  'rewindable', 'wait_for', 'rewindable',
+                  'rewindable', 'wait_for', 'resume', 'rewindable',
                   'set', 'trigger']))
 
     inps.append((test_plan,
                  motor,
                  SynGauss('det', motor, 'motor', center=0, Imax=1),
                  ['set', 'trigger', 'sleep',
-                  'rewindable', 'wait_for', 'rewindable',
+                  'rewindable', 'wait_for', 'resume', 'rewindable',
                   'set',
                   'trigger', 'sleep', 'set', 'trigger']))
 
