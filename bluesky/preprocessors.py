@@ -948,6 +948,8 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
         reading = yield Msg('read', obj)
         if reading is None:
             # this plan may be being list-ified
+            print("*** all positions for {m.name} are "
+                  "relative to current position ***".format(m=obj))
             cur_pos = 0
         else:
             fields = getattr(obj, 'hints', {}).get('fields', [])
