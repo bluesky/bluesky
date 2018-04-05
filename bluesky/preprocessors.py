@@ -264,12 +264,11 @@ def print_summary_wrapper(plan):
             print('{motor.name} -> {args[0]}'.format(motor=msg.obj,
                                                      args=msg.args))
         elif cmd == 'create':
-            pass
+            read_cache = []
         elif cmd == 'read':
             read_cache.append(msg.obj.name)
         elif cmd == 'save':
             print('  Read {}'.format(read_cache))
-            read_cache = []
         yield msg
 
 
