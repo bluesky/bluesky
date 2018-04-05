@@ -256,7 +256,7 @@ class RunEngine:
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
         self._plan_stack = deque()  # stack of generators to work off of
-        self._response_stack = deque([None])  # resps to send into the plans
+        self._response_stack = deque()  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
@@ -420,7 +420,7 @@ class RunEngine:
         self._deferred_pause_requested = False
         self._plan_stack = deque()
         self._msg_cache = deque()
-        self._response_stack = deque([None])
+        self._response_stack = deque()
         self._exception = None
         self._run_start_uids.clear()
         self._exit_status = 'success'
