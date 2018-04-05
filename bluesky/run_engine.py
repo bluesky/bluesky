@@ -1008,15 +1008,15 @@ class RunEngine:
         """
         pending_cancel_exception = None
         self._reason = ''
-        # sentinal to decide if need to add to the response stack or not
-        sentinal = object()
+        # sentinel to decide if need to add to the response stack or not
+        sentinel = object()
         try:
             self.state = 'running'
             while True:
                 assert len(self._response_stack) == len(self._plan_stack)
-                # set resp to the sentinal so that if we fail in the sleep
+                # set resp to the sentinel so that if we fail in the sleep
                 # we do not add an extra response
-                resp = sentinal
+                resp = sentinel
                 try:
                     # the new response to be added
                     new_response = None
@@ -1052,7 +1052,7 @@ class RunEngine:
                             self._plan_stack.pop()
                             # we have killed the current plan, do not give
                             # it a new response
-                            resp = sentinal
+                            resp = sentinel
                             if len(self._plan_stack):
                                 self._exception = e
                                 continue
@@ -1074,7 +1074,7 @@ class RunEngine:
                             self._plan_stack.pop()
                             # we have killed the current plan, do not give
                             # it a new response
-                            resp = sentinal
+                            resp = sentinel
                             if len(self._plan_stack):
                                 continue
                             # or reraise to get out of the infinite loop
@@ -1087,7 +1087,7 @@ class RunEngine:
                             self._plan_stack.pop()
                             # we have killed the current plan, do not give
                             # it a new response
-                            resp = sentinal
+                            resp = sentinel
                             if len(self._plan_stack):
                                 self._exception = e
                                 continue
@@ -1161,7 +1161,7 @@ class RunEngine:
                 finally:
                     # if we poped a response and did not pop a plan, we need
                     # to put the new response back on the stack
-                    if resp is not sentinal:
+                    if resp is not sentinel:
                         self._response_stack.append(new_response)
 
         except (StopIteration, RequestStop):
