@@ -1051,19 +1051,6 @@ def reset_positions_wrapper(plan, devices=None):
     else:
         coupled_parents = set()
 
-    def read_and_stash_a_motor(obj):
-        try:
-            cur_pos = obj.position
-        except AttributeError:
-            reading = yield Msg('read', obj)
-            if reading is None:
-                # this plan may be being list-ified
-                cur_pos = 0
-            else:
-                k = list(reading.keys())[0]
-                cur_pos = reading[k]['value']
-        initial_positions[obj] = cur_pos
-
     def insert_reads(msg):
         eligible = devices is None or msg.obj in devices
         seen = msg.obj in initial_positions
