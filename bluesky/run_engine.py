@@ -1039,12 +1039,12 @@ class RunEngine:
                     # side of the yield in the plan will be moved past
                     resp = self._response_stack.pop()
                     # The case where we have a stashed exception
-                    if self._exception is not None:
+                    if (self._exception is not None or
+                            isinstance(resp, Exception)):
                         # throw the exception at the current plan
                         try:
-
                             msg = self._plan_stack[-1].throw(
-                                self._exception)
+                                self._exception or resp)
                         except Exception as e:
                             # The current plan did not handle it,
                             # maybe the next plan (if any) would like
@@ -1116,8 +1116,7 @@ class RunEngine:
                     # to top of the loop
                     except KeyError:
                         # TODO make this smarter
-                        self._exception = InvalidCommand(msg.command)
-                        new_response = self._exception
+                        new_response = InvalidCommand(msg.command)
                         continue
 
                     # try to finally run the command the user asked for
@@ -1133,7 +1132,6 @@ class RunEngine:
                         raise
                     # any other exception, stash it and go to the top of loop
                     except Exception as e:
-                        self._exception = e
                         new_response = e
                         continue
                     # normal use, if it runs cleanly, stash the response and
@@ -1159,7 +1157,6 @@ class RunEngine:
                     # raised error is not already stashed in _exception
                     if self._exception is None:
                         self._exception = e
-                        new_response = e
                     pending_cancel_exception = e
                 finally:
                     # if we poped a response and did not pop a plan, we need
