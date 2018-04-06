@@ -256,7 +256,7 @@ class RunEngine:
         self._msg_cache = deque()  # history of processed msgs for rewinding
         self._rewindable_flag = True  # if the RE is allowed to replay msgs
         self._plan_stack = deque()  # stack of generators to work off of
-        self._response_stack = deque([None])  # resps to send into the plans
+        self._response_stack = deque()  # resps to send into the plans
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
@@ -280,6 +280,7 @@ class RunEngine:
             'clear_checkpoint': self._clear_checkpoint,
             'rewindable': self._rewindable,
             'pause': self._pause,
+            'resume': self._resume,
             'collect': self._collect,
             'kickoff': self._kickoff,
             'complete': self._complete,
@@ -419,7 +420,7 @@ class RunEngine:
         self._deferred_pause_requested = False
         self._plan_stack = deque()
         self._msg_cache = deque()
-        self._response_stack = deque([None])
+        self._response_stack = deque()
         self._exception = None
         self._run_start_uids.clear()
         self._exit_status = 'success'
@@ -881,9 +882,11 @@ class RunEngine:
             # queue up the cached messages
             self._plan_stack.append(new_plan)
             self._response_stack.append(None)
+
             self._plan_stack.append(single_gen(
                 Msg('rewindable', None, self.rewindable)))
             self._response_stack.append(None)
+
             # if there is a post plan add it between the wait
             # and the cached messages
             if post_plan is not None:
@@ -891,9 +894,15 @@ class RunEngine:
                     post_plan = post_plan()
                 self._plan_stack.append(ensure_generator(post_plan))
                 self._response_stack.append(None)
+
+            # tell the devices they are ready to go again
+            self._plan_stack.append(single_gen(Msg('resume', None, )))
+            self._response_stack.append(None)
+
             # add the wait on the future to the stack
             self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
             self._response_stack.append(None)
+
             # if there is a pre plan add on top of the wait
             if pre_plan is not None:
                 if callable(pre_plan):
@@ -999,10 +1008,19 @@ class RunEngine:
         """
         pending_cancel_exception = None
         self._reason = ''
+        # sentinel to decide if need to add to the response stack or not
+        sentinel = object()
         try:
             self.state = 'running'
             while True:
+                assert len(self._response_stack) == len(self._plan_stack)
+                # set resp to the sentinel so that if we fail in the sleep
+                # we do not add an extra response
+                resp = sentinel
                 try:
+                    # the new response to be added
+                    new_response = None
+
                     # This 'yield from' must be here to ensure that
                     # this coroutine breaks out of its current behavior
                     # before trying to get the next message from the
@@ -1016,17 +1034,25 @@ class RunEngine:
                     # that any of the 'async' exceptions get thrown in the
                     # correct place
                     yield from asyncio.sleep(0, loop=self.loop)
+                    # always pop off a result, we are either sending it back in
+                    # or throwing an exception in, in either case the left hand
+                    # side of the yield in the plan will be moved past
+                    resp = self._response_stack.pop()
                     # The case where we have a stashed exception
-                    if self._exception is not None:
+                    if (self._exception is not None or
+                            isinstance(resp, Exception)):
                         # throw the exception at the current plan
                         try:
                             msg = self._plan_stack[-1].throw(
-                                self._exception)
+                                self._exception or resp)
                         except Exception as e:
                             # The current plan did not handle it,
                             # maybe the next plan (if any) would like
                             # to try
                             self._plan_stack.pop()
+                            # we have killed the current plan, do not give
+                            # it a new response
+                            resp = sentinel
                             if len(self._plan_stack):
                                 self._exception = e
                                 continue
@@ -1040,13 +1066,15 @@ class RunEngine:
                             self._exception = None
                     # The normal case of clean operation
                     else:
-                        resp = self._response_stack.pop()
                         try:
                             msg = self._plan_stack[-1].send(resp)
                         # We have exhausted the top generator
                         except StopIteration:
                             # pop the dead generator go back to the top
                             self._plan_stack.pop()
+                            # we have killed the current plan, do not give
+                            # it a new response
+                            resp = sentinel
                             if len(self._plan_stack):
                                 continue
                             # or reraise to get out of the infinite loop
@@ -1057,6 +1085,9 @@ class RunEngine:
                             # pop the dead plan, stash the exception and
                             # go to the top of the loop
                             self._plan_stack.pop()
+                            # we have killed the current plan, do not give
+                            # it a new response
+                            resp = sentinel
                             if len(self._plan_stack):
                                 self._exception = e
                                 continue
@@ -1085,7 +1116,7 @@ class RunEngine:
                     # to top of the loop
                     except KeyError:
                         # TODO make this smarter
-                        self._exception = InvalidCommand(msg.command)
+                        new_response = InvalidCommand(msg.command)
                         continue
 
                     # try to finally run the command the user asked for
@@ -1093,19 +1124,19 @@ class RunEngine:
                         # this is one of two places that 'async'
                         # exceptions (coming in via throw) can be
                         # raised
-                        response = yield from coro(msg)
+                        new_response = yield from coro(msg)
+
                     # special case `CancelledError` and let the outer
                     # exception block deal with it.
                     except asyncio.CancelledError:
                         raise
                     # any other exception, stash it and go to the top of loop
                     except Exception as e:
-                        self._exception = e
+                        new_response = e
                         continue
                     # normal use, if it runs cleanly, stash the response and
                     # go to the top of the loop
                     else:
-                        self._response_stack.append(response)
                         continue
 
                 except KeyboardInterrupt:
@@ -1127,6 +1158,12 @@ class RunEngine:
                     if self._exception is None:
                         self._exception = e
                     pending_cancel_exception = e
+                finally:
+                    # if we poped a response and did not pop a plan, we need
+                    # to put the new response back on the stack
+                    if resp is not sentinel:
+                        self._response_stack.append(new_response)
+
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             # TODO Is the sleep here necessary?
@@ -1990,6 +2027,25 @@ class RunEngine:
         keyword arguments in the `Msg` signature
         """
         self.request_pause(*msg.args, **msg.kwargs)
+
+    @asyncio.coroutine
+    def _resume(self, msg):
+        """Request the run engine to resume
+
+        Expected message object is:
+
+            Msg('resume', defer=False, name=None, callback=None)
+
+        See RunEngine.resume() docstring for explanation of the three
+        keyword arguments in the `Msg` signature
+        """
+        # Re-instate monitoring callbacks.
+        for obj, (cb, kwargs) in self._monitor_params.items():
+            obj.subscribe(cb, **kwargs)
+        # Notify Devices of the resume in case they want to clean up.
+        for obj in self._objs_seen:
+            if hasattr(obj, 'resume'):
+                obj.resume()
 
     @asyncio.coroutine
     def _checkpoint(self, msg):
