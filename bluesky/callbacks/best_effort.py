@@ -299,7 +299,8 @@ class BestEffortCallback(CallbackBase):
                          "create LiveGrid.")
                 else:
                     data_range = np.array([float(np.diff(e)) for e in extents])
-                    y_step, x_step = data_range / [s - 1 for s in shape]
+                    shp = [(s + 1) if s == 1 else s for s in shape]
+                    y_step, x_step = data_range / [s - 1 for s in shp]
                     adjusted_extent = [extents[1][0] - x_step / 2,
                                        extents[1][1] + x_step / 2,
                                        extents[0][0] - y_step / 2,
