@@ -1,5 +1,5 @@
 import ast
-from bluesky.plans import scan
+from bluesky.plans import scan, grid_scan
 import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import SupplementalData
@@ -80,3 +80,9 @@ def test_underhinted_plan(RE, hw):
         yield from bps.trigger_and_read(dets)
 
     RE(broken_plan([hw.det]))
+
+
+def test_live_grid(RE, hw):
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
