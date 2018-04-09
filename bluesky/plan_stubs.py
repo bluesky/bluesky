@@ -789,7 +789,6 @@ def trigger_and_read(devices, name='primary',
     rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
 
     def inner_trigger_and_read():
-        print("trigger an read")
         grp = _short_uid('trigger')
         no_wait = True
         for obj in devices:
@@ -798,21 +797,17 @@ def trigger_and_read(devices, name='primary',
                 yield from trigger(obj, group=grp)
 
         # read from the streaming devices
-        print('stream create')
         yield from create(streaming_prefix + name)
         for obj in devices:
             yield from read(obj, streaming=True)
         # this will create an event (and descriptor if first event)
         # *only* if information is read
-        print('stream save')
         yield from save()
 
         # Skip 'wait' if none of the devices implemented a trigger method.
-        print("waiting")
         if not no_wait:
             yield from wait(group=grp)
 
-        print("create then read save")
         # now read from the devices once trigger is complete
         yield from create(name)
         ret = {}  # collect and return readings to give plan access to them
@@ -821,7 +816,6 @@ def trigger_and_read(devices, name='primary',
             if reading is not None:
                 ret.update(reading)
         yield from save()
-        print("done")
         return ret
     from .preprocessors import rewindable_wrapper
     return (yield from rewindable_wrapper(inner_trigger_and_read(),

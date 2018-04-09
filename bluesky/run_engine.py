@@ -1485,7 +1485,7 @@ class RunEngine:
             if obj not in describe_cache:
                 describe_cache[obj] = dict()
                 if self._bundle_type =='streaming':
-                    if 'streaming' in inspect.signature(obj.read).parameters:
+                    if 'streaming' in inspect.signature(obj.describe).parameters:
                         data_keys = obj.describe(*msg.args, streaming=True, **msg.kwargs)
                     else:
                         raise ValueError("Error, detector has a streaming read method but not describe()")
