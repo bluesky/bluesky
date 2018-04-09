@@ -259,7 +259,7 @@ class BestEffortCallback(CallbackBase):
 
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
-        if stream_name == 'primary':
+        if stream_name == 'primary' or True:
             if ndims == 1:
                 self._live_plots[doc['uid']] = {}
                 self._peak_stats[doc['uid']] = {}
@@ -331,68 +331,32 @@ class BestEffortCallback(CallbackBase):
                     for I_key, ax in zip(columns, axes):
                         try:
                             extents = self._start_doc['extents']
-                            shape = self._start_doc['shape']
                         except KeyError:
-                            warn("Need both 'shape' and 'extents' in plan metadata to "
-                                 "create LiveGrid.")
+                            xlim = ylim = None
                         else:
-                            data_range = np.array([float(np.diff(e)) for e in extents])
-                            y_step, x_step = data_range / [s - 1 for s in shape]
-                            adjusted_extent = [extents[1][0] - x_step / 2,
-                                               extents[1][1] + x_step / 2,
-                                               extents[0][0] - y_step / 2,
-                                               extents[0][1] + y_step / 2]
-                            for I_key, ax in zip(columns, axes):
-                                # MAGIC NUMBERS based on what tacaswell thinks looks OK
-                                data_aspect_ratio = np.abs(data_range[1]/data_range[0])
-                                MAR = 2
-                                if (1/MAR < data_aspect_ratio < MAR):
-                                    aspect = 'equal'
-                                    ax.set_aspect(aspect, adjustable='box-forced')
-                                else:
-                                    aspect = 'auto'
-                                    ax.set_aspect(aspect, adjustable='datalim')
-        
-                                live_grid = LiveGrid(shape, I_key,
-                                                     xlabel=fast, ylabel=slow,
-                                                     extent=adjusted_extent,
-                                                     aspect=aspect,
-                                                     ax=ax)
-        
-                                live_grid('start', self._start_doc)
-                                live_grid('descriptor', doc)
-                                self._live_grids[doc['uid']][I_key] = live_grid
-                    else:
-                        self._live_scatters[doc['uid']] = {}
-                        x_key, y_key = dim_fields
-                        for I_key, ax in zip(columns, axes):
-                            try:
-                                extents = self._start_doc['extents']
-                            except KeyError:
-                                xlim = ylim = None
-                            else:
-                                xlim, ylim = extents
-                            live_scatter = LiveScatter(x_key, y_key, I_key,
-                                                       xlim=xlim, ylim=ylim,
-                                                       # Let clim autoscale.
-                                                       ax=ax)
-                            live_scatter('start', self._start_doc)
-                            live_scatter('descriptor', doc)
-                            self._live_scatters[doc['uid']][I_key] = live_scatter
-                else:
-                    raise NotImplementedError("we do not support 3D+ in BEC yet "
-                                              "(and it should have bailed above)")
-        
-                fig.tight_layout()
+                            xlim, ylim = extents
+                        live_scatter = LiveScatter(x_key, y_key, I_key,
+                                                   xlim=xlim, ylim=ylim,
+                                                   # Let clim autoscale.
+                                                   ax=ax)
+                        live_scatter('start', self._start_doc)
+                        live_scatter('descriptor', doc)
+                        self._live_scatters[doc['uid']][I_key] = live_scatter
+            else:
+                raise NotImplementedError("we do not support 3D+ in BEC yet "
+                                          "(and it should have bailed above)")
+    
+            fig.tight_layout()
 
     def event(self, doc):
         descriptor = self._descriptors[doc['descriptor']]
-        if descriptor.get('name') == 'primary':
+        stream_name = descriptor.get("name")
+        if stream_name == 'primary':
             if self._table is not None:
                 self._table('event', doc)
 
         # Show the baseline readings.
-        if descriptor.get('name') == 'baseline':
+        if stream_name == 'baseline':
             columns = hinted_fields(descriptor)
             self._baseline_toggle = not self._baseline_toggle
             if self._baseline_toggle:
@@ -411,7 +375,7 @@ class BestEffortCallback(CallbackBase):
                     print('| {:>30} | {:<30} |'.format(k, v), file=file)
                 print(border, file=file)
 
-        if descriptor.get('name') == 'primary':
+        if stream_name == 'primary' or True:
             for y_key in doc['data']:
                 live_plot = self._live_plots.get(doc['descriptor'], {}).get(y_key)
                 if live_plot is not None:
