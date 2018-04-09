@@ -259,7 +259,7 @@ class BestEffortCallback(CallbackBase):
 
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
-        if stream_name == 'primary' or True:
+        if stream_name == 'primary':
             if ndims == 1:
                 self._live_plots[doc['uid']] = {}
                 self._peak_stats[doc['uid']] = {}
@@ -375,7 +375,7 @@ class BestEffortCallback(CallbackBase):
                     print('| {:>30} | {:<30} |'.format(k, v), file=file)
                 print(border, file=file)
 
-        if stream_name == 'primary' or True:
+        if stream_name == 'primary':
             for y_key in doc['data']:
                 live_plot = self._live_plots.get(doc['descriptor'], {}).get(y_key)
                 if live_plot is not None:
