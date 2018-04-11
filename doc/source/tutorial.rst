@@ -51,7 +51,7 @@ Before You Begin
 
   .. code-block:: bash
 
-    conda install -c lightsoure2-tag bluesky ophyd databroker ipython
+    conda install -c lightsource2-tag bluesky ophyd databroker ipython
 
 * Start IPython:
 
