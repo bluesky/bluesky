@@ -615,6 +615,64 @@ def test_sigint_many_hits_cb(RE):
     assert ttime.time() - start_time < 2
 
 
+def test_no_context_manager(RE):
+    # Clear the context managers so that RE will not react to sigint
+    RE.context_managers = []
+
+    # Proceed as normal
+    pid = os.getpid()
+
+    def sim_kill(n=1):
+        for j in range(n):
+            print('KILL', j)
+            ttime.sleep(0.05)
+            os.kill(pid, signal.SIGINT)
+
+    def hanging_plan():
+        "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
+        ttime.sleep(2)
+        yield Msg('null')
+
+    # Only send one SIGINT
+    timer = threading.Timer(0.5, sim_kill, (1,))
+    timer.start()
+
+    t = threading.Thread(target=RE, args=(hanging_plan()))
+    start = ttime.time()
+    t.start()
+
+    # Wait for the KeyboardInterrupt and handle in the main thread
+    with pytest.raises(KeyboardInterrupt):
+        ttime.sleep(5)
+
+    t.join()
+    delta = ttime.time() - start
+
+    # Hanging plan finished, but extra sleep did not
+    assert 2 < delta < 5
+
+
+def test_many_context_managers(RE):
+    class Manager:
+        enters = 0
+        exits = 0
+
+        def __init__(self, RE):
+            pass
+
+        def __enter__(self):
+            Manager.enters += 1
+
+        def __exit__(self, *args, **kwargs):
+            Manager.exits += 1
+
+    n = 42
+    RE.context_managers.extend([Manager]*n)
+    RE([Msg('null')])
+    assert Manager.enters == n
+    assert Manager.exits == n
+
+
 def _make_plan_marker():
     @reset_positions_decorator()
     def raiser(motor):

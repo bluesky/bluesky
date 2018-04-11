@@ -12,7 +12,6 @@ import inspect
 from inspect import Parameter, Signature
 import itertools
 from collections import Iterable
-import sys
 import numpy as np
 from cycler import cycler
 import logging
@@ -176,6 +175,55 @@ class SignalHandler:
         signal.signal(self.sig, self.original_handler)
         self.released = True
         return True
+
+
+class SigintHandler(SignalHandler):
+    def __init__(self, RE):
+        super().__init__(signal.SIGINT, log=RE.log)
+        self.RE = RE
+        self.last_sigint_time = None  # time most recent SIGINT was processed
+        self.num_sigints_processed = 0  # count SIGINTs processed
+
+    def __enter__(self):
+        self.RE.loop.call_later(0.1, self.check_for_signals)
+        return super().__enter__()
+
+    def check_for_signals(self):
+        # Check for pause requests from keyboard.
+        if self.RE.state.is_running and (not self.RE._interrupted):
+            if self.count > self.num_sigints_processed:
+                self.num_sigints_processed = self.count
+                self.log.debug("RunEngine caught a new SIGINT")
+                self.last_sigint_time = time.time()
+
+                if self.count == 1:
+                    # Ctrl-C once -> request a deferred pause
+                    if not self.RE._deferred_pause_requested:
+                        self.RE.loop.call_soon(self.RE.request_pause, True)
+                        print("A 'deferred pause' has been requested. The "
+                              "RunEngine will pause at the next checkpoint. "
+                              "To pause immediately, hit Ctrl+C again in the "
+                              "next 10 seconds.")
+                elif self.count > 1:
+                    # - Ctrl-C twice within 10 seconds -> hard pause
+                    self.log.debug("RunEngine detected two SIGINTs. "
+                                   "A hard pause will be requested.")
+                    self.RE.loop.call_soon(self.RE.request_pause, False)
+            else:
+                # No new SIGINTs to process.
+                if self.num_sigints_processed > 0:
+                    if time.time() - self.last_sigint_time > 10:
+                        self.log.debug("It has been 10 seconds since the "
+                                       "last SIGINT. Resetting SIGINT "
+                                       "handler.")
+                        # It's been 10 seconds since the last SIGINT. Reset.
+                        self.num_sigints_processed = 0
+                        self.count = 0
+                        self.interrupted = False
+                        self.last_sigint_time = None
+
+        if not self.released:
+            self.RE.loop.call_later(0.1, self.check_for_signals)
 
 
 class CallbackRegistry:
@@ -696,6 +744,7 @@ def get_history():
 
 _QT_KICKER_INSTALLED = {}
 _NB_KICKER_INSTALLED = {}
+
 
 def install_kicker(loop=None, update_rate=0.03):
     """

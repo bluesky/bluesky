@@ -7,11 +7,10 @@ from warnings import warn
 from inspect import Parameter, Signature
 from itertools import count, tee
 from collections import deque, defaultdict, ChainMap
-import signal
 from enum import Enum
 import functools
 import inspect
-
+from contextlib import ExitStack
 
 import jsonschema
 from event_model import DocumentNames, schemas
@@ -19,7 +18,7 @@ from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
 
-from .utils import (CallbackRegistry, SignalHandler, normalize_subs_input,
+from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     AsyncInput, new_uid, NoReplayAllowed,
                     RequestAbort, RequestStop, RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
@@ -107,12 +106,21 @@ class RunEngine:
     loop : asyncio event loop
         e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
 
-    preprocessors : list
+    preprocessors : list, optional
         Generator functions that take in a plan (generator instance) and
         modify its messages on the way out. Suitable examples include
         the functions in the module ``bluesky.plans`` with names ending in
         'wrapper'.  Functions are composed in order: the preprocessors
         ``[f, g]`` are applied like ``f(g(plan))``.
+
+    context_managers : list, optional
+        Context managers that will be entered when we run a plan. The context
+        managers will be composed in order, much like the preprocessors. If
+        this argument is omitted, we will use a user-oriented handler for
+        SIGINT. The elements of this list will be passed this ``RunEngine``
+        instance as their only argument. You may pass an empty list if you
+        would like a ``RunEngine`` with no signal handling and no context
+        managers.
 
     md_validator : callable, optional
         a function that raises and prevents starting a run if it deems
@@ -190,7 +198,7 @@ class RunEngine:
                              'remove_suspender']
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
-                 md_validator=None):
+                 context_managers=None, md_validator=None):
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
@@ -208,6 +216,9 @@ class RunEngine:
         if preprocessors is None:
             preprocessors = []
         self.preprocessors = preprocessors
+        if context_managers is None:
+            context_managers = [SigintHandler]
+        self.context_managers = context_managers
         if md_validator is None:
             md_validator = _default_md_validator
         self.md_validator = md_validator
@@ -225,9 +236,6 @@ class RunEngine:
         self._bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
         self._deferred_pause_requested = False  # pause at next 'checkpoint'
-        self._sigint_handler = None  # intercepts Ctrl+C
-        self._last_sigint_time = None  # time most recent SIGINT was processed
-        self._num_sigints_processed = 0  # count SIGINTs processed
         self._exception = None  # stored and then raised in the _run loop
         self._interrupted = False  # True if paused, aborted, or failed
         self._objs_read = deque()  # objects read in one Event
@@ -307,8 +315,6 @@ class RunEngine:
         self.unsubscribe_lossless = self.dispatcher.unsubscribe
         self._subscribe_lossless = self.dispatcher.subscribe
         self._unsubscribe_lossless = self.dispatcher.unsubscribe
-
-        self.loop.call_soon(self._check_for_signals)
 
     def subscribe(self, func, name='all'):
         """
@@ -430,8 +436,6 @@ class RunEngine:
         self._pardon_failures = asyncio.Event(loop=self.loop)
         self._plan = None
         self._interrupted = False
-        self._last_sigint_time = None
-        self._num_sigints_processed = 0
 
         # Unsubscribe for per-run callbacks.
         for cid in self._temp_callback_ids:
@@ -657,8 +661,10 @@ class RunEngine:
             self._plan_stack.append(single_gen(Msg('wait_for', None, futs)))
             self._response_stack.append(None)
 
-        # Intercept ^C.
-        with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
+        # Handle all context managers
+        with ExitStack() as stack:
+            for mgr in self.context_managers:
+                stack.enter_context(mgr(self))
             self._task = self.loop.create_task(self._run())
             try:
                 self.loop.run_forever()
@@ -736,10 +742,11 @@ class RunEngine:
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
         self.state = 'running'
-        self._last_sigint_time = None
-        self._num_sigints_processed = 0
-        # Intercept ^C
-        with SignalHandler(signal.SIGINT, self.log) as self._sigint_handler:
+
+        # Handle all context managers
+        with ExitStack() as stack:
+            for mgr in self.context_managers:
+                stack.enter_context(mgr(self))
             if self._task.done():
                 return
             try:
@@ -1231,43 +1238,6 @@ class RunEngine:
         # if the task was cancelled
         if pending_cancel_exception is not None:
             raise pending_cancel_exception
-
-    def _check_for_signals(self):
-        # Check for pause requests from keyboard.
-        if self.state.is_running and (not self._interrupted):
-            count = self._sigint_handler.count
-            if count > self._num_sigints_processed:
-                self._num_sigints_processed = count
-                self.log.debug("RunEngine caught a new SIGINT")
-                self._last_sigint_time = ttime.time()
-
-                if count == 1:
-                    # Ctrl-C once -> request a deferred pause
-                    if not self._deferred_pause_requested:
-                        self.loop.call_soon(self.request_pause, True)
-                        print("A 'deferred pause' has been requested. The "
-                              "RunEngine will pause at the next checkpoint. "
-                              "To pause immediately, hit Ctrl+C again in the "
-                              "next 10 seconds.")
-                elif count > 1:
-                    # - Ctrl-C twice within 10 seconds -> hard pause
-                    self.log.debug("RunEngine detected two SIGINTs. "
-                                   "A hard pause will be requested.")
-                    self.loop.call_soon(self.request_pause, False)
-            else:
-                # No new SIGINTs to process.
-                if self._num_sigints_processed > 0:
-                    if ttime.time() - self._last_sigint_time > 10:
-                        self.log.debug("It has been 10 seconds since the "
-                                       "last SIGINT. Resetting SIGINT "
-                                       "handler.")
-                        # It's been 10 seconds since the last SIGINT. Reset.
-                        self._num_sigints_processed = 0
-                        self._sigint_handler.count = 0
-                        self._sigint_handler.interrupted = False
-                        self._last_sigint_time = None
-
-        self.loop.call_later(0.1, self._check_for_signals)
 
     @asyncio.coroutine
     def _wait_for(self, msg):
