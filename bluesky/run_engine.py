@@ -1307,7 +1307,7 @@ class RunEngine:
         # Emit an Event Descriptor for recording any interruptions as Events.
         if self.record_interruptions:
             self._interruptions_desc_uid = new_uid()
-            dk = {'dtype': 'string', 'shape': None, 'source': 'RunEngine'}
+            dk = {'dtype': 'string', 'shape': [], 'source': 'RunEngine'}
             interruptions_desc = dict(time=ttime.time(),
                                       uid=self._interruptions_desc_uid,
                                       name='interruptions',
