@@ -13,6 +13,9 @@ import numpy as np
 from operator import attrgetter
 from . import plans as bp
 from . import plan_stubs as bps
+
+from ophyd.areadetector.base import ADBase
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
@@ -111,6 +114,17 @@ class BlueskyMagics(Magics):
     FMT_PREC = 6
 
     @line_magic
+    def detectors(self, line):
+        ''' List all available detectors.'''
+        devices = _which_devices(cls_whitelist=[ADBase], cls_blacklist=None)
+        cols = ["Python name", "Ophyd Name"]
+        print("{:20s} \t {:20s}".format(*cols))
+        print("="*40)
+        for name, obj in devices:
+            print("{:20s} \t {:20s}".format(name, obj.name))
+
+
+    @line_magic
     def wa(self, line):
         "List positioner info. 'wa' stands for 'where all'."
         if line.strip():
@@ -156,6 +170,42 @@ class BlueskyMagics(Magics):
             lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit,
                                          offset))
         print('\n'.join(lines))
+
+
+def _which_devices(cls_whitelist=None, cls_blacklist=None):
+    ''' Returns list of all devices according to the classes listed.
+
+        Parameters
+        ----------
+        cls_whitelist : tuple or list, optional
+            the class of PV's to search for
+            defaults to [Device, Signal]
+        cls_blacklist : tuple or list, optional
+
+        Examples
+        --------
+        Read from everything except EpicsMotor's:
+            objs = _which_devices(cls_blacklist=[EpicsMotor])
+    '''
+    if cls_whitelist is None:
+        cls_whitelist = [Device, Signal]
+    if cls_blacklist is None:
+        cls_blacklist = []
+
+    user_ns = get_ipython().user_ns
+
+    obj_list = list()
+    for key, obj in user_ns.items():
+        # ignore objects beginning with "_"
+        # (mainly for ipython stored objs from command line
+        # return of commands)
+        # also check its a subclass of desired classes
+        if not key.startswith("_") and \
+                isinstance(obj, tuple(cls_whitelist)) and \
+                not isinstance(tuple(cls_blacklist)):
+            obj_list.append((key, obj))
+
+    return obj_list
 
 
 def _ct_callback(name, doc):
