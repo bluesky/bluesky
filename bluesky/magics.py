@@ -15,6 +15,7 @@ from . import plans as bp
 from . import plan_stubs as bps
 
 from ophyd.areadetector.base import ADBase
+from ophyd.epics_motor import EpicsMotor
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -123,6 +124,16 @@ class BlueskyMagics(Magics):
         for name, obj in devices:
             print("{:20s} \t {:20s}".format(name, obj.name))
 
+    @line_magic
+    def motors(self, line):
+        ''' List all available detectors.'''
+        devices = _which_devices(cls_whitelist=[EpicsMotor], cls_blacklist=None)
+        cols = ["Python name", "Ophyd Name"]
+        print("{:20s} \t {:20s}".format(*cols))
+        print("="*40)
+        for name, obj in devices:
+            print("{:20s} \t {:20s}".format(name, obj.name))
+
 
     @line_magic
     def wa(self, line):
@@ -180,7 +191,10 @@ def _which_devices(cls_whitelist=None, cls_blacklist=None):
         cls_whitelist : tuple or list, optional
             the class of PV's to search for
             defaults to [Device, Signal]
+
         cls_blacklist : tuple or list, optional
+            the class of PV's to ignore
+            this defaults to an empty list
 
         Examples
         --------
@@ -202,7 +216,7 @@ def _which_devices(cls_whitelist=None, cls_blacklist=None):
         # also check its a subclass of desired classes
         if not key.startswith("_") and \
                 isinstance(obj, tuple(cls_whitelist)) and \
-                not isinstance(tuple(cls_blacklist)):
+                not isinstance(obj, tuple(cls_blacklist)):
             obj_list.append((key, obj))
 
     return obj_list
