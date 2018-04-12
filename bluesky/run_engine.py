@@ -25,6 +25,8 @@ from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
                     single_gen, short_uid)
 
+_validate = functools.partial(jsonschema.validate, types={'array': (list, tuple)})
+
 
 class RunEngineStateMachine(StateMachine):
     """
@@ -568,7 +570,7 @@ class RunEngine:
                        seq_num=next(self._interruptions_counter),
                        data={'interruption': content},
                        timestamps={'interruption': ttime.time()})
-            jsonschema.validate(doc, schemas[DocumentNames.event])
+            _validate(doc, schemas[DocumentNames.event])
             self.dispatcher.process(DocumentNames.event, doc)
 
     def __call__(self, *args, **metadata_kw):
@@ -1513,7 +1515,7 @@ class RunEngine:
             doc = dict(descriptor=descriptor_uid,
                        time=ttime.time(), data=data, timestamps=timestamps,
                        seq_num=next(seq_num_counter), uid=new_uid())
-            jsonschema.validate(doc, schemas[DocumentNames.event])
+            _validate(doc, schemas[DocumentNames.event])
             self.dispatcher.process(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
@@ -2234,7 +2236,7 @@ class RunEngine:
     @asyncio.coroutine
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
-        jsonschema.validate(doc, schemas[name])
+        _validate(doc, schemas[name])
         self.dispatcher.process(name, doc)
 
 
