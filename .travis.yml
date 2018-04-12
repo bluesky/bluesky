@@ -26,6 +26,7 @@ before_install:
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
   - pip install -r requirements.txt
+  - pip install --upgrade cython
   - pip install -r dev-requirements.txt
   - pip install codecov
   - python setup.py install
