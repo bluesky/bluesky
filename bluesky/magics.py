@@ -14,9 +14,6 @@ from operator import attrgetter
 from . import plans as bp
 from . import plan_stubs as bps
 
-from ophyd.areadetector.base import ADBase
-from ophyd.epics_motor import EpicsMotor
-
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
@@ -117,22 +114,26 @@ class BlueskyMagics(Magics):
     @line_magic
     def detectors(self, line):
         ''' List all available detectors.'''
-        devices = _which_devices(cls_whitelist=[ADBase], cls_blacklist=None)
+        # also make sure it has a name for printing
+        logic = lambda x : is_detector(x) and hasattr(x, 'name')
+        devices = _which_devices(cls_whitelist=logic, cls_blacklist=None)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
         print("="*40)
         for name, obj in devices:
-            print("{:20s} \t {:20s}".format(name, obj.name))
+            print("{:20s} \t {:20s}".format(name, str(obj.name)))
 
     @line_magic
     def motors(self, line):
         ''' List all available detectors.'''
-        devices = _which_devices(cls_whitelist=[EpicsMotor], cls_blacklist=None)
+        # also make sure it has a name for printing
+        logic = lambda x : is_epics_motor(x) and hasattr(x, 'name')
+        devices = _which_devices(cls_whitelist=logic, cls_blacklist=None)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
         print("="*40)
         for name, obj in devices:
-            print("{:20s} \t {:20s}".format(name, obj.name))
+            print("{:20s} \t {:20s}".format(name, str(obj.name)))
 
 
     @line_magic
@@ -188,13 +189,17 @@ def _which_devices(cls_whitelist=None, cls_blacklist=None):
 
         Parameters
         ----------
-        cls_whitelist : tuple or list, optional
-            the class of PV's to search for
-            defaults to [Device, Signal]
+        cls_whitelist : func or None, optional
+            the class of objects to accept
+            a function that receives and object and returns a bool
+            if None, assumes True
+            whether or not to accept
+            defaults to is_ophyd_obj(obj)
 
-        cls_blacklist : tuple or list, optional
-            the class of PV's to ignore
-            this defaults to an empty list
+        cls_blacklist : func or None, optional
+            the class of objects to ignore
+            if None, assumes always False
+            this defaults to None
 
         Examples
         --------
@@ -202,9 +207,10 @@ def _which_devices(cls_whitelist=None, cls_blacklist=None):
             objs = _which_devices(cls_blacklist=[EpicsMotor])
     '''
     if cls_whitelist is None:
-        cls_whitelist = [Device, Signal]
+        cls_whitelist = is_ophyd_obj
+
     if cls_blacklist is None:
-        cls_blacklist = []
+        cls_blacklist = lambda x : False
 
     user_ns = get_ipython().user_ns
 
@@ -214,13 +220,33 @@ def _which_devices(cls_whitelist=None, cls_blacklist=None):
         # (mainly for ipython stored objs from command line
         # return of commands)
         # also check its a subclass of desired classes
-        if not key.startswith("_") and \
-                isinstance(obj, tuple(cls_whitelist)) and \
-                not isinstance(obj, tuple(cls_blacklist)):
+        if not key.startswith("_") and cls_whitelist(obj) and \
+                not cls_blacklist(obj):
             obj_list.append((key, obj))
 
     return obj_list
 
+
+def is_class(obj):
+    return hasattr(obj, '__mro__')
+
+def is_ophyd_obj(obj):
+    if hasattr(obj, 'read') and not is_class(obj):
+        return True
+    else:
+        return False
+
+def is_detector(obj):
+    if hasattr(obj, 'get_asyn_digraph') and not is_class(obj):
+        return True
+    else:
+        return False
+
+def is_epics_motor(obj):
+    if hasattr(obj, 'user_readback') and not is_class(obj):
+        return True
+    else:
+        return False
 
 def _ct_callback(name, doc):
     if name != 'event':
