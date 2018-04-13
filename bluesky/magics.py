@@ -116,7 +116,8 @@ class BlueskyMagics(Magics):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
         logic = lambda x : is_detector(x) and hasattr(x, 'name')
-        devices = _which_devices(cls_whitelist=logic, cls_blacklist=None)
+        devices = _which_devices(cls_whitelist=logic, cls_blacklist=None,
+                                 user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
         print("="*40)
@@ -128,7 +129,8 @@ class BlueskyMagics(Magics):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
         logic = lambda x : is_epics_motor(x) and hasattr(x, 'name')
-        devices = _which_devices(cls_whitelist=logic, cls_blacklist=None)
+        devices = _which_devices(cls_whitelist=logic, cls_blacklist=None,
+                                 user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
         print("="*40)
@@ -184,7 +186,7 @@ class BlueskyMagics(Magics):
         print('\n'.join(lines))
 
 
-def _which_devices(cls_whitelist=None, cls_blacklist=None):
+def _which_devices(cls_whitelist=None, cls_blacklist=None, user_ns=None):
     ''' Returns list of all devices according to the classes listed.
 
         Parameters
@@ -212,7 +214,8 @@ def _which_devices(cls_whitelist=None, cls_blacklist=None):
     if cls_blacklist is None:
         cls_blacklist = lambda x : False
 
-    user_ns = get_ipython().user_ns
+    if user_ns is None:
+        user_ns = get_ipython().user_ns
 
     obj_list = list()
     for key, obj in user_ns.items():
