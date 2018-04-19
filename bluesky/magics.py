@@ -115,9 +115,9 @@ class BlueskyMagics(Magics):
     def detectors(self, line):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
-        def logic(x):
+        def leaf_logic(x):
             return is_detector(x) and hasattr(x, 'name')
-        devices = _which_devices(cls_whitelist=logic, cls_blacklist=None,
+        devices = _which_devices(leaf_logic=leaf_logic,
                                  user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
@@ -129,10 +129,9 @@ class BlueskyMagics(Magics):
     def motors(self, line):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
-        def logic(x):
+        def leaf_logic(x):
             return is_epics_motor(x) and hasattr(x, 'name')
-        positioner_list = _which_devices(cls_whitelist=logic,
-                                         cls_blacklist=None,
+        positioner_list = _which_devices(leaf_logic=leaf_logic,
                                          user_ns=self.shell.user_ns)
         # ignore the first key
         positioners = [positioner[1] for positioner in positioner_list]
@@ -207,53 +206,76 @@ def _print_positioners(positioners, sort=True, precision=6):
     print('\n'.join(lines))
 
 
-def _which_devices(cls_whitelist=None, cls_blacklist=None, user_ns=None):
+def _which_devices(leaf_logic=None, node_logic=None, user_ns=None, maxdepth=6):
     ''' Returns list of all devices according to the classes listed.
 
         Parameters
         ----------
-        cls_whitelist : func or None, optional
-            the class of objects to accept
-            a function that receives and object and returns a bool
-            if None, assumes True
-            whether or not to accept
-            defaults to is_ophyd_obj(obj)
+        leaf_logic: func or None, optional
+            This is a function that receives an object as input and
+                returns True if this object is a leaf and false if it's not a
+                node.
 
-        cls_blacklist : func or None, optional
-            the class of objects to ignore
-            if None, assumes always False
-            this defaults to None
+        node_logic: func or None, optional
+            This is a function that receives an object as input and
+                returns True if this object is a node and false if it's not a
+                node.
+
+        user_ns : dict, optional
+            The namespace to search on
+
+        maxdepth :
+            maximum recursion depth
 
         Examples
         --------
         Read from everything except EpicsMotor's:
-            objs = _which_devices(cls_blacklist=[EpicsMotor])
+            objs = _which_devices(leaf_logic=is_epics_motor)
     '''
-    if cls_whitelist is None:
-        cls_whitelist = is_ophyd_obj
+    if node_logic is None:
+        node_logic = is_device
 
-    if cls_blacklist is None:
-        cls_blacklist = lambda x: False
+    if leaf_logic is None:
+        leaf_logic = is_signal
 
     if user_ns is None:
         user_ns = get_ipython().user_ns
 
     obj_list = list()
+    if maxdepth == 0:
+        return obj_list
+
     for key, obj in user_ns.items():
         # ignore objects beginning with "_"
         # (mainly for ipython stored objs from command line
         # return of commands)
         # also check its a subclass of desired classes
-        if not key.startswith("_") and cls_whitelist(obj) and \
-                not cls_blacklist(obj):
-            obj_list.append((key, obj))
+        if not key.startswith("_"):
+            # NOTE : First check leaf
+            if leaf_logic(obj):
+                obj_list.append((key, obj))
+            elif node_logic(obj):
+                # node so recurse
+                obj_list.extend(_which_devices(node_logic=node_logic,
+                                               leaf_logic=leaf_logic,
+                                               user_ns=obj.__dict__,
+                                               maxdepth=maxdepth-1))
+            else:
+                # don't add to list
+                pass
 
     return obj_list
+
 
 
 def is_class(obj):
     return hasattr(obj, '__mro__')
 
+def is_device(obj):
+    return hasattr(obj, "component_names")
+
+def is_signal(obj):
+    return hasattr(obj, "value")
 
 def is_ophyd_obj(obj):
     if hasattr(obj, 'read') and not is_class(obj):
