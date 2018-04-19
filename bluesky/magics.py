@@ -145,7 +145,7 @@ class BlueskyMagics(Magics):
             positioners = eval(line, self.shell.user_ns)
         else:
             positioners = self.positioners
-        _print_positioners(positioners)
+        _print_positioners(positioners, precision=self.FMT_PREC)
 
 
 def _print_positioners(positioners, sort=True, precision=6):
