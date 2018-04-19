@@ -115,7 +115,8 @@ class BlueskyMagics(Magics):
     def detectors(self, line):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
-        logic = lambda x : is_detector(x) and hasattr(x, 'name')
+        def logic(x):
+            return is_detector(x) and hasattr(x, 'name')
         devices = _which_devices(cls_whitelist=logic, cls_blacklist=None,
                                  user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
@@ -128,15 +129,14 @@ class BlueskyMagics(Magics):
     def motors(self, line):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
-        logic = lambda x : is_epics_motor(x) and hasattr(x, 'name')
-        devices = _which_devices(cls_whitelist=logic, cls_blacklist=None,
-                                 user_ns=self.shell.user_ns)
-        cols = ["Python name", "Ophyd Name"]
-        print("{:20s} \t {:20s}".format(*cols))
-        print("="*40)
-        for name, obj in devices:
-            print("{:20s} \t {:20s}".format(name, str(obj.name)))
-
+        def logic(x):
+            return is_epics_motor(x) and hasattr(x, 'name')
+        positioner_list = _which_devices(cls_whitelist=logic,
+                                         cls_blacklist=None,
+                                         user_ns=self.shell.user_ns)
+        # ignore the first key
+        positioners = [positioner[1] for positioner in positioner_list]
+        _print_positioners(positioners, precision=self.FMT_PREC)
 
     @line_magic
     def wa(self, line):
@@ -145,45 +145,66 @@ class BlueskyMagics(Magics):
             positioners = eval(line, self.shell.user_ns)
         else:
             positioners = self.positioners
+        _print_positioners(positioners)
+
+
+def _print_positioners(positioners, sort=True, precision=6):
+    '''
+        This will take a list of positioners and try to print them.
+
+        Parameters
+        ----------
+        positioners : list
+            list of positioners
+
+        sort : bool, optional
+            whether or not to sort the list
+
+        precision: int, optional
+            The precision to use for numbers
+    '''
+    # sort first
+    if sort:
         positioners = sorted(set(positioners), key=attrgetter('name'))
-        values = []
-        for p in positioners:
+
+    values = []
+    for p in positioners:
+        try:
+            values.append(p.position)
+        except Exception as exc:
+            values.append(exc)
+
+    headers = ['Positioner', 'Value', 'Low Limit', 'High Limit', 'Offset']
+    LINE_FMT = '{: <30} {: <11} {: <11} {: <11} {: <11}'
+    lines = []
+    lines.append(LINE_FMT.format(*headers))
+    for p, v in zip(positioners, values):
+        if not isinstance(v, Exception):
             try:
-                values.append(p.position)
+                prec = p.precision
+            except Exception:
+                prec = precision
+            value = np.round(v, decimals=prec)
+            try:
+                low_limit, high_limit = p.limits
             except Exception as exc:
-                values.append(exc)
-
-        headers = ['Positioner', 'Value', 'Low Limit', 'High Limit', 'Offset']
-        LINE_FMT = '{: <30} {: <11} {: <11} {: <11} {: <11}'
-        lines = []
-        lines.append(LINE_FMT.format(*headers))
-        for p, v in zip(positioners, values):
-            if not isinstance(v, Exception):
-                try:
-                    prec = p.precision
-                except Exception:
-                    prec = self.FMT_PREC
-                value = np.round(v, decimals=prec)
-                try:
-                    low_limit, high_limit = p.limits
-                except Exception as exc:
-                    low_limit = high_limit = exc.__class__.__name__
-                else:
-                    low_limit = np.round(low_limit, decimals=prec)
-                    high_limit = np.round(high_limit, decimals=prec)
-                try:
-                    offset = p.user_offset.get()
-                except Exception as exc:
-                    offset = exc.__class__.__name__
-                else:
-                    offset = np.round(offset, decimals=prec)
+                low_limit = high_limit = exc.__class__.__name__
             else:
-                value = v.__class__.__name__  # e.g. 'DisconnectedError'
-                low_limit = high_limit = offset = ''
+                low_limit = np.round(low_limit, decimals=prec)
+                high_limit = np.round(high_limit, decimals=prec)
+            try:
+                offset = p.user_offset.get()
+            except Exception as exc:
+                offset = exc.__class__.__name__
+            else:
+                offset = np.round(offset, decimals=prec)
+        else:
+            value = v.__class__.__name__  # e.g. 'DisconnectedError'
+            low_limit = high_limit = offset = ''
 
-            lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit,
-                                         offset))
-        print('\n'.join(lines))
+        lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit,
+                                     offset))
+    print('\n'.join(lines))
 
 
 def _which_devices(cls_whitelist=None, cls_blacklist=None, user_ns=None):
@@ -212,7 +233,7 @@ def _which_devices(cls_whitelist=None, cls_blacklist=None, user_ns=None):
         cls_whitelist = is_ophyd_obj
 
     if cls_blacklist is None:
-        cls_blacklist = lambda x : False
+        cls_blacklist = lambda x: False
 
     if user_ns is None:
         user_ns = get_ipython().user_ns
@@ -233,11 +254,13 @@ def _which_devices(cls_whitelist=None, cls_blacklist=None, user_ns=None):
 def is_class(obj):
     return hasattr(obj, '__mro__')
 
+
 def is_ophyd_obj(obj):
     if hasattr(obj, 'read') and not is_class(obj):
         return True
     else:
         return False
+
 
 def is_detector(obj):
     if hasattr(obj, 'get_asyn_digraph') and not is_class(obj):
@@ -245,11 +268,13 @@ def is_detector(obj):
     else:
         return False
 
+
 def is_epics_motor(obj):
     if hasattr(obj, 'user_readback') and not is_class(obj):
         return True
     else:
         return False
+
 
 def _ct_callback(name, doc):
     if name != 'event':
