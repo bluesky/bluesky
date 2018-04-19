@@ -127,7 +127,7 @@ class BlueskyMagics(Magics):
 
     @line_magic
     def motors(self, line):
-        ''' List all available detectors.'''
+        ''' List all available motors.'''
         # also make sure it has a name for printing
         def leaf_logic(x):
             return is_epics_motor(x) and hasattr(x, 'name')
@@ -136,6 +136,21 @@ class BlueskyMagics(Magics):
         # ignore the first key
         positioners = [positioner[1] for positioner in positioner_list]
         _print_positioners(positioners, precision=self.FMT_PREC)
+
+    @line_magic
+    def signals(self, line):
+        ''' List all ophyd signals.'''
+        # also make sure it has a name for printing
+        def leaf_logic(x):
+            return is_signal(x) and hasattr(x, 'name')
+        devices = _which_devices(leaf_logic=leaf_logic,
+                                 user_ns=self.shell.user_ns)
+        cols = ["Python name", "Ophyd Name"]
+        print("{:20s} \t {:20s}".format(*cols))
+        print("="*40)
+        for name, obj in devices:
+            print("{:20s} \t {:20s}".format(name, str(obj.name)))
+
 
     @line_magic
     def wa(self, line):
@@ -206,7 +221,8 @@ def _print_positioners(positioners, sort=True, precision=6):
     print('\n'.join(lines))
 
 
-def _which_devices(leaf_logic=None, node_logic=None, user_ns=None, maxdepth=6):
+def _which_devices(leaf_logic=None, node_logic=None, user_ns=None, maxdepth=6,
+                   get_children=None, prefix=""):
     ''' Returns list of all devices according to the classes listed.
 
         Parameters
@@ -227,6 +243,12 @@ def _which_devices(leaf_logic=None, node_logic=None, user_ns=None, maxdepth=6):
         maxdepth :
             maximum recursion depth
 
+        get_children : func or None, optional
+            function to get children of a node
+
+        prefix : str, optional
+            prefix string of object (used for recursion)
+
         Examples
         --------
         Read from everything except EpicsMotor's:
@@ -241,6 +263,9 @@ def _which_devices(leaf_logic=None, node_logic=None, user_ns=None, maxdepth=6):
     if user_ns is None:
         user_ns = get_ipython().user_ns
 
+    if get_children is None:
+        get_children = lambda x : getattr(x, "_signals", {})
+
     obj_list = list()
     if maxdepth == 0:
         return obj_list
@@ -252,14 +277,20 @@ def _which_devices(leaf_logic=None, node_logic=None, user_ns=None, maxdepth=6):
         # also check its a subclass of desired classes
         if not key.startswith("_"):
             # NOTE : First check leaf
+            # it's assumed here that the device is a subset of a leaf
             if leaf_logic(obj):
-                obj_list.append((key, obj))
+                obj_list.append((prefix + key, obj))
             elif node_logic(obj):
                 # node so recurse
+                if len(prefix):
+                    prefix = prefix + "." + obj.name
+                else:
+                    prefix = obj.name
                 obj_list.extend(_which_devices(node_logic=node_logic,
                                                leaf_logic=leaf_logic,
-                                               user_ns=obj.__dict__,
-                                               maxdepth=maxdepth-1))
+                                               user_ns=get_children(obj),
+                                               maxdepth=maxdepth-1,
+                                               prefix=prefix))
             else:
                 # don't add to list
                 pass
