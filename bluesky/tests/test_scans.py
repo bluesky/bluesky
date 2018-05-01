@@ -479,3 +479,22 @@ def test_relative_fermat_spiral(RE, hw):
     approx_multi_traj_checker(RE, scan,
                               _get_fermat_data(start_x, start_y),
                               decimal=2)
+
+
+def test_x2x_scan(RE,hw):
+    y_start = -1
+    y_stop = 4
+    y_num = 11
+    expected_traj = []
+
+    for i in range(y_num):
+        y_val = y_start + i * (y_stop - y_start) / (y_num - 1)
+        expected_traj.append({'motor1': y_val, 'det': 1.0, 'motor2': y_val / 2})
+
+    for d in expected_traj:
+        d.update({'motor1_setpoint': d['motor1']})
+        d.update({'motor2_setpoint': d['motor2']})
+
+    scan = bp.x2x_scan([hw.det], hw.motor1, hw.motor2, y_start, y_stop, y_num )
+
+    multi_traj_checker(RE, scan, expected_traj)
