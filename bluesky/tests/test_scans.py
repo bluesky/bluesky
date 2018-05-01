@@ -481,7 +481,7 @@ def test_relative_fermat_spiral(RE, hw):
                               decimal=2)
 
 
-def test_x2x_scan(RE,hw):
+def test_x2x_scan(RE, hw):
     y_start = -1
     y_stop = 4
     y_num = 11
