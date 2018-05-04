@@ -54,7 +54,7 @@ class LiveDispatcher(CallbackBase):
         # of the original start document. Preserve the rest of the metadata
         # that we retrieved from the start document
         md = ChainMap({'uid': self._stream_start_uid,
-                       'original_run_uid': doc['uid'],
+                       'original_run_uid': doc.get('uid', None),
                        'time': ttime.time()},
                       _md, doc)
         # Dispatch the start document for anyone subscribed to our Dispatcher
@@ -115,6 +115,10 @@ class LiveDispatcher(CallbackBase):
         """
         id_args = id_args or (doc['descriptor'],)
         config = config or dict()
+        # If we haven't seen a start document make sure we at least give an
+        # metadata-less start document to our subscribers
+        if not self._stream_start_uid:
+            self.start({})
         # Determine the descriptor id
         desc_id = frozenset((tuple(doc['data'].keys()), stream_name, id_args))
         # If we haven't described this configuration
