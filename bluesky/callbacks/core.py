@@ -31,6 +31,15 @@ class CallbackBase:
     def bulk_events(self, doc):
         pass
 
+    def resource(self, doc):
+        pass
+
+    def datum(self, doc):
+        pass
+
+    def bulk_datum(self, doc):
+        pass
+
     def descriptor(self, doc):
         pass
 
