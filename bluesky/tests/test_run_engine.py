@@ -1427,3 +1427,31 @@ def test_drop(RE, hw):
     RE(plan(), collector)
 
     assert len(docs['event']) == 3
+
+
+def test_failing_describe_callback(RE, hw):
+    class TestException(Exception):
+        pass
+    det = hw.det
+    det2 = hw.det2
+
+    def evil_cb(name, doc):
+        if any(k in doc['data_keys'] for k in det.describe()):
+            raise TestException
+
+    RE.subscribe(evil_cb, 'descriptor')
+
+    def plan():
+        yield Msg('open_run')
+        try:
+            yield Msg('create')
+            yield Msg('read', det)
+            yield Msg('save')
+        finally:
+            yield Msg('create')
+            yield Msg('read', det2)
+            yield Msg('save')
+        yield Msg('close_run')
+
+    with pytest.raises(TestException):
+        RE(plan())

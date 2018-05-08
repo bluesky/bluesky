@@ -1569,6 +1569,17 @@ class RunEngine:
 
         # Event Descriptor documents
         desc_key = self._bundle_name
+
+        # This is a separate check because it can be reset on resume.
+        seq_num_key = desc_key
+        if seq_num_key not in self._sequence_counters:
+            counter = count(1)
+            counter_copy1, counter_copy2 = tee(counter)
+            self._sequence_counters[seq_num_key] = counter_copy1
+            self._teed_sequence_counters[seq_num_key] = counter_copy2
+        self._bundling = False
+        self._bundle_name = None
+
         d_objs, doc = self._descriptors.get(desc_key, (None, None))
         if d_objs is not None and d_objs != objs_read:
             raise RuntimeError("Mismatched objects read, expected {!s}, "
@@ -1596,25 +1607,15 @@ class RunEngine:
             descriptor_uid = new_uid()
             doc = dict(run_start=self._run_start_uid, time=ttime.time(),
                        data_keys=data_keys, uid=descriptor_uid,
-                       configuration=config, name=self._bundle_name,
+                       configuration=config, name=desc_key,
                        hints=hints, object_keys=object_keys)
             yield from self.emit(DocumentNames.descriptor, doc)
             self.log.debug("Emitted Event Descriptor with name %r containing "
-                           "data keys %r (uid=%r)", self._bundle_name,
+                           "data keys %r (uid=%r)", desc_key,
                            data_keys.keys(), descriptor_uid)
             self._descriptors[desc_key] = (objs_read, doc)
 
         descriptor_uid = doc['uid']
-
-        # This is a separate check because it can be reset on resume.
-        seq_num_key = desc_key
-        if seq_num_key not in self._sequence_counters:
-            counter = count(1)
-            counter_copy1, counter_copy2 = tee(counter)
-            self._sequence_counters[seq_num_key] = counter_copy1
-            self._teed_sequence_counters[seq_num_key] = counter_copy2
-        self._bundling = False
-        self._bundle_name = None
 
         # Resource and Datum documents
         for name, doc in self._asset_docs_cache:
