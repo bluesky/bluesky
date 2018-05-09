@@ -1412,11 +1412,6 @@ class RunEngine:
         obj = msg.obj
         # actually _read_ the object
         ret = obj.read(*msg.args, **msg.kwargs)
-        # Ask the object for any datum documents is has cached.
-        if hasattr(obj, 'collect_asset_docs'):
-            datum_docs = list(obj.collect_asset_docs(*msg.args, **msg.kwargs))
-        else:
-            datum_docs = []
 
         if self._bundling:
             # if the object is not in the _describe_cache, cache it
@@ -1441,9 +1436,15 @@ class RunEngine:
             # add this object to the cache of things we have read
             self._objs_read.append(obj)
 
-            # stash the results
+            # Stash the results, which will be emitted the next time _save is
+            # called --- or never emitted if _drop is called instead.
             self._read_cache.append(ret)
-            self._asset_docs_cache.extend(datum_docs)
+            # Ask the object for any resource or datum documents is has cached
+            # and cache them as well. Likewise, these will be emitted if and
+            # when _save is called.
+            if hasattr(obj, 'collect_asset_docs'):
+                self._asset_docs_cache.extend(
+                    obj.collect_asset_docs(*msg.args, **msg.kwargs))
 
         return ret
 
