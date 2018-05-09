@@ -191,9 +191,6 @@ class RunEngine:
         It is set to ``bluesky.run_engine.PAUSE_MSG`` by default and
         can be modified based on needs.
 
-    Properties
-    ----------
-
     commands:
         The list of commands available to Msg.
 
@@ -374,7 +371,7 @@ class RunEngine:
 
         for command, func in self._command_registry.items():
             docstring = func.__doc__
-            if verbose is False:
+            if not verbose:
                 docstring = docstring.split("\n")[0]
             commands = commands + "{} : {}\n".format(command, docstring)
 
