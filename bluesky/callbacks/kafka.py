@@ -11,7 +11,7 @@ from ..run_engine import Dispatcher, DocumentNames
 import time
 
 
-class Producer(CallbackBase):
+class Producer:
     """
     A callback that publishes documents to kafka.
 
@@ -21,22 +21,34 @@ class Producer(CallbackBase):
         list of servers the brokers run on
     topic: str
         topic to push to
+    logger : Logger instance
+        A logger instance to log output to.
+        Logs are outputted only if logging.DEBUG level or higher are set
+    timeout: int, optional
+        The amount of time to timeout if a message is not sent
 
     Example
     -------
     >>> producer = Producer(bootstrap_servers=['localhost:9092'], topic='analysis')
     """
-    def __init__(self, bootstrap_servers, topic):
+    def __init__(self, bootstrap_servers, topic, serializer=None, logger=None, timeout=2):
+        self.logger = logger
+        if serializer is None:
+            self.serializer = pickle.dumps
         self._publisher = KafkaProducer(bootstrap_servers=bootstrap_servers)
         self._topic = topic
+        self._timeout = timeout
 
     def __call__(self, name, doc):
-        message = b' '.join([name.encode(), pickle.dumps(doc)])
+        if self.logger is not None:
+            self.logger.debug("Received a message from %s", name)
+        message = b' '.join([name.encode(), self.serializer(doc)])
         future = self._publisher.send(self._topic, message)
-        # call this to make sure that this blocks until sent
-        # (or else message may not send)
-        # TODO : handle case when this failed
-        result = future.get(timeout=60)
+        # NOTE: we have to wait on sending. Add max timeout and check for
+        # delivery
+        result = future.get(timeout=self._timeout)
+        if not result.succeeded():
+            raise result.exception
 
 
 
@@ -51,6 +63,9 @@ class ConsumerDispatcher(Dispatcher):
     topic : str
         the topic to listen to
     loop : asyncio event loop, optional
+    logger : Logger instance
+        A logger instance to log output to.
+        Logs are outputted only if logging.DEBUG level or higher are set
 
     Example
     -------
@@ -62,7 +77,11 @@ class ConsumerDispatcher(Dispatcher):
     >>> d.start()  # runs until interrupted
     """
     # TODO : Should we add runengine id and filter by that?
-    def __init__(self, bootstrap_servers, topic, loop=None):
+    def __init__(self, bootstrap_servers, topic, loop=None, deserializer=None,
+                 logger=None):
+        self.logger = logger
+        if deserializer is None:
+            self.deserializer = pickle.loads 
         self._topic = topic
         self._consumer = KafkaConsumer(topic, bootstrap_servers=bootstrap_servers)
         # create an event loop in asyncio
@@ -73,22 +92,25 @@ class ConsumerDispatcher(Dispatcher):
 
         super().__init__()
 
-    # TODO : I can add "await" instead of yield from I believe
     # kafka doesn't have asyncio methods, so we poll and sleep
     async def _poll(self):
         while True:
-            #print("getting a consumer message")
             message = self._consumer.poll()  # 1 sec timeout
             if len(message):
-                for key, vals in message.items():
+                if self.logger is not None:
+                    self.logger.debug("KafkaProducer : Getting a consumer message")
+                for key, crecords in message.items():
                     if key.topic == self._topic:
-                        for val in vals:
-                            message = val.value
-                            name, doc = message.split(b' ', 2)
+                        for crecord in crecords:
+                            message = crecord.value
+                            if self.logger is not None:
+                                self.logger.debug("Message : %s", message)
+                            name, doc = message.split(b' ', maxsplit=1)
+                            if self.logger is not None:
+                                self.logger.debug("name: %s", name)
                             name = name.decode()
-                            doc = pickle.loads(doc)
+                            doc = self.deserializer(doc)
                             self.loop.call_soon(self.process, DocumentNames[name], doc)
-            #print("sleeping")
             await asyncio.sleep(self.poll_time)
 
     def start(self):
