@@ -321,8 +321,6 @@ class RunEngine:
         self._subscribe_lossless = self.dispatcher.subscribe
         self._unsubscribe_lossless = self.dispatcher.unsubscribe
 
-        self.loop.call_soon(self._check_for_signals)
-
     @property
     def commands(self):
         '''
