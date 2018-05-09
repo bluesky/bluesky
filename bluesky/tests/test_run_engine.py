@@ -1,4 +1,5 @@
 import asyncio
+from event_model import DocumentNames
 import threading
 import types
 import os
@@ -327,7 +328,7 @@ def test_dispatcher_unsubscribe_all(RE):
         pass
 
     RE.subscribe(cb)
-    assert count_callbacks(RE) == 5
+    assert count_callbacks(RE) == len(DocumentNames)
     RE.dispatcher.unsubscribe_all()
     assert count_callbacks(RE) == 0
 
