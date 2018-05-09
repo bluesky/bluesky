@@ -191,6 +191,9 @@ class RunEngine:
         It is set to ``bluesky.run_engine.PAUSE_MSG`` by default and
         can be modified based on needs.
 
+    commands:
+        The list of commands available to Msg.
+
     """
 
     state = LoggingPropertyMachine(RunEngineStateMachine)
@@ -317,6 +320,60 @@ class RunEngine:
         self.unsubscribe_lossless = self.dispatcher.unsubscribe
         self._subscribe_lossless = self.dispatcher.subscribe
         self._unsubscribe_lossless = self.dispatcher.unsubscribe
+
+    @property
+    def commands(self):
+        '''
+        The list of commands available to Msg.
+
+        See Also
+        --------
+        :meth:`RunEngine.register_command`
+        :meth:`RunEngine.unregister_command`
+        :meth:`RunEngine.print_command_registry`
+
+        Examples
+        --------
+        >>> from bluesky import RunEngine
+        >>> RE = RunEngine()
+        >>> # to list commands
+        >>> RE.commands
+        '''
+        # return as a list, not lazy loader, no surprises...
+        return list(self._command_registry.keys())
+
+    def print_command_registry(self, verbose=False):
+        '''
+        This conveniently prints the command registry of available
+        commands.
+
+        Parameters
+        ----------
+        Verbose : bool, optional
+        verbose print. Default is False
+
+        See Also
+        --------
+        :meth:`RunEngine.register_command`
+        :meth:`RunEngine.unregister_command`
+        :attr:`RunEngine.commands`
+
+        Examples
+        --------
+        >>> from bluesky import RunEngine
+        >>> RE = RunEngine()
+        >>> # Print a very verbose list of currently registered commands
+        >>> RE.print_command_registry(verbose=True)
+        '''
+        commands = "List of available commands\n"
+
+        for command, func in self._command_registry.items():
+            docstring = func.__doc__
+            if not verbose:
+                docstring = docstring.split("\n")[0]
+            commands = commands + "{} : {}\n".format(command, docstring)
+
+        return commands
 
     def subscribe(self, func, name='all'):
         """
@@ -482,6 +539,8 @@ class RunEngine:
         See Also
         --------
         :meth:`RunEngine.unregister_command`
+        :meth:`RunEngine.print_command_registry`
+        :attr:`RunEngine.commands`
         """
         self._command_registry[name] = func
 
@@ -496,6 +555,8 @@ class RunEngine:
         See Also
         --------
         :meth:`RunEngine.register_command`
+        :meth:`RunEngine.print_command_registry`
+        :attr:`RunEngine.commands`
         """
         del self._command_registry[name]
 

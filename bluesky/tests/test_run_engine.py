@@ -1456,3 +1456,31 @@ def test_failing_describe_callback(RE, hw):
 
     with pytest.raises(TestException):
         RE(plan())
+
+def test_print_commands(RE):
+    ''' test the printing of commands available.
+        NOTE : An error here likely just means that this interface has changed.
+        You'll likely want to change the test.
+        (A test here is still a good idea as it at least raises awareness about
+        the changes made breaking past API)
+    '''
+
+    # testing the commands list
+    commands1 = list(RE._command_registry.keys())
+    commands2 = RE.commands
+
+    assert commands1 == commands2
+
+    # testing print commands
+    # copy and paste most of the code...
+    verbose = False
+    print_command_reg1 = "List of available commands\n"
+    for command, func in RE._command_registry.items():
+        docstring = func.__doc__
+        if verbose is False:
+            docstring = docstring.split("\n")[0]
+        print_command_reg1 = print_command_reg1 +\
+            "{} : {}\n".format(command, docstring)
+
+    print_command_reg2 = RE.print_command_registry()
+    assert print_command_reg1 == print_command_reg2
