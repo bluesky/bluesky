@@ -1780,6 +1780,14 @@ class RunEngine:
                                          "run is open.")
         self._uncollected.discard(obj)
 
+        if hasattr(obj, 'collect_asset_docs'):
+            # Resource and Datum documents
+            for name, doc in self.collect_asset_docs():
+                # Add a 'run_start' field to the resource document on its way out.
+                if name == 'resource':
+                    doc['run_start'] = self._run_start_uid
+                yield from self.emit(DocumentNames(name), doc)
+
         named_data_keys = obj.describe_collect()
         # e.g., {name_for_desc1: data_keys_for_desc1,
         #        name for_desc2: data_keys_for_desc2, ...}
