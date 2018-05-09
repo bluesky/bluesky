@@ -1210,11 +1210,17 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     '''
     _md = {'plan_name': 'rel_spiral_fermat'}
     _md.update(md or {})
-    return (yield from spiral_fermat(detectors, x_motor, y_motor,
-                                     x_motor.position,
-                                     y_motor.position, x_range,
-                                     y_range, dr, factor, tilt=tilt,
-                                     per_step=per_step, md=_md))
+
+    @bpp.reset_positions_decorator([x_motor, y_motor])
+    @bpp.relative_set_decorator([x_motor, y_motor])
+    def inner_relative_spiral_fermat():
+        return (yield from spiral_fermat(detectors, x_motor, y_motor,
+                                         0, 0,
+                                         x_range, y_range,
+                                         dr, factor, tilt=tilt,
+                                         per_step=per_step, md=_md))
+
+    return (yield from inner_relative_spiral_fermat())
 
 
 def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
@@ -1324,12 +1330,138 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.spiral_fermat`
     '''
-    _md = {'plan_name': 'rel_spiral_fermat'}
+    _md = {'plan_name': 'rel_spiral'}
     _md.update(md or {})
-    return (yield from spiral(detectors, x_motor, y_motor,
-                              x_motor.position, y_motor.position,
-                              x_range, y_range, dr, nth, tilt=tilt,
-                              per_step=per_step, md=_md))
+
+    @bpp.reset_positions_decorator([x_motor, y_motor])
+    @bpp.relative_set_decorator([x_motor, y_motor])
+    def inner_relative_spiral():
+        return (yield from spiral(detectors, x_motor, y_motor,
+                                  0, 0,
+                                  x_range, y_range, dr, nth, tilt=tilt,
+                                  per_step=per_step, md=_md))
+
+    return (yield from inner_relative_spiral())
+
+
+def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
+                  y_range, x_num, y_num, *, per_step=None, md=None):
+    '''Absolute square spiral scan, centered around (x_center, y_center)
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_center : float
+        x center
+    y_center : float
+        y center
+    x_range : float
+        x width of spiral
+    y_range : float
+        y width of spiral
+    x_num : float
+        number of x axis points
+    y_num : float
+        Number of y axis points.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    :func:`bluesky.plans.relative_spiral_square`
+    :func:`bluesky.plans.spiral`
+    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.spiral_fermat`
+    :func:`bluesky.plans.relative_spiral_fermat`
+    '''
+    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_center=x_center,
+                        y_center=y_center, x_range=x_range, y_range=y_range,
+                        x_num=x_num, y_num=y_num)
+    cyc = plan_patterns.spiral_square_pattern(**pattern_args)
+
+    # Before including pattern_args in metadata, replace objects with reprs.
+    pattern_args['x_motor'] = repr(x_motor)
+    pattern_args['y_motor'] = repr(y_motor)
+    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
+                         'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
+                         'x_center': x_center, 'y_center': y_center,
+                         'x_range': x_range, 'y_range': y_range,
+                         'x_num': x_num, 'y_num': y_num,
+                         'per_step': repr(per_step)},
+           'plan_name': 'spiral_square',
+           'plan_pattern': 'spiral_square',
+           'shape': (y_num, x_num),
+           'extents': ((y_center - y_range / 2, y_center + y_range / 2),
+                       (x_center - x_range / 2, x_center + x_range / 2)),
+           'hints': {},
+           }
+    _md.update(md or {})
+    _md['hints'].setdefault('gridding', 'rectilinear_nonsequential')
+    try:
+        _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
+                                               for m in [y_motor, x_motor]])
+    except (AttributeError, KeyError):
+        ...
+
+    return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
+
+
+def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
+                      x_num, y_num, *, per_step=None, md=None):
+    '''Relative square spiral scan, centered around current (x, y) position.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    x_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    y_motor : object
+        any 'setable' object (motor, temp controller, etc.)
+    x_range : float
+        x width of spiral
+    y_range : float
+        y width of spiral
+    x_num : float
+        number of x axis points
+    y_num : float
+        Number of y axis points.
+    per_step : callable, optional
+        hook for cutomizing action of inner loop (messages per step)
+        See docstring of bluesky.plans.one_nd_step (the default) for
+        details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    :func:`bluesky.plans.spiral_square`
+    :func:`bluesky.plans.spiral`
+    :func:`bluesky.plans.relative_spiral`
+    :func:`bluesky.plans.spiral_fermat`
+    :func:`bluesky.plans.relative_spiral_fermat`
+    '''
+    _md = {'plan_name': 'rel_spiral_square'}
+    _md.update(md or {})
+
+    @bpp.reset_positions_decorator([x_motor, y_motor])
+    @bpp.relative_set_decorator([x_motor, y_motor])
+    def inner_relative_spiral():
+        return (yield from spiral_square(detectors, x_motor, y_motor,
+                                         0, 0,
+                                         x_range, y_range, x_num, y_num,
+                                         per_step=per_step, md=_md))
+
+    return (yield from inner_relative_spiral())
 
 
 def ramp_plan(go_plan,

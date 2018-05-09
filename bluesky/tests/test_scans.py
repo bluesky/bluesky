@@ -33,10 +33,13 @@ def approx_multi_traj_checker(RE, scan, expected_data, *, decimal=2):
 
     RE(scan, {'event': collect_data})
     keys = sorted(expected_data[0].keys())
+
     actual_values = [[row[key] for key in keys]
                      for row in actual_data]
+
     expected_values = [[row[key] for key in keys]
                        for row in expected_data]
+
     err_msg = 'Trajectory differs. Data keys: {}'.format(', '.join(keys))
     numpy.testing.assert_almost_equal(actual_values, expected_values,
                                       decimal=decimal,
@@ -498,3 +501,99 @@ def test_x2x_scan(RE, hw):
     scan = bp.x2x_scan([hw.det], hw.motor1, hw.motor2, y_start, y_stop, y_num )
 
     multi_traj_checker(RE, scan, expected_traj)
+
+
+square_spiral_data = [
+    {'det': 1.0, 'motor1': 0.0, 'motor2': 0.0},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': 0.0},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': -0.5},
+    {'det': 1.0, 'motor1': 0.0, 'motor2': -0.5},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': -0.5},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': 0.0},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': 0.5},
+    {'det': 1.0, 'motor1': 0.0, 'motor2': 0.5},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': 0.5},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': 0.5},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': 0.0},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': -0.5},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': -1.0},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': -1.0},
+    {'det': 1.0, 'motor1': 0.0, 'motor2': -1.0},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': -1.0},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': -1.0},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': -0.5},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': 0.0},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': 0.5},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': 1.0},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': 1.0},
+    {'det': 1.0, 'motor1': 0.0, 'motor2': 1.0},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': 1.0},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': 1.0},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': 1.0},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': 0.5},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': 0.0},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': -0.5},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': -1.0},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': -1.5},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': -1.5},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': -1.5},
+    {'det': 1.0, 'motor1': 0.0, 'motor2': -1.5},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': -1.5},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': -1.5},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': -1.5},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': -1.0},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': -0.5},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': 0.0},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': 0.5},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': 1.0},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': 1.5},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': 1.5},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': 1.5},
+    {'det': 1.0, 'motor1': 0.0, 'motor2': 1.5},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': 1.5},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': 1.5},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': 1.5},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': -2.0},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': -2.0},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': -2.0},
+    {'det': 1.0, 'motor1': 0.0, 'motor2': -2.0},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': -2.0},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': -2.0},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': -2.0},
+    {'det': 1.0, 'motor1': -1.5, 'motor2': 2.0},
+    {'det': 1.0, 'motor1': -1.0, 'motor2': 2.0},
+    {'det': 1.0, 'motor1': -0.5, 'motor2': 2.0},
+    {'det': 1.0, 'motor1': 0.0, 'motor2': 2.0},
+    {'det': 1.0, 'motor1': 0.5, 'motor2': 2.0},
+    {'det': 1.0, 'motor1': 1.0, 'motor2': 2.0},
+    {'det': 1.0, 'motor1': 1.5, 'motor2': 2.0},
+]
+
+
+def test_spiral_square(RE, hw):
+    motor1 = hw.motor1
+    motor2 = hw.motor2
+    det = hw.det
+
+    plan = bp.spiral_square(
+        [det], motor1, motor2,
+        x_center=0, y_center=0,
+        x_range=3, y_range=4,
+        x_num=3*2+1, y_num=4*2+1)
+
+    approx_multi_traj_checker(RE, plan,
+                              square_spiral_data, decimal=2)
+                              
+
+def test_rel_spiral_square(RE, hw):
+    motor1 = hw.motor1
+    motor2 = hw.motor2
+    det = hw.det
+
+    plan = bp.rel_spiral_square(
+        [det], motor1, motor2,
+        x_range=3, y_range=4,
+        x_num=3*2+1, y_num=4*2+1)
+
+    approx_multi_traj_checker(RE, plan,
+                              square_spiral_data, decimal=2)
