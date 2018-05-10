@@ -10,9 +10,11 @@ from bluesky.utils import ProgressBarManager
 from bluesky import RunEngine, RunEngineInterrupted
 from IPython.core.magic import Magics, magics_class, line_magic
 import numpy as np
+import collections
 from operator import attrgetter
 from . import plans as bp
 from . import plan_stubs as bps
+from bluesky.utils import separate_devices
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -115,41 +117,36 @@ class BlueskyMagics(Magics):
     def detectors(self, line):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
-        def leaf_logic(x):
-            return is_detector(x) and hasattr(x, 'name')
-        devices = _which_devices(leaf_logic=leaf_logic,
+        label='detector'
+        devices = _which_devices(labels=[label],
                                  user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
         print("="*40)
-        for name, obj in devices:
+        for name, obj in devices[label]:
             print("{:20s} \t {:20s}".format(name, str(obj.name)))
 
     @line_magic
     def motors(self, line):
         ''' List all available motors.'''
         # also make sure it has a name for printing
-        def leaf_logic(x):
-            return is_epics_motor(x) and hasattr(x, 'name')
-        positioner_list = _which_devices(leaf_logic=leaf_logic,
-                                         user_ns=self.shell.user_ns)
+        label='motor'
+        devices = _which_devices(labels=[label],
+                                 user_ns=self.shell.user_ns)
         # ignore the first key
-        positioners = [positioner[1] for positioner in positioner_list]
+        positioners = [positioner[1] for positioner in devices[label]]
         _print_positioners(positioners, precision=self.FMT_PREC)
 
     @line_magic
     def signals(self, line):
         ''' List all ophyd signals.'''
-        # also make sure it has a name for printing
-        def leaf_logic(x):
-            return is_signal(x) and hasattr(x, 'name')
-        devices = _which_devices(leaf_logic=leaf_logic,
-                                 user_ns=self.shell.user_ns)
+        devices = _which_devices(labels=None, user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
         print("="*40)
-        for name, obj in devices:
-            print("{:20s} \t {:20s}".format(name, str(obj.name)))
+        for label, objs in devices.items():
+            for name, obj in devices:
+                print("{:20s} \t {:20s}".format(name, str(obj.name)))
 
 
     @line_magic
@@ -221,54 +218,28 @@ def _print_positioners(positioners, sort=True, precision=6):
     print('\n'.join(lines))
 
 
-def _which_devices(leaf_logic=None, node_logic=None, user_ns=None, maxdepth=6,
-                   get_children=None, prefix=""):
+def _which_devices(user_ns=None, max_depth=6):
     ''' Returns list of all devices according to the classes listed.
 
         Parameters
         ----------
-        leaf_logic: func or None, optional
-            This is a function that receives an object as input and
-                returns True if this object is a leaf and false if it's not a
-                node.
-
-        node_logic: func or None, optional
-            This is a function that receives an object as input and
-                returns True if this object is a node and false if it's not a
-                node.
-
         user_ns : dict, optional
             The namespace to search on
 
-        maxdepth :
-            maximum recursion depth
-
-        get_children : func or None, optional
-            function to get children of a node
-
-        prefix : str, optional
-            prefix string of object (used for recursion)
+        max_dept: int, optional
+            max recursion depth
 
         Examples
         --------
         Read from everything except EpicsMotor's:
-            objs = _which_devices(leaf_logic=is_epics_motor)
+            objs = _which_devices()
+            objs['motors']
     '''
-    if node_logic is None:
-        node_logic = is_device
-
-    if leaf_logic is None:
-        leaf_logic = is_signal
+    # could be set but lists are more common for users
+    obj_list = collections.defaultdict(list)
 
     if user_ns is None:
         user_ns = get_ipython().user_ns
-
-    if get_children is None:
-        get_children = lambda x : getattr(x, "_signals", {})
-
-    obj_list = list()
-    if maxdepth == 0:
-        return obj_list
 
     for key, obj in user_ns.items():
         # ignore objects beginning with "_"
@@ -276,57 +247,12 @@ def _which_devices(leaf_logic=None, node_logic=None, user_ns=None, maxdepth=6,
         # return of commands)
         # also check its a subclass of desired classes
         if not key.startswith("_"):
-            # NOTE : First check leaf
-            # it's assumed here that the device is a subset of a leaf
-            if leaf_logic(obj):
-                obj_list.append((prefix + key, obj))
-            elif node_logic(obj):
-                # node so recurse
-                if len(prefix):
-                    prefix = prefix + "." + obj.name
-                else:
-                    prefix = obj.name
-                obj_list.extend(_which_devices(node_logic=node_logic,
-                                               leaf_logic=leaf_logic,
-                                               user_ns=get_children(obj),
-                                               maxdepth=maxdepth-1,
-                                               prefix=prefix))
-            else:
-                # don't add to list
-                pass
+            if hasattr(obj, '_ophyd_labels_'):
+                for label in obj._ophyd_labels_:
+                    obj_list[label].append((key, obj))
 
     return obj_list
 
-
-
-def is_class(obj):
-    return hasattr(obj, '__mro__')
-
-def is_device(obj):
-    return hasattr(obj, "component_names")
-
-def is_signal(obj):
-    return hasattr(obj, "value")
-
-def is_ophyd_obj(obj):
-    if hasattr(obj, 'read') and not is_class(obj):
-        return True
-    else:
-        return False
-
-
-def is_detector(obj):
-    if hasattr(obj, 'get_asyn_digraph') and not is_class(obj):
-        return True
-    else:
-        return False
-
-
-def is_epics_motor(obj):
-    if hasattr(obj, 'user_readback') and not is_class(obj):
-        return True
-    else:
-        return False
 
 
 def _ct_callback(name, doc):
