@@ -118,8 +118,7 @@ class BlueskyMagics(Magics):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
         label='detector'
-        devices = _which_devices(labels=[label],
-                                 user_ns=self.shell.user_ns)
+        devices = _labeled_devices(user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
         print("="*40)
@@ -131,23 +130,10 @@ class BlueskyMagics(Magics):
         ''' List all available motors.'''
         # also make sure it has a name for printing
         label='motor'
-        devices = _which_devices(labels=[label],
-                                 user_ns=self.shell.user_ns)
+        devices = _labeled_devices(user_ns=self.shell.user_ns)
         # ignore the first key
         positioners = [positioner[1] for positioner in devices[label]]
         _print_positioners(positioners, precision=self.FMT_PREC)
-
-    @line_magic
-    def signals(self, line):
-        ''' List all ophyd signals.'''
-        devices = _which_devices(labels=None, user_ns=self.shell.user_ns)
-        cols = ["Python name", "Ophyd Name"]
-        print("{:20s} \t {:20s}".format(*cols))
-        print("="*40)
-        for label, objs in devices.items():
-            for name, obj in devices:
-                print("{:20s} \t {:20s}".format(name, str(obj.name)))
-
 
     @line_magic
     def wa(self, line):
@@ -218,25 +204,33 @@ def _print_positioners(positioners, sort=True, precision=6):
     print('\n'.join(lines))
 
 
-def _which_devices(user_ns=None, max_depth=6):
-    ''' Returns list of all devices according to the classes listed.
+def _labeled_devices(user_ns=None, maxdepth=6):
+    ''' Returns list of all devices that are labeled.
 
         Parameters
         ----------
         user_ns : dict, optional
             The namespace to search on
 
-        max_dept: int, optional
+        maxdepth: int, optional
             max recursion depth
+
+        Returns
+        -------
+            A dictionary of (name, ophydobject) tuple indexed by device label.
 
         Examples
         --------
-        Read from everything except EpicsMotor's:
-            objs = _which_devices()
-            objs['motors']
+        Read devices labeled as motors:
+            objs = _labeled_devices()
+            my_motors = objs['motors']
     '''
     # could be set but lists are more common for users
     obj_list = collections.defaultdict(list)
+
+    if maxdepth <= 0:
+        print("Recursion limit exceeded")
+        return obj_list
 
     if user_ns is None:
         user_ns = get_ipython().user_ns
@@ -247,13 +241,33 @@ def _which_devices(user_ns=None, max_depth=6):
         # return of commands)
         # also check its a subclass of desired classes
         if not key.startswith("_"):
-            if hasattr(obj, '_ophyd_labels_'):
-                for label in obj._ophyd_labels_:
-                    obj_list[label].append((key, obj))
+            if is_parent(obj):
+                labels = getattr(obj, '_ophyd_labels_', set())
+                obj_list.update(_labeled_devices(user_ns=obj.__dict__,
+                                              maxdepth=maxdepth-1,))
+            else:
+                if hasattr(obj, '_ophyd_labels_'):
+                    # inherit parent labels
+                    labels = obj._ophyd_labels_
+                    for label in labels:
+                        obj_list[label].append((key, obj))
 
     return obj_list
 
 
+def is_parent(dev):
+    # return whether a node is a parent
+    # should not have component_names, or if yes, should be empty
+    # read_attrs needed to check it's an instance and not class itself
+    return (hasattr(dev, 'component_names') and len(dev.component_names) > 0
+            and hasattr(dev, 'read_attrs'))
+
+def get_children(dev):
+    children = list()
+    if hasattr(dev, 'component_names') and len(dev.component_names) > 0:
+        for comp_name in dev.component_names:
+            children.append(getattr(dev, comp_name))
+    return children
 
 def _ct_callback(name, doc):
     if name != 'event':
