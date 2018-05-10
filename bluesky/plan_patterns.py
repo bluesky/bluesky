@@ -46,7 +46,7 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     if dr_y is None:
         dr_aspect = 1
     else:
-        dr_aspect = dr_y/dr
+        dr_aspect = dr_y / dr
     
     half_x = x_range / 2
     half_y = y_range / (2 * dr_aspect)
@@ -65,8 +65,8 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
             angle = i_angle * angle_step
             x = radius * np.cos(angle)
             y = radius * np.sin(angle) * dr_aspect
-            if ((abs(x - (y/dr_aspect) / tilt_tan) <= half_x) and 
-                    (abs(y/dr_aspect) <= half_y)):
+            if ((abs(x - (y / dr_aspect) / tilt_tan) <= half_x) and 
+                    (abs(y / dr_aspect) <= half_y)):
                 x_points.append(x_start + x)
                 y_points.append(y_start + y)
 
@@ -260,7 +260,7 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         x = radius * np.cos(angle)
         y = radius * np.sin(angle) * dr_aspect
 
-        if ((abs(x - (y/dr_aspect) / tilt_tan) <= half_x) and (abs(y) <= half_y)):
+        if ((abs(x - (y / dr_aspect) / tilt_tan) <= half_x) and (abs(y) <= half_y)):
             x_points.append(x_start + x)
             y_points.append(y_start + y)
 
