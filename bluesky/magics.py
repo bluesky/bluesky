@@ -14,7 +14,6 @@ import collections
 from operator import attrgetter
 from . import plans as bp
 from . import plan_stubs as bps
-from bluesky.utils import separate_devices
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -117,7 +116,7 @@ class BlueskyMagics(Magics):
     def detectors(self, line):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
-        label='detector'
+        label = 'detector'
         devices = _labeled_devices(user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
@@ -129,7 +128,7 @@ class BlueskyMagics(Magics):
     def motors(self, line):
         ''' List all available motors.'''
         # also make sure it has a name for printing
-        label='motor'
+        label = 'motor'
         devices = _labeled_devices(user_ns=self.shell.user_ns)
         # ignore the first key
         positioners = [positioner[1] for positioner in devices[label]]
@@ -244,7 +243,7 @@ def _labeled_devices(user_ns=None, maxdepth=6):
             if is_parent(obj):
                 labels = getattr(obj, '_ophyd_labels_', set())
                 obj_list.update(_labeled_devices(user_ns=obj.__dict__,
-                                              maxdepth=maxdepth-1,))
+                                                 maxdepth=maxdepth-1,))
             else:
                 if hasattr(obj, '_ophyd_labels_'):
                     # inherit parent labels
@@ -262,12 +261,14 @@ def is_parent(dev):
     return (hasattr(dev, 'component_names') and len(dev.component_names) > 0
             and hasattr(dev, 'read_attrs'))
 
+
 def get_children(dev):
     children = list()
     if hasattr(dev, 'component_names') and len(dev.component_names) > 0:
         for comp_name in dev.component_names:
             children.append(getattr(dev, comp_name))
     return children
+
 
 def _ct_callback(name, doc):
     if name != 'event':
