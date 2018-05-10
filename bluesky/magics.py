@@ -6,6 +6,7 @@
 # ip.register_magics(BlueskyMagics)
 
 import asyncio
+import warnings
 from bluesky.utils import ProgressBarManager
 from bluesky import RunEngine, RunEngineInterrupted
 from IPython.core.magic import Magics, magics_class, line_magic
@@ -117,7 +118,7 @@ class BlueskyMagics(Magics):
         ''' List all available detectors.'''
         # also make sure it has a name for printing
         label = 'detector'
-        devices = _labeled_devices(user_ns=self.shell.user_ns)
+        devices = get_labeled_devices(user_ns=self.shell.user_ns)
         cols = ["Python name", "Ophyd Name"]
         print("{:20s} \t {:20s}".format(*cols))
         print("="*40)
@@ -129,7 +130,7 @@ class BlueskyMagics(Magics):
         ''' List all available motors.'''
         # also make sure it has a name for printing
         label = 'motor'
-        devices = _labeled_devices(user_ns=self.shell.user_ns)
+        devices = get_labeled_devices(user_ns=self.shell.user_ns)
         # ignore the first key
         positioners = [positioner[1] for positioner in devices[label]]
         _print_positioners(positioners, precision=self.FMT_PREC)
@@ -203,13 +204,14 @@ def _print_positioners(positioners, sort=True, precision=6):
     print('\n'.join(lines))
 
 
-def _labeled_devices(user_ns=None, maxdepth=6):
-    ''' Returns list of all devices that are labeled.
+def get_labeled_devices(user_ns=None, maxdepth=6):
+    ''' Returns dict of labels mapped to devices with that label
 
         Parameters
         ----------
         user_ns : dict, optional
             The namespace to search on
+            Default is to grab the namespace of the ipython shell.
 
         maxdepth: int, optional
             max recursion depth
@@ -221,14 +223,14 @@ def _labeled_devices(user_ns=None, maxdepth=6):
         Examples
         --------
         Read devices labeled as motors:
-            objs = _labeled_devices()
+            objs = get_labeled_devices()
             my_motors = objs['motors']
     '''
     # could be set but lists are more common for users
     obj_list = collections.defaultdict(list)
 
     if maxdepth <= 0:
-        print("Recursion limit exceeded")
+        warnings.warn("Recursion limit exceeded")
         return obj_list
 
     if user_ns is None:
@@ -242,11 +244,11 @@ def _labeled_devices(user_ns=None, maxdepth=6):
         if not key.startswith("_"):
             if is_parent(obj):
                 labels = getattr(obj, '_ophyd_labels_', set())
-                obj_list.update(_labeled_devices(user_ns=obj.__dict__,
-                                                 maxdepth=maxdepth-1,))
+                obj_list.update(get_labeled_devices(user_ns=obj.__dict__,
+                                                    maxdepth=maxdepth-1,))
             else:
                 if hasattr(obj, '_ophyd_labels_'):
-                    # inherit parent labels
+                    # don't inherit parent labels
                     labels = obj._ophyd_labels_
                     for label in labels:
                         obj_list[label].append((key, obj))
@@ -258,7 +260,7 @@ def is_parent(dev):
     # return whether a node is a parent
     # should not have component_names, or if yes, should be empty
     # read_attrs needed to check it's an instance and not class itself
-    return (hasattr(dev, 'component_names') and len(dev.component_names) > 0
+    return (isinstance(dev, type) and len(dev.component_names) > 0
             and hasattr(dev, 'read_attrs'))
 
 
