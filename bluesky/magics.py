@@ -30,27 +30,27 @@ class MetaclassForClassProperties(MetaHasTraits, type):
     @property
     def positioners(self):
         if self._positioners:
-            warnings.warn("positioners is deprecated. "
-                        "Please use the newer labels feature")
+            warnings.warn("BlueskyMagics.positioners is deprecated. "
+                          "Please use the newer labels feature.")
         return self._positioners
 
     @positioners.setter
     def positioners(self, val):
-        warnings.warn("positioners is deprecated. "
-                       "Please use the newer labels feature")
+        warnings.warn("BlueskyMagics.positioners is deprecated. "
+                      "Please use the newer labels feature.")
         self._positioners = val
 
     @property
     def detectors(self):
         if self._detectors:
-            warnings.warn("detectors is deprecated. "
-                        "Please use the newer labels feature")
+            warnings.warn("BlueskyMagics.detectors is deprecated. "
+                          "Please use the newer labels feature.")
         return self._detectors
 
     @detectors.setter
     def detectors(self, val):
-        warnings.warn("detectors is deprecated. "
-                       "Please use the newer labels feature")
+        warnings.warn("BlueskyMagics.detectors is deprecated. "
+                      "Please use the newer labels feature.")
         self._detectors = val
 
     _positioners = []
