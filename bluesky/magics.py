@@ -92,7 +92,6 @@ class BlueskyMagics(Magics):
         self._ensure_idle()
         return None
 
-    detectors = []
 
     @line_magic
     def ct(self, line):
@@ -110,30 +109,36 @@ class BlueskyMagics(Magics):
         self._ensure_idle()
         return None
 
-    positioners = []
+    _positioners = []
+    _detectors = []
+
+    @property
+    def positioners(self):
+        warnings.warn("positioners is deprecated." +
+                      "Please use the newer labels feature")
+        return self._positioners
+
+    @positioners.setter
+    def positioners(self, val):
+        warnings.warn("positioners is deprecated." +
+                      "Please use the newer labels feature")
+        self._positioners = val
+
+    @property
+    def detectors(self):
+        warnings.warn("positioners is deprecated." +
+                      "Please use the newer labels feature")
+        return self._detectors
+
+    @detectors.setter
+    def detectors(self, val):
+        warnings.warn("positioners is deprecated." +
+                      "Please use the newer labels feature")
+        self._detectors = val
+
+
     FMT_PREC = 6
 
-    @line_magic
-    def detectors(self, line):
-        ''' List all available detectors.'''
-        # also make sure it has a name for printing
-        label = 'detector'
-        devices = get_labeled_devices(user_ns=self.shell.user_ns)
-        cols = ["Python name", "Ophyd Name"]
-        print("{:20s} \t {:20s}".format(*cols))
-        print("="*40)
-        for name, obj in devices[label]:
-            print("{:20s} \t {:20s}".format(name, str(obj.name)))
-
-    @line_magic
-    def motors(self, line):
-        ''' List all available motors.'''
-        # also make sure it has a name for printing
-        label = 'motor'
-        devices = get_labeled_devices(user_ns=self.shell.user_ns)
-        # ignore the first key
-        positioners = [positioner[1] for positioner in devices[label]]
-        _print_positioners(positioners, precision=self.FMT_PREC)
 
     @line_magic
     def wa(self, line):
@@ -142,10 +147,41 @@ class BlueskyMagics(Magics):
             positioners = eval(line, self.shell.user_ns)
         else:
             positioners = self.positioners
-        _print_positioners(positioners, precision=self.FMT_PREC)
+        if len(positioners) > 0:
+            _print_positioners(positioners, precision=self.FMT_PREC)
+        else:
+            # new behaviour
+            devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
+            labels = list(devices_dict.keys())
+            for label in labels:
+                print(label)
+                # ignore the first key
+                if are_positioners(devices_dict[label]):
+                    positioners = [positioner[1] for positioner in devices_dict[label]]
+                    _print_positioners(positioners, precision=self.FMT_PREC,
+                                       prefix=" "*8)
+                else:
+                    _print_devices(devices_dict[label], prefix=" "*8)
 
+def _print_devices(devices, prefix=""):
+    cols = ["Python name", "Ophyd Name"]
+    print(prefix + "{:20s} \t {:20s}".format(*cols))
+    print(prefix + "="*40)
+    for name, obj in devices:
+        print(prefix + "{:20s} \t {:20s}".format(name, str(obj.name)))
 
-def _print_positioners(positioners, sort=True, precision=6):
+def are_positioners(devs):
+    # only true if all are positioners
+    # takes ((name, dev),...) tuple
+    logic = True
+    for dev in devs:
+        logic = logic and is_positioner(dev[1])
+    return logic
+
+def is_positioner(dev):
+    return hasattr(dev, 'position')
+
+def _print_positioners(positioners, sort=True, precision=6, prefix=""):
     '''
         This will take a list of positioners and try to print them.
 
@@ -172,7 +208,7 @@ def _print_positioners(positioners, sort=True, precision=6):
             values.append(exc)
 
     headers = ['Positioner', 'Value', 'Low Limit', 'High Limit', 'Offset']
-    LINE_FMT = '{: <30} {: <11} {: <11} {: <11} {: <11}'
+    LINE_FMT = prefix + '{: <30} {: <11} {: <11} {: <11} {: <11}'
     lines = []
     lines.append(LINE_FMT.format(*headers))
     for p, v in zip(positioners, values):
@@ -260,8 +296,8 @@ def is_parent(dev):
     # return whether a node is a parent
     # should not have component_names, or if yes, should be empty
     # read_attrs needed to check it's an instance and not class itself
-    return (isinstance(dev, type) and len(dev.component_names) > 0
-            and hasattr(dev, 'read_attrs'))
+    return (isinstance(dev, type) and
+            len(getattr(dev, 'component_names', [])) > 0)
 
 
 def get_children(dev):
