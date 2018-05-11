@@ -149,12 +149,15 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
     @line_magic
     def wa(self, line):
         "List positioner info. 'wa' stands for 'where all'."
-        if line.strip():
-            positioners = eval(line, self.shell.user_ns)
-        else:
-            positioners = self.positioners
-        if len(positioners) > 0:
-            _print_positioners(positioners, precision=self.FMT_PREC)
+        # If the deprecated BlueskyMagics.positioners list is non-empty, it has
+        # been configured by the user, and we must revert to the old behavior.
+        if type(self).positioners:
+            if line.strip():
+                positioners = eval(line, self.shell.user_ns)
+            else:
+                positioners = type(self).positioners
+            if len(positioners) > 0:
+                _print_positioners(positioners, precision=self.FMT_PREC)
         else:
             # new behaviour
             devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
