@@ -13,7 +13,7 @@ from .utils import snake_cyclers
 
 
 def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
-           tilt=0.0):
+           dr_y=None, tilt=0.0):
     '''Spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -31,7 +31,9 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     y_range : float
         y width of spiral
     dr : float
-        Delta radius
+        Delta radius along the minor axis of the ellipse.
+    dr_y : float, optional
+        Delta radius along the major axis of the ellipse, if not specifed defaults to dr
     nth : float
         Number of theta steps
     tilt : float, optional
@@ -41,8 +43,13 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     -------
     cyc : cycler
     '''
+    if dr_y is None:
+        dr_aspect = 1
+    else:
+        dr_aspect = dr_y / dr
+    
     half_x = x_range / 2
-    half_y = y_range / 2
+    half_y = y_range / (2 * dr_aspect)
 
     r_max = np.sqrt(half_x ** 2 + half_y ** 2)
     num_ring = 1 + int(r_max / dr)
@@ -57,8 +64,9 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
         for i_angle in range(int(i_ring * nth)):
             angle = i_angle * angle_step
             x = radius * np.cos(angle)
-            y = radius * np.sin(angle)
-            if ((abs(x - y / tilt_tan) <= half_x) and (abs(y) <= half_y)):
+            y = radius * np.sin(angle) * dr_aspect
+            if ((abs(x - (y / dr_aspect) / tilt_tan) <= half_x) and 
+                    (abs(y / dr_aspect) <= half_y)):
                 x_points.append(x_start + x)
                 y_points.append(y_start + y)
 
@@ -201,7 +209,7 @@ def spiral_square_pattern(x_motor, y_motor, x_center, y_center,
 
 
 def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
-                  factor, *, tilt=0.0):
+                  factor, *, dr_y=None, tilt=0.0):
     '''Absolute fermat spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -219,7 +227,9 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     y_range : float
         y width of spiral
     dr : float
-        delta radius
+        delta radius along the minor axis of the ellipse.
+    dr_y : float, optional
+        Delta radius along the major axis of the ellipse, if not specifed defaults to dr
     factor : float
         radius gets divided by this
     tilt : float, optional
@@ -229,10 +239,15 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     -------
     cyc : cycler
     '''
+    if dr_y is None:
+        dr_aspect = 1
+    else:
+        dr_aspect = dr_y / dr
+    
     phi = 137.508 * np.pi / 180.
 
     half_x = x_range / 2
-    half_y = y_range / 2
+    half_y = y_range / (2 * dr_aspect)
     tilt_tan = np.tan(tilt + np.pi / 2.)
 
     x_points, y_points = [], []
@@ -243,9 +258,9 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
         radius = np.sqrt(i_ring) * dr / factor
         angle = phi * i_ring
         x = radius * np.cos(angle)
-        y = radius * np.sin(angle)
+        y = radius * np.sin(angle) * dr_aspect
 
-        if ((abs(x - y / tilt_tan) <= half_x) and (abs(y) <= half_y)):
+        if ((abs(x - (y / dr_aspect) / tilt_tan) <= half_x) and (abs(y) <= half_y)):
             x_points.append(x_start + x)
             y_points.append(y_start + y)
 
