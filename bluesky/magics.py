@@ -161,16 +161,27 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
         else:
             # new behaviour
             devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
-            labels = list(devices_dict.keys())
+            if line.strip():
+                # User has provided a white list of labels like
+                # %wa label1 label2
+                labels = line.strip().split()
+            else:
+                # Show all labels.
+                labels = list(devices_dict.keys())
             for label in labels:
                 print(label)
+                try:
+                    devices = devices_dict[label]
+                except KeyError:
+                    print('<no matches for this label>')
+                    continue
                 # ignore the first key
-                if are_positioners(devices_dict[label]):
+                if are_positioners(devices):
                     positioners = [positioner[1] for positioner in devices_dict[label]]
                     _print_positioners(positioners, precision=self.FMT_PREC,
                                        prefix=" "*8)
                 else:
-                    _print_devices(devices_dict[label], prefix=" "*8)
+                    _print_devices(devices, prefix=" "*8)
 
 def _print_devices(devices, prefix=""):
     cols = ["Python name", "Ophyd Name"]
@@ -295,7 +306,8 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
                     for label in labels:
                         obj_list[label].append((key, obj))
 
-    return obj_list
+    # Convert from defaultdict to normal dict before returning.
+    return dict(obj_list)
 
 
 def is_parent(dev):
