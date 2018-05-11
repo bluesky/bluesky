@@ -29,8 +29,9 @@ except ImportError:
 class MetaclassForClassProperties(MetaHasTraits, type):
     @property
     def positioners(self):
-        warnings.warn("positioners is deprecated. "
-                       "Please use the newer labels feature")
+        if self._positioners:
+            warnings.warn("positioners is deprecated. "
+                        "Please use the newer labels feature")
         return self._positioners
 
     @positioners.setter
@@ -41,8 +42,9 @@ class MetaclassForClassProperties(MetaHasTraits, type):
 
     @property
     def detectors(self):
-        warnings.warn("detectors is deprecated. "
-                       "Please use the newer labels feature")
+        if self._detectors:
+            warnings.warn("detectors is deprecated. "
+                        "Please use the newer labels feature")
         return self._detectors
 
     @detectors.setter
