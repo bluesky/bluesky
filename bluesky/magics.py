@@ -10,7 +10,7 @@ import warnings
 from bluesky.utils import ProgressBarManager
 from bluesky import RunEngine, RunEngineInterrupted
 from IPython.core.magic import Magics, magics_class, line_magic
-from IPython.utils.traitlets import MetaHasTraits
+from traitlets import MetaHasTraits
 import numpy as np
 import collections
 from operator import attrgetter
