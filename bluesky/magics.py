@@ -139,6 +139,13 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
             # new behaviour
             devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
             if line.strip():
+                if '[' in line or ']' in line:
+                    raise ValueError("It looks like you entered a list like "
+                                     "`%ct [motors, detectors]` "
+                                     "Magics work a bit differently than "
+                                     "normal Python. Enter "
+                                     "*space-separated* labels like "
+                                     "`%ct motors detectors`.")
                 # User has provided a white list of labels like
                 # %ct label1 label2
                 labels = line.strip().split()
@@ -177,6 +184,13 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
             # new behaviour
             devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
             if line.strip():
+                if '[' in line or ']' in line:
+                    raise ValueError("It looks like you entered a list like "
+                                     "`%wa [motors, detectors]` "
+                                     "Magics work a bit differently than "
+                                     "normal Python. Enter "
+                                     "*space-separated* labels like "
+                                     "`%wa motors detectors`.")
                 # User has provided a white list of labels like
                 # %wa label1 label2
                 labels = line.strip().split()
