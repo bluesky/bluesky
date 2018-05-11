@@ -10,6 +10,7 @@ import warnings
 from bluesky.utils import ProgressBarManager
 from bluesky import RunEngine, RunEngineInterrupted
 from IPython.core.magic import Magics, magics_class, line_magic
+from IPython.utils.traitlets import MetaHasTraits
 import numpy as np
 import collections
 from operator import attrgetter
@@ -22,9 +23,39 @@ try:
 except ImportError:
     from toolz import partition
 
+# This is temporarily here to allow for warnings to be printed
+# we changed positioners to a property but since we never instantiate
+# the class we need to add this
+class MetaclassForClassProperties(MetaHasTraits, type):
+    @property
+    def positioners(self):
+        warnings.warn("positioners is deprecated. "
+                       "Please use the newer labels feature")
+        return self._positioners
+
+    @positioners.setter
+    def positioners(self, val):
+        warnings.warn("positioners is deprecated. "
+                       "Please use the newer labels feature")
+        self._positioners = val
+
+    @property
+    def detectors(self):
+        warnings.warn("detectors is deprecated. "
+                       "Please use the newer labels feature")
+        return self._detectors
+
+    @detectors.setter
+    def detectors(self, val):
+        warnings.warn("detectors is deprecated. "
+                       "Please use the newer labels feature")
+        self._detectors = val
+
+    _positioners = []
+    _detectors = []
 
 @magics_class
-class BlueskyMagics(Magics):
+class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
     """
     IPython magics for bluesky.
 
@@ -109,33 +140,6 @@ class BlueskyMagics(Magics):
         self._ensure_idle()
         return None
 
-    _positioners = []
-    _detectors = []
-
-    @property
-    def positioners(self):
-        warnings.warn("positioners is deprecated." +
-                      "Please use the newer labels feature")
-        return self._positioners
-
-    @positioners.setter
-    def positioners(self, val):
-        warnings.warn("positioners is deprecated." +
-                      "Please use the newer labels feature")
-        self._positioners = val
-
-    @property
-    def detectors(self):
-        warnings.warn("positioners is deprecated." +
-                      "Please use the newer labels feature")
-        return self._detectors
-
-    @detectors.setter
-    def detectors(self, val):
-        warnings.warn("positioners is deprecated." +
-                      "Please use the newer labels feature")
-        self._detectors = val
-
 
     FMT_PREC = 6
 
@@ -173,10 +177,7 @@ def _print_devices(devices, prefix=""):
 def are_positioners(devs):
     # only true if all are positioners
     # takes ((name, dev),...) tuple
-    logic = True
-    for dev in devs:
-        logic = logic and is_positioner(dev[1])
-    return logic
+    return all(is_positioner(obj) for _, obj in devs)
 
 def is_positioner(dev):
     return hasattr(dev, 'position')
