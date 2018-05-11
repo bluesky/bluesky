@@ -6,22 +6,58 @@
 # ip.register_magics(BlueskyMagics)
 
 import asyncio
+import warnings
 from bluesky.utils import ProgressBarManager
 from bluesky import RunEngine, RunEngineInterrupted
 from IPython.core.magic import Magics, magics_class, line_magic
+from traitlets import MetaHasTraits
 import numpy as np
+import collections
 from operator import attrgetter
 from . import plans as bp
 from . import plan_stubs as bps
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
 except ImportError:
     from toolz import partition
 
+# This is temporarily here to allow for warnings to be printed
+# we changed positioners to a property but since we never instantiate
+# the class we need to add this
+class MetaclassForClassProperties(MetaHasTraits, type):
+    @property
+    def positioners(self):
+        if self._positioners:
+            warnings.warn("positioners is deprecated. "
+                        "Please use the newer labels feature")
+        return self._positioners
+
+    @positioners.setter
+    def positioners(self, val):
+        warnings.warn("positioners is deprecated. "
+                       "Please use the newer labels feature")
+        self._positioners = val
+
+    @property
+    def detectors(self):
+        if self._detectors:
+            warnings.warn("detectors is deprecated. "
+                        "Please use the newer labels feature")
+        return self._detectors
+
+    @detectors.setter
+    def detectors(self, val):
+        warnings.warn("detectors is deprecated. "
+                       "Please use the newer labels feature")
+        self._detectors = val
+
+    _positioners = []
+    _detectors = []
 
 @magics_class
-class BlueskyMagics(Magics):
+class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
     """
     IPython magics for bluesky.
 
@@ -89,7 +125,6 @@ class BlueskyMagics(Magics):
         self._ensure_idle()
         return None
 
-    detectors = []
 
     @line_magic
     def ct(self, line):
@@ -107,55 +142,188 @@ class BlueskyMagics(Magics):
         self._ensure_idle()
         return None
 
-    positioners = []
+
     FMT_PREC = 6
+
 
     @line_magic
     def wa(self, line):
         "List positioner info. 'wa' stands for 'where all'."
-        if line.strip():
-            positioners = eval(line, self.shell.user_ns)
-        else:
-            positioners = self.positioners
-        positioners = sorted(set(positioners), key=attrgetter('name'))
-        values = []
-        for p in positioners:
-            try:
-                values.append(p.position)
-            except Exception as exc:
-                values.append(exc)
-
-        headers = ['Positioner', 'Value', 'Low Limit', 'High Limit', 'Offset']
-        LINE_FMT = '{: <30} {: <11} {: <11} {: <11} {: <11}'
-        lines = []
-        lines.append(LINE_FMT.format(*headers))
-        for p, v in zip(positioners, values):
-            if not isinstance(v, Exception):
-                try:
-                    prec = p.precision
-                except Exception:
-                    prec = self.FMT_PREC
-                value = np.round(v, decimals=prec)
-                try:
-                    low_limit, high_limit = p.limits
-                except Exception as exc:
-                    low_limit = high_limit = exc.__class__.__name__
-                else:
-                    low_limit = np.round(low_limit, decimals=prec)
-                    high_limit = np.round(high_limit, decimals=prec)
-                try:
-                    offset = p.user_offset.get()
-                except Exception as exc:
-                    offset = exc.__class__.__name__
-                else:
-                    offset = np.round(offset, decimals=prec)
+        # If the deprecated BlueskyMagics.positioners list is non-empty, it has
+        # been configured by the user, and we must revert to the old behavior.
+        if type(self).positioners:
+            if line.strip():
+                positioners = eval(line, self.shell.user_ns)
             else:
-                value = v.__class__.__name__  # e.g. 'DisconnectedError'
-                low_limit = high_limit = offset = ''
+                positioners = type(self).positioners
+            if len(positioners) > 0:
+                _print_positioners(positioners, precision=self.FMT_PREC)
+        else:
+            # new behaviour
+            devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
+            if line.strip():
+                # User has provided a white list of labels like
+                # %wa label1 label2
+                labels = line.strip().split()
+            else:
+                # Show all labels.
+                labels = list(devices_dict.keys())
+            for label in labels:
+                print(label)
+                try:
+                    devices = devices_dict[label]
+                except KeyError:
+                    print('<no matches for this label>')
+                    continue
+                # ignore the first key
+                if are_positioners(devices):
+                    positioners = [positioner[1] for positioner in devices_dict[label]]
+                    _print_positioners(positioners, precision=self.FMT_PREC,
+                                       prefix=" "*8)
+                else:
+                    _print_devices(devices, prefix=" "*8)
 
-            lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit,
-                                         offset))
-        print('\n'.join(lines))
+def _print_devices(devices, prefix=""):
+    cols = ["Python name", "Ophyd Name"]
+    print(prefix + "{:20s} \t {:20s}".format(*cols))
+    print(prefix + "="*40)
+    for name, obj in devices:
+        print(prefix + "{:20s} \t {:20s}".format(name, str(obj.name)))
+
+def are_positioners(devs):
+    # only true if all are positioners
+    # takes ((name, dev),...) tuple
+    return all(is_positioner(obj) for _, obj in devs)
+
+def is_positioner(dev):
+    return hasattr(dev, 'position')
+
+def _print_positioners(positioners, sort=True, precision=6, prefix=""):
+    '''
+        This will take a list of positioners and try to print them.
+
+        Parameters
+        ----------
+        positioners : list
+            list of positioners
+
+        sort : bool, optional
+            whether or not to sort the list
+
+        precision: int, optional
+            The precision to use for numbers
+    '''
+    # sort first
+    if sort:
+        positioners = sorted(set(positioners), key=attrgetter('name'))
+
+    values = []
+    for p in positioners:
+        try:
+            values.append(p.position)
+        except Exception as exc:
+            values.append(exc)
+
+    headers = ['Positioner', 'Value', 'Low Limit', 'High Limit', 'Offset']
+    LINE_FMT = prefix + '{: <30} {: <11} {: <11} {: <11} {: <11}'
+    lines = []
+    lines.append(LINE_FMT.format(*headers))
+    for p, v in zip(positioners, values):
+        if not isinstance(v, Exception):
+            try:
+                prec = p.precision
+            except Exception:
+                prec = precision
+            value = np.round(v, decimals=prec)
+            try:
+                low_limit, high_limit = p.limits
+            except Exception as exc:
+                low_limit = high_limit = exc.__class__.__name__
+            else:
+                low_limit = np.round(low_limit, decimals=prec)
+                high_limit = np.round(high_limit, decimals=prec)
+            try:
+                offset = p.user_offset.get()
+            except Exception as exc:
+                offset = exc.__class__.__name__
+            else:
+                offset = np.round(offset, decimals=prec)
+        else:
+            value = v.__class__.__name__  # e.g. 'DisconnectedError'
+            low_limit = high_limit = offset = ''
+
+        lines.append(LINE_FMT.format(p.name, value, low_limit, high_limit,
+                                     offset))
+    print('\n'.join(lines))
+
+
+def get_labeled_devices(user_ns=None, maxdepth=6):
+    ''' Returns dict of labels mapped to devices with that label
+
+        Parameters
+        ----------
+        user_ns : dict, optional
+            The namespace to search on
+            Default is to grab the namespace of the ipython shell.
+
+        maxdepth: int, optional
+            max recursion depth
+
+        Returns
+        -------
+            A dictionary of (name, ophydobject) tuple indexed by device label.
+
+        Examples
+        --------
+        Read devices labeled as motors:
+            objs = get_labeled_devices()
+            my_motors = objs['motors']
+    '''
+    # could be set but lists are more common for users
+    obj_list = collections.defaultdict(list)
+
+    if maxdepth <= 0:
+        warnings.warn("Recursion limit exceeded")
+        return obj_list
+
+    if user_ns is None:
+        user_ns = get_ipython().user_ns
+
+    for key, obj in user_ns.items():
+        # ignore objects beginning with "_"
+        # (mainly for ipython stored objs from command line
+        # return of commands)
+        # also check its a subclass of desired classes
+        if not key.startswith("_"):
+            if is_parent(obj):
+                labels = getattr(obj, '_ophyd_labels_', set())
+                obj_list.update(get_labeled_devices(user_ns=obj.__dict__,
+                                                    maxdepth=maxdepth-1,))
+            else:
+                if hasattr(obj, '_ophyd_labels_'):
+                    # don't inherit parent labels
+                    labels = obj._ophyd_labels_
+                    for label in labels:
+                        obj_list[label].append((key, obj))
+
+    # Convert from defaultdict to normal dict before returning.
+    return dict(obj_list)
+
+
+def is_parent(dev):
+    # return whether a node is a parent
+    # should not have component_names, or if yes, should be empty
+    # read_attrs needed to check it's an instance and not class itself
+    return (isinstance(dev, type) and
+            len(getattr(dev, 'component_names', [])) > 0)
+
+
+def get_children(dev):
+    children = list()
+    if hasattr(dev, 'component_names') and len(dev.component_names) > 0:
+        for comp_name in dev.component_names:
+            children.append(getattr(dev, comp_name))
+    return children
 
 
 def _ct_callback(name, doc):
