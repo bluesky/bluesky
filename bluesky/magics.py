@@ -128,10 +128,25 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
 
     @line_magic
     def ct(self, line):
-        if line.strip():
-            dets = eval(line, self.shell.user_ns)
+        # If the deprecated BlueskyMagics.detectors list is non-empty, it has
+        # been configured by the user, and we must revert to the old behavior.
+        if type(self).detectors:
+            if line.strip():
+                dets = eval(line, self.shell.user_ns)
+            else:
+                dets = type(self).detectors
         else:
-            dets = self.detectors
+            # new behaviour
+            devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
+            if line.strip():
+                # User has provided a white list of labels like
+                # %ct label1 label2
+                labels = line.strip().split()
+            else:
+                labels = ['detectors']
+            dets = []
+            for label in labels:
+                dets.extend(obj for _, obj in devices_dict.get(label, []))
         plan = bp.count(dets)
         print("[This data will not be saved. "
               "Use the RunEngine to collect data.]")
