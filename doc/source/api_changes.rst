@@ -1,6 +1,62 @@
 Release History
 ===============
 
+v1.3.0 (2018-05-14)
+-------------------
+
+Features
+^^^^^^^^
+
+* When used with ophyd v1.2.0 or later, emit Resource and Datum documents
+  through the RunEngine. Previously, ophyd would insert these documents
+  directly into a database. This left other consumers with only partial
+  information (for example, missing file paths to externally-stored data) and
+  no guarantees around synchronization. Now, ophyd need not interact with a
+  database directly. All information flows through the RunEngine and out to any
+  subscribed consumers in a deterministic order.
+* New Msg commands, ``install_suspender`` and ``remove_suspender``, allow plans
+  to temporarily add and remove Suspenders.
+* The RunEngine's signal handling (i.e. Ctrl+C capturing) is now configurable.
+  The RunEngine accepts a list of ``context_managers`` that it will enter and
+  exit before and after running. By default, it has one context manager that
+  handles Ctrl+C. To disable Ctrl+C handling, pass in an empty list instead.
+  This can also be used to inject other custom behavior.
+* Add new plans: :func:`~bluesky.plans.x2x_scan`,
+  :func:`~bluesky.plans.spiral_square_plan`, and
+  :func:`~bluesky.plans.rel_spiral_square_plan`.
+* Add convenience methods for reviewing the available commands,
+  :meth:`~bluesky.run_engine.RunEngine.commands` and
+  :meth:`~bluesky.run_engine.RunEngine.print_command_registry`.
+* Add a ``crossings`` attribute to ``PeakStats``.
+
+Bug Fixes
+^^^^^^^^^
+
+* When resuming after a suspender, call ``resume()`` on all devices (if
+  present).
+* Fixed BEC LiveGrid plot for a motor with one step.
+* A codepath in ``LiveFit`` that should have produced a warning produced an
+  error instead.
+
+Breaking Changes
+^^^^^^^^^^^^^^^^
+
+* User-defined callbacks subscribed to the RunEngine ``'all'`` stream must
+  accept documents with names ``'resource'``, ``'datum'`` and ``'bulk_datum'``.
+  It does not necessarily have to heed their contents, but it must not fall
+  over if it receives one.
+
+Deprecations
+^^^^^^^^^^^^
+
+* The IPython "magics", always marked as experimental, have been reworked.
+  Instead of relying on the singleton lists, ``BlueskyMagics.positioners`` and
+  ``BlueskyMagics.detectors``, the magics now scrape the user namespace for
+  objects that implement the ``_ophyd_labels_`` interface. See :doc:`magics`
+  for the new usage. The magics will revert to their old behavior if the
+  singleton lists are non-empty, but they will produce a warning. The old
+  behavior will be removed in a future release.
+
 v1.2.0 (2018-02-20)
 -------------------
 
