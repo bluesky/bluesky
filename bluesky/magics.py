@@ -30,27 +30,27 @@ class MetaclassForClassProperties(MetaHasTraits, type):
     @property
     def positioners(self):
         if self._positioners:
-            warnings.warn("positioners is deprecated. "
-                        "Please use the newer labels feature")
+            warnings.warn("BlueskyMagics.positioners is deprecated. "
+                          "Please use the newer labels feature.")
         return self._positioners
 
     @positioners.setter
     def positioners(self, val):
-        warnings.warn("positioners is deprecated. "
-                       "Please use the newer labels feature")
+        warnings.warn("BlueskyMagics.positioners is deprecated. "
+                      "Please use the newer labels feature.")
         self._positioners = val
 
     @property
     def detectors(self):
         if self._detectors:
-            warnings.warn("detectors is deprecated. "
-                        "Please use the newer labels feature")
+            warnings.warn("BlueskyMagics.detectors is deprecated. "
+                          "Please use the newer labels feature.")
         return self._detectors
 
     @detectors.setter
     def detectors(self, val):
-        warnings.warn("detectors is deprecated. "
-                       "Please use the newer labels feature")
+        warnings.warn("BlueskyMagics.detectors is deprecated. "
+                      "Please use the newer labels feature.")
         self._detectors = val
 
     _positioners = []
@@ -128,10 +128,32 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
 
     @line_magic
     def ct(self, line):
-        if line.strip():
-            dets = eval(line, self.shell.user_ns)
+        # If the deprecated BlueskyMagics.detectors list is non-empty, it has
+        # been configured by the user, and we must revert to the old behavior.
+        if type(self).detectors:
+            if line.strip():
+                dets = eval(line, self.shell.user_ns)
+            else:
+                dets = type(self).detectors
         else:
-            dets = self.detectors
+            # new behaviour
+            devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
+            if line.strip():
+                if '[' in line or ']' in line:
+                    raise ValueError("It looks like you entered a list like "
+                                     "`%ct [motors, detectors]` "
+                                     "Magics work a bit differently than "
+                                     "normal Python. Enter "
+                                     "*space-separated* labels like "
+                                     "`%ct motors detectors`.")
+                # User has provided a white list of labels like
+                # %ct label1 label2
+                labels = line.strip().split()
+            else:
+                labels = ['detectors']
+            dets = []
+            for label in labels:
+                dets.extend(obj for _, obj in devices_dict.get(label, []))
         plan = bp.count(dets)
         print("[This data will not be saved. "
               "Use the RunEngine to collect data.]")
@@ -162,6 +184,13 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
             # new behaviour
             devices_dict = get_labeled_devices(user_ns=self.shell.user_ns)
             if line.strip():
+                if '[' in line or ']' in line:
+                    raise ValueError("It looks like you entered a list like "
+                                     "`%wa [motors, detectors]` "
+                                     "Magics work a bit differently than "
+                                     "normal Python. Enter "
+                                     "*space-separated* labels like "
+                                     "`%wa motors detectors`.")
                 # User has provided a white list of labels like
                 # %wa label1 label2
                 labels = line.strip().split()

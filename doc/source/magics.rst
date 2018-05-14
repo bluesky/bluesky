@@ -41,7 +41,10 @@ For this example we'll use some simulated hardware.
 
 .. ipython:: python
 
-    from ophyd.sim import det1, det2, motor1, motor2
+    from ophyd.sim import motor1, motor2
+
+Moving a Motor
+~~~~~~~~~~~~~~
 
 Suppose you want to move a motor interactively. You can use the ``%mov`` magic:
 
@@ -49,6 +52,7 @@ Suppose you want to move a motor interactively. You can use the ``%mov`` magic:
 
     %mov motor1 42
 
+Where ``motor1`` refers to the actual ophyd object itself.
 This is equivanent to:
 
 .. code-block:: python
@@ -64,29 +68,55 @@ move multiple devices in parallel like so:
 
     %mov motor1 -3 motor2 3
 
+
+Note: Magics has changed from version v1.3.0 onwards. The previous method will
+be described in the next section.
+
+Taking a reading using ``%ct`` (Post v1.3.0)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Before we may make use of the power of magics for counting, we must "label"
+this hardware. To add a label, we must give hardware a ``labels={'mylabel'}``
+keyword argument. For example, here we initialize five simulated signals: two
+motors, a shutter motor, an area detector and a point detector:
+
+.. ipython:: python
+
+    import numpy as np
+    from ophyd.sim import SynAxis, SynSignal
+    motor1 = SynAxis(name='motor1', labels={'motors', 'scan_motors'})
+    motor2 = SynAxis(name='motor2', labels={'motors', 'scan_motors'})
+    shutter_motor = SynAxis(name='shutter_motor', labels={'motors', 'shutter_motors'})
+    # create a fake area detector that returns a 2x2 array
+    area_detector = SynSignal(func=lambda: np.random.random((2, 2)),
+                              name='adet1', labels={'detectors', 'area_detectors'})
+    point_detector = SynSignal(func=lambda: np.random.random((1,)),
+                               name='pointdet1', labels={'detectors', 'point_detectors'})
+
+Now we have detectors and motors, with proper labels.
+
 Now suppose you want to take a quick reading of some devices and print the
 results to the screen without saving them or doing any fancy processing. Use
 the ``%ct`` magic:
 
 .. ipython:: python
 
-    %ct [det1, det2]
+    %ct area_detectors
 
-or, equivalently,
+Where the names after count are a list of whitespace separated labels. In this
+case, only ``area_detector`` will be counted.
 
-.. ipython:: python
-
-    dets = [det1, det2]
-    %ct dets
-
-You can set a default list of detectors and them use ``%ct`` without any
-parameters:
+Running ``%ct`` without arguments looks for the ``detectors`` label by default:
 
 .. ipython:: python
 
-    BlueskyMagics.detectors = [det1, det2]
     %ct
 
+In this case, we count both on the area detector and the point detector.
+
+
+Aside on the automagic feature in IPython
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 If IPython’s ‘automagic’ feature is enabled, IPython will even let you drop the
 ``%`` as long as the meaning is unambiguous:
 
@@ -101,19 +131,28 @@ If IPython’s ‘automagic’ feature is enabled, IPython will even let you dro
 For what it’s worth, we recommend disabling 'automagic'. The ``%`` is useful
 for flagging what follows as magical, non-Python code.
 
-Finally, the ``%wa`` magic displays the current positions of movable
-devices. Like ``%ct``, it accepts a list of devices
+Listing available motors using ``%wa`` (Post v1.3.0)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Finally, the ``%wa`` magic displays the a list of labeled devices.
 
 .. ipython:: python
 
-    %wa [motor1, motor2]
-    
-or, if blank, falls back on a defaults list configured like so:
+    %wa scan_motors
+
+will display all motors used for a scan.
+If blank, will print all labeled devices.
 
 .. ipython:: python
 
-    BlueskyMagics.positioners = [motor1, motor2]
     %wa
+
+Note: It is possible to give a device more than one label. Thus it is possible
+to have the same device in more than one list when calling ``%wa``. It is up to
+the user to decide whether they want overlapping labels or not.
+
+    
+Comparison with SPEC
+~~~~~~~~~~~~~~~~~~~~
 
 The names of these magics, and the order of the parameters they take, are meant
 to feel familiar to users of :doc:`SPEC <comparison-with-spec>`.
@@ -124,6 +163,29 @@ Again, they must be registered with IPython before they can be used:
 
     from bluesky.magics import BlueskyMagics
     get_ipython().register_magics(BlueskyMagics)
+
+
+Taking a reading using ``%ct`` (Pre v1.3.0)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Previously, you could set a default list of detectors and them use ``%ct``
+without any parameters. This behaviour is deprecated. Do not use this:
+
+.. ipython:: python
+
+    BlueskyMagics.detectors = [area_detector, point_detector]
+    %ct
+
+This is no longer supported.
+
+Listing available motors using ``%wa`` (Pre v1.3.0)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Previously, it was possible to supply a list of motors. This feature is also
+deprecated. Do not use this:
+
+.. ipython:: python
+
+    BlueskyMagics.positioners = [motor1, motor2]
+    %wa
 
 ======================================================================= ==============================
 Magic                                                                   Plan Invoked
