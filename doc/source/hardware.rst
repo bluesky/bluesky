@@ -56,7 +56,7 @@ asynchronously monitor the compeletion of having triggered or set a device.
         Parameters
         ----------
         func : callable
-            Expected to accept the keyword aruments:
+            Expected to accept the keyword arguments:
 
                 * ``name``
                 * ``current``
