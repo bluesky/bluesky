@@ -36,7 +36,7 @@ def create(name='primary'):
 
     See Also
     --------
-    :func:`bluesky.plans.save`
+    :func:`bluesky.plan_stubs.save`
     """
     return (yield Msg('create', name=name))
 
@@ -52,7 +52,7 @@ def save():
 
     See Also
     --------
-    :func:`bluesky.plans.create`
+    :func:`bluesky.plan_stubs.create`
     """
     return (yield Msg('save'))
 
@@ -68,8 +68,8 @@ def drop():
 
     See Also
     --------
-    :func:`bluesky.plans.save`
-    :func:`bluesky.plans.create`
+    :func:`bluesky.plan_stubs.save`
+    :func:`bluesky.plan_stubs.create`
     """
     return (yield Msg('drop'))
 
@@ -111,7 +111,7 @@ def monitor(obj, *, name=None, **kwargs):
 
     See Also
     --------
-    :func:`bluesky.plans.unmonitor`
+    :func:`bluesky.plan_stubs.unmonitor`
     """
     return (yield Msg('monitor', obj, name=name, **kwargs))
 
@@ -131,7 +131,7 @@ def unmonitor(obj):
 
     See Also
     --------
-    :func:`bluesky.plans.monitor`
+    :func:`bluesky.plan_stubs.monitor`
     """
     return (yield Msg('unmonitor', obj))
 
@@ -171,9 +171,9 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
 
     See Also
     --------
-    :func:`bluesky.plans.rel_set`
-    :func:`bluesky.plans.wait`
-    :func:`bluesky.plans.mv`
+    :func:`bluesky.plan_stubs.rel_set`
+    :func:`bluesky.plan_stubs.wait`
+    :func:`bluesky.plan_stubs.mv`
     """
     if wait and group is None:
         group = str(uuid.uuid4())
@@ -206,8 +206,8 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
 
     See Also
     --------
-    :func:`bluesky.plans.abs_set`
-    :func:`bluesky.plans.wait`
+    :func:`bluesky.plan_stubs.abs_set`
+    :func:`bluesky.plan_stubs.wait`
     """
     from .preprocessors import relative_set_wrapper
     return (yield from relative_set_wrapper(
@@ -231,8 +231,8 @@ def mv(*args):
 
     See Also
     --------
-    :func:`bluesky.plans.abs_set`
-    :func:`bluesky.plans.mvr`
+    :func:`bluesky.plan_stubs.abs_set`
+    :func:`bluesky.plan_stubs.mvr`
     """
     group = str(uuid.uuid4())
     status_objects = []
@@ -268,8 +268,8 @@ def mvr(*args):
 
     See Also
     --------
-    :func:`bluesky.plans.rel_set`
-    :func:`bluesky.plans.mv`
+    :func:`bluesky.plan_stubs.rel_set`
+    :func:`bluesky.plan_stubs.mv`
     """
     objs = []
     for obj, val in partition(2, args):
@@ -376,7 +376,7 @@ def checkpoint():
 
     See Also
     --------
-    :func:`bluesky.plans.clear_checkpoint`
+    :func:`bluesky.plan_stubs.clear_checkpoint`
     """
     return (yield Msg('checkpoint'))
 
@@ -392,7 +392,7 @@ def clear_checkpoint():
 
     See Also
     --------
-    :func:`bluesky.plans.checkpoint`
+    :func:`bluesky.plan_stubs.checkpoint`
     """
     return (yield Msg('clear_checkpoint'))
 
@@ -408,8 +408,8 @@ def pause():
 
     See Also
     --------
-    :func:`bluesky.plans.deferred_pause`
-    :func:`bluesky.plans.sleep`
+    :func:`bluesky.plan_stubs.deferred_pause`
+    :func:`bluesky.plan_stubs.sleep`
     """
     return (yield Msg('pause', None, defer=False))
 
@@ -425,8 +425,8 @@ def deferred_pause():
 
     See Also
     --------
-    :func:`bluesky.plans.pause`
-    :func:`bluesky.plans.sleep`
+    :func:`bluesky.plan_stubs.pause`
+    :func:`bluesky.plan_stubs.sleep`
     """
     return (yield Msg('pause', None, defer=True))
 
@@ -471,9 +471,9 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
 
     See Also
     --------
-    :func:`bluesky.plans.complete`
-    :func:`bluesky.plans.collect`
-    :func:`bluesky.plans.wait`
+    :func:`bluesky.plan_stubs.complete`
+    :func:`bluesky.plan_stubs.collect`
+    :func:`bluesky.plan_stubs.wait`
     """
     ret = (yield Msg('kickoff', obj, group=group, **kwargs))
     if wait:
@@ -510,9 +510,9 @@ def complete(obj, *, group=None, wait=False, **kwargs):
 
     See Also
     --------
-    :func:`bluesky.plans.kickoff`
-    :func:`bluesky.plans.collect`
-    :func:`bluesky.plans.wait`
+    :func:`bluesky.plan_stubs.kickoff`
+    :func:`bluesky.plan_stubs.collect`
+    :func:`bluesky.plan_stubs.wait`
     """
     ret = yield Msg('complete', obj, group=group, **kwargs)
     if wait:
@@ -539,9 +539,9 @@ def collect(obj, *, stream=False):
 
     See Also
     --------
-    :func:`bluesky.plans.kickoff`
-    :func:`bluesky.plans.complete`
-    :func:`bluesky.plans.wait`
+    :func:`bluesky.plan_stubs.kickoff`
+    :func:`bluesky.plan_stubs.complete`
+    :func:`bluesky.plan_stubs.wait`
     """
     return (yield Msg('collect', obj, stream=stream))
 
@@ -581,7 +581,7 @@ def stage(obj):
 
     See Also
     --------
-    :func:`bluesky.plans.unstage`
+    :func:`bluesky.plan_stubs.unstage`
     """
     return (yield Msg('stage', obj))
 
@@ -601,7 +601,7 @@ def unstage(obj):
 
     See Also
     --------
-    :func:`bluesky.plans.stage`
+    :func:`bluesky.plan_stubs.stage`
     """
     return (yield Msg('unstage', obj))
 
@@ -624,7 +624,7 @@ def subscribe(name, func):
 
     See Also
     --------
-    :func:`bluesky.plans.unsubscribe`
+    :func:`bluesky.plan_stubs.unsubscribe`
     """
     return (yield Msg('subscribe', None, func, name))
 
@@ -645,7 +645,7 @@ def unsubscribe(token):
 
     See Also
     --------
-    :func:`bluesky.plans.subscribe`
+    :func:`bluesky.plan_stubs.subscribe`
     """
     return (yield Msg('unsubscribe', token=token))
 
@@ -666,7 +666,7 @@ def install_suspender(suspender):
 
     See Also
     --------
-    :func:`bluesky.plan_subs.remove_suspender`
+    :func:`bluesky.plan_stubs.remove_suspender`
     """
     return (yield Msg('install_suspender', None, suspender))
 
@@ -708,7 +708,7 @@ def open_run(md=None):
 
     See Also
     --------
-    func:`bluesky.plans_stubs.close_run`
+    :func:`bluesky.plans_stubs.close_run`
     """
     return (yield Msg('open_run', **(md or {})))
 
@@ -751,7 +751,7 @@ def wait_for(futures, **kwargs):
 
     See Also
     --------
-    :func:`bluesky.plans.wait`
+    :func:`bluesky.plan_stubs.wait`
     """
     return (yield Msg('wait_for', None, futures, **kwargs))
 
@@ -848,7 +848,7 @@ def repeater(n, gen_func, *args, **kwargs):
 
     See Also
     --------
-    :func:`bluesky.plans.caching_repeater`
+    :func:`bluesky.plan_stubs.caching_repeater`
     """
     it = range
     if n is None:
@@ -878,7 +878,7 @@ def caching_repeater(n, plan):
 
     See Also
     --------
-    :func:`bluesky.plans.repeater`
+    :func:`bluesky.plan_stubs.repeater`
     """
     warnings.warn("The caching_repeater will be removed in a future version "
                   "of bluesky.")
