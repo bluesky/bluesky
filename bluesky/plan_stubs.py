@@ -708,7 +708,7 @@ def open_run(md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.close_run`
+    func:`bluesky.plans_stubs.close_run`
     """
     return (yield Msg('open_run', **(md or {})))
 
@@ -728,7 +728,7 @@ def close_run(exit_status=None, reason=None):
 
     See Also
     --------
-    :func:`bluesky.plans.open_run`
+    :func:`bluesky.plans_stubs.open_run`
     """
     return (yield Msg('close_run', exit_status=exit_status, reason=reason))
 
