@@ -45,7 +45,8 @@ def test_ramp(RE):
     assert len(primary_events) > 11
 
     monitor_events = db.event[descs['mot_monitor']['uid']]
-    assert len(monitor_events) == 10
+    # the 10 from the updates, 1 from 'run at subscription time'
+    assert len(monitor_events) == 11
 
 
 @requires_ophyd
