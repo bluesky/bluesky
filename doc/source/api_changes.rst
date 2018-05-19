@@ -1,6 +1,16 @@
 Release History
 ===============
 
+v1.3.1 (2018-05-19)
+-------------------
+
+Bug Fixes
+^^^^^^^^^
+
+* Fixed race condition where monitored signals could emit an Event document
+  before the corresponding Event Descriptor document.
+* Addressed incompatibilities with upcoming release of Python, 3.7.
+
 v1.3.0 (2018-05-15)
 -------------------
 
