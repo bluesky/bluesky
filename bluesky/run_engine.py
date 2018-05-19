@@ -1581,8 +1581,8 @@ class RunEngine:
             self.dispatcher.process(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
-        obj.subscribe(emit_event, **kwargs)
         yield from self.emit(DocumentNames.descriptor, desc_doc)
+        obj.subscribe(emit_event, **kwargs)
         yield from self._reset_checkpoint_state_coro()
 
     @asyncio.coroutine

@@ -153,7 +153,8 @@ def test_relative_pseudo(hw, RE, db):
     assert len(tb1) == len(tb2)
 
     def get_hint(c):
-        return c.hints['fields'][0]
+        h = c.hints['fields']
+        return h[0] if h else c.name
 
     for c in list(p.pseudo_positioners) + list(p.real_positioners):
         col = get_hint(c)

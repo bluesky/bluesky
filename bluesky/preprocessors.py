@@ -1,3 +1,5 @@
+from __future__ import generator_stop
+
 from collections import OrderedDict, deque, ChainMap, Iterable
 import uuid
 from .utils import (normalize_subs_input, root_ancestor,
@@ -73,6 +75,35 @@ def plan_mutator(plan, msg_proc):
             # if we have a stashed exception, pass it along
             try:
                 msg = plan_stack[-1].throw(exception)
+            except StopIteration as e:
+                # discard the exhausted generator
+                exhausted_gen = plan_stack.pop()
+                # if this is the parent plan, capture it's return value
+                if exhausted_gen is parent_plan:
+                    ret_value = e.value
+
+                # if we just came out of a 'tail' generator,
+                # discard its return value and replace it with the
+                # cached one (from the last message in its paired
+                # 'new_gen')
+                if id(exhausted_gen) in tail_result_cache:
+                    ret = tail_result_cache.pop(id(exhausted_gen))
+
+                result_stack.append(ret)
+
+                if id(exhausted_gen) in tail_cache:
+                    gen = tail_cache.pop(id(exhausted_gen))
+                    if gen is not None:
+                        plan_stack.append(gen)
+                        saved_result = result_stack.pop()
+                        tail_result_cache[id(gen)] = saved_result
+                        # must use None to prime generator
+                        result_stack.append(None)
+
+                if plan_stack:
+                    continue
+                else:
+                    return ret_value
             except Exception as e:
                 # if we catch an exception,
                 # the current top plan is dead so pop it
