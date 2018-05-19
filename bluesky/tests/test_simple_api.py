@@ -57,6 +57,7 @@ def test_plans(RE, pln, args, kwargs, hw):
     (bp.rel_spiral_fermat,
      ('motor_no_hints1', 'motor_no_hints2', 0.3, 0.3, 0.05, 3), {}),
     ])
+@pytest.mark.xfail
 def test_plans_motors_no_hints(RE, pln, args, kwargs, hw):
     args = tuple(getattr(hw, v, v) if isinstance(v, str) else v
                  for v in args)
@@ -79,6 +80,7 @@ def test_plans_motors_no_hints(RE, pln, args, kwargs, hw):
     (bp.spiral_fermat, ('motor1', 'motor2', 0.0, 0.0, 0.3, 0.3, 0.05, 3), {}),
     (bp.rel_spiral_fermat, ('motor1', 'motor2', 0.3, 0.3, 0.05, 3), {}),
     ])
+@pytest.mark.xfail
 def test_plans_motor_empty_hints(RE, pln, args, kwargs, hw):
     args = tuple(getattr(hw, v, v) if isinstance(v, str) else v
                  for v in args)
