@@ -209,7 +209,7 @@ def plan_ETA(plan, print_output = True):
         if msg.obj is not None:
 
             if msg.command in ['set', 'trigger', 'stage', 'unstage']:
-                obj = getattr(sys.modules[__name__], msg.obj.name)
+                obj =  msg.obj
                 if msg.command == 'unstage':
                     val_dict['trigger'][msg.obj.name] = 0
                 object_ETA = obj.ETA(cmd = msg.command, val_dict = val_dict, vals = msg.args)
@@ -218,7 +218,7 @@ def plan_ETA(plan, print_output = True):
             elif msg.command == 'kickoff':
                 #and adds the ETA for each step. 
                 #This section pulls out the list of motor positions from the flyer
-                obj = getattr(sys.modules[__name__], msg.obj._mot.name)
+                obj = msg.obj
                 out_ETA = [0,0]
                 for pos in msg.obj._steps:
                     object_ETA = obj.ETA(cmd = 'set', val_dict = val_dict, vals = [pos])
@@ -282,13 +282,11 @@ def plan_ETA(plan, print_output = True):
             msg = next(plan)
             object_ETA, val_dict = obj_ETA(msg, val_dict)
             out_ETA = combine_ETA(out_ETA, object_ETA, method = 'max')
-            if out_ETA[0] < object_ETA[0]:
-                out_ETA = object_ETA
 
         return out_ETA, val_dict
 
 
-     def run_ETA(msg, val_dict):
+    def run_ETA(msg, val_dict):
         """
         Returns the ETA/STD_DEV pair for a run.
         This function returns an ETA/STD_DEV pair, for a group, where a group is defined as a 
