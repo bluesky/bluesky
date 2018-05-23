@@ -272,6 +272,140 @@ class LiveMesh(LiveScatter):
         super().__init__(*args, **kwargs)
 
 
+class Grid(CallbackBase):
+    '''Draw a matplotlib AxesImage artist and update it for each event.
+
+    The purposes of this callback is to create (on initialization) of a
+    matplotlib 'grid' image and then update it with new data for every 'event'.
+
+    Parameters
+    ----------
+
+    start_doc: dict
+        not used; accepted and dicarded to satisfy callback_factory API.
+
+    func : callable
+        This must accept a BulkEvent and return three lists of floats (x
+        grid co-ordinates y grid-co-ordinates and grid position intensity
+        values). The three lists must contain an equal number of items, but
+        that number is arbitrary. That is, a given document may add one new
+        point, no new points or multiple new points to the plot.
+
+    grid_shape : tuple
+        The (row, col) shape of the grid.
+
+    single_func : callback, optional
+        This parameter is available as a perfomrance operation. For most uses,
+        ``func`` is sufficient. This is like ``func``, but it gets an Event
+        instead of a BulkEvent. If ``None`` is given, Events are up-cast into
+        BulkEvents and handed to ``func``.
+
+    ax : matplotlib Axes, optional.
+        if ``None``, a new Figure and Axes are created.
+
+    **kwargs
+        Passed through to :meth:`Axes.imshow` to style the AxesImage object.
+    '''
+    def __init__(self, start_doc, func, grid_shape, *, single_func=None,
+                 ax=None, **kwargs):
+        self.func = func
+        self.grid_shape = grid_shape
+        self.single_func = single_func
+        if ax is None:
+            _, ax = plt.subplots()
+        self.ax = ax
+        self.grid_data = np.ones(self.grid_shape) * np.nan
+        self.image, = ax.imshow(self.grid_data, **kwargs)
+
+    def bulk_events(self, doc):
+        '''
+        Takes in a bulk_events document and updates grid_data with the values
+        returned from self.func(doc)
+
+        Parameters
+        ----------
+
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the bulk event.
+
+        Returns
+        -------
+
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the bulk event.
+        '''
+        x_coords, y_coords, I_vals = self.func(doc)
+        self._update(x_coords, y_coords, I_vals)
+
+    def event(self, doc):
+        '''
+        Takes in a event documents and updates grid_data with the values
+        returned from self.single_func(doc) or, if it is `None`, self.func(doc)
+
+        Parameters
+        ----------
+
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the event.
+
+        Returns
+        -------
+
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the event.
+        '''
+        x_coord, y_coords, I_vals = self.func(doc)
+        self._update(x_coords, y_coords, I_vals)
+
+        if self.single_func is not None:
+            x_coords, y_coords, I_vals = self.single_func(doc)
+        else:
+            # Make a BulkEvent from this Event and use func.
+            bulk_event = doc.copy()
+            bulk_event['data'] = {k: np.expand_dims(v, 0)
+                                  for k, v in doc['data'].items()}
+            bulk_event['timestamps'] = {k: np.expand_dims(v, 0)
+                                        for k, v in doc['timestamps'].items()}
+            x_coords, y_coords, I_vals = self.func(bulk_event)
+
+        self._update(x_coords, y_coords, I_vals)
+
+    def _update(self, x_coords, y_coords, I_vals):
+        '''
+        Updates self.grid_data with the values from the lists x_coords,
+        y_coords, I_vals.
+
+        Parameters
+        ----------
+
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the event. The length of all three lists must
+            be the same.
+        '''
+
+        length = len(x_coords)
+        if any(len(lst) == length for lst in [y_coords, I_vals]):
+            raise ValueError("User function is expected to provide the same "
+                             "number of x, y and I points. Got {0} x points "
+                             "and {1} y points and {2} I values."
+                             "".format(len(x_coords), len(y_coords),
+                                       len(I_vals)))
+
+        if not x_coords:
+            # No new data Short-circuit.
+            return
+
+        # Update grid_data and the plot.
+        for x_coord, y_coord, I_val in zip(x_coords, y_coords, I_vals):
+            self.grid_data[x_coord, y_coord] = I_val
+        self.image.set_array(self.grid_data)
+
+
 class LiveGrid(CallbackBase):
     """Plot gridded 2D data in a "heat map".
 
