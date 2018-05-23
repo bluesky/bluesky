@@ -324,16 +324,20 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
         # return of commands)
         # also check its a subclass of desired classes
         if not key.startswith("_"):
-            if is_parent(obj):
-                labels = getattr(obj, '_ophyd_labels_', set())
-                obj_list.update(get_labeled_devices(user_ns=obj.__dict__,
-                                                    maxdepth=maxdepth-1,))
-            else:
-                if hasattr(obj, '_ophyd_labels_'):
-                    # don't inherit parent labels
-                    labels = obj._ophyd_labels_
-                    for label in labels:
-                        obj_list[label].append((key, obj))
+            if hasattr(obj, '_ophyd_labels_'):
+                # don't inherit parent labels
+                labels = obj._ophyd_labels_
+                for label in labels:
+                    obj_list[label].append((key, obj))
+
+                if is_parent(obj):
+                    for c_key, v in get_labeled_devices(user_ns={k: getattr(obj, k)
+                                                             for k in obj.read_attrs
+                                                             if '.' not in k},
+                                                        maxdepth=maxdepth-1,
+                                                       ).items():
+                        obj_list[c_key].extend([('.'.join([key, ot[0]]), ot[1]) for ot in v])
+
 
     # Convert from defaultdict to normal dict before returning.
     return dict(obj_list)
@@ -343,7 +347,7 @@ def is_parent(dev):
     # return whether a node is a parent
     # should not have component_names, or if yes, should be empty
     # read_attrs needed to check it's an instance and not class itself
-    return (isinstance(dev, type) and
+    return (not isinstance(dev, type) and
             len(getattr(dev, 'component_names', [])) > 0)
 
 
