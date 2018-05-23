@@ -212,6 +212,11 @@ def plan_ETA(plan, print_output = True):
                 obj =  msg.obj
                 if msg.command == 'unstage':
                     val_dict['trigger'][msg.obj.name] = 0
+                elif msg.command == 'trigger':
+                    if msg.obj.name in list(val_dict['trigger'].keys()):
+                        val_dict['trigger'][msg.obj.name] += 1
+                    else:
+                        val_dict['trigger'][msg.obj.name] = 1
                 object_ETA = obj.ETA(cmd = msg.command, val_dict = val_dict, vals = msg.args)
                 return object_ETA, val_dict
 
