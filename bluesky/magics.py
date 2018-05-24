@@ -260,7 +260,7 @@ def _print_positioners(positioners, sort=True, precision=6, prefix=""):
     for p, v in zip(positioners, values):
         if not isinstance(v, Exception):
             try:
-                prec = p.precision
+                prec = int(p.precision)
             except Exception:
                 prec = precision
             value = np.round(v, decimals=prec)
