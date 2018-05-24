@@ -116,75 +116,78 @@ def check_limits(plan):
                                      "".format(msg.obj.name, pos, (low, high)))
 
 
-def plan_ETA(plan, print_output = True):
+def est_time(plan, print_output = True):
     """
     Estimates a time for a plan to be completed.
-    This function estimates the time it will take (ETA) to complete the plan defined by 'plan'. This    is done by generating an ETA for each of the steps in the plan using the ETA attribute on the 
-    devices used in each step. As the device ETA is generally based on statistics gathered from 
-    previous use, and returns the mean value (ETA) and the standard deviation (STD_DEV) from those 
-    statistics, plan_ETA also returns the STD_DEV for the ETA to give an idea of the accuracy of 
-    the prediction. As this is a statistical approach to time estimating at the device level it is
-    expected that the accuracy will improve with more use of the device through bluesky. The final
-    information returned is a list of ETA, STD_DEV pairs for each 'run' in the plan, where a 'run' 
-    is defined as the anything that occurs between a 'start' and 'stop' document being generated 
-    (which is how the data is stored in the databroker). 
+    This function estimates the time it will take (est_time) to complete the plan defined by 
+    'plan'. This is done by generating an est_time for each of the steps in the plan using the 
+    est_time attribute on the devices used in each step. As the device est_time is generally based 
+    on statistics gathered from previous use, and returns the mean value (est_time) and the 
+    standard deviation (std_dev) from those statistics, est_time also returns the std_dev for the 
+    est_time to give an idea of the accuracy of the prediction. As this is a statistical approach 
+    to time estimating at the device level it is expected that the accuracy will improve with more 
+    use of the device through bluesky. The final information returned is a list of est_time, std_dev
+    pairs for each 'run' in the plan, where a 'run' is defined as the anything that occurs between 
+    a 'start' and 'stop' document being generated (which is how the data is stored in the 
+    databroker). 
 
     Parameters
     ----------
     plan : generator.
-        The bluesky plan that the ETA is to be estimated for.
+        The bluesky plan that the est_time is to be estimated for.
     print_output : boolean, optional.
         Indicates if the return values should also be printed to the command line in a human 
         readable way, default value is 'True'.
     
     Return Parameters
     -----------------
-    out_ETA : list.
-        A list containing 2 items, the ETA and the STD_DEV, for the plan.
+    out_est_time : tuple.
+        A tuple containing 2 items, the est_time and the std_dev, for the plan.
     run_info : list.
-        A list of items, 1 for each run in the plan, containing the ETA and STD_DEV.
+        A list of items, 1 for each run in the plan, containing an est_time/std_dev tuple.
 
     """
 
-    def combine_ETA(ETA_1, ETA_2, method = 'sum'):
+    def combine_est_time(est_time_1, est_time_2, method = 'sum'):
         """
-        Returns the combination ETA/STD_DEV pairs ETA_1 and ETA_2.
-        This function returns the combination of ETA_1 and ETA_2, combined using the method defined
-        by 'method'.
+        Returns the combination est_time/std_dev pairs et_1 and et_2.
+        This function returns the combination of est_time_1 and est_time_2, combined using the 
+        method definedby 'method'.
 
         Parameters
         ----------
-        ETA_1, ETA_2 : list.
-            The lists containing the ETA/STD_DEV pairs to be combined.
+        est_time_1, est_time_2 : tuples.
+            The tuples containing the est_time/std_dev tuples to be combined.
         method : string, optional.
-            The method to use for the combination of ETA_1 and ETA_2, default is 'sum'.
+            The method to use for the combination of est_time_1 and est_time_2, default is 
+            'sum'.
 
         Return Parameters
         -----------------
-        out_ETA : list.
-            The combined ETA/STD_DEV pair.
+        out_est_time : tuple.
+            The combined est_time/std_dev tuple.
         """
-        out_ETA = [0,0]
+        out_est_time = (0,0)
         if method == 'sum':
-            out_ETA[0] = ETA_1[0] + ETA_2[0]
-            out_ETA[1] = ETA_1[1] + ETA_2[1]
+            out_est_time[0] = est_time_1[0] + est_time_2[0]
+            out_est_time[1] = est_time_1[1] + est_time_2[1]
 
         elif method == 'max':
-            if ETA_1[0] < ETA_2[0]:
-                out_ETA = ETA_2 
+            if est_time_1[0] < est_time_2[0]:
+                out_est_time = est_time_2 
 
             else:
-                out_ETA = ETA_1
+                out_est_time = est_time_1
 
-        return out_ETA
+        return out_est_time
 
 
 
-    def obj_ETA(msg, val_dict):
+    def obj_est_time(msg, val_dict):
         """
-        Returns the ETA/STD_DEV pair for the object referenced in msg.
-        This function returns the ETA/STD_DEV pair for the object referenced in msg.obj and for the 
-        command type reference in msg.command.
+        Returns the est_time/std_dev pair for the object referenced in msg.
+        This function returns the est_time/std_dev pair for the object referenced in msg.obj and 
+        for the command type reference in msg.command.
 
         Parameters
         ----------
@@ -200,8 +203,8 @@ def plan_ETA(plan, print_output = True):
         
         Return Parameters
         -----------------
-        out_ETA : list.
-            The combined ETA/STD_DEV pair.
+        out_est_time : tuple.
+            The combined est_time/std_dev pair.
         val_dict : dict.
             The updated version of val_dict.
         """
@@ -217,20 +220,21 @@ def plan_ETA(plan, print_output = True):
                         val_dict['trigger'][msg.obj.name] += 1
                     else:
                         val_dict['trigger'][msg.obj.name] = 1
-                object_ETA = obj.ETA(cmd = msg.command, val_dict = val_dict, vals = msg.args)
-                return object_ETA, val_dict
+                object_est_time = obj.est_time(cmd = msg.command, val_dict = val_dict, 
+                                               vals = msg.args)
+                return object_est_time, val_dict
 
             elif msg.command == 'kickoff':
                 #and adds the ETA for each step. 
                 #This section pulls out the list of motor positions from the flyer
                 obj = msg.obj
-                out_ETA = [0,0]
+                out_est_time = (0,0)
                 for pos in msg.obj._steps:
-                    object_ETA = obj.ETA(cmd = 'set', val_dict = val_dict, vals = [pos])
-                    out_ETA = combine_ETA(out_ETA, object_ETA)
+                    object_est_time = obj.est_time(cmd = 'set', val_dict = val_dict, vals = [pos])
+                    out_est_time = combine_est_time(out_est_time, object_est_time)
                     val_dict['set'][msg.obj._mot.name] = pos
 
-                return out_ETA, val_dict                
+                return out_est_time, val_dict                
     
             else:
                 return [0, 0], val_dict
@@ -242,13 +246,13 @@ def plan_ETA(plan, print_output = True):
             return[0, 0], val_dict
 
 
-    def group_ETA(msg, val_dict):
+    def group_est_time(msg, val_dict):
         """
-        Returns the ETA/STD_DEV pair for a group.
-        This function returns an ETA/STD_DEV pair, for a group, where a group is defined as a 
+        Returns the est_time/std_dev tuple for a group.
+        This function returns an est_time/std_dev tuple, for a group, where a group is defined as a 
         series of messages which are run simultaneously and is ended on a wait messages. It 
-        assumes that it is called from inside plan_ETA, once the first message of the group has 
-        been detected. The routine also returns an updated version of val_dict including any 
+        assumes that it is called from inside plan_est_time, once the first message of the group 
+        has been detected. The routine also returns an updated version of val_dict including any 
         changed values from the group.
 
         Parameters
@@ -266,12 +270,12 @@ def plan_ETA(plan, print_output = True):
         
         Return Parameters
         -----------------
-        out_ETA : list.
-            The combined ETA/STD_DEV pair.
+        out_est_time : tuple.
+            The combined est_time/std_dev pair.
         val_dict : dict.
             The updated version of val_dict.
         """
-        out_ETA, val_dict = obj_ETA(msg, val_dict)
+        out_est_time, val_dict = obj_est_time(msg, val_dict)
 
         while msg.command is not 'wait':
             if msg.command == 'set': 
@@ -285,25 +289,25 @@ def plan_ETA(plan, print_output = True):
                     val_dict['trigger'][msg.obj.name] = 1
 
             msg = next(plan)
-            object_ETA, val_dict = obj_ETA(msg, val_dict)
-            out_ETA = combine_ETA(out_ETA, object_ETA, method = 'max')
+            object_est_time, val_dict = obj_est_time(msg, val_dict)
+            out_est_time = combine_est_time(out_est_time, object_est_time, method = 'max')
 
-        return out_ETA, val_dict
+        return out_est_time, val_dict
 
 
-    def run_ETA(msg, val_dict):
+    def run_est_time(msg, val_dict):
         """
-        Returns the ETA/STD_DEV pair for a run.
-        This function returns an ETA/STD_DEV pair, for a group, where a group is defined as a 
+        Returns the est_time/std_dev pair for a run.
+        This function returns an est_time/std_dev pair, for a group, where a group is defined as a 
         series of messages which are run simultaneously and is ended on a wait messages. It 
-        assumes that it is called from inside plan_ETA, once an 'open_run' has been detected. 
+        assumes that it is called from inside plan_est_time, once an 'open_run' has been detected. 
         The routine also returns an updated version of val_dict including any changed values 
         from the run.
 
         Parameters
         ----------
         msg : message.
-            The first message of the group that was detected in plan_ETA.
+            The first message of the group that was detected in plan_est_time.
         val_dict : dict.
             A dictionary containing information on values updated during the plan. It has key:arg 
             pairs with keys relating to message components where each arg is a dictionary 
@@ -315,51 +319,51 @@ def plan_ETA(plan, print_output = True):
         
         Return Parameters
         -----------------
-        out_ETA : list.
-            The combined ETA/STD_DEV pair.
+        out_est_time : tuple.
+            The combined est_time/std_dev tuple.
         val_dict : dict.
             The updated version of val_dict.
         """
 
-        out_ETA = [0,0]
+        out_est_time = (0,0)
         
         while msg.command is not 'close_run':
             msg = next(plan)
             if msg.command in ['set','trigger','kickoff']:
-                grp_ETA, val_dict = group_ETA(msg, val_dict)
-                out_ETA = combine_ETA(out_ETA, grp_ETA)
+                grp_est_time, val_dict = group_est_time(msg, val_dict)
+                out_est_time = combine_est_time(out_est_time, grp_est_time)
 
             else:
-                object_ETA, val_dict = obj_ETA(msg, val_dict)
-                out_ETA = combine_ETA(out_ETA, object_ETA)
+                object_est_time, val_dict = obj_est_time(msg, val_dict)
+                out_est_time = combine_est_time(out_est_time, object_est_time)
    
-        return out_ETA, val_dict
+        return out_est_time, val_dict
 
 
     #Define some variables used in the following.
     val_dict = {'set':{}, 'trigger':{} } #this holds information on the updated values.
-    out_ETA = [0, 0] #this holds the plan ETA and STD_DEV as a pair.
+    out_est_time = (0, 0) #this holds the plan est_time and std_dev as a pair.
     run_info = [] #used to track the ETA and STD_DEV for any 'runs' inside the plan.
 
     for msg in plan:
         if msg.command is 'open_run':
-            rn_ETA, val_dict = run_ETA(msg, val_dict)
-            run_info.append(rn_ETA)
-            out_ETA = combine_ETA(out_ETA, rn_ETA)
+            rn_est_time, val_dict = run_est_time(msg, val_dict)
+            run_info.append(rn_est_time)
+            out_est_time = combine_est_time(out_est_time, rn_est_time)
         if msg.command in ['set','trigger','kickoff']:
-            grp_ETA, val_dict = group_ETA(msg, val_dict)
-            out_ETA = combine_ETA(out_ETA, grp_ETA)            
+            grp_est_time, val_dict = group_est_time(msg, val_dict)
+            out_est_time = combine_est_time(out_est_time, grp_est_time)            
 
         else:
-            object_ETA, val_dict = obj_ETA(msg, val_dict)
-            out_ETA = combine_ETA(out_ETA, object_ETA)
+            object_est_time, val_dict = obj_est_time(msg, val_dict)
+            out_est_time = combine_est_time(out_est_time, object_est_time)
 
     if print_output == True:
         for i, run in enumerate(run_info):
-            print('  * Run %d ETA --> %.2f s, Std Dev --> %.2f s' % (i+1, run[0], run[1]))
-        print('Plan ETA --> %.2f s, Std Dev --> %.2f s' % (out_ETA[0], out_ETA[1]))
+            print('  * Run %d est. time --> %.2f s, std Dev --> %.2f s' % (i+1, run[0], run[1]))
+        print('Plan est. time --> %.2f s, std Dev --> %.2f s' % (out_est_time[0], out_est_time[1]))
 
-    return out_ETA, run_info
+    return out_est_time, run_info
 
 
 
