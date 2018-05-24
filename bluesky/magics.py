@@ -208,9 +208,9 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
                 if are_positioners(devices):
                     positioners = [positioner[1] for positioner in devices_dict[label]]
                     _print_positioners(positioners, precision=self.FMT_PREC,
-                                       prefix=" "*8)
+                                       prefix=" "*2)
                 else:
-                    _print_devices(devices, prefix=" "*8)
+                    _print_devices(devices, prefix=" "*2)
 
 def _print_devices(devices, prefix=""):
     cols = ["Python name", "Ophyd Name"]
