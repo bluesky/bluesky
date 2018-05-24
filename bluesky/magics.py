@@ -331,12 +331,15 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
                     obj_list[label].append((key, obj))
 
                 if is_parent(obj):
-                    for c_key, v in get_labeled_devices(user_ns={k: getattr(obj, k)
-                                                             for k in obj.read_attrs
-                                                             if '.' not in k},
-                                                        maxdepth=maxdepth-1,
-                                                       ).items():
-                        obj_list[c_key].extend([('.'.join([key, ot[0]]), ot[1]) for ot in v])
+                    # Get direct children (not grandchildren).
+                    children = {k: getattr(obj, k) for k in obj.read_attrs
+                                if '.' not in k}
+                    # Recurse over all children.
+                    for c_key, v in get_labeled_devices(
+                            user_ns=children,
+                            maxdepth=maxdepth-1).items():
+                        items = [('.'.join([key, ot[0]]), ot[1]) for ot in v]
+                        obj_list[c_key].extend(items)
 
 
     # Convert from defaultdict to normal dict before returning.
