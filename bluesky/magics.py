@@ -201,28 +201,29 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
                 print(label)
                 try:
                     devices = devices_dict[label]
+                    all_children = [(k, getattr(obj, k))
+                                    for _, obj in devices
+                                        for k in getattr(obj, 'read_attrs', [])]
                 except KeyError:
                     print('<no matches for this label>')
                     continue
-                # ignore the first key
-                if are_positioners(devices):
-                    positioners = [dev for _, dev in devices_dict[label]]
+                # Search devices and all their children for positioners.
+                positioners = [dev for _, dev in devices + all_children
+                               if is_positioner(dev)]
+                if positioners:
                     _print_positioners(positioners, precision=self.FMT_PREC,
-                                       prefix=" "*2)
-                else:
-                    _print_devices(devices, prefix=" "*2)
+                                        prefix=" "*2)
+                    print()  # blank line
+                # Just display the top-level devices in the namespace (no
+                # children).
+                _print_devices(devices, prefix=" "*2)
+                print()  # blank line
 
 def _print_devices(devices, prefix=""):
-    cols = ["Python name", "Ophyd Name"]
-    print(prefix + "{:20s} \t {:20s}".format(*cols))
-    print(prefix + "="*40)
+    cols = ["Local variable name", "Ophyd name (to be recorded as metadata)"]
+    print(prefix + "{:38s} {:38s}".format(*cols))
     for name, obj in devices:
-        print(prefix + "{:20s} \t {:20s}".format(name, str(obj.name)))
-
-def are_positioners(devs):
-    # only true if all are positioners
-    # takes ((name, dev),...) tuple
-    return all(is_positioner(obj) for _, obj in devs)
+        print(prefix + "{:38} {:38s}".format(name, str(obj.name)))
 
 def is_positioner(dev):
     return hasattr(dev, 'position')
@@ -332,7 +333,9 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
 
                 if is_parent(obj):
                     # Get direct children (not grandchildren).
-                    children = {k: getattr(obj, k) for k in obj.read_attrs
+                    children = {k: getattr(obj, k)
+                                # obj might be a Signal (no read_attrs).
+                                for k in getattr(obj, 'read_attrs', [])
                                 if '.' not in k}
                     # Recurse over all children.
                     for c_key, v in get_labeled_devices(
@@ -351,14 +354,6 @@ def is_parent(dev):
     # should not have component_names, or if yes, should be empty
     # read_attrs needed to check it's an instance and not class itself
     return (not isinstance(dev, type) and getattr(dev, 'component_names', []))
-
-
-def get_children(dev):
-    children = list()
-    if hasattr(dev, 'component_names') and len(dev.component_names) > 0:
-        for comp_name in dev.component_names:
-            children.append(getattr(dev, comp_name))
-    return children
 
 
 def _ct_callback(name, doc):
