@@ -206,7 +206,7 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
                     continue
                 # ignore the first key
                 if are_positioners(devices):
-                    positioners = [positioner[1] for positioner in devices_dict[label]]
+                    positioners = [dev for _, dev in devices_dict[label]]
                     _print_positioners(positioners, precision=self.FMT_PREC,
                                        prefix=" "*2)
                 else:
