@@ -350,8 +350,7 @@ def is_parent(dev):
     # return whether a node is a parent
     # should not have component_names, or if yes, should be empty
     # read_attrs needed to check it's an instance and not class itself
-    return (not isinstance(dev, type) and
-            len(getattr(dev, 'component_names', [])) > 0)
+    return (not isinstance(dev, type) and getattr(dev, 'component_names', []))
 
 
 def get_children(dev):
