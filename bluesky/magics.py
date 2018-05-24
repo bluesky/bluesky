@@ -206,11 +206,11 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
                     continue
                 # ignore the first key
                 if are_positioners(devices):
-                    positioners = [positioner[1] for positioner in devices_dict[label]]
+                    positioners = [dev for _, dev in devices_dict[label]]
                     _print_positioners(positioners, precision=self.FMT_PREC,
-                                       prefix=" "*8)
+                                       prefix=" "*2)
                 else:
-                    _print_devices(devices, prefix=" "*8)
+                    _print_devices(devices, prefix=" "*2)
 
 def _print_devices(devices, prefix=""):
     cols = ["Python name", "Ophyd Name"]
@@ -260,7 +260,7 @@ def _print_positioners(positioners, sort=True, precision=6, prefix=""):
     for p, v in zip(positioners, values):
         if not isinstance(v, Exception):
             try:
-                prec = p.precision
+                prec = int(p.precision)
             except Exception:
                 prec = precision
             value = np.round(v, decimals=prec)
@@ -312,7 +312,7 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
     obj_list = collections.defaultdict(list)
 
     if maxdepth <= 0:
-        warnings.warn("Recursion limit exceeded")
+        warnings.warn("Recursion limit exceeded. Results will be truncated.")
         return obj_list
 
     if user_ns is None:
@@ -324,16 +324,23 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
         # return of commands)
         # also check its a subclass of desired classes
         if not key.startswith("_"):
-            if is_parent(obj):
-                labels = getattr(obj, '_ophyd_labels_', set())
-                obj_list.update(get_labeled_devices(user_ns=obj.__dict__,
-                                                    maxdepth=maxdepth-1,))
-            else:
-                if hasattr(obj, '_ophyd_labels_'):
-                    # don't inherit parent labels
-                    labels = obj._ophyd_labels_
-                    for label in labels:
-                        obj_list[label].append((key, obj))
+            if hasattr(obj, '_ophyd_labels_'):
+                # don't inherit parent labels
+                labels = obj._ophyd_labels_
+                for label in labels:
+                    obj_list[label].append((key, obj))
+
+                if is_parent(obj):
+                    # Get direct children (not grandchildren).
+                    children = {k: getattr(obj, k) for k in obj.read_attrs
+                                if '.' not in k}
+                    # Recurse over all children.
+                    for c_key, v in get_labeled_devices(
+                            user_ns=children,
+                            maxdepth=maxdepth-1).items():
+                        items = [('.'.join([key, ot[0]]), ot[1]) for ot in v]
+                        obj_list[c_key].extend(items)
+
 
     # Convert from defaultdict to normal dict before returning.
     return dict(obj_list)
@@ -343,8 +350,7 @@ def is_parent(dev):
     # return whether a node is a parent
     # should not have component_names, or if yes, should be empty
     # read_attrs needed to check it's an instance and not class itself
-    return (isinstance(dev, type) and
-            len(getattr(dev, 'component_names', [])) > 0)
+    return (not isinstance(dev, type) and getattr(dev, 'component_names', []))
 
 
 def get_children(dev):
