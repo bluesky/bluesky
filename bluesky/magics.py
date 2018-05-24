@@ -312,7 +312,7 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
     obj_list = collections.defaultdict(list)
 
     if maxdepth <= 0:
-        warnings.warn("Recursion limit exceeded")
+        warnings.warn("Recursion limit exceeded. Results will be truncated.")
         return obj_list
 
     if user_ns is None:
