@@ -1,6 +1,17 @@
 Release History
 ===============
 
+v1.3.2 (2018-05-24)
+-------------------
+
+Bug Fixes
+^^^^^^^^^
+
+* Revised behavior of magics that integrate with ophyd's experimental
+  "labels" feature. The most important difference is that the ``%wa`` magic now
+  traverses the children of labeled devices to find any sub-devices that are
+  positioners.
+
 v1.3.1 (2018-05-19)
 -------------------
 
