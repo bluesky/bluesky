@@ -221,7 +221,7 @@ def est_time(plan, print_output = True):
                         val_dict['trigger'][msg.obj.name] += 1
                     else:
                         val_dict['trigger'][msg.obj.name] = 1
-                object_est_time = obj.est_time(cmd = msg.command, val_dict = val_dict, 
+                object_est_time, val_dict = obj.est_time(cmd = msg.command, val_dict = val_dict, 
                                                vals = msg.args)
                 return object_est_time, val_dict
 
@@ -231,7 +231,8 @@ def est_time(plan, print_output = True):
                 obj = msg.obj
                 out_est_time = (0,0)
                 for pos in msg.obj._steps:
-                    object_est_time = obj.est_time(cmd = 'set', val_dict = val_dict, vals = [pos])
+                    object_est_time, val_dict = obj.est_time(cmd = 'set', val_dict = val_dict, 
+                                                            vals = [pos])
                     out_est_time = combine_est_time(out_est_time, object_est_time)
                     val_dict['set'][msg.obj._mot.name] = pos
 
