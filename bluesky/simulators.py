@@ -141,8 +141,8 @@ def est_time(plan, print_output = True):
     
     Return Parameters
     -----------------
-    out_est_time : tuple.
-        A tuple containing 2 items, the est_time and the std_dev, for the plan.
+    out_est_time : list.
+        A list containing 2 items, the est_time and the std_dev, for the plan.
     run_info : list.
         A list of items, 1 for each run in the plan, containing an est_time/std_dev tuple.
 
@@ -164,10 +164,11 @@ def est_time(plan, print_output = True):
 
         Return Parameters
         -----------------
-        out_est_time : tuple.
+        out_est_time : list.
             The combined est_time/std_dev tuple.
         """
-        out_est_time = (0,0)
+        out_est_time = [0,0]
+        print (f'est_time_1 = {est_time_1}: est_time_2 = {est_time_2}') 
         if method == 'sum':
             out_est_time[0] = est_time_1[0] + est_time_2[0]
             out_est_time[1] = est_time_1[1] + est_time_2[1]
@@ -203,7 +204,7 @@ def est_time(plan, print_output = True):
         
         Return Parameters
         -----------------
-        out_est_time : tuple.
+        out_est_time : list.
             The combined est_time/std_dev pair.
         val_dict : dict.
             The updated version of val_dict.
@@ -243,7 +244,7 @@ def est_time(plan, print_output = True):
             return [msg.args[0], 0], val_dict
 
         else:
-            return[0, 0], val_dict
+            return [0, 0], val_dict
 
 
     def group_est_time(msg, val_dict):
@@ -270,7 +271,7 @@ def est_time(plan, print_output = True):
         
         Return Parameters
         -----------------
-        out_est_time : tuple.
+        out_est_time : list.
             The combined est_time/std_dev pair.
         val_dict : dict.
             The updated version of val_dict.
@@ -319,13 +320,13 @@ def est_time(plan, print_output = True):
         
         Return Parameters
         -----------------
-        out_est_time : tuple.
-            The combined est_time/std_dev tuple.
+        out_est_time : list.
+            The combined est_time/std_dev pair.
         val_dict : dict.
             The updated version of val_dict.
         """
 
-        out_est_time = (0,0)
+        out_est_time = [0,0]
         
         while msg.command is not 'close_run':
             msg = next(plan)
@@ -342,7 +343,7 @@ def est_time(plan, print_output = True):
 
     #Define some variables used in the following.
     val_dict = {'set':{}, 'trigger':{} } #this holds information on the updated values.
-    out_est_time = (0, 0) #this holds the plan est_time and std_dev as a pair.
+    out_est_time = [0, 0] #this holds the plan est_time and std_dev as a pair.
     run_info = [] #used to track the ETA and STD_DEV for any 'runs' inside the plan.
 
     for msg in plan:
