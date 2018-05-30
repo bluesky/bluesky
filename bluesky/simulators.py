@@ -168,7 +168,6 @@ def est_time(plan, print_output = True):
             The combined est_time/std_dev tuple.
         """
         out_est_time = [0,0]
-        print (f'est_time_1 = {est_time_1}: est_time_2 = {est_time_2}') 
         if method == 'sum':
             out_est_time[0] = est_time_1[0] + est_time_2[0]
             out_est_time[1] = est_time_1[1] + est_time_2[1]
@@ -338,7 +337,6 @@ def est_time(plan, print_output = True):
             else:
                 object_est_time, val_dict = obj_est_time(msg, val_dict)
                 out_est_time = combine_est_time(out_est_time, object_est_time)
-   
         return out_est_time, val_dict
 
 
