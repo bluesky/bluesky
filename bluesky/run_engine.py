@@ -1844,7 +1844,7 @@ class RunEngine:
 
         if hasattr(obj, 'collect_asset_docs'):
             # Resource and Datum documents
-            for name, doc in self.collect_asset_docs():
+            for name, doc in obj.collect_asset_docs():
                 # Add a 'run_start' field to the resource document on its way out.
                 if name == 'resource':
                     doc['run_start'] = self._run_start_uid
