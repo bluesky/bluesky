@@ -191,10 +191,10 @@ class LiveTable(CallbackBase):
         Function to call to 'print' a line.  Defaults to `print`
     '''
     _FMTLOOKUP = {'s': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
-                  'f': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
+                  'e': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
                   'g': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
                   'd': '{pad}{{{k}: >{width}{dtype}}}{pad}'}
-    _FMT_MAP = {'number': 'f',
+    _FMT_MAP = {'number': 'e',
                 'integer': 'd',
                 'string': 's',
                 }
