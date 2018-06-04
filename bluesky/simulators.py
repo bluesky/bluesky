@@ -148,6 +148,19 @@ def est_time(plan, print_output = True):
 
     """
 
+    #The commands that start/end a 'run'.
+    _run_start_cmds = ['open_run']
+    _run_end_cmds = ['close_run']
+    #The commands that start/end a 'group', but not flyer commands.
+    _group_start_cmds = ['set','trigger']   
+    _group_end_cmds = ['wait']
+    #The commands that don't start/end a 'group/plan' but are still timed.
+    _timed_cmds = ['stage', 'unstage', 'read', 'sleep']
+    #Commands that are 
+    _flyer_start_cmds = ['kickoff']
+
+
+
     def combine_est_time(est_time_1, est_time_2, method = 'sum'):
         """
         Returns the combination est_time/std_dev pairs et_1 and et_2.
@@ -209,10 +222,16 @@ def est_time(plan, print_output = True):
             The updated version of val_dict.
         """
 
+
         if msg.obj is not None:
 
-            if msg.command in ['set', 'trigger', 'stage', 'unstage']:
+            if msg.command is 'sleep':
+                return [msg.args[0], 0], val_dict
+
+            elif msg.command in (_run_start_cmds + _timed_cmds):
                 obj =  msg.obj
+                #The if-elif section below is used to track how many 'triggers' have occured since
+                #the last 'unstage'.
                 if msg.command == 'unstage':
                     val_dict['trigger'][msg.obj.name] = 0
                 elif msg.command == 'trigger':
@@ -220,13 +239,14 @@ def est_time(plan, print_output = True):
                         val_dict['trigger'][msg.obj.name] += 1
                     else:
                         val_dict['trigger'][msg.obj.name] = 1
+
                 object_est_time, val_dict = obj.est_time(cmd = msg.command, val_dict = val_dict, 
                                                vals = msg.args)
                 return object_est_time, val_dict
 
-            elif msg.command == 'kickoff':
-                #and adds the ETA for each step. 
+            elif msg.command == _flyer_start_cmds:
                 #This section pulls out the list of motor positions from the flyer
+                #and pulls out the ETA for each step.
                 obj = msg.obj
                 out_est_time = (0,0)
                 for pos in msg.obj._steps:
@@ -239,9 +259,6 @@ def est_time(plan, print_output = True):
     
             else:
                 return [0, 0], val_dict
-
-        elif msg.command is 'sleep':
-            return [msg.args[0], 0], val_dict
 
         else:
             return [0, 0], val_dict
@@ -278,7 +295,9 @@ def est_time(plan, print_output = True):
         """
         out_est_time, val_dict = obj_est_time(msg, val_dict)
 
-        while msg.command is not 'wait':
+        while msg.command not in _group_end_cmds:
+            #the below if-elif statement is used to track any changes of values using 'set', and
+            #the number of 'triggers' called for later use in the time estimate.
             if msg.command == 'set': 
                 val_dict['set'][msg.obj.name] = msg.args[0]
 
@@ -289,6 +308,7 @@ def est_time(plan, print_output = True):
                 else:
                     val_dict['trigger'][msg.obj.name] = 1
 
+            #this section estimates the time fro each command.
             msg = next(plan)
             object_est_time, val_dict = obj_est_time(msg, val_dict)
             out_est_time = combine_est_time(out_est_time, object_est_time, method = 'max')
@@ -328,9 +348,9 @@ def est_time(plan, print_output = True):
 
         out_est_time = [0,0]
         
-        while msg.command is not 'close_run':
+        while msg.command not in _run_end_cmds:
             msg = next(plan)
-            if msg.command in ['set','trigger','kickoff']:
+            if msg.command in (_run_start_cmds + _flyer_start_cmds):
                 grp_est_time, val_dict = group_est_time(msg, val_dict)
                 out_est_time = combine_est_time(out_est_time, grp_est_time)
 
@@ -346,11 +366,11 @@ def est_time(plan, print_output = True):
     run_info = [] #used to track the ETA and STD_DEV for any 'runs' inside the plan.
 
     for msg in plan:
-        if msg.command is 'open_run':
+        if msg.command in _run_start_cmds:
             rn_est_time, val_dict = run_est_time(msg, val_dict)
             run_info.append(rn_est_time)
             out_est_time = combine_est_time(out_est_time, rn_est_time)
-        if msg.command in ['set','trigger','kickoff']:
+        if msg.command in (_group_start_cmds + _flyer_start_cmds):
             grp_est_time, val_dict = group_est_time(msg, val_dict)
             out_est_time = combine_est_time(out_est_time, grp_est_time)            
 
