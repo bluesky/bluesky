@@ -380,8 +380,8 @@ def est_time(plan, print_output = True):
 
     if print_output == True:
         for i, run in enumerate(run_info):
-            print('  * Run %d est. time --> %.2f s, std Dev --> %.2f s' % (i+1, run[0], run[1]))
-        print('Plan est. time --> %.2f s, std Dev --> %.2f s' % (out_est_time[0], out_est_time[1]))
+            print('  * Run %d est. time --> %.2g s, std Dev --> %.2g s' % (i+1, run[0], run[1]))
+        print('Plan est. time --> %.2g s, std Dev --> %.2g s' % (out_est_time[0], out_est_time[1]))
 
     return out_est_time, run_info
 
