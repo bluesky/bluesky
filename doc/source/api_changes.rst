@@ -1,6 +1,20 @@
 Release History
 ===============
 
+v1.3.3 (2018-06-06)
+-------------------
+
+Bug Fixes
+^^^^^^^^^
+
+* Fixed show-shopping RunEngine bug in flyer asset collection. (The impact of
+  this bug is expected to be low, as there *are* no flyers with asset
+  collection yet and the bug was discovered while writing the first one.)
+* Fixed packaging issue where certain important files (notably
+  ``requirements.txt``) were not included in the source tarball.
+* Made BestEffortCallback swallow errors related to matplotlib's "tight layout"
+  if the occur --- better to show a messy plot than error out.
+
 v1.3.2 (2018-05-24)
 -------------------
 
