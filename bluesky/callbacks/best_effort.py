@@ -344,8 +344,10 @@ class BestEffortCallback(CallbackBase):
         else:
             raise NotImplementedError("we do not support 3D+ in BEC yet "
                                       "(and it should have bailed above)")
-
-        fig.tight_layout()
+        try:
+            fig.tight_layout()
+        except ValueError:
+            pass
 
     def event(self, doc):
         descriptor = self._descriptors[doc['descriptor']]
