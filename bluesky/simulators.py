@@ -1,5 +1,8 @@
 from warnings import warn
 from bluesky.preprocessors import print_summary_wrapper
+from collections import namedtuple
+
+_TimeStats=namedtuple('TimeStats','est_time std_dev')
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -218,7 +221,7 @@ class EstTimeSimulator():
         self._plan_history = {'set':{}, 'trigger':{} }
 
         #Define some variables used in the following.
-        out_est_time = [0, 0] #this holds the plan est_time and std_dev as a pair.
+        out_est_time = _TimeStats(0, 0) #this holds the plan est_time and std_dev as a pair.
         run_info = [] #used to track the ETA and STD_DEV for any 'runs' inside the plan.
 
         for msg in plan:
@@ -237,7 +240,8 @@ class EstTimeSimulator():
         if print_output == True:
             for i, run in enumerate(run_info):
                 print('  * Run %d est. time --> %.2g s, std Dev --> %.2g s' % (i+1, run[0], run[1]))
-            print('Plan est. time --> %.2g s, std Dev --> %.2g s' % (out_est_time[0], out_est_time[1]))
+            print('Plan est. time --> %.2g s, std Dev --> %.2g s' % (out_est_time.est_time, 
+                                                                                out_est_time.std_dev))
 
         return out_est_time, run_info
 
@@ -251,7 +255,7 @@ class EstTimeSimulator():
 
         Parameters
         ----------
-        est_time_1, est_time_2 : tuples.
+        est_time_1, est_time_2 : namedtuples.
             The tuples containing the est_time/std_dev tuples to be combined.
         method : string, optional.
             The method to use for the combination of est_time_1 and est_time_2, default is 
@@ -259,16 +263,16 @@ class EstTimeSimulator():
 
         Return Parameters
         -----------------
-        out_est_time : list.
+        out_est_time : namedtuple.
             The combined est_time/std_dev tuple.
         """
-        out_est_time = [0,0]
+        
         if method == 'sum':
-            out_est_time[0] = est_time_1[0] + est_time_2[0]
-            out_est_time[1] = est_time_1[1] + est_time_2[1]
+            out_est_time = _TimeStats(est_time_1.est_time + est_time_2.est_time, 
+                            est_time_1.std_dev + est_time_2.std_dev)
 
         elif method == 'max':
-            if est_time_1[0] < est_time_2[0]:
+            if est_time_1.est_time < est_time_2.est_time:
                 out_est_time = est_time_2 
 
             else:
@@ -344,10 +348,10 @@ class EstTimeSimulator():
                 return out_est_time              
     
             else:
-                return [0, 0]
+                return _TimeStats(0, 0)
 
         else:
-            return [0, 0]
+            return _TimeStats(0, 0)
 
 
     def group_est_time(self, msg, plan):
@@ -440,7 +444,7 @@ class EstTimeSimulator():
 
         """
 
-        out_est_time = [0,0]
+        out_est_time = _TimeStats(0,0)
         
         while msg.command not in self._run_end_cmds:
             msg = next(plan)
