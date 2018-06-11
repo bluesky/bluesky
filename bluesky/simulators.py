@@ -116,7 +116,7 @@ def check_limits(plan):
                                      "".format(msg.obj.name, pos, (low, high)))
 
 
-class EstTime():
+class EstTimeSimulator():
     """
     Estimates a time for a plan to be completed.
     This function estimates the time it will take (est_time) to complete the plan defined by 
@@ -146,6 +146,31 @@ class EstTime():
     run_info : list.
         A list of items, 1 for each run in the plan, containing an est_time/std_dev tuple.
 
+
+    ATTRIBUTE PARAMETERS
+    --------------------
+    _run_start_cmds: list
+        A list of message 'commands' that are found at the start of a run.
+    _run_end_cmds: list
+        A list of message 'commands' that are found at the end of a run.
+    _group_start_cmds: list
+        A list of message 'commands' that are found at the begining of a 'group' (where more than
+        one command is processed in parallel).
+    _group_end_cmds: list
+        A list of message 'commands' that are found at the begining of a 'group' (where more than
+        one command is processed in parallel).
+    _self._timed_cmds: list.
+        A list of message 'commands' that do not start/end a run/group/flyer but are stil timed.
+    __flyer_start_cmds: list.
+        A list of message 'commands' that start a 'flyer'.
+    _plan_history: dict.
+        A dictionary containing information on values updated during the plan. It has key:arg 
+        pairs with keys relating to message components where each arg is a dictionary 
+        containing devices (detectors, axes) that have been updated, as keywords and a value 
+        indicating the update status. For 'set' the update status is the latest 'position' that
+        it is to be set and for 'trigger' the update status is the number of times since the 
+        beginning of the scan or since an 'unstage' event that the device has been triggered.
+
     """
 
     def __init__(self):
@@ -163,7 +188,9 @@ class EstTime():
         self._timed_cmds = ['stage', 'unstage', 'read', 'sleep']
         #Commands that are 
         self._flyer_start_cmds = ['kickoff']
-
+        #create a reference to a dictionary called plan_history to capture set changes during the 
+        #plan for later modification.
+        self._plan_history = {'set':{}, 'trigger':{}}
 
     def __call__(self, plan, print_output = True):
         '''The call method.
@@ -179,29 +206,32 @@ class EstTime():
             Indicates if the return values should also be printed to the command line in a human 
             readable way, default value is 'True'.
     
-        Return Parameters
+        RETURN PARAMETERS
         -----------------
         out_est_time : list.
             A list containing 2 items, the est_time and the std_dev, for the plan.
         run_info : list.
             A list of items, 1 for each run in the plan, containing an est_time/std_dev tuple.
+
         '''
+        #reset the self._plan_history dictionary. 
+        self._plan_history = {'set':{}, 'trigger':{} }
+
         #Define some variables used in the following.
-        val_dict = {'set':{}, 'trigger':{} } #this holds information on the updated values.
         out_est_time = [0, 0] #this holds the plan est_time and std_dev as a pair.
         run_info = [] #used to track the ETA and STD_DEV for any 'runs' inside the plan.
 
         for msg in plan:
             if msg.command in self._run_start_cmds:
-                rn_est_time, val_dict = self.run_est_time(msg, plan, val_dict)
+                rn_est_time = self.run_est_time(msg, plan)
                 run_info.append(rn_est_time)
                 out_est_time = self.combine_est_time(out_est_time, rn_est_time)
             if msg.command in (self._group_start_cmds + self._flyer_start_cmds):
-                grp_est_time, val_dict = self.group_est_time(msg, plan, val_dict)
+                grp_est_time = self.group_est_time(msg, plan)
                 out_est_time = self.combine_est_time(out_est_time, grp_est_time)            
 
             else:
-                object_est_time, val_dict = self.obj_est_time(msg, val_dict)
+                object_est_time = self.obj_est_time(msg)
                 out_est_time = self.combine_est_time(out_est_time, object_est_time)
 
         if print_output == True:
@@ -248,7 +278,7 @@ class EstTime():
 
 
 
-    def obj_est_time(self, msg, val_dict):
+    def obj_est_time(self, msg ):
         """
         Returns the est_time/std_dev pair for the object referenced in msg.
         This function returns the est_time/std_dev pair for the object referenced in msg.obj and 
@@ -258,42 +288,47 @@ class EstTime():
         ----------
         msg : message.
             The first message of the group that was detected in plan_ETA.
-        val_dict : dict.
+        
+        Return Parameters
+        -----------------
+        out_est_time : list.
+            The combined est_time/std_dev pair.
+
+        Updated Parameters
+        ------------------
+        self._plan_history : dict.
             A dictionary containing information on values updated during the plan. It has key:arg 
             pairs with keys relating to message components where each arg is a dictionary 
             containing devices (detectors, axes) that have been updated, as keywords and a value 
             indicating the update status. For 'set' the update status is the latest 'position' that
             it is to be set and for 'trigger' the update status is the number of times since the 
             beginning of the scan or since an 'unstage' event that the device has been triggered.
-        
-        Return Parameters
-        -----------------
-        out_est_time : list.
-            The combined est_time/std_dev pair.
-        val_dict : dict.
-            The updated version of val_dict.
+            NOTE: Any 'set' ot 'trigger' messages processed in this function will be added to the 
+            dictionary
         """
 
         if msg.obj is not None:
 
             if msg.command is 'sleep':
-                return [msg.args[0], 0], val_dict
+                return [msg.args[0], 0]
 
-            elif msg.command in (self._run_start_cmds + self._timed_cmds):
+            elif msg.command in (self._run_start_cmds + self._group_start_cmds + self._timed_cmds):
                 obj =  msg.obj
-                #The if-elif section below is used to track how many 'triggers' have occured since
-                #the last 'unstage'.
+                #The if-elif section below is used to track how many 'triggers'/'sets' have 
+                #occured since the last 'unstage'/start of plan.
                 if msg.command == 'unstage':
-                    val_dict['trigger'][msg.obj.name] = 0
+                    self._plan_history['trigger'][msg.obj.name] = 0
                 elif msg.command == 'trigger':
-                    if msg.obj.name in list(val_dict['trigger'].keys()):
-                        val_dict['trigger'][msg.obj.name] += 1
+                    if msg.obj.name in list(self._plan_history['trigger'].keys()):
+                        self._plan_history['trigger'][msg.obj.name] += 1
                     else:
-                        val_dict['trigger'][msg.obj.name] = 1
+                        self._plan_history['trigger'][msg.obj.name] = 1
+                elif msg.command == 'set':
+                    self._plan_history['set'][msg.obj.name] = msg.args[0]
 
-                object_est_time, val_dict = obj.est_time(cmd = msg.command, val_dict = val_dict, 
-                                               vals = msg.args)
-                return object_est_time, val_dict
+                object_est_time = obj.est_time(cmd = msg.command, 
+                                                plan_history = self._plan_history, vals = msg.args)
+                return object_est_time
 
             elif msg.command == self._flyer_start_cmds:
                 #This section pulls out the list of motor positions from the flyer
@@ -301,28 +336,27 @@ class EstTime():
                 obj = msg.obj
                 out_est_time = (0,0)
                 for pos in msg.obj._steps:
-                    object_est_time, val_dict = obj.est_time(cmd = 'set', val_dict = val_dict, 
-                                                            vals = [pos])
+                    object_est_time = obj.est_time(cmd = 'set', plan_history = self._plan_history, 
+                                                    vals = [pos])
                     out_est_time = self.combine_est_time(out_est_time, object_est_time)
-                    val_dict['set'][msg.obj._mot.name] = pos
+                    self._plan_history['set'][msg.obj._mot.name] = pos
 
-                return out_est_time, val_dict                
+                return out_est_time              
     
             else:
-                return [0, 0], val_dict
+                return [0, 0]
 
         else:
-            return [0, 0], val_dict
+            return [0, 0]
 
 
-    def group_est_time(self, msg, plan, val_dict):
+    def group_est_time(self, msg, plan):
         """
         Returns the est_time/std_dev tuple for a group.
         This function returns an est_time/std_dev tuple, for a group, where a group is defined as a 
         series of messages which are run simultaneously and is ended on a wait messages. It 
         assumes that it is called from inside plan_est_time, once the first message of the group 
-        has been detected. The routine also returns an updated version of val_dict including any 
-        changed values from the group.
+        has been detected. 
 
         Parameters
         ----------
@@ -330,53 +364,55 @@ class EstTime():
             The first message of the group that was detected in plan_ETA.
         plan: generator.
             The generator that has the list of msgs to be examined.
-        val_dict : dict.
-            A dictionary containing information on values updated during the plan. It has key:arg 
-            pairs with keys relating to message components where each arg is a dictionary 
-            containing devices, (detectors, axes) that have been updated, as keywords and a value 
-            indicating the update status. For 'set' the update status is the latest 'position' 
-            that it has reached and for 'trigger' the update status is the number of times since 
-            the beginning of the scan or since an 'unstage' event that the device has been 
-            triggered.
         
         Return Parameters
         -----------------
         out_est_time : list.
             The combined est_time/std_dev pair.
-        val_dict : dict.
-            The updated version of val_dict.
+
+        Updated Parameters
+        ------------------
+        self._plan_history : dict.
+            A dictionary containing information on values updated during the plan. It has key:arg 
+            pairs with keys relating to message components where each arg is a dictionary 
+            containing devices (detectors, axes) that have been updated, as keywords and a value 
+            indicating the update status. For 'set' the update status is the latest 'position' that
+            it is to be set and for 'trigger' the update status is the number of times since the 
+            beginning of the scan or since an 'unstage' event that the device has been triggered.
+            NOTE: Any 'set' ot 'trigger' messages processed in this function will be added to the 
+            dictionary
+
         """
-        out_est_time, val_dict = self.obj_est_time(msg, val_dict)
+        out_est_time = self.obj_est_time(msg, plan_history = self._plan_history)
 
         while msg.command not in self._group_end_cmds:
             #the below if-elif statement is used to track any changes of values using 'set', and
             #the number of 'triggers' called for later use in the time estimate.
             if msg.command == 'set': 
-                val_dict['set'][msg.obj.name] = msg.args[0]
+                print (f'set {msg.obj.name} to {msg.args[0]}, _plan_history = [self._plan_history]')
+                self._plan_history['set'][msg.obj.name] = msg.args[0]
 
             elif msg.command == 'trigger': 
-                if msg.obj.name in list( val_dict['trigger'].keys() ):
-                    val_dict['trigger'][msg.obj.name] += 1
+                if msg.obj.name in list(self._plan_history['trigger'].keys() ):
+                    self._plan_history['trigger'][msg.obj.name] += 1
 
                 else:
-                    val_dict['trigger'][msg.obj.name] = 1
+                    self._plan_history['trigger'][msg.obj.name] = 1
 
             #this section estimates the time fro each command.
             msg = next(plan)
-            object_est_time, val_dict = self.obj_est_time(msg, val_dict)
+            object_est_time = self.obj_est_time(msg, plan_history = self._plan_history)
             out_est_time = self.combine_est_time(out_est_time, object_est_time, method = 'max')
 
-        return out_est_time, val_dict
+        return out_est_time
 
 
-    def run_est_time(self, msg, plan, val_dict):
+    def run_est_time(self, msg, plan):
         """
         Returns the est_time/std_dev pair for a run.
         This function returns an est_time/std_dev pair, for a group, where a group is defined as a 
         series of messages which are run simultaneously and is ended on a wait messages. It 
         assumes that it is called from inside plan_est_time, once an 'open_run' has been detected. 
-        The routine also returns an updated version of val_dict including any changed values 
-        from the run.
 
         Parameters
         ----------
@@ -384,21 +420,24 @@ class EstTime():
             The first message of the group that was detected in plan_est_time.
         plan : generator.
             The generator that contains the list of messages to be examined.
-        val_dict : dict.
-            A dictionary containing information on values updated during the plan. It has key:arg 
-            pairs with keys relating to message components where each arg is a dictionary 
-            containing devices, (detectors, axes) that have been updated, as keywords and a value 
-            indicating the update status. For 'set' the update status is the latest 'position' 
-            that it has reached and for 'trigger' the update status is the number of times since 
-            the beginning of the scan or since an 'unstage' event that the device has been 
-            triggered.
         
         Return Parameters
         -----------------
         out_est_time : list.
             The combined est_time/std_dev pair.
-        val_dict : dict.
-            The updated version of val_dict.
+
+        Updated Parameters
+        ------------------
+        self._plan_history : dict.
+            A dictionary containing information on values updated during the plan. It has key:arg 
+            pairs with keys relating to message components where each arg is a dictionary 
+            containing devices (detectors, axes) that have been updated, as keywords and a value 
+            indicating the update status. For 'set' the update status is the latest 'position' that
+            it is to be set and for 'trigger' the update status is the number of times since the 
+            beginning of the scan or since an 'unstage' event that the device has been triggered.
+            NOTE: Any 'set' ot 'trigger' messages processed in this function will be added to the 
+            dictionary
+
         """
 
         out_est_time = [0,0]
@@ -406,17 +445,17 @@ class EstTime():
         while msg.command not in self._run_end_cmds:
             msg = next(plan)
             if msg.command in (self._run_start_cmds + self._flyer_start_cmds):
-                grp_est_time, val_dict = self.group_est_time(msg, plan, val_dict)
+                grp_est_time = self.group_est_time(msg, plan)
                 out_est_time = self.combine_est_time(out_est_time, grp_est_time)
 
             else:
-                object_est_time, val_dict = self.obj_est_time(msg, val_dict)
+                object_est_time = self.obj_est_time(msg)
                 out_est_time = self.combine_est_time(out_est_time, object_est_time)
-        return out_est_time, val_dict
+        return out_est_time
 
 
 
 
-est_time = EstTime()
+est_time = EstTimeSimulator()
 
 
