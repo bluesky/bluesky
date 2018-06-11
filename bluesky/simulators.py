@@ -116,7 +116,7 @@ def check_limits(plan):
                                      "".format(msg.obj.name, pos, (low, high)))
 
 
-def est_time(plan, print_output = True):
+class EstTime():
     """
     Estimates a time for a plan to be completed.
     This function estimates the time it will take (est_time) to complete the plan defined by 
@@ -148,20 +148,72 @@ def est_time(plan, print_output = True):
 
     """
 
-    #The commands that start/end a 'run'.
-    _run_start_cmds = ['open_run']
-    _run_end_cmds = ['close_run']
-    #The commands that start/end a 'group', but not flyer commands.
-    _group_start_cmds = ['set','trigger']   
-    _group_end_cmds = ['wait']
-    #The commands that don't start/end a 'group/plan' but are still timed.
-    _timed_cmds = ['stage', 'unstage', 'read', 'sleep']
-    #Commands that are 
-    _flyer_start_cmds = ['kickoff']
+    def __init__(self):
+        '''The initialization method.
+
+        '''
+
+        #The commands that start/end a 'run'.
+        self._run_start_cmds = ['open_run']
+        self._run_end_cmds = ['close_run']
+        #The commands that start/end a 'group', but not flyer commands.
+        self._group_start_cmds = ['set','trigger']   
+        self._group_end_cmds = ['wait']
+        #The commands that don't start/end a 'group/plan' but are still timed.
+        self._timed_cmds = ['stage', 'unstage', 'read', 'sleep']
+        #Commands that are 
+        self._flyer_start_cmds = ['kickoff']
+
+
+    def __call__(self, plan, print_output = True):
+        '''The call method.
+
+        This method takes in a plan, and an optional print_output kwarg, and returns an estimate for 
+        the time to complete for the plan, in addition it returns an time estimate for any subplans. 
+
+        PARAMETERS
+        ----------
+        plan : generator.
+            The bluesky plan that the est_time is to be estimated for.
+        print_output : boolean, optional.
+            Indicates if the return values should also be printed to the command line in a human 
+            readable way, default value is 'True'.
+    
+        Return Parameters
+        -----------------
+        out_est_time : list.
+            A list containing 2 items, the est_time and the std_dev, for the plan.
+        run_info : list.
+            A list of items, 1 for each run in the plan, containing an est_time/std_dev tuple.
+        '''
+        #Define some variables used in the following.
+        val_dict = {'set':{}, 'trigger':{} } #this holds information on the updated values.
+        out_est_time = [0, 0] #this holds the plan est_time and std_dev as a pair.
+        run_info = [] #used to track the ETA and STD_DEV for any 'runs' inside the plan.
+
+        for msg in plan:
+            if msg.command in self._run_start_cmds:
+                rn_est_time, val_dict = self.run_est_time(msg, plan, val_dict)
+                run_info.append(rn_est_time)
+                out_est_time = self.combine_est_time(out_est_time, rn_est_time)
+            if msg.command in (self._group_start_cmds + self._flyer_start_cmds):
+                grp_est_time, val_dict = self.group_est_time(msg, plan, val_dict)
+                out_est_time = self.combine_est_time(out_est_time, grp_est_time)            
+
+            else:
+                object_est_time, val_dict = self.obj_est_time(msg, val_dict)
+                out_est_time = self.combine_est_time(out_est_time, object_est_time)
+
+        if print_output == True:
+            for i, run in enumerate(run_info):
+                print('  * Run %d est. time --> %.2g s, std Dev --> %.2g s' % (i+1, run[0], run[1]))
+            print('Plan est. time --> %.2g s, std Dev --> %.2g s' % (out_est_time[0], out_est_time[1]))
+
+        return out_est_time, run_info
 
 
 
-    def combine_est_time(est_time_1, est_time_2, method = 'sum'):
+    def combine_est_time(self, est_time_1, est_time_2, method = 'sum'):
         """
         Returns the combination est_time/std_dev pairs et_1 and et_2.
         This function returns the combination of est_time_1 and est_time_2, combined using the 
@@ -196,7 +248,7 @@ def est_time(plan, print_output = True):
 
 
 
-    def obj_est_time(msg, val_dict):
+    def obj_est_time(self, msg, val_dict):
         """
         Returns the est_time/std_dev pair for the object referenced in msg.
         This function returns the est_time/std_dev pair for the object referenced in msg.obj and 
@@ -222,13 +274,12 @@ def est_time(plan, print_output = True):
             The updated version of val_dict.
         """
 
-
         if msg.obj is not None:
 
             if msg.command is 'sleep':
                 return [msg.args[0], 0], val_dict
 
-            elif msg.command in (_run_start_cmds + _timed_cmds):
+            elif msg.command in (self._run_start_cmds + self._timed_cmds):
                 obj =  msg.obj
                 #The if-elif section below is used to track how many 'triggers' have occured since
                 #the last 'unstage'.
@@ -244,7 +295,7 @@ def est_time(plan, print_output = True):
                                                vals = msg.args)
                 return object_est_time, val_dict
 
-            elif msg.command == _flyer_start_cmds:
+            elif msg.command == self._flyer_start_cmds:
                 #This section pulls out the list of motor positions from the flyer
                 #and pulls out the ETA for each step.
                 obj = msg.obj
@@ -252,7 +303,7 @@ def est_time(plan, print_output = True):
                 for pos in msg.obj._steps:
                     object_est_time, val_dict = obj.est_time(cmd = 'set', val_dict = val_dict, 
                                                             vals = [pos])
-                    out_est_time = combine_est_time(out_est_time, object_est_time)
+                    out_est_time = self.combine_est_time(out_est_time, object_est_time)
                     val_dict['set'][msg.obj._mot.name] = pos
 
                 return out_est_time, val_dict                
@@ -264,7 +315,7 @@ def est_time(plan, print_output = True):
             return [0, 0], val_dict
 
 
-    def group_est_time(msg, val_dict):
+    def group_est_time(self, msg, plan, val_dict):
         """
         Returns the est_time/std_dev tuple for a group.
         This function returns an est_time/std_dev tuple, for a group, where a group is defined as a 
@@ -277,6 +328,8 @@ def est_time(plan, print_output = True):
         ----------
         msg : message.
             The first message of the group that was detected in plan_ETA.
+        plan: generator.
+            The generator that has the list of msgs to be examined.
         val_dict : dict.
             A dictionary containing information on values updated during the plan. It has key:arg 
             pairs with keys relating to message components where each arg is a dictionary 
@@ -293,9 +346,9 @@ def est_time(plan, print_output = True):
         val_dict : dict.
             The updated version of val_dict.
         """
-        out_est_time, val_dict = obj_est_time(msg, val_dict)
+        out_est_time, val_dict = self.obj_est_time(msg, val_dict)
 
-        while msg.command not in _group_end_cmds:
+        while msg.command not in self._group_end_cmds:
             #the below if-elif statement is used to track any changes of values using 'set', and
             #the number of 'triggers' called for later use in the time estimate.
             if msg.command == 'set': 
@@ -310,13 +363,13 @@ def est_time(plan, print_output = True):
 
             #this section estimates the time fro each command.
             msg = next(plan)
-            object_est_time, val_dict = obj_est_time(msg, val_dict)
-            out_est_time = combine_est_time(out_est_time, object_est_time, method = 'max')
+            object_est_time, val_dict = self.obj_est_time(msg, val_dict)
+            out_est_time = self.combine_est_time(out_est_time, object_est_time, method = 'max')
 
         return out_est_time, val_dict
 
 
-    def run_est_time(msg, val_dict):
+    def run_est_time(self, msg, plan, val_dict):
         """
         Returns the est_time/std_dev pair for a run.
         This function returns an est_time/std_dev pair, for a group, where a group is defined as a 
@@ -329,6 +382,8 @@ def est_time(plan, print_output = True):
         ----------
         msg : message.
             The first message of the group that was detected in plan_est_time.
+        plan : generator.
+            The generator that contains the list of messages to be examined.
         val_dict : dict.
             A dictionary containing information on values updated during the plan. It has key:arg 
             pairs with keys relating to message components where each arg is a dictionary 
@@ -348,42 +403,20 @@ def est_time(plan, print_output = True):
 
         out_est_time = [0,0]
         
-        while msg.command not in _run_end_cmds:
+        while msg.command not in self._run_end_cmds:
             msg = next(plan)
-            if msg.command in (_run_start_cmds + _flyer_start_cmds):
-                grp_est_time, val_dict = group_est_time(msg, val_dict)
-                out_est_time = combine_est_time(out_est_time, grp_est_time)
+            if msg.command in (self._run_start_cmds + self._flyer_start_cmds):
+                grp_est_time, val_dict = self.group_est_time(msg, plan, val_dict)
+                out_est_time = self.combine_est_time(out_est_time, grp_est_time)
 
             else:
-                object_est_time, val_dict = obj_est_time(msg, val_dict)
-                out_est_time = combine_est_time(out_est_time, object_est_time)
+                object_est_time, val_dict = self.obj_est_time(msg, val_dict)
+                out_est_time = self.combine_est_time(out_est_time, object_est_time)
         return out_est_time, val_dict
 
 
-    #Define some variables used in the following.
-    val_dict = {'set':{}, 'trigger':{} } #this holds information on the updated values.
-    out_est_time = [0, 0] #this holds the plan est_time and std_dev as a pair.
-    run_info = [] #used to track the ETA and STD_DEV for any 'runs' inside the plan.
 
-    for msg in plan:
-        if msg.command in _run_start_cmds:
-            rn_est_time, val_dict = run_est_time(msg, val_dict)
-            run_info.append(rn_est_time)
-            out_est_time = combine_est_time(out_est_time, rn_est_time)
-        if msg.command in (_group_start_cmds + _flyer_start_cmds):
-            grp_est_time, val_dict = group_est_time(msg, val_dict)
-            out_est_time = combine_est_time(out_est_time, grp_est_time)            
 
-        else:
-            object_est_time, val_dict = obj_est_time(msg, val_dict)
-            out_est_time = combine_est_time(out_est_time, object_est_time)
-
-    if print_output == True:
-        for i, run in enumerate(run_info):
-            print('  * Run %d est. time --> %.2g s, std Dev --> %.2g s' % (i+1, run[0], run[1]))
-        print('Plan est. time --> %.2g s, std Dev --> %.2g s' % (out_est_time[0], out_est_time[1]))
-
-    return out_est_time, run_info
-
+est_time = EstTime()
 
 
