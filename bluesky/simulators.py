@@ -144,7 +144,7 @@ class EstTimeSimulator():
     
     Return Parameters
     -----------------
-    out_est_time : list.
+    out_time : list.
         A list containing 2 items, the est_time and the std_dev, for the plan.
     run_info : list.
         A list of items, 1 for each run in the plan, containing an est_time/std_dev tuple.
@@ -211,7 +211,7 @@ class EstTimeSimulator():
     
         RETURN PARAMETERS
         -----------------
-        out_est_time : list.
+        out_time : list.
             A list containing 2 items, the est_time and the std_dev, for the plan.
         run_info : list.
             A list of items, 1 for each run in the plan, containing an est_time/std_dev tuple.
@@ -221,33 +221,33 @@ class EstTimeSimulator():
         self._plan_history = {'set':{}, 'trigger':{} }
 
         #Define some variables used in the following.
-        out_est_time = _TimeStats(0, 0) #this holds the plan est_time and std_dev as a pair.
+        out_time = _TimeStats(0, 0) #this holds the plan est_time and std_dev as a pair.
         run_info = [] #used to track the ETA and STD_DEV for any 'runs' inside the plan.
 
         for msg in plan:
             if msg.command in self._run_start_cmds:
-                rn_est_time = self.run_est_time(msg, plan)
-                run_info.append(rn_est_time)
-                out_est_time = self.combine_est_time(out_est_time, rn_est_time)
+                rn_time = self.run_est(msg, plan)
+                run_info.append(rn_time)
+                out_time = self.combine_est(out_time, rn_time)
             if msg.command in (self._group_start_cmds + self._flyer_start_cmds):
-                grp_est_time = self.group_est_time(msg, plan)
-                out_est_time = self.combine_est_time(out_est_time, grp_est_time)            
+                grp_time = self.group_est(msg, plan)
+                out_time = self.combine_est(out_time, grp_time)            
 
             else:
-                object_est_time = self.obj_est_time(msg)
-                out_est_time = self.combine_est_time(out_est_time, object_est_time)
+                object_est = self.obj_est(msg)
+                out_time = self.combine_est(out_time, object_est)
 
         if print_output == True:
             for i, run in enumerate(run_info):
                 print('  * Run %d est. time --> %.2g s, std Dev --> %.2g s' % (i+1, run[0], run[1]))
-            print('Plan est. time --> %.2g s, std Dev --> %.2g s' % (out_est_time.est_time, 
-                                                                                out_est_time.std_dev))
+            print('Plan est. time --> %.2g s, std Dev --> %.2g s' % (out_time.est_time, 
+                                                                                out_time.std_dev))
 
-        return out_est_time, run_info
+        return out_time, run_info
 
 
 
-    def combine_est_time(self, est_time_1, est_time_2, method = 'sum'):
+    def combine_est(self, est_time_1, est_time_2, method = 'sum'):
         """
         Returns the combination est_time/std_dev pairs et_1 and et_2.
         This function returns the combination of est_time_1 and est_time_2, combined using the 
@@ -263,26 +263,26 @@ class EstTimeSimulator():
 
         Return Parameters
         -----------------
-        out_est_time : namedtuple.
+        out_time : namedtuple.
             The combined est_time/std_dev tuple.
         """
         
         if method == 'sum':
-            out_est_time = _TimeStats(est_time_1.est_time + est_time_2.est_time, 
+            out_time = _TimeStats(est_time_1.est_time + est_time_2.est_time, 
                             est_time_1.std_dev + est_time_2.std_dev)
 
         elif method == 'max':
             if est_time_1.est_time < est_time_2.est_time:
-                out_est_time = est_time_2 
+                out_time = est_time_2 
 
             else:
-                out_est_time = est_time_1
+                out_time = est_time_1
 
-        return out_est_time
+        return out_time
 
 
 
-    def obj_est_time(self, msg ):
+    def obj_est(self, msg ):
         """
         Returns the est_time/std_dev pair for the object referenced in msg.
         This function returns the est_time/std_dev pair for the object referenced in msg.obj and 
@@ -295,7 +295,7 @@ class EstTimeSimulator():
         
         Return Parameters
         -----------------
-        out_est_time : list.
+        out_time : list.
             The combined est_time/std_dev pair.
 
         Updated Parameters
@@ -330,22 +330,22 @@ class EstTimeSimulator():
                 elif msg.command == 'set':
                     self._plan_history['set'][msg.obj.name] = msg.args[0]
 
-                object_est_time = obj.est_time(cmd = msg.command, 
+                object_est = obj.est_time(cmd = msg.command, 
                                                 plan_history = self._plan_history, vals = msg.args)
-                return object_est_time
+                return object_est
 
             elif msg.command == self._flyer_start_cmds:
                 #This section pulls out the list of motor positions from the flyer
                 #and pulls out the ETA for each step.
                 obj = msg.obj
-                out_est_time = (0,0)
+                out_time = (0,0)
                 for pos in msg.obj._steps:
-                    object_est_time = obj.est_time(cmd = 'set', plan_history = self._plan_history, 
+                    object_est = obj.est_time(cmd = 'set', plan_history = self._plan_history, 
                                                     vals = [pos])
-                    out_est_time = self.combine_est_time(out_est_time, object_est_time)
+                    out_time = self.combine_est(out_time, object_est)
                     self._plan_history['set'][msg.obj._mot.name] = pos
 
-                return out_est_time              
+                return out_time              
     
             else:
                 return _TimeStats(0, 0)
@@ -354,7 +354,7 @@ class EstTimeSimulator():
             return _TimeStats(0, 0)
 
 
-    def group_est_time(self, msg, plan):
+    def group_est(self, msg, plan):
         """
         Returns the est_time/std_dev tuple for a group.
         This function returns an est_time/std_dev tuple, for a group, where a group is defined as a 
@@ -371,7 +371,7 @@ class EstTimeSimulator():
         
         Return Parameters
         -----------------
-        out_est_time : list.
+        out_time : list.
             The combined est_time/std_dev pair.
 
         Updated Parameters
@@ -387,7 +387,7 @@ class EstTimeSimulator():
             dictionary
 
         """
-        out_est_time = self.obj_est_time(msg, plan_history = self._plan_history)
+        out_time = self.obj_est(msg, plan_history = self._plan_history)
 
         while msg.command not in self._group_end_cmds:
             #the below if-elif statement is used to track any changes of values using 'set', and
@@ -405,13 +405,13 @@ class EstTimeSimulator():
 
             #this section estimates the time fro each command.
             msg = next(plan)
-            object_est_time = self.obj_est_time(msg, plan_history = self._plan_history)
-            out_est_time = self.combine_est_time(out_est_time, object_est_time, method = 'max')
+            object_est = self.obj_est(msg, plan_history = self._plan_history)
+            out_time = self.combine_est(out_time, object_est, method = 'max')
 
-        return out_est_time
+        return out_time
 
 
-    def run_est_time(self, msg, plan):
+    def run_est(self, msg, plan):
         """
         Returns the est_time/std_dev pair for a run.
         This function returns an est_time/std_dev pair, for a group, where a group is defined as a 
@@ -427,7 +427,7 @@ class EstTimeSimulator():
         
         Return Parameters
         -----------------
-        out_est_time : list.
+        out_time : list.
             The combined est_time/std_dev pair.
 
         Updated Parameters
@@ -444,18 +444,18 @@ class EstTimeSimulator():
 
         """
 
-        out_est_time = _TimeStats(0,0)
+        out_time = _TimeStats(0,0)
         
         while msg.command not in self._run_end_cmds:
             msg = next(plan)
             if msg.command in (self._run_start_cmds + self._flyer_start_cmds):
-                grp_est_time = self.group_est_time(msg, plan)
-                out_est_time = self.combine_est_time(out_est_time, grp_est_time)
+                grp_time = self.group_est(msg, plan)
+                out_time = self.combine_est(out_time, grp_time)
 
             else:
-                object_est_time = self.obj_est_time(msg)
-                out_est_time = self.combine_est_time(out_est_time, object_est_time)
-        return out_est_time
+                object_est = self.obj_est(msg)
+                out_time = self.combine_est(out_time, object_est)
+        return out_time
 
 
 
