@@ -3,6 +3,7 @@ from bluesky.preprocessors import print_summary_wrapper
 from collections import namedtuple
 
 _TimeStats=namedtuple('TimeStats','est_time std_dev')
+_MsgStats=namedtuple('MsgStats', 'msg est_time std_dev')
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -245,7 +246,33 @@ class EstTimeSimulator():
 
         return out_time, run_info
 
+    def msg_est(self,plan):
+        '''Returns a list of msg/est_time/std_dev named tuples for each msg in plan
+    
+        This function is used to return an un-grouped list of msgs and estimated times. It differs 
+        from self.est_time in that it does not estimate the entire plan, or 'runs' in the plan and it 
+        does not sort into msg 'groups', which are done in parallel. it simply returns a msg/est_time/
+        std_dev tuple for each message in the plan.
 
+        PARAMETERS
+        ----------
+        plan : generator.
+            The bluesky plan that the est_time is to be estimated for.
+    
+        RETURN PARAMETERS
+        -----------------
+        out_time : list.
+            A list containing a msg/est_time/std_dev named tuple for each message in the plan.
+        '''
+        
+        out_time = []
+        for msg in plan:
+            est_time = self.obj_est(msg)
+            out_time.append(msg, est_time.est_time, est_time.std_dev)
+
+        return out_time
+
+         
 
     def combine_est(self, est_time_1, est_time_2, method = 'sum'):
         """
