@@ -268,7 +268,7 @@ class EstTimeSimulator():
         out_time = []
         for msg in plan:
             est_time = self.obj_est(msg)
-            out_time.append(msg, est_time.est_time, est_time.std_dev)
+            out_time.append(_MsgStats( msg, est_time.est_time, est_time.std_dev))
 
         return out_time
 
@@ -308,7 +308,7 @@ class EstTimeSimulator():
             neg_stdev = min(est_time1.est_time - est_time1.std_dev,
                             est_time2.est_time - est_time2.std_dev )
             max_stdev = max(abs(pos_stdev-max_time), abs(neg_stdev-max_time))
-                out_time = _TimeStats(max_time, max_stdev)
+            out_time = _TimeStats(max_time, max_stdev)
 
         return out_time
 
