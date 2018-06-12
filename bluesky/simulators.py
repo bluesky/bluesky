@@ -188,7 +188,7 @@ class EstTimeSimulator():
         self._group_start_cmds = ['set','trigger']   
         self._group_end_cmds = ['wait']
         #The commands that don't start/end a 'group/plan' but are still timed.
-        self._timed_cmds = ['stage', 'unstage', 'read', 'sleep']
+        self._timed_cmds = ['stage', 'unstage', 'sleep']
         #Commands that are 
         self._flyer_start_cmds = ['kickoff']
         #create a reference to a dictionary called plan_history to capture set changes during the 
