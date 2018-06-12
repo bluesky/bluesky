@@ -268,15 +268,20 @@ class EstTimeSimulator():
         """
         
         if method == 'sum':
+            #adds the est_time, uses quadrature for std_dev.
             out_time = _TimeStats(est_time_1.est_time + est_time_2.est_time, 
-                            est_time_1.std_dev + est_time_2.std_dev)
+                            (est_time_1.std_dev**2 + est_time_2.std_dev**2)**.5)
 
         elif method == 'max':
-            if est_time_1.est_time < est_time_2.est_time:
-                out_time = est_time_2 
-
-            else:
-                out_time = est_time_1
+            #finds the max est_time, finds the potentially largest difference from the max_time
+            #as the std_dev.
+            max_time = max(est_time1.est_time, est_time2.est_time) 
+            pos_stdev = max(est_time1.est_time + est_time1.std_dev,
+                            est_time2.est_time + est_time2.std_dev )
+            neg_stdev = min(est_time1.est_time - est_time1.std_dev,
+                            est_time2.est_time - est_time2.std_dev )
+            max_stdev = max(abs(pos_stdev-max_time), abs(neg_stdev-max_time))
+                out_time = _TimeStats(max_time, max_stdev)
 
         return out_time
 
