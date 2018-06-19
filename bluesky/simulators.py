@@ -1,6 +1,7 @@
 from warnings import warn
 from bluesky.preprocessors import print_summary_wrapper
 from collections import namedtuple
+import inspect
 
 _TimeStats=namedtuple('TimeStats','est_time std_dev')
 _MsgStats=namedtuple('MsgStats', 'msg est_time std_dev')
@@ -362,8 +363,24 @@ class EstTimeSimulator():
                 elif msg.command == 'set':
                     self._plan_history['set'][msg.obj.name] = msg.args[0]
 
-                object_est = obj.est_time(cmd = msg.command, 
-                                                plan_history = self._plan_history, vals = msg.args)
+                #determine what values are required for time estimation and find them
+                obj_est_time = get_attr(obj,'est_time.'+cmd)
+                arg_names = inspect.signature(obj_est_time)
+                args = []
+                for arg_name in arg_names:
+                    try: 
+                        args.append(self._plan_history['set'][arg_name])
+                    except KeyError:
+                        try:
+                            args.append(getattr(obj, arg_name).position)
+                        except AttributeError:
+                            print('{}.est_time.{} requires a {} attribute but none can be \
+                                    found'.format(obj.name, cmd, arg_name) )
+                            raise
+
+                #ask the object for a time estimation. 
+                object_est = obj_est_time(*args)
+
                 return object_est
 
             elif msg.command == self._flyer_start_cmds:
@@ -372,8 +389,24 @@ class EstTimeSimulator():
                 obj = msg.obj
                 out_time = (0,0)
                 for pos in msg.obj._steps:
-                    object_est = obj.est_time(cmd = 'set', plan_history = self._plan_history, 
-                                                    vals = [pos])
+                     #determine what values are required for time estimation and find them
+                    obj_est_time = get_attr(obj,'est_time.'+cmd)
+                    arg_names = inspect.signature(obj_est_time)
+                    args = []
+                    for arg_name in arg_names:
+                        try: 
+                            args.append(self._plan_history['set'][arg_name])
+                        except KeyError:
+                            try:
+                                args.append(getattr(obj, arg_name).position)
+                            except AttributeError:
+                                print('{}.est_time.{} requires a {} attribute but none can be \
+                                    found'.format(obj.name, cmd, arg_name) )
+                            raise
+
+                    #ask the object for a time estimation. 
+                    object_est = obj_est_time(*args)
+
                     out_time = self.combine_est(out_time, object_est)
                     self._plan_history['set'][msg.obj._mot.name] = pos
 
