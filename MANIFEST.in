@@ -3,7 +3,7 @@ recursive-include doc/source *
 include doc/Makefile doc/make.bat
 include LICENSE
 include MANIFEST.in
-include README.rst
+include README.md
 include requirements.txt
 include setup.py
 include versioneer.py
