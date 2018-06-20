@@ -1475,7 +1475,7 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
 def ramp_plan(go_plan,
               monitor_sig,
               inner_plan_func,
-              pre_data_enable=False,
+              take_pre_data=False,
               timeout=None,
               period=None, md=None):
     '''Take data while ramping one or more positioners.
@@ -1535,7 +1535,7 @@ def ramp_plan(go_plan,
             fail_time = time.time() + timeout
 
         # take a 'pre' data point
-        if pre_data_enable == True:
+        if take_pre_data == True:
             yield from inner_plan_func()
         # start the ramp
         status = (yield from go_plan)
