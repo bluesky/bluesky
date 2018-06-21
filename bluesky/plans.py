@@ -1475,7 +1475,7 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
 def ramp_plan(go_plan,
               monitor_sig,
               inner_plan_func,
-              take_pre_data=False,
+              take_pre_data=True,
               timeout=None,
               period=None, md=None):
     '''Take data while ramping one or more positioners.
