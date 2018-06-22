@@ -384,7 +384,7 @@ class RunEngine:
             argument has been given a default value, ``'all'``. Because the
             meaning of the arguments is unambigious (they must be a callable
             and a string, respectively) the old order will be supported
-            indefeinitely, with a warning.
+            indefinitely, with a warning.
 
         Parameters
         ----------
@@ -2345,14 +2345,14 @@ class Dispatcher:
             argument has been given a default value, ``'all'``. Because the
             meaning of the arguments is unambigious (they must be a callable
             and a string, respectively) the old order will be supported
-            indefeinitely, with a warning.
+            indefinitely, with a warning.
 
         .. versionchanged :: 0.10.0
             The order of the arguments was swapped and the ``name``
             argument has been given a default value, ``'all'``. Because the
             meaning of the arguments is unambigious (they must be a callable
             and a string, respectively) the old order will be supported
-            indefeinitely, with a warning.
+            indefinitely, with a warning.
 
         Parameters
         ----------
