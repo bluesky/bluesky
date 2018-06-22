@@ -2,6 +2,7 @@ from warnings import warn
 from bluesky.preprocessors import print_summary_wrapper
 from collections import namedtuple
 import inspect
+import sys
 
 _TimeStats=namedtuple('TimeStats','est_time std_dev')
 _MsgStats=namedtuple('MsgStats', 'msg est_time std_dev')
@@ -344,6 +345,8 @@ class EstTimeSimulator():
             dictionary
         """
 
+        set_dict={}
+
         if msg.obj is not None:
 
             if msg.command is 'sleep':
@@ -361,22 +364,32 @@ class EstTimeSimulator():
                     else:
                         self._plan_history['trigger'][msg.obj.name] = 1
                 elif msg.command == 'set':
+                    try:
+                        set_dict['start_pos'] = self._plan_history['set'][msg.obj.name]
+                    except KeyError:
+                        set_dict['start_pos'] = msg.obj.position
+
+                    set_dict['target'] = msg.args[0]
                     self._plan_history['set'][msg.obj.name] = msg.args[0]
 
                 #determine what values are required for time estimation and find them
-                obj_est_time = get_attr(obj,'est_time.'+cmd)
-                arg_names = inspect.signature(obj_est_time)
+                obj_est_time = getattr(msg.obj.est_time, msg.command)
+                arg_names = inspect.signature(obj_est_time).parameters
                 args = []
                 for arg_name in arg_names:
-                    try: 
-                        args.append(self._plan_history['set'][arg_name])
+                    try:
+                        args.append(set_dict[arg_name])
                     except KeyError:
-                        try:
-                            args.append(getattr(obj, arg_name).position)
-                        except AttributeError:
-                            print('{}.est_time.{} requires a {} attribute but none can be \
-                                    found'.format(obj.name, cmd, arg_name) )
-                            raise
+                        try: 
+                            args.append(self._plan_history['set'][arg_name])
+                        except KeyError:
+                            print (self._plan_history)
+                            try:
+                                args.append(getattr(obj, arg_name).position)
+                            except AttributeError:
+                                print('{}.est_time.{} requires a {} attribute on {} but none can be \
+                                    found'.format(obj.name, msg.command, arg_name, obj) )
+                                raise
 
                 #ask the object for a time estimation. 
                 object_est = obj_est_time(*args)
@@ -390,7 +403,7 @@ class EstTimeSimulator():
                 out_time = (0,0)
                 for pos in msg.obj._steps:
                      #determine what values are required for time estimation and find them
-                    obj_est_time = get_attr(obj,'est_time.'+cmd)
+                    obj_est_time = getattr(obj.est_time,msg.cmd)
                     arg_names = inspect.signature(obj_est_time)
                     args = []
                     for arg_name in arg_names:
@@ -401,7 +414,7 @@ class EstTimeSimulator():
                                 args.append(getattr(obj, arg_name).position)
                             except AttributeError:
                                 print('{}.est_time.{} requires a {} attribute but none can be \
-                                    found'.format(obj.name, cmd, arg_name) )
+                                    found'.format(obj.name, msg.command, arg_name) )
                             raise
 
                     #ask the object for a time estimation. 
