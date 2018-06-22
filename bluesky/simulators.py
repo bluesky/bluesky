@@ -383,7 +383,6 @@ class EstTimeSimulator():
                         try: 
                             args.append(self._plan_history['set'][arg_name])
                         except KeyError:
-                            print (self._plan_history)
                             try:
                                 args.append(getattr(obj, arg_name).position)
                             except AttributeError:
