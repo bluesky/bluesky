@@ -3,6 +3,7 @@ from bluesky.preprocessors import print_summary_wrapper
 from collections import namedtuple
 import inspect
 import sys
+import stat
 
 _TimeStats=namedtuple('TimeStats','est_time std_dev')
 _MsgStats=namedtuple('MsgStats', 'msg est_time std_dev')
@@ -464,13 +465,13 @@ class EstTimeSimulator():
             dictionary
 
         """
-        out_time = self.obj_est(msg, plan_history = self._plan_history)
+        group_time = {}
+        group_time[msg.group] = [self.obj_est(msg, plan_history = self._plan_history)]
 
-        while msg.command not in self._group_end_cmds:
+        while group_time:           
             #the below if-elif statement is used to track any changes of values using 'set', and
             #the number of 'triggers' called for later use in the time estimate.
             if msg.command == 'set': 
-                print (f'set {msg.obj.name} to {msg.args[0]}, _plan_history = [self._plan_history]')
                 self._plan_history['set'][msg.obj.name] = msg.args[0]
 
             elif msg.command == 'trigger': 
@@ -482,9 +483,22 @@ class EstTimeSimulator():
 
             #this section estimates the time fro each command.
             msg = next(plan)
-            object_est = self.obj_est(msg, plan_history = self._plan_history)
-            out_time = self.combine_est(out_time, object_est, method = 'max')
-
+            
+            if msg.command in self._group_end_cmds:
+                group_list = group_time.pop(msg.group)
+                out_time = group_list.pop()
+                while group_list:
+                    out_time = self.combine_est(out_time, group_list.pop(), method = 'max')
+        
+                for group_name in group_time:    
+                    for i, item in enumerate(group_time[group_name]):
+                        group_time[group_name][i] = self.combine_est(item, out_time, method = 'subtract')
+            else:
+                try:
+                    group_time[msg.group].append(self.obj_est(msg, plan_history = self._plan_history))
+                except KeyError:
+                    group_time[msg.group] = [self.obj_est(msg, plan_history = self._plan_history)]
+            
         return out_time
 
 
