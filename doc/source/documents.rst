@@ -84,7 +84,7 @@ everything we know before we start taking data, including all metadata provided
 by the user and the plan. (More on this in the :doc:`next section <metadata>`.)
 
 All built-in plans provide some useful metadata like the names of the
-detector(s) and motor(s) used. (User-definied plans may also do this; see
+detector(s) and motor(s) used. (User-defined plans may also do this; see
 :ref:`this section <tutorial_plan_metadata>` of the tutorial.)
 
 The command:
