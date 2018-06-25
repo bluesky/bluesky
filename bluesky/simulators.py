@@ -167,12 +167,12 @@ _flyer_start_cmds = ['kickoff']
 _plan_history = {'set':{}, 'trigger':{}}
 
 def est_time(plan, print_output = True):
-    '''The call method.
+    '''The function estiamtes the time to complete a paln.
 
     This method takes in a plan, and an optional print_output kwarg, and returns an estimate for 
     the time to complete for the plan, in addition it returns an time estimate for any subplans. 
 
-    PARAMETERS
+    Parameters
     ----------
     plan : generator.
         The bluesky plan that the est_time is to be estimated for.
@@ -180,7 +180,7 @@ def est_time(plan, print_output = True):
         Indicates if the return values should also be printed to the command line in a human 
         readable way, default value is 'True'.
 
-    RETURN PARAMETERS
+    Returns
     -----------------
     out_time : list.
         A list containing 2 items, the est_time and the std_dev, for the plan.
@@ -208,7 +208,7 @@ def est_time(plan, print_output = True):
             object_est = obj_est(msg)
             out_time = combine_est(out_time, object_est)
 
-        if print_output == True:
+        if print_output:
             for i, run in enumerate(run_info):
                 print('  * Run %d est. time --> %.2g s, std Dev --> %.2g s' % (i+1, run[0], run[1]))
             print('Plan est. time --> %.2g s, std Dev --> %.2g s' % (out_time.est_time, 
@@ -240,7 +240,7 @@ def msg_est(plan):
         est_time = obj_est(msg)
         out_time.append(_MsgStats( msg, est_time.est_time, est_time.std_dev))
 
-    return out_time
+    return (estimate for estimate in out_time)
 
          
 
