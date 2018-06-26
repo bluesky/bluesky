@@ -1,5 +1,5 @@
 from .core import (CallbackBase, CallbackCounter, print_metadata, collector,
-                   get_obj_fields, CollectThenCompute, LiveTable)
+                   get_obj_fields, CollectThenCompute, LiveTable, Table)
 from .fitting import LiveFit
 try:
     import matplotlib

@@ -20,6 +20,40 @@ except ImportError:
                                LiveFitPlot, LiveRaster, LiveMesh)
 
 
+class Callback:
+    def __init__(self, start_doc):
+        # We just require the start_doc to ensure that the subclass requires a
+        # start_doc at __init__ time. Some subclasses may cache start_doc in
+        # instance state and refer back to it, but some may not need to, so we
+        # leave caching start_doc up to the subclass.
+        super().__init__()
+
+    def __call__(self, name, doc):
+        "Dispatch to methods expecting particular doc types."
+        return getattr(self, name)(doc)
+
+    def event(self, doc):
+        pass
+
+    def bulk_events(self, doc):
+        pass
+
+    def resource(self, doc):
+        pass
+
+    def datum(self, doc):
+        pass
+
+    def bulk_datum(self, doc):
+        pass
+
+    def descriptor(self, doc):
+        pass
+
+    def stop(self, doc):
+        pass
+
+
 class CallbackBase:
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
@@ -158,11 +192,14 @@ class CollectThenCompute(CallbackBase):
         raise NotImplementedError("This method must be defined by a subclass.")
 
 
-class LiveTable(CallbackBase):
+class Table(Callback):
     '''Live updating table
 
     Parameters
     ----------
+    start_doc : dict
+        RunStart document
+
     fields : list
          List of fields to add to the table.
 
@@ -203,16 +240,16 @@ class LiveTable(CallbackBase):
                   "(scan num: {st[scan_id]})")
     ev_time_key = 'SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES'
 
-    def __init__(self, fields, *, stream_name='primary',
+    def __init__(self, start_doc, fields, *, stream_name='primary',
                  print_header_interval=50,
                  min_width=12, default_prec=3, extra_pad=1,
                  logbook=None, out=print):
-        super().__init__()
+        super().__init__(start_doc)
         self._header_interval = print_header_interval
         # expand objects
         self._fields = get_obj_fields(fields)
         self._stream = stream_name
-        self._start = None
+        self._start = start_doc
         self._stop = None
         self._descriptors = set()
         self._pad_len = extra_pad
@@ -341,13 +378,56 @@ class LiveTable(CallbackBase):
             self.logbook('\n'.join([wm] + self._rows))
         super().stop(doc)
 
+    def _print(self, out_str):
+        self._rows.append(out_str)
+        self._out(out_str)
+
+
+class LiveTable(Table):
+    '''Live updating table
+
+    See also Table, a version of this with a life-cycle of one Run. This is an
+    older implementation that has a life-cycle of an unlimited number of Runs.
+
+    Parameters
+    ----------
+    fields : list
+         List of fields to add to the table.
+
+    stream_name : str, optional
+         The event stream to watch for
+
+    print_header_interval : int, optional
+         Reprint the header every this many lines, defaults to 50
+
+    min_width : int, optional
+         The minimum width is spaces of the data columns.  Defaults to 12
+
+    default_prec : int, optional
+         Precision to use if it can not be found in descriptor, defaults to 3
+
+    extra_pad : int, optional
+         Number of extra spaces to put around the printed data, defaults to 1
+
+    logbook : callable, optional
+        Must take a sting as the first positional argument
+
+           def logbook(input_str):
+                pass
+
+    out : callable, optional
+        Function to call to 'print' a line.  Defaults to `print`
+    '''
+    def __init__(self, fields, *, stream_name='primary',
+                 print_header_interval=50,
+                 min_width=12, default_prec=3, extra_pad=1,
+                 logbook=None, out=print):
+        super().__init__(start_doc={}, fields=fields, stream_name=stream_name,
+                         print_header_interval=print_header_interval,
+                         min_width=min_width, default_prec=default_prec,
+                         extra_pad=extra_pad, logbook=logbook, out=out)
     def start(self, doc):
         self._rows = []
         self._start = doc
         self._stop = None
         self._sep_format = None
-        super().start(doc)
-
-    def _print(self, out_str):
-        self._rows.append(out_str)
-        self._out(out_str)
