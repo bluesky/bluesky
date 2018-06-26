@@ -84,6 +84,126 @@ class CallbackBase:
         pass
 
 
+class RunRouter(CallbackBase):
+    """
+    Routes documents, by run, to callbacks it creates from factory functions.
+
+    A RunRouter is callable, and it is has the signature ``router(name, doc)``,
+    suitable for subscribing to the RunEngine.
+
+    The RunRouter maintains a list of factory functions with the signature
+    ``callback_factory(start_doc)``. When the router receives a RunStart
+    document, it passes it to each ``callback_factory`` function. Each factory
+    should return ``None`` ("I am not interested in this run,") or a callback
+    function with the signature ``cb(name, doc)``. All future documents related
+    to that run will be forwarded to ``cb``. When the run is complete, the
+    RunRouter will drop all its references to ``cb``. It is up to
+    ``callback_factory`` whether to return a new callable each time (having a
+    lifecycle of one run, garbage collected thereafter), or to return the same
+    object every time, or some other pattern.
+    
+    To summarize, the RunRouter's promise is that it will call each
+    ``callback_factory`` with each new RunStart document and that it will
+    forward all other documents from that run to whatever ``callback_factory``
+    returns (if not None).
+
+    Parameters
+    ----------
+    callback_factories : list
+        A list of callables with the signature:
+
+            callback_factory(start_doc)
+
+        which should return ``None`` or another callable with this signature:
+
+            callback(name, doc)
+    """
+    def __init__(self, callback_factories):
+        self.callback_factories = callback_factories
+        self.callbacks = {}  # start uid -> callback
+        self.descriptors = {}  # descriptor uid -> start uid
+        self.resources = {}  # resource uid -> start uid
+
+    def _event_or_bulk_event(self, doc):
+        descriptor_uid = doc['descriptor']
+        try:
+            start_uid = self.descriptors[descriptor_uid]
+        except KeyError:
+            # The belongs to a run that we are not interested in.
+            return
+        cb = self.callbacks[start_uid]
+        return cb
+
+    def event(self, doc):
+        cb = self._event_or_bulk_event(doc)
+        cb('event', doc)
+
+    def bulk_event(self, doc):
+        cb = self._event_or_bulk_event(doc)
+        cb('bulk_event', doc)
+
+    def _datum_or_bulk_datum(self, doc):
+        resource_uid = doc['resource']
+        try:
+            start_uid = self.resources[resource_uid]
+        except KeyError:
+            # The belongs to a run that we are not interested in.
+            return
+        cb = self.callbacks[start_uid]
+
+    def datum(self, doc):
+        cb = self._datum_or_bulk_datum(doc)
+        cb('datum', doc)
+
+    def bulk_datum(self, doc):
+        cb = self._datum_or_bulk_datum(doc)
+        cb('bulk_datum', doc)
+
+    def descriptor(self, doc):
+        start_uid = doc['run_start']
+        try:
+            cb = self.callbacks[start_uid]
+        except KeyError:
+            # This belongs to a run we are not interested in.
+            return
+        self.descriptors[doc['uid']] = start_uid
+        cb('descriptor', doc)
+
+    def resource(self, doc):
+        start_uid = doc['run_start']
+        try:
+            cb = self.callbacks[start_uid]
+        except KeyError:
+            # This belongs to a run we are not interested in.
+            return
+        self.resources[doc['uid']] = start_uid
+        cb('resource', doc)
+
+    def start(self, doc):
+        for callback_factory in self.callback_factories:
+            cb = callback_factory(doc)
+            if cb is None:
+                # The callback_factory is not interested in this run.
+                continue
+            self.callbacks[doc['uid']] = cb
+
+    def stop(self, doc):
+        start_uid = doc['run_start']
+        # Clean up references.
+        try:
+            cb = self.callbacks[start_uid]
+        except KeyError:
+            return
+        to_remove = []
+        for k, v in list(self.descriptors.items()):
+            if v == start_uid:
+                del self.descriptors[k]
+        for k, v in list(self.resources.items()):
+            if v == start_uid:
+                del self.resources[k]
+        cb('stop', doc)
+
+
 class CallbackCounter:
     "As simple as it sounds: count how many times a callback is called."
     # Wrap itertools.count in something we can use as a callback.
