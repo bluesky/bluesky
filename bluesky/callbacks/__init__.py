@@ -6,7 +6,7 @@ __all__ = ["CallbackBase", "CallbackCounter", "print_metadata", "collector",
 
 from .core import (CallbackBase, CallbackCounter, print_metadata, collector,
                    get_obj_fields, CollectThenCompute, LiveTable, Table,
-                   RunRouter)
+                   RunRouter, Callback)
 from .fitting import LiveFit
 
 from .mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
