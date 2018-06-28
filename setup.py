@@ -1,7 +1,5 @@
-from __future__ import (absolute_import, division, print_function)
 import glob
 import versioneer
-
 import setuptools
 
 with open('requirements.txt') as f:
@@ -21,8 +19,8 @@ setuptools.setup(
     install_requires=requirements,
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
     ],
 )
