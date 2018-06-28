@@ -553,9 +553,8 @@ class BaselinePrinter(Callback):
         # If the stream name is 'baseline', record doc['uid'] in an instance
         # variable for future reference.
         ...
-        self._descriptors[doc['uid']] = doc
         if descriptor.get('name') == 'baseline':
-            self._descriptors['name'] = 'baseline'
+            self._descriptors[doc['uid']] = doc
     def event(self, doc):
         # Check the descriptor uid of this Event using doc['descriptor'].
         # if this matches the uid of the descriptor we have stashed in the 
