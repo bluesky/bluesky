@@ -553,7 +553,7 @@ class BaselinePrinter(Callback):
         # If the stream name is 'baseline', record doc['uid'] in an instance
         # variable for future reference.
         ...
-        if descriptor.get('name') == 'baseline':
+        if doc['name'] == 'baseline':
             self._descriptors[doc['uid']] = doc
     def event(self, doc):
         # Check the descriptor uid of this Event using doc['descriptor'].
@@ -561,10 +561,9 @@ class BaselinePrinter(Callback):
         # method above, extract the baseline readings and print them, the way
         # we do in BestEffortCallback currently.
         ...
-        descriptor = self._descriptors[doc['descriptor']]
-
         # Show the baseline readings.
         if doc['descriptor'] in self._descriptors:
+            descriptor = self._descriptors[doc['descriptor']]
             columns = hinted_fields(descriptor)
             self._baseline_toggle = not self._baseline_toggle
             if self._baseline_toggle:
@@ -579,6 +578,7 @@ class BaselinePrinter(Callback):
                     continue
                 print('| {:>30} | {:<30} |'.format(k, v), file=self._file)
             print(border, file=self._file)
+
 
 def hinted_fields(descriptor):
     # Figure out which columns to put in the table.
