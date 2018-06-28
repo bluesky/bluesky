@@ -15,6 +15,7 @@ matrix:
     - python: 3.5
     - python: 3.6
       env: BUILD_DOCS=1
+    - python: 3.7
     - python: nightly
   allow_failures:
     - python: nightly
