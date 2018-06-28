@@ -16,7 +16,6 @@ setuptools.setup(
     license="BSD (3-clause)",
     url="https://github.com/NSLS-II/bluesky",
     packages=setuptools.find_packages(),
-    package_data={'bluesky': ['schema/*.json']},
     scripts=glob.glob('scripts/*'),
     python_requires='>=3.6',
     install_requires=requirements,
