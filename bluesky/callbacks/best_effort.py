@@ -529,11 +529,22 @@ class LivePlotPlusPeaks(LivePlot):
         self.check_visibility()
         super().stop(doc)
 
+class HeadingPrinter(Callback):
+    def __init__(self, start_doc):
+        self._start_doc = start_doc
+        # Print heading.
+        tt = datetime.fromtimestamp(self._start_doc['time']).utctimetuple()
+        print("Transient Scan ID: {0}     Time: {1}".format(
+            self._start_doc['scan_id'],
+            time.strftime("%Y/%m/%d %H:%M:%S", tt)))
+        print("Persistent Unique Scan ID: '{0}'".format(
+            self._start_doc['uid']))
+
+
 class BaselinePrinter(Callback):
     def __init__(self, start_doc, file=sys.stdout):
         # We accept a start_doc but discard it.
         ...
-        self._baseline_enabled = True
         self._descriptors = {}
         self._baseline_toggle = True
         self._file = file
@@ -543,7 +554,8 @@ class BaselinePrinter(Callback):
         # variable for future reference.
         ...
         self._descriptors[doc['uid']] = doc
-
+        if descriptor.get('name') == 'baseline':
+            self._descriptors['name'] = 'baseline'
     def event(self, doc):
         # Check the descriptor uid of this Event using doc['descriptor'].
         # if this matches the uid of the descriptor we have stashed in the 
@@ -553,22 +565,21 @@ class BaselinePrinter(Callback):
         descriptor = self._descriptors[doc['descriptor']]
 
         # Show the baseline readings.
-        if descriptor.get('name') == 'baseline':
+        if doc['descriptor'] in self._descriptors:
             columns = hinted_fields(descriptor)
             self._baseline_toggle = not self._baseline_toggle
             if self._baseline_toggle:
                 subject = 'End-of-run'
             else:
                 subject = 'Start-of-run'
-            if self._baseline_enabled:
-                print('{} baseline readings:'.format(subject), file=self._file)
-                border = '+' + '-' * 32 + '+' + '-' * 32 + '+'
-                print(border, file=self._file)
-                for k, v in doc['data'].items():
-                    if k not in columns:
-                        continue
-                    print('| {:>30} | {:<30} |'.format(k, v), file=self._file)
-                print(border, file=self._file)
+            print('{} baseline readings:'.format(subject), file=self._file)
+            border = '+' + '-' * 32 + '+' + '-' * 32 + '+'
+            print(border, file=self._file)
+            for k, v in doc['data'].items():
+                if k not in columns:
+                    continue
+                print('| {:>30} | {:<30} |'.format(k, v), file=self._file)
+            print(border, file=self._file)
 
 def hinted_fields(descriptor):
     # Figure out which columns to put in the table.
