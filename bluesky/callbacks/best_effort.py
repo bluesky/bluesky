@@ -529,6 +529,46 @@ class LivePlotPlusPeaks(LivePlot):
         self.check_visibility()
         super().stop(doc)
 
+class BaselinePrinter(Callback):
+    def __init__(self, start_doc, file=sys.stdout):
+        # We accept a start_doc but discard it.
+        ...
+        self._baseline_enabled = True
+        self._descriptors = {}
+        self._baseline_toggle = True
+        self._file = file
+    def descriptor(self, doc):
+        # TODO Check the stream name of this descriptor using doc['name']
+        # If the stream name is 'baseline', record doc['uid'] in an instance
+        # variable for future reference.
+        ...
+        self._descriptors[doc['uid']] = doc
+
+    def event(self, doc):
+        # Check the descriptor uid of this Event using doc['descriptor'].
+        # if this matches the uid of the descriptor we have stashed in the 
+        # method above, extract the baseline readings and print them, the way
+        # we do in BestEffortCallback currently.
+        ...
+        descriptor = self._descriptors[doc['descriptor']]
+
+        # Show the baseline readings.
+        if descriptor.get('name') == 'baseline':
+            columns = hinted_fields(descriptor)
+            self._baseline_toggle = not self._baseline_toggle
+            if self._baseline_toggle:
+                subject = 'End-of-run'
+            else:
+                subject = 'Start-of-run'
+            if self._baseline_enabled:
+                print('{} baseline readings:'.format(subject), file=self._file)
+                border = '+' + '-' * 32 + '+' + '-' * 32 + '+'
+                print(border, file=self._file)
+                for k, v in doc['data'].items():
+                    if k not in columns:
+                        continue
+                    print('| {:>30} | {:<30} |'.format(k, v), file=self._file)
+                print(border, file=self._file)
 
 def hinted_fields(descriptor):
     # Figure out which columns to put in the table.
