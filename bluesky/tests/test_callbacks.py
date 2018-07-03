@@ -1,6 +1,7 @@
 from collections import defaultdict
+from ophyd.sim import SynSignalWithRegistry, NumpySeqHandler
 from bluesky.run_engine import Msg, RunEngineInterrupted
-from bluesky.examples import stepscan, Reader, ReaderWithRegistryHandler
+from bluesky.examples import stepscan
 from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
 from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
@@ -451,11 +452,11 @@ def test_plotting_hints(RE, hw, db):
     assert dc.start[-1]['hints'] == hint
 
 
-def test_exporter(fresh_RE, db, db2, tmpdir):
-    RE = fresh_RE
+def test_exporter(RE, db, db2, tmpdir):
     RE.subscribe(db.insert)
-    db.fs.register_handler('RWFS_NPY', ReaderWithRegistryHandler)
-    det = Reader('det', {'img': lambda: np.array(np.ones((10, 10)))})
+    db.fs.register_handler('RWFS_NPY', NumpySeqHandler)
+    det = SynSignalWithRegistry(lambda: np.array(np.ones((10, 10))),
+                                name='det')
     exporter = Exporter(db2, db, tmpdir)
     RE.subscribe(exporter)
     RE(count([det]))
