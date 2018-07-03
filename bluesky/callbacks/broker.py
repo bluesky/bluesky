@@ -321,17 +321,7 @@ class Exporter(CallbackBase):
 
         self.start_uid = None
 
-    def start(self, doc):
-        # This is run on start just in case we miss a stop
-        if self.start_uid:
-            hdr = self.old_db[self.start_uid]
-            self.old_db.export(hdr, self.new_db, self.new_root,
-                               self.copy_kwargs)
-        self.start_uid = doc['uid']
-
     def stop(self, doc):
-        if self.start_uid:
-            hdr = self.old_db[self.start_uid]
-            self.old_db.export(hdr, self.new_db, self.new_root,
-                               self.copy_kwargs)
-            self.start_uid = None
+        hdr = self.old_db[doc['run_start']]
+        self.old_db.export(hdr, self.new_db, self.new_root,
+                           self.copy_kwargs)

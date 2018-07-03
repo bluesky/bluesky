@@ -454,7 +454,7 @@ def test_plotting_hints(RE, hw, db):
 
 def test_exporter(RE, db, db2, tmpdir):
     RE.subscribe(db.insert)
-    db.fs.register_handler('RWFS_NPY', NumpySeqHandler)
+    db.reg.register_handler('RWFS_NPY', NumpySeqHandler)
     det = SynSignalWithRegistry(lambda: np.array(np.ones((10, 10))),
                                 name='det')
     exporter = Exporter(db2, db, tmpdir)
