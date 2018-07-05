@@ -24,6 +24,7 @@ class Publisher:
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
+    prefix : message prefix
     serializer: function, optional
         optional function to serialize data. Default is pickle.dumps
 
@@ -35,7 +36,9 @@ class Publisher:
     >>> RE = RunEngine({})
     >>> publisher = Publisher('localhost:5567', RE=RE)
     """
-    def __init__(self, address, *, RE=None, zmq=None, serializer=pickle.dumps):
+    def __init__(self, address, *, RE=None, zmq=None, prefix=None, serializer=pickle.dumps):
+        if prefix is None:
+            prefix = ''
         if zmq is None:
             import zmq
         if isinstance(address, str):
@@ -45,8 +48,13 @@ class Publisher:
         self.hostname = socket.gethostname()
         self.pid = os.getpid()
         url = "tcp://%s:%d" % self.address
-        self._prefix = b'%s %d %d ' % (self.hostname.encode(),
-                                       self.pid, id(RE))
+        if prefix is not None:
+            self._prefix = b'%s %s %d %d ' % (prefix, self.hostname.encode(),
+                                              self.pid, id(RE))
+        else:
+            self._prefix = b'%s %s %d %d ' % (self.hostname.encode(), self.pid,
+                                              id(RE))
+
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
         self._socket.connect(url)
@@ -209,8 +217,9 @@ class RemoteDispatcher(Dispatcher):
     >>> d.start()  # runs until interrupted
     """
     def __init__(self, address, *, hostname=None, pid=None, run_engine_id=None,
-                 loop=None, zmq=None, zmq_asyncio=None,
+                 loop=None, zmq=None, zmq_asyncio=None, prefix=None,
                  deserializer=pickle.loads):
+        self._message_prefix = prefix
         if zmq is None:
             import zmq
         if zmq_asyncio is None:
@@ -234,13 +243,22 @@ class RemoteDispatcher(Dispatcher):
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._task = None
 
-        def is_our_message(_hostname, _pid, _RE_id):
+        def is_our_message(_hostname, _pid, _RE_id, message_prefix=None):
             # Close over filters and decide if this message applies to this
             # RemoteDispatcher.
-            return ((hostname is None or hostname == _hostname)
-                    and (pid is None or pid == _pid)
-                    and (run_engine_id is None or run_engine_id ==
-                         run_engine_id))
+            if message_prefix is not None:
+                return ((hostname is None or hostname == _hostname)
+                        and (pid is None or pid == _pid)
+                        and (run_engine_id is None or run_engine_id ==
+                            run_engine_id)
+                        and message_prefix == self._message_prefix
+                       )
+            else:
+                return ((hostname is None or hostname == _hostname)
+                        and (pid is None or pid == _pid)
+                        and (run_engine_id is None or run_engine_id ==
+                            run_engine_id))
+
         self._is_our_message = is_our_message
 
         super().__init__()
@@ -249,12 +267,17 @@ class RemoteDispatcher(Dispatcher):
     def _poll(self):
         while True:
             message = yield from self._socket.recv()
-            hostname, pid, RE_id, name, doc = message.split(b' ', 4)
+            if self.message_prefix is not None:
+                prefix, hostname, pid, RE_id, name, doc = message.split(b' ', 5)
+            else:
+                hostname, pid, RE_id, name, doc = message.split(b' ', 5)
+            prefix = prefix.decode()
             hostname = hostname.decode()
             pid = int(pid)
             RE_id = int(RE_id)
             name = name.decode()
-            if self._is_our_message(hostname, pid, RE_id):
+            if self._is_our_message(hostname, pid, RE_id, message_prefix=prefix):
+                doc = pickle.loads(doc)
                 doc = self._deserializer(doc)
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
