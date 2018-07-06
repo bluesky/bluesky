@@ -35,8 +35,6 @@ class Publisher:
     >>> publisher = Publisher('localhost:5567', RE=RE)
     """
     def __init__(self, address, *, RE=None, zmq=None, prefix=''):
-        if prefix is None:
-            prefix = ''
         if zmq is None:
             import zmq
         if isinstance(address, str):
