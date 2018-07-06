@@ -48,7 +48,7 @@ class Publisher:
         self.hostname = socket.gethostname()
         self.pid = os.getpid()
         url = "tcp://%s:%d" % self.address
-        self._prefix = b'%s\x00%s\x00%d\x00%d\x00' % (prefix,
+        self._prefix = b'%s\x00%s\x00%d\x00%d\x00' % (prefix.encode(),
                                                       self.hostname.encode(),
                                                       self.pid, id(RE))
 
@@ -63,7 +63,7 @@ class Publisher:
         doc = copy.deepcopy(doc)
         apply_to_dict_recursively(doc, sanitize_np)
         message = bytes(self._prefix)  # making a copy
-        message += b' '.join([name.encode(), self._serializer(doc)])
+        message += b'\x00'.join([name.encode(), self._serializer(doc)])
         self._socket.send(message)
 
     def close(self):
