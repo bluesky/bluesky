@@ -36,7 +36,7 @@ class Publisher:
     >>> RE = RunEngine({})
     >>> publisher = Publisher('localhost:5567', RE=RE)
     """
-    def __init__(self, address, *, RE=None, zmq=None, prefix=None, serializer=pickle.dumps):
+    def __init__(self, address, *, RE=None, zmq=None, prefix='',serializer=pickle.dumps):
         if prefix is None:
             prefix = ''
         if zmq is None:
@@ -48,12 +48,9 @@ class Publisher:
         self.hostname = socket.gethostname()
         self.pid = os.getpid()
         url = "tcp://%s:%d" % self.address
-        if prefix is not None:
-            self._prefix = b'%s %s %d %d ' % (prefix, self.hostname.encode(),
-                                              self.pid, id(RE))
-        else:
-            self._prefix = b'%s %s %d %d ' % (self.hostname.encode(), self.pid,
-                                              id(RE))
+        self._prefix = b'%s\x00%s\x00%d\x00%d\x00' % (prefix,
+                                                      self.hostname.encode(),
+                                                      self.pid, id(RE))
 
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
@@ -217,7 +214,7 @@ class RemoteDispatcher(Dispatcher):
     >>> d.start()  # runs until interrupted
     """
     def __init__(self, address, *, hostname=None, pid=None, run_engine_id=None,
-                 loop=None, zmq=None, zmq_asyncio=None, prefix=None,
+                 loop=None, zmq=None, zmq_asyncio=None, prefix='',
                  deserializer=pickle.loads):
         self._message_prefix = prefix
         if zmq is None:
@@ -243,21 +240,15 @@ class RemoteDispatcher(Dispatcher):
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._task = None
 
-        def is_our_message(_hostname, _pid, _RE_id, message_prefix=None):
+        def is_our_message(_hostname, _pid, _RE_id, message_prefix):
             # Close over filters and decide if this message applies to this
             # RemoteDispatcher.
-            if message_prefix is not None:
-                return ((hostname is None or hostname == _hostname)
-                        and (pid is None or pid == _pid)
-                        and (run_engine_id is None or run_engine_id ==
-                            run_engine_id)
-                        and message_prefix == self._message_prefix
-                       )
-            else:
-                return ((hostname is None or hostname == _hostname)
-                        and (pid is None or pid == _pid)
-                        and (run_engine_id is None or run_engine_id ==
-                            run_engine_id))
+            return ((hostname is None or hostname == _hostname)
+                     and (pid is None or pid == _pid)
+                     and (run_engine_id is None or run_engine_id ==
+                          run_engine_id)
+                     and message_prefix == self._message_prefix
+                    )
 
         self._is_our_message = is_our_message
 
@@ -267,10 +258,7 @@ class RemoteDispatcher(Dispatcher):
     def _poll(self):
         while True:
             message = yield from self._socket.recv()
-            if self.message_prefix is not None:
-                prefix, hostname, pid, RE_id, name, doc = message.split(b' ', 5)
-            else:
-                hostname, pid, RE_id, name, doc = message.split(b' ', 5)
+            prefix, hostname, pid, RE_id, name, doc = message.split(b'\x00', 5)
             prefix = prefix.decode()
             hostname = hostname.decode()
             pid = int(pid)
