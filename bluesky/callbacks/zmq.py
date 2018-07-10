@@ -33,7 +33,7 @@ class Publisher:
     >>> RE = RunEngine({})
     >>> publisher = Publisher('localhost:5567', RE=RE)
     """
-    def __init__(self, address, *, RE=None, zmq=None, serializer=None):
+    def __init__(self, address, *, RE=None, zmq=None, serializer=pickle.dumps):
         if zmq is None:
             import zmq
         if isinstance(address, str):
@@ -50,8 +50,6 @@ class Publisher:
         self._socket.connect(url)
         if RE:
             self._subscription_token = RE.subscribe(self)
-        if serializer is None:
-            serializer = pickle.dumps
         self._serializer = serializer
 
     def __call__(self, name, doc):
@@ -207,15 +205,14 @@ class RemoteDispatcher(Dispatcher):
     >>> d.start()  # runs until interrupted
     """
     def __init__(self, address, *, hostname=None, pid=None, run_engine_id=None,
-                 loop=None, zmq=None, zmq_asyncio=None, deserializer=None):
+                 loop=None, zmq=None, zmq_asyncio=None,
+                 deserializer=pickle.loads):
         if zmq is None:
             import zmq
         if zmq_asyncio is None:
             import zmq.asyncio as zmq_asyncio
         if isinstance(address, str):
             address = address.split(':', maxsplit=1)
-        if deserializer is None:
-            deserializer = pickle.loads
         self._deserializer = deserializer
         self.address = (address[0], int(address[1]))
         self.hostname = hostname
