@@ -50,8 +50,8 @@ class Publisher:
         self._socket.connect(url)
         if RE:
             self._subscription_token = RE.subscribe(self)
-        if serializer is None
-            serializer = pickel.dumps
+        if serializer is None:
+            serializer = pickle.dumps
         self._serializer = serializer
 
     def __call__(self, name, doc):
