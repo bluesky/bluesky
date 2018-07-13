@@ -24,6 +24,8 @@ class Publisher:
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
+    serializer: function, optional
+        optional function to serialize data. Default is pickle.dumps
 
     Example
     -------
@@ -194,6 +196,8 @@ class RemoteDispatcher(Dispatcher):
     zmq_asyncio : object, optional
         By default, the 'zmq.asyncio' module is imported and used. Anything
         else mocking its interface is accepted.
+    deserializer: function, optional
+        optional function to deserialize data. Default is pickle.loads
 
     Example
     -------
