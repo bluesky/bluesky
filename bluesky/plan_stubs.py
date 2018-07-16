@@ -908,7 +908,7 @@ def one_1d_step(detectors, motor, step):
     return (yield from trigger_and_read(list(detectors) + [motor]))
 
 
-def move_per_step(detectors, step, pos_cache):
+def move_per_step(step, pos_cache):
     """
     Just the motion part of an N-dimensional step scan.
 
@@ -916,8 +916,6 @@ def move_per_step(detectors, step, pos_cache):
 
     Parameters
     ----------
-    detectors : iterable
-        devices to read
     step : dict
         mapping motors to positions in this step
     pos_cache : dict
@@ -950,7 +948,7 @@ def one_nd_step(detectors, step, pos_cache):
         mapping motors to their last-set positions
     """
     motors = step.keys()
-    yield from move_per_step(detectors, step, pos_cache)
+    yield from move_per_step(step, pos_cache)
     yield from trigger_and_read(list(detectors) + list(motors))
 
 
