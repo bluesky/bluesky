@@ -908,6 +908,30 @@ def one_1d_step(detectors, motor, step):
     return (yield from trigger_and_read(list(detectors) + [motor]))
 
 
+def move_per_step(step, pos_cache):
+    """
+    Inner loop of an N-dimensional step scan without any readings
+
+    This can be used as a building block for custom ``per_step`` stubs.
+
+    Parameters
+    ----------
+    step : dict
+        mapping motors to positions in this step
+    pos_cache : dict
+        mapping motors to their last-set positions
+    """
+    yield Msg('checkpoint')
+    grp = _short_uid('set')
+    for motor, pos in step.items():
+        if pos == pos_cache[motor]:
+            # This step does not move this motor.
+            continue
+        yield Msg('set', motor, pos, group=grp)
+        pos_cache[motor] = pos
+    yield Msg('wait', None, group=grp)
+
+
 def one_nd_step(detectors, step, pos_cache):
     """
     Inner loop of an N-dimensional step scan
@@ -923,19 +947,8 @@ def one_nd_step(detectors, step, pos_cache):
     pos_cache : dict
         mapping motors to their last-set positions
     """
-    def move():
-        yield Msg('checkpoint')
-        grp = _short_uid('set')
-        for motor, pos in step.items():
-            if pos == pos_cache[motor]:
-                # This step does not move this motor.
-                continue
-            yield Msg('set', motor, pos, group=grp)
-            pos_cache[motor] = pos
-        yield Msg('wait', None, group=grp)
-
     motors = step.keys()
-    yield from move()
+    yield from move_per_step(step, pos_cache)
     yield from trigger_and_read(list(detectors) + list(motors))
 
 
