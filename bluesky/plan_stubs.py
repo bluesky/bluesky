@@ -910,7 +910,7 @@ def one_1d_step(detectors, motor, step):
 
 def move_per_step(step, pos_cache):
     """
-    Just the motion part of an N-dimensional step scan.
+    Inner loop of an N-dimensional step scan without any readings
 
     This can be used as a building block for custom ``per_step`` stubs.
 
