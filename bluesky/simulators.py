@@ -125,30 +125,18 @@ def check_limits(plan):
 """
 ATTRIBUTE PARAMETERS
 --------------------
-_run_start_cmds: list
-    A list of message 'commands' that are found at the start of a run.
-_run_end_cmds: list
-    A list of message 'commands' that are found at the end of a run.
 _group_start_cmds: list
     A list of message 'commands' that are found at the begining of a 'group'
     (where more than one command is processed in parallel).
 _group_end_cmds: list
     A list of message 'commands' that are found at the begining of a 'group'
     (where more than one command is processed in parallel).
-_self._timed_cmds: list.
-    A list of message 'commands' that do not start/end a run/group/flyer but
-    are stil timed.
-__flyer_start_cmds: list.
-    A list of message 'commands' that start a 'flyer'.
-_plan_history: dict.
-    A dictionary containing information on values updated during the plan. It
-    has key:arg pairs with keys relating to message components where each arg
-    is a dictionary containing devices (detectors, axes) that have been
-    updated, as keywords and a value indicating the update status. For 'set'
-    the update status is the latest 'position' that it is to be set and for
-    'trigger' the update status is the number of times since the beginning of
-    the scan or since an 'unstage' event that the device has been triggered.
+__timed_cmds: list.
+    A list of message 'commands' that aren't groupable but are timed.
+__communication_cmds: list.
+    A list of message 'commands' that require network communication.
 """
+
 # GROUP THE DIFFERENT COMMAND TYPES
 # The commands that start/end a 'group', but not flyer commands.
 _group_start_cmds = ['set', 'trigger', 'kickoff']
