@@ -1530,7 +1530,7 @@ def ramp_plan(go_plan,
             # sort out if we should watch the clock
             fail_time = time.time() + timeout
 
-
+        # take a 'pre' data point
         yield from inner_plan_func()
         # start the ramp
         status = (yield from go_plan)
