@@ -148,7 +148,7 @@ _communication_cmds = ['read', 'describe', 'open_run', 'close_run']
 # Define some times associated with network communications and internal
 # state tasks. I am not yet sure how to accurately estimate these times as
 # they are unlikely to be 'static' and measuring them for statistics will
-# take as much time as performing them, they are including incase a good
+# take as much time as performing them, they are including in-case a good
 # solution for this is found.
 _communication_time = _TimeStats(0, 0)  # An est_time/std_dev named tuple
 _internal_state_time = _TimeStats(0, 0)  # An est_time/std_dev named tuple
@@ -158,12 +158,12 @@ def est_time(plan):
     '''The generator function estimates the time to complete a plan with
     a yield at every message.
 
-    This method takes in a plan and yields out a tuple with the structure
-    (msg, estimated stop time, estimated start time). Where msg is the
-    message from the plan and stop/start times are (est_time, std_dev)
-    named tuples which provides the end/start time for each message taking
-    the scan start as zero. Note that for 'groupable' actions (like 'set'
-    and 'trigger') the action msg will start and stop within the group time.
+    This method takes in a plan and yields out a named tuple with the structure
+    (msg, estimated stop time, estimated start time). Where msg is the message
+    from the plan and stop/start times are (est_time, std_dev) named tuples
+    which provides the end/start time for each message taking the scan start as
+    zero. Note that for 'groupable' actions (like 'set' and 'trigger') the
+    action msg will start and stop within the group time.
 
     Parameters
     ----------
@@ -174,8 +174,9 @@ def est_time(plan):
     -----------------
     out_time : named tuple.
         A named tuple containing 3 items, the message specifed in the plan,
-        the est_time/ std_dev named tuple for cumulative time and the est_time
-        /std_dev named tuple for the message time.
+        and the est_time/ std_dev named tuple for the estimated stop and start
+        times for the message, 'wait' messages return the start and stop times
+        for the entire group.
     '''
 
     # create a reference to a dictionary called plan_history to capture set
@@ -263,10 +264,10 @@ def est_time(plan):
 
 
 def combine_est(est_time_1, est_time_2, method='sum'):
-    """
-    Returns the combination est_time/std_dev pairs et_1 and et_2.
-    This function returns the combination of est_time_1 and est_time_2,
-    combined using the method definedby 'method'.
+    """Returns the combination of est_time_1 and est_time_2.
+
+    This function returns the combination of the named tuples est_time_1 and
+    est_time_2, combined using the method defined by 'method'.
 
     Parameters
     ----------
@@ -274,7 +275,7 @@ def combine_est(est_time_1, est_time_2, method='sum'):
         The tuples containing the est_time/std_dev tuples to be combined.
     method : string, optional.
         The method to use for the combination of est_time_1 and est_time_2,
-        default is 'sum'.
+        default is 'sum', other options are 'max', 'min' and 'subtract'.
 
     Return Parameters
     -----------------
@@ -320,15 +321,16 @@ def combine_est(est_time_1, est_time_2, method='sum'):
 
 
 def obj_est(msg, plan_history={}):
-    """
-    Returns the est_time/std_dev pair for the object referenced in msg.
-    This function returns the est_time/std_dev pair for the object referenced
-    in msg.obj and for the command type reference in msg.command.
+    """Returns the est_time/std_dev named tuple for the object referenced in
+    msg.
+
+    This function returns the est_time/std_dev named tuple for the object
+    referenced in msg.obj and for the command type referenced in msg.command.
 
     Parameters
     ----------
     msg : message.
-        The first message of the group that was detected in plan_ETA.
+        The message that the estimated time is to be found for.
     plan_history : dict, optional.
         A dictionary containing information on values updated during the plan.
         It has key:arg pairs with keys relating to message components where
@@ -342,7 +344,7 @@ def obj_est(msg, plan_history={}):
     Return Parameters
     -----------------
     out_time : named tuple.
-        The combined est_time/std_dev pair.
+        The combined est_time/std_dev named tuple.
        """
 
     set_dict = {}
@@ -385,15 +387,15 @@ def obj_est(msg, plan_history={}):
 
 
 def est_time_per_group(plan):
-    '''The generator function removes any yields from est_time(plan) that
+    '''A generator function that removes any yields from est_time(plan) that
     occur within a group.
 
-    This method yields out a tuple with the structure (msg, estimated stop
-    time, estimated start time). Where msg is the message from the plan and
-    stop/start times are (est_time, std_dev) named tuples which provides the
-    end/start time for each message taking the scan start as zero. It removes
-    any yields from 'groupable' messages but does yield for the group as a
-    whole, at the group end message.
+    This method yields out a named tuple with the structure (message, stop_time
+    , start_time). Where message is the message from the plan and stop/start
+    times are (est_time, std_dev) named tuples which provides the end/start
+    time for each message taking the scan start as zero. It removes any yields
+    from 'groupable' messages but does yield for the group as a whole, at the
+    'wait' message that concludes the group.
 
     Parameters
     ----------
@@ -403,9 +405,9 @@ def est_time_per_group(plan):
     Returns
     -----------------
     out_time : named tuple.
-        A named tuple containing 3 items, the message specifed in the plan,
-        the est_time/ std_dev named tuple for cumulative time and the est_time
-        /std_dev named tuple for the message time.
+        A named tuple containing 3 items, the message specifed in the plan and
+        the est_time/ std_dev named tuples for the stop and start times for the
+        message, 'wait' messages yield times for the group they conclude.
     '''
 
     for estimated_time in est_time(plan):
@@ -415,14 +417,13 @@ def est_time_per_group(plan):
 
 def est_time_run(plan):
     '''The generator function adds the start/stop times for 'runs' to
-    est_time(plan) these will be yielded at the 'close_run'.
+    est_time(plan) these will be yielded at the 'close_run' message.
 
-    This method yields out a tuple with the structure (msg, estimated stop
-    time, estimated start time). Where msg is the message from the plan and
-    stop/start times are (est_time, std_dev) named tuples which provides the
-    end/start time for each message taking the scan start as zero. It removes
-    any yields from 'groupable' messages but does yield for the group as a
-    whole, at the group end message.
+    This method yields out a named tuple with the structure (msg, stop_time
+    , start_time. Where msg is the message from the plan and stop/start times
+    are (est_time, std_dev) named tuples which provides the end/start time for
+    each message taking the scan start as zero. It yields at each message and
+    yields a start and stop time for each 'run'for the 'close_run' message.
 
     Parameters
     ----------
@@ -432,9 +433,9 @@ def est_time_run(plan):
     Returns
     -----------------
     out_time : named tuple.
-        A named tuple containing 3 items, the message specifed in the plan,
-        the est_time/ std_dev named tuple for cumulative time and the est_time
-        /std_dev named tuple for the message time.
+        A named tuple containing 3 items, the message specifed in the plan and
+        the est_time/ std_dev named tuples for the stop and start times for the
+        message, 'close_run' messages yield times for the run they conclude.
     '''
     # Note: when parallel runs are allowed this will need updating.
     for estimated_time in est_time(plan):
@@ -449,15 +450,16 @@ def est_time_run(plan):
 
 
 def est_time_per_run(plan):
-    '''The generator function removes any yields from est_time(plan) that
-    occur within a group.
+    '''The generator function removes any yields from est_time_run(plan) that
+    occur within a run.
 
-    This method yields out a tuple with the structure (msg, estimated stop
-    time, estimated start time). Where msg is the message from the plan and
-    stop/start times are (est_time, std_dev) named tuples which provides the
-    end/start time for each message taking the scan start as zero. It removes
-    any yields from 'groupable' messages but does yield for the group as a
-    whole, at the group end message.
+    This method yields out a named tuple with the structure (msg, stop_time,
+    start_time). Where msg is the message from the plan and stop/start times
+    are (est_time, std_dev) named tuples which provides the end/start time for
+    each message taking the scan start as zero. It removes any yields from that
+    occur between 'open_run' and 'close_run' messages, the combined time for
+    the messages between these messages  is returned with the 'close_run'
+    message.
 
     Parameters
     ----------
@@ -467,9 +469,10 @@ def est_time_per_run(plan):
     Returns
     -----------------
     out_time : named tuple.
-        A named tuple containing 3 items, the message specifed in the plan,
-        the est_time/ std_dev named tuple for cumulative time and the est_time
-        /std_dev named tuple for the message time.
+        A named tuple containing 3 items, the message specifed in the plan and
+        the est_time/ std_dev named tuple for stop/start times for the message.
+        The times for the runs yield with the 'close_run' message that
+        concludes the run.
     '''
 
     for estimated_time in est_time_run(plan):
