@@ -400,7 +400,7 @@ class BestEffortCallback(CallbackBase):
                 ps('stop', doc)
                 ps_by_key[y_key] = ps
         self.peaks.update(ps_by_key)
-        self.peaks_list.append(self.peaks)    
+        self.peaks_list.append(self.peaks)
         for live_plots in self._live_plots.values():
             for live_plot in live_plots.values():
                 live_plot('stop', doc)
@@ -544,23 +544,19 @@ class HeadingPrinter(Callback):
 class BaselinePrinter(Callback):
     def __init__(self, start_doc, file=sys.stdout):
         # We accept a start_doc but discard it.
-        ...
         self._descriptors = {}
         self._baseline_toggle = True
         self._file = file
+
     def descriptor(self, doc):
-        # TODO Check the stream name of this descriptor using doc['name']
-        # If the stream name is 'baseline', record doc['uid'] in an instance
-        # variable for future reference.
-        ...
         if doc['name'] == 'baseline':
             self._descriptors[doc['uid']] = doc
+
     def event(self, doc):
         # Check the descriptor uid of this Event using doc['descriptor'].
-        # if this matches the uid of the descriptor we have stashed in the 
+        # if this matches the uid of the descriptor we have stashed in the
         # method above, extract the baseline readings and print them, the way
         # we do in BestEffortCallback currently.
-        ...
         # Show the baseline readings.
         if doc['descriptor'] in self._descriptors:
             descriptor = self._descriptors[doc['descriptor']]
@@ -596,4 +592,3 @@ def hinted_fields(descriptor):
             fields = descriptor['object_keys'][obj_name]
         columns.extend(fields)
     return columns
-
