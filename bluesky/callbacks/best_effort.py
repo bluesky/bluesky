@@ -5,6 +5,7 @@
 '''
 from cycler import cycler
 from datetime import datetime
+import functools
 from io import StringIO
 import itertools
 import numpy as np
@@ -16,9 +17,21 @@ import time
 from warnings import warn
 import weakref
 from collections import deque
-from .core import CallbackBase, Callback, LiveTable
+from .core import CallbackBase, Callback, LiveTable, Table, RunRouter
 from .mpl_plotting import LivePlot, LiveGrid, LiveScatter
 from .fitting import PeakStats
+
+
+class NewBestEffortCallback(RunRouter):
+    def __init__(self, callback_factories=None):
+        if callback_factories is None:
+            callback_factories = []
+        super().__init__(callback_factories)
+
+    def start(self, doc):
+        table = functools.partial(Table, fields=[])(doc)
+        self.callbacks[doc['uid']].append(table)
+        return super().start(doc)
 
 
 class BestEffortCallback(CallbackBase):
