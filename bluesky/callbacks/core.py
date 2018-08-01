@@ -121,7 +121,7 @@ class RunRouter(CallbackBase):
             start_uid = self.descriptors[descriptor_uid]
         except KeyError:
             # The belongs to a run that we are not interested in.
-            return
+            return []
         return self.callbacks[start_uid]
 
     def event(self, doc):
@@ -138,7 +138,7 @@ class RunRouter(CallbackBase):
             start_uid = self.resources[resource_uid]
         except KeyError:
             # The belongs to a run that we are not interested in.
-            return
+            return []
         return self.callbacks[start_uid]
 
     def datum(self, doc):
