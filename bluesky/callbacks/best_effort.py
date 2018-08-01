@@ -22,16 +22,131 @@ from .mpl_plotting import LivePlot, LiveGrid, LiveScatter
 from .fitting import PeakStats
 
 
+def guess_dimensions(start_doc):
+    """
+    Parameters
+    ----------
+    Prepare a guess about the dimensions (independent variables).
+    start_doc : dict
+
+    Returns
+    -------
+    dimensions : list
+        looks like a plan's 'dimensions' hint, but guessed from heuristics
+    """
+    motors = start_doc.get('motors')
+    if motors is not None:
+        return [([motor], 'primary') for motor in motors]
+        # For example, if this was a 2D grid scan, we would have:
+        # [(['x'], 'primary'), (['y'], 'primary')]
+    else:
+        # There is no motor, so we will guess this is a time series.
+        return [(['time'], 'primary')]
+
+
+def extract_hints_info(start_doc):
+    """
+    Parameters
+    ----------
+    start_doc : dict
+
+    Returns
+    -------
+    stream_name, dim_fields, all_dim_fields
+    """
+    plan_hints = start_doc.get('hints', {})
+    cleanup_motor_heuristic = False
+
+    # Use the guess if there is not hint about dimensions.
+    dimensions = plan_hints.get('dimensions')
+    if dimensions is None:
+        cleanup_motor_heuristic = True
+        dimensions = guess_dimensions(start_doc)
+
+    # Do all the 'dimensions' belong to the same Event stream? If not, that is
+    # too complicated for this implementation, so we ignore the plan's
+    # dimensions hint and fall back on guessing.
+        cleanup_motor_heuristic = True
+        dimensions =  guess_dimensions(start_doc)
+        warn("We are ignoring the dimensions hinted because we cannot "
+             "combine streams.")
+
+    # for each dimension, choose one field only
+    # the plan can supply a list of fields. It's assumed the first
+    # of the list is always the one plotted against
+    # fields could be just one field, like ['time'] or ['x'], but for an "inner
+    # product scan", it could be multiple fields like ['x', 'y'] being scanned
+    # over jointly. In that case, we just plot against the first one.
+    dim_fields = [first_field for (first_field, *_), stream_name in dimensions]
+
+    # Make distinction between flattened fields and plotted fields.
+    # Motivation for this is that when plotting, we find dependent variable
+    # by finding elements that are not independent variables
+    all_dim_fields = [field
+                      for fields, stream_name in dimensions
+                           for field in fields]
+
+    # Above we checked that all the dimensions belonged to the same Event
+    # stream, so we can take the stream_name from any item in the list of
+    # dimensions, and we'll get the same result. Might as well use the first
+    # one.
+    _, dim_stream = dimensions[0]  # so dim_stream is like 'primary'
+    # TO DO -- Do we want to return all of these? Maybe we should just return
+    # 'dimensions' and let the various callback_factories do whatever
+    # transformations they need.
+    return dim_stream, dim_fields, all_dim_fields
+
+
+class HintedTable(Callback):
+    def __init__(self, start_doc, *args, **kwargs):
+        self._start_doc = start_doc
+        self._options = (args, kwargs)
+        self.table = None
+        super().__init__(start_doc)
+
+    def descriptor(self, doc):
+        # Extract what the columns of the table should be, using the plan hints
+        # in the start_doc and the hints from the Device in this descriptor
+        # doc.
+        dim_stream, all_dim_fields, _ = extract_hints_info(self._start_doc)
+        fields = set(list(all_dim_fields) + hinted_fields(doc))
+        if doc.get('name') != dim_stream or self.table is not None:
+            # We are not interested in this descriptor either because it is not
+            # in the stream we care about or because it is not the *first*
+            # descriptor in that stream.
+            return
+        args, kwargs = self._options
+        self.table = Table(self._start_doc, fields, *args, **kwargs)
+
+    def __call__(self, name, doc):
+        super().__call__(name, doc)
+        if self.table is not None:
+            self.table(name, doc)
+
+
 class NewBestEffortCallback(RunRouter):
+    """
+    Automatically configures several callbacks for live feedback.
+
+    Examples
+    --------
+    Create a new RunEngine and subscribe the NewBestEffortCallback.
+    >>> RE = RunEngine({})
+    >>> bec = NewBestEffortCallback()
+    >>> bec.callback_factories.append(my_custom_callback_factory)  # MAYBE??
+    >>> RE.subscribe(bec)
+
+    Another way to add some user-provided stuff:
+    >>> my_run_router = RunRouter([my_custom_callback_factory1, my_custom_callback_factory2])
+    >>> my_run_router.callback_factories.append(my_custom_callback_factory)  # MAYBE??
+    >>> RE.subscribe(my_run_router)
+    """
     def __init__(self, callback_factories=None):
         if callback_factories is None:
             callback_factories = []
-        super().__init__(callback_factories)
-
-    def start(self, doc):
-        table = functools.partial(Table, fields=[])(doc)
-        self.callbacks[doc['uid']].append(table)
-        return super().start(doc)
+        defaults = [HintedTable, HeadingPrinter, BaselinePrinter]
+        # Mix default callback_factories with any user-provided ones.
+        super().__init__(defaults + list(callback_factories))
 
 
 class BestEffortCallback(CallbackBase):
