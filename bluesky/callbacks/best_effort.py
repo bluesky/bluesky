@@ -66,6 +66,7 @@ def extract_hints_info(start_doc):
     # Do all the 'dimensions' belong to the same Event stream? If not, that is
     # too complicated for this implementation, so we ignore the plan's
     # dimensions hint and fall back on guessing.
+    if len(set(stream_name for fields, stream_name in dimensions)) != 1:
         cleanup_motor_heuristic = True
         dimensions =  guess_dimensions(start_doc)
         warn("We are ignoring the dimensions hinted because we cannot "
@@ -96,6 +97,48 @@ def extract_hints_info(start_doc):
     # transformations they need.
     return dim_stream, dim_fields, all_dim_fields
 
+class HintedPeakStats(Callback):
+    def __init__(self, start_doc, results_callback,  *args, **kwargs):
+        self._start_doc = start_doc
+        self._options = (args, kwargs)
+        self.peaks = dict()
+        self.results_callback = results_callback 
+        super().__init__(start_doc)
+
+    def descriptor(self, doc):
+        # Extract what the columns of the p should be, using the plan hints
+        # in the start_doc and the hints from the Device in this descriptor
+        # doc.
+
+        dim_stream, all_dim_fields, dim_fields = extract_hints_info(self._start_doc)
+        fields = set(list(all_dim_fields) + hinted_fields(doc))
+
+        if doc.get('name') != dim_stream or self.peaks:
+            # We are not interested in this descriptor either because it is not
+            # in the stream we care about or because it is not the *first*
+            # descriptor in that stream.
+            return
+        args, kwargs = self._options
+        columns = hinted_fields(doc)
+        print("colums")
+        print(columns)
+        x, = dim_fields 
+        for y in columns:
+            self.peaks[y] = PeakStats(x, y,  *args, **kwargs)
+            self.peaks[y]('descriptor', doc)
+
+    def __call__(self, name, doc):
+        for item in self.peaks.values():
+            item(name, doc)
+        super().__call__(name, doc)
+
+    def stop(self, doc):
+        print(self.peaks)
+        ATTRS = ('com', 'cen', 'max', 'min', 'fwhm', 'nlls')
+        results = {}
+        for y, peak_stats in self.peaks.items():
+            results[y] = {attr: getattr(peak_stats, attr) for attr in ATTRS}
+        self.results_callback(results)
 
 class HintedTable(Callback):
     def __init__(self, start_doc, *args, **kwargs):
@@ -142,9 +185,15 @@ class NewBestEffortCallback(RunRouter):
     >>> RE.subscribe(my_run_router)
     """
     def __init__(self, callback_factories=None):
+
+        self.peaks_list = deque([],maxlen = 10)
+        def results_callback(peaks_results):
+            self.peaks_list.append(peaks_results)
         if callback_factories is None:
             callback_factories = []
-        defaults = [HintedTable, HeadingPrinter, BaselinePrinter]
+        PreparedHintedPeakStats = functools.partial(HintedPeakStats, results_callback=results_callback)
+        defaults = [PreparedHintedPeakStats, HintedTable, HeadingPrinter, BaselinePrinter]
+        #defaults = [HintedTable, HeadingPrinter, BaselinePrinter]
         # Mix default callback_factories with any user-provided ones.
         super().__init__(defaults + list(callback_factories))
 
