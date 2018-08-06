@@ -590,34 +590,35 @@ def print_est_time(plan, est_time_func=est_time_per_run):
     run_id = -1  # This will not be used once runs can occur in parallel
 
     for estimated_time in est_time_func(plan):
-        time_string = f' -> start:'
-        time_string += f'{estimated_time.start_time.est_time}+/-'
-        time_string += f'{ estimated_time.start_time.std_dev}, stop:'
-        time_string += f'{estimated_time.stop_time.est_time}+/-'
-        time_string += f'{ estimated_time.stop_time.std_dev}'
+        time_string = ' -> start:'
+        time_string += '{}+/-'.format(estimated_time.start_time.est_time),
+        time_string += '{}, stop:'.format(estimated_time.start_time.std_dev),
+        time_string += '{}+/-'.format(estimated_time.stop_time.est_time),
+        time_string += '{}'.format(estimated_time.stop_time.std_dev)
 
         if estimated_time.message.command == 'set':
-            print(f'move {estimated_time.message.obj.name:} to ' +
-                  f'{estimated_time.message.args[0]}' + time_string)
+            print('move {}: to '.format(estimated_time.message.obj.name) +
+                  '{} '.format(estimated_time.message.args) + time_string)
 
         elif estimated_time.message.command == 'sleep':
-            print(f'wait for {estimated_time.message.args[0]}' + time_string)
+            print('wait for {} '.format(estimated_time.message.args[0]) +
+                  time_string)
 
         elif estimated_time.message.command == 'open_run':
             run_id += 1
-            print(f'open_run {run_id}' + time_string)
+            print('open_run {} '.format(run_id) + time_string)
 
         elif estimated_time.message.command == 'close_run':
-            print(f'close_run {run_id}' + time_string)
+            print('close_run {} '.format(run_id) + time_string)
 
         elif estimated_time.message.command == 'wait':
-            print(f'wait on group ' +
-                  f'{estimated_time.message.kwargs.get("group")}' +
+            print('wait on group ' +
+                  '{} '.format(estimated_time.message.kwargs.get('group')) +
                   time_string)
 
         elif hasattr(estimated_time.message.obj, 'name'):
-            print(f'{estimated_time.message.command} ' +
-                  f'{estimated_time.message.obj.name}' + time_string)
+            print('{} '.format(estimated_time.message.command) +
+                  '{} '.format(estimated_time.message.obj.name) + time_string)
 
         else:
             print(f'{estimated_time.message.command}' + time_string)
