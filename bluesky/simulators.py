@@ -621,4 +621,4 @@ def print_est_time(plan, est_time_func=est_time_per_run):
                   '{} '.format(estimated_time.message.obj.name) + time_string)
 
         else:
-            print(f'{estimated_time.message.command}' + time_string)
+            print('{} '.format(estiamted_time.message.command) + time_string)
