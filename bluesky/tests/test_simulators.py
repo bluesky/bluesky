@@ -380,7 +380,7 @@ def test_est_delta_time(setup_telemetry, hw):
         raw_data = est_time_functions[est_time_gen]
         for result, expected in zip(est_time_gen(plan),
                                     expected_generator(raw_data)):
-            err_string = f'failed test of {str(est_time_gen)}:'
+            err_string = 'failed test of {}.format(str(est_time_gen)):'
             if result[1] is None and expected[0] is None:
                 pass
             else:
