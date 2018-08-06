@@ -4,8 +4,10 @@ from collections import namedtuple, defaultdict
 import inspect
 
 _TimeStats = namedtuple('TimeStats', 'est_time std_dev')
-_MsgStats = namedtuple('MsgStats', 'message stop_time start_time')
-_GroupStats = namedtuple('GroupStats', 'stop_time start_time')
+_CumulativeStats = namedtuple('CumulativeStats',
+                              'message stop_time start_time')
+_MsgStats = namedtuple('MsgStats', 'message process_time action_time')
+_GroupStats = namedtuple('GroupStats', 'delta_time elapsed_time')
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -144,26 +146,30 @@ _group_end_cmds = ['wait']
 # The commands that aren't  groupable but still have statistics.
 _timed_cmds = ['stage', 'unstage']
 # The commands that only require network communication.
-_communication_cmds = ['read', 'describe', 'open_run', 'close_run']
-# Define some times associated with network communications and internal
-# state tasks. I am not yet sure how to accurately estimate these times as
-# they are unlikely to be 'static' and measuring them for statistics will
-# take as much time as performing them, they are including in-case a good
-# solution for this is found.
-_communication_time = _TimeStats(0, 0)  # An est_time/std_dev named tuple
-_internal_state_time = _TimeStats(0, 0)  # An est_time/std_dev named tuple
+_communication_cmds = ['read', 'describe']
+# The commands that emit documents to databroker.
+_emit_cmds = ['open_run', 'close_run']
+# Define some times associated with network communications ('communication'),
+# internal processing ('internal') and databroker document emit time ('emit').
+# These are defined in a global dictionary to allow for the status_objects to
+# access them.
+Process_time = {'communication': _TimeStats(0, 0),
+                'internal': _TimeStats(0, 0),
+                'emit': _TimeStats(0, 0)}
 
 
-def est_time(plan):
-    '''The generator function estimates the time to complete a plan with
-    a yield at every message.
+def est_delta_time(plan):
+    '''A generator function that yields an estimate of the time to complete
+    each message in 'plan'.
 
     This method takes in a plan and yields out a named tuple with the structure
-    (msg, estimated stop time, estimated start time). Where msg is the message
-    from the plan and stop/start times are (est_time, std_dev) named tuples
-    which provides the end/start time for each message taking the scan start as
-    zero. Note that for 'groupable' actions (like 'set' and 'trigger') the
-    action msg will start and stop within the group time.
+    (msg, process_time, action_time). Where msg is the message
+    from the plan and process_time/ action_time are (est_time, std_dev) named
+    tuples which provide the time delta to process/perform the message
+    respectively. Note that for actions that do not return a status object the
+    action_time will be 'None' while for 'wait' and 'sleep' messages the
+    action_time will also be 'None' and the 'process_time' will be the wait/
+    sleep time.
 
     Parameters
     ----------
@@ -174,93 +180,104 @@ def est_time(plan):
     -----------------
     out_time : named tuple.
         A named tuple containing 3 items, the message specifed in the plan,
-        and the est_time/ std_dev named tuple for the estimated stop and start
-        times for the message, 'wait' messages return the start and stop times
-        for the entire group.
+        and the est_time/ std_dev named tuple for the process and action
+        times for the message.
     '''
 
     # create a reference to a dictionary called plan_history to capture set
     # changes during the plan for later modification.
     plan_history = {'set': {}, 'trigger': {}}
     # create a dictionary for storing the info regarding groups in progress.
-    groups = defaultdict(_TimeStats())
-
-    # used to hold the cumulative time for the plan
-    out_time = _TimeStats(0, 0)
+    groups = defaultdict(_GroupStats)
 
     for msg in plan:
         # case 1: commands that are 'groupable'
         if msg.command in _group_start_cmds:
             # add set and trigger commands to plan_history
             if msg.command == 'set':
-                plan_history['set'][msg.obj.name] = msg.args[0]
+                plan_history['set'][msg.obj.name] = (msg.args, msg.kwargs)
             elif msg.command == 'trigger':
                 if msg.obj.name in list(plan_history['trigger'].keys()):
                     plan_history['trigger'][msg.obj.name] += 1
                 else:
                     plan_history['trigger'][msg.obj.name] = 1
 
-            message_time = combine_est(
-                            obj_est(msg, plan_history=plan_history),
-                            _communication_time)
-            start_time = out_time
-            stop_time = combine_est(start_time, message_time)
+            process_time = Process_time['communication']
+            action_time = obj_est(msg, plan_history=plan_history)
 
             try:
                 group_time = groups[msg.kwargs.get('group')]
-            except KeyError:
+            except (KeyError, TypeError):
                 group_time = _GroupStats(_TimeStats(0, 0), _TimeStats(0, 0))
 
             # update the times for the group.
+            new_delta_time = combine_est(group_time.elapsed_time, action_time)
             groups[msg.kwargs.get('group')] = _GroupStats(combine_est(
-                                                 group_time.stop_time,
-                                                 stop_time,
+                                                 group_time.delta_time,
+                                                 new_delta_time,
                                                  method='max'),
-                                                 combine_est(
-                                                 group_time.start_time,
-                                                 start_time,
-                                                 method='min'))
+                                                 group_time.elapsed_time)
+
             # yield out the times for the message
-            yield _MsgStats(msg, stop_time, start_time)
+            yield _MsgStats(msg, process_time, action_time)
 
         # case 2: commands that end 'groups'
         elif msg.command in _group_end_cmds:
             group_time = groups.pop(msg.kwargs.get('group'))
 
-            start_time = group_time.start_time
-            out_time = combine_est(out_time, group_time.stop_time)
+            process_time = group_time.delta_time
+            action_time = None
 
-            yield _MsgStats(msg, out_time, start_time)
+            yield _MsgStats(msg, process_time, action_time)
 
         # case 3: commands that have stats but are not 'groupable'
         elif msg.command in _timed_cmds:
-            start_time = out_time
-            out_time = combine_est(out_time,
-                                   obj_est(msg, plan_history=plan_history))
+            process_time = obj_est(msg, plan_history=plan_history)
+            action_time = None
 
-            yield _MsgStats(msg, out_time, start_time)
+            yield _MsgStats(msg, process_time, action_time)
 
         # case 4: commands that have an associated communication time
         elif msg.command in _communication_cmds:
-            start_time = out_time
-            out_time = combine_est(out_time, _communication_time)
+            process_time = Process_time['communication']
+            action_time = None
 
-            yield _MsgStats(msg, out_time, start_time)
+            yield _MsgStats(msg, process_time, action_time)
 
-        # case 5: sleep command
+        # case 5: commands that have an associated databroker emit time
+        elif msg.command in _communication_cmds:
+            process_time = Process_time['emit']
+            action_time = None
+
+            yield _MsgStats(msg, process_time, action_time)
+
+        # case 6: sleep command
         elif msg.command is 'sleep':
-            start_time = out_time
-            out_time = combine_est(out_time, _TimeStats(msg.args[0], 0))
-            out_time = combine_est(out_time, _communication_time)
+            process_time = _TimeStats(msg.args[0], 0)
+            action_time = None
 
-            yield _MsgStats(msg, out_time, start_time)
+            yield _MsgStats(msg, process_time, action_time)
 
-        # case 6: commands that only require internal processing
+        # case 7: commands that only require internal processing
         else:
-            start_time = out_time
-            out_time = combine_est(out_time, _internal_state_time)
+            process_time = Process_time['internal']
+            action_time = None
 
-            yield _MsgStats(msg, out_time, _communication_time)
+            yield _MsgStats(msg, process_time, action_time)
+
+        # before moving to a new msg increase all group elapsed times.
+        for key in groups:
+            if msg.command in _group_end_cmds:
+                extra_time = combine_est(group_time.delta_time,
+                                         group_time.elapsed_time,
+                                         method='subtract')
+            else:
+                extra_time = process_time
+
+            prev_group = groups[key]
+            groups[key] = _GroupStats(prev_group.delta_time,
+                                      combine_est(prev_group.elapsed_time,
+                                                  extra_time))
 
 
 def combine_est(est_time_1, est_time_2, method='sum'):
@@ -382,8 +399,71 @@ def obj_est(msg, plan_history={}):
         object_est = obj_est_time(*args)
 
         return object_est
+
     else:
         return _TimeStats(0, 0)
+
+
+def est_time(plan):
+    '''A generator function that yields a cumulative estimated time for each
+    message in 'plan'.
+
+    This method yields out a named tuple with the structure (message, stop_time
+    , start_time). Where message is the message from the plan and stop/start
+    times are (est_time, std_dev) named tuples which provides the end/start
+    time for each message taking the scan start as zero. 'Wait' messages yield
+    the times for the group as a whole.
+
+    Parameters
+    ----------
+    plan : generator.
+        The bluesky plan that the estimated_time is to be estimated for.
+
+    Returns
+    -----------------
+    out_time : named tuple.
+        A named tuple containing 3 items, the message specifed in the plan and
+        the est_time/ std_dev named tuples for the stop and start times for the
+        message, 'wait' messages yield times for the group they conclude.
+    '''
+
+    # Define the cumulative timeand a group time dictionary for tracking group
+    # start times.
+    cumulative_time = _TimeStats(0, 0)
+    groups = defaultdict(_TimeStats)
+
+    for delta_time in est_delta_time(plan):
+        # if it is a groupable command
+        if delta_time.message.command in _group_start_cmds:
+            # if it is the first command for this group store the start time.
+            if delta_time.message.kwargs.get("group") not in groups.keys():
+                groups[delta_time.message.kwargs.get("group")] =\
+                    cumulative_time
+
+            start_time = cumulative_time
+            cumulative_time = combine_est(cumulative_time,
+                                          delta_time.process_time)
+            stop_time = combine_est(cumulative_time, delta_time.action_time)
+
+            yield _CumulativeStats(delta_time.message, stop_time, start_time)
+
+        # if this is a group ending command.
+        elif delta_time.message.command in _group_end_cmds:
+            start_time = groups.pop(delta_time.message.kwargs.get('group'))
+            stop_time = combine_est(start_time, delta_time.process_time)
+            cumulative_time = combine_est(cumulative_time, stop_time,
+                                          method='max')
+
+            yield _CumulativeStats(delta_time.message, stop_time, start_time)
+
+        # For all other cases.
+        else:
+            start_time = cumulative_time
+            cumulative_time = combine_est(cumulative_time,
+                                          delta_time.process_time)
+
+            yield _CumulativeStats(delta_time.message, cumulative_time,
+                                   start_time)
 
 
 def est_time_per_group(plan):
@@ -444,7 +524,8 @@ def est_time_run(plan):
             yield estimated_time
         elif estimated_time.message.command is 'close_run':
             stop_time = estimated_time.stop_time
-            yield _MsgStats(estimated_time.message, stop_time, start_time)
+            yield _CumulativeStats(estimated_time.message, stop_time,
+                                   start_time)
         else:
             yield estimated_time
 
@@ -475,14 +556,15 @@ def est_time_per_run(plan):
         concludes the run.
     '''
 
+    in_run = False
     for estimated_time in est_time_run(plan):
         if estimated_time.message.command == 'open_run':
-            inner_estimated_time = estimated_time
-            while inner_estimated_time.message.command is not 'close_run':
-                inner_estimated_time = next(est_time_run(plan))
-
-            yield inner_estimated_time
-        else:
+            in_run = True
+            yield estimated_time
+        elif estimated_time.message.command == 'close_run':
+            in_run = False
+            yield estimated_time
+        elif not in_run:
             yield estimated_time
 
 
@@ -508,27 +590,34 @@ def print_est_time(plan, est_time_func=est_time_per_run):
     run_id = -1  # This will not be used once runs can occur in parallel
 
     for estimated_time in est_time_func(plan):
-        time_string = f'   ->  start: \
-                      {estimated_time.start_time.est_time}+/-\
-                      {estimated_time.start_time.std_dev},  stop: \
-                      {estimated_time.stop_time.est_time}+/-\
-                      {estimated_time.stop_time.std_dev}'
+        time_string = f' -> start:'
+        time_string += f'{estimated_time.start_time.est_time}+/-'
+        time_string += f'{ estimated_time.start_time.std_dev}, stop:'
+        time_string += f'{estimated_time.stop_time.est_time}+/-'
+        time_string += f'{ estimated_time.stop_time.std_dev}'
 
-        if estimated_time.command == 'set':
-            print(f'move {estimated_time.message.obj.name} to \
-                  {estimated_time.message.args[0]}' + time_string)
+        if estimated_time.message.command == 'set':
+            print(f'move {estimated_time.message.obj.name:} to ' +
+                  f'{estimated_time.message.args[0]}' + time_string)
 
-        elif estimated_time.command == 'sleep':
+        elif estimated_time.message.command == 'sleep':
             print(f'wait for {estimated_time.message.args[0]}' + time_string)
 
-        elif estimated_time.command == 'close_run':
+        elif estimated_time.message.command == 'open_run':
+            run_id += 1
+            print(f'open_run {run_id}' + time_string)
+
+        elif estimated_time.message.command == 'close_run':
             print(f'close_run {run_id}' + time_string)
 
-        elif estimated_time.command == 'wait':
-            print(f'wait on group \
-                  {estimated_time.message.kwargs.get("group")}' +
+        elif estimated_time.message.command == 'wait':
+            print(f'wait on group ' +
+                  f'{estimated_time.message.kwargs.get("group")}' +
                   time_string)
 
+        elif hasattr(estimated_time.message.obj, 'name'):
+            print(f'{estimated_time.message.command} ' +
+                  f'{estimated_time.message.obj.name}' + time_string)
+
         else:
-            print(f'{estimated_time.message.command} \
-                    {estimated_time.message.obj.name}' + time_string)
+            print(f'{estimated_time.message.command}' + time_string)
