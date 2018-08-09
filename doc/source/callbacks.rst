@@ -591,6 +591,7 @@ There is also a convenience function for plotting:
 
 .. _best_effort_callback:
 
+
 Best-Effort Callback
 --------------------
 
@@ -663,6 +664,55 @@ The attribute ``bec.overplot`` can be used to control whether line plots for
 subsequent runs are plotted on the same axes. It is ``True`` by default.
 Overplotting only occurs if the names of the axes are the same from one plot
 to the next.
+
+New Best-Effort Callback
+------------------------
+
+.. warning::
+
+    This is a new, experimental feature. It will likely be changed in future
+    releases in a way that is not backend-compatible.
+    It doesn't influence BestEffortCallback.
+
+This New Best-Effort Callback are designed to realize user friendly flexible and memory efficency.
+Lower level optimize won't be covered here. User level realization will be demo below.
+
+There are two philosophys for built your ideal callback functions. One is optimize current best_effort callback to
+fit your request. Second is list your customized callback(callback_factories) by yourself.
+
+Optimized bec
+.. code-block:: python
+    from bluesky.plans import scan
+    from ophyd.sim import det1, det2, motor
+    from bluesky import RunEngine
+    from bluesky.callbacks import RunRouter
+    from bluesky.callbacks.best_effort import NewBestEffortCallback
+    RE = RunEngine({})
+
+    bec = NewBestEffortCallback()
+    bec.callback_factories.append(print)
+    #bec.callback_factories.append(cb1)
+    #bec.callback_factories.append(cb2)
+    #...
+    RE.subscribe(bec)
+
+    dets = [det1, det2]
+    RE(scan(dets, motor, 1, 5, 5))
+
+Customized callback factories
+.. code-block:: python
+    from bluesky.plans import scan
+    from ophyd.sim import det1, det2, motor
+    from bluesky import RunEngine
+    from bluesky.callbacks import RunRouter
+    from bluesky.callbacks.best_effort import NewBestEffortCallback
+    RE = RunEngine({})
+
+    my_run_router = RunRouter([print])
+    RE.subscribe(my_run_router)
+    
+    dets = [det1, det2]
+    RE(scan(dets, motor, 1, 5, 5))
 
 Peak Stats
 ++++++++++
