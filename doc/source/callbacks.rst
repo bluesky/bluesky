@@ -691,7 +691,9 @@ There are two philosophys for built your ideal callback functions. One is optimi
 fit your request. Second is list your customized callback(callback_factories) by yourself.
 
 Optimized bec
+
 .. code-block:: python
+
     from bluesky.plans import scan
     from ophyd.sim import det1, det2, motor
     from bluesky import RunEngine
@@ -710,7 +712,9 @@ Optimized bec
     RE(scan(dets, motor, 1, 5, 5))
 
 Customized callback factories
+
 .. code-block:: python
+
     from bluesky.plans import scan
     from ophyd.sim import det1, det2, motor
     from bluesky import RunEngine
