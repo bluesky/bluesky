@@ -684,6 +684,7 @@ plot area and press Shift+P. (Lowercase p is a shortcut for
 "panning" the plot.)
 
 To access the peak-fit statistics programmatically, use ``bec.peaks``.
+To access the peak-fit last 10 statistics programmatically, use ``bec.peaks_list``.
 
 .. _hints:
 
