@@ -684,13 +684,15 @@ New Best-Effort Callback
     releases in a way that is not backend-compatible.
     It doesn't influence BestEffortCallback.
 
-This New Best-Effort Callback are designed to realize user friendly flexible and memory efficency.
-Lower level optimize won't be covered here. User level realization will be demo below.
+This New Best-Effort Callback are designed to realize user flexible and memory efficency.
 
-There are two philosophys for built your ideal callback functions. One is optimize current best_effort callback to
-fit your request. Second is list your customized callback(callback_factories) by yourself.
+There are two methods to help you for built callback functions.
 
-Optimized bec
+bec optimization method
+
+You may want to use this method to implement your callbacks if you just need slight change on BestEffortCallback or you
+have limited new callback functions need to be added. You need to create a bec instance by NewBestEffortCallback which will 
+allow you ``.append()`` new callback later. Then you ``RE.subscribe(bec)``. 
 
 .. code-block:: python
 
@@ -711,7 +713,9 @@ Optimized bec
     dets = [det1, det2]
     RE(scan(dets, motor, 1, 5, 5))
 
-Customized callback factories
+Customized callback factories method
+
+You may want to use this method to implement your callbacks if you need fully customized callbacks. You will create a ``router`` by ``RunRouter()`` function. It take a list of callback functions. The you subscribe your ``rounter``
 
 .. code-block:: python
 
@@ -723,6 +727,7 @@ Customized callback factories
     RE = RunEngine({})
 
     my_run_router = RunRouter([print])
+    #my_run_router = RunRouter([callback_function_1, callback_function2, callback_function3])
     RE.subscribe(my_run_router)
     
     dets = [det1, det2]
