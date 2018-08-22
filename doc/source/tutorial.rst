@@ -44,14 +44,14 @@ Before You Begin
 
   .. code-block:: bash
 
-     python3 -m pip install --upgrade bluesky ophyd databroker ipython
+     python3 -m pip install --upgrade bluesky ophyd databroker ipython matplotlib
 
   Alternatively, if you are a conda user and you prefer conda packages, you can
   use:
 
   .. code-block:: bash
 
-    conda install -c lightsource2-tag bluesky ophyd databroker ipython
+    conda install -c lightsource2-tag bluesky ophyd databroker ipython matplotlib
 
 * Start IPython:
 
