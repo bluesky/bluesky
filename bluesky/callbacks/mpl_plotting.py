@@ -310,6 +310,14 @@ class LiveGrid(CallbackBase):
     ax : Axes, optional
         matplotib Axes; if none specified, new figure and axes are made.
 
+    x_positive: string, optional
+        Defines the positive direction of the x axis, takes the values 'right'
+        (default) or 'left'.
+
+    y_positive: string, optional
+        Defines the positive direction of the y axis, takes the values 'up'
+        (default) or 'down'.
+
     See Also
     --------
     :class:`bluesky.callbacks.LiveScatter`.
@@ -317,7 +325,7 @@ class LiveGrid(CallbackBase):
     def __init__(self, raster_shape, I, *,
                  clim=None, cmap='viridis',
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
-                 ax=None):
+                 ax=None, x_positive='right', y_positive='up'):
         if ax is None:
             fig, ax = plt.subplots()
         ax.cla()
@@ -336,6 +344,8 @@ class LiveGrid(CallbackBase):
         self.im = None
         self.extent = extent
         self.aspect = aspect
+        self.x_positive = x_positive
+        self.y_positive = y_positive
 
     def start(self, doc):
         if self.im is not None:
@@ -351,10 +361,27 @@ class LiveGrid(CallbackBase):
                             extent=extent, aspect=self.aspect,
                             origin='lower')
 
-        # make sure the 'sense' of the axes is 'y values increasing up'
+        # make sure the 'positive direction' of the axes matches what is defined in
+        #axes_positive
+        xmin, xmax = self.ax.get_ylim()
+        if ((xmin > xmax and self.x_positive == 'right') or
+                (xmax > xmin and self.x_positive == 'left')):
+            self.ax.set_xlim(xmax, xmin)
+        elif ((xmax >= xmin and self.x_positive == 'right') or
+                (xmin >= xmax and self.x_positive == 'left')):
+            self.ax.set_xlim(xmin, xmax)
+        else:
+            raise ValueError('x_positive must be either "right" or "left"')
+
         ymin, ymax = self.ax.get_ylim()
-        if ymin > ymax:
+        if ((ymin > ymax and self.y_positive == 'up') or
+                (ymax > ymin and self.y_positive == 'down')):
             self.ax.set_ylim(ymax, ymin)
+        elif ((ymax >= ymin and self.y_positive == 'up') or
+                (ymin >= ymax and self.y_positive == 'down')):
+            self.ax.set_ylim(ymin, ymax)
+        else:
+            raise ValueError('y_positive must be either "up" or "down"')
 
         self.im = im
         self.ax.set_title('scan {uid} [{sid}]'.format(sid=doc['scan_id'],

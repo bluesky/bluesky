@@ -346,7 +346,7 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
 
 
     # Convert from defaultdict to normal dict before returning.
-    return dict(obj_list)
+    return {k: sorted(v) for k, v in obj_list.items()}
 
 
 def is_parent(dev):
