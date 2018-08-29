@@ -24,6 +24,8 @@ class Publisher:
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
+    serializer: function, optional
+        optional function to serialize data. Default is pickle.dumps
 
     Example
     -------
@@ -33,7 +35,7 @@ class Publisher:
     >>> RE = RunEngine({})
     >>> publisher = Publisher('localhost:5567', RE=RE)
     """
-    def __init__(self, address, *, RE=None, zmq=None):
+    def __init__(self, address, *, RE=None, zmq=None, serializer=pickle.dumps):
         if zmq is None:
             import zmq
         if isinstance(address, str):
@@ -50,12 +52,13 @@ class Publisher:
         self._socket.connect(url)
         if RE:
             self._subscription_token = RE.subscribe(self)
+        self._serializer = serializer
 
     def __call__(self, name, doc):
         doc = copy.deepcopy(doc)
         apply_to_dict_recursively(doc, sanitize_np)
         message = bytes(self._prefix)  # making a copy
-        message += b' '.join([name.encode(), pickle.dumps(doc)])
+        message += b' '.join([name.encode(), self._serializer(doc)])
         self._socket.send(message)
 
     def close(self):
@@ -193,6 +196,8 @@ class RemoteDispatcher(Dispatcher):
     zmq_asyncio : object, optional
         By default, the 'zmq.asyncio' module is imported and used. Anything
         else mocking its interface is accepted.
+    deserializer: function, optional
+        optional function to deserialize data. Default is pickle.loads
 
     Example
     -------
@@ -204,13 +209,15 @@ class RemoteDispatcher(Dispatcher):
     >>> d.start()  # runs until interrupted
     """
     def __init__(self, address, *, hostname=None, pid=None, run_engine_id=None,
-                 loop=None, zmq=None, zmq_asyncio=None):
+                 loop=None, zmq=None, zmq_asyncio=None,
+                 deserializer=pickle.loads):
         if zmq is None:
             import zmq
         if zmq_asyncio is None:
             import zmq.asyncio as zmq_asyncio
         if isinstance(address, str):
             address = address.split(':', maxsplit=1)
+        self._deserializer = deserializer
         self.address = (address[0], int(address[1]))
         self.hostname = hostname
         self.pid = pid
@@ -248,7 +255,7 @@ class RemoteDispatcher(Dispatcher):
             RE_id = int(RE_id)
             name = name.decode()
             if self._is_our_message(hostname, pid, RE_id):
-                doc = pickle.loads(doc)
+                doc = self._deserializer(doc)
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
