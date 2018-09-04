@@ -2,6 +2,30 @@
  Release History
 =================
 
+v1.4.0 (2018-09-05)
+===================
+
+Features
+--------
+
+* Added ability to control 'sense' of
+  :class:`~bluesky.callbacks.mpl_plotting.LiveGrid` (ex "positive goes
+  down and to the right") to match the coordinates in the hutch.
+* Learned how to specify the serializer / deserializer for the zmq
+  publisher / client.
+* Promoted the inner function from :func:`~bluesky.plan_stubs.one_nd_step`
+  to a top-level plan :func:`bluesky.plan_stubs.move_per_step`.
+* Added flag to :func:`~bluesky.plans.ramp_plan` to control if a
+  data point is taken before the ramp starts.
+
+Bug Fixes
+---------
+
+* Ensure order stability in :func:`~bluesky.magics.get_labeled_devices`
+  on all supported versions of Python.
+* Fixed typos, dev requirements, and build details.
+
+
 v1.3.3 (2018-06-06)
 ===================
 
