@@ -13,7 +13,7 @@ A variety of pre-assembled plans are provided. Like sandwiches on a deli menu,
 you can use our pre-assembled plans or assemble your own from the same
 ingredients, catalogued under the heading :ref:`stub_plans` below.
 
-.. note:: 
+.. note::
 
     In the examples that follow, we will assume that you have a RunEngine
     instance named ``RE``. This may have already been configured for you if you
@@ -313,7 +313,7 @@ This is a basic example of the power of adaptive plan logic.
     RE.subscribe(bec)
 
     RE(adaptive_scan([det], 'det', motor,
-                     start=-15,
+                     start=-15.5,
                      stop=10,
                      min_step=0.01,
                      max_step=5,
