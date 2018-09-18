@@ -363,7 +363,7 @@ class LiveGrid(CallbackBase):
 
         # make sure the 'positive direction' of the axes matches what is defined in
         #axes_positive
-        xmin, xmax = self.ax.get_ylim()
+        xmin, xmax = self.ax.get_xlim()
         if ((xmin > xmax and self.x_positive == 'right') or
                 (xmax > xmin and self.x_positive == 'left')):
             self.ax.set_xlim(xmax, xmin)
