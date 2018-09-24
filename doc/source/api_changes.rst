@@ -2,6 +2,18 @@
  Release History
 =================
 
+v1.4.1 (2018-09-24)
+===================
+
+This release fixes a single regression introduced in v1.4.0. We recommend all
+users upgrade.
+
+Bug Fixes
+---------
+
+* Fix a critical typo that made
+  :class:`~bluesky.callbacks.mpl_plotting.LiveGrid` unusable.
+
 v1.4.0 (2018-09-05)
 ===================
 
