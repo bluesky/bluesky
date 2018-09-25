@@ -17,7 +17,7 @@ import time
 from warnings import warn
 import weakref
 from collections import deque
-from .core import CallbackBase, Callback, LiveTable, Table, RunRouter
+from .core import CallbackBase, LiveTable, Table, RunRouter
 from .mpl_plotting import LivePlot, LiveGrid, LiveScatter
 from .fitting import PeakStats
 
@@ -97,7 +97,7 @@ def extract_hints_info(start_doc):
     # transformations they need.
     return dim_stream, dim_fields, all_dim_fields
 
-class HintedPeakStats(Callback):
+class HintedPeakStats(CallbackBase):
     def __init__(self, start_doc, results_callback,  *args, **kwargs):
         self._start_doc = start_doc
         self._options = (args, kwargs)
@@ -140,7 +140,7 @@ class HintedPeakStats(Callback):
             results[y] = {attr: getattr(peak_stats, attr) for attr in ATTRS}
         self.results_callback(results)
 
-class HintedTable(Callback):
+class HintedTable(CallbackBase):
     def __init__(self, start_doc, *args, **kwargs):
         self._start_doc = start_doc
         self._options = (args, kwargs)
@@ -706,7 +706,7 @@ class LivePlotPlusPeaks(LivePlot):
         self.check_visibility()
         super().stop(doc)
 
-class HeadingPrinter(Callback):
+class HeadingPrinter(CallbackBase):
     def __init__(self, start_doc):
         self._start_doc = start_doc
         # Print heading.
@@ -718,7 +718,7 @@ class HeadingPrinter(Callback):
             self._start_doc['uid']))
 
 
-class BaselinePrinter(Callback):
+class BaselinePrinter(CallbackBase):
     def __init__(self, start_doc, file=sys.stdout):
         # We accept a start_doc but discard it.
         self._descriptors = {}

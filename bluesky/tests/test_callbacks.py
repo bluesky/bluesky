@@ -124,13 +124,6 @@ def test_table_warns():
                              'data_keys': {'field': {'dtype': 'array'}}})
 
 
-class SimpleTableManager:
-    def __call__(self, name, doc):
-        if name == 'start':
-            self.table = functools.partial(Table, fields=['det', 'motor'], min_width=16, extra_pad=2)
-        else:
-            self.table(name, doc)
-
 # A callback factory should take in a start_doc. All the other
 # callback-specific arguments should be set in advance using functools.partial.
 table_factory = functools.partial(

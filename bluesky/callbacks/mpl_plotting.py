@@ -3,10 +3,10 @@ from cycler import cycler
 import numpy as np
 import warnings
 
-from .core import CallbackBase, Callback, get_obj_fields
+from .core import CallbackBase, get_obj_fields
 
 
-class Line(Callback):
+class Line(CallbackBase):
     """
     Draw a matplotlib Line Arist update it for each Event.
 
@@ -40,7 +40,7 @@ class Line(Callback):
         self.x_data = []
         self.y_data = []
 
-    def bulk_event(self, doc):
+    def bulk_events(self, doc):
         x, y = self.func(doc)
         self._update(x, y)
 
@@ -74,6 +74,7 @@ class Line(Callback):
         self.ax.relim(visible_only=True)
         self.ax.autoscale_view(tight=True)
         self.ax.figure.canvas.draw_idle()
+
 
 class LivePlot(CallbackBase):
     """
