@@ -20,41 +20,35 @@ except ImportError:
                                LiveFitPlot, LiveRaster, LiveMesh)
 
 
-class Callback:
-    def __init__(self, start_doc):
-        # We just require the start_doc to ensure that the subclass requires a
-        # start_doc at __init__ time. Some subclasses may cache start_doc in
-        # instance state and refer back to it, but some may not need to, so we
-        # leave caching start_doc up to the subclass.
-        super().__init__()
-
-    def __call__(self, name, doc):
-        "Dispatch to methods expecting particular doc types."
-        return getattr(self, name)(doc)
-
-    def event(self, doc):
-        pass
-
-    def bulk_events(self, doc):
-        pass
-
-    def resource(self, doc):
-        pass
-
-    def datum(self, doc):
-        pass
-
-    def bulk_datum(self, doc):
-        pass
-
-    def descriptor(self, doc):
-        pass
-
-    def stop(self, doc):
-        pass
-
-
 class CallbackBase:
+    """
+    A convenient platform for writing stateful callbacks.
+
+    Examples
+    --------
+    A callback that prints the total number of events as they go by.
+
+    >>> class Thing(CallbackBase):
+    ...     def __init__(self, start_doc=None):
+    ...         super().__init__(start_doc)
+    ...         self.counter = 0
+    ...
+    ...     def event(self, doc):
+    ...         self.counter += 1       
+    ...         print(self.counter)
+    """
+
+    def __init__(self, start_doc=None):
+        # Callbacks meant to be used with a RunRouter may *require* a start_doc
+        # at __init__ time by making the start_doc argument required.
+        # Others may not.
+        #
+        # If a start_doc is given, it is passed to the `start` method
+        # immediately, here. If one is not given, it is up to the caller to
+        # call `start(...)` later once the RunStart document is available.
+        if start_doc is not None:
+            self.start(start_doc)
+
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
         return getattr(self, name)(doc)
@@ -311,7 +305,7 @@ class CollectThenCompute(CallbackBase):
         raise NotImplementedError("This method must be defined by a subclass.")
 
 
-class Table(Callback):
+class Table(CallbackBase):
     '''Live updating table
 
     Parameters
