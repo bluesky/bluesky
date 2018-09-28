@@ -276,7 +276,13 @@ class Grid(CallbackBase):
     '''Draw a matplotlib AxesImage artist and update it for each event.
 
     The purposes of this callback is to create (on initialization) of a
-    matplotlib 'grid' image and then update it with new data for every 'event'.
+    matplotlib grid image and then update it with new data for every `event`.
+
+    NOTE: Some important parameters are fed in through **kwargs like `extent`
+    which defines the axes min and max and `origin` which defines if the grid
+    co-ordinates start in the bottom left or top left of the plot. For more
+    info see https://matplotlib.org/tutorials/intermediate/imshow_extent.html
+    or https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow
 
     Parameters
     ----------
