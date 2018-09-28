@@ -45,8 +45,6 @@ class Publisher:
             address = address.split(':', maxsplit=1)
         self.address = (address[0], int(address[1]))
         self.RE = RE
-        self.hostname = socket.gethostname()
-        self.pid = os.getpid()
         url = "tcp://%s:%d" % self.address
         self._prefix = b'%s' % (prefix.encode())
         self._context = zmq.Context()
@@ -59,8 +57,7 @@ class Publisher:
     def __call__(self, name, doc):
         doc = copy.deepcopy(doc)
         apply_to_dict_recursively(doc, sanitize_np)
-        message = bytes(self._prefix)  # making a copy
-        message += b'\x00'.join([name.encode(), self._serializer(doc)])
+        message = b'\x00'.join([bytes(self._prefix),name.encode(), self._serializer(doc)])
         self._socket.send(message)
 
     def close(self):
@@ -210,8 +207,7 @@ class RemoteDispatcher(Dispatcher):
     >>> d.subscribe(print)
     >>> d.start()  # runs until interrupted
     """
-    def __init__(self, address, *, hostname=None, pid=None, run_engine_id=None,
-                 loop=None, zmq=None, zmq_asyncio=None, prefix='',
+    def __init__(self, address, *, loop=None, zmq=None, zmq_asyncio=None, prefix='',
                  deserializer=pickle.loads):
         self._message_prefix = prefix
         if zmq is None:
@@ -222,9 +218,6 @@ class RemoteDispatcher(Dispatcher):
             address = address.split(':', maxsplit=1)
         self._deserializer = deserializer
         self.address = (address[0], int(address[1]))
-        self.hostname = hostname
-        self.pid = pid
-        self.run_engine_id = run_engine_id
 
         if loop is None:
             loop = zmq_asyncio.ZMQEventLoop()
@@ -237,15 +230,10 @@ class RemoteDispatcher(Dispatcher):
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._task = None
 
-        def is_our_message(_hostname, _pid, _RE_id, message_prefix):
+        def is_our_message(message_prefix):
             # Close over filters and decide if this message applies to this
             # RemoteDispatcher.
-            return ((hostname is None or hostname == _hostname)
-                     and (pid is None or pid == _pid)
-                     and (run_engine_id is None or run_engine_id ==
-                          run_engine_id)
-                     and message_prefix == self._message_prefix
-                    )
+            return (message_prefix == self._message_prefix)
 
         self._is_our_message = is_our_message
 
@@ -255,14 +243,10 @@ class RemoteDispatcher(Dispatcher):
     def _poll(self):
         while True:
             message = yield from self._socket.recv()
-            prefix, hostname, pid, RE_id, name, doc = message.split(b'\x00', 5)
+            prefix, hostname, pid, RE_id, name, doc = message.split(b'\x00', 2)
             prefix = prefix.decode()
-            hostname = hostname.decode()
-            pid = int(pid)
-            RE_id = int(RE_id)
             name = name.decode()
-            if self._is_our_message(hostname, pid, RE_id, message_prefix=prefix):
-                doc = pickle.loads(doc)
+            if self._is_our_message(message_prefix=prefix):
                 doc = self._deserializer(doc)
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
