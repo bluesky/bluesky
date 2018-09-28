@@ -48,10 +48,7 @@ class Publisher:
         self.hostname = socket.gethostname()
         self.pid = os.getpid()
         url = "tcp://%s:%d" % self.address
-        self._prefix = b'%s\x00%s\x00%d\x00%d\x00' % (prefix.encode(),
-                                                      self.hostname.encode(),
-                                                      self.pid, id(RE))
-
+        self._prefix = b'%s' % (prefix.encode())
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
         self._socket.connect(url)
