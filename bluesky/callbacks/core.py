@@ -5,6 +5,7 @@ from itertools import count
 import warnings
 from collections import deque, namedtuple, OrderedDict, ChainMap
 import time as ttime
+import os
 
 from datetime import datetime
 import numpy as np
@@ -351,3 +352,46 @@ class LiveTable(CallbackBase):
     def _print(self, out_str):
         self._rows.append(out_str)
         self._out(out_str)
+
+
+class Retrieve(CallbackBase):
+    def __init__(self, root_map=None, handler_reg=None):
+        if root_map is None:
+            root_map = {}
+        if handler_reg is None:
+            handler_reg = {}
+        self.resources = None
+        self.handlers = None
+        self.datums = None
+        self.root_map = root_map
+        self.handler_reg = handler_reg
+
+    def start(self, doc):
+        self.resources = {}
+        self.handlers = {}
+        self.datums = {}
+
+    def resource(self, resource):
+        self.resources[resource['uid']] = resource
+        handler = self.handler_reg[resource['spec']]
+
+        key = (str(resource['uid']), handler.__name__)
+
+        kwargs = resource['resource_kwargs']
+        rpath = resource['resource_path']
+        root = resource.get('root', '')
+        root = self.root_map.get(root, root)
+        if root:
+            rpath = os.path.join(root, rpath)
+        ret = handler(rpath, **kwargs)
+        self.handlers[key] = ret
+
+    def datum(self, doc):
+        self.datums[doc['datum_id']] = doc
+
+    def retrieve(self, datum_id):
+        doc = self.datums[datum_id]
+        resource = self.resources[doc['resource']]
+        handler_class = self.handler_reg[resource]
+        key = (str(resource['uid']), handler_class.__name__)
+        return self.handlers[key](**doc['datum_kwargs'])
