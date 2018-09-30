@@ -392,6 +392,6 @@ class Retrieve(CallbackBase):
     def retrieve(self, datum_id):
         doc = self.datums[datum_id]
         resource = self.resources[doc['resource']]
-        handler_class = self.handler_reg[resource]
+        handler_class = self.handler_reg[resource['spec']]
         key = (str(resource['uid']), handler_class.__name__)
         return self.handlers[key](**doc['datum_kwargs'])

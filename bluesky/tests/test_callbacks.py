@@ -1,16 +1,20 @@
 from collections import defaultdict
+
+from bluesky.callbacks.core import Retrieve
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.examples import stepscan
 from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
 from bluesky.object_plans import AbsScanPlan
-from bluesky.preprocessors import run_wrapper, subs_wrapper
-from bluesky.plan_stubs import pause
+from bluesky.preprocessors import run_wrapper, subs_wrapper, stage_decorator, \
+    run_decorator
+from bluesky.plan_stubs import pause, trigger_and_read, subscribe, stage
 import bluesky.plans as bp
 from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
                                LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
 from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks import CallbackBase
+from bluesky.tests.conftest import NumpySeqHandler
 from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
 import signal
 import threading
@@ -449,3 +453,17 @@ def test_plotting_hints(RE, hw, db):
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
                  True, hw.motor3, -2, 0, 2, True))
     assert dc.start[-1]['hints'] == hint
+
+
+def test_retrieve(RE, hw):
+    rt = Retrieve(handler_reg={'NPY_SEQ': NumpySeqHandler})
+    RE.subscribe(rt)
+
+    @stage_decorator([hw.img])
+    @run_decorator()
+    def plan(dets):
+        data_id = yield from trigger_and_read(dets)
+        data = rt.retrieve(data_id['img']['value'])
+        np.testing.assert_allclose(data, np.ones((10, 10)))
+
+    RE(plan([hw.img]))
