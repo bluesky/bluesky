@@ -1,4 +1,4 @@
-from .mpl_plotting import Grid
+from .mpl_plotting import Grid, Path
 import numpy as np
 
 
@@ -94,7 +94,14 @@ def grid_factory(start_doc):
                        extent[0][0] - y_step / 2,
                        extent[0][1] + y_step / 2]
 
+    # This section is where the scan path is defined, if the x_path and y_path
+    # are 'None' it is not overlayed.
+    # NOTE: we need to decide how to pass this info down to here.
+    x_path = None  # This should be able to take in the path info here.
+    y_path = None  # This should be able to take in the path info here.
+
     for I_name, ax in zip(I_names, axes):
+        # This section defines the function for the grid callback
         def func(self, bulk_event):
             '''This functions takes in a bulk event and returns x_coords,
             y_coords, I_vals lists.
@@ -120,8 +127,22 @@ def grid_factory(start_doc):
 
             return x_coords, y_coords, I_vals  # lists to be returned
 
-            grid_callback = Grid(start_doc, func, self.grid_shape, ax=ax,
-                                 extent=adjusted_extent, origin=self.origin)
-            callbacks.append(grid_callback)
+        grid_callback = Grid(start_doc, func, grid_shape, ax=ax,
+                             extent=adjusted_extent, origin=origin)
+        callbacks.append(grid_callback)
+
+        # This section defines the callback for the overlayed path.
+        def path_func(self, bulk_event):
+            '''This functions takes in a bulk event and returns x_vals, y_vals
+            lists.
+            '''
+            x_vals = bulk_event['data'][dim_names[1]]
+            y_vals = bulk_event['data'][dim_names[0]]
+
+            return x_vals, y_vals
+
+        if x_path is not None:
+            path_callback = Path(start_doc, path_func, x_path, y_path, ax=ax)
+            callbacks.append(path_callback)
 
     return callbacks
