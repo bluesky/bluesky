@@ -82,13 +82,13 @@ def grid_factory(start_doc):
     I_names = [c for c in hinted_fields(start_doc)
                if c not in all_dim_names]
     extent = start_doc['extents']
-    grid_shape = start_doc['shape']
+    shape = start_doc['shape']
     origin = 'lower'
 
     # This section adjusts extents so that the values are centered on the grid
     # pixels
     data_range = np.array([float(np.diff(e)) for e in extent])
-    y_step, x_step = data_range / [max(1, s - 1) for s in grid_shape]
+    y_step, x_step = data_range / [max(1, s - 1) for s in shape]
     adjusted_extent = [extent[1][0] - x_step / 2,
                        extent[1][1] + x_step / 2,
                        extent[0][0] - y_step / 2,
@@ -109,8 +109,7 @@ def grid_factory(start_doc):
             # start by working out the scaling between grid pixels and axes
             # units
             data_range = np.array([float(np.diff(e)) for e in self.extent])
-            y_step, x_step = data_range / [max(1, s - 1) for s in
-                                           self.grid_shape]
+            y_step, x_step = data_range / [max(1, s - 1) for s in self.shape]
             x_min = self.extent[0]
             y_min = self.extent[2]
             # define the lists of relevant data from the bulk_event
@@ -127,7 +126,7 @@ def grid_factory(start_doc):
 
             return x_coords, y_coords, I_vals  # lists to be returned
 
-        grid_callback = Grid(start_doc, func, grid_shape, ax=ax,
+        grid_callback = Grid(start_doc, func, shape, ax=ax,
                              extent=adjusted_extent, origin=origin)
         callbacks.append(grid_callback)
 
