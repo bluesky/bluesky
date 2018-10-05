@@ -671,15 +671,15 @@ def plot_peak_stats(peak_stats, ax=None):
     return arts
 
 
-class Path(CallbackBase):
+class Trajectory(CallbackBase):
     '''Draw a matplotlib Line2D artist and update it for each event.
 
     The purposes of this callback is to create (on initialization) a
-    matplotlib plot indicating the path that a scan will take. During the scan
-    it should also indicate when a point has been taken by removing the point
-    from the path. A second Line2D artist is also included that indicates the
-    actual points that the path took  and then update it with new data for
-    every `event`.
+    matplotlib plot indicating the trajectory that a scan will take. During
+    the scan it should also indicate when a point has been taken by removing
+    the point from the trajectory. A second Line2D artist is also included that
+    indicates the actual points that the trajectory took and then update it
+    with new data for every `event`.
 
       Parameters
     ----------
@@ -694,10 +694,10 @@ class Path(CallbackBase):
         one new point, no new points or multiple new points to the 'completed'
         plot and remove 0, 1 or more points from the 'future' path.
 
-    x_path, y_path : Lists
+    x_trajectory, y_trajectory : Lists
         Two lists ( `'x_vals'` and `'y_vals'`) which are a list of succesive
-        x_vals or y_vals indicating the path to be taken. The length of the two
-        lists should be identical.
+        x_vals or y_vals indicating the trajectory to be taken. The length of
+        the two lists should be identical.
 
     single_func : callback, optional
         This parameter is available as a perfomrance operation. For most uses,
@@ -711,18 +711,19 @@ class Path(CallbackBase):
     **kwargs
         Passed through to :meth:`Axes.imshow` to style the AxesImage object.
     '''
-    def __init__(self, start_doc, func, x_path, y_path, *, single_func=None,
-                 ax=None, **kwargs):
+    def __init__(self, start_doc, func, x_trajectory, y_trajectory, *,
+                 single_func=None, ax=None, **kwargs):
         self.func = func
-        self.x_path = x_path
-        self.y_path = y_path
+        self.x_trajectory = x_trajectory
+        self.y_trajectory = y_trajectory
         self.single_func = single_func
         if ax is None:
             _, ax = plt.subplots()
         self.ax = ax
         self.x_past = []
         self.y_past = []
-        self.path = self.ax.plot(self.x_path, self.y_path, **kwargs)
+        self.trajectory = self.ax.plot(self.x_trajectory, self.y_trajectory,
+                                       **kwargs)
         self.past = self.ax.plot(self.x_past, self.y_past, **kwargs)
 
     def bulk_events(self, doc):
@@ -740,7 +741,7 @@ class Path(CallbackBase):
         Returns
         -------
 
-        x_vals, y_valss : Lists
+        x_vals, y_vals : Lists
             These are lists of x values and y values arising from the bulk
             event.
         '''
