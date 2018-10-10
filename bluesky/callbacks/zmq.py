@@ -36,7 +36,7 @@ class Publisher:
     >>> RE = RunEngine({})
     >>> publisher = Publisher('localhost:5567', RE=RE)
     """
-    def __init__(self, address, *, RE=None, zmq=None, prefix='',serializer=pickle.dumps):
+    def __init__(self, address, *, RE=None, zmq=None, prefix='', serializer=pickle.dumps):
         if zmq is None:
             import zmq
         if isinstance(address, str):
@@ -55,7 +55,7 @@ class Publisher:
     def __call__(self, name, doc):
         doc = copy.deepcopy(doc)
         apply_to_dict_recursively(doc, sanitize_np)
-        message = b'\x00'.join([bytes(self._prefix),name.encode(), self._serializer(doc)])
+        message = b'\x00'.join([bytes(self._prefix), name.encode(), self._serializer(doc)])
         self._socket.send(message)
 
     def close(self):
