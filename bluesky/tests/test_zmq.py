@@ -118,7 +118,7 @@ def test_zmq_components():
 
     repr(d)
 
-def test_zmq_prefix(hx, RE):
+def test_zmq_prefix(hw, RE):
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
