@@ -79,45 +79,6 @@ def test_zmq(RE, hw):
     assert remote_accumulator == local_accumulator
 
 
-def test_zmq_components():
-    # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
-    # process, which coverage misses.
-    pid = os.getpid()
-
-    def delayed_sigint(delay):
-        time.sleep(delay)
-        os.kill(os.getpid(), signal.SIGINT)
-
-    proxy = Proxy(5567, 5568)
-    assert not proxy.closed
-    threading.Thread(target=delayed_sigint, args=(5,)).start()
-    try:
-        proxy.start()
-        # delayed_sigint stops the proxy
-    except KeyboardInterrupt:
-        ...
-    assert proxy.closed
-    with pytest.raises(RuntimeError):
-        proxy.start()
-
-    proxy = Proxy()  # random port
-    threading.Thread(target=delayed_sigint, args=(5,)).start()
-    try:
-        proxy.start()
-        # delayed_sigint stops the proxy
-    except KeyboardInterrupt:
-        ...
-
-    repr(proxy)
-
-    # test that two ways of specifying address are equivalent
-    d = RemoteDispatcher('localhost:5555')
-    assert d.address == ('localhost', 5555)
-    d = RemoteDispatcher(('localhost', 5555))
-    assert d.address == ('localhost', 5555)
-
-    repr(d)
-
 def test_zmq_prefix(hw, RE):
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
@@ -131,7 +92,7 @@ def test_zmq_prefix(hw, RE):
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
 
-    p = Publisher('127.0.0.1:5567', RE=RE, prefix = "sb")  # noqa
+    p = Publisher('127.0.0.1:5567', RE=RE, prefix="sb")  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
@@ -143,7 +104,7 @@ def test_zmq_prefix(hw, RE):
             print('putting ', name, 'in queue')
             queue.put((name, doc))
 
-        d = RemoteDispatcher('127.0.0.1:5568', prefix = "sb")
+        d = RemoteDispatcher('127.0.0.1:5568', prefix="sb")
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
         d.loop.call_later(9, d.stop)
@@ -184,6 +145,7 @@ def test_zmq_prefix(hw, RE):
     proxy_proc.join()
     dispatcher_proc.join()
     assert remote_accumulator == local_accumulator
+
 
 def test_zmq_no_RE(RE):
     # COMPONENT 1
@@ -319,3 +281,41 @@ def test_zmq_no_RE_newserializer(RE):
     assert remote_accumulator == local_accumulator
 
 
+def test_zmq_components():
+    # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
+    # process, which coverage misses.
+    pid = os.getpid()
+
+    def delayed_sigint(delay):
+        time.sleep(delay)
+        os.kill(os.getpid(), signal.SIGINT)
+
+    proxy = Proxy(5567, 5568)
+    assert not proxy.closed
+    threading.Thread(target=delayed_sigint, args=(5,)).start()
+    try:
+        proxy.start()
+        # delayed_sigint stops the proxy
+    except KeyboardInterrupt:
+        ...
+    assert proxy.closed
+    with pytest.raises(RuntimeError):
+        proxy.start()
+
+    proxy = Proxy()  # random port
+    threading.Thread(target=delayed_sigint, args=(5,)).start()
+    try:
+        proxy.start()
+        # delayed_sigint stops the proxy
+    except KeyboardInterrupt:
+        ...
+
+    repr(proxy)
+
+    # test that two ways of specifying address are equivalent
+    d = RemoteDispatcher('localhost:5555')
+    assert d.address == ('localhost', 5555)
+    d = RemoteDispatcher(('localhost', 5555))
+    assert d.address == ('localhost', 5555)
+
+    repr(d)
