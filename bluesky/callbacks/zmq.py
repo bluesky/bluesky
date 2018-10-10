@@ -37,8 +37,6 @@ class Publisher:
     >>> publisher = Publisher('localhost:5567', RE=RE)
     """
     def __init__(self, address, *, RE=None, zmq=None, prefix='',serializer=pickle.dumps):
-        if prefix is None:
-            prefix = ''
         if zmq is None:
             import zmq
         if isinstance(address, str):
@@ -243,7 +241,7 @@ class RemoteDispatcher(Dispatcher):
     def _poll(self):
         while True:
             message = yield from self._socket.recv()
-            prefix, hostname, pid, RE_id, name, doc = message.split(b'\x00', 2)
+            prefix, name, doc = message.split(b'\x00', 2)
             prefix = prefix.decode()
             name = name.decode()
             if self._is_our_message(message_prefix=prefix):
