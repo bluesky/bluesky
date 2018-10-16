@@ -343,6 +343,125 @@ class LiveMesh(LiveScatter):
         super().__init__(*args, **kwargs)
 
 
+class Grid(CallbackBase):
+    '''Draw a matplotlib AxesImage artist and update it for each event.
+    The purposes of this callback is to create (on initialization) of a
+    matplotlib grid image and then update it with new data for every `event`.
+    NOTE: Some important parameters are fed in through **kwargs like `extent`
+    which defines the axes min and max and `origin` which defines if the grid
+    co-ordinates start in the bottom left or top left of the plot. For more
+    info see https://matplotlib.org/tutorials/intermediate/imshow_extent.html
+    or https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow
+
+    Parameters
+    ----------
+    start_doc: dict
+        not used; accepted and dicarded to satisfy callback_factory API.
+    func : callable
+        This must accept a BulkEvent and return three lists of floats (x
+        grid co-ordinates, y grid co-ordinates and grid position intensity
+        values). The three lists must contain an equal number of items, but
+        that number is arbitrary. That is, a given document may add one new
+        point, no new points or multiple new points to the plot.
+    shape : tuple
+        The (row, col) shape of the grid.
+    single_func : callback, optional
+        This parameter is available as a perfomrance operation. For most uses,
+        ``func`` is sufficient. This is like ``func``, but it gets an Event
+        instead of a BulkEvent. If ``None`` is given, Events are up-cast into
+        BulkEvents and handed to ``func``.
+    ax : matplotlib Axes, optional.
+        if ``None``, a new Figure and Axes are created.
+    **kwargs
+        Passed through to :meth:`Axes.imshow` to style the AxesImage object.
+    '''
+
+    def __init__(self, start_doc, func, shape, *, single_func=None,
+                 ax=None, **kwargs):
+        self.func = func
+        self.shape = shape
+        self.single_func = single_func
+        if ax is None:
+            _, ax = plt.subplots()
+        self.ax = ax
+        self.grid_data = np.full(self.shape, np.nan)
+        self.image, = ax.imshow(self.grid_data, **kwargs)
+
+    def bulk_events(self, doc):
+        '''
+        Takes in a bulk_events document and updates grid_data with the values
+        returned from self.func(doc)
+
+        Parameters
+        ----------
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the bulk event.
+
+        Returns
+        -------
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the bulk event.
+        '''
+        x_coords, y_coords, I_vals = self.func(doc)
+        self._update(x_coords, y_coords, I_vals)
+
+    def event(self, doc):
+        '''
+        Takes in a event documents and updates grid_data with the values
+        returned from self.single_func(doc) or, if it is `None`, self.func(doc)
+
+        Parameters
+        ----------
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the event.
+
+        Returns
+        -------
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the event.
+        '''
+
+        if self.single_func is not None:
+            x_coords, y_coords, I_vals = self.single_func(doc)
+        else:
+            bulk_doc = event2bulk_event(doc)
+            x_coords, y_coords, Ivals = self.func(bulk_doc)
+
+        self._update(x_coords, y_coords, I_vals)
+
+    def _update(self, x_coords, y_coords, I_vals):
+        '''
+        Updates self.grid_data with the values from the lists x_coords,
+        y_coords, I_vals.
+
+        Parameters
+        ----------
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the event. The length of all three lists must
+            be the same.
+        '''
+
+        if not len(x_coords) == len(y_coords) == len(I_vals):
+            raise ValueError("User function is expected to provide the same "
+                             "number of x, y and I points. Got {0} x points, "
+                             "{1} y points and {2} I values."
+                             "".format(len(x_coords), len(y_coords),
+                                       len(I_vals)))
+
+        if not x_coords:
+            # No new data, Short-circuit.
+            return
+
+        # Update grid_data and the plot.
+        self.grid_data[x_coords, y_coords] = I_vals
+        self.image.set_array(self.grid_data)
+
+
 class LiveGrid(CallbackBase):
     """Plot gridded 2D data in a "heat map".
 
@@ -639,3 +758,158 @@ def plot_peak_stats(peak_stats, ax=None):
     legend = ax.legend(loc='best')
     arts.update({'points': points, 'vlines': vlines, 'legend': legend})
     return arts
+
+
+class Trajectory(CallbackBase):
+    '''Draw a matplotlib Line2D artist and update it for each event.
+    The purposes of this callback is to create (on initialization) a
+    matplotlib plot indicating the trajectory that a scan will take. During
+    the scan it should also indicate when a point has been taken by removing
+    the point from the trajectory. A second Line2D artist is also included that
+    indicates the actual points that the trajectory took and then update it
+    with new data for every `event`.
+
+    Parameters
+    ----------
+    start_doc: dict
+        not used; accepted and dicarded to satisfy callback_factory API.
+    func : callable
+        This must accept a BulkEvent and return two lists of floats (x
+        values and y values). The two lists must contain an equal number of
+        items, but that number is arbitrary. That is, a given document may add
+        one new point, no new points or multiple new points to the 'completed'
+        plot and remove 0, 1 or more points from the 'future' path.
+    x_trajectory, y_trajectory : Lists
+        Two lists ( `'x_vals'` and `'y_vals'`) which are a list of succesive
+        x_vals or y_vals indicating the trajectory to be taken. The length of
+        the two lists should be identical.
+    single_func : callback, optional
+        This parameter is available as a perfomrance operation. For most uses,
+        ``func`` is sufficient. This is like ``func``, but it gets an Event
+        instead of a BulkEvent. If ``None`` is given, Events are up-cast into
+        BulkEvents and handed to ``func``.
+    ax : matplotlib Axes, optional.
+        if ``None``, a new Figure and Axes are created.
+    **kwargs
+        Passed through to :meth:`Axes.imshow` to style the AxesImage object.
+    '''
+
+    def __init__(self, start_doc, func, x_trajectory, y_trajectory, *,
+                 single_func=None, ax=None, **kwargs):
+        self.func = func
+        self.x_trajectory = x_trajectory
+        self.y_trajectory = y_trajectory
+        self.single_func = single_func
+        if ax is None:
+            _, ax = plt.subplots()
+        self.ax = ax
+        self.x_past = []
+        self.y_past = []
+        self.trajectory = self.ax.plot(self.x_trajectory, self.y_trajectory,
+                                       **kwargs)
+        self.past = self.ax.plot(self.x_past, self.y_past, **kwargs)
+
+    def bulk_events(self, doc):
+        '''Takes in a bulk_events document and updates x_past and y_past with
+        the values returned from self.func(doc).
+
+        Parameters
+        ----------
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the bulk event.
+
+        Returns
+        -------
+        x_vals, y_vals : Lists
+            These are lists of x values and y values arising from the bulk
+            event.
+        '''
+
+        x_vals, y_vals = self.func(doc)
+        self._update(x_vals, y_vals)
+
+    def event(self, doc):
+        '''
+        Takes in a event documents and returns the values returned from
+        self.single_func(doc) or, if it is `None`, self.func(doc).
+
+        Parameters
+        ----------
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the event.
+
+        Returns
+        -------
+        x_vals, y_vals : Lists
+            These are lists of x values and y values arising
+            from the event.
+        '''
+
+        if self.single_func is not None:
+            x_vals, y_vals = self.single_func(doc)
+        else:
+            bulk_doc = event2bulk_event(doc)
+            x_vals, y_vals = self.func(bulk_doc)
+        self._update(x_vals, y_vals)
+
+    def _update(self, x_vals, y_vals):
+        '''
+        Updates self.x_past and self.y_past with the values from the lists
+        x_coords, y_coords.
+
+        Parameters
+        ----------
+        x_vals, y_vals : Lists
+            These are lists of x co-ordinate and y co-ordinate values arising
+            from the event. The length of all three lists must be the same.
+        '''
+
+        if not len(x_vals) == len(y_vals):
+            raise ValueError("User function is expected to provide the same "
+                             "number of x and y points. Got {0} x points "
+                             "and {1} y points."
+                             "".format(len(x_vals), len(y_vals)))
+
+        if not x_vals:
+            # No new data, Short-circuit.
+            return
+
+        # Update grid_data and the plot.
+        for x_val, y_val in zip(x_vals, y_vals):
+            # add the new values to the past lists
+            self.x_past.extend(x_val)
+            self.y_past.extend(y_val)
+            # remove the first item from the path lists
+            del self.x_path.pop[0]
+            del self.y_path.pop[0]
+
+        self.path.set_data(self.x_path, self.y_path)
+        self.past.set_data(self.x_past, self.y_past)
+
+
+def event2bulk_event(doc):
+    '''Make a BulkEvent from this Event.
+
+    Parameters
+    ----------
+    doc : dict
+        The event dictionary that contains the 'data' and 'timestamps'
+        associated with the bulk event.
+
+    Returns
+    -------
+    bulk_event : dict
+        The bulk event dictionary that contains the 'data' and 'timestamp'
+        associated with the event.
+    '''
+
+    bulk_event = doc.copy()
+    bulk_event['data'] = {k: np.expand_dims(v, 0)
+                          for k, v in doc['data'].items()}
+
+    bulk_event['timestamps'] = {k: np.expand_dims(v, 0)
+                                for k, v in doc['timestamps'].items()}
+
+    return bulk_event
