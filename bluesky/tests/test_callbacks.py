@@ -463,7 +463,7 @@ def test_retrieve(RE, hw):
     @run_decorator()
     def plan(dets):
         data_id = yield from trigger_and_read(dets)
-        data = rt.retrieve(data_id['img']['value'])
+        data = rt.retrieve_datum(data_id['img']['value'])
         np.testing.assert_allclose(data, np.ones((10, 10)))
 
     RE(plan([hw.img]))

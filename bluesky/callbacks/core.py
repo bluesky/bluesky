@@ -1,6 +1,7 @@
 """
 Useful callbacks for the Run Engine
 """
+import copy
 from itertools import count
 import warnings
 from collections import deque, namedtuple, OrderedDict, ChainMap
@@ -10,6 +11,9 @@ import os
 from datetime import datetime
 import numpy as np
 import logging
+
+from databroker._core import _sanitize
+
 from ..utils import ensure_uid
 logger = logging.getLogger(__name__)
 
@@ -355,7 +359,7 @@ class LiveTable(CallbackBase):
 
 
 class Retrieve(CallbackBase):
-    def __init__(self, root_map=None, handler_reg=None):
+    def __init__(self, handler_reg, root_map=None):
         if root_map is None:
             root_map = {}
         if handler_reg is None:
@@ -389,9 +393,37 @@ class Retrieve(CallbackBase):
     def datum(self, doc):
         self.datums[doc['datum_id']] = doc
 
-    def retrieve(self, datum_id):
+    def retrieve_datum(self, datum_id):
         doc = self.datums[datum_id]
         resource = self.resources[doc['resource']]
         handler_class = self.handler_reg[resource['spec']]
         key = (str(resource['uid']), handler_class.__name__)
         return self.handlers[key](**doc['datum_kwargs'])
+
+    def fill_event(self, event, fields=True, inplace=True):
+        if fields is True:
+            fields = set(event['data'])
+        elif fields is False:
+            # if no fields, we got nothing to do!
+            # just return back as-is
+            return event
+        elif fields:
+            fields = set(fields)
+
+        if not inplace:
+            ev = _sanitize(event)
+            ev = copy.deepcopy(ev)
+        else:
+            ev = event
+        data = ev['data']
+        filled = ev['filled']
+        for k in set(data) & fields:
+            # Try to fill the data
+            try:
+                v = self.retrieve_datum(data[k])
+                data[k] = v
+                filled[k] = True
+            # If retrieve fails keep going
+            except (ValueError, KeyError):
+                pass
+        return event
