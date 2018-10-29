@@ -3,11 +3,10 @@ Useful callbacks for the Run Engine
 """
 from itertools import count
 import warnings
-from collections import deque, namedtuple, OrderedDict, ChainMap
+from collections import deque, namedtuple, OrderedDict
 import time as ttime
 
 from datetime import datetime
-import numpy as np
 import logging
 from ..utils import ensure_uid
 logger = logging.getLogger(__name__)
