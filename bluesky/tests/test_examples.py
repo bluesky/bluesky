@@ -4,7 +4,7 @@ from bluesky.examples import (simple_scan, sleepy, wait_one,
                               checkpoint_forever, simple_scan_saving,
                               stepscan, fly_gen, conditional_break,
                               )
-from bluesky.callbacks import LivePlot
+from bluesky.callbacks.mpl_plotting import LivePlot
 from bluesky import (Msg, IllegalMessageSequence,
                      RunEngineInterrupted, FailedStatus)
 import bluesky.plan_stubs as bps
