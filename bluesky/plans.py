@@ -528,7 +528,7 @@ def tune_centroid(
         step_factor=3.0,
         snake=False,
         *, md=None):
-    """
+    r"""
     plan: tune a motor to the centroid of signal(motor)
 
     Initially, traverse the range from start to stop with
