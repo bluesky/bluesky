@@ -5,6 +5,7 @@ import os
 import pickle
 import socket
 import time
+import warnings
 from ..run_engine import Dispatcher, DocumentNames
 from ..utils import apply_to_dict_recursively, sanitize_np
 
@@ -19,6 +20,7 @@ class Publisher:
         Address of a running 0MQ proxy, given either as a string like
         ``'127.0.0.1:5567'`` or as a tuple like ``('127.0.0.1', 5567)``
     RE : ``bluesky.RunEngine``, optional
+        DEPRECATED.
         RunEngine to which the Publisher will be automatically subscribed
         (and, more importantly, unsubscribed when it is closed).
     zmq : object, optional
@@ -32,10 +34,17 @@ class Publisher:
 
     Publish from a RunEngine to a Proxy running on localhost on port 5567.
 
+    >>> publisher = Publisher('localhost:5567')
     >>> RE = RunEngine({})
-    >>> publisher = Publisher('localhost:5567', RE=RE)
+    >>> RE.subscribe(publisher)
     """
     def __init__(self, address, *, RE=None, zmq=None, serializer=pickle.dumps):
+        if RE is not None:
+            warnings.warn("The RE argument to Publisher is deprecated and "
+                          "will be removed in a future release of bluesky. "
+                          "Update your code to subscribe this Publisher "
+                          "instance to (and, if needed, unsubscribe from) to "
+                          "the RunEngine manually.")
         if zmq is None:
             import zmq
         if isinstance(address, str):

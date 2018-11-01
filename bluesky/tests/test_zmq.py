@@ -24,7 +24,8 @@ def test_zmq(RE, hw):
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
 
-    p = Publisher('127.0.0.1:5567', RE=RE)  # noqa
+    p = Publisher('127.0.0.1:5567')  # noqa
+    RE.subscribe(p)
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
