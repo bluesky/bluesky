@@ -1,3 +1,4 @@
+import sys
 from collections import defaultdict
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.examples import stepscan
@@ -19,6 +20,7 @@ import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 from sqlite3 import InterfaceError
+import subprocess
 
 
 def exception_raiser(name, doc):
@@ -449,3 +451,24 @@ def test_plotting_hints(RE, hw, db):
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
                  True, hw.motor3, -2, 0, 2, True))
     assert dc.start[-1]['hints'] == hint
+
+
+@pytest.mark.skipif(sys.version_info < (3, 6),
+                    reason="requires python3.6 or higher")
+def test_optional_matplotlib():
+    test_src = """
+import sys
+from importlib.abc import Finder
+
+
+class MyFinder(Finder):
+    def find_module(self, name, path):
+        if name.startswith('matplotlib'):
+            raise ModuleNotFoundError
+
+sys.meta_path.insert(0, MyFinder())
+
+from bluesky.callbacks import CallbackBase
+sys.exit(int('matplotlib' in sys.modules))
+"""
+    assert subprocess.run([sys.executable, '-c', test_src]).returncode == 0
