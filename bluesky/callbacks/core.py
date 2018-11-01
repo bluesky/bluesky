@@ -12,12 +12,49 @@ import logging
 from ..utils import ensure_uid
 logger = logging.getLogger(__name__)
 
-# back-compat
-try:
-    import matplotlib
-except ImportError:
-    from .mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
-                               LiveFitPlot, LiveRaster, LiveMesh)
+
+WARNING_TEXT = (
+    "In a future version of bluesky, {} will not be importable from "
+    "bluesky.callbacks.core or bluesky.callbacks. Instead, import it from "
+    "bluesky.callbacks.mpl_plotting. This change allows other callbacks, "
+    "unrelated to matplotlib, to be imported and used without importing "
+    "matplotlib.pyplot or configuring a DISPLAY.")
+
+
+def LivePlot(*args, **kwargs):
+    warnings.warn(WARNING_TEXT.format('LivePlot')
+    from .mpl_plotting import LivePlot
+    return LivePlot(*args, **kwargs)
+
+
+def LiveScatter(*args, **kwargs):
+    warnings.warn(WARNING_TEXT.format('LiveScatter')
+    from .mpl_plotting import LiveScatter
+    return LiveScatter(*args, **kwargs)
+
+
+def LiveGrid(*args, **kwargs):
+    warnings.warn(WARNING_TEXT.format('LiveGrid')
+    from .mpl_plotting import LiveGrid
+    return LiveGrid(*args, **kwargs)
+
+
+def LiveFitPlot(*args, **kwargs):
+    warnings.warn(WARNING_TEXT.format('LiveFitPlot')
+    from .mpl_plotting import LiveFitPlot
+    return LiveFitPlot(*args, **kwargs)
+
+
+def LiveRaster(*args, **kwargs):
+    warnings.warn(WARNING_TEXT.format('LiveRaster')
+    from .mpl_plotting import LiveRaster
+    return LiveRaster(*args, **kwargs)
+
+
+def LiveMesh(*args, **kwargs):
+    warnings.warn(WARNING_TEXT.format('LiveMesh')
+    from .mpl_plotting import LiveMesh
+    return LiveMesh(*args, **kwargs)
 
 
 class CallbackBase:
