@@ -23,9 +23,8 @@ def _deprecate_import_name(name):
         "matplotlib.pyplot or configuring a DISPLAY."
     ).format(name)
     def f(*args, **kwargs):
-        from warnings import warn
         # per bluesky convention use UserWarning instead of DeprecationWarning
-        warn(wmsg, UserWarning)
+        warnings.warn(wmsg, UserWarning)
         from . import mpl_plotting
         cls = getattr(mpl_plotting, name)
         return cls(*args, **kwargs)
