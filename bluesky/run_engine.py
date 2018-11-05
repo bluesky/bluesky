@@ -91,6 +91,10 @@ _call_sig = Signature(
      Parameter('subs', Parameter.POSITIONAL_ONLY, default=None),
      Parameter('metadata_kw', Parameter.VAR_KEYWORD)])
 
+#Default scan_id_source
+def default_scan_id_source(md):
+    scan_id = md.get('scan_id', 0) + 1
+    md['scan_id'] = scan_id
 
 class RunEngine:
     """The Run Engine execute messages and emits Documents.
@@ -131,6 +135,11 @@ class RunEngine:
         Function should raise if md is invalid. What that means is
         completely up to the user. The function's return value is
         ignored.
+
+    scan_id_source : callable, optional
+        a function that will be use to calculate scan_id. Defaultis increment
+        scan_id 1 each time. However you could pass in a bespoken function to
+        get a complex scan_id
 
     Attributes
     ----------
@@ -203,7 +212,8 @@ class RunEngine:
                              'remove_suspender']
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
-                 context_managers=None, md_validator=None):
+                 context_managers=None, md_validator=None, 
+                 scan_id_source=default_scan_id_source):
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
@@ -227,6 +237,7 @@ class RunEngine:
         if md_validator is None:
             md_validator = _default_md_validator
         self.md_validator = md_validator
+        self.scan_id_source = scan_id_source
 
         self.max_depth = None
         self.msg_hook = None
@@ -1341,9 +1352,8 @@ class RunEngine:
         self._run_start_uids.append(self._run_start_uid)
         self.log.debug("Starting new with uid %r", self._run_start_uid)
 
-        # Increment scan ID
-        scan_id = self.md.get('scan_id', 0) + 1
-        self.md['scan_id'] = scan_id
+        # Run scan_id calculation method
+        self.scan_id_source(self.md)
 
         # For metadata below, info about plan passed to self.__call__ for.
         plan_type = type(self._plan).__name__
