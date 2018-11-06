@@ -91,10 +91,8 @@ _call_sig = Signature(
      Parameter('subs', Parameter.POSITIONAL_ONLY, default=None),
      Parameter('metadata_kw', Parameter.VAR_KEYWORD)])
 
-#Default scan_id_source
 def default_scan_id_source(md):
-    scan_id = md.get('scan_id', 0) + 1
-    md['scan_id'] = scan_id
+    return md.get('scan_id', 0) + 1
 
 class RunEngine:
     """The Run Engine execute messages and emits Documents.
@@ -137,9 +135,11 @@ class RunEngine:
         ignored.
 
     scan_id_source : callable, optional
-        a function that will be use to calculate scan_id. Defaultis increment
-        scan_id 1 each time. However you could pass in a bespoken function to
-        get a complex scan_id
+        a function that will be used to calculate scan_id. Default is increment
+        scan_id 1 each time. However you could pass in a bespoke function to
+        get a scan_id from any source
+        Expected signature: f(md)
+        Expected return: updated scan_id value
 
     Attributes
     ----------
@@ -1353,7 +1353,7 @@ class RunEngine:
         self.log.debug("Starting new with uid %r", self._run_start_uid)
 
         # Run scan_id calculation method
-        self.scan_id_source(self.md)
+        self.md['scan_id'] = self.scan_id_source(self.md)
 
         # For metadata below, info about plan passed to self.__call__ for.
         plan_type = type(self._plan).__name__
