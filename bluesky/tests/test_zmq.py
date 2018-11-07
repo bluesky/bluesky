@@ -268,7 +268,10 @@ def test_zmq_prefix(RE, hw):
     # Run a Publisher and a RunEngine in this main process.
 
     p = Publisher('127.0.0.1:5567', prefix=b'sb')  # noqa
+    p2 = Publisher('127.0.0.1:5567', prefix=b'not_sb')  # noqa
     RE.subscribe(p)
+    RE.subscribe(p2)
+
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
