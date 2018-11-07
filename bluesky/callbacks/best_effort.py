@@ -215,7 +215,7 @@ class BestEffortCallback(CallbackBase):
             # If any open figure matches 'figname {number}', use it. If there
             # are multiple, the most recently touched one will be used.
             pat1 = re.compile('^' + fig_name + '$')
-            pat2 = re.compile('^' + fig_name + ' \d+$')
+            pat2 = re.compile('^' + fig_name + r' \d+$')
             for label in plt.get_figlabels():
                 if pat1.match(label) or pat2.match(label):
                     fig_name = label
