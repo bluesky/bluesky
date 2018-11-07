@@ -1,10 +1,10 @@
 import asyncio
 import copy
 import multiprocessing
-import os
 import pickle
 import socket
 import time
+import warnings
 from ..run_engine import Dispatcher, DocumentNames
 from ..utils import apply_to_dict_recursively, sanitize_np
 
@@ -18,7 +18,11 @@ class Publisher:
     address : string or tuple
         Address of a running 0MQ proxy, given either as a string like
         ``'127.0.0.1:5567'`` or as a tuple like ``('127.0.0.1', 5567)``
+    prefix : bytes, optional
+        User-defined bytestring used to distinguish between multiple
+        Publishers. May not contain b' '.
     RE : ``bluesky.RunEngine``, optional
+        DEPRECATED.
         RunEngine to which the Publisher will be automatically subscribed
         (and, more importantly, unsubscribed when it is closed).
     zmq : object, optional
@@ -32,21 +36,28 @@ class Publisher:
 
     Publish from a RunEngine to a Proxy running on localhost on port 5567.
 
+    >>> publisher = Publisher('localhost:5567')
     >>> RE = RunEngine({})
-    >>> publisher = Publisher('localhost:5567', RE=RE)
+    >>> RE.subscribe(publisher)
     """
-    def __init__(self, address, *, RE=None, zmq=None, serializer=pickle.dumps):
+    def __init__(self, address, *, prefix=b'',
+                 RE=None, zmq=None, serializer=pickle.dumps):
+        if RE is not None:
+            warnings.warn("The RE argument to Publisher is deprecated and "
+                          "will be removed in a future release of bluesky. "
+                          "Update your code to subscribe this Publisher "
+                          "instance to (and, if needed, unsubscribe from) to "
+                          "the RunEngine manually.")
+        if b' ' in prefix:
+            raise ValueError("prefix {!r} may not contain b' '".format(prefix))
         if zmq is None:
             import zmq
         if isinstance(address, str):
             address = address.split(':', maxsplit=1)
         self.address = (address[0], int(address[1]))
         self.RE = RE
-        self.hostname = socket.gethostname()
-        self.pid = os.getpid()
         url = "tcp://%s:%d" % self.address
-        self._prefix = b'%s %d %d ' % (self.hostname.encode(),
-                                       self.pid, id(RE))
+        self._prefix = bytes(prefix)
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
         self._socket.connect(url)
@@ -57,8 +68,9 @@ class Publisher:
     def __call__(self, name, doc):
         doc = copy.deepcopy(doc)
         apply_to_dict_recursively(doc, sanitize_np)
-        message = bytes(self._prefix)  # making a copy
-        message += b' '.join([name.encode(), self._serializer(doc)])
+        message = b' '.join([self._prefix,
+                             name.encode(),
+                             self._serializer(doc)])
         self._socket.send(message)
 
     def close(self):
@@ -182,13 +194,10 @@ class RemoteDispatcher(Dispatcher):
     address : tuple
         Address of a running 0MQ proxy, given either as a string like
         ``'127.0.0.1:5567'`` or as a tuple like ``('127.0.0.1', 5567)``
-    hostname : string, optional
-        A filter: only process documents from a host with this name.
-    pid : int, optional
-        A filter: only process documents from a process with this pid.
-    run_engine_id : int, optional
-        A filter: only process documents from a RunEngine with this Python id
-        (memory address).
+    prefix : bytes, optional
+        User-defined bytestring used to distinguish between multiple
+        Publishers. If set, messages without this prefix will be ignored.
+        If unset, no mesages will be ignored.
     loop : zmq.asyncio.ZMQEventLoop, optional
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
@@ -208,9 +217,12 @@ class RemoteDispatcher(Dispatcher):
     >>> d.subscribe(print)
     >>> d.start()  # runs until interrupted
     """
-    def __init__(self, address, *, hostname=None, pid=None, run_engine_id=None,
+    def __init__(self, address, *, prefix=None,
                  loop=None, zmq=None, zmq_asyncio=None,
                  deserializer=pickle.loads):
+        if prefix and b' ' in prefix:
+            raise ValueError("prefix {!r} may not contain b' '".format(prefix))
+        self._prefix = prefix
         if zmq is None:
             import zmq
         if zmq_asyncio is None:
@@ -219,9 +231,6 @@ class RemoteDispatcher(Dispatcher):
             address = address.split(':', maxsplit=1)
         self._deserializer = deserializer
         self.address = (address[0], int(address[1]))
-        self.hostname = hostname
-        self.pid = pid
-        self.run_engine_id = run_engine_id
 
         if loop is None:
             loop = zmq_asyncio.ZMQEventLoop()
@@ -234,27 +243,16 @@ class RemoteDispatcher(Dispatcher):
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._task = None
 
-        def is_our_message(_hostname, _pid, _RE_id):
-            # Close over filters and decide if this message applies to this
-            # RemoteDispatcher.
-            return ((hostname is None or hostname == _hostname)
-                    and (pid is None or pid == _pid)
-                    and (run_engine_id is None or run_engine_id ==
-                         run_engine_id))
-        self._is_our_message = is_our_message
-
         super().__init__()
 
     @asyncio.coroutine
     def _poll(self):
+        our_prefix = self._prefix  # local var to save an attribute lookup
         while True:
             message = yield from self._socket.recv()
-            hostname, pid, RE_id, name, doc = message.split(b' ', 4)
-            hostname = hostname.decode()
-            pid = int(pid)
-            RE_id = int(RE_id)
+            prefix, name, doc = message.split(b' ', 2)
             name = name.decode()
-            if self._is_our_message(hostname, pid, RE_id):
+            if (not our_prefix) or prefix == our_prefix:
                 doc = self._deserializer(doc)
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
