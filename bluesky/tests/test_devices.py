@@ -10,11 +10,6 @@ from .utils import DocCollector
 
 if ophyd:
     from ophyd import Component as Cpt, Device, Signal
-    import epics
-    try:
-        ophyd.setup_ophyd()
-    except epics.ca.ChannelAccessException:
-        pass
 
     class A(Device):
         s1 = Cpt(Signal, value=0)
