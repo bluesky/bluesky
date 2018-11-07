@@ -249,7 +249,7 @@ Plot scalars. Example:
 
     from bluesky.plans import scan
     from ophyd.sim import det, motor
-    from bluesky.callbacks import LivePlot
+    from bluesky.callbacks.mpl_plotting import LivePlot
 
     RE(scan([det], motor, -5, 5, 30), LivePlot('det', 'motor'))
 
@@ -258,7 +258,7 @@ Plot scalars. Example:
     from bluesky import RunEngine
     from bluesky.plans import scan
     from ophyd.sim import det, motor
-    from bluesky.callbacks import LivePlot
+    from bluesky.callbacks.mpl_plotting import LivePlot
     RE = RunEngine({})
     RE(scan([det], motor, -5, 5, 30), LivePlot('det', 'motor'))
 
@@ -276,12 +276,12 @@ To customize style, pass in any
     from bluesky import RunEngine
     from bluesky.plans import scan
     from ophyd.sim import det, motor
-    from bluesky.callbacks import LivePlot
+    from bluesky.callbacks.mpl_plotting import LivePlot
     RE = RunEngine({})
     RE(scan([det], motor, -5, 5, 30),
        LivePlot('det', 'motor', marker='x', markersize=10, color='red'))
 
-.. autoclass:: bluesky.callbacks.LivePlot
+.. autoclass:: bluesky.callbacks.mpl_plotting.LivePlot
 
 Live Image
 ++++++++++
@@ -299,7 +299,7 @@ Plot a scalar value as a function of two variables on a regular grid. Example:
 
     from bluesky.plans import grid_scan
     from ophyd.sim import det4, motor1, motor2
-    from bluesky.callbacks import LiveGrid
+    from bluesky.callbacks.mpl_plotting import LiveGrid
 
     RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
@@ -309,27 +309,27 @@ Plot a scalar value as a function of two variables on a regular grid. Example:
     from bluesky import RunEngine
     from bluesky.plans import grid_scan
     from ophyd.sim import det4, motor1, motor2
-    from bluesky.callbacks import LiveGrid
+    from bluesky.callbacks.mpl_plotting import LiveGrid
     motor1.delay = 0
     motor2.delay = 0
     RE = RunEngine({})
     RE(grid_scan([det4], motor1, -3, 3, 6, motor2, -5, 5, 10, False),
        LiveGrid((6, 10), 'det4'))
 
-.. autoclass:: bluesky.callbacks.LiveGrid
+.. autoclass:: bluesky.callbacks.mpl_plotting.LiveGrid
 
 LiveScatter (scattered heat map)
 ++++++++++++++++++++++++++++++++
 
 Plot a scalar value as a function of two variables. Unlike
-:class:`bluesky.callbacks.LiveGrid`, this does not assume a regular grid.
+:class:`bluesky.callbacks.mpl_plotting.LiveGrid`, this does not assume a regular grid.
 Example:
 
 .. code-block:: python
 
     from bluesky.plans import grid_scan
     from ophyd.sim import det5, jittery_motor1, jittery_motor2
-    from bluesky.callbacks import LiveScatter
+    from bluesky.callbacks.mpl_plotting import LiveScatter
 
     # The 'jittery' example motors won't go exactly where they are told to go.
 
@@ -344,7 +344,7 @@ Example:
     from bluesky import RunEngine
     from bluesky.plans import grid_scan
     from ophyd.sim import det5, jittery_motor1, jittery_motor2
-    from bluesky.callbacks import LiveScatter
+    from bluesky.callbacks.mpl_plotting import LiveScatter
     RE = RunEngine({})
     RE(grid_scan([det5],
                           jittery_motor1, -3, 3, 6,
@@ -352,7 +352,7 @@ Example:
        LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
                 xlim=(-3, 3), ylim=(-5, 5)))
 
-.. autoclass:: bluesky.callbacks.LiveScatter
+.. autoclass:: bluesky.callbacks.mpl_plotting.LiveScatter
 
 LiveFit
 +++++++
@@ -475,7 +475,7 @@ Repeating the example from ``LiveFit`` above, adding a plot:
 
     # now add the plot...
 
-    from bluesky.callbacks import LiveFitPlot
+    from bluesky.callbacks.mpl_plotting import LiveFitPlot
     lpf = LiveFitPlot(lf, color='r')
 
     RE(scan([noisy_det], motor, -1, 1, 100), lfp)
@@ -489,7 +489,8 @@ Repeating the example from ``LiveFit`` above, adding a plot:
     import lmfit
     from bluesky.plans import scan
     from ophyd.sim import motor, noisy_det
-    from bluesky.callbacks import LiveFit, LiveFitPlot
+    from bluesky.callbacks import LiveFit
+    from bluesky.callbacks.mpl_plotting import LiveFitPlot
     from bluesky import RunEngine
 
     RE = RunEngine({})
@@ -526,7 +527,8 @@ Notice that they can styled independently.
     import lmfit
     from bluesky.plans import scan
     from ophyd.sim import motor, noisy_det
-    from bluesky.callbacks import LiveFit, LivePlot, LiveFitPlot
+    from bluesky.callbacks import LiveFit
+    from bluesky.callbacks.mpl_plotting import LivePlot, LiveFitPlot
     from bluesky import RunEngine
 
     RE = RunEngine({})
@@ -548,7 +550,7 @@ Notice that they can styled independently.
     RE(scan([noisy_det], motor, -1, 1, 50), [lfp, lp])
     plt.draw()
 
-.. autoclass:: bluesky.callbacks.LiveFitPlot
+.. autoclass:: bluesky.callbacks.mpl_plotting.LiveFitPlot
 
 PeakStats
 ++++++++++

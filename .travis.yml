@@ -40,6 +40,8 @@ install:
   - python -c "from bluesky.utils import get_history; get_history()"
 
 script:
+  # ensure that callbacks import without matplotlib
+  - python -c 'import sys, bluesky.callbacks; assert "matplotlib" not in sys.modules'
   - coverage run run_tests.py
   - coverage report -m
   - set -e
