@@ -137,8 +137,8 @@ class RunEngine:
         ignored.
 
     scan_id_source : callable, optional
-        a function that will be used to calculate scan_id. Default is to 
-        increment scan_id by 1 each time. However you could pass in a 
+        a function that will be used to calculate scan_id. Default is to
+        increment scan_id by 1 each time. However you could pass in a
         customized function to get a scan_id from any source.
         Expected signature: f(md)
         Expected return: updated scan_id value
@@ -214,7 +214,7 @@ class RunEngine:
                              'remove_suspender']
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
-                 context_managers=None, md_validator=None, 
+                 context_managers=None, md_validator=None,
                  scan_id_source=default_scan_id_source):
         if loop is None:
             loop = asyncio.get_event_loop()
