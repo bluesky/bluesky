@@ -91,8 +91,10 @@ _call_sig = Signature(
      Parameter('subs', Parameter.POSITIONAL_ONLY, default=None),
      Parameter('metadata_kw', Parameter.VAR_KEYWORD)])
 
+
 def default_scan_id_source(md):
     return md.get('scan_id', 0) + 1
+
 
 class RunEngine:
     """The Run Engine execute messages and emits Documents.
