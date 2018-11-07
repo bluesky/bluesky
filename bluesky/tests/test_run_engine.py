@@ -35,7 +35,7 @@ def test_verbose(RE, hw):
     RE.verbose = True
     assert RE.verbose
     # Emit all four kinds of document, exercising the logging.
-    RE([Msg('open_run'), Msg('create'), Msg('read', hw.det), Msg('save'),
+    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det), Msg('save'),
         Msg('close_run')])
 
 
@@ -222,12 +222,12 @@ def test_dropping_without_an_open_bundle_is_illegal(RE):
 
 def test_opening_a_bundle_without_a_run_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('create')])
+        RE([Msg('create', name='primary')])
 
 
 def test_checkpoint_inside_a_bundle_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('create'), Msg('checkpoint')])
+        RE([Msg('open_run'), Msg('create', name='primary'), Msg('checkpoint')])
 
 
 def test_redundant_monitors_are_illegal(RE):
@@ -308,14 +308,14 @@ def test_empty_bundle(RE, hw):
 
     # In this case, an Event should be emitted.
     mutable.clear()
-    RE([Msg('open_run'), Msg('create'), Msg('read', hw.det), Msg('save')],
+    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det), Msg('save')],
        {'event': cb})
     assert 'flag' in mutable
 
     # In this case, an Event should not be emitted because the bundle is
     # emtpy (i.e., there are no readings.)
     mutable.clear()
-    RE([Msg('open_run'), Msg('create'), Msg('save')], {'event': cb})
+    RE([Msg('open_run'), Msg('create', name='primary'), Msg('save')], {'event': cb})
     assert 'flag' not in mutable
 
 
@@ -1086,7 +1086,7 @@ def test_bad_from_idle_transitions(RE, change_func):
 def test_empty_cache_pause(RE):
     RE.rewindable = False
     pln = [Msg('open_run'),
-           Msg('create'),
+           Msg('create', name='primary'),
            Msg('pause'),
            Msg('save'),
            Msg('close_run')]
@@ -1406,7 +1406,7 @@ def test_drop(RE, hw):
     det = hw.det
 
     def inner(msg):
-        yield Msg('create')
+        yield Msg('create', name='primary')
         yield Msg('read', det)
         yield Msg(msg)
 
@@ -1445,11 +1445,11 @@ def test_failing_describe_callback(RE, hw):
     def plan():
         yield Msg('open_run')
         try:
-            yield Msg('create')
+            yield Msg('create', name='primary')
             yield Msg('read', det)
             yield Msg('save')
         finally:
-            yield Msg('create')
+            yield Msg('create', name='primary')
             yield Msg('read', det2)
             yield Msg('save')
         yield Msg('close_run')

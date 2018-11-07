@@ -171,6 +171,7 @@ Previously, you could set a default list of detectors and them use ``%ct``
 without any parameters. This behaviour is deprecated. Do not use this:
 
 .. ipython:: python
+    :okwarning:
 
     BlueskyMagics.detectors = [area_detector, point_detector]
     %ct
@@ -183,6 +184,7 @@ Previously, it was possible to supply a list of motors. This feature is also
 deprecated. Do not use this:
 
 .. ipython:: python
+    :okwarning:
 
     BlueskyMagics.positioners = [motor1, motor2]
     %wa

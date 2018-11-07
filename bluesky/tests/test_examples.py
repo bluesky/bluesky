@@ -29,11 +29,11 @@ def test_msgs(RE, hw):
     assert m.args == tuple()
     assert m.kwargs == {}
 
-    m = Msg('create')
+    m = Msg('create', name='primary')
     assert m.command == 'create'
     assert m.obj is None
     assert m.args == tuple()
-    assert m.kwargs == {}
+    assert m.kwargs == {'name': 'primary'}
 
     m = Msg('sleep', None, 5)
     assert m.command == 'sleep'
@@ -268,7 +268,7 @@ def test_suspend(RE, hw):
         Msg('sleep', None, .2),
         Msg('set', hw.motor, 5),
         Msg('trigger', hw.det),
-        Msg('create'),
+        Msg('create', name='primary'),
         Msg('read', hw.motor),
         Msg('read', hw.det),
         Msg('save'),
@@ -408,17 +408,17 @@ def test_seqnum_nonrepeated(RE, hw):
 
     def gen():
         yield Msg('open_run')
-        yield Msg('create')
+        yield Msg('create', name='primary')
         yield Msg('set', hw.motor, 1)
         yield Msg('read', hw.motor)
         yield Msg('save')
         yield Msg('checkpoint')
-        yield Msg('create')
+        yield Msg('create', name='primary')
         yield Msg('set', hw.motor, 2)
         yield Msg('read', hw.motor)
         yield Msg('save')
         yield Msg('pause')
-        yield Msg('create')
+        yield Msg('create', name='primary')
         yield Msg('set', hw.motor, 3)
         yield Msg('read', hw.motor)
         yield Msg('save')
@@ -444,7 +444,7 @@ def test_duplicate_keys(RE, hw):
 
     def gen():
         yield(Msg('open_run'))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('trigger', hw.det))
         yield(Msg('trigger', hw.identical_det))
         yield(Msg('read', hw.det))
@@ -459,8 +459,8 @@ def test_illegal_sequences(RE, hw):
     def gen1():
         # two 'create' msgs in a row
         yield(Msg('open_run'))
-        yield(Msg('create'))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
+        yield(Msg('create', name='primary'))
         yield(Msg('close_run'))
 
     with pytest.raises(IllegalMessageSequence):
@@ -469,7 +469,7 @@ def test_illegal_sequences(RE, hw):
     def gen2():
         # two 'save' msgs in a row
         yield(Msg('open_run'))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('save'))
         yield(Msg('save'))
         yield(Msg('close_run'))
@@ -480,7 +480,7 @@ def test_illegal_sequences(RE, hw):
     def gen3():
         # 'configure' after 'create', before 'save'
         yield(Msg('open_run'))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('configure', hw.motor, {}))
 
     with pytest.raises(IllegalMessageSequence):
@@ -489,7 +489,7 @@ def test_illegal_sequences(RE, hw):
     def gen4():
         # two 'drop' msgs in a row
         yield(Msg('open_run'))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('drop'))
         yield(Msg('drop'))
         yield(Msg('close_run'))
@@ -507,11 +507,11 @@ def test_new_ev_desc(RE, hw):
     def gen1():
         # configure between two events -> two descs
         yield(Msg('open_run'))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('read', hw.motor))
         yield(Msg('save'))
         yield(Msg('configure', hw.motor, {}))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('read', hw.motor))
         yield(Msg('save'))
         yield(Msg('close_run'))
@@ -525,11 +525,11 @@ def test_new_ev_desc(RE, hw):
         # -> two descs
         yield(Msg('open_run'))
         yield(Msg('configure', hw.motor, {}))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('read', hw.motor))
         yield(Msg('save'))
         yield(Msg('configure', hw.motor, {}))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('read', hw.motor))
         yield(Msg('save'))
         yield(Msg('close_run'))
@@ -542,10 +542,10 @@ def test_new_ev_desc(RE, hw):
         # configure once before any events -> one desc
         yield(Msg('open_run'))
         yield(Msg('configure', hw.motor, {}))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('read', hw.motor))
         yield(Msg('save'))
-        yield(Msg('create'))
+        yield(Msg('create', name='primary'))
         yield(Msg('read', hw.motor))
         yield(Msg('save'))
         yield(Msg('close_run'))

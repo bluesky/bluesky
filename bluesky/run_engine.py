@@ -1404,7 +1404,7 @@ class RunEngine:
         num_events = {}
         for bundle_name, counter in self._sequence_counters.items():
             if bundle_name is None:
-                # rare but possible via Msg('create')
+                # rare but possible via Msg('create', name='primary')
                 continue
             num_events[bundle_name] = next(counter) - 1
         reason = msg.kwargs.get('reason', None)
@@ -1432,7 +1432,7 @@ class RunEngine:
         Expected message object is:
 
             Msg('create', None, name='primary')
-            Msg('create')
+            Msg('create', name='primary')
 
         Note that the `name` kwarg will be the 'name' field of the resulting
         descriptor. So descriptor['name'] = msg.kwargs['name'].
@@ -1453,13 +1453,16 @@ class RunEngine:
         self._asset_docs_cache.clear()
         self._objs_read.clear()
         self._bundling = True
-        self._bundle_name = None  # default
         command, obj, args, kwargs = msg
         try:
             self._bundle_name = kwargs['name']
         except KeyError:
-            if len(args) == 1:
+            try:
                 self._bundle_name, = args
+            except ValueError:
+                raise ValueError(
+                    "Msg('create') now requires a stream name, given as "
+                    "Msg('create', name) or Msg('create', name=name)") from None
 
     @asyncio.coroutine
     def _read(self, msg):

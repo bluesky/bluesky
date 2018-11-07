@@ -68,7 +68,7 @@ class AverageStream(LiveDispatcher):
             data_keys = self.raw_descriptors[desc_id]['data_keys']
             for key, info in data_keys.items():
                 # Information from non-number fields is dropped
-                if info['dtype'] in ('number', 'array'):
+                if info['dtype'] in ('number', 'array', 'integer'):
                     # Average together
                     average_evt[key] = np.mean([evt['data'][key]
                                                 for evt in cache], axis=0)

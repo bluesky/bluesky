@@ -8,7 +8,7 @@ ipython
 ipywidgets
 jinja2
 lmfit
-matplotlib
+matplotlib != 3.0.1  # bug in scatter method
 mongoquery
 networkx
 nose

@@ -311,7 +311,7 @@ def run_fuzz():
     closerun_messages = [Msg('close_run')] * 10
     checkpoint_messages = [Msg('checkpoint')] * 10
     clear_checkpoint_messages = [Msg('clear_checkpoint')] * 10
-    create_messages = ([Msg('create')] * 5 +
+    create_messages = ([Msg('create', name='primary')] * 5 +
                        [Msg('create', name=unique_name()) for _ in range(5)])
     save_messages = [Msg('save')] * 10
     sleep_messages = [Msg('sleep', None, random.random() * 0.25) for _ in range(10)]
