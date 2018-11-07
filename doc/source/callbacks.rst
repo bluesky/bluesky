@@ -489,7 +489,8 @@ Repeating the example from ``LiveFit`` above, adding a plot:
     import lmfit
     from bluesky.plans import scan
     from ophyd.sim import motor, noisy_det
-    from bluesky.callbacks.mpl_plotting import LiveFit, LiveFitPlot
+    from bluesky.callbacks import LiveFit
+    from bluesky.callbacks.mpl_plotting import LiveFitPlot
     from bluesky import RunEngine
 
     RE = RunEngine({})
@@ -526,7 +527,8 @@ Notice that they can styled independently.
     import lmfit
     from bluesky.plans import scan
     from ophyd.sim import motor, noisy_det
-    from bluesky.callbacks.mpl_plotting import LiveFit, LivePlot, LiveFitPlot
+    from bluesky.callbacks import LiveFit
+    from bluesky.callbacks.mpl_plotting import LivePlot, LiveFitPlot
     from bluesky import RunEngine
 
     RE = RunEngine({})
