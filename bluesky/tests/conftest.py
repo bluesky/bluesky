@@ -59,3 +59,17 @@ def cleanup_any_figures(request):
     import matplotlib.pyplot as plt
     "Close any matplotlib figures that were opened during a test."
     plt.close('all')
+
+
+try:
+    # we turn interactive plotting on as part of the setup
+    # of the callbacks which is what we want, however, when
+    # running on a headless system draw_idle turns into draw (NOW!)
+    # which means that when we update an artist to a (temporarily)
+    # invalid state one of the needlessly triggered draws fails
+    # which brings down the whole test suite.
+    import matplotlib.pyplot as plt
+    # this patches the function that does said drawing out of existence
+    plt._auto_draw_if_interactive = lambda fig, val: None
+except ImportError:
+    pass
