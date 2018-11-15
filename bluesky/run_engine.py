@@ -224,7 +224,6 @@ class RunEngine:
         # Python id, to keep from mixing output from separate instances.
         logger_name = "bluesky.RE.{id}".format(id=id(self))
         self.log = logging.getLogger(logger_name)
-        self.verbose = True  # a convenience property, setting log.disabled
 
         if md is None:
             md = {}
