@@ -1088,6 +1088,7 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
+        debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
         pending_cancel_exception = None
         self._reason = ''
         # sentinel to decide if need to add to the response stack or not
@@ -1180,6 +1181,7 @@ class RunEngine:
                     # if we have a message hook, call it
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
+                    debug(msg)
 
                     # update the running set of all objects we have seen
                     self._objs_seen.add(msg.obj)
