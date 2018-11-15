@@ -155,6 +155,21 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
     -------
     handler : logging.Handler
         The handler, which has already been added to the 'bluesky' logger.
+
+    Examples
+    --------
+    Log to a file.
+
+    >>> set_handler(file=open('/tmp/what_is_happening.txt'))
+
+    Include the date along with the time. (The log messages will always include
+    microseconds, which are configured separately, not as part of 'datefmt'.)
+
+    >>> set_handler(datefmt="%Y-%m-%d %H:%M:%S")
+
+    Turn off ANSI color codes.
+
+    >>> set_handler(color=False)
     """
     global current_handler
     handler = logging.StreamHandler(file)
