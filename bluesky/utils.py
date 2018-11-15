@@ -28,8 +28,6 @@ try:
 except ImportError:
     from toolz import groupby
 
-logger = logging.getLogger(__name__)
-
 
 class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
     __slots__ = ()

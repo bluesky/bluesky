@@ -9,7 +9,6 @@ import time as ttime
 from datetime import datetime
 import logging
 from ..utils import ensure_uid
-logger = logging.getLogger(__name__)
 
 
 # deprecate callbacks moved to mpl_plotting ----------------------------------

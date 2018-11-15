@@ -1,6 +1,3 @@
-import logging
-logger = logging.getLogger(__name__)
-
 from .utils import Msg
 from .utils import RunEngineInterrupted
 from .utils import IllegalMessageSequence
