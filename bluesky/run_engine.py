@@ -222,10 +222,9 @@ class RunEngine:
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
-        logger_name = "{name}_id{id}".format(name=__name__, id=id(self))
+        logger_name = "bluesky.RE.{id}".format(id=id(self))
         self.log = logging.getLogger(logger_name)
-        self.log.setLevel(logging.DEBUG)
-        self.verbose = False  # a convenience property, setting log.disabled
+        self.verbose = True  # a convenience property, setting log.disabled
 
         if md is None:
             md = {}
