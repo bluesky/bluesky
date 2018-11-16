@@ -52,15 +52,16 @@ whether its triggering behavior was programmed properly on the Python side.
 
 When finished troubleshooting, set ``RE.msg_hook = None``.
 
-We used ``print`` for simple debugging. Any user-defined function that accepts
-a ``bluesky.Msg`` namedtuple as its argument could also be used. For example,
-to write to a file:
+Any user-defined function that accepts a ``bluesky.Msg`` namedtuple as its
+argument could also be used. For example, to write to a file:
 
 .. code-block:: python
 
+    from bluesky.utils import ts_msg_hook
+
     def append_to_file(msg):
-        with open('myfile.log', 'a') as f:
-            f.write(str(msg))
+        with open('myfile.log', 'a') as file:
+            ts_msg_hook(msg, file=file)
 
     RE.msg_hook = append_to_file
 
