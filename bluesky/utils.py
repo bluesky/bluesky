@@ -974,14 +974,14 @@ def ensure_uid(doc_or_uid):
         return doc_or_uid
 
 
-def ts_msg_hook(msg):
+def ts_msg_hook(msg, file=sys.stdout):
     t = '{:%H:%M:%S.%f}'.format(datetime.datetime.now())
     msg_fmt = '{: <17s} -> {!s: <15s} args: {}, kwargs: {}'.format(
         msg.command,
         msg.obj.name if hasattr(msg.obj, 'name') else msg.obj,
         msg.args,
         msg.kwargs)
-    print('{} {}'.format(t, msg_fmt))
+    print('{} {}'.format(t, msg_fmt), file=file)
 
 
 def make_decorator(wrapper):
