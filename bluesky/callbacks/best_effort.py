@@ -38,6 +38,7 @@ class BestEffortCallback(CallbackBase):
         self._live_grids = {}
         self._live_scatters = {}
         self._peak_stats = {}  # same structure as live_plots
+        self._label_format = None
         self._cleanup_motor_heuristic = False
         self._stream_names_seen = set()
 
@@ -84,6 +85,10 @@ class BestEffortCallback(CallbackBase):
     def disable_plots(self):
         "Do not plot anything."
         self._plots_enabled = False
+
+    def format_labels(self, fmt):
+        "Format peak stats labels in a legend of LivePlot."
+        self._label_format = validate_label_format(fmt)
 
     def __call__(self, name, doc):
         if not (self._table_enabled or self._baseline_enabled or
@@ -271,7 +276,8 @@ class BestEffortCallback(CallbackBase):
                     continue
                 # Create an instance of LivePlot and an instance of PeakStats.
                 live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
-                                              peak_results=self.peaks)
+                                              peak_results=self.peaks,
+                                              label_format=self._label_format)
                 live_plot('start', self._start_doc)
                 live_plot('descriptor', doc)
                 peak_stats = PeakStats(x=x_key, y=y_key)
@@ -434,7 +440,7 @@ class BestEffortCallback(CallbackBase):
 
 
 class PeakResults:
-    ATTRS = ('com', 'cen', 'max', 'min', 'fwhm', 'nlls')
+    ATTRS = ('com', 'cen', 'max', 'min', 'fwhm', 'nlls', 'crossings')
 
     def __init__(self):
         for attr in self.ATTRS:
@@ -474,15 +480,18 @@ class LivePlotPlusPeaks(LivePlot):
     __visible = weakref.WeakKeyDictionary()  # map ax to True/False
     __instances = weakref.WeakKeyDictionary()  # map ax to list of instances
 
-    def __init__(self, *args, peak_results, **kwargs):
+    def __init__(self, *args, peak_results,
+                 label_format=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.peak_results = peak_results
+        self.label_format = validate_label_format(label_format)
 
         ax = self.ax  # for brevity
         if ax not in self.__visible:
             # This is the first instance of LivePlotPlusPeaks on these axes.
             # Set up matplotlib event handling.
 
+            # TODO: make it configurable, requested by beamline scientists:
             self.__visible[ax] = False
 
             def toggle(event):
@@ -505,25 +514,52 @@ class LivePlotPlusPeaks(LivePlot):
             else:
                 for artist in self.__arts:
                     artist.set_visible(True)
+                    label = artist.get_label()
+                    if label.startswith('_'):
+                        artist.set_label(label[1:])
         elif self.__arts is not None:
-                for artist in self.__arts:
-                    artist.set_visible(False)
+            for artist in self.__arts:
+                artist.set_visible(False)
+                label = artist.get_label()
+                artist.set_label('_' + label)
         self.ax.legend(loc='best')
         self.ax.figure.canvas.draw_idle()
 
     def plot_annotations(self):
-        styles = iter(cycler('color', 'kr'))
-        vlines = []
-        for style, attr in zip(styles, ['cen', 'com']):
+        # Vertical and horizontal lines:
+        styles = iter(cycler('color', 'krbm'))
+        lines = []
+        for style, attr, meth, ind in zip(styles,
+                                          ['cen', 'com', 'min', 'max'],
+                                          ['axvline', 'axvline',
+                                           'axhline', 'axhline'],
+                                          [None, None, 1, 1]):
             val = self.peak_results[attr][self.y]
-            # Only put labels in this legend once per axis.
-            if self.ax in self.__labeled:
-                label = '_no_legend_'
-            else:
-                label = attr
-            vlines.append(self.ax.axvline(val, label=label, **style))
+            if ind is not None:
+                val = val[ind]
+            label = self.label_format.format(attr=attr, val=val)
+            lines.append(getattr(self.ax, meth)(val, label=label, **style))
+
+        # Arrows (e.g., FWHM):
+        attr = 'fwhm'
+        val = self.peak_results[attr][self.y]
+        arrows = []
+        if val:
+            max_crds = self.peak_results['max'][self.y]
+            min_crds = self.peak_results['min'][self.y]
+            crossings = self.peak_results['crossings'][self.y]
+            style = {'color': 'g'}
+            arrow_y_pos = (max_crds[1] + min_crds[1]) / 2
+            label = self.label_format.format(attr=attr, val=val)
+            # Fake line for the legend:
+            lines += self.ax.plot([], [], label=label, **style)
+            arrows.append(self.ax.annotate(
+                '', xytext=(crossings[0], arrow_y_pos),
+                xy=(crossings[-1], arrow_y_pos),
+                arrowprops=dict(arrowstyle="<->", **style)))
+
         self.__labeled[self.ax] = None
-        self.__arts = vlines
+        self.__arts = lines + arrows
 
     def stop(self, doc):
         self.check_visibility()
@@ -546,3 +582,16 @@ def hinted_fields(descriptor):
             fields = descriptor['object_keys'][obj_name]
         columns.extend(fields)
     return columns
+
+
+def validate_label_format(label_format):
+    """Validate label format for a legend in LivePlot"""
+    default_label_format = '{attr}={val:.3f}'
+    assert (label_format is None) or \
+        ('attr' in label_format and 'val' in label_format), \
+        'Label format string must either be "None" or \n' \
+        'contain named placeholders "attr" and "val", e.g. "{}"'\
+        .format(default_label_format)
+    if not label_format:
+        return default_label_format
+    return label_format
