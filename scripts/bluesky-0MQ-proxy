@@ -7,6 +7,13 @@ import sys
 from bluesky.callbacks.zmq import RemoteDispatcher
 
 def start_dispatcher(logfile):
+    """The dispatcher function
+    Parameters
+    ----------
+    logfile : string
+        string come from user command. ex --logfile=temp.log
+        logfile will be "temp.log". logfile could be empty.
+    """
     d = RemoteDispatcher('localhost:'+str(out_port))
     if logfile:
         logger = logging.getLogger('logfile')
@@ -16,7 +23,14 @@ def start_dispatcher(logfile):
         logger.addHandler(hdlr)
         logger.setLevel(logging.INFO) #Only write to file with logger.info or worse
         def log_writer(name, doc):
+            """logger's wrapper function
+                This function will be use to fit .subscribe() method.
+                It has two arguments as .subscribe expect. Inside, it
+                call logger.info to write doc which is a dict as a str
+                into logfile
+            """
             logger.info(str(doc))
+            print("Log",name ,"doc to", logfile)
         d.subscribe(log_writer) # Subscribe log writer
     else:
         d.subscribe(print)
@@ -41,10 +55,10 @@ if __name__ == "__main__":
         print("in_port:", in_port)
         print("out_port:", out_port)
         if args.verbose > 2:
-            obj = threading.Thread(target=start_dispatcher,
-                                    args=(args.logfile,),
-                                    daemon = True).start()  # Set daemon to all ipython exit
-                                                            # kill all threads
+            threading.Thread(target=start_dispatcher,
+                                args=(args.logfile,),
+                                daemon = True).start()  # Set daemon to all ipython exit
+                                                        # kill all threads
     print("Loading...")
     from bluesky.callbacks.zmq import Proxy  # this takes a couple seconds
     print("Connecting...")
