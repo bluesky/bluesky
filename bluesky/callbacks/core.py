@@ -379,7 +379,7 @@ class Retrieve(CallbackBase):
         self.resources[resource['uid']] = resource
         handler = self.handler_reg[resource['spec']]
 
-        key = (str(resource['uid']), handler.__name__)
+        key = (str(resource['uid']), handler.__module__, handler.__qualname__)
 
         kwargs = resource['resource_kwargs']
         rpath = resource['resource_path']
