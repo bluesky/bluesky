@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
+from bluesky.callbacks.zmq import RemoteDispatcher
+import threading
 import argparse
 
+def start_dispatcher():
+    d = RemoteDispatcher('localhost:'+str(out_port))
+    d.subscribe(print)
+    d.start()
 
 if __name__ == "__main__":
     DESC = "Start a 0MQ proxy for publishing bluesky documents over a network."
@@ -9,10 +15,17 @@ if __name__ == "__main__":
                         help='port that RunEngines should broadcast to')
     parser.add_argument('out_port', type=int, nargs=1,
                         help='port that subscribers should subscribe to')
+    parser.add_argument('--verbose', '-v', action='count',
+                        help="Show more log messages. (Use -vvv for even more.)")
+
     args = parser.parse_args()
     in_port = args.in_port[0]
     out_port = args.out_port[0]
-
+    if args.verbose:
+        print("in_port:", in_port)
+        print("out_port:", out_port)
+        if args.verbose > 2:
+            threading.Thread(target=start_dispatcher).start()
     print("Loading...")
     from bluesky.callbacks.zmq import Proxy  # this takes a couple seconds
     print("Connecting...")
