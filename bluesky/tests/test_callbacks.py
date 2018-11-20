@@ -453,3 +453,14 @@ def test_plotting_hints(RE, hw, db):
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
                  True, hw.motor3, -2, 0, 2, True))
     assert dc.start[-1]['hints'] == hint
+
+
+def test_callback_return(RE, hw):
+    class c(CallbackBase):
+        def start(self, doc):
+            doc.update({'hello': 'world'})
+            return doc
+    L = []
+    cc = c()
+    RE(stepscan(hw.det, hw.motor), {'all': lambda *x: L.append(cc(*x))})
+    assert L[0][1]['hello'] == 'world'

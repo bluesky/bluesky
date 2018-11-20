@@ -42,7 +42,13 @@ LiveMesh = _deprecate_import_name("LiveMesh")
 class CallbackBase:
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
-        return getattr(self, name)(doc)
+        # if callback returns it will return a new dict document
+        ret = getattr(self, name)(doc)
+        if ret:
+            return name, ret
+        # if the return is None (very likely for most callbacks)
+        # give back the original name, doc pair
+        return name, doc
 
     def event(self, doc):
         pass
