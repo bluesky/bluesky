@@ -456,11 +456,11 @@ def test_plotting_hints(RE, hw, db):
 
 
 def test_callback_return(RE, hw):
-    class c(CallbackBase):
+    class C(CallbackBase):
         def start(self, doc):
             doc.update({'hello': 'world'})
             return doc
     L = []
-    cc = c()
+    cc = C()
     RE(stepscan(hw.det, hw.motor), {'all': lambda *x: L.append(cc(*x))})
     assert L[0][1]['hello'] == 'world'
