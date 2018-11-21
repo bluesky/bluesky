@@ -14,8 +14,9 @@ def start_dispatcher(logfile):
         string come from user command. ex --logfile=temp.log
         logfile will be "temp.log". logfile could be empty.
     """
-    d = RemoteDispatcher('localhost:'+str(out_port))
+    d = RemoteDispatcher(f'localhost:{out_port}')
     if logfile:
+        print("inside log")
         logger = logging.getLogger('logfile')
         hdlr = logging.FileHandler(logfile)
         formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
