@@ -46,7 +46,7 @@ if __name__ == "__main__":
                         help='port that subscribers should subscribe to')
     parser.add_argument('--verbose', '-v', action='count',
                         help=("Show 'start' and 'stop' documents. "
-                              "(Use -vvv show to all documents.)"))
+                              "(Use -vvv to show to all documents.)"))
     parser.add_argument('--logfile', type=str,
                         help="Write logfile")
     args = parser.parse_args()
