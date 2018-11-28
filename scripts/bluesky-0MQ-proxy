@@ -30,9 +30,9 @@ def start_dispatcher(logfile):
             into logfile
         """
         if name in ('start', 'stop'):
-            logger.info(f'{name}: {doc}')
+            logger.info("%s: %r", name, doc)
         else:
-            logger.debug(f'{name}: {doc}')
+            logger.debug("%s: %r", name, doc)
     dispatcher.subscribe(log_writer) # Subscribe log writer
     dispatcher.start()
 
