@@ -19,7 +19,7 @@ def start_dispatcher(logfile):
         string come from user command. ex --logfile=temp.log
         logfile will be "temp.log". logfile could be empty.
     """
-    d = RemoteDispatcher(f'localhost:{out_port}')
+    dispatcher = RemoteDispatcher(f'localhost:{out_port}')
     if logfile:
         set_handler(file=logfile)
     def log_writer(name, doc):
@@ -33,8 +33,8 @@ def start_dispatcher(logfile):
             logger.info(f'{name}: {doc}')
         else:
             logger.debug(f'{name}: {doc}')
-    d.subscribe(log_writer) # Subscribe log writer
-    d.start()
+    dispatcher.subscribe(log_writer) # Subscribe log writer
+    dispatcher.start()
 
 
 if __name__ == "__main__":
