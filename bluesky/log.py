@@ -144,7 +144,7 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
 
     Parameters
     ----------
-    file : object with ``write`` method
+    file : object with ``write`` method or filename string
         Default is ``sys.stdout``.
     datefmt : string
         Date format. Default is ``'%H:%M:%S'``.
@@ -160,7 +160,7 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
     --------
     Log to a file.
 
-    >>> set_handler(file=open('/tmp/what_is_happening.txt'))
+    >>> set_handler(file='/tmp/what_is_happening.txt')
 
     Include the date along with the time. (The log messages will always include
     microseconds, which are configured separately, not as part of 'datefmt'.)
@@ -172,7 +172,10 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
     >>> set_handler(color=False)
     """
     global current_handler
-    handler = logging.StreamHandler(file)
+    if isinstance(file, str):
+        handler = logging.FileHandler(file)
+    else:
+        handler = logging.StreamHandler(file)
     if color:
         format = color_log_format
     else:
