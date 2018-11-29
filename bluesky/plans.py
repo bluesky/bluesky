@@ -35,7 +35,7 @@ def count(detectors, num=1, delay=None, *, md=None):
 
         If None, capture data until canceled
     delay : iterable or scalar, optional
-        time delay between successive readings; default is 0
+        Time delay in seconds between successive readings; default is 0.
     md : dict, optional
         metadata
 
