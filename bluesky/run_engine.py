@@ -11,6 +11,7 @@ from enum import Enum
 import functools
 import inspect
 from contextlib import ExitStack
+import threading
 
 from event_model import DocumentNames, schema_validators
 from super_state_machine.machines import StateMachine
@@ -220,6 +221,7 @@ class RunEngine:
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
+        self._block = threading.Event()
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -622,10 +624,9 @@ class RunEngine:
             self._task.cancel()
             for task in self._status_tasks:
                 task.cancel()
+            # Let RunEngine.__call__ return.
+            self._block.set()
             return
-        # stop accepting new tasks in the event loop (existing tasks will
-        # still be processed)
-        self.loop.stop()
         # Remove any monitoring callbacks, but keep refs in
         # self._monitor_params to re-instate them later.
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
@@ -640,6 +641,8 @@ class RunEngine:
                     obj.pause()
                 except NoReplayAllowed:
                     self._reset_checkpoint_state_meth()
+        # Let RunEngine.__call__ return.
+        self._block.set()
 
     def _record_interruption(self, content):
         """
@@ -686,6 +689,7 @@ class RunEngine:
         uids : list
             list of uids (i.e. RunStart Document uids) of run(s)
         """
+        _ensure_event_loop_running(self.loop)
         # This scheme lets us make 'plan' and 'subs' POSITIONAL ONLY, reserving
         # all keyword arguments for user metdata.
         arguments = _call_sig.bind(self, *args, **metadata_kw).arguments
@@ -752,11 +756,20 @@ class RunEngine:
         with ExitStack() as stack:
             for mgr in self.context_managers:
                 stack.enter_context(mgr(self))
-            self._task = self.loop.create_task(self._run())
+
+            # The self._run() task will set the self._block Event when it
+            # compltes. Clear it here, start the self._run() task, and then
+            # wait for it to set.
+            self._block.clear()
+            self._task = asyncio.run_coroutine_threadsafe(self._run(),
+                                                          loop=self.loop)
             self.log.info("Executing plan %r", self._plan)
+
             try:
-                self.loop.run_forever()
+                print('waiting')
+                self._block.wait()
             finally:
+                print('finally after waiting')
                 if self._task.done():
                     # get exceptions from the main task
                     try:
@@ -1101,6 +1114,7 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
+        print('RUN')
         debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
         pending_cancel_exception = None
         self._reason = ''
@@ -1277,6 +1291,7 @@ class RunEngine:
             self.log.exception("Run aborted")
             raise err
         finally:
+            print('finally')
             # Some done_callbacks may still be alive in other threads.
             # Block them from creating new 'failed status' tasks on the loop.
             self._pardon_failures.set()
@@ -1320,8 +1335,11 @@ class RunEngine:
                     print('The plan {!r} tried to yield a value on close.  '
                           'Please fix your plan.'.format(p))
 
-            self.loop.stop()
             self._state = 'idle'
+
+            # Let RunEngine.__call__ return.
+            self._block.set()
+
         # if the task was cancelled
         if pending_cancel_exception is not None:
             raise pending_cancel_exception
@@ -2502,3 +2520,11 @@ def _default_md_validator(md):
             "GOOD: sample='dirt' "
             "GOOD: sample={'color': 'red', 'number': 5} "
             "BAD: sample=[1, 2] ")
+
+
+def _ensure_event_loop_running(loop):
+    print('ensure')
+    if not loop.is_running():
+        print('start thread')
+        threading.Thread(target=loop.run_forever, daemon=True).start()
+        print('thread started')
