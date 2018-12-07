@@ -221,7 +221,6 @@ class RunEngine:
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
-        self._block = threading.Event()
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -624,8 +623,6 @@ class RunEngine:
             self._task.cancel()
             for task in self._status_tasks:
                 task.cancel()
-            # Let RunEngine.__call__ return.
-            self._block.set()
             return
         # Remove any monitoring callbacks, but keep refs in
         # self._monitor_params to re-instate them later.
@@ -641,8 +638,6 @@ class RunEngine:
                     obj.pause()
                 except NoReplayAllowed:
                     self._reset_checkpoint_state_meth()
-        # Let RunEngine.__call__ return.
-        self._block.set()
 
     def _record_interruption(self, content):
         """
@@ -757,17 +752,13 @@ class RunEngine:
             for mgr in self.context_managers:
                 stack.enter_context(mgr(self))
 
-            # The self._run() task will set the self._block Event when it
-            # compltes. Clear it here, start the self._run() task, and then
-            # wait for it to set.
-            self._block.clear()
             self._task = asyncio.run_coroutine_threadsafe(self._run(),
                                                           loop=self.loop)
             self.log.info("Executing plan %r", self._plan)
 
             try:
                 print('waiting')
-                self._block.wait()
+                self._task.result()
             finally:
                 print('finally after waiting')
                 if self._task.done():
@@ -1336,9 +1327,6 @@ class RunEngine:
                           'Please fix your plan.'.format(p))
 
             self._state = 'idle'
-
-            # Let RunEngine.__call__ return.
-            self._block.set()
 
         # if the task was cancelled
         if pending_cancel_exception is not None:
