@@ -137,11 +137,18 @@ class LivePlot(CallbackBase):
         self.x_data.append(x)
 
     def update_plot(self):
+        import matplotlib
         self.current_line.set_data(self.x_data, self.y_data)
         # Rescale and redraw.
         self.ax.relim(visible_only=True)
         self.ax.autoscale_view(tight=True)
         self.ax.figure.canvas.draw_idle()
+
+        if matplotlib.get_backend() == 'Qt5Agg':
+            import matplotlib.backends.backend_qt5
+
+            qApp = matplotlib.backends.backend_qt5.qApp
+            qApp.processEvents()
 
     def stop(self, doc):
         if not self.x_data:
