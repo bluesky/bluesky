@@ -23,7 +23,7 @@ from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     RequestAbort, RequestStop, RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
-                    single_gen, short_uid, run_qt_kicker)
+                    single_gen, short_uid, run_matplotlib_qApp)
 
 
 class RunEngineStateMachine(StateMachine):
@@ -217,10 +217,12 @@ class RunEngine:
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
-                 scan_id_source=default_scan_id_source):
+                 scan_id_source=default_scan_id_source,
+                 during_task=run_matplotlib_qApp):
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
+        self._during_task = during_task
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -756,15 +758,12 @@ class RunEngine:
                                                           loop=self.loop)
             self.log.info("Executing plan %r", self._plan)
 
-            if not self._task.done():
-                stop_qt_kicker = run_qt_kicker(self.loop)
             try:
                 print('waiting')
                 # Block until plan is complete or exception is raised.
-                self._task.result()
+                self._during_task(self._task)
             finally:
                 print('finally after waiting')
-                stop_qt_kicker()
                 if self._task.done():
                     # get exceptions from the main task
                     try:

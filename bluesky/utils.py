@@ -1348,3 +1348,35 @@ def merge_cycler(cyc):
             output_data.append(cycler(c, input_data[c]))
 
     return reduce(operator.add, output_data)
+
+
+def run_matplotlib_qApp(task):
+    """
+    The default setting for the RunEngine's during_task parameter.
+
+    This makes it possible for plots that use matplotlib's Qt backend to update
+    live during data acquisition.
+
+    It solves the problem that Qt must be run from the main thread.
+    If matplotlib and a known Qt binding are already imported, run the
+    matplotlib qApp until the task completes. If not, there is no need to
+    handle qApp: just wait on the task.
+    """
+
+    if any(p in sys.modules for p in ['PyQt4', 'pyside', 'PyQt5']):
+        if 'matplotlib' in sys.modules:
+            import matplotlib
+            import matplotlib.backends.backend_qt5
+            # TODO _create_qApp?
+            qApp = matplotlib.backends.backend_qt5.qApp
+
+            def exit(*args, **kwargs):
+                print('exit', args, kwargs)
+                qApp.exit()
+
+            task.add_done_callback(exit)
+            while not task.done():
+                print('exec')
+                qApp.exec()
+    else:
+        task.result()
