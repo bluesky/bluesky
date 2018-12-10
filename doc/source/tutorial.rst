@@ -241,7 +241,7 @@ Using the RunEngine, ``RE``, "count" the detectors:
 
     from bluesky.plans import count
     dets = [det1, det2]   # a list of any number of detectors
- 
+
     RE(count(dets))
 
 Demo:
@@ -434,7 +434,7 @@ Demo:
     dets = [det4]
 
 .. ipython:: python
-    
+
     RE(scan(dets,
             motor1, -1.5, 1.5,  # scan motor1 from -1.5 to 1.5
             motor2, -0.1, 0.1,  # ...while scanning motor2 from -0.1 to 0.1
@@ -641,12 +641,12 @@ why.) Examples:
 
     from bluesky.plans import scan
 
-    def coarse_and_fine(detectors, start, stop):
+    def coarse_and_fine(detectors, motor, start, stop):
         "Scan from 'start' to 'stop' in 10 steps and then again in 100 steps."
-        yield from scan(detectors, start, stop, 10)
-        yield from scan(detectors, start, stop, 100)
+        yield from scan(detectors, motor, start, stop, 10)
+        yield from scan(detectors, motor, start, stop, 100)
 
-    RE(coarse_and_fine(dets, -1, 1))
+    RE(coarse_and_fine(dets, motor, -1, 1))
 
 All of the plans introduced thus far, which we imported from
 :mod:`bluesky.plans`, generate data sets ("runs"). Plans in the
@@ -1291,7 +1291,7 @@ or more devices and waits for them all to arrive. There is also
 
 Some scenarios require more low-level control over when the waiting occurs.
 For these, we employ :func:`~bluesky.plan_stubs.wait` and
-:func:`~bluesky.plan_stubs.abs_set` ("absolute set") or 
+:func:`~bluesky.plan_stubs.abs_set` ("absolute set") or
 :func:`~bluesky.plan_stubs.rel_set` ("relative set").
 
 Here is a scenario that does require a custom solution: we want to set several
