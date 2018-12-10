@@ -740,6 +740,7 @@ class RunEngine:
             for mgr in self.context_managers:
                 stack.enter_context(mgr(self))
             self._task = self.loop.create_task(self._run())
+            self.log.info("Executing plan %r", self._plan)
             try:
                 self.loop.run_forever()
             finally:
@@ -1073,8 +1074,8 @@ class RunEngine:
             else:
                 try:
                     stop(success=success)
-                except Exception as exc:
-                    self.log.error("Failed to stop %r. Error: %r", obj, exc)
+                except Exception:
+                    self.log.exception("Failed to stop %r.", obj)
 
     @asyncio.coroutine
     def _run(self):
@@ -1256,13 +1257,11 @@ class RunEngine:
             self._exit_status = 'abort'
             # TODO Is the sleep here necessary?
             yield from asyncio.sleep(0, loop=self.loop)
-            self.log.error("Run aborted")
-            self.log.error("%r", self._exception)
+            self.log.exception("Run aborted")
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
             self._reason = str(err)
-            self.log.error("Run aborted")
-            self.log.error("%r", err)
+            self.log.exception("Run aborted")
             raise err
         finally:
             # Some done_callbacks may still be alive in other threads.
@@ -1275,22 +1274,21 @@ class RunEngine:
             for obj in list(self._uncollected):
                 try:
                     yield from self._collect(Msg('collect', obj))
-                except Exception as exc:
-                    self.log.error("Failed to collect %r. Error: %r", obj, exc)
+                except Exception:
+                    self.log.exception("Failed to collect %r.", obj)
             # in case we were interrupted between 'stage' and 'unstage'
             for obj in list(self._staged):
                 try:
                     obj.unstage()
-                except Exception as exc:
-                    self.log.error("Failed to unstage %r. Error: %r", obj, exc)
+                except Exception:
+                    self.log.exception("Failed to unstage %r.", obj)
                 self._staged.remove(obj)
             # Clear any uncleared monitoring callbacks.
             for obj, (cb, kwargs) in list(self._monitor_params.items()):
                 try:
                     obj.clear_sub(cb)
-                except Exception as exc:
-                    self.log.error("Failed to stop monitoring %r. Error: %r",
-                                   obj, exc)
+                except Exception:
+                    self.log.exception("Failed to stop monitoring %r.", obj)
                 else:
                     del self._monitor_params[obj]
             sys.stdout.flush()
@@ -1298,9 +1296,9 @@ class RunEngine:
             if self._run_is_open:
                 try:
                     yield from self._close_run(Msg('close_run'))
-                except Exception as exc:
-                    self.log.error("Failed to close run %r. Error: %r",
-                                   self._run_start_uid, exc)
+                except Exception:
+                    self.log.error(
+                        "Failed to close run %r.", self._run_start_uid)
 
             for p in self._plan_stack:
                 try:
@@ -1314,6 +1312,7 @@ class RunEngine:
         # if the task was cancelled
         if pending_cancel_exception is not None:
             raise pending_cancel_exception
+        self.log.info("Cleaned up from plan %r", self._plan)
 
     @asyncio.coroutine
     def _wait_for(self, msg):
@@ -1352,7 +1351,6 @@ class RunEngine:
         self._clear_run_cache()
         self._run_start_uid = new_uid()
         self._run_start_uids.append(self._run_start_uid)
-        self.log.debug("Starting new with uid %r", self._run_start_uid)
 
         # Run scan_id calculation method
         self.md['scan_id'] = self.scan_id_source(self.md)
