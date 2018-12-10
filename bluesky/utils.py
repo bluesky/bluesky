@@ -1367,15 +1367,17 @@ def run_matplotlib_qApp(task):
         if 'matplotlib' in sys.modules:
             import matplotlib
             import matplotlib.backends.backend_qt5
-            # TODO _create_qApp?
+            matplotlib.backends.backend_qt5._create_qApp()
             qApp = matplotlib.backends.backend_qt5.qApp
 
             def exit(*args, **kwargs):
                 print('exit', args, kwargs)
                 qApp.exit()
+                qApp.quit()
+                print('exited')
 
             task.add_done_callback(exit)
-            while not task.done():
+            if not task.done():
                 print('exec')
                 qApp.exec()
     else:
