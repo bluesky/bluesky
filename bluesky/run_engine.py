@@ -220,7 +220,7 @@ class RunEngine:
                  scan_id_source=default_scan_id_source,
                  during_task=run_matplotlib_qApp):
         if loop is None:
-            loop = asyncio.get_event_loop()
+            loop = get_bluesky_event_loop()
         self._loop = loop
         self._during_task = during_task
 
@@ -2516,8 +2516,25 @@ def _default_md_validator(md):
 
 
 def _ensure_event_loop_running(loop):
-    print('ensure')
+    """
+    Run an asyncio event loop forever on a background thread.
+
+    This is idempotent: if the loop is already running nothing will be done.
+    """
     if not loop.is_running():
-        print('start thread')
         threading.Thread(target=loop.run_forever, daemon=True).start()
-        print('thread started')
+
+
+_bluesky_event_loop = None
+
+
+def get_bluesky_event_loop():
+    global _bluesky_event_loop
+    if _bluesky_event_loop is None:
+        _bluesky_event_loop = asyncio.new_event_loop()
+    return _bluesky_event_loop
+
+
+def set_bluesky_event_loop(loop):
+    global _bluesky_event_loop
+    _bluesky_event_loop = loop
