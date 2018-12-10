@@ -761,6 +761,7 @@ class RunEngine:
 
             try:
                 print('waiting')
+                # Block until plan is complete or exception is raised.
                 self._task.result()
             finally:
                 print('finally after waiting')
@@ -846,7 +847,9 @@ class RunEngine:
             if self._task.done():
                 return
             try:
-                self.loop.run_forever()
+                print('waiting')
+                # Block until plan is complete or exception is raised.
+                self._task.result()
             finally:
                 if self._task.done():
                     # get exceptions from the main task
