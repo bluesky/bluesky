@@ -23,7 +23,7 @@ from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     RequestAbort, RequestStop, RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
-                    single_gen, short_uid, install_new_qt_kicker)
+                    single_gen, short_uid, run_qt_kicker)
 
 
 class RunEngineStateMachine(StateMachine):
@@ -757,8 +757,7 @@ class RunEngine:
             self.log.info("Executing plan %r", self._plan)
 
             if not self._task.done():
-                stop_qt_kicker = install_new_qt_kicker(self.loop)
-
+                stop_qt_kicker = run_qt_kicker(self.loop)
             try:
                 print('waiting')
                 # Block until plan is complete or exception is raised.

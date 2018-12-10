@@ -767,8 +767,8 @@ def install_kicker(loop=None, update_rate=0.03):
         raise NotImplementedError("The matplotlib backend {} is not yet "
                                   "supported.".format(backend))
 
-def install_new_qt_kicker(loop=None, update_rate=0.03):
-    """Install a periodic callback to integrate Qt and asyncio event loops.
+def run_qt_kicker(loop=None, update_rate=0.03):
+    """Run a periodic callback to integrate Qt and asyncio event loops.
 
     If a version of the Qt bindings are not already imported, this function
     will do nothing.
@@ -814,6 +814,7 @@ def install_new_qt_kicker(loop=None, update_rate=0.03):
         if not poison_pill:
             loop.call_later(update_rate, _qt_kicker)
 
+    loop.call_soon(_qt_kicker)
     return stop
 
 
