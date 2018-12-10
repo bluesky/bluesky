@@ -641,10 +641,10 @@ why.) Examples:
 
     from bluesky.plans import scan
 
-    def coarse_and_fine(detectors, mtr, start, stop):
+    def coarse_and_fine(detectors, motor, start, stop):
         "Scan from 'start' to 'stop' in 10 steps and then again in 100 steps."
-        yield from scan(detectors, mtr, start, stop, 10)
-        yield from scan(detectors, mtr, start, stop, 100)
+        yield from scan(detectors, motor, start, stop, 10)
+        yield from scan(detectors, motor, start, stop, 100)
 
     RE(coarse_and_fine(dets, motor, -1, 1))
 
