@@ -767,64 +767,14 @@ def install_kicker(loop=None, update_rate=0.03):
         raise NotImplementedError("The matplotlib backend {} is not yet "
                                   "supported.".format(backend))
 
-def run_qt_kicker(loop=None, update_rate=0.03):
-    """Run a periodic callback to integrate Qt and asyncio event loops.
-
-    If a version of the Qt bindings are not already imported, this function
-    will do nothing.
-
-    It is safe to call this function multiple times.
-
-    Parameters
-    ----------
-    loop : event loop, optional
-    update_rate : number
-        Seconds between periodic updates. Default is 0.03.
-    """
-    poison_pill = []
-
-    def stop():
-        poison_pill.append(object())
-
-    if loop is None:
-        loop = asyncio.get_event_loop()
-    if not any(p in sys.modules for p in ['PyQt4', 'pyside', 'PyQt5']):
-        return stop
-    import matplotlib.backends.backend_qt5
-    from matplotlib.backends.backend_qt5 import _create_qApp
-    from matplotlib._pylab_helpers import Gcf
-
-    _create_qApp()
-    qApp = matplotlib.backends.backend_qt5.qApp
-
-    try:
-        _draw_all = Gcf.draw_all  # mpl version >= 1.5
-    except AttributeError:
-        # slower, but backward-compatible
-        def _draw_all():
-            for f_mgr in Gcf.get_all_fig_managers():
-                f_mgr.canvas.draw_idle()
-
-    def _qt_kicker():
-        # The RunEngine Event Loop interferes with the qt event loop. Here we
-        # kick it to keep it going.
-        _draw_all()
-
-        qApp.processEvents()
-        if not poison_pill:
-            loop.call_later(update_rate, _qt_kicker)
-
-    loop.call_soon(_qt_kicker)
-    return stop
-
 
 def install_qt_kicker(loop=None, update_rate=0.03):
     """Install a periodic callback to integrate Qt and asyncio event loops.
 
-    If a version of the Qt bindings are not already imported, this function
-    will do nothing.
-
-    It is safe to call this function multiple times.
+    DEPRECATED: This functionality is now handled automatically by default and
+    is configurable via the RunEngine's new ``during_task`` parameter. Calling
+    this function now has no effect. It will be removed in a future release of
+    bluesky.
 
     Parameters
     ----------
@@ -832,37 +782,9 @@ def install_qt_kicker(loop=None, update_rate=0.03):
     update_rate : number
         Seconds between periodic updates. Default is 0.03.
     """
-    if loop is None:
-        loop = asyncio.get_event_loop()
-    global _QT_KICKER_INSTALLED
-    if loop in _QT_KICKER_INSTALLED:
-        return
-    if not any(p in sys.modules for p in ['PyQt4', 'pyside', 'PyQt5']):
-        return
-    import matplotlib.backends.backend_qt5
-    from matplotlib.backends.backend_qt5 import _create_qApp
-    from matplotlib._pylab_helpers import Gcf
-
-    _create_qApp()
-    qApp = matplotlib.backends.backend_qt5.qApp
-
-    try:
-        _draw_all = Gcf.draw_all  # mpl version >= 1.5
-    except AttributeError:
-        # slower, but backward-compatible
-        def _draw_all():
-            for f_mgr in Gcf.get_all_fig_managers():
-                f_mgr.canvas.draw_idle()
-
-    def _qt_kicker():
-        # The RunEngine Event Loop interferes with the qt event loop. Here we
-        # kick it to keep it going.
-        _draw_all()
-
-        qApp.processEvents()
-        loop.call_later(update_rate, _qt_kicker)
-
-    _QT_KICKER_INSTALLED[loop] = loop.call_soon(_qt_kicker)
+    warnings.warn("bluesky.utils.install_qt_kicker is no longer necessary and "
+                  "has no effect. Please remove your use of it. It may be "
+                  "removed in a future release of bluesky.")
 
 
 def install_nb_kicker(loop=None, update_rate=0.03):
