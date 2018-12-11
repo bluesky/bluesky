@@ -1272,7 +1272,7 @@ def merge_cycler(cyc):
     return reduce(operator.add, output_data)
 
 
-def run_matplotlib_qApp(task):
+def run_matplotlib_qApp(running_event):
     """
     The default setting for the RunEngine's during_task parameter.
 
@@ -1292,15 +1292,19 @@ def run_matplotlib_qApp(task):
             matplotlib.backends.backend_qt5._create_qApp()
             qApp = matplotlib.backends.backend_qt5.qApp
 
-            def exit(*args, **kwargs):
-                print('exit', args, kwargs)
-                qApp.exit()
-                qApp.quit()
-                print('exited')
+            def exit_qApp():
+                # Be sure it has finished starting before we try to kill it.
+                time.sleep(0.1)  # HACK
 
-            task.add_done_callback(exit)
-            if not task.done():
-                print('exec')
+                running_event.wait()
+                qApp.exit()
+
+            thread = threading.Thread(target=exit_qApp, daemon=True)
+            thread.start()
+
+            if not running_event.is_set():
                 qApp.exec()
+
+            thread.join()
     else:
-        task.result()
+        running_event.wait()

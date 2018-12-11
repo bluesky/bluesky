@@ -223,6 +223,7 @@ class RunEngine:
             loop = get_bluesky_event_loop()
         self._loop = loop
         self._during_task = during_task
+        self._running_event = threading.Event()
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -753,15 +754,19 @@ class RunEngine:
         with ExitStack() as stack:
             for mgr in self.context_managers:
                 stack.enter_context(mgr(self))
-
+            self.log.info("Executing plan %r", self._plan)
             self._task = asyncio.run_coroutine_threadsafe(self._run(),
                                                           loop=self.loop)
-            self.log.info("Executing plan %r", self._plan)
+
+            def set_running_event(future):
+                self._running_event.set()
+
+            self._task.add_done_callback(set_running_event)
 
             try:
                 print('waiting')
                 # Block until plan is complete or exception is raised.
-                self._during_task(self._task)
+                self._during_task(self._running_event)
             finally:
                 print('finally after waiting')
                 if self._task.done():
