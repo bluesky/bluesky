@@ -906,6 +906,25 @@ def register_transform(RE, *, prefix='<'):
     ip.input_transformer_manager.logical_line_transforms.append(tr_re())
 
 
+def ipython_profile_name():
+    """
+    return the name of the current ipython profile or `None`
+
+    Example (add to default RunEngine metadata)::
+        RE.md['ipython_profile'] = str(ipython_profile_name())
+    """
+    import IPython.paths
+    import IPython.core.profileapp
+    import IPython.core.profiledir
+
+    path = IPython.paths.get_ipython_dir()
+    ipd = IPython.core.profiledir.ProfileDir()
+    for p in IPython.core.profileapp.list_profiles_in(path):
+        pd = ipd.find_profile_dir_by_name(path, p)
+        if os.path.dirname(__file__) == pd.startup_dir:
+            return p
+
+
 class AsyncInput:
     """a input prompt that allows event loop to run in the background
 
