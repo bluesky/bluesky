@@ -137,6 +137,16 @@ def test_stop_motors_and_log_any_errors(RE, hw):
 
 
 @requires_ophyd
+def test_collect_asset_documents_with_flyer(RE):
+
+    from ophyd.sim import det, flyer1, flyer2
+    from bluesky.preprocessors import fly_during_wrapper
+
+    RE(fly_during_wrapper(count([det], num=5), [flyer1, flyer2]))
+    for name, d in flyer1.collect_asset_docs():
+        print(name)
+
+@requires_ophyd
 def test_collect_uncollected_and_log_any_errors(RE):
     # test that if stopping one motor raises an error, we can carry on
     collected = {}
