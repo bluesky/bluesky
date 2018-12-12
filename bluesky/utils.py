@@ -908,10 +908,18 @@ def register_transform(RE, *, prefix='<'):
 
 def ipython_profile_name():
     """
-    return the name of the current ipython profile or `None`
+    A function to return ipython profile name.
 
-    Example (add to default RunEngine metadata)::
-        RE.md['ipython_profile'] = str(ipython_profile_name())
+    Returns 
+    -------
+    p: string
+        The name of the current ipython profile or `None`
+
+    Examples
+    --------
+    Add ipython profile name to default RunEngine metadata
+
+    >>> RE.md['ipython_profile'] = str(ipython_profile_name())
     """
     import IPython.paths
     import IPython.core.profileapp
