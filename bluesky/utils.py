@@ -1285,7 +1285,7 @@ def run_matplotlib_qApp(running_event):
     handle qApp: just wait on the task.
     """
 
-    if any(p in sys.modules for p in ['PyQt4', 'pyside', 'PyQt5']):
+    if any(p in sys.modules for p in ['PyQt4', 'pyside', 'pyside2, 'PyQt5']):
         if 'matplotlib' in sys.modules:
             import matplotlib
             import matplotlib.backends.backend_qt5
