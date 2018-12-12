@@ -223,7 +223,13 @@ class RunEngine:
             loop = get_bluesky_event_loop()
         self._loop = loop
         self._during_task = during_task
-        self._running_event = threading.Event()
+
+        # When set, RunEngine.__call__ should stop blocking.
+        self._blocking_event = threading.Event()
+
+        # When cleared, RunEngine._run will pause until set.
+        self._resume_event = threading.Event()
+        self._resume_event.set()
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -627,20 +633,9 @@ class RunEngine:
             for task in self._status_tasks:
                 task.cancel()
             return
-        # Remove any monitoring callbacks, but keep refs in
-        # self._monitor_params to re-instate them later.
-        for obj, (cb, kwargs) in list(self._monitor_params.items()):
-            obj.clear_sub(cb)
-        # During pause, all motors should be stopped. Call stop() on every
-        # object we ever set().
-        self._stop_movable_objects(success=True)
-        # Notify Devices of the pause in case they want to clean up.
-        for obj in self._objs_seen:
-            if hasattr(obj, 'pause'):
-                try:
-                    obj.pause()
-                except NoReplayAllowed:
-                    self._reset_checkpoint_state_meth()
+        # Clearing this Event will cause the _run loop to pause on its next
+        # iteration. It will then wait for this Event to be set.
+        self._resume_event.clear()
 
     def _record_interruption(self, content):
         """
@@ -754,19 +749,20 @@ class RunEngine:
         with ExitStack() as stack:
             for mgr in self.context_managers:
                 stack.enter_context(mgr(self))
-            self.log.info("Executing plan %r", self._plan)
+
+            self._blocking_event.clear()
             self._task = asyncio.run_coroutine_threadsafe(self._run(),
                                                           loop=self.loop)
 
-            def set_running_event(future):
-                self._running_event.set()
+            def set_blocking_event(future):
+                self._blocking_event.set()
 
-            self._task.add_done_callback(set_running_event)
+            self._task.add_done_callback(set_blocking_event)
 
             try:
                 print('waiting')
                 # Block until plan is complete or exception is raised.
-                self._during_task(self._running_event)
+                self._during_task(self._blocking_event)
             finally:
                 print('finally after waiting')
                 if self._task.done():
@@ -813,7 +809,7 @@ class RunEngine:
         for obj in self._objs_seen:
             if hasattr(obj, 'resume'):
                 obj.resume()
-        self._resume_event_loop()
+        self._resume_task()
         if self._interrupted:
             raise RunEngineInterrupted(self.pause_msg) from None
         return self._run_start_uids
@@ -839,7 +835,7 @@ class RunEngine:
             self._bundling = False
         return new_plan
 
-    def _resume_event_loop(self):
+    def _resume_task(self):
         # may be called by 'resume' or 'abort'
         self._state = 'running'
 
@@ -849,10 +845,17 @@ class RunEngine:
                 stack.enter_context(mgr(self))
             if self._task.done():
                 return
+
+            # Clear the blocking Event so that we can wait on it below.
+            # The task will set it when it is done, as it was previously
+            # configured to do it __call__.
+            self._blocking_event.clear()
+            # The _run task is waiting on this Event. Let is continue.
+            self._resume_event.set()
             try:
                 print('waiting')
                 # Block until plan is complete or exception is raised.
-                self._task.result()
+                self._during_task(self._blocking_event)
             finally:
                 if self._task.done():
                     # get exceptions from the main task
@@ -1047,7 +1050,7 @@ class RunEngine:
             task.cancel()
         self._exit_status = 'abort'
         if self._state == 'paused':
-            self._resume_event_loop()
+            self._resume_task()
         return self._run_start_uids
 
     def stop(self):
@@ -1067,7 +1070,7 @@ class RunEngine:
         self._exception = RequestStop()
         self._task.cancel()
         if self._state == 'paused':
-            self._resume_event_loop()
+            self._resume_task()
         return self._run_start_uids
 
     def halt(self):
@@ -1088,7 +1091,7 @@ class RunEngine:
         self._exit_status = 'abort'
         self._task.cancel()
         if self._state == 'paused':
-            self._resume_event_loop()
+            self._resume_task()
         return self._run_start_uids
 
     def _stop_movable_objects(self, *, success=True):
@@ -1124,6 +1127,37 @@ class RunEngine:
         try:
             self._state = 'running'
             while True:
+                if not self._resume_event.is_set():
+                    # A pause has been requested. First, put everything in a
+                    # resting state.
+
+                    # Remove any monitoring callbacks, but keep refs in
+                    # self._monitor_params to re-instate them later.
+                    for obj, (cb, kwargs) in list(self._monitor_params.items()):
+                        obj.clear_sub(cb)
+                    # During pause, all motors should be stopped. Call stop()
+                    # on every object we ever set().
+                    self._stop_movable_objects(success=True)
+                    # Notify Devices of the pause in case they want to clean up.
+                    for obj in self._objs_seen:
+                        if hasattr(obj, 'pause'):
+                            try:
+                                obj.pause()
+                            except NoReplayAllowed:
+                                self._reset_checkpoint_state_meth()
+
+                    # Let RunEngine.__call__ return...
+                    print('release __call__')
+                    self._blocking_event.set()
+                    # ...and wait here until RunEngine.{resume|stop|abort|halt} is
+                    # called.
+                    print('going to wait')
+                    self._resume_event.wait()
+                    print('passed wait')
+
+                    # If we are here, we have come back to life either to
+                    # continue (resume) or to clean up before exiting.
+
                 assert len(self._response_stack) == len(self._plan_stack)
                 # set resp to the sentinel so that if we fail in the sleep
                 # we do not add an extra response
