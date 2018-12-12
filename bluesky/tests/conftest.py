@@ -16,7 +16,8 @@ def RE(request):
             RE.halt()
         ev = asyncio.Event(loop=loop)
         ev.set()
-        loop.run_until_complete(ev.wait())
+        task = asyncio.run_coroutine_threadsafe(ev.wait(), loop=loop)
+        task.result()
 
     request.addfinalizer(clean_event_loop)
     return RE

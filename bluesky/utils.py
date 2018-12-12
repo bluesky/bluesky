@@ -183,7 +183,8 @@ class SigintHandler(SignalHandler):
         self.num_sigints_processed = 0  # count SIGINTs processed
 
     def __enter__(self):
-        self.RE.loop.call_later(0.1, self.check_for_signals)
+        loop = self.RE.loop
+        loop.call_soon_threadsafe(loop.call_later, 0.1, self.check_for_signals)
         return super().__enter__()
 
     def check_for_signals(self):
@@ -221,7 +222,9 @@ class SigintHandler(SignalHandler):
                         self.last_sigint_time = None
 
         if not self.released:
-            self.RE.loop.call_later(0.1, self.check_for_signals)
+            loop = self.RE.loop
+            loop.call_soon_threadsafe(
+                loop.call_later, 0.1, self.check_for_signals)
 
 
 class CallbackRegistry:
