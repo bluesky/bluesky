@@ -8,6 +8,7 @@ import uuid
 from functools import reduce
 from weakref import ref, WeakKeyDictionary
 import types
+import importlib
 import inspect
 from inspect import Parameter, Signature
 import itertools
@@ -1275,7 +1276,7 @@ def merge_cycler(cyc):
     return reduce(operator.add, output_data)
 
 
-def run_matplotlib_qApp(running_event):
+def run_matplotlib_qApp(blocking_event):
     """
     The default setting for the RunEngine's during_task parameter.
 
@@ -1287,27 +1288,51 @@ def run_matplotlib_qApp(running_event):
     matplotlib qApp until the task completes. If not, there is no need to
     handle qApp: just wait on the task.
     """
+    # Figure out if we are using matplotlib with a Qt backend, and do so
+    # without importing anything that is not already imported.
+    if 'matplotlib' in sys.modules:
+        import matplotlib
+        if matplotlib.get_backend() in ('Qt4Agg', 'Qt5Agg'):
 
-    if any(p in sys.modules for p in ['PyQt4', 'pyside', 'pyside2, 'PyQt5']):
-        if 'matplotlib' in sys.modules:
-            import matplotlib
-            import matplotlib.backends.backend_qt5
-            matplotlib.backends.backend_qt5._create_qApp()
-            qApp = matplotlib.backends.backend_qt5.qApp
+            # We are using matplotlib with Qt.
 
-            def exit_qApp():
-                # Be sure it has finished starting before we try to kill it.
-                time.sleep(0.1)  # HACK
+            # When the function is run for the first time, _create_qApp and
+            # stash it as state *on* the function itself.
+            if run_matplotlib_qApp.qApp_instance is None:
+                import matplotlib.backends.backend_qt5
+                matplotlib.backends.backend_qt5._create_qApp()
+                run_matplotlib_qApp.qApp_instance = matplotlib.backends.backend_qt5.qApp
+            qApp = run_matplotlib_qApp.qApp_instance
 
-                running_event.wait()
-                qApp.exit()
+            from matplotlib.backends.qt_compat import QtCore
 
-            thread = threading.Thread(target=exit_qApp, daemon=True)
-            thread.start()
+            def start_killer_thread():
+                def exit_qApp():
+                    blocking_event.wait()
+                    # If the above wait ends quickly, we need to avoid the race
+                    # condition where this thread might try to exit the qApp
+                    # before it even starts.  Therefore, we use QTimer, below,
+                    # which will not start running until the qApp event loop is
+                    # running.
+                    qApp.exit()
 
-            if not running_event.is_set():
+                threading.Thread(target=exit_qApp).start()
+
+            timer = QtCore.QTimer()
+            timer.setSingleShot(True)
+            timer.timeout.connect(start_killer_thread)
+            timer.start(0)
+
+            if not blocking_event.is_set():
                 qApp.exec()
-
-            thread.join()
+        else:
+            # We are not using matplotlib + Qt. Just wait on the Event.
+            blocking_event.wait()
     else:
-        running_event.wait()
+        # We are not using matplotlib + Qt. Just wait on the Event.
+        blocking_event.wait()
+
+
+# We stash some private state *on* the function here and refer to it in the
+# function body.
+run_matplotlib_qApp.qApp_instance = None
