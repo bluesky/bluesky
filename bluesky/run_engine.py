@@ -228,8 +228,8 @@ class RunEngine:
         self._blocking_event = threading.Event()
 
         # When cleared, RunEngine._run will pause until set.
-        self._resume_event = threading.Event()
-        self._resume_event.set()
+        self._run_permit = threading.Event()
+        self._run_permit.set()
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -635,7 +635,7 @@ class RunEngine:
             return
         # Clearing this Event will cause the _run loop to pause on its next
         # iteration. It will then wait for this Event to be set.
-        self._resume_event.clear()
+        self._run_permit.clear()
 
     def _record_interruption(self, content):
         """
@@ -851,7 +851,7 @@ class RunEngine:
             # configured to do it __call__.
             self._blocking_event.clear()
             # The _run task is waiting on this Event. Let is continue.
-            self._resume_event.set()
+            self._run_permit.set()
             try:
                 print('waiting')
                 # Block until plan is complete or exception is raised.
@@ -1127,7 +1127,7 @@ class RunEngine:
         try:
             self._state = 'running'
             while True:
-                if not self._resume_event.is_set():
+                if not self._run_permit.is_set():
                     # A pause has been requested. First, put everything in a
                     # resting state.
 
@@ -1152,7 +1152,7 @@ class RunEngine:
                     # ...and wait here until RunEngine.{resume|stop|abort|halt} is
                     # called.
                     print('going to wait')
-                    self._resume_event.wait()
+                    self._run_permit.wait()
                     print('passed wait')
 
                     # If we are here, we have come back to life either to
