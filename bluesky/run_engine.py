@@ -1151,8 +1151,24 @@ class RunEngine:
                     self._blocking_event.set()
                     # ...and wait here until RunEngine.{resume|stop|abort|halt} is
                     # called.
+                    bridge_event = asyncio.Event()
+
+                    @asyncio.coroutine
+                    def set_bridge_event():
+                        bridge_event.set()
+
+                    def unblock_bridge():
+                        print('kicked off bridge thread')
+                        self._run_permit.wait()
+                        print('run permit is set')
+                        asyncio.run_coroutine_threadsafe(set_bridge_event(),
+                                                         loop=self.loop)
+                        print('bridge event is set')
+
+                    threading.Thread(target=unblock_bridge, daemon=True).start()
+
                     print('going to wait')
-                    self._run_permit.wait()
+                    yield from bridge_event.wait()
                     print('passed wait')
 
                     # If we are here, we have come back to life either to
