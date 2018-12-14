@@ -221,6 +221,7 @@ class RunEngine:
                  during_task=run_matplotlib_qApp):
         if loop is None:
             loop = get_bluesky_event_loop()
+        _ensure_event_loop_running(loop)
         self._loop = loop
         self._during_task = during_task
 
@@ -682,7 +683,6 @@ class RunEngine:
         uids : list
             list of uids (i.e. RunStart Document uids) of run(s)
         """
-        _ensure_event_loop_running(self.loop)
         # This scheme lets us make 'plan' and 'subs' POSITIONAL ONLY, reserving
         # all keyword arguments for user metdata.
         arguments = _call_sig.bind(self, *args, **metadata_kw).arguments
