@@ -88,9 +88,9 @@ def test_live_grid(RE, hw):
     RE.subscribe(bec)
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
 
+
 def test_plot_ints(RE):
     from ophyd import Signal
-    from bluesky import RunEngine
     from bluesky.callbacks.best_effort import BestEffortCallback
     from bluesky.plans import count
 
@@ -98,7 +98,7 @@ def test_plot_ints(RE):
     RE.subscribe(bec)
 
     s = Signal(name='s')
-    s.set(0)
+    s.set(int(0))
     assert s.describe()['s']['dtype'] == 'integer'
     s.kind = 'hinted'
     with pytest.warns(None) as record:
