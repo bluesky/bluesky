@@ -265,7 +265,7 @@ class BestEffortCallback(CallbackBase):
             x_key, = dim_fields
             for y_key, ax in zip(columns, axes):
                 dtype = doc['data_keys'][y_key]['dtype']
-                if dtype not in ('number',):
+                if dtype not in ('number', 'integer'):
                     warn("Omitting {} from plot because dtype is {}"
                          "".format(y_key, dtype))
                     continue
