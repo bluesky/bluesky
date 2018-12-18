@@ -1,4 +1,5 @@
 import ast
+import pytest
 from bluesky.plans import scan, grid_scan
 import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
@@ -86,3 +87,21 @@ def test_live_grid(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
+
+def test_plot_ints(RE):
+    from ophyd import Signal
+    from bluesky import RunEngine
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    from bluesky.plans import count
+
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+    s = Signal(name='s')
+    s.set(0)
+    assert s.describe()['s']['dtype'] == 'integer'
+    s.kind = 'hinted'
+    with pytest.warns(None) as record:
+        RE(count([s], num=35))
+
+    assert len(record) == 0
