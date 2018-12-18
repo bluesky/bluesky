@@ -137,14 +137,14 @@ def test_stop_motors_and_log_any_errors(RE, hw):
 
 
 @requires_ophyd
-def test_collect_asset_documents_with_flyer(RE):
+def test_flyer_with_collect_asset_documents(RE):
 
-    from ophyd.sim import det, flyer1, flyer2
+    from ophyd.sim import det, new_trivial_flyer, trivial_flyer
     from bluesky.preprocessors import fly_during_wrapper
+    assert hasattr(new_trivial_flyer, 'collect_asset_docs')
+    assert hasattr(trivial_flyer, 'collec_asset_docs') == False
+    RE(fly_during_wrapper(count([det], num=5), [new_trivial_flyer, trivial_flyer]))
 
-    RE(fly_during_wrapper(count([det], num=5), [flyer1, flyer2]))
-    for name, d in flyer1.collect_asset_docs():
-        print(name)
 
 @requires_ophyd
 def test_collect_uncollected_and_log_any_errors(RE):
