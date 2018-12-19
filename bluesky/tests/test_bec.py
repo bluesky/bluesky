@@ -93,12 +93,13 @@ def test_plot_ints(RE):
     from ophyd import Signal
     from bluesky.callbacks.best_effort import BestEffortCallback
     from bluesky.plans import count
+    import bluesky.plan_stubs as bps
 
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
     s = Signal(name='s')
-    s.set(int(0))
+    RE(bps.mov(s, int(0)))
     assert s.describe()['s']['dtype'] == 'integer'
     s.kind = 'hinted'
     with pytest.warns(None) as record:
