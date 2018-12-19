@@ -91,15 +91,15 @@ def test_live_grid(RE, hw):
 
 def test_plot_ints(RE):
     from ophyd import Signal
-    from ophyd.utils import set_and_wait
     from bluesky.callbacks.best_effort import BestEffortCallback
     from bluesky.plans import count
+    import bluesky.plan_stubs as bps
 
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
     s = Signal(name='s')
-    set_and_wait(s, int(0))
+    RE(bps.mov(s, int(0)))
     assert s.describe()['s']['dtype'] == 'integer'
     s.kind = 'hinted'
     with pytest.warns(None) as record:
