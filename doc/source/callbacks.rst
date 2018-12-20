@@ -194,6 +194,14 @@ field.
 
 .. autoclass:: bluesky.callbacks.LiveTable
 
+.. warning
+
+   The data in the table is formatted according to its type and the
+   precision reported by the control system.  If you are seeing too
+   many or too few decimal places, this should be adjusted at the
+   controls system level.  In EPICS, this is typically the ``.PREC``
+   field on the record.
+
 .. _kickers:
 
 Aside: Making plots update live
