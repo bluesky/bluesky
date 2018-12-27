@@ -302,6 +302,19 @@ def test_live_fit_multidim(RE, hw):
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
 
 
+def test_live_plot_from_callbacks():
+    from bluesky.callbacks import LivePlot as LivePlotFromCallbacks
+    from bluesky.callbacks.core import LivePlot as LivePlotFromCore
+    assert LivePlotFromCallbacks == LivePlot
+    assert LivePlotFromCore == LivePlot
+    class FromCallbacks(LivePlotFromCallbacks):
+        ...
+    FromCallbacks('det', 'motor')
+    class FromCore(LivePlotFromCore):
+        ...
+    FromCore('det', 'motor')
+
+
 def test_live_fit_plot(RE, hw):
     try:
         import lmfit
