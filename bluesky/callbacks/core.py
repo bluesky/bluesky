@@ -129,7 +129,6 @@ def _deprecate_import_name(name):
     warnings.warn(wmsg, UserWarning)
     from . import mpl_plotting
     cls = getattr(mpl_plotting, name)
-    cls.__name__ = name
     return cls
 
 LiveScatter = _deprecate_import_name("LiveScatter")
