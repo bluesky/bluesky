@@ -3,41 +3,21 @@ Useful callbacks for the Run Engine
 """
 from itertools import count
 import warnings
-from collections import deque, namedtuple, OrderedDict
+from collections import deque, namedtuple, OrderedDict, ChainMap
 import time as ttime
 
 from datetime import datetime
+import numpy as np
 import logging
 from ..utils import ensure_uid
 
+# back-compat
+try:
+    import matplotlib
+except ImportError:
+    from .mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
+                               LiveFitPlot, LiveRaster, LiveMesh)
 
-# deprecate callbacks moved to mpl_plotting ----------------------------------
-
-def _deprecate_import_name(name):
-    wmsg = (
-        "In a future version of bluesky, {} will not be importable from "
-        "bluesky.callbacks.core or bluesky.callbacks. Instead, import it from "
-        "bluesky.callbacks.mpl_plotting. This change allows other callbacks, "
-        "unrelated to matplotlib, to be imported and used without importing "
-        "matplotlib.pyplot or configuring a DISPLAY."
-    ).format(name)
-    def f(*args, **kwargs):
-        # per bluesky convention use UserWarning instead of DeprecationWarning
-        warnings.warn(wmsg, UserWarning)
-        from . import mpl_plotting
-        cls = getattr(mpl_plotting, name)
-        return cls(*args, **kwargs)
-    f.__name__ = name
-    return f
-
-LiveScatter = _deprecate_import_name("LiveScatter")
-LivePlot = _deprecate_import_name("LivePlot")
-LiveGrid = _deprecate_import_name("LiveGrid")
-LiveFitPlot = _deprecate_import_name("LiveFitPlot")
-LiveRaster = _deprecate_import_name("LiveRaster")
-LiveMesh = _deprecate_import_name("LiveMesh")
-
-# ----------------------------------------------------------------------------
 
 class CallbackBase:
     def __call__(self, name, doc):

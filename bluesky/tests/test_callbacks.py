@@ -6,9 +6,9 @@ from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.plan_stubs import pause
 import bluesky.plans as bp
-from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit
-from bluesky.callbacks.mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
-                                            LiveFitPlot, LiveRaster, LiveMesh)
+from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
+                               LiveFitPlot, LivePlot, LiveGrid, LiveScatter)
+from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks import CallbackBase
 from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
