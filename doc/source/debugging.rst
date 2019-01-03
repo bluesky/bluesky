@@ -35,8 +35,8 @@ Here is the complete list of loggers used by bluesky.
   a status object has completed.
 * ``'bluesky.RE.<id>'`` --- Messages from a specific RunEngine instance,
   disambiguating the (rare) case where there are multiple RunEngine instances
-  in the same process.
-  This is the logger that the accessor ``RE.log`` refers to.
+  in the same process. This is the logger that the accessor ``RE.log`` refers
+  to.
 * ``'bluesky.RE.<id>.msg'`` --- DEBUG-level notes when each message from a plan
   is about to be processed.
 
