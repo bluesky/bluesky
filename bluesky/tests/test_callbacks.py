@@ -10,11 +10,7 @@ from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit
 from bluesky.callbacks.mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
                                             LiveFitPlot, LiveRaster, LiveMesh)
 from bluesky.callbacks.broker import BrokerCallbackBase
-from bluesky.callbacks import CallbackBase
 from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
-import signal
-import threading
-import time
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
@@ -300,6 +296,21 @@ def test_live_fit_multidim(RE, hw):
     expected = {'A': 1, 'sigma': 1, 'x0': 0, 'y0': 0}
     for k, v in expected.items():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
+
+
+def test_live_plot_from_callbacks():
+    import bluesky.callbacks.core
+    # We don't want the shims in callbacks.core, see #1133 for discussion
+    assert not hasattr(bluesky.callbacks.core, 'LivePlot')
+    # We still want the shims in callbacks.__init__
+    from bluesky.callbacks import LivePlot as LivePlotFromCallbacks
+    assert LivePlotFromCallbacks is LivePlot
+
+    # Make sure we can subclass it
+    class FromCallbacks(LivePlotFromCallbacks):
+        ...
+
+    FromCallbacks('det', 'motor')
 
 
 def test_live_fit_plot(RE, hw):

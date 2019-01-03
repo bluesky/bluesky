@@ -1,6 +1,4 @@
 from collections import ChainMap
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
 from cycler import cycler
 import numpy as np
 import warnings
@@ -49,6 +47,7 @@ class LivePlot(CallbackBase):
     """
     def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, fig=None, epoch='run', **kwargs):
+        import matplotlib.pyplot as plt
         super().__init__()
         if fig is not None:
             if ax is not None:
@@ -185,6 +184,8 @@ class LiveScatter(CallbackBase):
     """
     def __init__(self, x, y, I, *, xlim=None, ylim=None,
                  clim=None, cmap='viridis', ax=None, **kwargs):
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as mcolors
         if ax is None:
             fig, ax = plt.subplots()
             fig.show()
@@ -326,6 +327,8 @@ class LiveGrid(CallbackBase):
                  clim=None, cmap='viridis',
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
                  ax=None, x_positive='right', y_positive='up'):
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as mcolors
         if ax is None:
             fig, ax = plt.subplots()
         ax.cla()
@@ -532,6 +535,7 @@ def plot_peak_stats(peak_stats, ax=None):
     arts : dict
         dictionary of matplotlib Artist objects, for further styling
     """
+    import matplotlib.pyplot as plt
     arts = {}
     ps = peak_stats  # for brevity
     if ax is None:
