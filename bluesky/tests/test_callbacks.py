@@ -303,16 +303,16 @@ def test_live_fit_multidim(RE, hw):
 
 
 def test_live_plot_from_callbacks():
+    import bluesky.callbacks.core
+    # We don't want the shims in callbacks.core, see #1133 for discussion
+    assert not hasattr(bluesky.callbacks.core, 'LivePlot')
+    # We still want the shims in callbacks.__init__
     from bluesky.callbacks import LivePlot as LivePlotFromCallbacks
-    from bluesky.callbacks.core import LivePlot as LivePlotFromCore
     assert LivePlotFromCallbacks == LivePlot
-    assert LivePlotFromCore == LivePlot
+    # Make sure we can subclass it
     class FromCallbacks(LivePlotFromCallbacks):
         ...
     FromCallbacks('det', 'motor')
-    class FromCore(LivePlotFromCore):
-        ...
-    FromCore('det', 'motor')
 
 
 def test_live_fit_plot(RE, hw):
