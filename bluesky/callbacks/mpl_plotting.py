@@ -452,7 +452,6 @@ class LiveFitPlot(LivePlot):
     """
     def __init__(self, livefit, *, num_points=100, legend_keys=None, xlim=None,
                  ylim=None, ax=None, **kwargs):
-        import matplotlib.pyplot as plt
         if len(livefit.independent_vars) != 1:
             raise NotImplementedError("LiveFitPlot supports models with one "
                                       "independent variable only.")
