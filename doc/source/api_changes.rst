@@ -2,6 +2,61 @@
  Release History
 =================
 
+v1.5.0 (2019-01-03)
+===================
+
+This release includes many documentation fixes and handful of new features,
+especially around improved logging.
+
+Features
+--------
+
+* Logging has been increased and improved.
+* A default handler is added to the ``'bluesky'`` logger at import time. A new
+  convenience function, :func:`~bluesky.set_handler`, addresses common cases
+  such as directing the log output to a file.
+* The ``bluesky-0MQ-proxy`` script now supports a ``-v, --verbose`` option,
+  which logs every start and stop document received and a ``-vvv`` ("very
+  verbose")` option, which logs every document of every type.
+* The prefix on messages sent by :class:`bluesky.callbacks.zmq.Publisher` can
+  be set to arbitrary bytes. (In previous versions, the prefix was hardcoded to
+  an encoded combination of the hostname, process ID, and the Python object ID
+  of a RunEngine intance.)
+* The RunEngine includes a human-readable, not-necessarily-unique ``scan_id``
+  key in the RunStart document. The source of the ``scan_id`` is now pluggable
+  via a new parameter, ``scan_id_source``. See :doc:`run_engine_api` for
+  details.
+* The convenience function, :func:`bluesky.utils.ts_msg_hook` accepts new
+  parameter ``file`` for directing the output to a file instead of the standard
+  out.
+* It is possible to use those callbacks that do not require matplotlib without
+  importing matplotlib.
+
+Bug Fixes
+---------
+
+* Fixed BestEffortCallback's handling of integer data in plots.
+* Fixed invalid escape sequence that produced a warning in Python 3.6.
+
+Breaking Changes
+----------------
+
+* The siganture of :class:`bluesky.callbacks.zmq.RemoteDispatcher` has been
+  changed in a non-backward-compatbile way. The parameters for filtering
+  messages by ``hostname``, ``pid``, and ``run_engine_id`` have been replaced
+  by one new parameter, ``prefix``.
+* The default value of ``RunEngine.verbose`` is now ``True``, meaning that the
+  ``RunEngine.log`` is *not* disabled by default.
+
+Deprecations
+------------
+
+* The :class:`bluesky.callbacks.zmq.Publisher` accepts an optional RunEngine
+  instance, which the Publisher subscribes to automatically. This parameter has
+  been deprecated; users are now encouraged to subscribe the publisher the
+  RunEngine manually, in the normal way (``RE.subscribe(publisher)``). The
+  parameter may be removed in a future release of bluesky.
+
 v1.4.1 (2018-09-24)
 ===================
 
