@@ -1,5 +1,5 @@
 cycler
-event-model
+event-model>=1.5.0
 historydict
 jsonschema
 numpy
