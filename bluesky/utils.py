@@ -22,6 +22,7 @@ import time
 from tqdm import tqdm
 from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
 import warnings
+import requests
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import groupby
@@ -223,6 +224,37 @@ class SigintHandler(SignalHandler):
         if not self.released:
             self.RE.loop.call_later(0.1, self.check_for_signals)
 
+class ElasticHandler(logging.Handler):
+    '''
+    Logging handler that submits data to Elastic
+    
+    Parameters
+    ----------
+    url: string
+        url to Elastic server
+
+    level: Logging Levels
+        Handler logging level
+    '''
+    def __init__(self, level = logging.DEBUG, url='http://elasticsearch.cs.nsls2.local/test/_doc/1'):
+        self.level = level
+        self.url = url
+        self.response = None
+        logging.basicConfig(filename='elasticsearch.log',level=self.level)
+        super().__init__(self.level)
+
+    def emit(self, record):
+        '''
+        method is used to send the message to its destination and logging for debug
+        '''
+        # Extract useful info from the record and put them into a dict.
+        f = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.response = requests.put(self.url, data=record)
+        logging.info(f.format(record))
+        try:
+            self.response.raise_for_status()
+        except Exception as err:
+            logging.error(err)
 
 class CallbackRegistry:
     """
