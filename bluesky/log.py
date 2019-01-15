@@ -134,7 +134,7 @@ logger = logging.getLogger('bluesky')
 current_handler = None  # overwritten below
 
 
-def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
+def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True, level = logging.WARNING):
     """
     Set a new handler on the ``logging.getLogger('bluesky')`` logger.
 
@@ -150,6 +150,8 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
         Date format. Default is ``'%H:%M:%S'``.
     color : boolean
         Use ANSI color codes. True by default.
+    level : logging Levels
+        One of from CRITICAL, ERROR, WARNING, INFO, DEBUG and NOTSET
 
     Returns
     -------
@@ -170,6 +172,10 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
     Turn off ANSI color codes.
 
     >>> set_handler(color=False)
+
+    Set log level higher to ERROR
+
+    >>> set_handler(level = logging.ERROR)
     """
     global current_handler
     if isinstance(file, str):
@@ -184,6 +190,7 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
         LogFormatter(format, datefmt=datefmt))
     if current_handler in logger.handlers:
         logger.removeHandler(current_handler)
+    handler.setLevel(level)
     logger.addHandler(handler)
     current_handler = handler
     return handler
