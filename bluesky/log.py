@@ -134,7 +134,7 @@ logger = logging.getLogger('bluesky')
 current_handler = None  # overwritten below
 
 
-def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True, level = logging.WARNING):
+def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True, level=logging.WARNING):
     """
     Set a new handler on the ``logging.getLogger('bluesky')`` logger.
 
