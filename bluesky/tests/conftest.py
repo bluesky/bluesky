@@ -25,7 +25,7 @@ def RE(request):
 @pytest.fixture(scope='function')
 def hw(tmpdir):
     from ophyd.sim import hw
-    return hw(tmpdir)
+    return hw(str(tmpdir))
 
 
 # vendored from ophyd.sim
