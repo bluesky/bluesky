@@ -4,9 +4,10 @@ import numpy as np
 import warnings
 
 from .core import CallbackBase, get_obj_fields
+from event_model import DocumentRouter
 
 
-class Line(CallbackBase):
+class Line(DocumentRouter):
     """
     Draw a matplotlib Line Arist update it for each Event.
 
@@ -15,22 +16,16 @@ class Line(CallbackBase):
     start_doc: dict
         Not used; accepted and discarded to satisfy the callback_factory API.
     func : callable
-        This must accept a BulkEvent and return two lists of floats
+        This must accept an EventPage and return two lists of floats
         (x points and y points). The two lists must contain an equal number of
         items, but that number is arbitrary. That is, a given document may add
         one new point to the plot, no new points, or multiple new points.
-    single_func : callback, optional
-        This parameter is available as a performance operation. For most uses,
-        ``func`` is sufficient. This is like ``func``, but it gets an Event
-        instead of a BulkEvent. If None is given, Events are up-cast into
-        BulkEvents and handed to ``func``.
     ax : matplotlib Axes, optional
         If None, a new Figure and Axes are created.
     **kwargs
         Passed through to :meth:`Axes.plot` to style Line object.
     """
-    def __init__(self, start_doc, func, *,
-                 single_func=None, ax=None, **kwargs):
+    def __init__(self, start_doc, func, *, ax=None, **kwargs):
         self.func = func
         self.single_func = single_func
         if ax is None:
@@ -40,21 +35,8 @@ class Line(CallbackBase):
         self.x_data = []
         self.y_data = []
 
-    def bulk_events(self, doc):
+    def event_page(self, doc):
         x, y = self.func(doc)
-        self._update(x, y)
-
-    def event(self, doc):
-        if self.single_func is not None:
-            x, y = self.single_func(doc)
-        else:
-            # Make a BulkEvent from this Event and use func.
-            bulk_event = doc.copy()
-            bulk_event['data'] = {k: np.expand_dims(v, 0)
-                                  for k, v in doc['data'].items()}
-            bulk_event['timestamps'] = {k: np.expand_dims(v, 0)
-                                        for k, v in doc['timestamps'].items()}
-            x, y = self.func(bulk_event)
         self._update(x, y)
 
     def _update(self, x, y):

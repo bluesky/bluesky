@@ -95,21 +95,33 @@ class RunRouter(CallbackBase):
     Parameters
     ----------
     callback_factories : list
-        A list of callables with the signature:
+        A list of callables with the signature::
 
             callback_factory(start_doc)
 
-        which should return ``None`` or another callable with this signature:
+        which should return two lists, which may be empty. All items in the
+        fist lits should be callbacks --- callables with the signature::
 
             callback(name, doc)
+
+        that will receive all documents from the run. All items in the second
+        list should be callback factories with the signature::
+
+            callback_factory(descriptor)
+
+        These will receive each of the EventDescriptor documents for the run,
+        as they arrive. They must return one list, which may be empty,
+        containing callbacks that will receive all documents related to that
+        descriptor's stream.
     """
     def __init__(self, callback_factories):
         self.callback_factories = callback_factories
+        self.stream_callback_factories = []
         self.callbacks = defaultdict(list)  # start uid -> callbacks
         self.descriptors = {}  # descriptor uid -> start uid
         self.resources = {}  # resource uid -> start uid
 
-    def _event_or_bulk_event(self, doc):
+    def event_page(self, doc):
         descriptor_uid = doc['descriptor']
         try:
             start_uid = self.descriptors[descriptor_uid]
@@ -118,15 +130,7 @@ class RunRouter(CallbackBase):
             return []
         return self.callbacks[start_uid]
 
-    def event(self, doc):
-        for cb in self._event_or_bulk_event(doc):
-            cb('event', doc)
-
-    def bulk_event(self, doc):
-        for cb in self._event_or_bulk_event(doc):
-            cb('bulk_event', doc)
-
-    def _datum_or_bulk_datum(self, doc):
+    def datum_page(self, doc):
         resource_uid = doc['resource']
         try:
             start_uid = self.resources[resource_uid]
@@ -135,16 +139,11 @@ class RunRouter(CallbackBase):
             return []
         return self.callbacks[start_uid]
 
-    def datum(self, doc):
-        for cb in self._datum_or_bulk_datum(doc):
-            cb('datum', doc)
-
-    def bulk_datum(self, doc):
-        for cb in self._datum_or_bulk_datum(doc):
-            cb('bulk_datum', doc)
-
     def descriptor(self, doc):
         start_uid = doc['run_start']
+        for callback_factory in self.stream_callback_factories:
+            callbacks = callback_factory(doc)
+            self.callbacks[start_uid].extend(callbacks)
         cbs = self.callbacks[start_uid]
         if not cbs:
             # This belongs to a run we are not interested in.
@@ -165,11 +164,9 @@ class RunRouter(CallbackBase):
 
     def start(self, doc):
         for callback_factory in self.callback_factories:
-            cb = callback_factory(doc)
-            if cb is None:
-                # The callback_factory is not interested in this run.
-                continue
-            self.callbacks[doc['uid']].append(cb)
+            callbacks, stream_callback_factories = callback_factory(doc)
+            self.callbacks[doc['uid']].extend(callbacks)
+            self.stream_callback_factories.extend(stream_callback_factores)
 
     def stop(self, doc):
         start_uid = doc['run_start']
