@@ -20,6 +20,7 @@ from collections import deque
 from .core import CallbackBase, LiveTable, Table, RunRouter
 from .mpl_plotting import LivePlot, LiveGrid, LiveScatter
 from .fitting import PeakStats
+from event_model import DocumentRouter
 
 
 def guess_dimensions(start_doc):
@@ -706,16 +707,19 @@ class LivePlotPlusPeaks(LivePlot):
         self.check_visibility()
         super().stop(doc)
 
-class HeadingPrinter(CallbackBase):
-    def __init__(self, start_doc):
-        self._start_doc = start_doc
-        # Print heading.
-        tt = datetime.fromtimestamp(self._start_doc['time']).utctimetuple()
-        print("Transient Scan ID: {0}     Time: {1}".format(
-            self._start_doc['scan_id'],
-            time.strftime("%Y/%m/%d %H:%M:%S", tt)))
-        print("Persistent Unique Scan ID: '{0}'".format(
-            self._start_doc['uid']))
+def heading_printer(doc):
+    """
+    This is a 
+    This factory uses the 'start' document and requires no further information.
+    """
+    # Print heading.
+    tt = datetime.fromtimestamp(self._start_doc['time']).utctimetuple()
+    print("Transient Scan ID: {0}     Time: {1}".format(
+        self._start_doc['scan_id'],
+        time.strftime("%Y/%m/%d %H:%M:%S", tt)))
+    print("Persistent Unique Scan ID: '{0}'".format(
+        self._start_doc['uid']))
+    return [], []
 
 
 class BaselinePrinter(CallbackBase):

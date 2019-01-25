@@ -5,10 +5,11 @@ from itertools import count
 import warnings
 from collections import defaultdict, deque, namedtuple, OrderedDict, ChainMap
 import time as ttime
-
 from datetime import datetime
 import logging
 from ..utils import ensure_uid
+
+from event_model import DocumentRouter
 
 
 class CallbackBase:
@@ -69,113 +70,131 @@ class CallbackBase:
         pass
 
 
-class RunRouter(CallbackBase):
+class RunRouter(DocumentRouter):
     """
     Routes documents, by run, to callbacks it creates from factory functions.
 
-    A RunRouter is callable, and it is has the signature ``router(name, doc)``,
+    A RunRouter is callable, and it hashas the signature ``router(name, doc)``,
     suitable for subscribing to the RunEngine.
 
-    The RunRouter maintains a list of factory functions with the signature
-    ``callback_factory(start_doc)``. When the router receives a RunStart
-    document, it passes it to each ``callback_factory`` function. Each factory
-    should return ``None`` ("I am not interested in this run,") or a callback
-    function with the signature ``cb(name, doc)``. All future documents related
-    to that run will be forwarded to ``cb``. When the run is complete, the
-    RunRouter will drop all its references to ``cb``. It is up to
-    ``callback_factory`` whether to return a new callable each time (having a
-    lifecycle of one run, garbage collected thereafter), or to return the same
-    object every time, or some other pattern.
-    
-    To summarize, the RunRouter's promise is that it will call each
-    ``callback_factory`` with each new RunStart document and that it will
-    forward all other documents from that run to whatever ``callback_factory``
-    returns (if not None).
+    It is configured with a list of factory functions that produce callbacks in
+    a two-layered scheme, described below.
 
     Parameters
     ----------
-    callback_factories : list
+    factories : list
         A list of callables with the signature::
 
-            callback_factory(start_doc)
+            factory(start_doc) -> List[Callbacks], List[SubFactories]
 
         which should return two lists, which may be empty. All items in the
-        fist lits should be callbacks --- callables with the signature::
+        first list should be callbacks --- callables with the signature::
 
             callback(name, doc)
 
-        that will receive all documents from the run. All items in the second
-        list should be callback factories with the signature::
+        that will receive all subsequent documents from the run including the
+        RunStop document. All items in the second list should be "subfactories"
+        with the signature::
 
-            callback_factory(descriptor)
+            subfactory(descriptor_doc) -> List[Callbacks]
 
         These will receive each of the EventDescriptor documents for the run,
         as they arrive. They must return one list, which may be empty,
-        containing callbacks that will receive all documents related to that
-        descriptor's stream.
+        containing callbacks that will receive all Events that reference that
+        EventDescriptor and finally the RunStop document for the run.
     """
-    def __init__(self, callback_factories):
-        self.callback_factories = callback_factories
-        self.stream_callback_factories = []
-        self.callbacks = defaultdict(list)  # start uid -> callbacks
-        self.descriptors = {}  # descriptor uid -> start uid
-        self.resources = {}  # resource uid -> start uid
+    def __init__(self, factories):
+        self.factories = factories
+        self._subfactories = {}
+
+        # Cache callbacks returned by factories. These want all of the
+        # documents from a run.
+        self._cbs_by_start = defaultdict(list)  # start uid -> callbacks
+
+        # Cache callbacks return by subfactories. These want documents for a
+        # specific descriptor (plus the stop document). These are dicts keyed
+        # on a descriptor_uid nested inside a dict keyed on start_uid.
+        self._cbs_by_descriptor = defaultdict(lambda: defaultdict(list))
+
+        self._descriptors = {}  # 
+        self._resources = {}  # resource uid -> start uid
+        self._unlabeled_resources = {}  # resource uid -> resource
 
     def event_page(self, doc):
         descriptor_uid = doc['descriptor']
-        try:
-            start_uid = self.descriptors[descriptor_uid]
-        except KeyError:
-            # The belongs to a run that we are not interested in.
-            return []
-        return self.callbacks[start_uid]
+        start_uid = 
+        for cb in self._cbs_by_descriptor[descriptor_uid]:
+            cb('event_page', doc)
+        for cb in self._cbs_by_start[descriptor_uid]:
+            cb('event_page', doc)
 
     def datum_page(self, doc):
         resource_uid = doc['resource']
         try:
             start_uid = self.resources[resource_uid]
         except KeyError:
-            # The belongs to a run that we are not interested in.
-            return []
-        return self.callbacks[start_uid]
+            if resource_uid in self._unlabeled_resources:
+                # Old Resources do not have a reference to a RunStart document,
+                # so in turn we cannot immediately tell which run these datum
+                # documents belong to.
+                # Fan them out to every run currently flowing through RunRouter. If
+                # they are not applicable they will do no harm, and this is
+                # expected to be an increasingly rare case.
+                for cbs in self._cbs_by_start.values():
+                    for cb in cbs:
+                        cb('datum_page', doc)
+                for cbs in self._cbs_by_descriptor.values():
+                    for cb in cbs:
+                        cb('datum_page', doc)
 
     def descriptor(self, doc):
+        uid = doc['uid']
         start_uid = doc['run_start']
-        for callback_factory in self.stream_callback_factories:
-            callbacks = callback_factory(doc)
-            self.callbacks[start_uid].extend(callbacks)
-        cbs = self.callbacks[start_uid]
-        if not cbs:
-            # This belongs to a run we are not interested in.
-            return
-        self.descriptors[doc['uid']] = start_uid
-        for cb in cbs:
+        for subfactory in self.subfactories[start_uid]:
+            callbacks = subfactory(doc)
+            self._cbs_by_descriptor[start_uid][uid].extend(callbacks)
+        for cb in self._descriptor_cbs[uid]:
             cb('descriptor', doc)
 
     def resource(self, doc):
-        start_uid = doc['run_start']
-        cbs = self.callbacks[start_uid]
-        if not cbs:
-            # This belongs to a run we are not interested in.
-            return
-        self.resources[doc['uid']] = start_uid
-        for cb in cbs:
-            cb('resource', doc)
+        try:
+            start_uid = doc['run_start']
+        except KeyError:
+            # Old Resources do not have a reference to a RunStart document.
+            # Fan them out to every run currently flowing through RunRouter. If
+            # they are not applicable they will do no harm, and this is
+            # expected to be an increasingly rare case.
+            self._unlabeled_resources.append(doc['uid'])
+            for cb in self._cbs_by_start.values():
+                cb('resource', doc)
+            for cbs in self._cbs_by_descriptor.values():
+                for cb in cbs:
+                    cb('resource', doc)
+        else:
+            self.resources[doc['uid']] = start_uid
+            for cb in self._descriptor_cbs_by_start[start_uid]:
+                cb('resource', doc)
+            for cbs in self._descriptor_cbs_by_descriptor[start_uid].values():
+                for cb in cbs:
+                    cb('resource', doc)
 
     def start(self, doc):
-        for callback_factory in self.callback_factories:
-            callbacks, stream_callback_factories = callback_factory(doc)
-            self.callbacks[doc['uid']].extend(callbacks)
-            self.stream_callback_factories.extend(stream_callback_factores)
+        for factory in self.factories:
+            callbacks, subfactories = callback_factory(doc)
+            self._cbs_by_start[doc['uid']].extend(callbacks)
+            self._subfactories.extend(subfactories)
 
     def stop(self, doc):
         start_uid = doc['run_start']
+        for cb in self._cbs_by_start:
+            cb('stop',doc)
         # Clean up references.
-        cbs = self.callbacks.pop(start_uid)
+        del self._subfactories[start_uid]
+        cbs = self._cbs_by_start.pop(start_uid)
         if not cbs:
             return
         to_remove = []
-        for k, v in list(self.descriptors.items()):
+        for k, v in list(self._cbs_by_descriptor.items()):
             if v == start_uid:
                 del self.descriptors[k]
         for k, v in list(self.resources.items()):
