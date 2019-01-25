@@ -48,6 +48,8 @@ class Publisher:
                           "Update your code to subscribe this Publisher "
                           "instance to (and, if needed, unsubscribe from) to "
                           "the RunEngine manually.")
+        if isinstance(prefix, str):
+            raise ValueError("prefix must be bytes, not string")
         if b' ' in prefix:
             raise ValueError("prefix {!r} may not contain b' '".format(prefix))
         if zmq is None:
@@ -217,10 +219,12 @@ class RemoteDispatcher(Dispatcher):
     >>> d.subscribe(print)
     >>> d.start()  # runs until interrupted
     """
-    def __init__(self, address, *, prefix=None,
+    def __init__(self, address, *, prefix=b'',
                  loop=None, zmq=None, zmq_asyncio=None,
                  deserializer=pickle.loads):
-        if prefix and b' ' in prefix:
+        if isinstance(prefix, str):
+            raise ValueError("prefix must be bytes, not string")
+        if b' ' in prefix:
             raise ValueError("prefix {!r} may not contain b' '".format(prefix))
         self._prefix = prefix
         if zmq is None:
