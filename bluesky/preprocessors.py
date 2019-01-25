@@ -9,6 +9,7 @@ from .utils import (normalize_subs_input, root_ancestor,
                     RunEngineControlException, merge_axis)
 from functools import wraps
 from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read)
+import json
 
 
 def plan_mutator(plan, msg_proc):
@@ -289,6 +290,24 @@ def print_summary_wrapper(plan):
         cmd = msg.command
         if cmd == 'open_run':
             print('{:=^80}'.format(' Open Run '))
+            # This next bit checks the metadata for json compatibility
+            try:
+                json.dumps(msg.kwargs)
+            except TypeError:
+                error_keys=[]
+                for key, value in msg.kwargs.items():
+                    try:
+                        json.dumps(value)
+                    except TypeError:
+                        error_keys.append(key)
+                if error_keys:
+                    raise TypeError(
+                        f'The values for the keys in "{error_keys}" '
+                        f'from the start document are not valid')
+                else:
+                    raise TypeError(
+                        f'the msg.kwarg dictionary is not valid, '
+                        f'however all of the values appear fine')
         elif cmd == 'close_run':
             print('{:=^80}'.format(' Close Run '))
         elif cmd == 'set':
