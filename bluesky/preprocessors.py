@@ -294,15 +294,10 @@ def print_summary_wrapper(plan):
             try:
                 json.dumps(msg.kwargs)
             except TypeError:
-                error_keys=[]
-                for key, value in msg.kwargs.items():
-                    try:
-                        json.dumps(value)
-                    except TypeError:
-                        error_keys.append(key)
-                if error_keys:
+                bad_keys = _recursive_validate_json_dict(msg.kwargs)
+                if bad_keys:
                     raise TypeError(
-                        f'The values for the keys in "{error_keys}" '
+                        f'The values for the keys in "{bad_keys}" '
                         f'from the start document are not valid')
                 else:
                     raise TypeError(
@@ -320,6 +315,37 @@ def print_summary_wrapper(plan):
         elif cmd == 'save':
             print('  Read {}'.format(read_cache))
         yield msg
+
+
+def _recursive_validate_json_dict(json_dict):
+    '''This takes in a dict and recursively validates it as json compatible.
+
+    Parameters
+    ----------
+    json_dict : dict
+        The dict to be checked for json compatibility
+
+    Returns
+    -------
+    bad_keys : list
+        The list of bad `key paths` found so far in the recursive loop.
+
+    '''
+
+    bad_keys = []
+
+    for key, val in json_dict.items():
+        if hasattr(val, 'items'):
+            _bad_keys = _recursive_validate_json_dict(val)
+            if _bad_keys:
+                for bad_key in _bad_keys:
+                    bad_keys.append(key+'/'+bad_key)
+        else:
+            try:
+                json.dumps(val)
+            except TypeError:
+                bad_keys.append(key)
+    return bad_keys
 
 
 def run_wrapper(plan, *, md=None):
