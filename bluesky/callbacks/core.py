@@ -161,7 +161,7 @@ class RunRouter(DocumentRouter):
 
     def event_page(self, doc):
         descriptor_uid = doc['descriptor']
-        for cb in self._factory_cbs_by_start[descriptor_uid]:
+        for cb in self._factory_cbs_by_descriptor[descriptor_uid]:
             cb('event_page', doc)
         for cb in self._subfactory_cbs_by_descriptor[descriptor_uid]:
             cb('event_page', doc)
