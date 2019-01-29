@@ -74,7 +74,7 @@ class RunRouter(DocumentRouter):
     """
     Routes documents, by run, to callbacks it creates from factory functions.
 
-    A RunRouter is callable, and it hashas the signature ``router(name, doc)``,
+    A RunRouter is callable, and it has the signature ``router(name, doc)``,
     suitable for subscribing to the RunEngine.
 
     It is configured with a list of factory functions that produce callbacks in
