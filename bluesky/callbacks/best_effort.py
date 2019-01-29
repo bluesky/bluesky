@@ -709,16 +709,16 @@ class LivePlotPlusPeaks(LivePlot):
 
 def heading_printer(doc):
     """
-    This is a 
+    This prints a text header summarizing metadata from the RunStart doc.
+
     This factory uses the 'start' document and requires no further information.
     """
     # Print heading.
-    tt = datetime.fromtimestamp(self._start_doc['time']).utctimetuple()
+    tt = datetime.fromtimestamp(doc['time']).utctimetuple()
     print("Transient Scan ID: {0}     Time: {1}".format(
-        self._start_doc['scan_id'],
+        doc['scan_id'],
         time.strftime("%Y/%m/%d %H:%M:%S", tt)))
-    print("Persistent Unique Scan ID: '{0}'".format(
-        self._start_doc['uid']))
+    print("Persistent Unique Scan ID: '{0}'".format(doc['uid']))
     return [], []
 
 
