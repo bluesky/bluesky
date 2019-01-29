@@ -707,56 +707,6 @@ class LivePlotPlusPeaks(LivePlot):
         self.check_visibility()
         super().stop(doc)
 
-def heading_printer(doc):
-    """
-    This prints a text header summarizing metadata from the RunStart doc.
-
-    This factory uses the 'start' document and requires no further information.
-    """
-    # Print heading.
-    tt = datetime.fromtimestamp(doc['time']).utctimetuple()
-    print("Transient Scan ID: {0}     Time: {1}".format(
-        doc['scan_id'],
-        time.strftime("%Y/%m/%d %H:%M:%S", tt)))
-    print("Persistent Unique Scan ID: '{0}'".format(doc['uid']))
-    return [], []
-
-
-class BaselinePrinter(CallbackBase):
-    def __init__(self, start_doc, file=sys.stdout):
-        # We accept a start_doc but discard it.
-        self._descriptors = {}
-        self._baseline_toggle = True
-        self._file = file
-
-    def descriptor(self, doc):
-        if doc['name'] == 'baseline':
-            self._descriptors[doc['uid']] = doc
-
-    def event(self, doc):
-        # Check the descriptor uid of this Event using doc['descriptor'].
-        # if this matches the uid of the descriptor we have stashed in the
-        # method above, extract the baseline readings and print them, the way
-        # we do in BestEffortCallback currently.
-        # Show the baseline readings.
-        if doc['descriptor'] in self._descriptors:
-            descriptor = self._descriptors[doc['descriptor']]
-            columns = hinted_fields(descriptor)
-            self._baseline_toggle = not self._baseline_toggle
-            if self._baseline_toggle:
-                subject = 'End-of-run'
-            else:
-                subject = 'Start-of-run'
-            print('{} baseline readings:'.format(subject), file=self._file)
-            border = '+' + '-' * 32 + '+' + '-' * 32 + '+'
-            print(border, file=self._file)
-            for k, v in doc['data'].items():
-                if k not in columns:
-                    continue
-                print('| {:>30} | {:<30} |'.format(k, v), file=self._file)
-            print(border, file=self._file)
-
-
 def hinted_fields(descriptor):
     # Figure out which columns to put in the table.
     obj_names = list(descriptor['object_keys'])

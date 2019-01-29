@@ -1,13 +1,31 @@
 from collections import namedtuple, OrderedDict
 from datetime import datetime
+import sys
 import time
 
 from event_model import DocumentRouter, unpack_event_page
 
+from .best_effort import hinted_fields
+
 
 class TextTableFactory:
+    """
+    Subscribe a TextTable to a given stream with optional column filtering.
+
+    This factory is interested in all Runs and in one Event stream.
+
+    Parameters
+    ----------
+    stream_name : string
+        The Event stream to represent as a table
+    include : Iterable
+        Set of columns to include in the table. If None (default) all fields are
+        included. This parameter is mutually incompatible with 'exclude'.
+    exclude : Iterable
+        Set of columns to exclude from table. If None (default) no fields are
+        excluded. This parameter is mutually incompatible with 'include'.
+    """
     def __init__(self, stream_name, include=None, exclude=None):
-        # TODO include/exlucde
         self.stream_name = stream_name
         self.include = include
         self.exclude = exclude
@@ -19,7 +37,7 @@ class TextTableFactory:
     def __call__(self, start_doc):
         def subfactory(descriptor_doc):
             if descriptor_doc.get('name') == self.stream_name:
-                text_table = TextTable()
+                text_table = TextTable(include=self.include, exclude=self.exclude)
                 text_table.start(start_doc)
                 text_table.descriptor(descriptor_doc)
                 return [text_table]
@@ -30,33 +48,29 @@ class TextTableFactory:
 
 
 class TextTable(DocumentRouter):
-    '''Live updating table
+    '''Print a text table that updates as documents are added.
+
+    This is meant to represent one event stream from one run. It expected to
+    see one 'start' document and one 'descriptor' document.
 
     Parameters
     ----------
-    start_doc : dict
-        RunStart document
-
-    fields : list
-         List of fields to add to the table.
-
-    stream_name : str, optional
-         The event stream to watch for
-
+    include : Iterable
+        Set of columns to include in the table. If None (default) all fields are
+        included. This parameter is mutually incompatible with 'exclude'.
+    exclude : Iterable
+        Set of columns to exclude from table. If None (default) no fields are
+        excluded. This parameter is mutually incompatible with 'include'.
     print_header_interval : int, optional
          Reprint the header every this many lines, defaults to 50
-
     min_width : int, optional
          The minimum width is spaces of the data columns.  Defaults to 12
-
     default_prec : int, optional
          Precision to use if it can not be found in descriptor, defaults to 3
-
     extra_pad : int, optional
          Number of extra spaces to put around the printed data, defaults to 1
-
-    out : callable, optional
-        Function to call to 'print' a line.  Defaults to `print`
+    out : writable, optional
+        Defaults to ``sys.stdout``
     '''
     _FMTLOOKUP = {'s': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
                   'f': '{pad}{{{k}: >{width}.{prec}{dtype}}}{pad}',
@@ -74,7 +88,7 @@ class TextTable(DocumentRouter):
     def __init__(self, include=None, exclude=None,
                  print_header_interval=50,
                  min_width=12, default_prec=3, extra_pad=1,
-                 out=print):
+                 file=sys.stdout):
         if include is not None and exclude is not None:
             raise ValueError("include and exclude are mutally exclusive")
         self._include = include
@@ -90,7 +104,7 @@ class TextTable(DocumentRouter):
             (self.ev_time_key, self._fm_sty(10 + 2 * extra_pad, 10, 's'))
         ])
         self._sep_format = None
-        self._out = out
+        self._file = file
 
     def start(self, doc):
         self._start = doc
@@ -205,8 +219,92 @@ class TextTable(DocumentRouter):
         self._stop = doc
 
         wm = self.water_mark.format(st=self._start)
-        self._out(wm)
+        self._print(wm)
         super().stop(doc)
 
     def _print(self, out_str):
-        self._out(out_str)
+        print(out_str, flush=True, file=self._file)
+
+
+def heading_printer(doc):
+    """
+    This prints a text header summarizing metadata from the 'start' document.
+
+    This factory uses the 'start' document and requires no further information.
+    """
+    tt = datetime.fromtimestamp(doc['time']).utctimetuple()
+    print("Transient Scan ID: {0}     Time: {1}".format(
+        doc['scan_id'],
+        time.strftime("%Y/%m/%d %H:%M:%S", tt)))
+    print("Persistent Unique Scan ID: '{0}'".format(doc['uid']))
+    return [], []
+
+
+class BaselinePrinterFactory:
+    """
+    Print a summary of the baseline readings at the beginning and end of a run.
+
+    This factory is interested in all Runs and the 'baseline' Event stream.
+    """
+    def __init__(self, include=None, exclude=None,
+                 stream_name='baseline', file=sys.stdout):
+        self.include = include
+        self.exclude = exclude
+        self.stream_name = stream_name
+        self.file = file
+
+    def __repr__(self):
+        return('{type(self).__name__}(file={self.file!r})')
+
+    def __call__(self, start_doc):
+        def subfactory(descriptor_doc):
+            if descriptor_doc.get('name') == self.stream_name:
+                cb = BaselinePrinter(include=self.include, exclude=self.exclude)
+                cb.start(start_doc)
+                cb.descriptor(descriptor_doc)
+                return [cb]
+            else:
+                return []
+        return [], [subfactory]
+
+
+class BaselinePrinter(DocumentRouter):
+    """
+    Print baseline readings.
+
+    Parameters
+    ----------
+
+    include : Iterable
+        Set of columns to include in the table. If None (default) all fields are
+        included. This parameter is mutually incompatible with 'exclude'.
+    exclude : Iterable
+        Set of columns to exclude from table. If None (default) no fields are
+        excluded. This parameter is mutually incompatible with 'include'.
+    """
+    def __init__(self, include=None, exclude=None, file=sys.stdout):
+        # TODO include, exclude
+        self._descriptor = None
+        self._baseline_toggle = True
+        self._file = file
+
+    def descriptor(self, doc):
+        print('descriptor!!!!!')
+        self._descriptor = doc
+
+    def event(self, doc):
+        print('event!!!!!')
+        columns = hinted_fields(self._descriptor)
+        self._baseline_toggle = not self._baseline_toggle
+        if self._baseline_toggle:
+            subject = 'End-of-run'
+        else:
+            subject = 'Start-of-run'
+        print('{} baseline readings:'.format(subject), file=self._file)
+        border = '+' + '-' * 32 + '+' + '-' * 32 + '+'
+        print(border, file=self._file)
+        for k, v in doc['data'].items():
+            if k not in columns:
+                continue
+            print('| {:>30} | {:<30} |'.format(k, v), file=self._file)
+        print(border, file=self._file)
