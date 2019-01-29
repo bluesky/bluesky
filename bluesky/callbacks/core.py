@@ -165,7 +165,6 @@ class RunRouter(DocumentRouter):
             cb('event_page', doc)
         for cb in self._subfactory_cbs_by_descriptor[descriptor_uid]:
             cb('event_page', doc)
-        return doc
 
     def datum_page(self, doc):
         resource_uid = doc['resource']
