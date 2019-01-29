@@ -214,11 +214,13 @@ class RunRouter(DocumentRouter):
         for cb in self._subfactory_cbs_by_start[start_uid]:
             cb('stop', doc)
         # Clean up references.
+        self._subfactories.pop(start_uid, None)
         self._factory_cbs_by_start.pop(start_uid, None)
         self._subfactory_cbs_by_start.pop(start_uid, None)
-        for descriptor_uid in self._descriptors.pop(start_uid, []):
+        for descriptor_uid in self._descriptors.pop(start_uid, ()):
             self._factory_cbs_by_descriptor.pop(descriptor_uid, None)
             self._subfactory_cbs_by_descriptor.pop(descriptor_uid, None)
+        self._resources.pop(start_uid, None)
 
 
 class CallbackCounter:
