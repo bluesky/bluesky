@@ -289,11 +289,16 @@ class BaselinePrinter(DocumentRouter):
         self._file = file
 
     def descriptor(self, doc):
-        print('descriptor!!!!!')
         self._descriptor = doc
 
+    def event_page(self, doc):
+        # Do the actual work in the 'event' method in this case, since baseline
+        # readings always come one at a time.
+        event = self.event  # Avoid attribute lookup in hot loop.
+        for event_doc in unpack_event_page(doc):
+            event(event_doc)
+
     def event(self, doc):
-        print('event!!!!!')
         columns = hinted_fields(self._descriptor)
         self._baseline_toggle = not self._baseline_toggle
         if self._baseline_toggle:
