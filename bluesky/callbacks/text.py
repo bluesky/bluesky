@@ -34,8 +34,8 @@ class TextTableFactory:
         return (f"{type(self).__name__}(stream_name={self.stream_name!r}, "
                 f"include={self.include!r}, exclude={self.exclude!r})")
 
-    def __call__(self, start_doc):
-        def subfactory(descriptor_doc):
+    def __call__(self, name, start_doc):
+        def subfactory(name, descriptor_doc):
             if descriptor_doc.get('name') == self.stream_name:
                 text_table = TextTable(include=self.include, exclude=self.exclude)
                 text_table.start(start_doc)
@@ -226,7 +226,7 @@ class TextTable(DocumentRouter):
         print(out_str, flush=True, file=self._file)
 
 
-def heading_printer(doc):
+def heading_printer(name, doc):
     """
     This prints a text header summarizing metadata from the 'start' document.
 
@@ -256,8 +256,8 @@ class BaselinePrinterFactory:
     def __repr__(self):
         return('{type(self).__name__}(file={self.file!r})')
 
-    def __call__(self, start_doc):
-        def subfactory(descriptor_doc):
+    def __call__(self, name, start_doc):
+        def subfactory(name, descriptor_doc):
             if descriptor_doc.get('name') == self.stream_name:
                 cb = BaselinePrinter(include=self.include, exclude=self.exclude)
                 cb.start(start_doc)

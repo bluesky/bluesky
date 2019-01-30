@@ -7,6 +7,16 @@ from .core import CallbackBase, get_obj_fields
 from event_model import DocumentRouter
 
 
+class FigureManager:
+    def __init__(self):
+        ...
+
+    def __call__(self, name, doc):
+        if name == 'start':
+            return self
+        # Decide what plot(s) we need for this stream.
+
+
 class Line(DocumentRouter):
     """
     Draw a matplotlib Line Arist update it for each Event.

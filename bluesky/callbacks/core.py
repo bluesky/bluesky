@@ -85,7 +85,7 @@ class RunRouter(DocumentRouter):
     factories : list
         A list of callables with the signature::
 
-            factory(start_doc) -> List[Callbacks], List[SubFactories]
+            factory('start', start_doc) -> List[Callbacks], List[SubFactories]
 
         which should return two lists, which may be empty. All items in the
         first list should be callbacks --- callables with the signature::
@@ -96,7 +96,7 @@ class RunRouter(DocumentRouter):
         RunStop document. All items in the second list should be "subfactories"
         with the signature::
 
-            subfactory(descriptor_doc) -> List[Callbacks]
+            subfactory('descriptor', descriptor_doc) -> List[Callbacks]
 
         These will receive each of the EventDescriptor documents for the run,
         as they arrive. They must return one list, which may be empty,
@@ -139,7 +139,7 @@ class RunRouter(DocumentRouter):
     def start(self, doc):
         uid = doc['uid']
         for factory in self.factories:
-            callbacks, subfactories = factory(doc)
+            callbacks, subfactories = factory('start', doc)
             self._factory_cbs_by_start[uid].extend(callbacks)
             self._subfactories[uid].extend(subfactories)
 
@@ -152,7 +152,7 @@ class RunRouter(DocumentRouter):
             cb('descriptor', doc)
         # Let all the subfactories add any relavant callbacks.
         for subfactory in self._subfactories[start_uid]:
-            callbacks = subfactory(doc)
+            callbacks = subfactory('descriptor', doc)
             self._subfactory_cbs_by_start[start_uid].extend(callbacks)
             self._subfactory_cbs_by_descriptor[uid].extend(callbacks)
         # Keep track of the RunStart UID -> [EventDescriptor UIDs] mapping for
