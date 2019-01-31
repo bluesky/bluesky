@@ -9,6 +9,7 @@ from event_model import DocumentRouter
 
 class RunFigureManager:
     def __init__(self):
+        ...
 
 
 class FigureManager:

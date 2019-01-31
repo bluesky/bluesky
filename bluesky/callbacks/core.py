@@ -135,6 +135,11 @@ class RunRouter(DocumentRouter):
         # Old-style Resources that do not have a RunStart UID
         self._unlabeled_resources = deque(maxlen=10000)
 
+    def __repr__(self):
+        return (f"RunRouter([\n" +
+                f"\n".join(f"    {factory}" for factory in self.factories) +
+                f"])")
+
     def start(self, doc):
         uid = doc['uid']
         for factory in self.factories:

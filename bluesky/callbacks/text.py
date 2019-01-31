@@ -25,19 +25,24 @@ class TextTableFactory:
         Set of columns to exclude from table. If None (default) no fields are
         excluded. This parameter is mutually incompatible with 'include'.
     """
-    def __init__(self, stream_name, include=None, exclude=None):
+    def __init__(self, stream_name, include=None, exclude=None, file=sys.stdout):
         self.stream_name = stream_name
         self.include = include
         self.exclude = exclude
+        self.file = file
 
     def __repr__(self):
         return (f"{type(self).__name__}(stream_name={self.stream_name!r}, "
-                f"include={self.include!r}, exclude={self.exclude!r})")
+                f"include={self.include!r}, exclude={self.exclude!r}, "
+                f"file={self.file!r})")
 
     def __call__(self, name, start_doc):
         def subfactory(name, descriptor_doc):
             if descriptor_doc.get('name') == self.stream_name:
-                text_table = TextTable(include=self.include, exclude=self.exclude)
+                text_table = TextTable(
+                    include=self.include,
+                    exclude=self.exclude,
+                    file=self.file)
                 text_table.start(start_doc)
                 text_table.descriptor(descriptor_doc)
                 return [text_table]
@@ -273,7 +278,7 @@ class BaselinePrinterFactory:
         self.file = file
 
     def __repr__(self):
-        return('{type(self).__name__}(file={self.file!r})')
+        return f'{type(self).__name__}(file={self.file!r})'
 
     def __call__(self, name, start_doc):
         def subfactory(name, descriptor_doc):
@@ -313,9 +318,9 @@ class BaselinePrinter(DocumentRouter):
     def event_page(self, doc):
         # Do the actual work in the 'event' method in this case, since baseline
         # readings always come one at a time.
-        event = self.event  # Avoid attribute lookup in hot loop.
+        event_method = self.event  # Avoid attribute lookup in hot loop.
         for event_doc in unpack_event_page(doc):
-            event(event_doc)
+            event_method(event_doc)
 
     def event(self, doc):
         columns = hinted_fields(self._descriptor)
