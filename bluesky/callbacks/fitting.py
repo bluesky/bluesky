@@ -242,15 +242,15 @@ class PeakStats(CollectThenCompute):
 
         x = []
         y = []
-        for event in self._events:
+        for event in self._event_pages:
             try:
                 _x = event['data'][self.x]
                 _y = event['data'][self.y]
             except KeyError:
                 pass
             else:
-                x.append(_x)
-                y.append(_y)
+                x.extend(_x)
+                y.extend(_y)
         x = np.array(x)
         y = np.array(y)
         if not len(x):

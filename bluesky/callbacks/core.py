@@ -304,7 +304,9 @@ class CollectThenCompute(CallbackBase):
     def __init__(self):
         self._start_doc = None
         self._stop_doc = None
-        self._events = deque()
+        self._event_pages = deque()
+        self._datum_pages= deque()
+        self._resources = deque()
         self._descriptors = deque()
 
     def start(self, doc):
@@ -315,9 +317,17 @@ class CollectThenCompute(CallbackBase):
         self._descriptors.append(doc)
         super().descriptor(doc)
 
-    def event(self, doc):
-        self._events.append(doc)
+    def resource(self, doc):
+        self._resources.append(doc)
+        super().resource(doc)
+
+    def event_page(self, doc):
+        self._event_pages.append(doc)
         super().event(doc)
+
+    def datum_page(self, doc):
+        self._datum_pages.append(doc)
+        super().datum(doc)
 
     def stop(self, doc):
         self._stop_doc = doc
@@ -327,7 +337,9 @@ class CollectThenCompute(CallbackBase):
     def reset(self):
         self._start_doc = None
         self._stop_doc = None
-        self._events.clear()
+        self._event_pages.clear()
+        self._datum_pages.clear()
+        self._resources.clear()
         self._descriptors.clear()
 
     def compute(self):
