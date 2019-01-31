@@ -148,8 +148,8 @@ class RunRouter(DocumentRouter):
         start_uid = doc['run_start']
         # Let all the callbacks that want all documents for this run process
         # this descriptor.
-        for cb in self._factory_cbs_by_start[start_uid]:
-            cb('descriptor', doc)
+        for callback in self._factory_cbs_by_start[start_uid]:
+            callback('descriptor', doc)
         # Let all the subfactories add any relavant callbacks.
         for subfactory in self._subfactories[start_uid]:
             callbacks = subfactory('descriptor', doc)
@@ -161,10 +161,10 @@ class RunRouter(DocumentRouter):
 
     def event_page(self, doc):
         descriptor_uid = doc['descriptor']
-        for cb in self._factory_cbs_by_descriptor[descriptor_uid]:
-            cb('event_page', doc)
-        for cb in self._subfactory_cbs_by_descriptor[descriptor_uid]:
-            cb('event_page', doc)
+        for callback in self._factory_cbs_by_descriptor[descriptor_uid]:
+            callback('event_page', doc)
+        for callback in self._subfactory_cbs_by_descriptor[descriptor_uid]:
+            callback('event_page', doc)
 
     def datum_page(self, doc):
         resource_uid = doc['resource']
@@ -178,11 +178,11 @@ class RunRouter(DocumentRouter):
                 # Fan them out to every run currently flowing through RunRouter. If
                 # they are not applicable they will do no harm, and this is
                 # expected to be an increasingly rare case.
-                for cbs in self._factory_cbs_by_start.values():
-                    for cb in cbs:
-                        cb('datum_page', doc)
+                for callbacks in self._factory_cbs_by_start.values():
+                    for callback in callbacks:
+                        callback('datum_page', doc)
                 for cbs in self._subfactory_cbs_by_start.values():
-                    for cb in cbs:
+                    for callback in callbacks:
                         cb('datum_page', doc)
 
     def resource(self, doc):

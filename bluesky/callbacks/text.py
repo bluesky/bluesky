@@ -240,6 +240,25 @@ def heading_printer(name, doc):
     return [], []
 
 
+def new_stream_printer(name, doc):
+    """
+    This prints line of text each time a unique stream is begun.
+
+    This factory uses every 'descriptor' document but requires no further
+    information.
+    """
+    streams = set()
+    def subfactory(name, descriptor_doc):
+        name = descriptor_doc.get('name')
+        if name is None:  # 'name' is missing from very old documents
+            return
+        if name not in streams:
+            streams.add(name)
+            print(f"New stream: {name!r}")
+        return []
+    return [], [subfactory]
+
+
 class BaselinePrinterFactory:
     """
     Print a summary of the baseline readings at the beginning and end of a run.
