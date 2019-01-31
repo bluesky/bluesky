@@ -1,66 +1,69 @@
 from collections import ChainMap
 from cycler import cycler
 import numpy as np
+import re
 import warnings
+import weakref
 
 from .core import CallbackBase, get_obj_fields
+from .utils import hinted_fields
+from .fitting import PeakStats
 from event_model import DocumentRouter
 
 
 class RunFigureManager:
-    def __init__(self):
-        ...
-
-
-class FigureManager:
-    def __init__(self):
+    def __init__(self, doc):
         self.noplot_streams = []  # Do we want to keep this?
-        ...
+        self.overplot = True  # Do we want to keep this?
+        self.peaks = dict()
+        self.omit_single_point_plot = True
+
+        self._start_doc = doc
+        self._descriptors = {}
+        self._cleanup_motor_heuristic = False
+        self.plan_hints = doc.get('hints', {})
+
+        # Prepare a guess about the dimensions (independent variables) in case
+        # we need it.
+        motors = self._start_doc.get('motors')
+        if motors is not None:
+            GUESS = [([motor], 'primary') for motor in motors]
+        else:
+            GUESS = [(['time'], 'primary')]
+
+        # Ues the guess if there is not hint about dimensions.
+        dimensions = self.plan_hints.get('dimensions')
+        if dimensions is None:
+            self._cleanup_motor_heuristic = True
+            dimensions = GUESS
+
+        # We can only cope with all the dimensions belonging to the same
+        # stream unless we resample. We are not doing to handle that yet.
+        if len(set(d[1] for d in dimensions)) != 1:
+            self._cleanup_motor_heuristic = True
+            dimensions = GUESS  # Fall back on our GUESS.
+            warn("We are ignoring the dimensions hinted because we cannot "
+                "combine streams.")
+
+        # for each dimension, choose one field only
+        # the plan can supply a list of fields. It's assumed the first
+        # of the list is always the one plotted against
+        self.dim_fields = [fields[0]
+                        for fields, stream_name in dimensions]
+
+        # make distinction between flattened fields and plotted fields
+        # motivation for this is that when plotting, we find dependent variable
+        # by finding elements that are not independent variables
+        self.all_dim_fields = [field
+                            for fields, stream_name in dimensions
+                            for field in fields]
+
+        _, self.dim_stream = dimensions[0]
 
     def __call__(self, name, doc):
-        if name == 'start':
-            self._start_doc = doc
-            self.plan_hints = doc.get('hints', {})
-
-            # Prepare a guess about the dimensions (independent variables) in case
-            # we need it.
-            motors = self._start_doc.get('motors')
-            if motors is not None:
-                GUESS = [([motor], 'primary') for motor in motors]
-            else:
-                GUESS = [(['time'], 'primary')]
-
-            # Ues the guess if there is not hint about dimensions.
-            dimensions = self.plan_hints.get('dimensions')
-            if dimensions is None:
-                self._cleanup_motor_heuristic = True
-                dimensions = GUESS
-
-            # We can only cope with all the dimensions belonging to the same
-            # stream unless we resample. We are not doing to handle that yet.
-            if len(set(d[1] for d in dimensions)) != 1:
-                self._cleanup_motor_heuristic = True
-                dimensions = GUESS  # Fall back on our GUESS.
-                warn("We are ignoring the dimensions hinted because we cannot "
-                    "combine streams.")
-
-            # for each dimension, choose one field only
-            # the plan can supply a list of fields. It's assumed the first
-            # of the list is always the one plotted against
-            self.dim_fields = [fields[0]
-                            for fields, stream_name in dimensions]
-
-            # make distinction between flattened fields and plotted fields
-            # motivation for this is that when plotting, we find dependent variable
-            # by finding elements that are not independent variables
-            self.all_dim_fields = [field
-                                for fields, stream_name in dimensions
-                                for field in fields]
-
-            _, self.dim_stream = dimensions[0]
-            return self
-
         # Decide which plots we want for this stream.
+
+        import matplotlib.pyplot as plt
 
         self._descriptors[doc['uid']] = doc
         stream_name = doc.get('name', 'primary')  # fall back for old docs
@@ -88,16 +91,14 @@ class FigureManager:
 
         # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
 
-        if not self._plots_enabled:
-            return
         if stream_name in self.noplot_streams:
-            return
+            return []
         if not columns:
-            return
+            return []
         if ((self._start_doc.get('num_points') == 1) and
                 (stream_name == self.dim_stream) and
                 self.omit_single_point_plot):
-            return
+            return []
 
         # This is a heuristic approach until we think of how to hint this in a
         # generalizable way.
@@ -132,10 +133,7 @@ class FigureManager:
             # we need 1 or 2 dims to do anything, do not make empty figures
             return
 
-        if self._fig_factory:
-            fig = self._fig_factory(fig_name)
-        else:
-            fig = plt.figure(fig_name)
+        fig = plt.figure(fig_name)
         if not fig.axes:
             # This is apparently a fresh figure. Make axes.
             # The complexity here is due to making a shared x axis. This can be
@@ -167,9 +165,25 @@ class FigureManager:
                     warn("Omitting {} from plot because dtype is {}"
                          "".format(y_key, dtype))
                     continue
-                # Create an instance of LivePlot and an instance of PeakStats.
-                live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
-                                              peak_results=self.peaks)
+
+                def func(event_page):
+                    """
+                    Extract x points and y points to plot out of an EventPage.
+
+                    This will be passed to LineWithPeaks.
+                    """
+                    y_data = event_page['data'][y_key]
+                    if x_key == 'time':
+                        t0 = self._start_doc['time']
+                        x_data = np.asarray(event_page['time']) - t0
+                    elif x_key == 'seq_num':
+                        x_data = event_page['seq_num']
+                    else:
+                        x_data = event_page['data'][x_key]
+                    return x_data, y_data
+
+                # Create instances of LineWithPeaks and PeakStats.
+                live_plot = LineWithPeaks(func, ax=ax, peak_results=self.peaks)
                 live_plot('start', self._start_doc)
                 live_plot('descriptor', doc)
                 peak_stats = PeakStats(x=x_key, y=y_key)
@@ -184,7 +198,6 @@ class FigureManager:
             # safer one to use, so it is the fallback..
             gridding = self._start_doc.get('hints', {}).get('gridding')
             if gridding == 'rectilinear':
-                self._live_grids[doc['uid']] = {}
                 slow, fast = dim_fields
                 try:
                     extents = self._start_doc['extents']
@@ -220,7 +233,6 @@ class FigureManager:
                         live_grid('descriptor', doc)
                         callbacks.append(live_grid)
             else:
-                self._live_scatters[doc['uid']] = {}
                 x_key, y_key = dim_fields
                 for I_key, ax in zip(columns, axes):
                     try:
@@ -246,14 +258,22 @@ class FigureManager:
         return callbacks
 
 
+class FigureManager:
+    def __init__(self):
+        self.noplot_streams = []  # Do we want to keep this?
+        ...
+
+    def __call__(self, name, doc):
+        run_figure_manager = RunFigureManager(doc)
+        return [], [run_figure_manager]
+
+
 class Line(DocumentRouter):
     """
     Draw a matplotlib Line Arist update it for each Event.
 
     Parameters
     ----------
-    start_doc: dict
-        Not used; accepted and discarded to satisfy the callback_factory API.
     func : callable
         This must accept an EventPage and return two lists of floats
         (x points and y points). The two lists must contain an equal number of
@@ -264,9 +284,8 @@ class Line(DocumentRouter):
     **kwargs
         Passed through to :meth:`Axes.plot` to style Line object.
     """
-    def __init__(self, start_doc, func, *, ax=None, **kwargs):
+    def __init__(self, func, *, ax=None, **kwargs):
         self.func = func
-        self.single_func = single_func
         if ax is None:
             _, ax = plt.subplots()
         self.ax = ax
@@ -576,8 +595,6 @@ class Grid(CallbackBase):
 
     Parameters
     ----------
-    start_doc: dict
-        not used; accepted and dicarded to satisfy callback_factory API.
     func : callable
         This must accept a BulkEvent and return three lists of floats (x
         grid co-ordinates, y grid co-ordinates and grid position intensity
@@ -586,22 +603,15 @@ class Grid(CallbackBase):
         point, no new points or multiple new points to the plot.
     shape : tuple
         The (row, col) shape of the grid.
-    single_func : callback, optional
-        This parameter is available as a perfomrance operation. For most uses,
-        ``func`` is sufficient. This is like ``func``, but it gets an Event
-        instead of a BulkEvent. If ``None`` is given, Events are up-cast into
-        BulkEvents and handed to ``func``.
     ax : matplotlib Axes, optional.
         if ``None``, a new Figure and Axes are created.
     **kwargs
         Passed through to :meth:`Axes.imshow` to style the AxesImage object.
     '''
 
-    def __init__(self, start_doc, func, shape, *, single_func=None,
-                 ax=None, **kwargs):
+    def __init__(self, func, shape, *, ax=None, **kwargs):
         self.func = func
         self.shape = shape
-        self.single_func = single_func
         if ax is None:
             _, ax = plt.subplots()
         self.ax = ax
@@ -992,8 +1002,6 @@ class Trajectory(CallbackBase):
 
     Parameters
     ----------
-    start_doc: dict
-        not used; accepted and dicarded to satisfy callback_factory API.
     func : callable
         This must accept a BulkEvent and return two lists of floats (x
         values and y values). The two lists must contain an equal number of
@@ -1015,7 +1023,7 @@ class Trajectory(CallbackBase):
         Passed through to :meth:`Axes.imshow` to style the AxesImage object.
     '''
 
-    def __init__(self, start_doc, func, x_trajectory, y_trajectory, *,
+    def __init__(self, func, x_trajectory, y_trajectory, *,
                  single_func=None, ax=None, **kwargs):
         self.func = func
         self.x_trajectory = x_trajectory
@@ -1134,3 +1142,65 @@ def event2bulk_event(doc):
                                 for k, v in doc['timestamps'].items()}
 
     return bulk_event
+
+
+class LineWithPeaks(Line):
+    # Track state of axes, which may share instances of LineWithPeaks.
+    __labeled = weakref.WeakKeyDictionary()  # map ax to True/False
+    __visible = weakref.WeakKeyDictionary()  # map ax to True/False
+    __instances = weakref.WeakKeyDictionary()  # map ax to list of instances
+
+    def __init__(self, *args, peak_results, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.peak_results = peak_results
+
+        ax = self.ax  # for brevity
+        if ax not in self.__visible:
+            # This is the first instance of LineWithPeaks on these axes.
+            # Set up matplotlib event handling.
+
+            self.__visible[ax] = False
+
+            def toggle(event):
+                if event.key == 'P':
+                    self.__visible[ax] = ~self.__visible[ax]
+                    for instance in self.__instances[ax]:
+                        instance.check_visibility()
+
+            ax.figure.canvas.mpl_connect('key_press_event', toggle)
+
+        if ax not in self.__instances:
+            self.__instances[ax] = []
+        self.__instances[ax].append(self)
+        self.__arts = None
+
+    def check_visibility(self):
+        if self.__visible[self.ax]:
+            if self.__arts is None:
+                self.plot_annotations()
+            else:
+                for artist in self.__arts:
+                    artist.set_visible(True)
+        elif self.__arts is not None:
+                for artist in self.__arts:
+                    artist.set_visible(False)
+        self.ax.legend(loc='best')
+        self.ax.figure.canvas.draw_idle()
+
+    def plot_annotations(self):
+        styles = iter(cycler('color', 'kr'))
+        vlines = []
+        for style, attr in zip(styles, ['cen', 'com']):
+            val = self.peak_results[attr][self.y]
+            # Only put labels in this legend once per axis.
+            if self.ax in self.__labeled:
+                label = '_no_legend_'
+            else:
+                label = attr
+            vlines.append(self.ax.axvline(val, label=label, **style))
+        self.__labeled[self.ax] = None
+        self.__arts = vlines
+
+    def stop(self, doc):
+        self.check_visibility()
+        super().stop(doc)
