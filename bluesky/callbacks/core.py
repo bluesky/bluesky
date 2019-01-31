@@ -1,5 +1,4 @@
-"""
-Useful callbacks for the Run Engine
+""" Useful callbacks for the Run Engine
 """
 from itertools import count
 import warnings
@@ -181,9 +180,9 @@ class RunRouter(DocumentRouter):
                 for callbacks in self._factory_cbs_by_start.values():
                     for callback in callbacks:
                         callback('datum_page', doc)
-                for cbs in self._subfactory_cbs_by_start.values():
+                for callbacks in self._subfactory_cbs_by_start.values():
                     for callback in callbacks:
-                        cb('datum_page', doc)
+                        callback('datum_page', doc)
 
     def resource(self, doc):
         try:
@@ -194,24 +193,24 @@ class RunRouter(DocumentRouter):
             # they are not applicable they will do no harm, and this is
             # expected to be an increasingly rare case.
             self._unlabeled_resources.append(doc['uid'])
-            for cbs in self._factory_cbs_by_start.values():
-                for cb in cbs:
-                    cb('resource', doc)
-            for cbs in self._subfactory_cbs_by_start.values():
-                for cb in cbs:
-                    cb('resource', doc)
+            for callbacks in self._factory_cbs_by_start.values():
+                for callback in callbacks:
+                    callback('resource', doc)
+            for callbacks in self._subfactory_cbs_by_start.values():
+                for callback in callbacks:
+                    callback('resource', doc)
         else:
-            for cb in self._factory_cbs_by_start[start_uid]:
-                cb('resource', doc)
-            for cb in self._subfactory_cbs_by_start[start_uid]:
-                cb('resource', doc)
+            for callback in self._factory_cbs_by_start[start_uid]:
+                callback('resource', doc)
+            for callback in self._subfactory_cbs_by_start[start_uid]:
+                callback('resource', doc)
 
     def stop(self, doc):
         start_uid = doc['run_start']
-        for cb in self._factory_cbs_by_start[start_uid]:
-            cb('stop', doc)
-        for cb in self._subfactory_cbs_by_start[start_uid]:
-            cb('stop', doc)
+        for callback in self._factory_cbs_by_start[start_uid]:
+            callback('stop', doc)
+        for callback in self._subfactory_cbs_by_start[start_uid]:
+            callback('stop', doc)
         # Clean up references.
         self._subfactories.pop(start_uid, None)
         self._factory_cbs_by_start.pop(start_uid, None)
