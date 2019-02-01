@@ -298,7 +298,7 @@ class Line(DocumentRouter):
     def start(self, doc):
         if self.label is None:
             label = ' :: '.join([f'{key!s} {doc.get(key)!r}'
-                               for key in self.legend_keys])
+                                 for key in self.legend_keys])
             self.line.set_label(label)
 
     def event_page(self, doc):
