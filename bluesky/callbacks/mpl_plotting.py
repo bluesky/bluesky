@@ -317,8 +317,8 @@ class Line(DocumentRouter):
         """
         if not len(x) == len(y):
             raise ValueError("User function is expected to provide the same "
-                             "number of x and y points. Got {0} x points and "
-                             "{1} y points.".format(len(x), len(y)))
+                             "number of x and y points. Got {len(x)} x points "
+                             "and {len(y)} y points.")
         if not x:
             # No new data. Short-circuit.
             return
