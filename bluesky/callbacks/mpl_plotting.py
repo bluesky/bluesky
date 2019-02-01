@@ -279,6 +279,12 @@ class Line(DocumentRouter):
         (x points and y points). The two lists must contain an equal number of
         items, but that number is arbitrary. That is, a given document may add
         one new point to the plot, no new points, or multiple new points.
+    legend_keys : Iterable
+        This collection of keys will be extracted from the RunStart document
+        and shown in the legend with the corresponding values if present or
+        'None' if not present. The default includes just one item, 'scan_id'.
+        If a 'label' keyword argument is given, this paramter will be ignored
+        and that label will be used instead.
     ax : matplotlib Axes, optional
         If None, a new Figure and Axes are created.
     **kwargs
