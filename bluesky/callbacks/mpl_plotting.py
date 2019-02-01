@@ -284,7 +284,7 @@ class Line(DocumentRouter):
     **kwargs
         Passed through to :meth:`Axes.plot` to style Line object.
     """
-    def __init__(self, func, *, ax=None, **kwargs):
+    def __init__(self, func, *, legend_keys=('scan_id',), ax=None, **kwargs):
         self.func = func
         if ax is None:
             _, ax = plt.subplots()
@@ -292,6 +292,14 @@ class Line(DocumentRouter):
         self.line, = ax.plot([], [], **kwargs)
         self.x_data = []
         self.y_data = []
+        self.legend_keys = legend_keys
+        self.label = kwargs.get('label')
+
+    def start(self, doc):
+        if self.label is None:
+            label = ' :: '.join([f'{key!s} {doc.get(key)!r}'
+                               for key in self.legend_keys])
+            self.line.set_label(label)
 
     def event_page(self, doc):
         x, y = self.func(doc)
