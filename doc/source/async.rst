@@ -64,7 +64,7 @@ To "fly" one or more "flyable" devices during a plan, bluesky provides a
 
     from ophyd.sim import det, flyer1, flyer2  # simulated hardware
     from bluesky.plans import count
-    from bluesky.preprocessors fly_during_wrapper
+    from bluesky.preprocessors import fly_during_wrapper
 
     RE(fly_during_wrapper(count([det], num=5), [flyer1, flyer2]))
 
@@ -74,7 +74,7 @@ and as a decorator, :func:`fly_during_decorator`.
 
     from ophyd.sim import det, flyer1, flyer2  # simulated hardware
     from bluesky.plans import count
-    from bluesky.preprocessors fly_during_wrapper
+    from bluesky.preprocessors import fly_during_wrapper
 
     # Define a new plan for future use.
     fly_and_count = fly_during_decorator([flyer1, flyer2])(count)
