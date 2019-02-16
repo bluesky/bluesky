@@ -29,6 +29,7 @@ jobs:
 
   - script: |
       pip install pytest
+      pip install -r dev-requirements.txt
       pytest bluesky/tests --doctest-modules --junitxml=junit/test-results.xml
     displayName: 'pytest'
 
