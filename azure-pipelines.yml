@@ -23,7 +23,12 @@ jobs:
     inputs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
-
+      
+  - script: |
+      /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16
+      export DISPLAY=:99.0
+    displayName: 'Start Xvfb'
+    
   - script: python -m pip install --upgrade pip && pip install -r requirements.txt
     displayName: 'Install dependencies'
 
