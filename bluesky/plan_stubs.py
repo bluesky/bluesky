@@ -901,7 +901,7 @@ def caching_repeater(n, plan):
 
 
 def count_step(detectors, step, pos_cache):
-    """Inner loop of a count scan
+    """Inner loop of a count scan.
 
     This is the default function for ``per_step`` in count plans.
 
