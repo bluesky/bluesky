@@ -51,7 +51,7 @@ In bluesky's view, there are three steps to "flying" a device during a scan.
    acquisition has successfully started.
 2. **Complete**: This step tells the device, "I am ready whenever you are
    ready." If the device is just collecting until it is told to stop, it will
-   report that is it ready immediately. If the device is executing some
+   report that it is ready immediately. If the device is executing some
    predetermined trajectory, it will finish before reporting ready.
 3. **Collect**: Finally, the data accumulated by the device is transferred to
    the RunEngine and processed like any other data.
