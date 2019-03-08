@@ -2,6 +2,23 @@
  Release History
 =================
 
+v1.5.1 (2019-03-08)
+===================
+
+This release contains bug fixes and documentation updates.
+
+Features
+--------
+
+* Use the ISO8601 delimiters for date in RE scans.
+
+Bug Fixes
+---------
+
+* Pin jsonschema <3 due to its deprecations.
+* Stop using deprecated API in Matplotlib.
+
+
 v1.5.0 (2019-01-03)
 ===================
 
