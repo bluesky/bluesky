@@ -1,7 +1,7 @@
 cycler
 event-model>=1.5.0
 historydict
-jsonschema
+jsonschema<3
 numpy
 super_state_machine
 toolz
