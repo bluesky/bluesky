@@ -5,8 +5,6 @@
 v1.5.1 (2019-03-08)
 ===================
 
-Bug fixes and documentation updates.
-
 This release contains bug fixes and documentation updates.
 
 Features
