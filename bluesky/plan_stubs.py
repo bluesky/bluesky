@@ -1020,3 +1020,50 @@ def repeat(plan, num=1, delay=None):
                     yield Msg('sleep', None, d)
 
     return (yield from repeated_plan())
+
+
+def update_epicsmotor_user_offset(epicsmotor, val):
+    '''Follows the correct procedure to update an EpicsMotor user offset.
+
+    There is a complex set of steps involved in correctly updating the user
+    offset value as the effect of changing its value depends on he values of
+    other signals, this plan_stub genreates the instructions to perform those
+    steps. See the section on Calibration-related fileds at https://epics.anl.gov/bcda/synApps/motor/R4-1/motorRecord.html>>>>>>>ccb1ced23ad740f7c7c0e9a5a312643f125c1599
+    for a detailed description of the how this is meant to work.
+
+    Parameters
+    ----------
+    epicsmotor : ``ophyd.EpicsMotor`` instance
+        This is an EpicsMotor instance whose user-offset is to be changed
+    val : float
+        The new value for the user offset.
+    '''
+    if hasattr(epicsmotor, 'user_offset') and hasattr(epicsmotor,
+                                                      'offset_freeze_switch'):
+        initial_offset_freeze = epicsmotor.offset_freeze_switch.position
+        yield from mv(epicsmotor.offset_freeze_switch, 0)
+        yield from mv(epicsmotor.user_offset, val)
+        yield from mv(epicsmotor.offset_freeze_switch, initial_offset_freeze)
+
+
+def set_current_epicsmotor_value(epicsmotor, val):
+    '''Follows the correct procedure to reset the EpicsMotor user value to val.
+
+    There is a complex set of steps involved in correctly setting the current
+    user value to a new value this has the effect of changing the user_offset
+    value, this plan_stub genreates the instructions to perform those
+    steps. See the section on Calibration-related fileds at https://epics.anl.gov/bcda/synApps/motor/R4-1/motorRecord.html>>>>>>>ccb1ced23ad740f7c7c0e9a5a312643f125c1599
+    for a detailed description of the how this is meant to work.
+
+    Parameters
+    ----------
+    epicsmotor : ``ophyd.EpicsMotor`` instance
+        This is an EpicsMotor instance whose user-offset is to be changed
+    val : float
+        The new value for the current motor position.
+    '''
+    if hasattr(epicsmotor, 'set') and hasattr(epicsmotor, 'set_use_switch'):
+        initial_set_use_switch = epicsmotor.set_use_switch.position
+        yield from mv(epicsmotor.set_use_switch, 0)
+        yield from mv(epicsmotor, val)
+        yield from mv(epicsmotor.set_use_switch, initial_set_use_switch)
