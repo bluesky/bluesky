@@ -1,5 +1,6 @@
 import ast
 import pytest
+import jsonschema
 from bluesky.plans import scan, grid_scan
 import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
@@ -89,6 +90,8 @@ def test_live_grid(RE, hw):
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
 
 
+@pytest.mark.xfail(not (jsonschema.__version__.split('.') < ['3', ]),
+                   reason='Deprecations in jsonschema')
 def test_plot_ints(RE):
     from ophyd import Signal
     from bluesky.callbacks.best_effort import BestEffortCallback
