@@ -900,23 +900,15 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def count_step(detectors, step, pos_cache):
+def count_step(detectors):
     """Inner loop of a count scan.
 
     This is the default function for ``per_step`` in count plans.
 
     Parameters
     ----------
-    detectors : iterable
+    detectors : Iterable[OphydObj]
         devices to read
-    step : dict
-        maps motors to positions in this step. Not used, included for API
-        compatibility with ``bluesky.plan_stubs.one_nd_step``, and similar
-        custom ``per_step`` functions only.
-    pos_cache : dict
-        maps motors to their last-set positions. Not used, included for API
-        compatibility with ``bluesky.plan_stubs.one_nd_step``, and similar
-        custom ``per_step`` functions only.
     """
 
     yield from trigger_and_read(list(detectors))
