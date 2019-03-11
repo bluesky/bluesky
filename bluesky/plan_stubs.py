@@ -900,7 +900,7 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def count_step(detectors):
+def count_step(detectors, take_reading=trigger_and_read):
     """Inner loop of a count scan.
 
     This is the default function for ``per_step`` in count plans.
@@ -909,9 +909,19 @@ def count_step(detectors):
     ----------
     detectors : Iterable[OphydObj]
         devices to read
+
+    take_reading : plan, optional
+        function to do the actual acquisition ::
+
+           def take_reading(dets, name='primary'):
+                yield from ...
+
+        Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
+
+        Defaults to `trigger_and_read`
     """
     yield Msg('checkpoint')
-    yield from trigger_and_read(list(detectors))
+    yield from take_reading(list(detectors))
 
 
 def one_1d_step(detectors, motor, step, take_reading=trigger_and_read):
