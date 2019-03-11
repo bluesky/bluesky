@@ -928,8 +928,13 @@ def one_1d_step(detectors, motor, step, take_reading=trigger_and_read):
         The motor to move
     step : Any
         Where to move the motor to
-    take_reading : Callable[List[OphydObj]] -> Generator[Msg], optional
-        function to do the actual acquisition.
+    take_reading : plan, optional
+        function to do the actual acquisition ::
+
+           def take_reading(dets, name='primary'):
+                yield from ...
+
+        Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
 
         Defaults to `trigger_and_read`
     """
@@ -981,8 +986,15 @@ def one_nd_step(detectors, step, pos_cache, take_reading=trigger_and_read):
         mapping motors to positions in this step
     pos_cache : dict
         mapping motors to their last-set positions
-    take_reading : Callable[List[OphydObj]] -> Generator[Msg], optional
-        function to
+    take_reading : plan, optional
+        function to do the actual acquisition ::
+
+           def take_reading(dets, name='primary'):
+                yield from ...
+
+        Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
+
+        Defaults to `trigger_and_read`
     """
     motors = step.keys()
     yield from move_per_step(step, pos_cache)
