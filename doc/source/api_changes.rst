@@ -2,6 +2,14 @@
  Release History
 =================
 
+v1.5.2 (2019-03-11)
+===================
+
+This release fixes compatibility with matplotlib 2.x; at least some matplotlib
+2.x releases are not compatible with the matplotlib plotting callbacks in
+bluesky v1.5.1. This release of bluesky is compatible with all 2.x and 3.x
+releases.
+
 v1.5.1 (2019-03-08)
 ===================
 
