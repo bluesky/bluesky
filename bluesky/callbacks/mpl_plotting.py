@@ -93,8 +93,13 @@ class LivePlot(CallbackBase):
         kwargs = ChainMap(self.kwargs, {'label': label})
         self.current_line, = self.ax.plot([], [], **kwargs)
         self.lines.append(self.current_line)
-        self.legend = self.ax.legend(
-            loc=0, title=self.legend_title).set_draggable(True)
+        legend = self.ax.legend(loc=0, title=self.legend_title)
+        try:
+            # matplotlib v3.x
+            self.legend = legend.set_draggable(True)
+        except AttributeError:
+            # matplotlib v2.x (warns in 3.x)
+            self.legend = legend.draggable(True)
         super().start(doc)
 
     def event(self, doc):
