@@ -1573,6 +1573,10 @@ def fly(flyers, *, md=None):
     msg : Msg
         'kickoff', 'wait', 'complete, 'wait', 'collect' messages
 
+    See Also
+    --------
+    :func:`bluesky.preprocessors.fly_during_wrapper`
+    :func:`bluesky.preprocessors.fly_during_decorator`
     """
     yield from bps.open_run(md)
     for flyer in flyers:
