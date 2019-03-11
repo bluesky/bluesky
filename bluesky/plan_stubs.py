@@ -914,7 +914,7 @@ def count_step(detectors):
     yield from trigger_and_read(list(detectors))
 
 
-def one_1d_step(detectors, motor, step, per_step=trigger_and_read):
+def one_1d_step(detectors, motor, step, take_reading=trigger_and_read):
     """
     Inner loop of a 1D step scan
 
@@ -928,7 +928,7 @@ def one_1d_step(detectors, motor, step, per_step=trigger_and_read):
         The motor to move
     step : Any
         Where to move the motor to
-    per_step : Callable[List[OphydObj]] -> Generator[Msg], optional
+    take_reading : Callable[List[OphydObj]] -> Generator[Msg], optional
         function to do the actual acquisition.
 
         Defaults to `trigger_and_read`
@@ -940,7 +940,7 @@ def one_1d_step(detectors, motor, step, per_step=trigger_and_read):
         yield Msg('wait', None, group=grp)
 
     yield from move()
-    return (yield from per_step(list(detectors) + [motor]))
+    return (yield from take_reading(list(detectors) + [motor]))
 
 
 def move_per_step(step, pos_cache):
@@ -967,7 +967,7 @@ def move_per_step(step, pos_cache):
     yield Msg('wait', None, group=grp)
 
 
-def one_nd_step(detectors, step, pos_cache, per_step=trigger_and_read):
+def one_nd_step(detectors, step, pos_cache, take_reading=trigger_and_read):
     """
     Inner loop of an N-dimensional step scan
 
@@ -981,12 +981,12 @@ def one_nd_step(detectors, step, pos_cache, per_step=trigger_and_read):
         mapping motors to positions in this step
     pos_cache : dict
         mapping motors to their last-set positions
-    per_step : Callable[List[OphydObj]] -> Generator[Msg], optional
+    take_reading : Callable[List[OphydObj]] -> Generator[Msg], optional
         function to
     """
     motors = step.keys()
     yield from move_per_step(step, pos_cache)
-    yield from per_step(list(detectors) + list(motors))
+    yield from take_reading(list(detectors) + list(motors))
 
 
 def repeat(plan, num=1, delay=None):
