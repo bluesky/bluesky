@@ -1573,9 +1573,6 @@ def fly(flyers, *, md=None):
     msg : Msg
         'kickoff', 'wait', 'complete, 'wait', 'collect' messages
 
-    See Also
-    --------
-    :func:`bluesky.plans.fly_during`
     """
     yield from bps.open_run(md)
     for flyer in flyers:
