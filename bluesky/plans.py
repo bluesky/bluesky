@@ -1575,7 +1575,8 @@ def fly(flyers, *, md=None):
 
     See Also
     --------
-    :func:`bluesky.plans.fly_during`
+    :func:`bluesky.preprocessors.fly_during_wrapper`
+    :func:`bluesky.preprocessors.fly_during_decorator`
     """
     yield from bps.open_run(md)
     for flyer in flyers:
