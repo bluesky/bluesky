@@ -6,7 +6,6 @@ import socket
 import time
 import warnings
 from ..run_engine import Dispatcher, DocumentNames
-from ..utils import apply_to_dict_recursively, sanitize_np
 
 
 class Publisher:
@@ -69,7 +68,6 @@ class Publisher:
 
     def __call__(self, name, doc):
         doc = copy.deepcopy(doc)
-        apply_to_dict_recursively(doc, sanitize_np)
         message = b' '.join([self._prefix,
                              name.encode(),
                              self._serializer(doc)])
