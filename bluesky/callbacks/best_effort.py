@@ -138,7 +138,7 @@ class BestEffortCallback(CallbackBase):
         tt = datetime.fromtimestamp(self._start_doc['time']).utctimetuple()
         if self._heading_enabled:
             print("Transient Scan ID: {0}     Time: {1}".format(
-                self._start_doc['scan_id'],
+                self._start_doc.get('scan_id', ''),
                 time.strftime("%Y-%m-%d %H:%M:%S", tt)))
             print("Persistent Unique Scan ID: '{0}'".format(
                 self._start_doc['uid']))
