@@ -14,6 +14,18 @@ import asyncio
 import time as ttime
 import numpy as np
 from numpy.testing import assert_array_equal
+import time
+import threading
+from functools import partial, wraps
+
+
+def _delayed_partial(func, delay):
+    @wraps(func)
+    def inner():
+        time.sleep(delay)
+        return func()
+
+    return inner
 
 
 def test_msgs(RE, hw):
@@ -132,16 +144,19 @@ def test_deferred_pause_no_checkpoint(RE):
 def test_pause_from_outside(RE):
     assert RE.state == 'idle'
 
-    def local_pause():
+    def local_pause(delay):
+        time.sleep(delay)
         RE.request_pause()
 
-    RE.loop.call_later(1, local_pause)
+    th = threading.Thread(target=partial(local_pause, 1))
+    th.start()
     with pytest.raises(RunEngineInterrupted):
         RE(checkpoint_forever())
     assert RE.state == 'paused'
 
     # Cue up a second pause requests in 2 seconds.
-    RE.loop.call_later(2, local_pause)
+    th = threading.Thread(target=partial(local_pause, 2))
+    th.start()
     with pytest.raises(RunEngineInterrupted):
         RE.resume()
     assert RE.state == 'paused'
@@ -287,9 +302,9 @@ def test_suspend(RE, hw):
     def ev_cb(name, ev):
         out.append(ev)
     # trigger the suspend right after the check point
-    RE.loop.call_later(.1, local_suspend)
+    threading.Thread(target=_delayed_partial(local_suspend, .1)).start()
     # wait a second and then resume
-    RE.loop.call_later(1, resume_cb)
+    threading.Thread(target=_delayed_partial(resume_cb, 1)).start()
     # grab the start time
     start = ttime.time()
     # run, this will not return until it is done
@@ -315,9 +330,9 @@ def test_pause_resume(RE):
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(1, sim_kill)
-    RE.loop.call_later(1.1, sim_kill)
-    RE.loop.call_later(2, done)
+    threading.Thread(target=_delayed_partial(sim_kill, 1)).start()
+    threading.Thread(target=_delayed_partial(sim_kill, 1.1)).start()
+    threading.Thread(target=_delayed_partial(done, 2)).start()
 
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
@@ -346,9 +361,9 @@ def test_pause_abort(RE):
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(.1, sim_kill)
-    RE.loop.call_later(.2, sim_kill)
-    RE.loop.call_later(1, done)
+    threading.Thread(target=_delayed_partial(sim_kill, .1)).start()
+    threading.Thread(target=_delayed_partial(sim_kill, .2)).start()
+    threading.Thread(target=_delayed_partial(done, 1)).start()
 
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
@@ -378,9 +393,9 @@ def test_abort(RE):
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(.1, sim_kill)
-    RE.loop.call_later(.2, sim_kill)
-    RE.loop.call_later(.3, done)
+    threading.Thread(target=_delayed_partial(sim_kill, .1)).start()
+    threading.Thread(target=_delayed_partial(sim_kill, .2)).start()
+    threading.Thread(target=_delayed_partial(done, .3)).start()
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
     stop = ttime.time()
@@ -594,12 +609,13 @@ def test_failed_status_object(RE):
     class failer:
         def set(self, inp):
             st = StatusBase()
-            RE.loop.call_later(1, lambda: st._finished(success=False))
+            threading.Thread(target=_delayed_partial(lambda: st._finished(success=False), 1)).start()
             return st
 
         def trigger(self):
             st = StatusBase()
-            RE.loop.call_later(1, lambda: st._finished(success=False))
+            threading.Thread(
+                target=_delayed_partial(lambda: st._finished(success=False), 1)).start()
             return st
 
         def stop(self, *, success=False):
