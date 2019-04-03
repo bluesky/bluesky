@@ -750,6 +750,7 @@ class RunEngine:
                 stack.enter_context(mgr(self))
 
             self._blocking_event.clear()
+            self.log.info("Executing plan %r", self._plan)
             self._task = asyncio.run_coroutine_threadsafe(self._run(),
                                                           loop=self.loop)
 
