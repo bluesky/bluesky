@@ -760,11 +760,9 @@ class RunEngine:
             self._task.add_done_callback(set_blocking_event)
 
             try:
-                print('waiting')
                 # Block until plan is complete or exception is raised.
                 self._during_task(self._blocking_event)
             finally:
-                print('finally after waiting')
                 if self._task.done():
                     # get exceptions from the main task
                     try:
@@ -853,7 +851,6 @@ class RunEngine:
             # The _run task is waiting on this Event. Let is continue.
             self._run_permit.set()
             try:
-                print('waiting')
                 # Block until plan is complete or exception is raised.
                 self._during_task(self._blocking_event)
             finally:
@@ -1114,7 +1111,6 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
-        print('RUN')
         debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
         pending_cancel_exception = None
         self._reason = ''
@@ -1143,7 +1139,6 @@ class RunEngine:
                                 self._reset_checkpoint_state_meth()
 
                     # Let RunEngine.__call__ return...
-                    print('release __call__')
                     self._blocking_event.set()
                     # ...and wait here until RunEngine.{resume|stop|abort|halt} is
                     # called.
@@ -1154,18 +1149,13 @@ class RunEngine:
                         bridge_event.set()
 
                     def unblock_bridge():
-                        print('kicked off bridge thread')
                         self._run_permit.wait()
-                        print('run permit is set')
                         asyncio.run_coroutine_threadsafe(set_bridge_event(),
                                                          loop=self.loop)
-                        print('bridge event is set')
 
                     threading.Thread(target=unblock_bridge, daemon=True).start()
 
-                    print('going to wait')
                     yield from bridge_event.wait()
-                    print('passed wait')
 
                     # If we are here, we have come back to life either to
                     # continue (resume) or to clean up before exiting.
@@ -1338,7 +1328,6 @@ class RunEngine:
             self.log.exception("Run aborted")
             raise err
         finally:
-            print('finally')
             # Some done_callbacks may still be alive in other threads.
             # Block them from creating new 'failed status' tasks on the loop.
             self._pardon_failures.set()
