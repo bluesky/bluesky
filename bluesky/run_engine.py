@@ -1487,6 +1487,11 @@ class RunEngine:
         # actually _read_ the object
         ret = obj.read(*msg.args, **msg.kwargs)
 
+        if ret is None:
+            raise RuntimeError(f"The read of {obj.name} returned None. "
+                               "This is a bug in your object implementation, "
+                               "`read` must return a dictionary ")
+
         if self._bundling:
             # if the object is not in the _describe_cache, cache it
             if obj not in self._describe_cache:
