@@ -1467,6 +1467,7 @@ def test_failing_describe_callback(RE, hw):
     with pytest.raises(TestException):
         RE(plan())
 
+
 def test_print_commands(RE):
     ''' test the printing of commands available.
         NOTE : An error here likely just means that this interface has changed.
@@ -1494,3 +1495,25 @@ def test_print_commands(RE):
 
     print_command_reg2 = RE.print_command_registry()
     assert print_command_reg1 == print_command_reg2
+
+
+def test_broken_read_exception(RE):
+    class Dummy:
+        def __init__(self, name):
+            self.name = name
+
+        def read_configuration(self):
+            return {}
+
+        def describe_configuration(self):
+            return {}
+
+        def describe(self):
+            return {}
+
+        def read(self):
+            ...
+
+    obj = Dummy('broken read')
+    with pytest.raises(RuntimeError):
+        RE([Msg('read', obj)])
