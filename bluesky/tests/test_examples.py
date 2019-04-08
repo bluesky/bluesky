@@ -295,7 +295,7 @@ def test_suspend(RE, hw):
         RE.request_suspend(ev.wait())
 
     def resume_cb():
-        ev.set()
+        RE.loop.call_soon_threadsafe(ev.set)
 
     out = []
 
@@ -320,7 +320,7 @@ def test_pause_resume(RE):
 
     def done():
         print("Done")
-        ev.set()
+        RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
 
@@ -351,7 +351,7 @@ def test_pause_abort(RE):
 
     def done():
         print("Done")
-        ev.set()
+        RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
 
@@ -383,7 +383,7 @@ def test_abort(RE):
 
     def done():
         print("Done")
-        ev.set()
+        RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
 
