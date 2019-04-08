@@ -2471,8 +2471,7 @@ class Dispatcher:
             self._token_mapping[public_token] = private_tokens
             return public_token
 
-        if name not in DocumentNames:
-            name = DocumentNames[name]
+        name = DocumentNames[name]
         private_token = self.cb_registry.connect(name, func)
         public_token = next(self._counter)
         self._token_mapping[public_token] = [private_token]
