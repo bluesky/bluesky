@@ -1028,7 +1028,7 @@ def update_epicsmotor_user_offset(epicsmotor, val):
     There is a complex set of steps involved in correctly updating the user
     offset value as the effect of changing its value depends on he values of
     other signals, this plan_stub genreates the instructions to perform those
-    steps. See the section on Calibration-related fileds at https://epics.anl.gov/bcda/synApps/motor/R4-1/motorRecord.html>>>>>>>ccb1ced23ad740f7c7c0e9a5a312643f125c1599
+    steps. See the section on Calibration-related fileds at https://epics.anl.gov/bcda/synApps/motor/R4-1/motorRecord.html
     for a detailed description of the how this is meant to work.
 
     Parameters
@@ -1052,7 +1052,7 @@ def set_current_epicsmotor_value(epicsmotor, val):
     There is a complex set of steps involved in correctly setting the current
     user value to a new value this has the effect of changing the user_offset
     value, this plan_stub genreates the instructions to perform those
-    steps. See the section on Calibration-related fileds at https://epics.anl.gov/bcda/synApps/motor/R4-1/motorRecord.html>>>>>>>ccb1ced23ad740f7c7c0e9a5a312643f125c1599
+    steps. See the section on Calibration-related fileds at https://epics.anl.gov/bcda/synApps/motor/R4-1/motorRecord.html
     for a detailed description of the how this is meant to work.
 
     Parameters
