@@ -60,6 +60,8 @@ from bluesky.plans import count, scan, rel_scan, inner_product_scan
 import bluesky.plans as bp
 
 from bluesky.utils import all_safe_rewind
+from .utils import _delayed_partial
+import threading
 
 
 @pytest.mark.parametrize(
@@ -619,7 +621,7 @@ def test_plan_md(RE, hw):
 def test_infinite_count(RE, hw):
     loop = RE.loop
 
-    loop.call_later(2, RE.stop)
+    threading.Thread(target=_delayed_partial(RE.stop, 2)).start()
     docs = defaultdict(list)
 
     def collector(name, doc):

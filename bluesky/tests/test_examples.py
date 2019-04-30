@@ -16,16 +16,8 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import time
 import threading
-from functools import partial, wraps
-
-
-def _delayed_partial(func, delay):
-    @wraps(func)
-    def inner():
-        time.sleep(delay)
-        return func()
-
-    return inner
+from functools import partial
+from .utils import _delayed_partial
 
 
 def test_msgs(RE, hw):
@@ -373,9 +365,10 @@ def test_pause_abort(RE):
     assert RE.state == 'idle'
     stop = ttime.time()
 
-    RE.loop.run_until_complete(ev.wait())
     assert mid - start > .1
     assert stop - start < 1
+
+    RE.loop.call_soon_threadsafe(ev.wait)
 
 
 def test_abort(RE):
@@ -609,13 +602,15 @@ def test_failed_status_object(RE):
     class failer:
         def set(self, inp):
             st = StatusBase()
-            threading.Thread(target=_delayed_partial(lambda: st._finished(success=False), 1)).start()
+            threading.Thread(target=_delayed_partial(
+                lambda: st._finished(success=False), 1)).start()
             return st
 
         def trigger(self):
             st = StatusBase()
             threading.Thread(
-                target=_delayed_partial(lambda: st._finished(success=False), 1)).start()
+                target=_delayed_partial(
+                    lambda: st._finished(success=False), 1)).start()
             return st
 
         def stop(self, *, success=False):

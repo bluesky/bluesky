@@ -1,4 +1,5 @@
-from bluesky.run_engine import RunEngine
+from functools import wraps
+import time
 from collections import defaultdict
 import contextlib
 import tempfile
@@ -44,3 +45,12 @@ class DocCollector:
             self.event[doc['uid']] = []
         else:
             self.event[doc['descriptor']].append(doc)
+
+
+def _delayed_partial(func, delay):
+    @wraps(func)
+    def inner():
+        time.sleep(delay)
+        return func()
+
+    return inner

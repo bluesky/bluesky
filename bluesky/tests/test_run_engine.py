@@ -23,6 +23,8 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    run_wrapper, rewindable_wrapper,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
+from .utils import _delayed_partial
+import threading
 
 
 def test_states():
@@ -507,17 +509,28 @@ def _make_unrewindable_suspender_marker():
 
 @_make_unrewindable_suspender_marker()
 def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
+    from bluesky.utils import ts_msg_hook
     msgs = []
 
     def collector(msg):
+        ts_msg_hook(msg)
         msgs.append(msg)
 
     RE.msg_hook = collector
 
     ev = asyncio.Event(loop=RE.loop)
-    loop = RE.loop
-    loop.call_later(.5, partial(RE.request_suspend, fut=ev.wait()))
-    loop.call_later(1, ev.set)
+
+    threading.Thread(
+        target=_delayed_partial(
+            partial(RE.request_suspend, fut=ev.wait()),
+            .5)).start()
+
+    def verbose_set():
+        print('seting')
+        ev.set()
+
+    threading.Thread(target=_delayed_partial(verbose_set, 1)).start()
+
     RE(plan(motor, det))
     assert [m.command for m in msgs] == msg_seq
 
