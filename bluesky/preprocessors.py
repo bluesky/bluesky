@@ -1,6 +1,7 @@
 from __future__ import generator_stop
 
-from collections import OrderedDict, deque, ChainMap, Iterable
+from collections import OrderedDict, deque, ChainMap
+from collections.abc import Iterable
 import uuid
 from .utils import (normalize_subs_input, root_ancestor,
                     separate_devices,

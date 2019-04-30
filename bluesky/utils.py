@@ -12,7 +12,7 @@ import importlib
 import inspect
 from inspect import Parameter, Signature
 import itertools
-from collections import Iterable
+from collections.abc import Iterable
 import numpy as np
 from cycler import cycler
 import logging

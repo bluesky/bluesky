@@ -4,7 +4,7 @@ from cycler import cycler
 from . import utils
 import operator
 from functools import reduce
-from collections import Iterable
+from collections.abc import Iterable
 import time
 import warnings
 
