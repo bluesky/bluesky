@@ -1320,8 +1320,14 @@ def run_matplotlib_qApp(blocking_event):
             # we need to 'kick' the python interpreter so it sees
             # system signals
             # https://stackoverflow.com/a/4939113/380231
+            def sigint_catcher():
+                try:
+                    ...
+                except KeyboardInterrupt:
+                    qApp.exit()
+
             kick_timer = QtCore.QTimer()
-            kick_timer.timeout.connect(lambda: None)
+            kick_timer.timeout.connect(sigint_catcher)
 
             # this kill the Qt event loop when the plan is finished
             killer_timer = QtCore.QTimer()
@@ -1332,7 +1338,7 @@ def run_matplotlib_qApp(blocking_event):
             if not blocking_event.is_set():
                 try:
                     kick_timer.start(50)
-                    qApp.exec()
+                    qApp.exec_()
                 finally:
                     kick_timer.stop()
         else:
