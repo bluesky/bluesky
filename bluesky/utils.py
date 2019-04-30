@@ -1303,7 +1303,6 @@ def run_matplotlib_qApp(blocking_event):
                 matplotlib.backends.backend_qt5._create_qApp()
                 run_matplotlib_qApp.qApp_instance = matplotlib.backends.backend_qt5.qApp
             qApp = run_matplotlib_qApp.qApp_instance
-
             from matplotlib.backends.qt_compat import QtCore
 
             def start_killer_thread():
@@ -1318,13 +1317,24 @@ def run_matplotlib_qApp(blocking_event):
 
                 threading.Thread(target=exit_qApp).start()
 
-            timer = QtCore.QTimer()
-            timer.setSingleShot(True)
-            timer.timeout.connect(start_killer_thread)
-            timer.start(0)
+            # we need to 'kick' the python interpreter so it sees
+            # system signals
+            # https://stackoverflow.com/a/4939113/380231
+            kick_timer = QtCore.QTimer()
+            kick_timer.timeout.connect(lambda: None)
+
+            # this kill the Qt event loop when the plan is finished
+            killer_timer = QtCore.QTimer()
+            killer_timer.setSingleShot(True)
+            killer_timer.timeout.connect(start_killer_thread)
+            killer_timer.start(0)
 
             if not blocking_event.is_set():
-                qApp.exec()
+                try:
+                    kick_timer.start(50)
+                    qApp.exec()
+                finally:
+                    kick_timer.stop()
         else:
             # We are not using matplotlib + Qt. Just wait on the Event.
             blocking_event.wait()
