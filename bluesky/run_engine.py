@@ -12,6 +12,7 @@ import functools
 import inspect
 from contextlib import ExitStack
 import threading
+import concurrent
 
 from event_model import DocumentNames, schema_validators
 from super_state_machine.machines import StateMachine
@@ -768,7 +769,8 @@ class RunEngine:
                     # get exceptions from the main task
                     try:
                         exc = self._task.exception()
-                    except asyncio.CancelledError:
+                    except (asyncio.CancelledError,
+                            concurrent.futures.CancelledError):
                         exc = None
                     # if the main task exception is not None, re-raise
                     # it (unless it is a canceled error)
