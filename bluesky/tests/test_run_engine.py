@@ -770,6 +770,9 @@ def test_finalizer_closeable():
 
 def test_invalid_generator(RE, hw, capsys):
     motor = hw.motor
+    from bluesky.utils import ts_msg_hook
+
+    RE.msg_hook = ts_msg_hook
 
     # this is not a valid generator as it will try to yield if it
     # is throw a GeneratorExit
@@ -785,10 +788,10 @@ def test_invalid_generator(RE, hw, capsys):
         yield Msg('pause')
 
     def post_plan(motor):
-        yield Msg('set', motor, 5)
+        yield Msg('set', motor, 500)
 
     def pre_suspend_plan():
-        yield Msg('set', motor, 5)
+        yield Msg('set', motor, -500)
         raise GeneratorExit('this one')
 
     def make_plan():
@@ -801,8 +804,8 @@ def test_invalid_generator(RE, hw, capsys):
     capsys.readouterr()
     try:
         RE.resume()
-    except GeneratorExit as sf:
-        assert sf.args[0] == 'this one'
+    except ValueError as sf:
+        assert sf.__cause__.args[0] == 'this one'
 
     actual_err, _ = capsys.readouterr()
     expected_prefix = 'The plan '
