@@ -6,6 +6,7 @@ import time as ttime
 import numpy as np
 import numpy.testing
 import pytest
+from .utils import _delayed_partial
 
 
 def test_scan_num(RE, hw):
@@ -352,7 +353,7 @@ def test_wait_for(RE):
     def done():
         ev.set()
     scan = [Msg('wait_for', None, [ev.wait(), ]), ]
-    RE.loop.call_later(2, done)
+    RE.loop.call_soon_threadsafe(_delayed_partial(done, 2))
     start = ttime.time()
     RE(scan)
     stop = ttime.time()
@@ -597,7 +598,7 @@ def test_spiral_square(RE, hw):
 
     approx_multi_traj_checker(RE, plan,
                               square_spiral_data, decimal=2)
-                              
+
 
 def test_rel_spiral_square(RE, hw):
     motor1 = hw.motor1

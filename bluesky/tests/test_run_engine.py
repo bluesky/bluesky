@@ -24,7 +24,6 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
 from .utils import _delayed_partial
-import threading
 
 
 def test_states():
@@ -571,9 +570,10 @@ def test_sigint_three_hits(RE, hw):
 
     lp = RE.loop
     motor.loop = lp
-    lp.call_later(.02, sim_kill, 3)
-    lp.call_later(.02, sim_kill, 3)
-    lp.call_later(.02, sim_kill, 3)
+    threading.Timer(.02, sim_kill, (3,)).start()
+    threading.Timer(.02, sim_kill, (3,)).start()
+    threading.Timer(.02, sim_kill, (3,)).start()
+
     start_time = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(finalize_wrapper(abs_set(motor, 1, wait=True),
@@ -889,9 +889,8 @@ def test_sideband_cancel(RE):
     scan = [Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(.5, side_band_kill)
-    RE.loop.call_later(2, done)
-
+    threading.Timer(.5, side_band_kill).start()
+    RE.loop.call_soon_threadsafe(_delayed_partial(done, 2))
     RE(scan)
     assert RE.state == 'idle'
     assert RE._task.cancelled()
@@ -1065,7 +1064,7 @@ def test_halt_async(RE):
             except_hit = True
             raise
 
-    RE.loop.call_later(.1, RE.halt)
+    threading.Timer(.1, RE.halt).start()
     start = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(sleeping_plan())
@@ -1092,7 +1091,7 @@ def test_prompt_stop(RE, cancel_func):
             except_hit = True
             raise
 
-    RE.loop.call_later(.1, partial(cancel_func, RE))
+    threading.Timer(.1, partial(cancel_func, RE))
     start = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(sleeping_plan())

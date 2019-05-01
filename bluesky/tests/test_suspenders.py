@@ -13,6 +13,7 @@ from bluesky.tests.utils import MsgCollector
 from bluesky import Msg
 import time as ttime
 from bluesky.run_engine import RunEngineInterrupted
+import threading
 import time
 
 @pytest.mark.parametrize(
@@ -45,8 +46,8 @@ def test_suspender(klass, sc_args, start_val, fail_val,
 
     start = ttime.time()
     # queue up fail and resume conditions
-    loop.call_later(.1, putter, fail_val)
-    loop.call_later(.5, putter, resume_val)
+    threading.Timer(.1, putter, (fail_val,)).start()
+    threading.Timer(.5, putter, (resume_val,)).start()
     # start the scan
     RE(scan)
     stop = ttime.time()
@@ -69,7 +70,7 @@ def test_pretripped(RE, hw):
     susp = SuspendBoolHigh(sig)
 
     RE.install_suspender(susp)
-    RE._loop.call_later(1, sig.put, 0)
+    threading.Timer(1, sig.put, (0,)).start()
     RE.msg_hook = accum
     RE(scan)
 
@@ -106,8 +107,8 @@ def test_pre_suspend_plan(RE, pre_plan, post_plan, expected_list, hw):
                            post_plan=post_plan)
 
     RE.install_suspender(susp)
-    RE._loop.call_later(.1, sig.put, 1)
-    RE._loop.call_later(1, sig.put, 0)
+    threading.Timer(.1, sig.put, (1,)).start()
+    threading.Timer(1, sig.put, (0,)).start()
     RE.msg_hook = accum
     RE(scan)
 
@@ -137,8 +138,8 @@ def test_pause_from_suspend(RE, hw):
     susp = SuspendBoolHigh(sig)
 
     RE.install_suspender(susp)
-    RE._loop.call_later(1, RE.request_pause)
-    RE._loop.call_later(2, sig.put, 0)
+    threading.Timer(1, RE.request_pause).start()
+    threading.Timer(2, sig.put, (0,)).start()
     RE.msg_hook = accum
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
@@ -161,8 +162,8 @@ def test_deferred_pause_from_suspend(RE, hw):
     susp = SuspendBoolHigh(sig)
 
     RE.install_suspender(susp)
-    RE._loop.call_later(1, RE.request_pause, True)
-    RE._loop.call_later(4, sig.put, 0)
+    threading.Timer(1, RE.request_pause, (True,)).start()
+    threading.Timer(4, sig.put, (0,)).start()
     RE.msg_hook = accum
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
@@ -174,14 +175,13 @@ def test_deferred_pause_from_suspend(RE, hw):
 def test_unresumable_suspend_fail(RE):
     'Tests what happens when a soft pause is requested from a suspended state'
 
-    scan = [Msg('clear_checkpoint'), Msg('sleep', None, 50)]
+    scan = [Msg('clear_checkpoint'), Msg('sleep', None, 2)]
     m_coll = MsgCollector()
     RE.msg_hook = m_coll
 
     ev = asyncio.Event(loop=RE.loop)
-    loop = RE.loop
-    loop.call_later(.1, partial(RE.request_suspend, fut=ev.wait()))
-    loop.call_later(1, ev.set)
+    threading.Timer(.1, partial(RE.request_suspend, fut=ev.wait())).start()
+    threading.Timer(1, ev.set).start()
     start = time.time()
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
@@ -221,8 +221,8 @@ def test_suspender_plans(RE, hw):
 
     # Suspend scan
     start = ttime.time()
-    loop.call_later(.1, putter, 1)
-    loop.call_later(.5, putter, 0)
+    threading.Timer(.1, putter, (1,)).start()
+    threading.Timer(.5, putter, (0,)).start()
     RE(suspend_wrapper(scan, my_suspender))
     stop = ttime.time()
     delta = stop - start
@@ -230,8 +230,8 @@ def test_suspender_plans(RE, hw):
 
     # Did we clean up?
     start = ttime.time()
-    loop.call_later(.1, putter, 1)
-    loop.call_later(.5, putter, 0)
+    threading.Timer(.1, putter, (1,)).start()
+    threading.Timer(.5, putter, (0,)).start()
     RE(scan)
     stop = ttime.time()
     delta = stop - start

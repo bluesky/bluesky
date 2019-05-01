@@ -393,7 +393,6 @@ def test_abort(RE):
         RE(scan)
     stop = ttime.time()
 
-    RE.loop.run_until_complete(ev.wait())
     assert RE.state == 'paused'
     assert stop - start < .3
     RE.abort()
