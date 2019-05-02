@@ -598,7 +598,8 @@ def test_sigint_many_hits_pln(RE):
 
     def hanging_plan():
         "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
-        ttime.sleep(10)
+        for j in range(100):
+            ttime.sleep(.1)
         yield Msg('null')
 
     start_time = ttime.time()
@@ -629,7 +630,8 @@ def test_sigint_many_hits_cb(RE):
             yield Msg('null')
 
     def hanging_callback(name, doc):
-        ttime.sleep(10)
+        for j in range(100):
+            ttime.sleep(.1)
 
     start_time = ttime.time()
     timer = threading.Timer(0.2, sim_kill, (11,))
