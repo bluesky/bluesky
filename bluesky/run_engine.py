@@ -763,7 +763,15 @@ class RunEngine:
 
             try:
                 # Block until plan is complete or exception is raised.
-                self._during_task(self._blocking_event)
+                try:
+                    self._during_task(self._blocking_event)
+                except KeyboardInterrupt:
+                    self._task.cancel()
+                    self.abort('uncaught KeyboardInterrupt raised')
+                except Exception as raised_er:
+                    self._task.cancel()
+                    self._interrupted = True
+                    raise raised_er
             finally:
                 if self._task.done():
                     # get exceptions from the main task
