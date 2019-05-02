@@ -1319,17 +1319,27 @@ def run_matplotlib_qApp(blocking_event):
 
                 threading.Thread(target=exit_qApp).start()
 
+            def null():
+                ...
+
+            # we also need to make sure that the qApp never sees
+            # exceptions raised by python inside of a c++ callback (as
+            # it will segfault its self because due to the way the
+            # code is called there is no clear way to propgate that
+            # back to the python code.
+            vals = (None, None, None)
+
+            def my_exception_hook(exctype, value, traceback):
+                nonlocal vals
+                vals = (exctype, value, traceback)
+                qApp.exit()
+            old_sys_handler = sys.excepthook
+
             # we need to 'kick' the python interpreter so it sees
             # system signals
             # https://stackoverflow.com/a/4939113/380231
-            def sigint_catcher():
-                try:
-                    ...
-                except KeyboardInterrupt:
-                    qApp.exit()
-
             kick_timer = QtCore.QTimer()
-            kick_timer.timeout.connect(sigint_catcher)
+            kick_timer.timeout.connect(null)
 
             # this kill the Qt event loop when the plan is finished
             killer_timer = QtCore.QTimer()
@@ -1339,10 +1349,15 @@ def run_matplotlib_qApp(blocking_event):
 
             if not blocking_event.is_set():
                 try:
+                    sys.excepthook = my_exception_hook
                     kick_timer.start(50)
                     qApp.exec_()
+                    if vals[1] is not None:
+                        raise vals[1]
                 finally:
+                    sys.excepthook = old_sys_handler
                     kick_timer.stop()
+
         else:
             # We are not using matplotlib + Qt. Just wait on the Event.
             blocking_event.wait()
