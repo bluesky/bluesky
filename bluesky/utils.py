@@ -1301,7 +1301,9 @@ def run_matplotlib_qApp(blocking_event):
             if run_matplotlib_qApp.qApp_instance is None:
                 import matplotlib.backends.backend_qt5
                 matplotlib.backends.backend_qt5._create_qApp()
-                run_matplotlib_qApp.qApp_instance = matplotlib.backends.backend_qt5.qApp
+                run_matplotlib_qApp.qApp_instance = \
+                    matplotlib.backends.backend_qt5.qApp
+
             qApp = run_matplotlib_qApp.qApp_instance
             from matplotlib.backends.qt_compat import QtCore
 
