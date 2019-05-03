@@ -654,8 +654,10 @@ class RunEngine:
         self._state = 'pausing'
 
         self._record_interruption('pause')
+
         with self._state_lock:
             self.loop.call_soon_threadsafe(self._task.cancel)
+
         if not self.resumable:
             # cannot resume, so we cannot pause.  Abort the plan.
             print("No checkpoint; cannot pause.")
@@ -814,7 +816,6 @@ class RunEngine:
                     # it (unless it is a canceled error)
                     if exc is not None and not isinstance(exc, _RunEnginePanic):
                         raise exc
-
             if self._interrupted:
                 raise RunEngineInterrupted(self.pause_msg) from None
 
@@ -875,8 +876,10 @@ class RunEngine:
         return new_plan
 
     def _resume_task(self):
-        # may be called by 'resume' or 'abort'
-        self._state = 'running'
+        # Clear the blocking Event so that we can wait on it below.
+        # The task will set it when it is done, as it was previously
+        # configured to do it __call__.
+        self._blocking_event.clear()
 
         # Handle all context managers
         with ExitStack() as stack:
@@ -885,10 +888,6 @@ class RunEngine:
             if self._task_fut.done():
                 return
 
-            # Clear the blocking Event so that we can wait on it below.
-            # The task will set it when it is done, as it was previously
-            # configured to do it __call__.
-            self._blocking_event.clear()
             # The _run task is waiting on this Event. Let is continue.
             self._run_permit.set()
             try:
@@ -1083,6 +1082,7 @@ class RunEngine:
         self._exception = RequestAbort()
         for task in self._status_tasks:
             task.cancel()
+        self.loop.call_soon_threadsafe(self._task.cancel)
         self._exit_status = 'abort'
         if self._state == 'paused':
             self._resume_task()
@@ -1103,8 +1103,10 @@ class RunEngine:
               "as 'success'...")
         self._interrupted = True
         self._exception = RequestStop()
+        self.loop.call_soon_threadsafe(self._task.cancel)
         if self._state == 'paused':
             self._resume_task()
+
         return tuple(self._run_start_uids)
 
     def halt(self):
@@ -1179,9 +1181,10 @@ class RunEngine:
                                 obj.pause()
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
-                    self.state = 'paused'
-                    if not self.resumable:
-                        raise _RunEnginePanic("Can not resume")
+                    if self.state == 'pausing':
+                        self.state = 'paused'
+                        if not self.resumable:
+                            raise _RunEnginePanic("Can not resume")
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
                     # ...and wait here until
@@ -1197,8 +1200,16 @@ class RunEngine:
                                                          loop=self.loop)
 
                     threading.Thread(target=unblock_bridge, daemon=True).start()
-
-                    await bridge_event.wait()
+                    try:
+                        await bridge_event.wait()
+                        # may be called by 'resume' or 'abort'
+                        self.state = 'running'
+                    except asyncio.CancelledError:
+                        # snarf the cancel exception here as this is
+                        # due to coming out of paused -> stop, abort, halt
+                        # we will loop again, get back to awaiting a new
+                        # bridge event which will be release by `_resume_task`
+                        continue
 
                     # If we are here, we have come back to life either to
                     # continue (resume) or to clean up before exiting.
