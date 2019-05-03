@@ -323,6 +323,7 @@ class RunEngine:
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
+        self._task_fut = None  # asyncio.Task associated with call to self._run
         self._status_tasks = deque()  # from self._status_object_completed
         self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the plan instance from __call__
@@ -541,6 +542,7 @@ class RunEngine:
         self._exit_status = 'success'
         self._reason = ''
         self._task = None
+        self._task_fut = None
         self._status_tasks.clear()
         self._pardon_failures = asyncio.Event(loop=self.loop)
         self._plan = None
@@ -767,13 +769,13 @@ class RunEngine:
 
             self._blocking_event.clear()
             self.log.info("Executing plan %r", self._plan)
-            self._task = asyncio.run_coroutine_threadsafe(self._run(),
-                                                          loop=self.loop)
+            self._task_fut = asyncio.run_coroutine_threadsafe(self._run(),
+                                                              loop=self.loop)
 
             def set_blocking_event(future):
                 self._blocking_event.set()
 
-            self._task.add_done_callback(set_blocking_event)
+            self._task_fut.add_done_callback(set_blocking_event)
 
             try:
                 # Block until plan is complete or exception is raised.
@@ -786,14 +788,14 @@ class RunEngine:
                     self._interrupted = True
                     self._blocking_event.wait(1)
                 except Exception as raised_er:
-                    self._task.cancel()
+                    self._task_fut.cancel()
                     self._interrupted = True
                     raise raised_er
             finally:
-                if self._task.done():
+                if self._task_fut.done():
                     # get exceptions from the main task
                     try:
-                        exc = self._task.exception()
+                        exc = self._task_fut.exception()
                     except (asyncio.CancelledError,
                             concurrent.futures.CancelledError):
                         exc = None
@@ -869,7 +871,7 @@ class RunEngine:
         with ExitStack() as stack:
             for mgr in self.context_managers:
                 stack.enter_context(mgr(self))
-            if self._task.done():
+            if self._task_fut.done():
                 return
 
             # Clear the blocking Event so that we can wait on it below.
@@ -882,10 +884,10 @@ class RunEngine:
                 # Block until plan is complete or exception is raised.
                 self._during_task(self._blocking_event)
             finally:
-                if self._task.done():
+                if self._task_fut.done():
                     # get exceptions from the main task
                     try:
-                        exc = self._task.exception()
+                        exc = self._task_fut.exception()
                     except asyncio.CancelledError:
                         exc = None
                     # if the main task exception is not None, re-raise
