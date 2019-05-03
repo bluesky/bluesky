@@ -67,7 +67,7 @@ class RunEngineStateMachine(StateMachine):
             # from_state : [valid_to_states]
             'idle': ['running'],
             'running': ['idle', 'pausing'],
-            'pausing': ['paused'],
+            'pausing': ['paused', 'idle'],
             'paused': ['idle', 'running'],
         }
         named_checkers = [
