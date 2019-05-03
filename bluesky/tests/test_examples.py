@@ -368,8 +368,6 @@ def test_pause_abort(RE):
     assert mid - start > .1
     assert stop - start < 1
 
-    RE.loop.call_soon_threadsafe(ev.wait)
-
 
 def test_abort(RE):
     ev = asyncio.Event(loop=RE.loop)
