@@ -1094,7 +1094,7 @@ def test_prompt_stop(RE, cancel_func):
             except_hit = True
             raise
 
-    threading.Timer(.1, partial(cancel_func, RE))
+    threading.Timer(.1, partial(cancel_func, RE)).start()
     start = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(sleeping_plan())
