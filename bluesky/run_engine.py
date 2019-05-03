@@ -81,13 +81,19 @@ class LoggingPropertyMachine(PropertyMachine):
         super().__init__(machine_type)
 
     def __set__(self, obj, value):
-        old_value = self.__get__(obj)
-        super().__set__(obj, value)
-        value = self.__get__(obj)
+        own = type(obj)
+        old_value = self.__get__(obj, own)
+        with obj._state_lock:
+            super().__set__(obj, value)
+        value = self.__get__(obj, own)
         obj.log.info("Change state on %r from %r -> %r",
                      obj, old_value, value)
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
+
+    def __get__(self, instance, owner):
+        with instance._state_lock:
+            return super().__get__(instance, owner)
 
 
 # See RunEngine.__call__.
@@ -230,6 +236,7 @@ class RunEngine:
         if loop is None:
             loop = get_bluesky_event_loop()
         self._th = _ensure_event_loop_running(loop)
+        self._state_lock = threading.RLock()
         self._loop = loop
         self._during_task = during_task
 
