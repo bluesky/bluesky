@@ -22,6 +22,14 @@ from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
 
+try:
+    from asyncio import current_task
+except ImportError:
+    # handle py < 3,7
+    from asyncio.tasks import Task
+    current_task = Task.current_task
+    del Task
+
 from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     AsyncInput, new_uid, NoReplayAllowed,
                     RequestAbort, RequestStop, RunEngineInterrupted,
@@ -1153,7 +1161,7 @@ class RunEngine:
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
         with self._state_lock:
-            self._task = asyncio.current_task(self.loop)
+            self._task = current_task(self.loop)
         debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
         pending_cancel_exception = None
         self._reason = ''
