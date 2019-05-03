@@ -883,17 +883,16 @@ def test_sideband_cancel(RE):
     ev = asyncio.Event(loop=RE.loop)
 
     def done():
-        print("Done")
         ev.set()
 
     def side_band_kill():
-        RE._task.cancel()
+        RE.loop.call_soon_threadsafe(RE._task.cancel)
 
     scan = [Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
     threading.Timer(.5, side_band_kill).start()
-    RE.loop.call_soon_threadsafe(_delayed_partial(done, 2))
+    threading.Timer(2, done).start()
     RE(scan)
     assert RE.state == 'idle'
     assert RE._task.cancelled()
