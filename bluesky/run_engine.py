@@ -108,6 +108,15 @@ def default_scan_id_source(md):
     return md.get('scan_id', 0) + 1
 
 
+def _state_locked(func):
+    @functools.wraps(func)
+    def inner(self, *args, **kwargs):
+        with self._state_lock:
+            return func(self, *args, **kwargs)
+
+    return inner
+
+
 class RunEngine:
     """The Run Engine execute messages and emits Documents.
 
@@ -527,6 +536,7 @@ class RunEngine:
         self._interruptions_desc_uid = None
         self._interruptions_counter = count(1)
 
+    @_state_locked
     def _clear_call_cache(self):
         "Clean up for a new __call__ (which may encompass multiple runs)."
         self._metadata_per_call.clear()
@@ -1139,6 +1149,8 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
+        with self._state_lock:
+            self._task = asyncio.current_task(self.loop)
         debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
         pending_cancel_exception = None
         self._reason = ''
