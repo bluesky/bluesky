@@ -1139,7 +1139,8 @@ def test_state_hook(RE):
         RE([Msg('open_run'), Msg('pause'), Msg('close_run')])
     RE.resume()
     expected = [('running', 'idle'),
-                ('paused', 'running'),
+                ('pausing', 'running'),
+                ('paused', 'pausing'),
                 ('running', 'paused'),
                 ('idle', 'running')]
     assert states == expected
