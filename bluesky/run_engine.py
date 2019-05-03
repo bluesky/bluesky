@@ -51,6 +51,7 @@ class RunEngineStateMachine(StateMachine):
         """state.name = state.value"""
         IDLE = 'idle'
         RUNNING = 'running'
+        PAUSING = 'pausing'
         PAUSED = 'paused'
 
         @classmethod
@@ -65,7 +66,8 @@ class RunEngineStateMachine(StateMachine):
             # opposite to <--> from structure.
             # from_state : [valid_to_states]
             'idle': ['running'],
-            'running': ['idle', 'paused'],
+            'running': ['idle', 'pausing'],
+            'pausing': ['paused'],
             'paused': ['idle', 'running'],
         }
         named_checkers = [
@@ -649,9 +651,11 @@ class RunEngine:
         self._deferred_pause_requested = False
         self._interrupted = True
         print("Pausing...")
-        self._state = 'paused'
+        self._state = 'pausing'
 
         self._record_interruption('pause')
+        with self._state_lock:
+            self.loop.call_soon_threadsafe(self._task.cancel)
         if not self.resumable:
             # cannot resume, so we cannot pause.  Abort the plan.
             print("No checkpoint; cannot pause.")
@@ -661,9 +665,6 @@ class RunEngine:
             for task in self._status_tasks:
                 task.cancel()
             return
-        # Clearing this Event will cause the _run loop to pause on its next
-        # iteration. It will then wait for this Event to be set.
-        self._run_permit.clear()
 
     def _record_interruption(self, content):
         """
@@ -1170,18 +1171,19 @@ class RunEngine:
                     # During pause, all motors should be stopped. Call stop()
                     # on every object we ever set().
                     self._stop_movable_objects(success=True)
-                    # Notify Devices of the pause in case they want to clean up.
+                    # Notify Devices of the pause in case they want to
+                    # clean up.
                     for obj in self._objs_seen:
                         if hasattr(obj, 'pause'):
                             try:
                                 obj.pause()
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
-
+                    self.state = 'paused'
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
-                    # ...and wait here until RunEngine.{resume|stop|abort|halt} is
-                    # called.
+                    # ...and wait here until
+                    # RunEngine.{resume|stop|abort|halt} is called.
                     bridge_event = asyncio.Event()
 
                     async def set_bridge_event():
@@ -1336,6 +1338,11 @@ class RunEngine:
                           "a HALT.")
                     self.loop.call_soon(self.halt)
                 except asyncio.CancelledError as e:
+                    if self.state == 'pausing':
+                        # if we got a CancelledError and we are in the 'pausing' state
+                        # clear the run permit and bounce to the top
+                        self._run_permit.clear()
+                        continue
                     # if we are handling this twice, raise and leave the plans
                     # alone
                     if self._exception is e:
@@ -1419,7 +1426,6 @@ class RunEngine:
         if pending_cancel_exception is not None:
             raise pending_cancel_exception
         self.log.info("Cleaned up from plan %r", self._plan)
-
 
     async def _wait_for(self, msg):
         """Instruct the RunEngine to wait until msg.obj has completed. Better

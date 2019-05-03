@@ -29,6 +29,7 @@ from .utils import _delayed_partial
 def test_states():
     assert RunEngineStateMachine.States.states() == ['idle',
                                                      'running',
+                                                     'pausing',
                                                      'paused']
 
 
