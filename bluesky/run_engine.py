@@ -1353,7 +1353,11 @@ class RunEngine:
         self._run_start_uids.append(self._run_start_uid)
 
         # Run scan_id calculation method
-        self.md['scan_id'] = self.scan_id_source(self.md)
+        if self.scan_id_source is not None:
+            self.md['scan_id'] = self.scan_id_source(self.md)
+        else:
+            if 'scan_id' in self.md:
+                del self.md['scan_id']
 
         # For metadata below, info about plan passed to self.__call__ for.
         plan_type = type(self._plan).__name__
