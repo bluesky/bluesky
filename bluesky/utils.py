@@ -162,6 +162,8 @@ class SignalHandler:
                 self.release()
                 orig_func(signum, frame)
 
+            self.check_for_signals()
+
         signal.signal(self.sig, handler)
         return self
 
@@ -175,6 +177,9 @@ class SignalHandler:
         self.released = True
         return True
 
+    def check_for_signals(self):
+        ...
+
 
 class SigintHandler(SignalHandler):
     def __init__(self, RE):
@@ -185,7 +190,6 @@ class SigintHandler(SignalHandler):
 
     def __enter__(self):
         loop = self.RE.loop
-        loop.call_soon_threadsafe(loop.call_later, 0.1, self.check_for_signals)
         return super().__enter__()
 
     def check_for_signals(self):
@@ -199,7 +203,8 @@ class SigintHandler(SignalHandler):
                 if self.count == 1:
                     # Ctrl-C once -> request a deferred pause
                     if not self.RE._deferred_pause_requested:
-                        self.RE.loop.call_soon(self.RE.request_pause, True)
+                        self.RE.loop.call_soon_threadsafe(
+                            self.RE.request_pause, True)
                         print("A 'deferred pause' has been requested. The "
                               "RunEngine will pause at the next checkpoint. "
                               "To pause immediately, hit Ctrl+C again in the "
@@ -208,7 +213,8 @@ class SigintHandler(SignalHandler):
                     # - Ctrl-C twice within 10 seconds -> hard pause
                     self.log.debug("RunEngine detected two SIGINTs. "
                                    "A hard pause will be requested.")
-                    self.RE.loop.call_soon(self.RE.request_pause, False)
+                    self.RE.loop.call_soon_threadsafe(
+                        self.RE.request_pause, False)
             else:
                 # No new SIGINTs to process.
                 if self.num_sigints_processed > 0:
@@ -221,11 +227,6 @@ class SigintHandler(SignalHandler):
                         self.count = 0
                         self.interrupted = False
                         self.last_sigint_time = None
-
-        if not self.released:
-            loop = self.RE.loop
-            loop.call_soon_threadsafe(
-                loop.call_later, 0.1, self.check_for_signals)
 
 
 class CallbackRegistry:
