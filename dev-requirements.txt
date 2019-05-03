@@ -18,6 +18,7 @@ pandas
 pims
 pyepics
 pytest
+pytest-faulthandler
 pyyaml
 pyzmq
 requests
