@@ -386,13 +386,13 @@ def test_abort(RE):
     start = ttime.time()
     threading.Thread(target=_delayed_partial(sim_kill, .1)).start()
     threading.Thread(target=_delayed_partial(sim_kill, .2)).start()
-    threading.Thread(target=_delayed_partial(done, .3)).start()
+    threading.Thread(target=_delayed_partial(done, .4)).start()
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
     stop = ttime.time()
 
     assert RE.state == 'paused'
-    assert stop - start < .3
+    assert stop - start < .4
     RE.abort()
     assert RE.state == 'idle'
 
