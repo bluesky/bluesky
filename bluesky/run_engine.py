@@ -1192,7 +1192,9 @@ class RunEngine:
                     if self.state == 'pausing':
                         self.state = 'paused'
                         if not self.resumable:
-                            raise _RunEnginePanic("Can not resume")
+                            self._run_permit.set()
+                            self._exception = FailedPause()
+                            continue
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
                     # ...and wait here until
