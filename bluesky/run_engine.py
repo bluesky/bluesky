@@ -1360,7 +1360,8 @@ class RunEngine:
             scan_id = None
 
         if scan_id is None:
-            del stateful_md['scan_id']
+            if 'scan_id' in stateful_md:
+                del stateful_md['scan_id']
         else:
             self.md['scan_id'] = scan_id
             stateful_md['scan_id'] = scan_id

@@ -23,6 +23,23 @@ def RE(request):
 
 
 @pytest.fixture(scope='function')
+def RE_no_scan_id(request):
+    loop = asyncio.new_event_loop()
+    loop.set_debug(True)
+    RE_no_scan_id = RunEngine({}, loop=loop, scan_id_source=None)
+
+    def clean_event_loop():
+        if RE_no_scan_id.state != 'idle':
+            RE_no_scan_id.halt()
+        ev = asyncio.Event(loop=loop)
+        ev.set()
+        loop.run_until_complete(ev.wait())
+
+    request.addfinalizer(clean_event_loop)
+    return RE_no_scan_id
+
+
+@pytest.fixture(scope='function')
 def hw(request):
     from ophyd.sim import hw
     return hw()
