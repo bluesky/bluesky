@@ -1,7 +1,7 @@
 import bluesky.plans as bp
 
 
-def test_relative_pseudo(hw, RE, RE_no_scan_id, db):
+def test_scan_id_source(hw, RE, RE_no_scan_id, db):
     RE.subscribe(db.insert)
     RE_no_scan_id.subscribe(db.insert)
     det = hw.det
