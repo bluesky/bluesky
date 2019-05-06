@@ -22,4 +22,5 @@ def test_scan_id_source(hw, RE, RE_no_scan_id, db):
     assert 'scan_id' not in hdr2['start']
     
     # Third scan, we have 'scan_id' in the start doc and it's 2.
+    assert 'scan_id' in hdr3['start']
     assert hdr3['start']['scan_id'] == 2
