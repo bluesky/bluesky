@@ -30,7 +30,10 @@ def test_states():
     assert RunEngineStateMachine.States.states() == ['idle',
                                                      'running',
                                                      'pausing',
-                                                     'paused']
+                                                     'paused',
+                                                     'halting',
+                                                     'stopping',
+                                                     'aborting']
 
 
 def test_state_is_readonly(RE):

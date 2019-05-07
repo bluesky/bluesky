@@ -61,6 +61,9 @@ class RunEngineStateMachine(StateMachine):
         RUNNING = 'running'
         PAUSING = 'pausing'
         PAUSED = 'paused'
+        HALTING = 'halting'
+        STOPPING = 'stopping'
+        ABORTING = 'aborting'
 
         @classmethod
         def states(cls):
@@ -74,9 +77,12 @@ class RunEngineStateMachine(StateMachine):
             # opposite to <--> from structure.
             # from_state : [valid_to_states]
             'idle': ['running'],
-            'running': ['idle', 'pausing'],
-            'pausing': ['paused', 'idle'],
-            'paused': ['idle', 'running'],
+            'running': ['idle', 'pausing', 'halting', 'stopping', 'aborting'],
+            'pausing': ['paused', 'idle', 'halting', 'aborting'],
+            'paused': ['idle', 'running', 'halting', 'stopping', 'aborting'],
+            'halting': ['idle'],
+            'stopping': ['idle'],
+            'aborting': ['idle'],
         }
         named_checkers = [
             ('can_pause', 'paused'),
