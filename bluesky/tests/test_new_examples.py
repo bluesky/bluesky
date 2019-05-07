@@ -621,7 +621,7 @@ def test_plan_md(RE, hw):
 def test_infinite_count(RE, hw):
     loop = RE.loop
 
-    threading.Thread(target=_delayed_partial(RE.stop, 2)).start()
+    threading.Timer(1, RE.stop).start()
     docs = defaultdict(list)
 
     def collector(name, doc):
