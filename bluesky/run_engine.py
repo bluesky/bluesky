@@ -1083,12 +1083,19 @@ class RunEngine:
               "exit_status as 'abort'...")
         self._interrupted = True
         self._reason = reason
-        self._exception = RequestAbort()
+
+        self._exit_status = 'abort'
+
+        was_paused = self._state == 'paused'
+        self._state = 'aborting'
+        if was_paused:
+            self._exception = RequestAbort()
+            self._resume_task()
+        else:
+            self.loop.call_soon_threadsafe(self._task.cancel)
+
         for task in self._status_tasks:
             task.cancel()
-        self._exit_status = 'abort'
-        if self._state == 'paused':
-            self._resume_task()
 
         return tuple(self._run_start_uids)
 
@@ -1106,9 +1113,13 @@ class RunEngine:
         print("Stopping: running cleanup and marking exit_status "
               "as 'success'...")
         self._interrupted = True
-        self._exception = RequestStop()
-        if self._state == 'paused':
+        was_paused = self._state == 'paused'
+        self._state = 'stopping'
+        if was_paused:
+            self._exception = RequestStop()
             self._resume_task()
+        else:
+            self.loop.call_soon_threadsafe(self._task.cancel)
 
         return tuple(self._run_start_uids)
 
@@ -1128,7 +1139,10 @@ class RunEngine:
         self._interrupted = True
         self._exception = PlanHalt()
         self._exit_status = 'abort'
-        if self._state == 'paused':
+        was_paused = self._state == 'paused'
+        self._state = 'halting'
+        self.loop.call_soon_threadsafe(self._task.cancel)
+        if was_paused:
             self._resume_task()
         return tuple(self._run_start_uids)
 
@@ -1210,8 +1224,9 @@ class RunEngine:
                     threading.Thread(target=unblock_bridge, daemon=True).start()
                     try:
                         await bridge_event.wait()
-                        # may be called by 'resume' or 'abort'
-                        self.state = 'running'
+                        if self.state == 'paused':
+                            # may be called by 'resume', 'stop', 'abort', 'halt'
+                            self.state = 'running'
                     except asyncio.CancelledError:
                         # snarf the cancel exception here as this is
                         # due to coming out of paused -> stop, abort, halt
@@ -1360,9 +1375,19 @@ class RunEngine:
                     self.loop.call_soon(self.halt)
                 except asyncio.CancelledError as e:
                     if self.state == 'pausing':
-                        # if we got a CancelledError and we are in the 'pausing' state
-                        # clear the run permit and bounce to the top
+                        # if we got a CancelledError and we are in the
+                        # 'pausing' state clear the run permit and
+                        # bounce to the top
                         self._run_permit.clear()
+                        continue
+                    if self.state in ('halting', 'stopping', 'aborting'):
+                        # if we got this while just keep going in tear-down
+                        exception_map = {'halting': PlanHalt,
+                                         'stopping': RequestStop,
+                                         'aborting': RequestAbort}
+                        # if the exception is not set bounce to the top
+                        if self._exception is None:
+                            self._exception = exception_map[self.state]
                         continue
                     # if we are handling this twice, raise and leave the plans
                     # alone
