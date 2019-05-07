@@ -672,16 +672,6 @@ class RunEngine:
         with self._state_lock:
             self.loop.call_soon_threadsafe(self._task.cancel)
 
-        if not self.resumable:
-            # cannot resume, so we cannot pause.  Abort the plan.
-            print("No checkpoint; cannot pause.")
-            print("Aborting: running cleanup and marking "
-                  "exit_status as 'abort'...")
-            self._exception = FailedPause()
-            for task in self._status_tasks:
-                task.cancel()
-            return
-
     def _record_interruption(self, content):
         """
         Emit an event in the 'interruptions' event stream.
@@ -1194,11 +1184,15 @@ class RunEngine:
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
                     if self.state == 'pausing':
-                        self.state = 'paused'
                         if not self.resumable:
                             self._run_permit.set()
                             self._exception = FailedPause()
+                            for task in self._status_tasks:
+                                task.cancel()
+                            self.state = 'aborting'
                             continue
+                        else:
+                            self.state = 'paused'
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
                     # ...and wait here until
