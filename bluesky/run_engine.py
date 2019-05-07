@@ -1162,7 +1162,6 @@ class RunEngine:
         with self._state_lock:
             self._task = current_task(self.loop)
         debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
-        pending_cancel_exception = None
         self._reason = ''
         # sentinel to decide if need to add to the response stack or not
         sentinel = object()
@@ -1373,7 +1372,6 @@ class RunEngine:
                     # raised error is not already stashed in _exception
                     if self._exception is None:
                         self._exception = e
-                    pending_cancel_exception = e
                 finally:
                     # if we poped a response and did not pop a plan, we need
                     # to put the new response back on the stack
@@ -1444,9 +1442,7 @@ class RunEngine:
                           'Please fix your plan.'.format(p))
 
             self._state = 'idle'
-        # if the task was cancelled
-        if pending_cancel_exception is not None:
-            raise pending_cancel_exception
+
         self.log.info("Cleaned up from plan %r", self._plan)
 
     async def _wait_for(self, msg):
