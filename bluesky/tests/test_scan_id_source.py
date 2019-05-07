@@ -1,4 +1,5 @@
 import bluesky.plans as bp
+import pytest
 
 
 def test_scan_id_source_two_REs(hw, RE, RE_no_scan_id, db):
@@ -54,3 +55,14 @@ def test_scan_id_source_one_RE(hw, RE, db):
     assert 'scan_id' in hdr3['start']
     assert hdr3['start']['scan_id'] == 2
 
+
+def test_scan_id_source_returns_None(hw, RE, db):
+    def always_return_none(*args, **kwargs):
+        return None
+
+    RE.subscribe(db.insert)
+    det = hw.det
+
+    RE.scan_id_source = always_return_none
+    with pytest.raises(RuntimeError):
+        uid = RE(bp.count([det], num=3))

@@ -1356,6 +1356,9 @@ class RunEngine:
         local_md = dict(self.md)
         if self.scan_id_source is not None:
             scan_id = self.scan_id_source(local_md)
+            if scan_id is None:
+                raise RuntimeError('The user-supplied "scan_id_source" is not '
+                                   'allowed to return "None".')
         else:
             scan_id = None
 
