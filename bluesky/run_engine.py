@@ -1353,18 +1353,17 @@ class RunEngine:
         self._run_start_uids.append(self._run_start_uid)
 
         # Run scan_id calculation method
-        stateful_md = self.md.copy()
+        local_md = dict(self.md)
         if self.scan_id_source is not None:
-            scan_id = self.scan_id_source(stateful_md)
+            scan_id = self.scan_id_source(local_md)
         else:
             scan_id = None
 
         if scan_id is None:
-            if 'scan_id' in stateful_md:
-                del stateful_md['scan_id']
+            local_md.pop('scan_id', None)
         else:
             self.md['scan_id'] = scan_id
-            stateful_md['scan_id'] = scan_id
+            local_md['scan_id'] = scan_id
 
         # For metadata below, info about plan passed to self.__call__ for.
         plan_type = type(self._plan).__name__
@@ -1375,7 +1374,7 @@ class RunEngine:
                       msg.kwargs,  # from 'open_run' Msg
                       {'plan_type': plan_type,  # computed from self._plan
                        'plan_name': plan_name},
-                      stateful_md)  # stateful, persistent metadata
+                      local_md)  # stateful, persistent metadata
         # The metadata is final. Validate it now, at the last moment.
         # Use copy for some reasonable (admittedly not total) protection
         # against users mutating the md with their validator.
