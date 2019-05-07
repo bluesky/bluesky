@@ -136,10 +136,14 @@ class RunEngine:
         completely up to the user. The function's return value is
         ignored.
 
-    scan_id_source : callable, optional
+    scan_id_source : callable or None, optional
         a function that will be used to calculate scan_id. Default is to
         increment scan_id by 1 each time. However you could pass in a
-        customized function to get a scan_id from any source.
+        customized function to get a scan_id from any source. The only
+        limitation is that this function cannot return ``None``, otherwise the
+        ``RuntimeError`` exception will be raised. The ``None`` value
+        can also be passed in, meaning the ``scan_id`` will be excluded from
+        the metadata.
         Expected signature: f(md)
         Expected return: updated scan_id value
 
