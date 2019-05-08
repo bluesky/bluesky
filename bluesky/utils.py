@@ -1320,8 +1320,61 @@ def run_matplotlib_qApp(blocking_event):
 
                 threading.Thread(target=exit_qApp).start()
 
-            def null():
-                ...
+            # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
+            # adapted from code at
+            # https://bitbucket.org/tortoisehg/thg/commits/550e1df5fbad
+            if os.name == 'posix' and hasattr(signal, 'set_wakeup_fd'):
+                # Wake up Python interpreter via pipe so that SIGINT
+                # can be handled immediately.
+                # (http://qt-project.org/doc/qt-4.8/unix-signals.html)
+                # Updated docs:
+                # https://doc.qt.io/qt-5/unix-signals.html
+                import fcntl
+                rfd, wfd = os.pipe()
+                for fd in (rfd, wfd):
+                    flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+                    fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+                wakeupsn = QtCore.QSocketNotifier(rfd,
+                                                  QtCore.QSocketNotifier.Read)
+                origwakeupfd = signal.set_wakeup_fd(wfd)
+
+                def cleanup():
+                    wakeupsn.setEnabled(False)
+                    rfd = wakeupsn.socket()
+                    wfd = signal.set_wakeup_fd(origwakeupfd)
+                    os.close(rfd)
+                    os.close(wfd)
+
+                def handleWakeup(inp):
+                    # here Python signal handler will be invoked
+                    # this book-keeping is to drain the pipe
+                    wakeupsn.setEnabled(False)
+                    rfd = wakeupsn.socket()
+                    try:
+                        os.read(rfd, 4096)
+                    except OSError as inst:
+                        print('failed to read wakeup fd: %s\n' % inst)
+
+                    wakeupsn.setEnabled(True)
+
+                wakeupsn.activated.connect(handleWakeup)
+
+            else:
+                # On Windows, non-blocking anonymous pipe or socket is
+                # not available.
+
+                def null():
+                    print('hi mom')
+                    ...
+
+                # we need to 'kick' the python interpreter so it sees
+                # system signals
+                # https://stackoverflow.com/a/4939113/380231
+                kick_timer = QtCore.QTimer()
+                kick_timer.timeout.connect(null)
+                kick_timer.start(50)
+
+                cleanup = kick_timer.stop
 
             # we also need to make sure that the qApp never sees
             # exceptions raised by python inside of a c++ callback (as
@@ -1330,17 +1383,13 @@ def run_matplotlib_qApp(blocking_event):
             # back to the python code.
             vals = (None, None, None)
 
+            old_sys_handler = sys.excepthook
+
             def my_exception_hook(exctype, value, traceback):
                 nonlocal vals
                 vals = (exctype, value, traceback)
                 qApp.exit()
-            old_sys_handler = sys.excepthook
-
-            # we need to 'kick' the python interpreter so it sees
-            # system signals
-            # https://stackoverflow.com/a/4939113/380231
-            kick_timer = QtCore.QTimer()
-            kick_timer.timeout.connect(null)
+                old_sys_handler(exctype, value, traceback)
 
             # this kill the Qt event loop when the plan is finished
             killer_timer = QtCore.QTimer()
@@ -1351,13 +1400,12 @@ def run_matplotlib_qApp(blocking_event):
             if not blocking_event.is_set():
                 try:
                     sys.excepthook = my_exception_hook
-                    kick_timer.start(50)
                     qApp.exec_()
                     if vals[1] is not None:
                         raise vals[1]
                 finally:
                     sys.excepthook = old_sys_handler
-                    kick_timer.stop()
+                    cleanup()
 
         else:
             # We are not using matplotlib + Qt. Just wait on the Event.
