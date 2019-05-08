@@ -1222,17 +1222,10 @@ class RunEngine:
                                                          loop=self.loop)
 
                     threading.Thread(target=unblock_bridge, daemon=True).start()
-                    try:
-                        await bridge_event.wait()
-                        if self.state == 'paused':
-                            # may be called by 'resume', 'stop', 'abort', 'halt'
-                            self.state = 'running'
-                    except asyncio.CancelledError:
-                        # snarf the cancel exception here as this is
-                        # due to coming out of paused -> stop, abort, halt
-                        # we will loop again, get back to awaiting a new
-                        # bridge event which will be release by `_resume_task`
-                        continue
+                    await bridge_event.wait()
+                    if self.state == 'paused':
+                        # may be called by 'resume', 'stop', 'abort', 'halt'
+                        self.state = 'running'
 
                     # If we are here, we have come back to life either to
                     # continue (resume) or to clean up before exiting.
