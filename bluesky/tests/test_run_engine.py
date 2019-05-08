@@ -562,21 +562,23 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
 
 
 def test_sigint_three_hits(RE, hw):
+    import time
     motor = hw.motor
-    motor.delay = 0.3
+    motor.delay = 1
 
     pid = os.getpid()
 
     def sim_kill(n=1):
         for j in range(n):
-            print('KILL')
+            time.sleep(.02)
             os.kill(pid, signal.SIGINT)
 
     lp = RE.loop
     motor.loop = lp
-    threading.Timer(.02, sim_kill, (3,)).start()
-    threading.Timer(.02, sim_kill, (3,)).start()
-    threading.Timer(.02, sim_kill, (3,)).start()
+    start = time.monotonic()
+    threading.Timer(.05, sim_kill, (3,)).start()
+    threading.Timer(.1, sim_kill, (3,)).start()
+    threading.Timer(.2, sim_kill, (3,)).start()
 
     start_time = ttime.time()
     with pytest.raises(RunEngineInterrupted):
