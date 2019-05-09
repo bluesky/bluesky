@@ -322,9 +322,9 @@ def test_pause_resume(RE):
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    threading.Thread(target=_delayed_partial(sim_kill, 1)).start()
-    threading.Thread(target=_delayed_partial(sim_kill, 1.1)).start()
-    threading.Thread(target=_delayed_partial(done, 2)).start()
+    threading.Timer(1, sim_kill).start()
+    threading.Timer(1.5, sim_kill).start()
+    threading.Timer(2, done).start()
 
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
