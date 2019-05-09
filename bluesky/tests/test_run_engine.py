@@ -886,7 +886,7 @@ def test_exception_cascade_planside(RE):
 
 
 def test_sideband_cancel(RE):
-    loop = RE.loop()
+    loop = RE.loop
     ev = asyncio.Event(loop=RE.loop)
 
     def done():
