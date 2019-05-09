@@ -1485,6 +1485,8 @@ class RunEngine:
             self._state = 'idle'
 
         self.log.info("Cleaned up from plan %r", self._plan)
+        if isinstance(self._exception, asyncio.CancelledError):
+            raise self._exception
 
     async def _wait_for(self, msg):
         """Instruct the RunEngine to wait until msg.obj has completed. Better
