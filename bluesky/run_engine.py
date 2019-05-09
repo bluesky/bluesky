@@ -2650,7 +2650,7 @@ def _ensure_event_loop_running(loop):
         th.start()
         _ensure_event_loop_running.loop_to_thread[loop] = th
     else:
-        th = _ensure_event_loop_running[loop]
+        th = _ensure_event_loop_running.loop_to_thread[loop]
     return th
 
 
