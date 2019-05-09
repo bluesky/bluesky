@@ -308,6 +308,8 @@ def test_suspend(RE, hw):
 
 
 def test_pause_resume(RE):
+    from bluesky.utils import ts_msg_hook
+    RE.msg_hook = ts_msg_hook
     ev = asyncio.Event(loop=RE.loop)
 
     def done():
