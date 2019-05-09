@@ -1014,7 +1014,13 @@ class RunEngine:
                   "exit_status as 'abort'...")
             self._interrupted = True
             self._exception = FailedPause()
-            return
+            was_paused = self.state == 'paused'
+            self.state = 'aborting'
+            if was_paused:
+                self._exception = RequestAbort()
+                self._resume_task()
+            else:
+                self.loop.call_soon_threadsafe(self._task.cancel)
 
         print("Suspending....To get prompt hit Ctrl-C twice to pause.")
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
