@@ -33,7 +33,8 @@ def test_states():
                                                      'paused',
                                                      'halting',
                                                      'stopping',
-                                                     'aborting']
+                                                     'aborting',
+                                                     'suspending',]
 
 
 def test_state_is_readonly(RE):
@@ -514,14 +515,14 @@ def _make_unrewindable_suspender_marker():
 def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
     from bluesky.utils import ts_msg_hook
     msgs = []
-
+    loop = RE.loop
     def collector(msg):
         ts_msg_hook(msg)
         msgs.append(msg)
 
     RE.msg_hook = collector
 
-    ev = asyncio.Event(loop=RE.loop)
+    ev = asyncio.Event(loop=loop)
 
     threading.Thread(
         target=_delayed_partial(
@@ -531,8 +532,8 @@ def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
     def verbose_set():
         print('seting')
         ev.set()
-
-    threading.Thread(target=_delayed_partial(verbose_set, 1)).start()
+    loop.call_soon_threadsafe(
+        loop.call_later, 1, verbose_set)
 
     RE(plan(motor, det))
     assert [m.command for m in msgs] == msg_seq
@@ -885,6 +886,7 @@ def test_exception_cascade_planside(RE):
 
 
 def test_sideband_cancel(RE):
+    loop = RE.loop()
     ev = asyncio.Event(loop=RE.loop)
 
     def done():
@@ -897,7 +899,8 @@ def test_sideband_cancel(RE):
     assert RE.state == 'idle'
     start = ttime.time()
     threading.Timer(.5, side_band_kill).start()
-    threading.Timer(2, done).start()
+    loop.call_soon_threadsafe(
+        loop.call_later, 2, done)
     RE(scan)
     assert RE.state == 'idle'
     assert RE._task.cancelled()
