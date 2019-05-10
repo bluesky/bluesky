@@ -1,4 +1,5 @@
 from collections import defaultdict
+import functools
 from bluesky.run_engine import Msg, RunEngineInterrupted
 from bluesky.examples import stepscan
 from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
@@ -6,9 +7,10 @@ from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.plan_stubs import pause
 import bluesky.plans as bp
-from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit
-from bluesky.callbacks.mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
-                                            LiveFitPlot, LiveRaster, LiveMesh)
+from bluesky.callbacks import (CallbackCounter, LiveTable, LiveFit,
+                               LiveFitPlot, LivePlot, LiveGrid, LiveScatter,
+                               Table, RunRouter)
+from bluesky.callbacks import LiveMesh, LiveRaster  # deprecated but tested
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
 import pytest
@@ -122,7 +124,17 @@ def test_table_warns():
                              'data_keys': {'field': {'dtype': 'array'}}})
 
 
-def test_table(RE, hw):
+# A callback factory should take in a start_doc. All the other
+# callback-specific arguments should be set in advance using functools.partial.
+table_factory = functools.partial(
+    Table, fields=['det', 'motor'], min_width=16, extra_pad=2)
+
+@pytest.mark.parametrize(
+    'table',
+    [LiveTable(['det', 'motor'], min_width=16, extra_pad=2),
+     RunRouter([table_factory])
+    ])
+def test_table(RE, hw, table):
 
     with _print_redirect() as fout:
         hw.det.precision = 2
@@ -134,7 +146,6 @@ def test_table(RE, hw):
         assert hw.det.describe()['det']['dtype'] == 'number'
         assert hw.motor.describe()['motor']['dtype'] == 'number'
 
-        table = LiveTable(['det', 'motor'], min_width=16, extra_pad=2)
         ad_scan = bp.adaptive_scan([hw.det], 'det', hw.motor,
                                    -15.0, 5., .01, 1, .05,
                                    True)
@@ -464,3 +475,30 @@ def test_plotting_hints(RE, hw, db):
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
                  True, hw.motor3, -2, 0, 2, True))
     assert dc.start[-1]['hints'] == hint
+
+
+def test_run_router(RE, hw):
+    L = []
+    LL = []
+
+    def appender(start_doc):
+        L.append(("start", start_doc))
+        return lambda n, d: L.append((n, d))
+
+    def not_interested(start_doc):
+        return
+
+    # Run with not interesteds
+    rr = RunRouter([not_interested])
+    rr_token = RE.subscribe(rr)
+
+    RE(bp.count([hw.img], 1))
+
+    # now we're interested
+    RE.unsubscribe(rr_token)
+    rr = RunRouter([appender, not_interested])
+    rr_token = RE.subscribe(rr)
+    RE.subscribe(lambda n, d: LL.append((n, d)))
+    RE(bp.count([hw.img], 1))
+
+    assert L == LL

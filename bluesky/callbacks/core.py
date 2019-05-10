@@ -1,17 +1,45 @@
-"""
-Useful callbacks for the Run Engine
+""" Useful callbacks for the Run Engine
 """
 from itertools import count
 import warnings
-from collections import deque, namedtuple, OrderedDict
+from collections import defaultdict, deque, namedtuple, OrderedDict, ChainMap
 import time as ttime
-
 from datetime import datetime
 import logging
 from ..utils import ensure_uid
 
+from event_model import DocumentRouter
+
 
 class CallbackBase:
+    """
+    A convenient platform for writing stateful callbacks.
+
+    Examples
+    --------
+    A callback that prints the total number of events as they go by.
+
+    >>> class Thing(CallbackBase):
+    ...     def __init__(self, start_doc=None):
+    ...         super().__init__(start_doc)
+    ...         self.counter = 0
+    ...
+    ...     def event(self, doc):
+    ...         self.counter += 1       
+    ...         print(self.counter)
+    """
+
+    def __init__(self, start_doc=None):
+        # Callbacks meant to be used with a RunRouter may *require* a start_doc
+        # at __init__ time by making the start_doc argument required.
+        # Others may not.
+        #
+        # If a start_doc is given, it is passed to the `start` method
+        # immediately, here. If one is not given, it is up to the caller to
+        # call `start(...)` later once the RunStart document is available.
+        if start_doc is not None:
+            self.start(start_doc)
+
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
         return getattr(self, name)(doc)
@@ -39,6 +67,163 @@ class CallbackBase:
 
     def stop(self, doc):
         pass
+
+
+class RunRouter(DocumentRouter):
+    """
+    Routes documents, by run, to callbacks it creates from factory functions.
+
+    A RunRouter is callable, and it has the signature ``router(name, doc)``,
+    suitable for subscribing to the RunEngine.
+
+    It is configured with a list of factory functions that produce callbacks in
+    a two-layered scheme, described below.
+
+    Parameters
+    ----------
+    factories : list
+        A list of callables with the signature::
+
+            factory('start', start_doc) -> List[Callbacks], List[SubFactories]
+
+        which should return two lists, which may be empty. All items in the
+        first list should be callbacks --- callables with the signature::
+
+            callback(name, doc)
+
+        that will receive all subsequent documents from the run including the
+        RunStop document. All items in the second list should be "subfactories"
+        with the signature::
+
+            subfactory('descriptor', descriptor_doc) -> List[Callbacks]
+
+        These will receive each of the EventDescriptor documents for the run,
+        as they arrive. They must return one list, which may be empty,
+        containing callbacks that will receive all Events that reference that
+        EventDescriptor and finally the RunStop document for the run.
+    """
+    def __init__(self, factories):
+        self.factories = factories
+
+        # Map RunStart UID to "subfactory" functions that want all
+        # EventDescriptors from that run.
+        self._subfactories = defaultdict(list)
+
+        # Callbacks that want all the documents from a given run, keyed on
+        # RunStart UID.
+        self._factory_cbs_by_start = defaultdict(list)
+
+        # Callbacks that want all the documents from a given run, keyed on
+        # each EventDescriptor UID in the run.
+        self._factory_cbs_by_descriptor = defaultdict(list)
+
+        # Callbacks that want documents related to a given EventDescriptor,
+        # keyed on EventDescriptor UID.
+        self._subfactory_cbs_by_descriptor = defaultdict(list)
+
+        # Callbacks that want documents related to a given EventDescriptor,
+        # keyed on the RunStart UID referenced by that EventDescriptor.
+        self._subfactory_cbs_by_start = defaultdict(list)
+
+        # Map RunStart UID to the list EventDescriptor. This is used to
+        # facilitate efficient cleanup of the caches above.
+        self._descriptors = defaultdict(list)
+
+        # Map Resource UID to RunStart UID.
+        self._resources = {}
+
+        # Old-style Resources that do not have a RunStart UID
+        self._unlabeled_resources = deque(maxlen=10000)
+
+    def __repr__(self):
+        return (f"RunRouter([\n" +
+                f"\n".join(f"    {factory}" for factory in self.factories) +
+                f"])")
+
+    def start(self, doc):
+        uid = doc['uid']
+        for factory in self.factories:
+            callbacks, subfactories = factory('start', doc)
+            self._factory_cbs_by_start[uid].extend(callbacks)
+            self._subfactories[uid].extend(subfactories)
+
+    def descriptor(self, doc):
+        uid = doc['uid']
+        start_uid = doc['run_start']
+        # Let all the callbacks that want all documents for this run process
+        # this descriptor.
+        for callback in self._factory_cbs_by_start[start_uid]:
+            callback('descriptor', doc)
+        # Let all the subfactories add any relavant callbacks.
+        for subfactory in self._subfactories[start_uid]:
+            callbacks = subfactory('descriptor', doc)
+            self._subfactory_cbs_by_start[start_uid].extend(callbacks)
+            self._subfactory_cbs_by_descriptor[uid].extend(callbacks)
+        # Keep track of the RunStart UID -> [EventDescriptor UIDs] mapping for
+        # purposes of cleanup in stop().
+        self._descriptors[start_uid].append(uid)
+
+    def event_page(self, doc):
+        descriptor_uid = doc['descriptor']
+        for callback in self._factory_cbs_by_descriptor[descriptor_uid]:
+            callback('event_page', doc)
+        for callback in self._subfactory_cbs_by_descriptor[descriptor_uid]:
+            callback('event_page', doc)
+
+    def datum_page(self, doc):
+        resource_uid = doc['resource']
+        try:
+            start_uid = self._resources[resource_uid]
+        except KeyError:
+            if resource_uid in self._unlabeled_resources:
+                # Old Resources do not have a reference to a RunStart document,
+                # so in turn we cannot immediately tell which run these datum
+                # documents belong to.
+                # Fan them out to every run currently flowing through RunRouter. If
+                # they are not applicable they will do no harm, and this is
+                # expected to be an increasingly rare case.
+                for callbacks in self._factory_cbs_by_start.values():
+                    for callback in callbacks:
+                        callback('datum_page', doc)
+                for callbacks in self._subfactory_cbs_by_start.values():
+                    for callback in callbacks:
+                        callback('datum_page', doc)
+
+    def resource(self, doc):
+        try:
+            start_uid = doc['run_start']
+        except KeyError:
+            # Old Resources do not have a reference to a RunStart document.
+            # Fan them out to every run currently flowing through RunRouter. If
+            # they are not applicable they will do no harm, and this is
+            # expected to be an increasingly rare case.
+            self._unlabeled_resources.append(doc['uid'])
+            for callbacks in self._factory_cbs_by_start.values():
+                for callback in callbacks:
+                    callback('resource', doc)
+            for callbacks in self._subfactory_cbs_by_start.values():
+                for callback in callbacks:
+                    callback('resource', doc)
+        else:
+            for callback in self._factory_cbs_by_start[start_uid]:
+                callback('resource', doc)
+            for callback in self._subfactory_cbs_by_start[start_uid]:
+                callback('resource', doc)
+
+    def stop(self, doc):
+        start_uid = doc['run_start']
+        for callback in self._factory_cbs_by_start[start_uid]:
+            callback('stop', doc)
+        for callback in self._subfactory_cbs_by_start[start_uid]:
+            callback('stop', doc)
+        # Clean up references.
+        self._subfactories.pop(start_uid, None)
+        self._factory_cbs_by_start.pop(start_uid, None)
+        self._subfactory_cbs_by_start.pop(start_uid, None)
+        for descriptor_uid in self._descriptors.pop(start_uid, ()):
+            self._factory_cbs_by_descriptor.pop(descriptor_uid, None)
+            self._subfactory_cbs_by_descriptor.pop(descriptor_uid, None)
+        self._resources.pop(start_uid, None)
 
 
 class CallbackCounter:
@@ -119,7 +304,9 @@ class CollectThenCompute(CallbackBase):
     def __init__(self):
         self._start_doc = None
         self._stop_doc = None
-        self._events = deque()
+        self._event_pages = deque()
+        self._datum_pages= deque()
+        self._resources = deque()
         self._descriptors = deque()
 
     def start(self, doc):
@@ -130,9 +317,17 @@ class CollectThenCompute(CallbackBase):
         self._descriptors.append(doc)
         super().descriptor(doc)
 
-    def event(self, doc):
-        self._events.append(doc)
+    def resource(self, doc):
+        self._resources.append(doc)
+        super().resource(doc)
+
+    def event_page(self, doc):
+        self._event_pages.append(doc)
         super().event(doc)
+
+    def datum_page(self, doc):
+        self._datum_pages.append(doc)
+        super().datum(doc)
 
     def stop(self, doc):
         self._stop_doc = doc
@@ -142,18 +337,23 @@ class CollectThenCompute(CallbackBase):
     def reset(self):
         self._start_doc = None
         self._stop_doc = None
-        self._events.clear()
+        self._event_pages.clear()
+        self._datum_pages.clear()
+        self._resources.clear()
         self._descriptors.clear()
 
     def compute(self):
         raise NotImplementedError("This method must be defined by a subclass.")
 
 
-class LiveTable(CallbackBase):
+class Table(CallbackBase):
     '''Live updating table
 
     Parameters
     ----------
+    start_doc : dict
+        RunStart document
+
     fields : list
          List of fields to add to the table.
 
@@ -194,16 +394,16 @@ class LiveTable(CallbackBase):
                   "(scan num: {st[scan_id]})")
     ev_time_key = 'SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES'
 
-    def __init__(self, fields, *, stream_name='primary',
+    def __init__(self, start_doc, fields, *, stream_name='primary',
                  print_header_interval=50,
                  min_width=12, default_prec=3, extra_pad=1,
                  logbook=None, out=print):
-        super().__init__()
+        super().__init__(start_doc)
         self._header_interval = print_header_interval
         # expand objects
         self._fields = get_obj_fields(fields)
         self._stream = stream_name
-        self._start = None
+        self._start = start_doc
         self._stop = None
         self._descriptors = set()
         self._pad_len = extra_pad
@@ -332,13 +532,56 @@ class LiveTable(CallbackBase):
             self.logbook('\n'.join([wm] + self._rows))
         super().stop(doc)
 
+    def _print(self, out_str):
+        self._rows.append(out_str)
+        self._out(out_str)
+
+
+class LiveTable(Table):
+    '''Live updating table
+
+    See also Table, a version of this with a life-cycle of one Run. This is an
+    older implementation that has a life-cycle of an unlimited number of Runs.
+
+    Parameters
+    ----------
+    fields : list
+         List of fields to add to the table.
+
+    stream_name : str, optional
+         The event stream to watch for
+
+    print_header_interval : int, optional
+         Reprint the header every this many lines, defaults to 50
+
+    min_width : int, optional
+         The minimum width is spaces of the data columns.  Defaults to 12
+
+    default_prec : int, optional
+         Precision to use if it can not be found in descriptor, defaults to 3
+
+    extra_pad : int, optional
+         Number of extra spaces to put around the printed data, defaults to 1
+
+    logbook : callable, optional
+        Must take a sting as the first positional argument
+
+           def logbook(input_str):
+                pass
+
+    out : callable, optional
+        Function to call to 'print' a line.  Defaults to `print`
+    '''
+    def __init__(self, fields, *, stream_name='primary',
+                 print_header_interval=50,
+                 min_width=12, default_prec=3, extra_pad=1,
+                 logbook=None, out=print):
+        super().__init__(start_doc={}, fields=fields, stream_name=stream_name,
+                         print_header_interval=print_header_interval,
+                         min_width=min_width, default_prec=default_prec,
+                         extra_pad=extra_pad, logbook=logbook, out=out)
     def start(self, doc):
         self._rows = []
         self._start = doc
         self._stop = None
         self._sep_format = None
-        super().start(doc)
-
-    def _print(self, out_str):
-        self._rows.append(out_str)
-        self._out(out_str)

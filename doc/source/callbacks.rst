@@ -601,6 +601,7 @@ There is also a convenience function for plotting:
 
 .. _best_effort_callback:
 
+
 Best-Effort Callback
 --------------------
 
@@ -674,6 +675,65 @@ subsequent runs are plotted on the same axes. It is ``True`` by default.
 Overplotting only occurs if the names of the axes are the same from one plot
 to the next.
 
+New Best-Effort Callback
+------------------------
+
+.. warning::
+
+    This is a new, experimental feature. It will likely be changed in future
+    releases in a way that is not backend-compatible.
+    It doesn't influence BestEffortCallback.
+
+This ``BestEffortCallback`` is designed to realize user flexible and memory efficency.
+There are two methods to help you built callback functions.
+
+bec optimization method
++++++++++++++++++++++++
+
+You may want to use this method to implement your callbacks if you just need slight change on BestEffortCallback or you
+have limited new callback functions need to be added. You need to create a bec instance by NewBestEffortCallback which will 
+allow you ``.append()`` new callback later. Then you ``RE.subscribe(bec)``. 
+
+.. code-block:: python
+
+    from bluesky.plans import scan
+    from ophyd.sim import det1, det2, motor
+    from bluesky import RunEngine
+    from bluesky.callbacks import RunRouter
+    from bluesky.callbacks.best_effort import NewBestEffortCallback
+    RE = RunEngine({})
+
+    bec = NewBestEffortCallback()
+    bec.callback_factories.append(print)
+    #bec.callback_factories.append(cb1)
+    #bec.callback_factories.append(cb2)
+    #...
+    RE.subscribe(bec)
+
+    dets = [det1, det2]
+    RE(scan(dets, motor, 1, 5, 5))
+
+Customized callback factories method
+++++++++++++++++++++++++++++++++++++
+
+You may want to use this method to implement your callbacks if you need fully customized callbacks. You will create a ``router`` by ``RunRouter()`` function. It take a list of callback functions. The you subscribe your ``rounter``
+
+.. code-block:: python
+
+    from bluesky.plans import scan
+    from ophyd.sim import det1, det2, motor
+    from bluesky import RunEngine
+    from bluesky.callbacks import RunRouter
+    from bluesky.callbacks.best_effort import NewBestEffortCallback
+    RE = RunEngine({})
+
+    my_run_router = RunRouter([print])
+    #my_run_router = RunRouter([callback_function_1, callback_function2, callback_function3])
+    RE.subscribe(my_run_router)
+    
+    dets = [det1, det2]
+    RE(scan(dets, motor, 1, 5, 5))
+
 Peak Stats
 ++++++++++
 
@@ -684,6 +744,7 @@ plot area and press Shift+P. (Lowercase p is a shortcut for
 "panning" the plot.)
 
 To access the peak-fit statistics programmatically, use ``bec.peaks``.
+To access the peak-fit last 10 statistics programmatically, use ``bec.peaks_list``. ``bec.peaks_list[-1]`` is the latest peaks data which is ``bec.peaks``
 
 .. _hints:
 

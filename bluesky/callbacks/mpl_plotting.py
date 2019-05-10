@@ -1,9 +1,333 @@
 from collections import ChainMap
 from cycler import cycler
 import numpy as np
+import re
 import warnings
+import weakref
 
 from .core import CallbackBase, get_obj_fields
+from .utils import hinted_fields
+from .fitting import PeakStats
+from event_model import DocumentRouter
+
+
+class RunFigureManager:
+    def __init__(self, doc):
+        self.noplot_streams = []  # Do we want to keep this?
+        self.overplot = True  # Do we want to keep this?
+        self.peaks = dict()
+        self.omit_single_point_plot = True
+
+        self._start_doc = doc
+        self._descriptors = {}
+        self._cleanup_motor_heuristic = False
+        self.plan_hints = doc.get('hints', {})
+
+        # Prepare a guess about the dimensions (independent variables) in case
+        # we need it.
+        motors = self._start_doc.get('motors')
+        if motors is not None:
+            GUESS = [([motor], 'primary') for motor in motors]
+        else:
+            GUESS = [(['time'], 'primary')]
+
+        # Ues the guess if there is not hint about dimensions.
+        dimensions = self.plan_hints.get('dimensions')
+        if dimensions is None:
+            self._cleanup_motor_heuristic = True
+            dimensions = GUESS
+
+        # We can only cope with all the dimensions belonging to the same
+        # stream unless we resample. We are not doing to handle that yet.
+        if len(set(d[1] for d in dimensions)) != 1:
+            self._cleanup_motor_heuristic = True
+            dimensions = GUESS  # Fall back on our GUESS.
+            warn("We are ignoring the dimensions hinted because we cannot "
+                "combine streams.")
+
+        # for each dimension, choose one field only
+        # the plan can supply a list of fields. It's assumed the first
+        # of the list is always the one plotted against
+        self.dim_fields = [fields[0]
+                        for fields, stream_name in dimensions]
+
+        # make distinction between flattened fields and plotted fields
+        # motivation for this is that when plotting, we find dependent variable
+        # by finding elements that are not independent variables
+        self.all_dim_fields = [field
+                            for fields, stream_name in dimensions
+                            for field in fields]
+
+        _, self.dim_stream = dimensions[0]
+
+    def __call__(self, name, doc):
+        # Decide which plots we want for this stream.
+
+        import matplotlib.pyplot as plt
+
+        self._descriptors[doc['uid']] = doc
+        stream_name = doc.get('name', 'primary')  # fall back for old docs
+        columns = hinted_fields(doc)
+
+        # ## This deals with old documents. ## #
+
+        if stream_name == 'primary' and self._cleanup_motor_heuristic:
+            # We stashed object names in self.dim_fields, which we now need to
+            # look up the actual fields for.
+            self._cleanup_motor_heuristic = False
+            fixed_dim_fields = []
+            for obj_name in self.dim_fields:
+                # Special case: 'time' can be a dim_field, but it's not an
+                # object name. Just add it directly to the list of fields.
+                if obj_name == 'time':
+                    fixed_dim_fields.append('time')
+                    continue
+                try:
+                    fields = doc.get('hints', {}).get(obj_name, {})['fields']
+                except KeyError:
+                    fields = doc['object_keys'][obj_name]
+                fixed_dim_fields.extend(fields)
+            self.dim_fields = fixed_dim_fields
+
+        # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
+
+        if stream_name in self.noplot_streams:
+            return []
+        if not columns:
+            return []
+        if ((self._start_doc.get('num_points') == 1) and
+                (stream_name == self.dim_stream) and
+                self.omit_single_point_plot):
+            return []
+
+        # This is a heuristic approach until we think of how to hint this in a
+        # generalizable way.
+        if stream_name == self.dim_stream:
+            dim_fields = self.dim_fields
+        else:
+            dim_fields = ['time']  # 'time' once LivePlot can do that
+
+        # Create a figure or reuse an existing one.
+
+        fig_name = '{} vs {}'.format(' '.join(sorted(columns)),
+                                     ' '.join(sorted(dim_fields)))
+        if self.overplot and len(dim_fields) == 1:
+            # If any open figure matches 'figname {number}', use it. If there
+            # are multiple, the most recently touched one will be used.
+            pat1 = re.compile('^' + fig_name + '$')
+            pat2 = re.compile('^' + fig_name + r' \d+$')
+            for label in plt.get_figlabels():
+                if pat1.match(label) or pat2.match(label):
+                    fig_name = label
+                    break
+        else:
+            if plt.fignum_exists(fig_name):
+                # Generate a unique name by appending a number.
+                for number in itertools.count(2):
+                    new_name = '{} {}'.format(fig_name, number)
+                    if not plt.fignum_exists(new_name):
+                        fig_name = new_name
+                        break
+        ndims = len(dim_fields)
+        if not 0 < ndims < 3:
+            # we need 1 or 2 dims to do anything, do not make empty figures
+            return
+
+        fig = plt.figure(fig_name)
+        if not fig.axes:
+            # This is apparently a fresh figure. Make axes.
+            # The complexity here is due to making a shared x axis. This can be
+            # simplified when Figure supports the `subplots` method in a future
+            # release of matplotlib.
+            fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
+            for i in range(len(columns)):
+                if i == 0:
+                    ax = fig.add_subplot(len(columns), 1, 1 + i)
+                    if ndims == 1:
+                        share_kwargs = {'sharex': ax}
+                    elif ndims == 2:
+                        share_kwargs = {'sharex': ax, 'sharey': ax}
+                    else:
+                        raise NotImplementedError("we now support 3D?!")
+                else:
+                    ax = fig.add_subplot(len(columns), 1, 1 + i,
+                                         **share_kwargs)
+        axes = fig.axes
+        callbacks = []
+
+        # ## LIVE PLOT AND PEAK ANALYSIS ## #
+
+        if ndims == 1:
+            x_key, = dim_fields
+            for y_key, ax in zip(columns, axes):
+                dtype = doc['data_keys'][y_key]['dtype']
+                if dtype not in ('number', 'integer'):
+                    warn("Omitting {} from plot because dtype is {}"
+                         "".format(y_key, dtype))
+                    continue
+
+                def func(event_page):
+                    """
+                    Extract x points and y points to plot out of an EventPage.
+
+                    This will be passed to LineWithPeaks.
+                    """
+                    y_data = event_page['data'][y_key]
+                    if x_key == 'time':
+                        t0 = self._start_doc['time']
+                        x_data = np.asarray(event_page['time']) - t0
+                    elif x_key == 'seq_num':
+                        x_data = event_page['seq_num']
+                    else:
+                        x_data = event_page['data'][x_key]
+                    return x_data, y_data
+
+                # Create instances of LineWithPeaks and PeakStats.
+                live_plot = LineWithPeaks(func, ax=ax, peak_results=self.peaks)
+                live_plot('start', self._start_doc)
+                live_plot('descriptor', doc)
+                peak_stats = PeakStats(x=x_key, y=y_key)
+                peak_stats('start', self._start_doc)
+                peak_stats('descriptor', doc)
+                callbacks.extend([live_plot, peak_stats])
+
+            for ax in axes[:-1]:
+                ax.set_xlabel('')
+        elif ndims == 2:
+            # Decide whether to use LiveGrid or LiveScatter. LiveScatter is the
+            # safer one to use, so it is the fallback..
+            gridding = self._start_doc.get('hints', {}).get('gridding')
+            if gridding == 'rectilinear':
+                slow, fast = dim_fields
+                try:
+                    extents = self._start_doc['extents']
+                    shape = self._start_doc['shape']
+                except KeyError:
+                    warn("Need both 'shape' and 'extents' in plan metadata to "
+                         "create LiveGrid.")
+                else:
+                    data_range = np.array([float(np.diff(e)) for e in extents])
+                    y_step, x_step = data_range / [max(1, s - 1) for s in shape]
+                    adjusted_extent = [extents[1][0] - x_step / 2,
+                                       extents[1][1] + x_step / 2,
+                                       extents[0][0] - y_step / 2,
+                                       extents[0][1] + y_step / 2]
+                    for I_key, ax in zip(columns, axes):
+                        # MAGIC NUMBERS based on what tacaswell thinks looks OK
+                        data_aspect_ratio = np.abs(data_range[1]/data_range[0])
+                        MAR = 2
+                        if (1/MAR < data_aspect_ratio < MAR):
+                            aspect = 'equal'
+                            ax.set_aspect(aspect, adjustable='box-forced')
+                        else:
+                            aspect = 'auto'
+                            ax.set_aspect(aspect, adjustable='datalim')
+
+                        live_grid = LiveGrid(shape, I_key,
+                                             xlabel=fast, ylabel=slow,
+                                             extent=adjusted_extent,
+                                             aspect=aspect,
+                                             ax=ax)
+
+                        live_grid('start', self._start_doc)
+                        live_grid('descriptor', doc)
+                        callbacks.append(live_grid)
+            else:
+                x_key, y_key = dim_fields
+                for I_key, ax in zip(columns, axes):
+                    try:
+                        extents = self._start_doc['extents']
+                    except KeyError:
+                        xlim = ylim = None
+                    else:
+                        xlim, ylim = extents
+                    live_scatter = LiveScatter(x_key, y_key, I_key,
+                                               xlim=xlim, ylim=ylim,
+                                               # Let clim autoscale.
+                                               ax=ax)
+                    live_scatter('start', self._start_doc)
+                    live_scatter('descriptor', doc)
+                    callbacks.append(live_scatter)
+        else:
+            raise NotImplementedError("we do not support 3D+ in BEC yet "
+                                      "(and it should have bailed above)")
+        try:
+            fig.tight_layout()
+        except ValueError:
+            pass
+        return callbacks
+
+
+class FigureManager:
+    def __init__(self):
+        self.noplot_streams = []  # Do we want to keep this?
+        ...
+
+    def __call__(self, name, doc):
+        run_figure_manager = RunFigureManager(doc)
+        return [], [run_figure_manager]
+
+
+class Line(DocumentRouter):
+    """
+    Draw a matplotlib Line Arist update it for each Event.
+
+    Parameters
+    ----------
+    func : callable
+        This must accept an EventPage and return two lists of floats
+        (x points and y points). The two lists must contain an equal number of
+        items, but that number is arbitrary. That is, a given document may add
+        one new point to the plot, no new points, or multiple new points.
+    legend_keys : Iterable
+        This collection of keys will be extracted from the RunStart document
+        and shown in the legend with the corresponding values if present or
+        'None' if not present. The default includes just one item, 'scan_id'.
+        If a 'label' keyword argument is given, this paramter will be ignored
+        and that label will be used instead.
+    ax : matplotlib Axes, optional
+        If None, a new Figure and Axes are created.
+    **kwargs
+        Passed through to :meth:`Axes.plot` to style Line object.
+    """
+    def __init__(self, func, *, legend_keys=('scan_id',), ax=None, **kwargs):
+        self.func = func
+        if ax is None:
+            _, ax = plt.subplots()
+        self.ax = ax
+        self.line, = ax.plot([], [], **kwargs)
+        self.x_data = []
+        self.y_data = []
+        self.legend_keys = legend_keys
+        self.label = kwargs.get('label')
+
+    def start(self, doc):
+        if self.label is None:
+            label = ' :: '.join([f'{key!s} {doc.get(key)!r}'
+                                 for key in self.legend_keys])
+            self.line.set_label(label)
+
+    def event_page(self, doc):
+        x, y = self.func(doc)
+        self._update(x, y)
+
+    def _update(self, x, y):
+        """
+        Takes in new x and y points and redraws plot if they are not empty.
+        """
+        if not len(x) == len(y):
+            raise ValueError("User function is expected to provide the same "
+                             "number of x and y points. Got {len(x)} x points "
+                             "and {len(y)} y points.")
+        if not x:
+            # No new data. Short-circuit.
+            return
+        self.x_data.extend(x)
+        self.y_data.extend(y)
+        self.line.set_data(self.x_data, self.y_data)
+        self.ax.relim(visible_only=True)
+        self.ax.autoscale_view(tight=True)
+        self.ax.figure.canvas.draw_idle()
 
 
 class LivePlot(CallbackBase):
@@ -276,6 +600,116 @@ class LiveMesh(LiveScatter):
         warnings.warn("LiveMesh has been renamed to LiveScatter. The name "
                       "LiveMesh will eventually be removed. Use LiveScatter.")
         super().__init__(*args, **kwargs)
+
+
+class Grid(CallbackBase):
+    '''Draw a matplotlib AxesImage artist and update it for each event.
+    The purposes of this callback is to create (on initialization) of a
+    matplotlib grid image and then update it with new data for every `event`.
+    NOTE: Some important parameters are fed in through **kwargs like `extent`
+    which defines the axes min and max and `origin` which defines if the grid
+    co-ordinates start in the bottom left or top left of the plot. For more
+    info see https://matplotlib.org/tutorials/intermediate/imshow_extent.html
+    or https://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.imshow.html#matplotlib.axes.Axes.imshow
+
+    Parameters
+    ----------
+    func : callable
+        This must accept a BulkEvent and return three lists of floats (x
+        grid co-ordinates, y grid co-ordinates and grid position intensity
+        values). The three lists must contain an equal number of items, but
+        that number is arbitrary. That is, a given document may add one new
+        point, no new points or multiple new points to the plot.
+    shape : tuple
+        The (row, col) shape of the grid.
+    ax : matplotlib Axes, optional.
+        if ``None``, a new Figure and Axes are created.
+    **kwargs
+        Passed through to :meth:`Axes.imshow` to style the AxesImage object.
+    '''
+
+    def __init__(self, func, shape, *, ax=None, **kwargs):
+        self.func = func
+        self.shape = shape
+        if ax is None:
+            _, ax = plt.subplots()
+        self.ax = ax
+        self.grid_data = np.full(self.shape, np.nan)
+        self.image, = ax.imshow(self.grid_data, **kwargs)
+
+    def bulk_events(self, doc):
+        '''
+        Takes in a bulk_events document and updates grid_data with the values
+        returned from self.func(doc)
+
+        Parameters
+        ----------
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the bulk event.
+
+        Returns
+        -------
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the bulk event.
+        '''
+        x_coords, y_coords, I_vals = self.func(doc)
+        self._update(x_coords, y_coords, I_vals)
+
+    def event(self, doc):
+        '''
+        Takes in a event documents and updates grid_data with the values
+        returned from self.single_func(doc) or, if it is `None`, self.func(doc)
+
+        Parameters
+        ----------
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the event.
+
+        Returns
+        -------
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the event.
+        '''
+
+        if self.single_func is not None:
+            x_coords, y_coords, I_vals = self.single_func(doc)
+        else:
+            bulk_doc = event2bulk_event(doc)
+            x_coords, y_coords, Ivals = self.func(bulk_doc)
+
+        self._update(x_coords, y_coords, I_vals)
+
+    def _update(self, x_coords, y_coords, I_vals):
+        '''
+        Updates self.grid_data with the values from the lists x_coords,
+        y_coords, I_vals.
+
+        Parameters
+        ----------
+        x_coords, y_coords, I_vals : Lists
+            These are lists of x co-ordinate, y co-ordinate and intensity
+            values arising from the event. The length of all three lists must
+            be the same.
+        '''
+
+        if not len(x_coords) == len(y_coords) == len(I_vals):
+            raise ValueError("User function is expected to provide the same "
+                             "number of x, y and I points. Got {0} x points, "
+                             "{1} y points and {2} I values."
+                             "".format(len(x_coords), len(y_coords),
+                                       len(I_vals)))
+
+        if not x_coords:
+            # No new data, Short-circuit.
+            return
+
+        # Update grid_data and the plot.
+        self.grid_data[x_coords, y_coords] = I_vals
+        self.image.set_array(self.grid_data)
 
 
 class LiveGrid(CallbackBase):
@@ -574,3 +1008,218 @@ def plot_peak_stats(peak_stats, ax=None):
     legend = ax.legend(loc='best')
     arts.update({'points': points, 'vlines': vlines, 'legend': legend})
     return arts
+
+
+class Trajectory(CallbackBase):
+    '''Draw a matplotlib Line2D artist and update it for each event.
+    The purposes of this callback is to create (on initialization) a
+    matplotlib plot indicating the trajectory that a scan will take. During
+    the scan it should also indicate when a point has been taken by removing
+    the point from the trajectory. A second Line2D artist is also included that
+    indicates the actual points that the trajectory took and then update it
+    with new data for every `event`.
+
+    Parameters
+    ----------
+    func : callable
+        This must accept a BulkEvent and return two lists of floats (x
+        values and y values). The two lists must contain an equal number of
+        items, but that number is arbitrary. That is, a given document may add
+        one new point, no new points or multiple new points to the 'completed'
+        plot and remove 0, 1 or more points from the 'future' path.
+    x_trajectory, y_trajectory : Lists
+        Two lists ( `'x_vals'` and `'y_vals'`) which are a list of succesive
+        x_vals or y_vals indicating the trajectory to be taken. The length of
+        the two lists should be identical.
+    single_func : callback, optional
+        This parameter is available as a perfomrance operation. For most uses,
+        ``func`` is sufficient. This is like ``func``, but it gets an Event
+        instead of a BulkEvent. If ``None`` is given, Events are up-cast into
+        BulkEvents and handed to ``func``.
+    ax : matplotlib Axes, optional.
+        if ``None``, a new Figure and Axes are created.
+    **kwargs
+        Passed through to :meth:`Axes.imshow` to style the AxesImage object.
+    '''
+
+    def __init__(self, func, x_trajectory, y_trajectory, *,
+                 single_func=None, ax=None, **kwargs):
+        self.func = func
+        self.x_trajectory = x_trajectory
+        self.y_trajectory = y_trajectory
+        self.single_func = single_func
+        if ax is None:
+            _, ax = plt.subplots()
+        self.ax = ax
+        self.x_past = []
+        self.y_past = []
+        self.trajectory = self.ax.plot(self.x_trajectory, self.y_trajectory,
+                                       **kwargs)
+        self.past = self.ax.plot(self.x_past, self.y_past, **kwargs)
+
+    def bulk_events(self, doc):
+        '''Takes in a bulk_events document and updates x_past and y_past with
+        the values returned from self.func(doc).
+
+        Parameters
+        ----------
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the bulk event.
+
+        Returns
+        -------
+        x_vals, y_vals : Lists
+            These are lists of x values and y values arising from the bulk
+            event.
+        '''
+
+        x_vals, y_vals = self.func(doc)
+        self._update(x_vals, y_vals)
+
+    def event(self, doc):
+        '''
+        Takes in a event documents and returns the values returned from
+        self.single_func(doc) or, if it is `None`, self.func(doc).
+
+        Parameters
+        ----------
+        doc : dict
+            The bulk event dictionary that contains the 'data' and 'timestamps'
+            associated with the event.
+
+        Returns
+        -------
+        x_vals, y_vals : Lists
+            These are lists of x values and y values arising
+            from the event.
+        '''
+
+        if self.single_func is not None:
+            x_vals, y_vals = self.single_func(doc)
+        else:
+            bulk_doc = event2bulk_event(doc)
+            x_vals, y_vals = self.func(bulk_doc)
+        self._update(x_vals, y_vals)
+
+    def _update(self, x_vals, y_vals):
+        '''
+        Updates self.x_past and self.y_past with the values from the lists
+        x_coords, y_coords.
+
+        Parameters
+        ----------
+        x_vals, y_vals : Lists
+            These are lists of x co-ordinate and y co-ordinate values arising
+            from the event. The length of all three lists must be the same.
+        '''
+
+        if not len(x_vals) == len(y_vals):
+            raise ValueError("User function is expected to provide the same "
+                             "number of x and y points. Got {0} x points "
+                             "and {1} y points."
+                             "".format(len(x_vals), len(y_vals)))
+
+        if not x_vals:
+            # No new data, Short-circuit.
+            return
+
+        # Update grid_data and the plot.
+        for x_val, y_val in zip(x_vals, y_vals):
+            # add the new values to the past lists
+            self.x_past.extend(x_val)
+            self.y_past.extend(y_val)
+            # remove the first item from the path lists
+            del self.x_path.pop[0]
+            del self.y_path.pop[0]
+
+        self.path.set_data(self.x_path, self.y_path)
+        self.past.set_data(self.x_past, self.y_past)
+
+
+def event2bulk_event(doc):
+    '''Make a BulkEvent from this Event.
+
+    Parameters
+    ----------
+    doc : dict
+        The event dictionary that contains the 'data' and 'timestamps'
+        associated with the bulk event.
+
+    Returns
+    -------
+    bulk_event : dict
+        The bulk event dictionary that contains the 'data' and 'timestamp'
+        associated with the event.
+    '''
+
+    bulk_event = doc.copy()
+    bulk_event['data'] = {k: np.expand_dims(v, 0)
+                          for k, v in doc['data'].items()}
+
+    bulk_event['timestamps'] = {k: np.expand_dims(v, 0)
+                                for k, v in doc['timestamps'].items()}
+
+    return bulk_event
+
+
+class LineWithPeaks(Line):
+    # Track state of axes, which may share instances of LineWithPeaks.
+    __labeled = weakref.WeakKeyDictionary()  # map ax to True/False
+    __visible = weakref.WeakKeyDictionary()  # map ax to True/False
+    __instances = weakref.WeakKeyDictionary()  # map ax to list of instances
+
+    def __init__(self, *args, peak_results, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.peak_results = peak_results
+
+        ax = self.ax  # for brevity
+        if ax not in self.__visible:
+            # This is the first instance of LineWithPeaks on these axes.
+            # Set up matplotlib event handling.
+
+            self.__visible[ax] = False
+
+            def toggle(event):
+                if event.key == 'P':
+                    self.__visible[ax] = ~self.__visible[ax]
+                    for instance in self.__instances[ax]:
+                        instance.check_visibility()
+
+            ax.figure.canvas.mpl_connect('key_press_event', toggle)
+
+        if ax not in self.__instances:
+            self.__instances[ax] = []
+        self.__instances[ax].append(self)
+        self.__arts = None
+
+    def check_visibility(self):
+        if self.__visible[self.ax]:
+            if self.__arts is None:
+                self.plot_annotations()
+            else:
+                for artist in self.__arts:
+                    artist.set_visible(True)
+        elif self.__arts is not None:
+                for artist in self.__arts:
+                    artist.set_visible(False)
+        self.ax.legend(loc='best')
+        self.ax.figure.canvas.draw_idle()
+
+    def plot_annotations(self):
+        styles = iter(cycler('color', 'kr'))
+        vlines = []
+        for style, attr in zip(styles, ['cen', 'com']):
+            val = self.peak_results[attr][self.y]
+            # Only put labels in this legend once per axis.
+            if self.ax in self.__labeled:
+                label = '_no_legend_'
+            else:
+                label = attr
+            vlines.append(self.ax.axvline(val, label=label, **style))
+        self.__labeled[self.ax] = None
+        self.__arts = vlines
+
+    def stop(self, doc):
+        self.check_visibility()
+        super().stop(doc)
