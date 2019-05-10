@@ -2,7 +2,10 @@ language: python
 sudo: false
 env:
   global:
+    # Doctr deploy key for NSLS-II/NSLS-II.github.io
     - secure: "UC5rEkKAKQHvpCojJAedrx1aVsplZ0xOq5xdFME3UxrKDOsihRIDBYV6YOnpDcWVxzI3iZAJOJG1rNqMZ/4pOnI/DQ5n2nCIbqZlhPh6xPbr//g88Y3dlQifPWbC6pqmh+WJCfde99lYNDI2XauD4AvRARI9MnRP9vGF0gyTbUMeA0ybLdXScawnhL48Gh7nj64R7e0F1SgF1iEXaU0LvWUW2UK9yIg/kqWfL0XKpgpvxcy0n+VGe9gbwiA70F3nd7iZ/aM7K1MRiLeppCbj3xlLwGE4mw6svF5uim6oYZoDp0si70Ux2yw7TNOYpn82dTBIq1KU59jGUyP/rH/nx0erPzCUJFak8YQTSrbhO08u/baRt5Qb0KWfqGJZcHzPknRC66PzI47zO5ol9qvnIo68xfuIrlJZRhTF7ewNWzmJP5MeJ85mgoQSTmZYyCgFTYDcPdoePerhjBepYngvT1EzS9BPTuUXhStH7lRgbriGVreOQ9bDvW5hTb/n9CKmI/XhQBOGy7T1HYAaIP1N+rlQw0lmp2uYIvZ53wGjqoKB+yLBpAAzXPBbK3sjDtuquou/jEqvyJnL9/VEbohPfIK3AlTTC0zIDi5QZq/h4zqMIKOybd3jmvT4P+Pvy8YGolXtlV6P/erA05GAOXijs/pki/BVcGsHNNjr1xRE0qU="
+    # Doctr deploy key for bluesky/bluesky.github.io
+    - secure: "aAdAJ0KVEaeEgqP+dMhkfjtTsORNnyKAwgI4TTyEiNw2VxofMc35jlArKdAW4ghMqaVv3+PrhLUEo27a36kWdSmmsXmbB4HUI5ef0qeiP3/OT+pvHFZ55rKnlKCn1Bcd2uTekkaH4ZPQSPB3mKdoM9TJbIchq+jfrHRAsXkNdCFubx3SDOS3n4Xp3iqF7udrsp2yPz2FuAxF4NdxoZIx/GeKAXTNNeRtzvvsY4hKWEk3ZaYF29gmszVefT4eLJAMd1UjaRJV/i+/cbXMtp73xpaF4/XzpwAWGcANcQxm+NVSNdTGPzsLA7t2FgfbTUWhdzf9OiHMGvK7Z0kjjiD2UOIQ9Tn26kwLYql5zvB69YLnvbAUJMp46BHEdDSGnUgWCYrxeGt+phU1UTjEitl5vEZxgWwYWx6w5B6zMAshXA3IE/WWVwNn3t3LNoQ/c5yP3u4g0d+XTMKrBi3dH3qqGN3Ukx4y6LY6bV3LpMUgtgLXzuEh6y67nSS4TUltc89Xx23zDfA4YrQJg+agJrNaBIUpqm/acJr8rQ1SsrTmY5nqFIUCCN2xrqgeafX+EmeX3xg0CGI/A7oFty8sLpPqY4SXoBIVg+8mvXBAmVV7ccqgwKcSo1x+M/HW7eloRL/GuDbhxwxn0l7LNlYTChYuFVE/A5x9OyGBHKfVGsjH2G8="
 
 cache:
   directories:
@@ -14,7 +17,7 @@ matrix:
   include:
     - python: 3.5
     - python: 3.6
-      env: BUILD_DOCS=1
+      env: PUBLISH_DOCS=1
     - python: nightly
   allow_failures:
     - python: nightly
@@ -45,14 +48,13 @@ script:
   - coverage run run_tests.py
   - coverage report -m
   - set -e
-  # Build docs.
+  - make -C doc html
+  # Publish docs.
   - |
-    if [ $BUILD_DOCS ]; then
-      pushd doc
-      make html
-      popd
+    if [ $PUBLISH_DOCS ]; then
       # Publish docs.
-      doctr deploy --deploy-repo NSLS-II/NSLS-II.github.io --deploy-branch-name master bluesky
+      doctr deploy --deploy-repo NSLS-II/NSLS-II.github.io --deploy-branch-name master bluesky;
+      doctr deploy --deploy-repo bluesky/bluesky.github.io --deploy-branch-name master bluesky;
     fi
 
 after_success:
