@@ -352,8 +352,9 @@ def test_wait_for(RE):
 
     def done():
         ev.set()
-    scan = [Msg('wait_for', None, [ev.wait(), ]), ]
-    RE.loop.call_soon_threadsafe(_delayed_partial(done, 2))
+    scan = [Msg('wait_for', None, [ev.wait, ]), ]
+    RE.loop.call_soon_threadsafe(
+        RE.loop.call_later, 2, done)
     start = ttime.time()
     RE(scan)
     stop = ttime.time()

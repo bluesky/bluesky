@@ -526,7 +526,7 @@ def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
 
     threading.Thread(
         target=_delayed_partial(
-            partial(RE.request_suspend, fut=ev.wait()),
+            partial(RE.request_suspend, fut=ev.wait),
             .5)).start()
 
     def verbose_set():
@@ -848,7 +848,7 @@ def test_exception_cascade_REside(RE):
         RE(pausing_plan())
     ev = asyncio.Event(loop=RE.loop)
     ev.set()
-    RE.request_suspend(ev.wait(), pre_plan=pre_plan())
+    RE.request_suspend(ev.wait, pre_plan=pre_plan())
     with pytest.raises(KeyError):
         RE.resume()
     assert except_hit
@@ -879,7 +879,7 @@ def test_exception_cascade_planside(RE):
         RE(pausing_plan())
     ev = asyncio.Event(loop=RE.loop)
     ev.set()
-    RE.request_suspend(ev.wait(), pre_plan=pre_plan())
+    RE.request_suspend(ev.wait, pre_plan=pre_plan())
     with pytest.raises(RuntimeError):
         RE.resume()
     assert except_hit
@@ -895,7 +895,7 @@ def test_sideband_cancel(RE):
     def side_band_kill():
         RE.loop.call_soon_threadsafe(RE._task.cancel)
 
-    scan = [Msg('wait_for', None, [ev.wait(), ]), ]
+    scan = [Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
     threading.Timer(.5, side_band_kill).start()

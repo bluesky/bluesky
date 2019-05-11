@@ -180,7 +180,7 @@ def test_unresumable_suspend_fail(RE):
     RE.msg_hook = m_coll
 
     ev = asyncio.Event(loop=RE.loop)
-    threading.Timer(.1, partial(RE.request_suspend, fut=ev.wait())).start()
+    threading.Timer(.1, partial(RE.request_suspend, fut=ev.wait)).start()
     threading.Timer(1, ev.set).start()
     start = time.time()
     with pytest.raises(RunEngineInterrupted):

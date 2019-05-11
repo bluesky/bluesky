@@ -1511,6 +1511,7 @@ class RunEngine:
         for ``asyncio.await``
         """
         futs, = msg.args
+        futs = set(f() for f in futs)
         await asyncio.wait(futs, loop=self.loop, **msg.kwargs)
 
     async def _open_run(self, msg):
@@ -1969,7 +1970,7 @@ class RunEngine:
         except AttributeError:
             # for ophyd < v0.8.0
             ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait())
+        self._groups[group].add(p_event.wait)
         self._status_objs[group].add(ret)
         return ret
 
@@ -2008,7 +2009,7 @@ class RunEngine:
         except AttributeError:
             # for ophyd < v0.8.0
             ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait())
+        self._groups[group].add(p_event.wait)
         self._status_objs[group].add(ret)
         return ret
 
@@ -2144,7 +2145,7 @@ class RunEngine:
         except AttributeError:
             # for ophyd < v0.8.0
             ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait())
+        self._groups[group].add(p_event.wait)
         self._status_objs[group].add(ret)
 
         return ret
@@ -2175,7 +2176,7 @@ class RunEngine:
         except AttributeError:
             # for ophyd < v0.8.0
             ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait())
+        self._groups[group].add(p_event.wait)
         self._status_objs[group].add(ret)
 
         return ret

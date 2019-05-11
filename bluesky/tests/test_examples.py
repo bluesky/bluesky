@@ -284,7 +284,7 @@ def test_suspend(RE, hw):
     assert RE.state == 'idle'
 
     def local_suspend():
-        RE.request_suspend(ev.wait())
+        RE.request_suspend(ev.wait)
 
     def resume_cb():
         RE.loop.call_soon_threadsafe(ev.set)
@@ -321,7 +321,7 @@ def test_pause_resume(RE):
     def sim_kill():
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
     threading.Timer(1, sim_kill).start()
@@ -336,6 +336,7 @@ def test_pause_resume(RE):
     assert RE.state == 'idle'
     stop = ttime.time()
 
+    time.sleep(3)
     assert mid - start > 1
     assert stop - start > 2
 
@@ -352,7 +353,7 @@ def test_pause_abort(RE):
     def sim_kill():
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
     threading.Thread(target=_delayed_partial(sim_kill, .1)).start()
@@ -383,7 +384,7 @@ def test_abort(RE):
     def sim_kill():
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
     threading.Thread(target=_delayed_partial(sim_kill, .1)).start()

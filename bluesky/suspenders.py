@@ -133,7 +133,7 @@ class SuspenderBase(metaclass=ABCMeta):
                     self.__make_event()
                     cb = partial(
                         self.RE.request_suspend,
-                        self._ev.wait(),
+                        self._ev.wait,
                         pre_plan=self._pre_plan,
                         post_plan=self._post_plan,
                         justification=self._get_justification())
@@ -188,7 +188,7 @@ class SuspenderBase(metaclass=ABCMeta):
         '''
         if not self.tripped:
             return [], ''
-        return [self.__make_event().wait()], self._get_justification()
+        return [self.__make_event().wait], self._get_justification()
 
     @property
     def tripped(self):
