@@ -1289,14 +1289,18 @@ def run_matplotlib_qApp(blocking_event):
     matplotlib qApp until the task completes. If not, there is no need to
     handle qApp: just wait on the task.
     """
+    if 'matplotlib' not in sys.modules:
+        # We are not using matplotlib + Qt. Just wait on the Event.
+        blocking_event.wait()
     # Figure out if we are using matplotlib with a Qt backend, and do so
     # without importing anything that is not already imported.
-    if 'matplotlib' in sys.modules:
+    else:
         import matplotlib
-        if matplotlib.get_backend() in ('Qt4Agg', 'Qt5Agg'):
-
+        if matplotlib.get_backend() not in ('Qt4Agg', 'Qt5Agg'):
+            # We are not using matplotlib + Qt. Just wait on the Event.
+            blocking_event.wait()
+        else:
             # We are using matplotlib with Qt.
-
             # When the function is run for the first time, _create_qApp and
             # stash it as state *on* the function itself.
             if run_matplotlib_qApp.qApp_instance is None:
@@ -1364,7 +1368,6 @@ def run_matplotlib_qApp(blocking_event):
                 # not available.
 
                 def null():
-                    print('hi mom')
                     ...
 
                 # we need to 'kick' the python interpreter so it sees
@@ -1397,22 +1400,14 @@ def run_matplotlib_qApp(blocking_event):
             killer_timer.timeout.connect(start_killer_thread)
             killer_timer.start(0)
 
-            if not blocking_event.is_set():
-                try:
-                    sys.excepthook = my_exception_hook
-                    qApp.exec_()
-                    if vals[1] is not None:
-                        raise vals[1]
-                finally:
-                    sys.excepthook = old_sys_handler
-                    cleanup()
-
-        else:
-            # We are not using matplotlib + Qt. Just wait on the Event.
-            blocking_event.wait()
-    else:
-        # We are not using matplotlib + Qt. Just wait on the Event.
-        blocking_event.wait()
+            try:
+                sys.excepthook = my_exception_hook
+                qApp.exec_()
+                if vals[1] is not None:
+                    raise vals[1]
+            finally:
+                sys.excepthook = old_sys_handler
+                cleanup()
 
 
 # We stash some private state *on* the function here and refer to it in the
