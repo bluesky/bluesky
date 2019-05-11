@@ -804,7 +804,7 @@ class RunEngine:
                 # Block until plan is complete or exception is raised.
                 try:
                     self._during_task(self._blocking_event)
-                except KeyboardInterrupt as err:
+                except KeyboardInterrupt:
                     ctypes.pythonapi.PyThreadState_SetAsyncExc(
                         ctypes.c_ulong(self._th.ident),
                         ctypes.py_object(_RunEnginePanic))
@@ -1219,7 +1219,7 @@ class RunEngine:
                     assert self.state == 'pausing'
                     # Remove any monitoring callbacks, but keep refs in
                     # self._monitor_params to re-instate them later.
-                    for obj, (cb, kwargs) in list(self._monitor_params.items()):
+                    for obj, (cb, kwargs) in self._monitor_params.items():
                         obj.clear_sub(cb)
                     # During pause, all motors should be stopped. Call stop()
                     # on every object we ever set().
@@ -1247,7 +1247,8 @@ class RunEngine:
                         asyncio.run_coroutine_threadsafe(set_bridge_event(),
                                                          loop=self.loop)
 
-                    threading.Thread(target=unblock_bridge, daemon=True).start()
+                    threading.Thread(target=unblock_bridge,
+                                     daemon=True).start()
                     await bridge_event.wait()
                     if self.state == 'paused':
                         # may be called by 'resume', 'stop', 'abort', 'halt'
@@ -1484,7 +1485,7 @@ class RunEngine:
             for p in self._plan_stack:
                 try:
                     p.close()
-                except RuntimeError as e:
+                except RuntimeError:
                     print('The plan {!r} tried to yield a value on close.  '
                           'Please fix your plan.'.format(p))
 
