@@ -186,6 +186,19 @@ class RunEngine:
         Expected signature: f(md)
         Expected return: updated scan_id value
 
+    during_task : callable, optional
+        Function to be run to block the main thread during `RE.__call__`
+
+        The required signature is ::
+
+              def blocking_func(ev : Threading.Event) -> None:
+                  "Returns when ev is set"
+
+        The default value handles the cases of:
+           - Matplotlib is not imported (just wait on the event)
+           - Matplotlib is imported, but not using a Qt backend (just wait on the event)
+           - Matplotlib is imported and using a Qt backend (run the Qt app)
+
     Attributes
     ----------
     md
@@ -1496,22 +1509,22 @@ class RunEngine:
             raise self._exception
 
     async def _wait_for(self, msg):
-        """Instruct the RunEngine to wait until msg.obj has completed. Better
-        yet, see the docstring for ``asyncio.wait`` for what msg.obj should
-        be...
-
-        TODO: Get someone who knows how this works to check this note, since
-        it is almost assuredly total bs
+        """Instruct the RunEngine to wait for futures
 
         Expected message object is:
 
-            Msg('wait_for', None, futures, **kwargs)
+            Msg('wait_for', None, awaitable_factories, **kwargs)
 
-        Where ``obj`` and **kwargs are the position and keyword-only arguments
-        for ``asyncio.await``
+        The keyword arguments will be passed through to `asyncio.wait`.
+
+        The callables in awaitable_factories must have the signature ::
+
+           def fut_fac() -> awaitable:
+               'This must work multiple times'
+
         """
         futs, = msg.args
-        futs = set(f() for f in futs)
+        futs = [f() for f in futs]
         await asyncio.wait(futs, loop=self.loop, **msg.kwargs)
 
     async def _open_run(self, msg):
