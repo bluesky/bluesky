@@ -5,6 +5,8 @@ import re
 import warnings
 import weakref
 
+import matplotlib.pyplot as plt
+
 from .core import CallbackBase, get_obj_fields
 from .utils import hinted_fields
 from .fitting import PeakStats
