@@ -228,6 +228,19 @@ class RunEngine:
         if md is None:
             md = {}
         self.md = md
+
+        try:
+            from ophyd import __version__
+            self.md['OPHYD_VERSION'] = ophyd.__version__
+        except ImportError:
+            self.log.exception("Failed to import __version__ from ophyd")
+
+        try:
+            from . import __verison__
+            self.md['BLUESKY_VERSION'] = bluesky.__version__
+        except ImportError:
+            self.log.exception("Failed to import __version__ from bluesky")
+
         if preprocessors is None:
             preprocessors = []
         self.preprocessors = preprocessors
