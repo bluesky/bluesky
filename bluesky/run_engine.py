@@ -207,11 +207,15 @@ class RunEngine:
 
     """
 
-    state = LoggingPropertyMachine(RunEngineStateMachine)
+    _state = LoggingPropertyMachine(RunEngineStateMachine)
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage',
                              'unstage', 'monitor', 'unmonitor', 'open_run',
                              'close_run', 'install_suspender',
                              'remove_suspender']
+
+    @property
+    def state(self):
+        return self._state
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
@@ -518,7 +522,7 @@ class RunEngine:
 
         Lossless subscriptions are not unsubscribed.
         """
-        if self.state != 'idle':
+        if self._state != 'idle':
             self.halt()
         self._clear_run_cache()
         self._clear_call_cache()
@@ -598,7 +602,7 @@ class RunEngine:
         self._deferred_pause_requested = False
         self._interrupted = True
         print("Pausing...")
-        self.state = 'paused'
+        self._state = 'paused'
         self._record_interruption('pause')
         if not self.resumable:
             # cannot resume, so we cannot pause.  Abort the plan.
@@ -694,8 +698,8 @@ class RunEngine:
                 raise RuntimeError(text)
 
         # If we are in the wrong state, raise.
-        if not self.state.is_idle:
-            raise RuntimeError("The RunEngine is in a %s state" % self.state)
+        if not self._state.is_idle:
+            raise RuntimeError("The RunEngine is in a %s state" % self._state)
 
         futs = []
         tripped_justifications = []
@@ -771,10 +775,10 @@ class RunEngine:
             list of Header uids (a.k.a RunStart uids) of run(s)
         """
         # The state machine does not capture the whole picture.
-        if not self.state.is_paused:
+        if not self._state.is_paused:
             raise TransitionError("The RunEngine is the {0} state. "
                                   "You can only resume for the paused state."
-                                  "".format(self.state))
+                                  "".format(self._state))
 
         self._interrupted = False
         self._record_interruption('resume')
@@ -816,7 +820,7 @@ class RunEngine:
 
     def _resume_event_loop(self):
         # may be called by 'resume' or 'abort'
-        self.state = 'running'
+        self._state = 'running'
 
         # Handle all context managers
         with ExitStack() as stack:
@@ -1008,7 +1012,7 @@ class RunEngine:
         :meth:`RunEngine.halt`
         :meth:`RunEngine.stop`
         """
-        if self.state.is_idle:
+        if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Aborting: running cleanup and marking "
               "exit_status as 'abort'...")
@@ -1019,7 +1023,7 @@ class RunEngine:
         for task in self._status_tasks:
             task.cancel()
         self._exit_status = 'abort'
-        if self.state == 'paused':
+        if self._state == 'paused':
             self._resume_event_loop()
         return self._run_start_uids
 
@@ -1032,14 +1036,14 @@ class RunEngine:
         :meth:`RunEngine.abort`
         :meth:`RunEngine.halt`
         """
-        if self.state.is_idle:
+        if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Stopping: running cleanup and marking exit_status "
               "as 'success'...")
         self._interrupted = True
         self._exception = RequestStop()
         self._task.cancel()
-        if self.state == 'paused':
+        if self._state == 'paused':
             self._resume_event_loop()
         return self._run_start_uids
 
@@ -1052,7 +1056,7 @@ class RunEngine:
         :meth:`RunEngine.abort`
         :meth:`RunEngine.stop`
         '''
-        if self.state.is_idle:
+        if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Halting: skipping cleanup and marking exit_status as "
               "'abort'...")
@@ -1060,7 +1064,7 @@ class RunEngine:
         self._exception = PlanHalt()
         self._exit_status = 'abort'
         self._task.cancel()
-        if self.state == 'paused':
+        if self._state == 'paused':
             self._resume_event_loop()
         return self._run_start_uids
 
@@ -1094,7 +1098,7 @@ class RunEngine:
         # sentinel to decide if need to add to the response stack or not
         sentinel = object()
         try:
-            self.state = 'running'
+            self._state = 'running'
             while True:
                 assert len(self._response_stack) == len(self._plan_stack)
                 # set resp to the sentinel so that if we fail in the sleep
@@ -1308,7 +1312,7 @@ class RunEngine:
                           'Please fix your plan.'.format(p))
 
             self.loop.stop()
-            self.state = 'idle'
+            self._state = 'idle'
         # if the task was cancelled
         if pending_cancel_exception is not None:
             raise pending_cancel_exception
