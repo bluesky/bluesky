@@ -207,11 +207,15 @@ class RunEngine:
 
     """
 
-    state = LoggingPropertyMachine(RunEngineStateMachine)
+    _state = LoggingPropertyMachine(RunEngineStateMachine)
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage',
                              'unstage', 'monitor', 'unmonitor', 'open_run',
                              'close_run', 'install_suspender',
                              'remove_suspender']
+
+    @property
+    def state(self):
+        return self._state
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
