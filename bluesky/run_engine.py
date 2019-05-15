@@ -228,15 +228,16 @@ class RunEngine:
         if md is None:
             md = {}
         self.md = md
+        self.md['versions'] = {}
 
         try:
             import ophyd
-            self.md['OPHYD_VERSION'] = ophyd.__version__
+            self.md['versions']['ophyd'] = ophyd.__version__
         except ImportError:
-            self.log.exception("Failed to import __version__ from ophyd.")
+            self.log.debug("Failed to import __version__ from ophyd.")
 
         from ._version import get_versions
-        self.md['BLUESKY_VERSION'] = get_versions()['version']
+        self.md['versions']['bluesky'] = get_versions()['version']
         del get_versions
 
         if preprocessors is None:
