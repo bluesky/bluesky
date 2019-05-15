@@ -228,7 +228,7 @@ class RunEngine:
         if md is None:
             md = {}
         self.md = md
-        self.md['versions'] = {}
+        self.md.setdefault('versions', {})
 
         try:
             import ophyd
