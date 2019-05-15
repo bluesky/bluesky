@@ -1027,8 +1027,8 @@ class RunEngine:
                   "exit_status as 'abort'...")
             self._interrupted = True
             self._exception = FailedPause()
-            was_paused = self.state == 'paused'
-            self.state = 'aborting'
+            was_paused = self._state == 'paused'
+            self._state = 'aborting'
             if was_paused:
                 self._exception = RequestAbort()
                 self._resume_task()
@@ -1096,8 +1096,8 @@ class RunEngine:
             # The event loop is still running. The pre_plan will be processed,
             # and then the RunEngine will be hung up on processing the
             # 'wait_for' message until `fut` is set.
-            if not self.state == 'paused':
-                self.state = 'suspending'
+            if not self._state == 'paused':
+                self._state = 'suspending'
                 # bump the _run task out of what ever it is awaiting
                 self._task.cancel()
 
@@ -1215,21 +1215,21 @@ class RunEngine:
         try:
             self._state = 'running'
             while True:
-                if self.state in ('pausing', 'suspending'):
+                if self._state in ('pausing', 'suspending'):
                     if not self.resumable:
                         self._run_permit.set()
                         self._exception = FailedPause()
                         for task in self._status_tasks:
                             task.cancel()
-                        self.state = 'aborting'
+                        self._state = 'aborting'
                         continue
                 # currently only using this
-                if self.state == 'suspending':
-                    self.state = 'running'
+                if self._state == 'suspending':
+                    self._state = 'running'
                 if not self._run_permit.is_set():
                     # A pause has been requested. First, put everything in a
                     # resting state.
-                    assert self.state == 'pausing'
+                    assert self._state == 'pausing'
                     # Remove any monitoring callbacks, but keep refs in
                     # self._monitor_params to re-instate them later.
                     for obj, (cb, kwargs) in self._monitor_params.items():
@@ -1245,7 +1245,7 @@ class RunEngine:
                                 obj.pause()
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
-                    self.state = 'paused'
+                    self._state = 'paused'
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
                     # ...and wait here until
@@ -1263,9 +1263,9 @@ class RunEngine:
                     threading.Thread(target=unblock_bridge,
                                      daemon=True).start()
                     await bridge_event.wait()
-                    if self.state == 'paused':
+                    if self._state == 'paused':
                         # may be called by 'resume', 'stop', 'abort', 'halt'
-                        self.state = 'running'
+                        self._state = 'running'
 
                     # If we are here, we have come back to life either to
                     # continue (resume) or to clean up before exiting.
@@ -1407,13 +1407,13 @@ class RunEngine:
                           "a HALT.")
                     self.loop.call_soon(self.halt)
                 except asyncio.CancelledError as e:
-                    if self.state == 'pausing':
+                    if self._state == 'pausing':
                         # if we got a CancelledError and we are in the
                         # 'pausing' state clear the run permit and
                         # bounce to the top
                         self._run_permit.clear()
                         continue
-                    if self.state in ('halting', 'stopping', 'aborting'):
+                    if self._state in ('halting', 'stopping', 'aborting'):
                         # if we got this while just keep going in tear-down
                         exception_map = {'halting': PlanHalt,
                                          'stopping': RequestStop,
@@ -1422,7 +1422,7 @@ class RunEngine:
                         if self._exception is None:
                             self._exception = exception_map[self.state]
                         continue
-                    if self.state == 'suspending':
+                    if self._state == 'suspending':
                         # just bounce to the top
                         continue
                     # if we are handling this twice, raise and leave the plans
