@@ -244,6 +244,7 @@ class RemoteDispatcher(Dispatcher):
         self._socket.connect(url)
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._task = None
+        self.closed = False
 
         super().__init__()
 
@@ -259,6 +260,10 @@ class RemoteDispatcher(Dispatcher):
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
+        if self.closed:
+            raise RuntimeError("This RemoteDispatcher has already been "
+                               "started and interrupted. Create a fresh "
+                               "instance with {}".format(repr(self)))
         try:
             self._task = self.loop.create_task(self._poll())
             self.loop.run_forever()
@@ -271,3 +276,4 @@ class RemoteDispatcher(Dispatcher):
             self._task.cancel()
             self.loop.stop()
         self._task = None
+        self.closed = True
