@@ -13,6 +13,7 @@ import inspect
 from contextlib import ExitStack
 
 import jsonschema
+from .log import doc_logger, msg_logger, status_logger
 from event_model import DocumentNames, schemas
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
@@ -78,8 +79,11 @@ class LoggingPropertyMachine(PropertyMachine):
         old_value = self.__get__(obj)
         super().__set__(obj, value)
         value = self.__get__(obj)
-        obj.log.info("Change state on %r from %r -> %r",
-                     obj, old_value, value)
+        tags = {'old_status': old_value,
+                'direction': '--->>>',
+                'new_status': value}
+        status_logger.info("Change state on %r from %r -> %r",
+                           obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
 
@@ -222,7 +226,7 @@ class RunEngine:
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
-        logger_name = "bluesky.RE.{id}".format(id=id(self))
+        logger_name = 'bluesky.RE.{id}'.format(id=id(self))
         self.log = logging.getLogger(logger_name)
 
         if md is None:
@@ -1088,7 +1092,7 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
-        debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
+        debug = msg_logger.debug
         pending_cancel_exception = None
         self._reason = ''
         # sentinel to decide if need to add to the response stack or not
@@ -1181,7 +1185,7 @@ class RunEngine:
                     # if we have a message hook, call it
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
-                    debug(msg)
+                    debug(msg, extra={'msg_command': msg.command})
 
                     # update the running set of all objects we have seen
                     self._objs_seen.add(msg.obj)
@@ -1372,7 +1376,7 @@ class RunEngine:
 
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
         yield from self.emit(DocumentNames.start, doc)
-        self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
+        doc_logger.debug("Emitted RunStart (uid=%r)", doc['uid'], extra={'doc_name': 'Start', 'doc_uid': doc['uid']})
         yield from self._reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
@@ -1430,7 +1434,8 @@ class RunEngine:
                    num_events=num_events)
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
-        self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
+        doc_logger.debug("Emitted RunStop (uid=%r)", doc['uid'],
+                         extra={'doc_name': 'Stop', 'doc_uid': doc['uid']})
         yield from self._reset_checkpoint_state_coro()
         return doc['run_start']
 
@@ -1691,9 +1696,10 @@ class RunEngine:
                        configuration=config, name=desc_key,
                        hints=hints, object_keys=object_keys)
             yield from self.emit(DocumentNames.descriptor, doc)
-            self.log.debug("Emitted Event Descriptor with name %r containing "
-                           "data keys %r (uid=%r)", desc_key,
-                           data_keys.keys(), descriptor_uid)
+            doc_logger.debug("Emitted Event Descriptor with name %r containing "
+                             "data keys %r (uid=%r)", desc_key,
+                             data_keys.keys(), descriptor_uid,
+                             extra={'doc_name': 'Descriptor', 'doc_uid': descriptor_uid})
             self._descriptors[desc_key] = (objs_read, doc)
 
         descriptor_uid = doc['uid']
@@ -1724,8 +1730,8 @@ class RunEngine:
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid, filled=filled)
         yield from self.emit(DocumentNames.event, doc)
-        self.log.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
-                       event_uid)
+        doc_logger.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
+                         event_uid, extra={'doc_name': 'Event', 'doc_uid': event_uid})
 
     @asyncio.coroutine
     def _drop(self, msg):
