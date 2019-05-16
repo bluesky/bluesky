@@ -367,7 +367,7 @@ class RunEngine:
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
-        self._task_fut = None  # asyncio.Task associated with call to self._run
+        self._task_fut = None  # future proxy to the task above
         self._status_tasks = deque()  # from self._status_object_completed
         self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the plan instance from __call__
