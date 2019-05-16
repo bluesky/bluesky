@@ -15,9 +15,15 @@ import threading
 import weakref
 from .bundlers import RunBundler
 
+<<<<<<< HEAD
 import concurrent
 
 from event_model import DocumentNames, schema_validators
+=======
+import jsonschema
+from .log import doc_logger, msg_logger, status_logger
+from event_model import DocumentNames, schemas
+>>>>>>> ENH: New logging framework for bluesky
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
@@ -114,8 +120,11 @@ class LoggingPropertyMachine(PropertyMachine):
         with obj._state_lock:
             super().__set__(obj, value)
         value = self.__get__(obj, own)
-        obj.log.info("Change state on %r from %r -> %r",
-                     obj, old_value, value)
+        tags = {'old_status': old_value,
+                'direction': '--->>>',
+                'new_status': value}
+        status_logger.info("Change state on %r from %r -> %r",
+                           obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
 
@@ -310,7 +319,7 @@ class RunEngine:
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
-        logger_name = "bluesky.RE.{id}".format(id=id(self))
+        logger_name = 'bluesky.RE.{id}'.format(id=id(self))
         self.log = logging.getLogger(logger_name)
 
         if md is None:
@@ -1225,6 +1234,7 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
+<<<<<<< HEAD
         await self._run_permit.wait()
         # grab the current task.  We need to do this here because the
         # object returned by `run_coroutine_threadsafe` is a future
@@ -1234,6 +1244,10 @@ class RunEngine:
             self._task = current_task(self.loop)
         stashed_exception = None
         debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
+=======
+        debug = msg_logger.debug
+        pending_cancel_exception = None
+>>>>>>> ENH: New logging framework for bluesky
         self._reason = ''
         # sentinel to decide if need to add to the response stack or not
         sentinel = object()
@@ -1379,7 +1393,7 @@ class RunEngine:
                     # if we have a message hook, call it
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
-                    debug(msg)
+                    debug(msg, extra={'msg_command': msg.command})
 
                     # update the running set of all objects we have seen
                     self._objs_seen.add(msg.obj)
@@ -1587,6 +1601,7 @@ class RunEngine:
         # against users mutating the md with their validator.
         self.md_validator(dict(md))
 
+<<<<<<< HEAD
         current_run = self._run_bundlers[run_key] = RunBundler(
             md, self.record_interruptions, self.emit, self.emit_sync, self.log,
             loop=self.loop)
@@ -1596,6 +1611,28 @@ class RunEngine:
         return new_uid
 
     async def _close_run(self, msg):
+=======
+        doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
+        yield from self.emit(DocumentNames.start, doc)
+        doc_logger.debug("Emitted RunStart (uid=%r)", doc['uid'], extra={'doc_name': 'Start', 'doc_uid': doc['uid']})
+        yield from self._reset_checkpoint_state_coro()
+
+        # Emit an Event Descriptor for recording any interruptions as Events.
+        if self.record_interruptions:
+            self._interruptions_desc_uid = new_uid()
+            dk = {'dtype': 'string', 'shape': [], 'source': 'RunEngine'}
+            interruptions_desc = dict(time=ttime.time(),
+                                      uid=self._interruptions_desc_uid,
+                                      name='interruptions',
+                                      data_keys={'interruption': dk},
+                                      run_start=self._run_start_uid)
+            yield from self.emit(DocumentNames.descriptor, interruptions_desc)
+
+        return self._run_start_uid
+
+    @asyncio.coroutine
+    def _close_run(self, msg):
+>>>>>>> ENH: New logging framework for bluesky
         """Instruct the RunEngine to write the RunStop document
 
         Expected message object is:
@@ -1605,6 +1642,7 @@ class RunEngine:
         if *exit_stats* and *reason* are not provided, use the values
         stashed on the RE.
         """
+<<<<<<< HEAD
         # TODO extract this from the Msg
         run_key = _extract_run_key(msg)
         try:
@@ -1616,6 +1654,43 @@ class RunEngine:
         ret = (await current_run.close_run(msg))
         del self._run_bundlers[run_key]
         return ret
+=======
+        if not self._run_is_open:
+            raise IllegalMessageSequence("A 'close_run' message was received "
+                                         "but there is no run open. If this "
+                                         "occurred after a pause/resume, add "
+                                         "a 'checkpoint' message after the "
+                                         "'close_run' message.")
+        self.log.debug("Stopping run %r", self._run_start_uid)
+        # Clear any uncleared monitoring callbacks.
+        for obj, (cb, kwargs) in list(self._monitor_params.items()):
+            obj.clear_sub(cb)
+            del self._monitor_params[obj]
+        # Count the number of Events in each stream.
+        num_events = {}
+        for bundle_name, counter in self._sequence_counters.items():
+            if bundle_name is None:
+                # rare but possible via Msg('create', name='primary')
+                continue
+            num_events[bundle_name] = next(counter) - 1
+        reason = msg.kwargs.get('reason', None)
+        if reason is None:
+            reason = self._reason
+        exit_status = msg.kwargs.get('exit_status', None)
+        if exit_status is None:
+            exit_status = self._exit_status
+        doc = dict(run_start=self._run_start_uid,
+                   time=ttime.time(), uid=new_uid(),
+                   exit_status=exit_status,
+                   reason=reason,
+                   num_events=num_events)
+        self._clear_run_cache()
+        yield from self.emit(DocumentNames.stop, doc)
+        doc_logger.debug("Emitted RunStop (uid=%r)", doc['uid'],
+                         extra={'doc_name': 'Stop', 'doc_uid': doc['uid']})
+        yield from self._reset_checkpoint_state_coro()
+        return doc['run_start']
+>>>>>>> ENH: New logging framework for bluesky
 
     async def _create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
@@ -1725,6 +1800,7 @@ class RunEngine:
         except KeyError as ke:
             # sanity check -- this should be caught by 'create' which makes
             # this code path impossible
+<<<<<<< HEAD
             raise IllegalMessageSequence(
                 "A 'save' message was sent but no " "run is open."
             ) from ke
@@ -1732,6 +1808,101 @@ class RunEngine:
         await current_run.save(msg)
 
     async def _drop(self, msg):
+=======
+            raise IllegalMessageSequence("A 'save' message was sent but no "
+                                         "run is open.")
+        # Short-circuit if nothing has been read. (Do not create empty Events.)
+        if not self._objs_read:
+            self._bundling = False
+            self._bundle_name = None
+            return
+        # The Event Descriptor is uniquely defined by the set of objects
+        # read in this Event grouping.
+        objs_read = frozenset(self._objs_read)
+
+        # Event Descriptor documents
+        desc_key = self._bundle_name
+
+        # This is a separate check because it can be reset on resume.
+        seq_num_key = desc_key
+        if seq_num_key not in self._sequence_counters:
+            counter = count(1)
+            counter_copy1, counter_copy2 = tee(counter)
+            self._sequence_counters[seq_num_key] = counter_copy1
+            self._teed_sequence_counters[seq_num_key] = counter_copy2
+        self._bundling = False
+        self._bundle_name = None
+
+        d_objs, doc = self._descriptors.get(desc_key, (None, None))
+        if d_objs is not None and d_objs != objs_read:
+            raise RuntimeError("Mismatched objects read, expected {!s}, "
+                               "got {!s}".format(d_objs, objs_read))
+        if doc is None:
+            # We don't not have an Event Descriptor for this set.
+            data_keys = {}
+            config = {}
+            object_keys = {}
+            hints = {}
+            for obj in objs_read:
+                dks = self._describe_cache[obj]
+                name = obj.name
+                # dks is an OrderedDict. Record that order as a list.
+                object_keys[obj.name] = list(dks)
+                for field, dk in dks.items():
+                    dk['object_name'] = name
+                data_keys.update(dks)
+                config[name] = {}
+                config[name]['data'] = self._config_values_cache[obj]
+                config[name]['timestamps'] = self._config_ts_cache[obj]
+                config[name]['data_keys'] = self._config_desc_cache[obj]
+                if hasattr(obj, 'hints'):
+                    hints[name] = obj.hints
+            descriptor_uid = new_uid()
+            doc = dict(run_start=self._run_start_uid, time=ttime.time(),
+                       data_keys=data_keys, uid=descriptor_uid,
+                       configuration=config, name=desc_key,
+                       hints=hints, object_keys=object_keys)
+            yield from self.emit(DocumentNames.descriptor, doc)
+            doc_logger.debug("Emitted Event Descriptor with name %r containing "
+                             "data keys %r (uid=%r)", desc_key,
+                             data_keys.keys(), descriptor_uid,
+                             extra={'doc_name': 'Descriptor', 'doc_uid': descriptor_uid})
+            self._descriptors[desc_key] = (objs_read, doc)
+
+        descriptor_uid = doc['uid']
+
+        # Resource and Datum documents
+        for name, doc in self._asset_docs_cache:
+            # Add a 'run_start' field to the resource document on its way out.
+            if name == 'resource':
+                doc['run_start'] = self._run_start_uid
+            yield from self.emit(DocumentNames(name), doc)
+
+        # Event documents
+        seq_num = next(self._sequence_counters[seq_num_key])
+        event_uid = new_uid()
+        # Merge list of readings into single dict.
+        readings = {k: v for d in self._read_cache for k, v in d.items()}
+        for key in readings:
+            readings[key]['value'] = readings[key]['value']
+        data, timestamps = _rearrange_into_parallel_dicts(readings)
+        # Mark all externally-stored data as not filled so that consumers
+        # know that the corresponding data are identifies, not dereferenced
+        # data.
+        filled = {k: False
+                  for k, v in
+                  self._descriptors[desc_key][1]['data_keys'].items()
+                  if 'external' in v}
+        doc = dict(descriptor=descriptor_uid,
+                   time=ttime.time(), data=data, timestamps=timestamps,
+                   seq_num=seq_num, uid=event_uid, filled=filled)
+        yield from self.emit(DocumentNames.event, doc)
+        doc_logger.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
+                         event_uid, extra={'doc_name': 'Event', 'doc_uid': event_uid})
+
+    @asyncio.coroutine
+    def _drop(self, msg):
+>>>>>>> ENH: New logging framework for bluesky
         """Drop the event that is currently being bundled
 
         Expected message object is:
