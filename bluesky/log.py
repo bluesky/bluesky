@@ -1,6 +1,5 @@
 # The LogFormatter is adapted light from tornado, which is licensed under
 # Apache 2.0. See other_licenses/ in the repository directory.
-import fnmatch
 import logging
 import sys
 import warnings
@@ -15,8 +14,8 @@ except ImportError:
     curses = None
 
 __all__ = ('color_logs', 'config_bluesky_logging', 'get_handler',
-           'DocFilter', 'MsgFilter', 'StatusFilter', 'LogFormatter',
-           'set_handler', 'logger', 'status_logger', 'doc_logger', 'msg_logger')
+           'DocFilter', 'MsgFilter', 'StateFilter', 'LogFormatter',
+           'set_handler', 'logger', 'state_logger', 'doc_logger', 'msg_logger')
 
 
 def _stderr_supports_color():
@@ -45,8 +44,8 @@ class LogFormatter(logging.Formatter):
 
     * Color support when logging to a terminal that supports it.
     * Timestamps on every log line.
-    * Includes extra record attributes (pv, our_address, their_address,
-      direction, role) when present.
+    * Includes extra record attributes (old_state, new_state, msg_command,
+      doc_name, doc_uid) when present.
 
     """
     DEFAULT_FORMAT = \
@@ -104,12 +103,10 @@ class LogFormatter(logging.Formatter):
 
     def format(self, record):
         message = []
-        if hasattr(record, 'old_status'):
-            message.append('[%s]' % record.old_status)
-        if hasattr(record, 'direction'):
-            message.append('%s' % record.direction)
-        if hasattr(record, 'new_status'):
-            message.append('[%s]' % record.new_status)
+        if hasattr(record, 'old_state'):
+            message.append('[Old:%s]' % record.old_status)
+        if hasattr(record, 'new_state'):
+            message.append('[New:%s]' % record.new_status)
         if hasattr(record, 'msg_command'):
             message.append('[MSG: %s]' % record.msg_command)
         if hasattr(record, 'doc_name'):
@@ -154,8 +151,8 @@ def color_logs(color):
 
 logger = logging.getLogger('bluesky')
 doc_logger = logging.getLogger('bluesky.emit_document')
-msg_logger = logging.getLogger('bluesky.msg')
-status_logger = logging.getLogger('bluesky.status')
+msg_logger = logging.getLogger('bluesky.RE.msg')
+state_logger = logging.getLogger('bluesky.RE.state')
 current_handler = None
 
 
@@ -177,6 +174,8 @@ def validate_level(level) -> int:
 
 class DocFilter(logging.Filter):
     '''
+    Filter records below a given level by document type.
+
     Block any message that is lower than certain level except it related to target
     documents. You have option to choose whether env, config and misc message is exclusive
     or not.
@@ -184,7 +183,8 @@ class DocFilter(logging.Filter):
     Parameters
     ----------
     names : string or list of string
-        Name of document type list which will be filtered in, one of 'Start', 'Descriptor', 'Event' and 'Stop'.
+        Name of document type list which will be filtered in, one of 'start',
+        'descriptor', 'event', 'datum', 'resource' and 'stop'.
 
     level : str or int
         Represents the "barrier height" of this filter: any records with a
@@ -211,7 +211,7 @@ class DocFilter(logging.Filter):
             return True
         elif hasattr(record, 'doc_name'):
             for name in self.names:
-                if fnmatch.fnmatch(record.doc_name, name):
+                if record.doc_name is name:
                     return True
             return False
         else:
@@ -220,6 +220,8 @@ class DocFilter(logging.Filter):
 
 class MsgFilter(logging.Filter):
     '''
+    Filter records below a given level by msg command.
+
     Block any message that is lower than certain level except it related to target
     messages. You have option to choose whether env, config and misc message is
     exclusive or not.
@@ -245,8 +247,8 @@ class MsgFilter(logging.Filter):
     passes : bool
     '''
 
-    def __init__(self, *names, level='WARNING', exclusive=False):
-        self.names = names
+    def __init__(self, *commands, level='WARNING', exclusive=False):
+        self.commands = commands
         self.levelno = validate_level(level)
         self.exclusive = exclusive
 
@@ -254,16 +256,18 @@ class MsgFilter(logging.Filter):
         if record.levelno >= self.levelno:
             return True
         elif hasattr(record, 'msg_command'):
-            for name in self.names:
-                if fnmatch.fnmatch(record.msg_command, name):
+            for command in self.commands:
+                if record.msg_command is command:
                     return True
             return False
         else:
             return not self.exclusive
 
 
-class StatusFilter(logging.Filter):
+class StateFilter(logging.Filter):
     '''
+    Filter records below a given level by RE state.
+
     Block any message that is lower than certain level except it related to target
     role. You have option to choose whether env, config and misc message is
     exclusive or not
@@ -296,9 +300,9 @@ class StatusFilter(logging.Filter):
     def filter(self, record):
         if record.levelno >= self.levelno:
             return True
-        elif hasattr(record, 'old_status'):
+        elif hasattr(record, 'old_state'):
             for name in self.names:
-                if fnmatch.fnmatch(record.old_status, name) or fnmatch.fnmatch(record.new_status, name):
+                if name in [record.new_state, record.old_state]:
                     return True
             return False
         else:
