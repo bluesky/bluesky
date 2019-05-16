@@ -6,4 +6,3 @@ def test_blueskyversion(RE):
 
 def test_ophydversion(RE):
     assert RE.md['versions'].get('ophyd') == ophyd.__version__
-
