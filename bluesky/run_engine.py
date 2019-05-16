@@ -234,7 +234,7 @@ class RunEngine:
             import ophyd
             self.md['versions']['ophyd'] = ophyd.__version__
         except ImportError:
-            self.log.debug("Failed to import ophyd.__version__.")
+            self.log.debug("Failed to import ophyd.")
 
         from ._version import get_versions
         self.md['versions']['bluesky'] = get_versions()['version']
