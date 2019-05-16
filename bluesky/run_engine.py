@@ -1867,7 +1867,7 @@ class RunEngine:
             doc_logger.debug("Emitted Event Descriptor with name %r containing "
                              "data keys %r (uid=%r)", desc_key,
                              data_keys.keys(), descriptor_uid,
-                             extra={'doc_name': 'Descriptor', 'doc_uid': descriptor_uid})
+                             extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
             self._descriptors[desc_key] = (objs_read, doc)
 
         descriptor_uid = doc['uid']
