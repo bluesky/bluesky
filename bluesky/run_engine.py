@@ -1899,7 +1899,7 @@ class RunEngine:
                    seq_num=seq_num, uid=event_uid, filled=filled)
         yield from self.emit(DocumentNames.event, doc)
         doc_logger.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
-                         event_uid, extra={'doc_name': 'Event', 'doc_uid': event_uid})
+                         event_uid, extra={'doc_name': 'event', 'doc_uid': event_uid})
 
     @asyncio.coroutine
     def _drop(self, msg):
