@@ -85,6 +85,7 @@ def test_noninterfering_handlers():
     debug_handler.setLevel('DEBUG')
 
     log = logging.getLogger('bluesky')
+    log.setLevel('DEBUG')
     assert log.getEffectiveLevel() == 10
     sub_log = logging.getLogger('bluesky.test')
     log.addHandler(info_handler)
