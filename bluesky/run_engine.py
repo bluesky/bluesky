@@ -1688,7 +1688,7 @@ class RunEngine:
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
         doc_logger.debug("Emitted RunStop (uid=%r)", doc['uid'],
-                         extra={'doc_name': 'Stop', 'doc_uid': doc['uid']})
+                         extra={'doc_name': 'stop', 'doc_uid': doc['uid']})
         yield from self._reset_checkpoint_state_coro()
         return doc['run_start']
 >>>>>>> ENH: New logging framework for bluesky
