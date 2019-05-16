@@ -1614,7 +1614,8 @@ class RunEngine:
 =======
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
         yield from self.emit(DocumentNames.start, doc)
-        doc_logger.debug("Emitted RunStart (uid=%r)", doc['uid'], extra={'doc_name': 'Start', 'doc_uid': doc['uid']})
+        doc_logger.debug("Emitted RunStart (uid=%r)", doc['uid'],
+        extra={'doc_name': 'start', 'doc_uid': doc['uid']})
         yield from self._reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
