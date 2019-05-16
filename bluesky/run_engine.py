@@ -13,7 +13,7 @@ import inspect
 from contextlib import ExitStack
 
 import jsonschema
-from .log import doc_logger, msg_logger, status_logger
+from .log import doc_logger, msg_logger, state_logger
 from event_model import DocumentNames, schemas
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
@@ -82,7 +82,7 @@ class LoggingPropertyMachine(PropertyMachine):
         tags = {'old_status': old_value,
                 'direction': '--->>>',
                 'new_status': value}
-        status_logger.info("Change state on %r from %r -> %r",
+        state_logger.info("Change state on %r from %r -> %r",
                            obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
@@ -1590,9 +1590,10 @@ class RunEngine:
                         data_keys=data_keys, uid=descriptor_uid,
                         configuration=config, hints=hints, name=name,
                         object_keys=object_keys)
-        self.log.debug("Emitted Event Descriptor with name %r containing "
-                       "data keys %r (uid=%r)", name, data_keys.keys(),
-                       descriptor_uid)
+        doc_logger.debug("Emitted Event Descriptor with name %r containing "
+                         "data keys %r (uid=%r)", name, data_keys.keys(),
+                         descriptor_uid,
+                         extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
         seq_num_counter = count(1)
 
         def emit_event(*args, **kwargs):
@@ -1897,9 +1898,10 @@ class RunEngine:
                            name=stream_name, hints=hints,
                            object_keys=object_keys)
                 yield from self.emit(DocumentNames.descriptor, doc)
-                self.log.debug("Emitted Event Descriptor with name %r "
-                               "containing data keys %r (uid=%r)", stream_name,
-                               data_keys.keys(), descriptor_uid)
+                doc_logger.debug("Emitted Event Descriptor with name %r "
+                                 "containing data keys %r (uid=%r)", stream_name,
+                                 data_keys.keys(), descriptor_uid,
+                                 extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
                 self._descriptors[desc_key] = (objs_read, doc)
                 self._sequence_counters[desc_key] = count(1)
             else:
@@ -1933,16 +1935,18 @@ class RunEngine:
             ev['uid'] = event_uid
 
             if stream:
-                self.log.debug("Emitted Event with data keys %r (uid=%r)",
-                               ev['data'].keys(), ev['uid'])
+                doc_logger.debug("Emitted Event with data keys %r (uid=%r)",
+                                 ev['data'].keys(), ev['uid'],
+                                 event_uid, extra={'doc_name': 'event', 'doc_uid': ev['uid']})
                 yield from self.emit(DocumentNames.event, ev)
             else:
                 bulk_data[descriptor_uid].append(ev)
 
         if not stream:
             yield from self.emit(DocumentNames.bulk_events, bulk_data)
-            self.log.debug("Emitted bulk events for descriptors with uids "
-                           "%r", bulk_data.keys())
+            doc_logger.debug("Emitted bulk events for descriptors with uids "
+                           "%r", bulk_data.keys(),
+                           extra={'doc_name': 'bulk_events'})
 
     @asyncio.coroutine
     def _null(self, msg):
