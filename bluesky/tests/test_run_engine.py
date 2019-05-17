@@ -31,6 +31,11 @@ def test_states():
                                                      'paused']
 
 
+def test_state_is_readonly(RE):
+    with pytest.raises(AttributeError):
+        RE.state = 'running'
+
+
 def test_verbose(RE, hw):
     RE.verbose = True
     assert RE.verbose
