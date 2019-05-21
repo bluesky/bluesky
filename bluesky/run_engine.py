@@ -1020,28 +1020,26 @@ class RunEngine:
             explanation of why the suspension has been requested
 
         """
-        if not self.resumable:
-            # TODO fix race condition here!
-            print("No checkpoint; cannot suspend.")
-            print("Aborting: running cleanup and marking "
-                  "exit_status as 'abort'...")
-            self._interrupted = True
-            with self._state_lock:
-                self._exception = FailedPause()
-            was_paused = self._state == 'paused'
-            self._state = 'aborting'
-            if was_paused:
-                with self._state_lock:
-                    self._exception = RequestAbort()
-                self._resume_task()
-            else:
-                self.loop.call_soon_threadsafe(self._task.cancel)
 
         print("Suspending....To get prompt hit Ctrl-C twice to pause.")
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print("Suspension occurred at {}.".format(ts))
 
         async def _request_suspend(pre_plan, post_plan, justification):
+            if not self.resumable:
+                print("No checkpoint; cannot suspend.")
+                print("Aborting: running cleanup and marking "
+                      "exit_status as 'abort'...")
+                self._interrupted = True
+                with self._state_lock:
+                    self._exception = FailedPause()
+                was_paused = self._state == 'paused'
+                self._state = 'aborting'
+                if was_paused:
+                    self._resume_task()
+                else:
+                    self._task.cancel()
+
             if justification is not None:
                 print("Justification for this suspension:\n%s" % justification)
             self._record_interruption('suspend')
@@ -1306,6 +1304,7 @@ class RunEngine:
                     # side of the yield in the plan will be moved past
                     resp = self._response_stack.pop()
                     # if any status tasks have failed, grab the exceptions.
+                    # give priority to things pushed in from outside
                     with self._state_lock:
                         if self._exception is not None:
                             stashed_exception = self._exception
