@@ -14,10 +14,9 @@ def RE(request):
     def clean_event_loop():
         if RE.state != 'idle':
             RE.halt()
-        ev = asyncio.Event(loop=loop)
-        ev.set()
-        task = asyncio.run_coroutine_threadsafe(ev.wait(), loop=loop)
-        task.result()
+        loop.call_soon_threadsafe(loop.stop)
+        RE._th.join()
+        loop.close()
 
     request.addfinalizer(clean_event_loop)
     return RE
