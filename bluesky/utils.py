@@ -162,7 +162,7 @@ class SignalHandler:
                 self.release()
                 orig_func(signum, frame)
 
-            self.check_for_signals()
+            self.handle_signals()
 
         signal.signal(self.sig, handler)
         return self
@@ -177,7 +177,7 @@ class SignalHandler:
         self.released = True
         return True
 
-    def check_for_signals(self):
+    def handle_signals(self):
         ...
 
 
@@ -189,44 +189,40 @@ class SigintHandler(SignalHandler):
         self.num_sigints_processed = 0  # count SIGINTs processed
 
     def __enter__(self):
-        loop = self.RE.loop
         return super().__enter__()
 
-    def check_for_signals(self):
+    def handle_signals(self):
         # Check for pause requests from keyboard.
+        # TODO, there is a possible race condition between the two
+        # pauses here
         if self.RE.state.is_running and (not self.RE._interrupted):
-            if self.count > self.num_sigints_processed:
-                self.num_sigints_processed = self.count
-                self.log.debug("RunEngine caught a new SIGINT")
-                self.last_sigint_time = time.time()
+            if (self.last_sigint_time is None or
+                    time.time() - self.last_sigint_time > 10):
+                # reset the counter to 1
+                # It's been 10 seconds since the last SIGINT. Reset.
+                self.count = 1
+                if self.last_sigint_time is not None:
+                    self.log.debug("It has been 10 seconds since the "
+                                   "last SIGINT. Resetting SIGINT "
+                                   "handler.")
+                # weeee push these to threads to not block the main thread
+                threading.Thread(target=self.RE.request_pause,
+                                 args=(True,)).start()
+                print("A 'deferred pause' has been requested. The "
+                      "RunEngine will pause at the next checkpoint. "
+                      "To pause immediately, hit Ctrl+C again in the "
+                      "next 10 seconds.")
 
-                if self.count == 1:
-                    # Ctrl-C once -> request a deferred pause
-                    if not self.RE._deferred_pause_requested:
-                        self.RE.loop.call_soon_threadsafe(
-                            self.RE.request_pause, True)
-                        print("A 'deferred pause' has been requested. The "
-                              "RunEngine will pause at the next checkpoint. "
-                              "To pause immediately, hit Ctrl+C again in the "
-                              "next 10 seconds.")
-                elif self.count > 1:
-                    # - Ctrl-C twice within 10 seconds -> hard pause
-                    self.log.debug("RunEngine detected two SIGINTs. "
-                                   "A hard pause will be requested.")
-                    self.RE.loop.call_soon_threadsafe(
-                        self.RE.request_pause, False)
-            else:
-                # No new SIGINTs to process.
-                if self.num_sigints_processed > 0:
-                    if time.time() - self.last_sigint_time > 10:
-                        self.log.debug("It has been 10 seconds since the "
-                                       "last SIGINT. Resetting SIGINT "
-                                       "handler.")
-                        # It's been 10 seconds since the last SIGINT. Reset.
-                        self.num_sigints_processed = 0
-                        self.count = 0
-                        self.interrupted = False
-                        self.last_sigint_time = None
+                self.last_sigint_time = time.time()
+            elif self.count == 2:
+                print('trying a second time')
+                # - Ctrl-C twice within 10 seconds -> hard pause
+                self.log.debug("RunEngine detected two SIGINTs. "
+                               "A hard pause will be requested.")
+
+                threading.Thread(target=self.RE.request_pause,
+                                 args=(False,)).start()
+            self.last_sigint_time = time.time()
 
 
 class CallbackRegistry:
