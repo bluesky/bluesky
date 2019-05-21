@@ -1211,9 +1211,10 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
-        # grab the current task.  We need to do this here because the object
-        # returned by `run_coroutine_threadsafe` is a future that acts as a proxy
-        # that does not have the correct behavior when `.cancel` is called on it.
+        # grab the current task.  We need to do this here because the
+        # object returned by `run_coroutine_threadsafe` is a future
+        # that acts as a proxy that does not have the correct behavior
+        # when `.cancel` is called on it.
         with self._state_lock:
             self._task = current_task(self.loop)
         stashed_exception = None
