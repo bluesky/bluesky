@@ -288,8 +288,8 @@ class RunEngine:
         self._blocking_event = threading.Event()
 
         # When cleared, RunEngine._run will pause until set.
-        self._run_permit = threading.Event()
-        self._run_permit.set()
+        self._run_permit = asyncio.Event(loop=loop)
+        self.loop.call_soon_threadsafe(self._run_permit.set)
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -929,7 +929,7 @@ class RunEngine:
                 return
 
             # The _run task is waiting on this Event. Let is continue.
-            self._run_permit.set()
+            self.loop.call_soon_threadsafe(self._run_permit.set)
             try:
                 # Block until plan is complete or exception is raised.
                 self._during_task(self._blocking_event)
@@ -1052,9 +1052,7 @@ class RunEngine:
                     self._exception = FailedPause()
                 was_paused = self._state == 'paused'
                 self._state = 'aborting'
-                if was_paused:
-                    self._resume_task()
-                else:
+                if not was_paused:
                     self._task.cancel()
 
             if justification is not None:
@@ -1296,22 +1294,8 @@ class RunEngine:
                     self._state = 'paused'
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
-                    # ...and wait here until
-                    # RunEngine.{resume|stop|abort|halt} is called.
-                    bridge_event = asyncio.Event()
 
-                    async def set_bridge_event():
-                        bridge_event.set()
-
-                    def unblock_bridge():
-                        self._run_permit.wait()
-                        asyncio.run_coroutine_threadsafe(set_bridge_event(),
-                                                         loop=self.loop)
-
-                    threading.Thread(target=unblock_bridge,
-                                     daemon=True).start()
-
-                    await bridge_event.wait()
+                    await self._run_permit.wait()
                     if self._state == 'paused':
                         # may be called by 'resume', 'stop', 'abort', 'halt'
                         self._state = 'running'
