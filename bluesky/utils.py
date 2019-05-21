@@ -1273,7 +1273,7 @@ def merge_cycler(cyc):
     return reduce(operator.add, output_data)
 
 
-def run_matplotlib_qApp(blocking_event):
+def dflt_during_task(blocking_event):
     """
     The default setting for the RunEngine's during_task parameter.
 
@@ -1299,13 +1299,13 @@ def run_matplotlib_qApp(blocking_event):
             # We are using matplotlib with Qt.
             # When the function is run for the first time, _create_qApp and
             # stash it as state *on* the function itself.
-            if run_matplotlib_qApp.qApp_instance is None:
+            if dflt_during_task.qApp_instance is None:
                 import matplotlib.backends.backend_qt5
                 matplotlib.backends.backend_qt5._create_qApp()
-                run_matplotlib_qApp.qApp_instance = \
+                dflt_during_task.qApp_instance = \
                     matplotlib.backends.backend_qt5.qApp
 
-            qApp = run_matplotlib_qApp.qApp_instance
+            qApp = dflt_during_task.qApp_instance
             from matplotlib.backends.qt_compat import QtCore
 
             def start_killer_thread():
@@ -1408,4 +1408,4 @@ def run_matplotlib_qApp(blocking_event):
 
 # We stash some private state *on* the function here and refer to it in the
 # function body.
-run_matplotlib_qApp.qApp_instance = None
+dflt_during_task.qApp_instance = None
