@@ -109,7 +109,9 @@ def test_deferred_pause1(RE):
 
 def test_deferred_pause2(RE):
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('pause', defer=True),
+        RE([Msg('pause', defer=True),
+            Msg('checkpoint'),
+            Msg('pause', defer=True),
             Msg('checkpoint')])
     assert RE.state == 'paused'
     with pytest.raises(RunEngineInterrupted):
