@@ -675,21 +675,38 @@ class RunEngine:
             If True, pause at the next checkpoint.
             False by default.
         """
+        coro_event = threading.Event()
+        task = None
+
+        def end_cb(fut):
+            coro_event.set()
+
+        def start_task():
+            nonlocal task
+            task = self.loop.create_task(self._request_pause_coro(defer))
+            task.add_done_callback(end_cb)
+
+        self.loop.call_soon_threadsafe(start_task)
+
+        coro_event.wait()
+        return task.result()
+
+    async def _request_pause_coro(self, defer=False):
+        # We are pausing. Cancel any deferred pause previously requested.
         if defer:
             self._deferred_pause_requested = True
             print("Deferred pause acknowledged. Continuing to checkpoint.")
             return
 
-        # We are pausing. Cancel any deferred pause previously requested.
+        print("Pausing...")
+
         self._deferred_pause_requested = False
         self._interrupted = True
-        print("Pausing...")
         self._state = 'pausing'
 
         self._record_interruption('pause')
 
-        with self._state_lock:
-            self.loop.call_soon_threadsafe(self._task.cancel)
+        self._task.cancel()
 
     def _record_interruption(self, content):
         """
@@ -2281,7 +2298,7 @@ class RunEngine:
         See RunEngine.request_pause() docstring for explanation of the three
         keyword arguments in the `Msg` signature
         """
-        self.request_pause(*msg.args, **msg.kwargs)
+        await self._request_pause_coro(*msg.args, **msg.kwargs)
 
     async def _resume(self, msg):
         """Request the run engine to resume
@@ -2320,7 +2337,7 @@ class RunEngine:
             # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
             await asyncio.sleep(0.5, loop=self.loop)
-            self.request_pause(defer=False)
+            await self._request_pause_coro(defer=False)
 
     def _reset_checkpoint_state(self):
         self._reset_checkpoint_state_meth()
