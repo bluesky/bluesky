@@ -11,6 +11,24 @@ from ..run_engine import Dispatcher
 from ..utils import new_uid
 
 
+def is_array(checker, instance):
+    return (
+        jsonschema.validators.Draft7Validator.TYPE_CHECKER.is_type(instance, 'array') or
+        isinstance(instance, tuple)
+    )
+
+
+array_type_checker = jsonschema.validators.Draft7Validator.TYPE_CHECKER.redefine('array', is_array)
+
+
+_Validator = jsonschema.validators.extend(
+    jsonschema.validators.Draft7Validator,
+    type_checker=array_type_checker)
+
+
+schema_validators = {name: _Validator(schema=schema) for name, schema in schemas.items()}
+
+
 class LiveDispatcher(CallbackBase):
     """
     A secondary event stream of processed data
@@ -197,7 +215,7 @@ class LiveDispatcher(CallbackBase):
 
     def emit(self, name, doc):
         """Check the document schema and send to the dispatcher"""
-        jsonschema.validate(doc, schemas[name])
+        schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)
 
     def subscribe(self, func, name='all'):

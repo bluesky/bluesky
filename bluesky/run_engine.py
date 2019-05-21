@@ -25,7 +25,23 @@ from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
                     single_gen, short_uid)
 
-_validate = functools.partial(jsonschema.validate, types={'array': (list, tuple)})
+
+def is_array(checker, instance):
+    return (
+        jsonschema.validators.Draft7Validator.TYPE_CHECKER.is_type(instance, 'array') or
+        isinstance(instance, tuple)
+    )
+
+
+array_type_checker = jsonschema.validators.Draft7Validator.TYPE_CHECKER.redefine('array', is_array)
+
+
+_Validator = jsonschema.validators.extend(
+    jsonschema.validators.Draft7Validator,
+    type_checker=array_type_checker)
+
+
+schema_validators = {name: _Validator(schema=schema) for name, schema in schemas.items()}
 
 
 class RunEngineStateMachine(StateMachine):
@@ -658,7 +674,7 @@ class RunEngine:
                        seq_num=next(self._interruptions_counter),
                        data={'interruption': content},
                        timestamps={'interruption': ttime.time()})
-            _validate(doc, schemas[DocumentNames.event])
+            schema_validators[DocumentNames.event].validate(doc)
             self.dispatcher.process(DocumentNames.event, doc)
 
     def __call__(self, *args, **metadata_kw):
@@ -1612,7 +1628,7 @@ class RunEngine:
             doc = dict(descriptor=descriptor_uid,
                        time=ttime.time(), data=data, timestamps=timestamps,
                        seq_num=next(seq_num_counter), uid=new_uid())
-            _validate(doc, schemas[DocumentNames.event])
+            schema_validators[DocumentNames.event].validate(doc)
             self.dispatcher.process(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
@@ -2342,7 +2358,7 @@ class RunEngine:
     @asyncio.coroutine
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
-        _validate(doc, schemas[name])
+        schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)
 
 
