@@ -1235,8 +1235,10 @@ class RunEngine:
         with self._state_lock:
             self._exception = PlanHalt()
             self._exit_status = 'abort'
+        was_paused = self._state == 'paused'
         self._state = 'halting'
-        self._task.cancel()
+        if not was_paused:
+            self._task.cancel()
         return tuple(self._run_start_uids)
 
     def _stop_movable_objects(self, *, success=True):
@@ -1323,6 +1325,7 @@ class RunEngine:
 
                     threading.Thread(target=unblock_bridge,
                                      daemon=True).start()
+
                     await bridge_event.wait()
                     if self._state == 'paused':
                         # may be called by 'resume', 'stop', 'abort', 'halt'
