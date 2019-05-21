@@ -1,5 +1,5 @@
 import asyncio
-from bluesky.run_engine import RunEngine
+from bluesky.run_engine import RunEngine, TransitionError
 import numpy as np
 import os
 import pytest
@@ -13,7 +13,10 @@ def RE(request):
 
     def clean_event_loop():
         if RE.state != 'idle':
-            RE.halt()
+            try:
+                RE.halt()
+            except TransitionError:
+                pass
         loop.call_soon_threadsafe(loop.stop)
         RE._th.join()
         loop.close()
