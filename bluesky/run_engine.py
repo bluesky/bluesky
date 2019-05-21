@@ -1188,6 +1188,26 @@ class RunEngine:
         :meth:`RunEngine.abort`
         :meth:`RunEngine.stop`
         '''
+        coro_event = threading.Event()
+        task = None
+
+        def end_cb(fut):
+            coro_event.set()
+
+        def start_task():
+            nonlocal task
+            task = self.loop.create_task(self._halt())
+            task.add_done_callback(end_cb)
+
+        was_paused = self._state == 'paused'
+        self.loop.call_soon_threadsafe(start_task)
+        coro_event.wait()
+        if was_paused:
+            self._resume_task()
+
+        return task.result()
+
+    async def _halt(self):
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Halting: skipping cleanup and marking exit_status as "
@@ -1196,11 +1216,8 @@ class RunEngine:
         with self._state_lock:
             self._exception = PlanHalt()
             self._exit_status = 'abort'
-        was_paused = self._state == 'paused'
         self._state = 'halting'
-        self.loop.call_soon_threadsafe(self._task.cancel)
-        if was_paused:
-            self._resume_task()
+        self._task.cancel()
         return tuple(self._run_start_uids)
 
     def _stop_movable_objects(self, *, success=True):
@@ -1436,7 +1453,7 @@ class RunEngine:
                     print("An unknown external library has improperly raised "
                           "KeyboardInterrupt. Intercepting and triggering "
                           "a HALT.")
-                    self.loop.call_soon(self.halt)
+                    await self._halt()
                 except asyncio.CancelledError as e:
                     if self._state == 'pausing':
                         # if we got a CancelledError and we are in the
