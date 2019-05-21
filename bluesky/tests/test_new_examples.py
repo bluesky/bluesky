@@ -60,7 +60,7 @@ from bluesky.plans import count, scan, rel_scan, inner_product_scan
 import bluesky.plans as bp
 
 from bluesky.utils import all_safe_rewind
-from .utils import _delayed_partial
+
 import threading
 
 

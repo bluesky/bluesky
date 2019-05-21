@@ -17,7 +17,6 @@ from numpy.testing import assert_array_equal
 import time
 import threading
 from functools import partial
-from .utils import _delayed_partial
 
 
 def test_msgs(RE, hw):
@@ -296,9 +295,9 @@ def test_suspend(RE, hw):
     def ev_cb(name, ev):
         out.append(ev)
     # trigger the suspend right after the check point
-    threading.Thread(target=_delayed_partial(local_suspend, .1)).start()
+    threading.Timer(.1, local_suspend).start()
     # wait a second and then resume
-    threading.Thread(target=_delayed_partial(resume_cb, 1)).start()
+    threading.Timer(1, resume_cb).start()
     # grab the start time
     start = ttime.time()
     # run, this will not return until it is done
@@ -358,9 +357,9 @@ def test_pause_abort(RE):
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    threading.Thread(target=_delayed_partial(sim_kill, .1)).start()
-    threading.Thread(target=_delayed_partial(sim_kill, .2)).start()
-    threading.Thread(target=_delayed_partial(done, 1)).start()
+    threading.Timer(.1, sim_kill).start()
+    threading.Timer(.2, sim_kill).start()
+    threading.Timer(1, done).start()
 
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
@@ -389,9 +388,9 @@ def test_abort(RE):
     scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    threading.Thread(target=_delayed_partial(sim_kill, .1)).start()
-    threading.Thread(target=_delayed_partial(sim_kill, .2)).start()
-    threading.Thread(target=_delayed_partial(done, .4)).start()
+    threading.Timer(.1, sim_kill).start()
+    threading.Timer(.2, sim_kill).start()
+    threading.Timer(.4, done).start()
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
     stop = ttime.time()
@@ -604,15 +603,14 @@ def test_failed_status_object(RE):
     class failer:
         def set(self, inp):
             st = StatusBase()
-            threading.Thread(target=_delayed_partial(
-                lambda: st._finished(success=False), 1)).start()
+            threading.Timer(1, st._finished,
+                            kwargs=dict(success=False)).start()
             return st
 
         def trigger(self):
             st = StatusBase()
-            threading.Thread(
-                target=_delayed_partial(
-                    lambda: st._finished(success=False), 1)).start()
+            threading.Timer(1, st._finished,
+                            kwargs=dict(success=False)).start()
             return st
 
         def stop(self, *, success=False):

@@ -23,7 +23,7 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    run_wrapper, rewindable_wrapper,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
-from .utils import _delayed_partial
+
 
 
 def test_states():
@@ -524,10 +524,8 @@ def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
 
     ev = asyncio.Event(loop=loop)
 
-    threading.Thread(
-        target=_delayed_partial(
-            partial(RE.request_suspend, fut=ev.wait),
-            .5)).start()
+    threading.Timer(.5, RE.request_suspend,
+                    kwargs=dict(fut=ev.wait)).start()
 
     def verbose_set():
         print('seting')

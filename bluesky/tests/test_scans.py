@@ -6,7 +6,7 @@ import time as ttime
 import numpy as np
 import numpy.testing
 import pytest
-from .utils import _delayed_partial
+
 
 
 def test_scan_num(RE, hw):

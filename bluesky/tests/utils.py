@@ -45,12 +45,3 @@ class DocCollector:
             self.event[doc['uid']] = []
         else:
             self.event[doc['descriptor']].append(doc)
-
-
-def _delayed_partial(func, delay):
-    @wraps(func)
-    def inner():
-        time.sleep(delay)
-        return func()
-
-    return inner
