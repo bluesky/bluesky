@@ -2,10 +2,58 @@ from collections import ChainMap
 from cycler import cycler
 import numpy as np
 import warnings
-
+import functools
 from .core import CallbackBase, get_obj_fields
 
 
+try:
+    from matplotlib.backends.qt_compat import QtCore
+
+    class Teleporter(QtCore.QObject):
+        name_doc = QtCore.Signal(str, dict)
+except ImportError:
+    Teleporter = None
+
+
+def _maybe_use_teleporter(cls):
+    orig_init = cls.__init__
+    orig_call = cls.__call__
+
+    cls_name = cls.__name__
+
+    @functools.wraps(orig_init)
+    def __init__(self, *args, maybe_use_teleporter=True, **kwargs):
+        orig_init(self, *args, **kwargs)
+        self._orig_init = orig_init
+        self._orig_call = orig_call
+        if Teleporter is not None and maybe_use_teleporter:
+            if not hasattr(self, '__teleporters'):
+                self.__teleporters = {}
+
+            def inner_func(name, doc):
+                orig_call(self, name, doc)
+
+            teleporter = Teleporter()
+            teleporter.name_doc.connect(inner_func)
+
+            self.__teleporters[cls_name] = teleporter
+        else:
+            self.__teleporter = None
+
+    @functools.wraps(orig_call)
+    def __call__(self, name, doc):
+        if hasattr(self, '__teleporters'):
+            self.__teleporters[cls_name].name_doc.emit(name, doc)
+        else:
+            return orig_call(self, name, doc)
+
+    cls.__init__ = __init__
+    cls.__call__ = __call__
+
+    return cls
+
+
+@_maybe_use_teleporter
 class LivePlot(CallbackBase):
     """
     Build a function that updates a plot from a stream of Events.
@@ -156,6 +204,7 @@ class LivePlot(CallbackBase):
         super().stop(doc)
 
 
+@_maybe_use_teleporter
 class LiveScatter(CallbackBase):
     """Plot scattered 2D data in a "heat map".
 
@@ -278,6 +327,7 @@ class LiveMesh(LiveScatter):
         super().__init__(*args, **kwargs)
 
 
+@_maybe_use_teleporter
 class LiveGrid(CallbackBase):
     """Plot gridded 2D data in a "heat map".
 
@@ -430,6 +480,7 @@ class LiveRaster(LiveGrid):
         super().__init__(*args, **kwargs)
 
 
+@_maybe_use_teleporter
 class LiveFitPlot(LivePlot):
     """
     Add a plot to an instance of LiveFit.

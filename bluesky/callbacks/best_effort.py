@@ -17,10 +17,11 @@ from warnings import warn
 import weakref
 
 from .core import CallbackBase, LiveTable
-from .mpl_plotting import LivePlot, LiveGrid, LiveScatter
+from .mpl_plotting import LivePlot, LiveGrid, LiveScatter, _maybe_use_teleporter
 from .fitting import PeakStats
 
 
+@_maybe_use_teleporter
 class BestEffortCallback(CallbackBase):
     def __init__(self, *, fig_factory=None, table_enabled=True):
         # internal state
@@ -89,7 +90,6 @@ class BestEffortCallback(CallbackBase):
         if not (self._table_enabled or self._baseline_enabled or
                 self._plots_enabled):
             return
-
         super().__call__(name, doc)
 
     def start(self, doc):
