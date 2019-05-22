@@ -814,21 +814,24 @@ class RunEngine:
         if futs:
             self._plan_stack.append(single_gen(Msg('wait_for', None, futs)))
             self._response_stack.append(None)
+        self.log.info("Executing plan %r", self._plan)
 
-        # Handle all context managers
-        with ExitStack() as stack:
-            for mgr in self.context_managers:
-                stack.enter_context(mgr(self))
-
-            self._blocking_event.clear()
-            self.log.info("Executing plan %r", self._plan)
+        def _build_task():
             self._task_fut = asyncio.run_coroutine_threadsafe(self._run(),
                                                               loop=self.loop)
 
             def set_blocking_event(future):
                 self._blocking_event.set()
 
+            self._blocking_event.clear()
             self._task_fut.add_done_callback(set_blocking_event)
+
+        # Handle all context managers
+        with ExitStack() as stack:
+            for mgr in self.context_managers:
+                stack.enter_context(mgr(self))
+
+            _build_task()
 
             try:
                 # Block until plan is complete or exception is raised.
