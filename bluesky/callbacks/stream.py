@@ -2,31 +2,12 @@ import logging
 import time as ttime
 from collections import Iterable, ChainMap
 
-import jsonschema
 import numpy as np
-from event_model import DocumentNames, schemas
+from event_model import DocumentNames, schema_validators
 
 from .core import CallbackBase
 from ..run_engine import Dispatcher
 from ..utils import new_uid
-
-
-def is_array(checker, instance):
-    return (
-        jsonschema.validators.Draft7Validator.TYPE_CHECKER.is_type(instance, 'array') or
-        isinstance(instance, tuple)
-    )
-
-
-array_type_checker = jsonschema.validators.Draft7Validator.TYPE_CHECKER.redefine('array', is_array)
-
-
-_Validator = jsonschema.validators.extend(
-    jsonschema.validators.Draft7Validator,
-    type_checker=array_type_checker)
-
-
-schema_validators = {name: _Validator(schema=schema) for name, schema in schemas.items()}
 
 
 class LiveDispatcher(CallbackBase):

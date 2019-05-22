@@ -12,8 +12,7 @@ import functools
 import inspect
 from contextlib import ExitStack
 
-import jsonschema
-from event_model import DocumentNames, schemas
+from event_model import DocumentNames, schema_validators
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
@@ -24,24 +23,6 @@ from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
                     single_gen, short_uid)
-
-
-def is_array(checker, instance):
-    return (
-        jsonschema.validators.Draft7Validator.TYPE_CHECKER.is_type(instance, 'array') or
-        isinstance(instance, tuple)
-    )
-
-
-array_type_checker = jsonschema.validators.Draft7Validator.TYPE_CHECKER.redefine('array', is_array)
-
-
-_Validator = jsonschema.validators.extend(
-    jsonschema.validators.Draft7Validator,
-    type_checker=array_type_checker)
-
-
-schema_validators = {name: _Validator(schema=schema) for name, schema in schemas.items()}
 
 
 class RunEngineStateMachine(StateMachine):
