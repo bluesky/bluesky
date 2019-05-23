@@ -27,16 +27,24 @@ def _maybe_use_teleporter(cls):
         _orig_call = orig_call
         if not hasattr(self, '__teleporters'):
             self.__teleporters = {}
+        if not hasattr(self, '__slots'):
+            self.__slots = {}
 
         if Teleporter is not None and maybe_use_teleporter:
 
-            def inner_func(name, doc, *, target=self):
-                _orig_call(target, name, doc)
+            def make_slot(target):
+
+                def inner_func(name, doc):
+                    _orig_call(target, name, doc)
+
+                return inner_func
 
             teleporter = Teleporter()
-            teleporter.name_doc.connect(inner_func)
+            slot = make_slot(self)
+            teleporter.name_doc.connect(slot)
 
             self.__teleporters[cls_name] = teleporter
+            self.__slots[cls_name] = slot
 
     @functools.wraps(orig_call)
     def __call__(self, name, doc):
