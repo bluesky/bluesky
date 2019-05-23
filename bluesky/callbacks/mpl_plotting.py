@@ -30,8 +30,8 @@ def _maybe_use_teleporter(cls):
             if not hasattr(self, '__teleporters'):
                 self.__teleporters = {}
 
-            def inner_func(name, doc):
-                orig_call(self, name, doc)
+            def inner_func(name, doc, *, target=self):
+                self._orig_call(target, name, doc)
 
             teleporter = Teleporter()
             teleporter.name_doc.connect(inner_func)
