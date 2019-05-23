@@ -2,65 +2,31 @@ from collections import ChainMap
 from cycler import cycler
 import numpy as np
 import warnings
-import functools
 from .core import CallbackBase, get_obj_fields
+from matplotlib.backends.qt_compat import QtCore
 
 
-try:
-    from matplotlib.backends.qt_compat import QtCore
+class QtAwareCallback(CallbackBase):
 
     class Teleporter(QtCore.QObject):
-        name_doc = QtCore.Signal(str, dict)
-except ImportError:
-    Teleporter = None
+        name_doc_escape = QtCore.Signal(str, dict, bool)
 
-
-def _maybe_use_teleporter(cls):
-    orig_init = cls.__init__
-    orig_call = cls.__call__
-
-    cls_name = cls.__name__
-
-    @functools.wraps(orig_init)
     def __init__(self, *args, maybe_use_teleporter=True, **kwargs):
-        orig_init(self, *args, **kwargs)
-        _orig_call = orig_call
-        if not hasattr(self, '__teleporters'):
-            self.__teleporters = {}
-        if not hasattr(self, '__slots'):
-            self.__slots = {}
+        self.__teleporter = self.Teleporter()
+        self.__teleporter.name_doc_escape.connect(self.__call__)
+        super().__init__(*args, **kwargs)
 
-        if Teleporter is not None and maybe_use_teleporter:
-
-            def make_slot(target):
-
-                def inner_func(name, doc):
-                    _orig_call(target, name, doc)
-
-                return inner_func
-
-            teleporter = Teleporter()
-            slot = make_slot(self)
-            teleporter.name_doc.connect(slot)
-
-            self.__teleporters[cls_name] = teleporter
-            self.__slots[cls_name] = slot
-
-    @functools.wraps(orig_call)
-    def __call__(self, name, doc):
-        if hasattr(self, '__teleporters'):
-            self.__teleporters[cls_name].name_doc.emit(name, doc)
+    def __call__(self, name, doc, escape=False):
+        print(f'qta {type(self)}, {id(self)}, {escape}')
+        if not escape:
+            print('about to emit')
+            self.__teleporter.name_doc_escape.emit(name, doc, True)
         else:
-            return orig_call(self, name, doc)
-
-    cls.__init__ = __init__
-    cls.__call__ = __call__
-
-    return cls
+            print('calling up the stack')
+            return CallbackBase.__call__(self, name, doc)
 
 
-@_maybe_use_teleporter
-class LivePlot(CallbackBase):
+class LivePlot(QtAwareCallback):
     """
     Build a function that updates a plot from a stream of Events.
 
@@ -210,8 +176,7 @@ class LivePlot(CallbackBase):
         super().stop(doc)
 
 
-@_maybe_use_teleporter
-class LiveScatter(CallbackBase):
+class LiveScatter(QtAwareCallback):
     """Plot scattered 2D data in a "heat map".
 
     Alternatively, if the data is placed on a regular grid, you can use
@@ -244,6 +209,7 @@ class LiveScatter(CallbackBase):
     """
     def __init__(self, x, y, I, *, xlim=None, ylim=None,
                  clim=None, cmap='viridis', ax=None, **kwargs):
+        super().__init__()
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
         if ax is None:
@@ -333,8 +299,7 @@ class LiveMesh(LiveScatter):
         super().__init__(*args, **kwargs)
 
 
-@_maybe_use_teleporter
-class LiveGrid(CallbackBase):
+class LiveGrid(QtAwareCallback):
     """Plot gridded 2D data in a "heat map".
 
     This assumes that readings are placed on a regular grid and can be placed
@@ -388,6 +353,7 @@ class LiveGrid(CallbackBase):
                  clim=None, cmap='viridis',
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
                  ax=None, x_positive='right', y_positive='up'):
+        super().__init__()
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
         if ax is None:
@@ -486,7 +452,6 @@ class LiveRaster(LiveGrid):
         super().__init__(*args, **kwargs)
 
 
-@_maybe_use_teleporter
 class LiveFitPlot(LivePlot):
     """
     Add a plot to an instance of LiveFit.

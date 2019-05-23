@@ -16,14 +16,14 @@ import time
 from warnings import warn
 import weakref
 
-from .core import CallbackBase, LiveTable
-from .mpl_plotting import LivePlot, LiveGrid, LiveScatter, _maybe_use_teleporter
+from .core import LiveTable
+from .mpl_plotting import LivePlot, LiveGrid, LiveScatter, QtAwareCallback
 from .fitting import PeakStats
 
 
-@_maybe_use_teleporter
-class BestEffortCallback(CallbackBase):
+class BestEffortCallback(QtAwareCallback):
     def __init__(self, *, fig_factory=None, table_enabled=True):
+        super().__init__()
         # internal state
         self._start_doc = None
         self._descriptors = {}
@@ -85,12 +85,6 @@ class BestEffortCallback(CallbackBase):
     def disable_plots(self):
         "Do not plot anything."
         self._plots_enabled = False
-
-    def __call__(self, name, doc):
-        if not (self._table_enabled or self._baseline_enabled or
-                self._plots_enabled):
-            return
-        super().__call__(name, doc)
 
     def start(self, doc):
         self.clear()
