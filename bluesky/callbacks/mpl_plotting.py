@@ -17,12 +17,9 @@ class QtAwareCallback(CallbackBase):
         super().__init__(*args, **kwargs)
 
     def __call__(self, name, doc, escape=False):
-        print(f'qta {type(self)}, {id(self)}, {escape}')
         if not escape:
-            print('about to emit')
             self.__teleporter.name_doc_escape.emit(name, doc, True)
         else:
-            print('calling up the stack')
             return CallbackBase.__call__(self, name, doc)
 
 
