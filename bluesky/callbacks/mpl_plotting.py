@@ -24,21 +24,19 @@ def _maybe_use_teleporter(cls):
     @functools.wraps(orig_init)
     def __init__(self, *args, maybe_use_teleporter=True, **kwargs):
         orig_init(self, *args, **kwargs)
-        self._orig_init = orig_init
-        self._orig_call = orig_call
+        _orig_call = orig_call
+        if not hasattr(self, '__teleporters'):
+            self.__teleporters = {}
+
         if Teleporter is not None and maybe_use_teleporter:
-            if not hasattr(self, '__teleporters'):
-                self.__teleporters = {}
 
             def inner_func(name, doc, *, target=self):
-                self._orig_call(target, name, doc)
+                _orig_call(target, name, doc)
 
             teleporter = Teleporter()
             teleporter.name_doc.connect(inner_func)
 
             self.__teleporters[cls_name] = teleporter
-        else:
-            self.__teleporter = None
 
     @functools.wraps(orig_call)
     def __call__(self, name, doc):
