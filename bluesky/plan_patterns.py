@@ -287,7 +287,8 @@ def inner_list_product(args):
     cyc : cycler
     '''
     if len(args) % 2 != 0:
-        raise ValueError("wrong number of positional arguments")
+        raise ValueError("Wrong number of positional arguments for "
+                         "'inner_list_product'")
 
     cyclers = []
     for motor, pos_list, in partition(2, args):
@@ -312,8 +313,8 @@ def outer_list_product(args, snake_axes):
         are lists of positions, all lists must have the same length.
 .
     snake_axes
-        which axes should be snaked, either None (do not snake any axes),
-        ``True`` (snake all axes) or a list of axes to snake. 'snaking an axis'
+        which axes should be snaked, either ``False`` (do not snake any axes),
+        ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
         is defined as following snake-like, winding trajectory instead of a
         simple left-to-right trajectory.
 
@@ -369,7 +370,8 @@ def inner_product(num, args):
     cyc : cycler
     '''
     if len(args) % 3 != 0:
-        raise ValueError("wrong number of positional arguments")
+        raise ValueError("Wrong number of positional arguments for "
+                         "'inner_product'")
 
     cyclers = []
     for motor, start, stop, in partition(3, args):
@@ -408,7 +410,8 @@ def chunk_outer_product_args(args):
     # make it easy to iterate over the chunks or args..
     args.insert(4, False)
     if len(args) % 5 != 0:
-        raise ValueError("wrong number of positional arguments")
+        raise ValueError("Wrong number of positional arguments "
+                         "for 'chunk_outer_product_args'")
 
     yield from partition(5, args)
 
