@@ -218,14 +218,15 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    :toctree: generated
    :nosignatures:
 
+   scan
+   rel_scan
    grid_scan
    rel_grid_scan
-   scan_nd
    list_scan
    rel_list_scan
    list_grid_scan
    rel_list_grid_scan
-
+   scan_nd
 
 Spiral trajectories
 -------------------
