@@ -1,5 +1,6 @@
 import functools
 import operator
+import collections
 
 import numpy as np
 from cycler import cycler
@@ -267,6 +268,89 @@ def spiral_fermat(x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     cyc = cycler(x_motor, x_points)
     cyc += cycler(y_motor, y_points)
     return cyc
+
+
+def inner_list_product(args):
+    '''Scan over one multi-motor trajectory.
+
+    Parameters
+    ----------
+    args : list
+        patterned like (``motor1, position_list1,``
+                        ``...,``
+                        ``motorN, position_listN``)
+        Motors can be any 'setable' object (motor, temp controller, etc.)
+        ``position_list``'s are a list of postiions, all lists must have the
+        same length.
+    Returns
+    -------
+    cyc : cycler
+    '''
+    if len(args) % 2 != 0:
+        raise ValueError("wrong number of positional arguments")
+
+    cyclers = []
+    for motor, pos_list, in partition(2, args):
+        c = cycler(motor, pos_list)
+        cyclers.append(c)
+    return functools.reduce(operator.add, cyclers)
+
+
+def outer_list_product(args, snake_axes):
+    '''Scan over a mesh; each motor is on an independent trajectory.
+
+    Parameters
+    ----------
+    args
+        patterned like (``motor1, position_list1,``
+                        ``motor2, position_list2,``
+                        ``motor3, position_list3,``
+                        ``...,``
+                        ``motorN, position_listN``)
+
+        The first motor is the "slowest", the outer loop. ``position_list``'s
+        are a list of positions, all lists must have the same length.
+.
+    snake_axes
+        which axes should be snaked, either None (do not snake any axes),
+        True (snake all axes) or a list of axes to snake. 'snaking an axis'
+        is defined as following snake-like, winding trajectory instead of a
+        simple left-to-right trajectory.
+
+
+    See Also
+    --------
+    `bluesky.plan_patterns.inner_list_product`
+
+    Returns
+    -------
+    cyc : cycler
+    '''
+    snaking = []
+    cyclers = []
+    for motor, pos_list in partition(2, args):
+        if not snake_axes:
+            snaking.append(False)
+        elif isinstance(snake_axes, collections.abc.Iterable):
+            if motor in snake_axes:
+                snaking.append(True)
+            else:
+                snaking.append(False)
+        elif snake_axes:
+            if not snaking:
+                snaking.append(False)
+            else:
+                snaking.append(True)
+        else:
+            raise ValueError('The snake_axes arg to ``outer_list_pattern`` '
+                             'must be either False (do not snake any axes), '
+                             'True (snake all axes) or a list of axes to '
+                             'snake. Instead it is {}.'.format(snake_axes))
+
+        c = cycler(motor, pos_list)
+        cyclers.append(c)
+
+    return snake_cyclers(cyclers, snaking)
 
 
 def inner_product(num, args):

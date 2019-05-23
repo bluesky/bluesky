@@ -44,6 +44,8 @@ documentation.
    rel_scan
    list_scan
    rel_list_scan
+   list_grid_scan
+   rel_list_grid_scan
    log_scan
    rel_log_scan
    grid_scan
@@ -219,6 +221,11 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    grid_scan
    rel_grid_scan
    scan_nd
+   list_scan
+   rel_list_scan
+   list_grid_scan
+   rel_list_grid_scan
+
 
 Spiral trajectories
 -------------------
