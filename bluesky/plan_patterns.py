@@ -279,7 +279,7 @@ def inner_list_product(args):
         patterned like (``motor1, position_list1,``
                         ``...,``
                         ``motorN, position_listN``)
-        Motors can be any 'setable' object (motor, temp controller, etc.)
+        Motors can be any 'settable' object (motor, temp controller, etc.)
         ``position_list``'s are a list of postiions, all lists must have the
         same length.
     Returns
@@ -309,11 +309,11 @@ def outer_list_product(args, snake_axes):
                         ``motorN, position_listN``)
 
         The first motor is the "slowest", the outer loop. ``position_list``'s
-        are a list of positions, all lists must have the same length.
+        are lists of positions, all lists must have the same length.
 .
     snake_axes
         which axes should be snaked, either None (do not snake any axes),
-        True (snake all axes) or a list of axes to snake. 'snaking an axis'
+        ``True`` (snake all axes) or a list of axes to snake. 'snaking an axis'
         is defined as following snake-like, winding trajectory instead of a
         simple left-to-right trajectory.
 
@@ -342,7 +342,7 @@ def outer_list_product(args, snake_axes):
             else:
                 snaking.append(True)
         else:
-            raise ValueError('The snake_axes arg to ``outer_list_pattern`` '
+            raise ValueError('The snake_axes arg to ``outer_list_product`` '
                              'must be either False (do not snake any axes), '
                              'True (snake all axes) or a list of axes to '
                              'snake. Instead it is {}.'.format(snake_axes))
