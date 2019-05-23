@@ -69,6 +69,7 @@ install:
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
   - pip install -U ophyd --pre
+  - pip install pyqt5
   - pip install codecov
   - python setup.py install
   # Need to clean the python build directory (and other cruft) or pytest is
