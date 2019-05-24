@@ -1,7 +1,6 @@
 import pytest
 import jsonschema
-from bluesky.run_engine import RunEngine
-from event_model import DocumentNames, schemas
+from event_model import DocumentNames, schema_validators
 from bluesky.utils import new_uid
 from bluesky.examples import simple_scan
 
@@ -19,14 +18,14 @@ def test_custom_metadata(RE, hw):
 def test_dots_not_allowed_in_keys():
     doc = {'time': 0,
            'uid': new_uid()}
-    jsonschema.validate(doc, schemas[DocumentNames.start])
+    schema_validators[DocumentNames.start].validate(doc)
     # Add a legal key.
     doc.update({'b': 'c'})
-    jsonschema.validate(doc, schemas[DocumentNames.start])
+    schema_validators[DocumentNames.start].validate(doc)
     # Now add illegal key.
     doc.update({'b.': 'c'})
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(doc, schemas[DocumentNames.start])
+        schema_validators[DocumentNames.start].validate(doc)
 
     doc = {'time': 0,
            'uid': new_uid(),
@@ -34,25 +33,25 @@ def test_dots_not_allowed_in_keys():
                                'dtype': 'number',
                                'shape': []}},
            'run_start': new_uid()}
-    jsonschema.validate(doc, schemas[DocumentNames.descriptor])
+    schema_validators[DocumentNames.descriptor].validate(doc)
     # Add a legal key.
     doc.update({'b': 'c'})
-    jsonschema.validate(doc, schemas[DocumentNames.descriptor])
+    schema_validators[DocumentNames.descriptor].validate(doc)
     # Now add illegal key.
     doc.update({'b.c': 'd'})
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(doc, schemas[DocumentNames.descriptor])
+        schema_validators[DocumentNames.descriptor].validate(doc)
 
     doc = {'time': 0,
            'uid': new_uid(),
            'exit_status': 'success',
            'reason': '',
            'run_start': new_uid()}
-    jsonschema.validate(doc, schemas[DocumentNames.stop])
+    schema_validators[DocumentNames.stop].validate(doc)
     # Add a legal key.
     doc.update({'b': 'c'})
-    jsonschema.validate(doc, schemas[DocumentNames.stop])
+    schema_validators[DocumentNames.stop].validate(doc)
     # Now add illegal key.
     doc.update({'.b': 'c'})
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(doc, schemas[DocumentNames.stop])
+        schema_validators[DocumentNames.stop].validate(doc)

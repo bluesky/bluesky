@@ -2,9 +2,8 @@ import logging
 import time as ttime
 from collections import Iterable, ChainMap
 
-import jsonschema
 import numpy as np
-from event_model import DocumentNames, schemas
+from event_model import DocumentNames, schema_validators
 
 from .core import CallbackBase
 from ..run_engine import Dispatcher
@@ -197,7 +196,7 @@ class LiveDispatcher(CallbackBase):
 
     def emit(self, name, doc):
         """Check the document schema and send to the dispatcher"""
-        jsonschema.validate(doc, schemas[name])
+        schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)
 
     def subscribe(self, func, name='all'):
