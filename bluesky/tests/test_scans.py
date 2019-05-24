@@ -187,12 +187,6 @@ def test_lin_ascan(RE, hw):
     traj_checker(RE, scan, traj)
 
 
-def test_log_ascan(RE, hw):
-    traj = np.logspace(0, 10, 5)
-    scan = bp.log_scan([hw.det], hw.motor, 0, 10, 5)
-    traj_checker(RE, scan, traj)
-
-
 def test_lin_dscan(RE, hw):
     traj = np.linspace(0, 10, 5) + 6
     hw.motor.set(6)
@@ -200,11 +194,197 @@ def test_lin_dscan(RE, hw):
     traj_checker(RE, scan, traj)
 
 
-def test_log_dscan(RE, hw):
-    traj = np.logspace(0, 10, 5) + 6
-    hw.motor.set(6)
-    scan = bp.rel_log_scan([hw.det], hw.motor, 0, 10, 5)
+def test_log_scan(RE, hw):
+    traj = np.logspace(math.log(1, 10), math.log(101, 10), 5)-1
+    scan = bp.log_scan([hw.det], hw.motor, 0, 100, num=5)
     traj_checker(RE, scan, traj)
+
+
+def test_log_scan_neg_pos(RE, hw):
+    traj = np.logspace(math.log(101, 10), math.log(1, 10), 5)-101
+    scan = bp.log_scan([hw.det], hw.motor, 0, -100, num=5)
+    traj_checker(RE, scan, traj)
+
+
+def test_log_scan_multi_axis(RE, hw):
+    expected_data = []
+    for motor1_pos, motor2_pos in zip(
+        np.logspace(math.log(1,10), math.log(101,10), 5)-1,
+        np.logspace(math.log(5,10), math.log(105,10), 5)):
+
+        expected_data.append({'motor2': motor2_pos,
+                              'motor2_setpoint': motor2_pos,
+                              'det': 1.0,
+                              'motor1': motor1_pos,
+                              'motor1_setpoint': motor1_pos})
+
+    scan = bp.log_scan([hw.det], hw.motor1, 0, 100,
+                       hw.motor2, 5, 105, num=5)
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_rel_log_scan(RE, hw):
+    traj = np.logspace(math.log(1, 10), math.log(101,10), 5)-1+6
+    hw.motor.set(6)
+    scan = bp.rel_log_scan([hw.det], hw.motor, 0, 100, num=5)
+    traj_checker(RE, scan, traj)
+
+
+def test_rel_log_scan_neg_pos(RE, hw):
+    traj = np.logspace(math.log(101, 10), math.log(1,10), 5)-101+6
+    hw.motor.set(6)
+    scan = bp.rel_log_scan([hw.det], hw.motor, 0, -100, num=5)
+    traj_checker(RE, scan, traj)
+
+
+def test_log_grid_scan(RE, hw):
+    expected_data = []
+    for motor1_pos in np.logspace(math.log(1,10), math.log(101,10), 5)-1:
+        for motor2_pos in np.logspace(math.log(5,10), math.log(105,10), 5):
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    scan = bp.log_grid_scan([hw.det], hw.motor1, 0, 100, 5,
+                            hw.motor2, 5, 105, 5)
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_log_grid_scan_snake(RE, hw):
+    expected_data = []
+    for i, motor1_pos in enumerate(
+        np.logspace(math.log(1,10), math.log(101,10), 5)-1):
+        if i%2 == 0:
+            motor2_pos_list = np.logspace(math.log(5,10), math.log(105,10), 5)
+        else:
+            motor2_pos_list = np.logspace(math.log(105,10), math.log(5,10), 5)
+
+        for motor2_pos in motor2_pos_list:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    scan = bp.log_grid_scan([hw.det], hw.motor1, 0, 100, 5,
+                            hw.motor2, 5, 105, 5, snake_axes=True)
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_log_grid_scan_snake_list(RE, hw):
+    expected_data = []
+    for i, motor1_pos in enumerate(
+        np.logspace(math.log(1,10), math.log(101,10), 5)-1):
+        if i%2 == 0:
+            motor2_pos_list = np.logspace(math.log(5,10), math.log(105,10), 5)
+        else:
+            motor2_pos_list = np.logspace(math.log(105,10), math.log(5,10), 5)
+
+        for motor2_pos in motor2_pos_list:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    scan = bp.log_grid_scan([hw.det], hw.motor1, 0, 100, 5,
+                            hw.motor2, 5, 105, 5, snake_axes=[hw.motor2])
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_log_grid_scan_neg_pos(RE, hw):
+    expected_data = []
+    for motor1_pos in np.logspace(math.log(101,10), math.log(1,10), 5)-101:
+        for motor2_pos in np.logspace(math.log(5,10), math.log(105,10), 5):
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    scan = bp.log_grid_scan([hw.det], hw.motor1, 0, -100, 5,
+                            hw.motor2, 5, 105, 5)
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_rel_log_grid_scan(RE, hw):
+    expected_data = []
+    for motor1_pos in np.logspace(math.log(1,10), math.log(101,10), 5)-1+6:
+        for motor2_pos in np.logspace(math.log(5,10), math.log(105,10), 5)+4:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+    hw.motor1.set(6)
+    hw.motor2.set(4)
+    scan = bp.rel_log_grid_scan([hw.det], hw.motor1, 0, 100, 5,
+                                hw.motor2, 5, 105, 5)
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_rel_log_grid_scan_snake(RE, hw):
+    expected_data = []
+    for i, motor1_pos in enumerate(
+        np.logspace(math.log(1,10), math.log(101,10), 5)-1):
+        if i%2 == 0:
+            motor2_pos_list = np.logspace(math.log(5,10), math.log(105,10), 5)
+        else:
+            motor2_pos_list = np.logspace(math.log(105,10), math.log(5,10), 5)
+
+        for motor2_pos in motor2_pos_list:
+            expected_data.append({'motor2': motor2_pos+4,
+                                  'motor2_setpoint': motor2_pos+4,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos+6,
+                                  'motor1_setpoint': motor1_pos+6})
+    hw.motor1.set(6)
+    hw.motor2.set(4)
+    scan = bp.rel_log_grid_scan([hw.det], hw.motor1, 0, 100, 5,
+                                hw.motor2, 5, 105, 5, snake_axes=True)
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_rel_log_grid_scan_snake_list(RE, hw):
+    expected_data = []
+    for i, motor1_pos in enumerate(
+        np.logspace(math.log(1,10), math.log(101,10), 5)-1):
+        if i%2 == 0:
+            motor2_pos_list = np.logspace(math.log(5,10), math.log(105,10), 5)
+        else:
+            motor2_pos_list = np.logspace(math.log(105,10), math.log(5,10), 5)
+
+        for motor2_pos in motor2_pos_list:
+            expected_data.append({'motor2': motor2_pos+4,
+                                  'motor2_setpoint': motor2_pos+4,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos+6,
+                                  'motor1_setpoint': motor1_pos+6})
+
+    hw.motor1.set(6)
+    hw.motor2.set(4)
+    scan = bp.rel_log_grid_scan([hw.det], hw.motor1, 0, 100, 5,
+                                hw.motor2, 5, 105, 5, snake_axes=[hw.motor2])
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_rel_log_grid_scan_neg_pos(RE, hw):
+    expected_data = []
+    for motor1_pos in np.logspace(math.log(101,10), math.log(1,10), 5)-101:
+        for motor2_pos in np.logspace(math.log(5,10), math.log(105,10), 5):
+            expected_data.append({'motor2': motor2_pos+4,
+                                  'motor2_setpoint': motor2_pos+4,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos+6,
+                                  'motor1_setpoint': motor1_pos+6})
+
+    hw.motor1.set(6)
+    hw.motor2.set(4)
+    scan = bp.rel_log_grid_scan([hw.det], hw.motor1, 0, -100, 5,
+                                hw.motor2, 5, 105, 5)
+    multi_traj_checker(RE, scan, expected_data)
 
 
 def test_adaptive_ascan(RE, hw):

@@ -258,22 +258,40 @@ def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None,
     return (yield from inner_relative_scan())
 
 
-def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def log_scan(detectors, *args, num, base=10, per_step=None, md=None):
     """
-    Scan over one variable in log-spaced steps.
+    Scan over one, or more, variable(s) in log-spaced steps simultaneously
+    (inner product).
 
     Parameters
     ----------
     detectors : list
         list of 'readable' objects
-    motor : object
-        any 'settable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
+    *args :
+        For one dimension, ``motor, start, stop``.
+        In general:
+
+        .. code-block:: python
+
+            motor0, start1, stop1,
+            motor1, start2, start2,
+            ...,
+            motorN, startN, stopN
+
+        Motors can be any 'settable' object (motor, temp controller, etc.)
+
+        The values from above are defined as:
+
+            motor : object
+                any 'settable' object (motor, temp controller, etc.)
+            start : float
+                starting position for motor.
+            stop : float
+                ending position for motor.
     num : int
         number of steps
+    base : float
+        base of log scale, defaults to 10
     per_step : callable, optional
         hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
@@ -283,18 +301,36 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.rel_log_scan`
+    :func:`bluesky.plans.log_grid_scan`
+    :func:`bluesky.plans.rel_log_grid_scan`
     """
+
+    if len(args) % 3 != 0:
+        raise ValueError('The list of arguments handed to ``log_scan()`` must '
+                         'contain multiples of the 3 arguments `motor`, '
+                         '`start`, `stop`. However what was recieved is of '
+                         'length {len(args)} which is not divisble by 3.'
+                         'The full set of arguments are {}.'.format(len(args),
+                                                                    args))
+
+    list_args = []
+    repr_args = []
+    for motor, start, stop in partition(3, args):
+        if start <= 0 or stop <= 0:  # resolve 'math.log' error if necesary
+            offset = -1*min(start, stop)+1
+        else:
+            offset = 0
+
+        list_args.extend([motor, np.logspace(math.log(start+offset, base),
+                                             math.log(stop+offset, base), num,
+                                             base=base)-offset])
+        repr_args.extend([repr(motor), start, stop])
+
     _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor.name],
-           'num_points': num,
-           'num_intervals': num - 1,
-           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
-                         'start': start, 'stop': stop, 'motor': repr(motor),
+           'plan_args': {'detectors': list(map(repr, detectors)),
+                         'args': repr_args, 'num': num, 'base': base,
                          'per_step': repr(per_step)},
            'plan_name': 'log_scan',
-           'plan_pattern': 'logspace',
-           'plan_pattern_module': 'numpy',
-           'plan_pattern_args': dict(start=start, stop=stop, num=num),
            'hints': {},
            }
     _md.update(md or {})
@@ -306,37 +342,47 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     else:
         _md['hints'].setdefault('dimensions', dimensions)
 
-    if per_step is None:
-        per_step = bps.one_1d_step
-
-    steps = np.logspace(**_md['plan_pattern_args'])
-
-    @bpp.stage_decorator(list(detectors) + [motor])
-    @bpp.run_decorator(md=_md)
     def inner_log_scan():
-        for step in steps:
-            yield from per_step(detectors, motor, step)
+        return (yield from list_scan(detectors, *list_args,
+                                     per_step=per_step, md=_md))
 
     return (yield from inner_log_scan())
 
 
-def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
-                 md=None):
+def rel_log_scan(detectors, *args, num, base=10, per_step=None, md=None):
     """
-    Scan over one variable in log-spaced steps relative to current position.
+    Scan over one or more  variable in simultaneous log-spaced steps relative
+    to current positions (inner product).
 
     Parameters
     ----------
     detectors : list
         list of 'readable' objects
-    motor : object
-        any 'settable' object (motor, temp controller, etc.)
-    start : float
-        starting position of motor
-    stop : float
-        ending position of motor
+    *args :
+        For one dimension, ``motor, start, stop``.
+        In general:
+
+        .. code-block:: python
+
+            motor1, start1, stop1,
+            motor2, start2, start2,
+            ...,
+            motorN, startN, stopN
+
+        Motors can be any 'settable' object (motor, temp controller, etc.)
+
+        The values from above are defined as:
+
+            motor : object
+                any 'settable' object (motor, temp controller, etc.)
+            start : float
+                starting position of motor relative to current position.
+            stop : float
+                ending position of motor relative to current position.
     num : int
         number of steps
+    base : float
+        base of log scale, defaults to 10
     per_step : callable, optional
         hook for customizing action of inner loop (messages per step)
         Expected signature: ``f(detectors, motor, step)``
@@ -346,18 +392,186 @@ def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     See Also
     --------
     :func:`bluesky.plans.log_scan`
+    :func:`bluesky.plans.log_grid_scan`
+    :func:`bluesky.plans.rel_log_grid_scan`
     """
-    # TODO read initial positions (redundantly) so they can be put in md here
+
     _md = {'plan_name': 'rel_log_scan'}
     _md.update(md or {})
 
-    @bpp.reset_positions_decorator([motor])
-    @bpp.relative_set_decorator([motor])
+    motors = [motor for motor, start, stop in partition(3, args)]
+
+    @bpp.reset_positions_decorator(motors)
+    @bpp.relative_set_decorator(motors)
     def inner_relative_log_scan():
-        return (yield from log_scan(detectors, motor, start, stop, num,
+        return (yield from log_scan(detectors, *args, num=num, base=base,
                                     per_step=per_step, md=_md))
 
     return (yield from inner_relative_log_scan())
+
+
+def log_grid_scan(detectors, *args, snake_axes=False, base=10, per_step=None,
+                  md=None):
+    """
+    Scan over one, or more, variable(s) in a mesh using log-spaced steps
+    (outer product).
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    *args :
+        For one dimension, ``motor, start, stop``.
+        In general:
+
+        .. code-block:: python
+
+            motor1, start1, stop1, num1,
+            motor2, start2, stop2, num2,
+            ...,
+            motorN, startN, stopN, numN
+
+        Motors can be any 'settable' object (motor, temp controller, etc.)
+
+        The values from above are defined as:
+
+            motor : object
+                any 'settable' object (motor, temp controller, etc.)
+            start : float
+                starting position of motor.
+            stop : float
+                ending position of motor.
+            num : int
+                number of steps for motor.
+    snake_axes : boolean or Iterable, optional
+        which axes should be snaked, either ``False`` (do not snake any axes),
+        ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
+        is defined as following snake-like, winding trajectory instead of a
+        simple left-to-right trajectory.
+    base : float
+        base of log scale, defaults to 10
+    per_step : callable, optional
+        hook for customizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)``
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    :func:`bluesky.plans.log_scan`
+    :func:`bluesky.plans.rel_log_scan`
+    :func:`bluesky.plans.rel_log_grid_scan`
+    """
+
+    if len(args) % 4 != 0:
+        raise ValueError('The list of arguments handed to ``log_scan()`` must '
+                         'contain multiples of the 4 arguments `motor`, '
+                         '`start`, `stop`, `num`. However what was recieved is'
+                         'of length {len(args)} which is not divisble by 4.'
+                         'The full set of arguments are {}.'.format(len(args),
+                                                                    args))
+
+    list_args = []
+    repr_args = []
+    for motor, start, stop, num in partition(4, args):
+        if start <= 0 or stop <= 0:  # resolve 'math.log' error if necesary
+            offset = -1*min(start, stop)+1
+        else:
+            offset = 0
+        list_args.extend([motor, np.logspace(math.log(start+offset, base),
+                                             math.log(stop+offset, base), num,
+                                             base=base)-offset])
+        repr_args.extend([repr(motor), start, stop, num])
+
+    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
+                         'args': repr_args, 'base': base,
+                         'per_step': repr(per_step)},
+           'plan_name': 'log_grid_scan',
+           'hints': {},
+           }
+    _md.update(md or {})
+
+    try:
+        dimensions = [(motor.hints['fields'], 'primary')]
+    except (AttributeError, KeyError):
+        pass
+    else:
+        _md['hints'].setdefault('dimensions', dimensions)
+
+    def inner_log_grid_scan():
+        return (yield from list_grid_scan(detectors, *list_args,
+                                          snake_axes=snake_axes,
+                                          per_step=per_step, md=_md))
+
+    return (yield from inner_log_grid_scan())
+
+
+def rel_log_grid_scan(detectors, *args, snake_axes=False, base=10,
+                      per_step=None, md=None):
+    """
+    Scan over one or more variables in log-spaced grids relative to current
+    position.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+    *args :
+        For one dimension, ``motor, start, stop``.
+        In general:
+
+        .. code-block:: python
+
+            motor1, start1, stop1, num1,
+            motor2, start2, stop2, num2,
+            ...,
+            motorN, startN, stopN, numN
+
+        Motors can be any 'settable' object (motor, temp controller, etc.)
+
+        The values from above are defined as:
+
+            motor : object
+                any 'settable' object (motor, temp controller, etc.)
+            start : float
+                starting position of motor.
+            stop : float
+                ending position of motor.
+            num : int
+                number of steps of motor.
+    snake_axes : boolean or Iterable, optional
+        which axes should be snaked, either ``False`` (do not snake any axes),
+        ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
+        is defined as following snake-like, winding trajectory instead of a
+        simple left-to-right trajectory.
+    base : float
+        base of log scale, defaults to 10
+    per_step : callable, optional
+        hook for customizing action of inner loop (messages per step)
+        Expected signature: ``f(detectors, motor, step)``
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    :func:`bluesky.plans.log_scan`
+    :func:`bluesky.plans.rel_log_scan`
+    :func:`bluesky.plans.log_grid_scan`
+
+    """
+    _md = {'plan_name': 'rel_log_grid_scan'}
+    _md.update(md or {})
+
+    motors = [motor for motor, start, stop, num in partition(4, args)]
+
+    @bpp.reset_positions_decorator(motors)
+    @bpp.relative_set_decorator(motors)
+    def inner_relative_log_grid_scan():
+        return (yield from log_grid_scan(detectors, *args,
+                                         snake_axes=snake_axes, base=base,
+                                         per_step=per_step, md=_md))
+
+    return (yield from inner_relative_log_grid_scan())
 
 
 def adaptive_scan(detectors, target_field, motor, start, stop,
