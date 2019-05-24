@@ -12,7 +12,6 @@ cache:
 matrix:
   fast_finish: true
   include:
-    - python: 3.5
     - python: 3.6
       env: BUILD_DOCS=1
     - python: nightly
@@ -25,6 +24,7 @@ before_install:
 
 install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
+  - pip install --upgrade pip
   - pip install --upgrade cython
   - pip install --quiet --upgrade --global-option='--without-libyaml' pyyaml
   - pip install -r requirements.txt
