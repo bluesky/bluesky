@@ -12,8 +12,7 @@ import functools
 import inspect
 from contextlib import ExitStack
 
-import jsonschema
-from event_model import DocumentNames, schemas
+from event_model import DocumentNames, schema_validators
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
@@ -24,8 +23,6 @@ from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
                     single_gen, short_uid)
-
-_validate = functools.partial(jsonschema.validate, types={'array': (list, tuple)})
 
 
 class RunEngineStateMachine(StateMachine):
@@ -658,7 +655,7 @@ class RunEngine:
                        seq_num=next(self._interruptions_counter),
                        data={'interruption': content},
                        timestamps={'interruption': ttime.time()})
-            _validate(doc, schemas[DocumentNames.event])
+            schema_validators[DocumentNames.event].validate(doc)
             self.dispatcher.process(DocumentNames.event, doc)
 
     def __call__(self, *args, **metadata_kw):
@@ -1612,7 +1609,7 @@ class RunEngine:
             doc = dict(descriptor=descriptor_uid,
                        time=ttime.time(), data=data, timestamps=timestamps,
                        seq_num=next(seq_num_counter), uid=new_uid())
-            _validate(doc, schemas[DocumentNames.event])
+            schema_validators[DocumentNames.event].validate(doc)
             self.dispatcher.process(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
@@ -2342,7 +2339,7 @@ class RunEngine:
     @asyncio.coroutine
     def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
-        _validate(doc, schemas[name])
+        schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)
 
 
