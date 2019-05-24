@@ -1,5 +1,5 @@
 cycler
-event-model>=1.5.0,!=1.8.0
+event-model==1.10.0rc1
 historydict
 numpy
 super_state_machine
