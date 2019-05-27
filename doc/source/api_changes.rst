@@ -2,6 +2,12 @@
  Release History
 =================
 
+v1.5.3 (2019-05-27)
+===================
+
+This release removes the dependency on an old version of the ``jsonschema``
+library and requires the latest version of the ``event-model`` library.
+
 v1.5.2 (2019-03-11)
 ===================
 
