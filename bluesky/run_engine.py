@@ -859,8 +859,9 @@ class RunEngine:
                     # it (unless it is a canceled error)
                     if exc is not None and not isinstance(exc, _RunEnginePanic):
                         raise exc
-            if self._interrupted:
-                raise RunEngineInterrupted(self.pause_msg) from None
+
+        if self._interrupted:
+            raise RunEngineInterrupted(self.pause_msg) from None
 
         return tuple(self._run_start_uids)
 
