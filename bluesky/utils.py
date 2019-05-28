@@ -1273,6 +1273,9 @@ def merge_cycler(cyc):
     return reduce(operator.add, output_data)
 
 
+_qapp = None
+
+
 def dflt_during_task(blocking_event):
     """
     The default setting for the RunEngine's during_task parameter.
@@ -1285,6 +1288,7 @@ def dflt_during_task(blocking_event):
     matplotlib qApp until the task completes. If not, there is no need to
     handle qApp: just wait on the task.
     """
+    global _qapp
     if 'matplotlib' not in sys.modules:
         # We are not using matplotlib + Qt. Just wait on the Event.
         blocking_event.wait()
@@ -1296,29 +1300,24 @@ def dflt_during_task(blocking_event):
             # We are not using matplotlib + Qt. Just wait on the Event.
             blocking_event.wait()
         else:
-            # We are using matplotlib with Qt.
-            # When the function is run for the first time, _create_qApp and
-            # stash it as state *on* the function itself.
-            if dflt_during_task.qApp_instance is None:
-                import matplotlib.backends.backend_qt5
-                matplotlib.backends.backend_qt5._create_qApp()
-                dflt_during_task.qApp_instance = \
-                    matplotlib.backends.backend_qt5.qApp
-
-            qApp = dflt_during_task.qApp_instance
-            from matplotlib.backends.qt_compat import QtCore
+            from matplotlib.backends.qt_compat import QtCore, QtWidgets
+            app = QtWidgets.QApplication.instance()
+            if app is None:
+                _qapp = app = QtWidgets.QApplication([b'bluesky'])
+            assert app is not None
+            event_loop = QtCore.QEventLoop()
 
             def start_killer_thread():
-                def exit_qApp():
+                def exit_loop():
                     blocking_event.wait()
                     # If the above wait ends quickly, we need to avoid the race
                     # condition where this thread might try to exit the qApp
                     # before it even starts.  Therefore, we use QTimer, below,
                     # which will not start running until the qApp event loop is
                     # running.
-                    qApp.exit()
+                    event_loop.exit()
 
-                threading.Thread(target=exit_qApp).start()
+                threading.Thread(target=exit_loop).start()
 
             # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
             # adapted from code at
@@ -1387,7 +1386,7 @@ def dflt_during_task(blocking_event):
             def my_exception_hook(exctype, value, traceback):
                 nonlocal vals
                 vals = (exctype, value, traceback)
-                qApp.exit()
+                event_loop.exit()
                 old_sys_handler(exctype, value, traceback)
 
             # this kill the Qt event loop when the plan is finished
@@ -1398,19 +1397,13 @@ def dflt_during_task(blocking_event):
 
             try:
                 sys.excepthook = my_exception_hook
-                qApp.exec_()
+                event_loop.exec_()
                 # make sure any pending signals are processed
-                qApp.processEvents()
+                event_loop.processEvents()
                 if vals[1] is not None:
                     raise vals[1]
             finally:
                 try:
                     cleanup()
                 finally:
-                    # restore the old exception hook
                     sys.excepthook = old_sys_handler
-
-
-# We stash some private state *on* the function here and refer to it in the
-# function body.
-dflt_during_task.qApp_instance = None
