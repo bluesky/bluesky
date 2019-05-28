@@ -18,6 +18,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     package_data={'bluesky': ['schema/*.json']},
     scripts=glob.glob('scripts/*'),
+    python_requires='>=3.6',
     install_requires=requirements,
     classifiers=[
         "Development Status :: 3 - Alpha",
