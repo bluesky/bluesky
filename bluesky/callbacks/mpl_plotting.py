@@ -2,22 +2,32 @@ from collections import ChainMap
 from cycler import cycler
 import numpy as np
 import warnings
+import functools
 from .core import CallbackBase, get_obj_fields
-from matplotlib.backends.qt_compat import QtCore
 
 
-class QtAwareCallback(CallbackBase):
+# use function + LRU cache to hide Matplotib import until needed
+@functools.lru_cache(maxsize=1)
+def _get_teleporter():
+    from matplotlib.backends.qt_compat import QtCore
 
     class Teleporter(QtCore.QObject):
         name_doc_escape = QtCore.Signal(str, dict, bool)
+    return Teleporter
 
-    def __init__(self, *args, maybe_use_teleporter=True, **kwargs):
-        self.__teleporter = self.Teleporter()
-        self.__teleporter.name_doc_escape.connect(self.__call__)
+
+class QtAwareCallback(CallbackBase):
+    def __init__(self, *args, use_teleporter=True, **kwargs):
+        if use_teleporter:
+            Teleporter = _get_teleporter()
+            self.__teleporter = Teleporter()
+            self.__teleporter.name_doc_escape.connect(self.__call__)
+        else:
+            self.__teleporter = None
         super().__init__(*args, **kwargs)
 
     def __call__(self, name, doc, escape=False):
-        if not escape:
+        if not escape and self.__teleporter is not None:
             self.__teleporter.name_doc_escape.emit(name, doc, True)
         else:
             return CallbackBase.__call__(self, name, doc)
@@ -388,8 +398,8 @@ class LiveGrid(QtAwareCallback):
                             extent=extent, aspect=self.aspect,
                             origin='lower')
 
-        # make sure the 'positive direction' of the axes matches what is defined in
-        #axes_positive
+        # make sure the 'positive direction' of the axes matches what
+        # is defined in axes_positive
         xmin, xmax = self.ax.get_xlim()
         if ((xmin > xmax and self.x_positive == 'right') or
                 (xmax > xmin and self.x_positive == 'left')):
