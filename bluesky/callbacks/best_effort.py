@@ -86,6 +86,12 @@ class BestEffortCallback(QtAwareCallback):
         "Do not plot anything."
         self._plots_enabled = False
 
+    def __call__(self, name, doc, *args, **kwargs):
+        if not (self._table_enabled or self._baseline_enabled or
+                self._plots_enabled):
+            return
+        super().__call__(name, doc, *args, **kwargs)
+
     def start(self, doc):
         self.clear()
         self._start_doc = doc
