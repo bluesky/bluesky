@@ -1399,6 +1399,8 @@ def dflt_during_task(blocking_event):
             try:
                 sys.excepthook = my_exception_hook
                 qApp.exec_()
+                # make sure any pending signals are processed
+                qApp.processEvents()
                 if vals[1] is not None:
                     raise vals[1]
             finally:
