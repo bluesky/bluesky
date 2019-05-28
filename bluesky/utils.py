@@ -1404,8 +1404,11 @@ def dflt_during_task(blocking_event):
                 if vals[1] is not None:
                     raise vals[1]
             finally:
-                sys.excepthook = old_sys_handler
-                cleanup()
+                try:
+                    cleanup()
+                finally:
+                    # restore the old exception hook
+                    sys.excepthook = old_sys_handler
 
 
 # We stash some private state *on* the function here and refer to it in the
