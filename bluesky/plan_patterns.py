@@ -33,7 +33,8 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
     dr : float
         Delta radius along the minor axis of the ellipse.
     dr_y : float, optional
-        Delta radius along the major axis of the ellipse, if not specifed defaults to dr
+        Delta radius along the major axis of the ellipse, if not specifed
+        defaults to dr
     nth : float
         Number of theta steps
     tilt : float, optional
@@ -47,7 +48,7 @@ def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
         dr_aspect = 1
     else:
         dr_aspect = dr_y / dr
-    
+   
     half_x = x_range / 2
     half_y = y_range / (2 * dr_aspect)
 
