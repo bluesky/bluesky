@@ -936,17 +936,29 @@ class RunEngine:
             self.loop.call_soon_threadsafe(self._run_permit.set)
             try:
                 # Block until plan is complete or exception is raised.
-                self._during_task(self._blocking_event)
+                try:
+                    self._during_task(self._blocking_event)
+                except KeyboardInterrupt:
+                    ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                        ctypes.c_ulong(self._th.ident),
+                        ctypes.py_object(_RunEnginePanic))
+                    self._interrupted = True
+                    self._blocking_event.wait(1)
+                except Exception as raised_er:
+                    self._task_fut.cancel()
+                    self._interrupted = True
+                    raise raised_er
             finally:
                 if self._task_fut.done():
                     # get exceptions from the main task
                     try:
                         exc = self._task_fut.exception()
-                    except asyncio.CancelledError:
+                    except (asyncio.CancelledError,
+                            concurrent.futures.CancelledError):
                         exc = None
                     # if the main task exception is not None, re-raise
                     # it (unless it is a canceled error)
-                    if exc is not None:
+                    if exc is not None and not isinstance(exc, _RunEnginePanic):
                         raise exc
 
     def install_suspender(self, suspender):
