@@ -826,39 +826,7 @@ class RunEngine:
             self._blocking_event.clear()
             self._task_fut.add_done_callback(set_blocking_event)
 
-        # Handle all context managers
-        with ExitStack() as stack:
-            for mgr in self.context_managers:
-                stack.enter_context(mgr(self))
-
-            _build_task()
-
-            try:
-                # Block until plan is complete or exception is raised.
-                try:
-                    self._during_task(self._blocking_event)
-                except KeyboardInterrupt:
-                    ctypes.pythonapi.PyThreadState_SetAsyncExc(
-                        ctypes.c_ulong(self._th.ident),
-                        ctypes.py_object(_RunEnginePanic))
-                    self._interrupted = True
-                    self._blocking_event.wait(1)
-                except Exception as raised_er:
-                    self._task_fut.cancel()
-                    self._interrupted = True
-                    raise raised_er
-            finally:
-                if self._task_fut.done():
-                    # get exceptions from the main task
-                    try:
-                        exc = self._task_fut.exception()
-                    except (asyncio.CancelledError,
-                            concurrent.futures.CancelledError):
-                        exc = None
-                    # if the main task exception is not None, re-raise
-                    # it (unless it is a canceled error)
-                    if exc is not None and not isinstance(exc, _RunEnginePanic):
-                        raise exc
+        self._resume_task(init_func=_build_task)
 
         if self._interrupted:
             raise RunEngineInterrupted(self.pause_msg) from None
@@ -919,7 +887,7 @@ class RunEngine:
             self._bundling = False
         return new_plan
 
-    def _resume_task(self):
+    def _resume_task(self, *, init_func=None):
         # Clear the blocking Event so that we can wait on it below.
         # The task will set it when it is done, as it was previously
         # configured to do it __call__.
@@ -929,7 +897,11 @@ class RunEngine:
         with ExitStack() as stack:
             for mgr in self.context_managers:
                 stack.enter_context(mgr(self))
-            if self._task_fut.done():
+
+            if init_func is not None:
+                init_func()
+
+            if self._task_fut is None or self._task_fut.done():
                 return
 
             # The _run task is waiting on this Event. Let is continue.
