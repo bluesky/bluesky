@@ -1376,7 +1376,7 @@ class RunEngine:
 
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
         yield from self.emit(DocumentNames.start, doc)
-        doc_logger.debug("Emitted RunStart (uid=%r)", doc['uid'],
+        doc_logger.debug("[start] document is emitted (run_uid=%r)", doc['uid'],
         extra={'doc_name': 'start', 'doc_uid': doc['uid']})
         yield from self._reset_checkpoint_state_coro()
 
@@ -1433,10 +1433,10 @@ class RunEngine:
                    exit_status=exit_status,
                    reason=reason,
                    num_events=num_events)
+        doc_logger.debug("[stop] document is emitted (run_uid=%r)", self._run_start_uid,
+                         extra={'doc_name': 'stop', 'doc_uid': doc['uid']})
         self._clear_run_cache()
         yield from self.emit(DocumentNames.stop, doc)
-        doc_logger.debug("Emitted RunStop (uid=%r)", doc['uid'],
-                         extra={'doc_name': 'stop', 'doc_uid': doc['uid']})
         yield from self._reset_checkpoint_state_coro()
         return doc['run_start']
 
@@ -1590,9 +1590,9 @@ class RunEngine:
                         data_keys=data_keys, uid=descriptor_uid,
                         configuration=config, hints=hints, name=name,
                         object_keys=object_keys)
-        doc_logger.debug("Emitted Event Descriptor with name %r containing "
-                         "data keys %r (uid=%r)", name, data_keys.keys(),
-                         descriptor_uid,
+        doc_logger.debug("[descriptor] document is emitted with name %r containing "
+                         "data keys %r (run_uid=%r)", name, data_keys.keys(),
+                         self._run_start_uid,
                          extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
         seq_num_counter = count(1)
 
@@ -1698,9 +1698,9 @@ class RunEngine:
                        configuration=config, name=desc_key,
                        hints=hints, object_keys=object_keys)
             yield from self.emit(DocumentNames.descriptor, doc)
-            doc_logger.debug("Emitted Event Descriptor with name %r containing "
-                             "data keys %r (uid=%r)", desc_key,
-                             data_keys.keys(), descriptor_uid,
+            doc_logger.debug("[descriptor] document is emitted with name %r containing "
+                             "data keys %r (run_uid=%r)", desc_key,
+                             data_keys.keys(), self._run_start_uid,
                              extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
             self._descriptors[desc_key] = (objs_read, doc)
 
@@ -1732,7 +1732,7 @@ class RunEngine:
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid, filled=filled)
         yield from self.emit(DocumentNames.event, doc)
-        doc_logger.debug("Emitted Event with data keys %r (currnt_run_uid=%r)", data.keys(),
+        doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)", data.keys(),
                          self._run_start_uid, extra={'doc_name': 'event', 'doc_uid': self._run_start_uid})
 
     @asyncio.coroutine
@@ -1898,9 +1898,9 @@ class RunEngine:
                            name=stream_name, hints=hints,
                            object_keys=object_keys)
                 yield from self.emit(DocumentNames.descriptor, doc)
-                doc_logger.debug("Emitted Event Descriptor with name %r "
-                                 "containing data keys %r (uid=%r)", stream_name,
-                                 data_keys.keys(), descriptor_uid,
+                doc_logger.debug("[descriptor] document is emitted with name %r "
+                                 "containing data keys %r (run_uid=%r)", stream_name,
+                                 data_keys.keys(), self._run_start_uid,
                                  extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
                 self._descriptors[desc_key] = (objs_read, doc)
                 self._sequence_counters[desc_key] = count(1)
@@ -1935,8 +1935,8 @@ class RunEngine:
             ev['uid'] = event_uid
 
             if stream:
-                doc_logger.debug("Emitted Event with data keys %r (uid=%r)",
-                                 ev['data'].keys(), ev['uid'],
+                doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)",
+                                 ev['data'].keys(), self._run_start_uid,
                                  event_uid, extra={'doc_name': 'event', 'doc_uid': ev['uid']})
                 yield from self.emit(DocumentNames.event, ev)
             else:
@@ -1944,9 +1944,9 @@ class RunEngine:
 
         if not stream:
             yield from self.emit(DocumentNames.bulk_events, bulk_data)
-            doc_logger.debug("Emitted bulk events for descriptors with uids "
-                           "%r", bulk_data.keys(),
-                           extra={'doc_name': 'bulk_events'})
+            doc_logger.debug("[bulk events] document is emitted for descriptors (run_uid=%r)",
+                             self._run_start_uid,
+                             extra={'doc_name': 'bulk_events'})
 
     @asyncio.coroutine
     def _null(self, msg):

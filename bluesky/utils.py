@@ -36,7 +36,7 @@ class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
         return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
 
     def __repr__(self):
-        return '{}: ({}), {}, {}'.format(
+        return '{}({}), {}, {}'.format(
             self.command, self.obj, self.args, self.kwargs)
 
 
