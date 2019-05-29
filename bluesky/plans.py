@@ -1101,7 +1101,8 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
 
 def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
-                  y_range, dr, factor, *, tilt=0.0, per_step=None, md=None):
+                  y_range, dr, factor, *, dr_y=None, tilt=0.0, per_step=None,
+                  md=None):
     '''Absolute fermat spiral scan, centered around (x_start, y_start)
 
     Parameters
@@ -1124,6 +1125,9 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
         delta radius
     factor : float
         radius gets divided by this
+    dr_y : float, optional
+        Delta radius along the major axis of the ellipse, if not specifed
+        defaults to dr.
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
@@ -1141,7 +1145,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     '''
     pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
                         y_start=y_start, x_range=x_range, y_range=y_range,
-                        dr=dr, factor=factor, tilt=tilt)
+                        dr=dr, factor=factor, dr_y=dr_y, tilt=tilt)
     cyc = plan_patterns.spiral_fermat(**pattern_args)
 
     # Before including pattern_args in metadata, replace objects with reprs.
@@ -1151,8 +1155,8 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
                          'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
                          'x_start': x_start, 'y_start': y_start,
                          'x_range': x_range, 'y_range': y_range,
-                         'dr': dr, 'factor': factor, 'tilt': tilt,
-                         'per_step': repr(per_step)},
+                         'dr': dr, 'factor': factor, 'dr_y': dr_y,
+                         'tilt': tilt, 'per_step': repr(per_step)},
            'extents': tuple([[x_start - x_range, x_start + x_range],
                              [y_start - y_range, y_start + y_range]]),
            'plan_name': 'spiral_fermat',
@@ -1174,7 +1178,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
 
 
 def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
-                      factor, *, tilt=0.0, per_step=None, md=None):
+                      factor, *, dr_y=None, tilt=0.0, per_step=None, md=None):
     '''Relative fermat spiral scan
 
     Parameters
@@ -1193,6 +1197,9 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
         delta radius
     factor : float
         radius gets divided by this
+    dr_y : float, optional
+        Delta radius along the major axis of the ellipse, if not specifed
+        defaults to dr
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
@@ -1217,7 +1224,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
         return (yield from spiral_fermat(detectors, x_motor, y_motor,
                                          0, 0,
                                          x_range, y_range,
-                                         dr, factor, tilt=tilt,
+                                         dr, factor, dr_y=dr_y, tilt=tilt,
                                          per_step=per_step, md=_md))
 
     return (yield from inner_relative_spiral_fermat())
@@ -1242,7 +1249,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     y_range : float
         y width of spiral
     dr : float
-        Delta radius along the minor axis of the ellipse. 
+        Delta radius along the minor axis of the ellipse.
     dr_y : float, optional
         Delta radius along the major axis of the ellipse. If None, defaults to
         dr.
@@ -1317,7 +1324,7 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     y_range : float
         y width of spiral
     dr : float
-        Delta radius along the minor axis of the ellipse. 
+        Delta radius along the minor axis of the ellipse.
     dr_y : float, optional
         Delta radius along the major axis of the ellipse. If None, it
         defaults to dr.
