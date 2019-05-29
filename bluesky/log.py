@@ -104,10 +104,6 @@ class LogFormatter(logging.Formatter):
         message = []
         if hasattr(record, 'msg_command'):
             message.append('msg')
-        #if hasattr(record, 'doc_name'):
-        #    message.append('[%s]' % record.doc_name)
-        #if hasattr(record, 'doc_uid'):
-        #    message.append('%s' % record.doc_uid)
         message.append(record.getMessage())
         record.message = ' '.join(message)
         record.asctime = self.formatTime(record, self.datefmt)
