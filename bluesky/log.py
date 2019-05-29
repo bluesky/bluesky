@@ -102,16 +102,12 @@ class LogFormatter(logging.Formatter):
 
     def format(self, record):
         message = []
-        if hasattr(record, 'old_state'):
-            message.append('[Old:%s]' % record.old_status)
-        if hasattr(record, 'new_state'):
-            message.append('[New:%s]' % record.new_status)
         if hasattr(record, 'msg_command'):
-            message.append('[MSG: %s]' % record.msg_command)
+            message.append('msg')
         if hasattr(record, 'doc_name'):
             message.append('[%s]' % record.doc_name)
-        if hasattr(record, 'doc_uid'):
-            message.append('[%s]' % record.doc_uid)
+        #if hasattr(record, 'doc_uid'):
+        #    message.append('%s' % record.doc_uid)
         message.append(record.getMessage())
         record.message = ' '.join(message)
         record.asctime = self.formatTime(record, self.datefmt)
