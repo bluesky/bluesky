@@ -35,7 +35,7 @@ from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     RequestAbort, RequestStop, RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
-                    single_gen, short_uid, dflt_during_task)
+                    single_gen, short_uid, default_during_task)
 
 
 class _RunEnginePanic(Exception):
@@ -276,7 +276,7 @@ class RunEngine:
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
                  scan_id_source=default_scan_id_source,
-                 during_task=dflt_during_task):
+                 during_task=default_during_task):
         if loop is None:
             loop = get_bluesky_event_loop()
         self._th = _ensure_event_loop_running(loop)

@@ -1276,7 +1276,7 @@ def merge_cycler(cyc):
 _qapp = None
 
 
-def dflt_during_task(blocking_event):
+def default_during_task(blocking_event):
     """
     The default setting for the RunEngine's during_task parameter.
 
