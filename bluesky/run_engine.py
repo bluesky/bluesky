@@ -15,15 +15,11 @@ import threading
 import weakref
 from .bundlers import RunBundler
 
-<<<<<<< HEAD
 import concurrent
 
 from event_model import DocumentNames, schema_validators
-=======
 import jsonschema
-from .log import doc_logger, msg_logger, state_logger
-from event_model import DocumentNames, schemas
->>>>>>> ENH: New logging framework for bluesky
+from .log import msg_logger, state_logger
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
@@ -1596,7 +1592,6 @@ class RunEngine:
         # against users mutating the md with their validator.
         self.md_validator(dict(md))
 
-<<<<<<< HEAD
         current_run = self._run_bundlers[run_key] = RunBundler(
             md, self.record_interruptions, self.emit, self.emit_sync, self.log,
             loop=self.loop)
@@ -1606,29 +1601,6 @@ class RunEngine:
         return new_uid
 
     async def _close_run(self, msg):
-=======
-        doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
-        yield from self.emit(DocumentNames.start, doc)
-        doc_logger.debug("Emitted RunStart (uid=%r)", doc['uid'],
-        extra={'doc_name': 'start', 'doc_uid': doc['uid']})
-        yield from self._reset_checkpoint_state_coro()
-
-        # Emit an Event Descriptor for recording any interruptions as Events.
-        if self.record_interruptions:
-            self._interruptions_desc_uid = new_uid()
-            dk = {'dtype': 'string', 'shape': [], 'source': 'RunEngine'}
-            interruptions_desc = dict(time=ttime.time(),
-                                      uid=self._interruptions_desc_uid,
-                                      name='interruptions',
-                                      data_keys={'interruption': dk},
-                                      run_start=self._run_start_uid)
-            yield from self.emit(DocumentNames.descriptor, interruptions_desc)
-
-        return self._run_start_uid
-
-    @asyncio.coroutine
-    def _close_run(self, msg):
->>>>>>> ENH: New logging framework for bluesky
         """Instruct the RunEngine to write the RunStop document
 
         Expected message object is:
@@ -1638,7 +1610,6 @@ class RunEngine:
         if *exit_stats* and *reason* are not provided, use the values
         stashed on the RE.
         """
-<<<<<<< HEAD
         # TODO extract this from the Msg
         run_key = _extract_run_key(msg)
         try:
@@ -1650,43 +1621,6 @@ class RunEngine:
         ret = (await current_run.close_run(msg))
         del self._run_bundlers[run_key]
         return ret
-=======
-        if not self._run_is_open:
-            raise IllegalMessageSequence("A 'close_run' message was received "
-                                         "but there is no run open. If this "
-                                         "occurred after a pause/resume, add "
-                                         "a 'checkpoint' message after the "
-                                         "'close_run' message.")
-        self.log.debug("Stopping run %r", self._run_start_uid)
-        # Clear any uncleared monitoring callbacks.
-        for obj, (cb, kwargs) in list(self._monitor_params.items()):
-            obj.clear_sub(cb)
-            del self._monitor_params[obj]
-        # Count the number of Events in each stream.
-        num_events = {}
-        for bundle_name, counter in self._sequence_counters.items():
-            if bundle_name is None:
-                # rare but possible via Msg('create', name='primary')
-                continue
-            num_events[bundle_name] = next(counter) - 1
-        reason = msg.kwargs.get('reason', None)
-        if reason is None:
-            reason = self._reason
-        exit_status = msg.kwargs.get('exit_status', None)
-        if exit_status is None:
-            exit_status = self._exit_status
-        doc = dict(run_start=self._run_start_uid,
-                   time=ttime.time(), uid=new_uid(),
-                   exit_status=exit_status,
-                   reason=reason,
-                   num_events=num_events)
-        self._clear_run_cache()
-        yield from self.emit(DocumentNames.stop, doc)
-        doc_logger.debug("Emitted RunStop (uid=%r)", doc['uid'],
-                         extra={'doc_name': 'stop', 'doc_uid': doc['uid']})
-        yield from self._reset_checkpoint_state_coro()
-        return doc['run_start']
->>>>>>> ENH: New logging framework for bluesky
 
     async def _create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
@@ -1761,52 +1695,9 @@ class RunEngine:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
             raise IllegalMessageSequence("A 'monitor' message was sent but no "
-<<<<<<< HEAD
                                          "run is open.") from ke
         await current_run.monitor(msg)
         await self._reset_checkpoint_state_coro()
-=======
-                                         "run is open.")
-        if obj in self._monitor_params:
-            raise IllegalMessageSequence("A 'monitor' message was sent for {}"
-                                         "which is already monitored".format(
-                                             obj))
-        descriptor_uid = new_uid()
-        data_keys = obj.describe()
-        config = {obj.name: {'data': {}, 'timestamps': {}}}
-        config[obj.name]['data_keys'] = obj.describe_configuration()
-        for key, val in obj.read_configuration().items():
-            config[obj.name]['data'][key] = val['value']
-            config[obj.name]['timestamps'][key] = val['timestamp']
-        object_keys = {obj.name: list(data_keys)}
-        hints = {}
-        if hasattr(obj, 'hints'):
-            hints.update({obj.name: obj.hints})
-        desc_doc = dict(run_start=self._run_start_uid, time=ttime.time(),
-                        data_keys=data_keys, uid=descriptor_uid,
-                        configuration=config, hints=hints, name=name,
-                        object_keys=object_keys)
-        doc_logger.debug("Emitted Event Descriptor with name %r containing "
-                         "data keys %r (uid=%r)", name, data_keys.keys(),
-                         descriptor_uid,
-                         extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
-        seq_num_counter = count(1)
-
-        def emit_event(*args, **kwargs):
-            # Ignore the inputs. Use this call as a signal to call read on the
-            # object, a crude way to be sure we get all the info we need.
-            data, timestamps = _rearrange_into_parallel_dicts(obj.read())
-            doc = dict(descriptor=descriptor_uid,
-                       time=ttime.time(), data=data, timestamps=timestamps,
-                       seq_num=next(seq_num_counter), uid=new_uid())
-            _validate(doc, schemas[DocumentNames.event])
-            self.dispatcher.process(DocumentNames.event, doc)
-
-        self._monitor_params[obj] = emit_event, kwargs
-        yield from self.emit(DocumentNames.descriptor, desc_doc)
-        obj.subscribe(emit_event, **kwargs)
-        yield from self._reset_checkpoint_state_coro()
->>>>>>> MNT: Update typo and style
 
     async def _unmonitor(self, msg):
         """
@@ -1839,7 +1730,6 @@ class RunEngine:
         except KeyError as ke:
             # sanity check -- this should be caught by 'create' which makes
             # this code path impossible
-<<<<<<< HEAD
             raise IllegalMessageSequence(
                 "A 'save' message was sent but no " "run is open."
             ) from ke
@@ -1847,101 +1737,6 @@ class RunEngine:
         await current_run.save(msg)
 
     async def _drop(self, msg):
-=======
-            raise IllegalMessageSequence("A 'save' message was sent but no "
-                                         "run is open.")
-        # Short-circuit if nothing has been read. (Do not create empty Events.)
-        if not self._objs_read:
-            self._bundling = False
-            self._bundle_name = None
-            return
-        # The Event Descriptor is uniquely defined by the set of objects
-        # read in this Event grouping.
-        objs_read = frozenset(self._objs_read)
-
-        # Event Descriptor documents
-        desc_key = self._bundle_name
-
-        # This is a separate check because it can be reset on resume.
-        seq_num_key = desc_key
-        if seq_num_key not in self._sequence_counters:
-            counter = count(1)
-            counter_copy1, counter_copy2 = tee(counter)
-            self._sequence_counters[seq_num_key] = counter_copy1
-            self._teed_sequence_counters[seq_num_key] = counter_copy2
-        self._bundling = False
-        self._bundle_name = None
-
-        d_objs, doc = self._descriptors.get(desc_key, (None, None))
-        if d_objs is not None and d_objs != objs_read:
-            raise RuntimeError("Mismatched objects read, expected {!s}, "
-                               "got {!s}".format(d_objs, objs_read))
-        if doc is None:
-            # We don't not have an Event Descriptor for this set.
-            data_keys = {}
-            config = {}
-            object_keys = {}
-            hints = {}
-            for obj in objs_read:
-                dks = self._describe_cache[obj]
-                name = obj.name
-                # dks is an OrderedDict. Record that order as a list.
-                object_keys[obj.name] = list(dks)
-                for field, dk in dks.items():
-                    dk['object_name'] = name
-                data_keys.update(dks)
-                config[name] = {}
-                config[name]['data'] = self._config_values_cache[obj]
-                config[name]['timestamps'] = self._config_ts_cache[obj]
-                config[name]['data_keys'] = self._config_desc_cache[obj]
-                if hasattr(obj, 'hints'):
-                    hints[name] = obj.hints
-            descriptor_uid = new_uid()
-            doc = dict(run_start=self._run_start_uid, time=ttime.time(),
-                       data_keys=data_keys, uid=descriptor_uid,
-                       configuration=config, name=desc_key,
-                       hints=hints, object_keys=object_keys)
-            yield from self.emit(DocumentNames.descriptor, doc)
-            doc_logger.debug("Emitted Event Descriptor with name %r containing "
-                             "data keys %r (uid=%r)", desc_key,
-                             data_keys.keys(), descriptor_uid,
-                             extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
-            self._descriptors[desc_key] = (objs_read, doc)
-
-        descriptor_uid = doc['uid']
-
-        # Resource and Datum documents
-        for name, doc in self._asset_docs_cache:
-            # Add a 'run_start' field to the resource document on its way out.
-            if name == 'resource':
-                doc['run_start'] = self._run_start_uid
-            yield from self.emit(DocumentNames(name), doc)
-
-        # Event documents
-        seq_num = next(self._sequence_counters[seq_num_key])
-        event_uid = new_uid()
-        # Merge list of readings into single dict.
-        readings = {k: v for d in self._read_cache for k, v in d.items()}
-        for key in readings:
-            readings[key]['value'] = readings[key]['value']
-        data, timestamps = _rearrange_into_parallel_dicts(readings)
-        # Mark all externally-stored data as not filled so that consumers
-        # know that the corresponding data are identifies, not dereferenced
-        # data.
-        filled = {k: False
-                  for k, v in
-                  self._descriptors[desc_key][1]['data_keys'].items()
-                  if 'external' in v}
-        doc = dict(descriptor=descriptor_uid,
-                   time=ttime.time(), data=data, timestamps=timestamps,
-                   seq_num=seq_num, uid=event_uid, filled=filled)
-        yield from self.emit(DocumentNames.event, doc)
-        doc_logger.debug("Emitted Event with data keys %r (currnt_run_uid=%r)", data.keys(),
-                         self._run_start_uid, extra={'doc_name': 'event', 'doc_uid': self._run_start_uid})
-
-    @asyncio.coroutine
-    def _drop(self, msg):
->>>>>>> ENH: New logging framework for bluesky
         """Drop the event that is currently being bundled
 
         Expected message object is:
@@ -2080,93 +1875,9 @@ class RunEngine:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
             raise IllegalMessageSequence("A 'collect' message was sent but no "
-<<<<<<< HEAD
                                          "run is open.") from ke
 
         return (await current_run.collect(msg))
-=======
-                                         "run is open.")
-        self._uncollected.discard(obj)
-
-        if hasattr(obj, 'collect_asset_docs'):
-            # Resource and Datum documents
-            for name, doc in obj.collect_asset_docs():
-                # Add a 'run_start' field to the resource document on its way out.
-                if name == 'resource':
-                    doc['run_start'] = self._run_start_uid
-                yield from self.emit(DocumentNames(name), doc)
-
-        named_data_keys = obj.describe_collect()
-        # e.g., {name_for_desc1: data_keys_for_desc1,
-        #        name for_desc2: data_keys_for_desc2, ...}
-        bulk_data = {}
-        local_descriptors = {}  # hashed on obj_read, not (name, objs_read)
-        for stream_name, data_keys in named_data_keys.items():
-            desc_key = stream_name
-            d_objs = frozenset(data_keys)
-            if desc_key not in self._descriptors:
-                objs_read = d_objs
-                # We don't not have an Event Descriptor for this set.
-                descriptor_uid = new_uid()
-                object_keys = {obj.name: list(data_keys)}
-                hints = {}
-                if hasattr(obj, 'hints'):
-                    hints.update({obj.name: obj.hints})
-                doc = dict(run_start=self._run_start_uid, time=ttime.time(),
-                           data_keys=data_keys, uid=descriptor_uid,
-                           name=stream_name, hints=hints,
-                           object_keys=object_keys)
-                yield from self.emit(DocumentNames.descriptor, doc)
-                doc_logger.debug("Emitted Event Descriptor with name %r "
-                                 "containing data keys %r (uid=%r)", stream_name,
-                                 data_keys.keys(), descriptor_uid,
-                                 extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
-                self._descriptors[desc_key] = (objs_read, doc)
-                self._sequence_counters[desc_key] = count(1)
-            else:
-                objs_read, doc = self._descriptors[desc_key]
-            if d_objs != objs_read:
-                raise RuntimeError("Mismatched objects read, "
-                                   "expected {!s}, "
-                                   "got {!s}".format(d_objs, objs_read))
-
-            descriptor_uid = doc['uid']
-            local_descriptors[objs_read] = (stream_name, descriptor_uid)
-
-            bulk_data[descriptor_uid] = []
-
-        # If stream is True, run 'event' subscription per document.
-        # If stream is False, run 'bulk_events' subscription once.
-        stream = msg.kwargs.get('stream', False)
-        for ev in obj.collect():
-            objs_read = frozenset(ev['data'])
-            stream_name, descriptor_uid = local_descriptors[objs_read]
-            seq_num = next(self._sequence_counters[stream_name])
-
-            event_uid = new_uid()
-
-            reading = ev['data']
-            for key in ev['data']:
-                reading[key] = reading[key]
-            ev['data'] = reading
-            ev['descriptor'] = descriptor_uid
-            ev['seq_num'] = seq_num
-            ev['uid'] = event_uid
-
-            if stream:
-                doc_logger.debug("Emitted Event with data keys %r (uid=%r)",
-                                 ev['data'].keys(), ev['uid'],
-                                 event_uid, extra={'doc_name': 'event', 'doc_uid': ev['uid']})
-                yield from self.emit(DocumentNames.event, ev)
-            else:
-                bulk_data[descriptor_uid].append(ev)
-
-        if not stream:
-            yield from self.emit(DocumentNames.bulk_events, bulk_data)
-            doc_logger.debug("Emitted bulk events for descriptors with uids "
-                           "%r", bulk_data.keys(),
-                           extra={'doc_name': 'bulk_events'})
->>>>>>> MNT: Update typo and style
 
     async def _null(self, msg):
         """
