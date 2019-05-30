@@ -25,7 +25,6 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    SupplementalData)
 
 
-
 def test_states():
     assert RunEngineStateMachine.States.states() == ['idle',
                                                      'running',
@@ -34,7 +33,9 @@ def test_states():
                                                      'halting',
                                                      'stopping',
                                                      'aborting',
-                                                     'suspending',]
+                                                     'suspending',
+                                                     'panicked',
+                                                     ]
 
 
 def test_state_is_readonly(RE):
@@ -46,7 +47,8 @@ def test_verbose(RE, hw):
     RE.verbose = True
     assert RE.verbose
     # Emit all four kinds of document, exercising the logging.
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det), Msg('save'),
+    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det),
+        Msg('save'),
         Msg('close_run')])
 
 

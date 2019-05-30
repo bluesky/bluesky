@@ -70,6 +70,8 @@ class RunEngineStateMachine(StateMachine):
 
         SUSPENDING = 'suspending'
 
+        PANICKED = 'panicked'
+
         @classmethod
         def states(cls):
             return [state.value for state in cls]
@@ -81,14 +83,17 @@ class RunEngineStateMachine(StateMachine):
             # Notice that 'transitions' and 'named_transitions' have
             # opposite to <--> from structure.
             # from_state : [valid_to_states]
-            'idle': ['running'],
-            'running': ['idle', 'pausing', 'halting', 'stopping', 'aborting', 'suspending'],
-            'pausing': ['paused', 'idle', 'halting', 'aborting'],
-            'suspending': ['running', 'halting', 'aborting'],
-            'paused': ['idle', 'running', 'halting', 'stopping', 'aborting'],
-            'halting': ['idle'],
-            'stopping': ['idle'],
-            'aborting': ['idle'],
+            'idle': ['running', 'panicked'],
+            'running': ['idle', 'pausing', 'halting', 'stopping',
+                        'aborting', 'suspending', 'panicked'],
+            'pausing': ['paused', 'idle', 'halting', 'aborting', 'panicked'],
+            'suspending': ['running', 'halting', 'aborting', 'panicked'],
+            'paused': ['idle', 'running', 'halting', 'stopping', 'aborting',
+                       'panicked'],
+            'halting': ['idle', 'panicked'],
+            'stopping': ['idle', 'panicked'],
+            'aborting': ['idle', 'panicked'],
+            'panicked': []
         }
         named_checkers = [
             ('can_pause', 'paused'),
