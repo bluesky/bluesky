@@ -817,13 +817,15 @@ class RunEngine:
         self.log.info("Executing plan %r", self._plan)
 
         def _build_task():
+            # make sure _run will block at the top
+            self._run_permit.clear()
+            self._blocking_event.clear()
             self._task_fut = asyncio.run_coroutine_threadsafe(self._run(),
                                                               loop=self.loop)
 
             def set_blocking_event(future):
                 self._blocking_event.set()
 
-            self._blocking_event.clear()
             self._task_fut.add_done_callback(set_blocking_event)
 
         self._resume_task(init_func=_build_task)
@@ -1236,6 +1238,7 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
+        await self._run_permit.wait()
         # grab the current task.  We need to do this here because the
         # object returned by `run_coroutine_threadsafe` is a future
         # that acts as a proxy that does not have the correct behavior
