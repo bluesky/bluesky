@@ -1406,11 +1406,11 @@ def test_force_stop_exit_status(bail_func, status, RE):
 
     @run_decorator()
     def bad_plan():
+        print('going in')
         yield Msg('pause')
-    try:
+    with pytest.raises(RunEngineInterrupted):
         RE(bad_plan())
-    except:
-        ...
+
     rs, = getattr(RE, bail_func)()
 
     assert len(d.start) == 1
