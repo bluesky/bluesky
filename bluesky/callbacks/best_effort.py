@@ -22,8 +22,8 @@ from .fitting import PeakStats
 
 
 class BestEffortCallback(QtAwareCallback):
-    def __init__(self, *, fig_factory=None, table_enabled=True):
-        super().__init__()
+    def __init__(self, *, fig_factory=None, table_enabled=True, **kwargs):
+        super().__init__(**kwargs)
         # internal state
         self._start_doc = None
         self._descriptors = {}

@@ -75,7 +75,7 @@ class LivePlot(QtAwareCallback):
     def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, fig=None, epoch='run', **kwargs):
         import matplotlib.pyplot as plt
-        super().__init__()
+        super().__init__(use_teleporter=kwargs.pop('use_teleporter', True))
         if fig is not None:
             if ax is not None:
                 raise ValueError("Values were given for both `fig` and `ax`. "
@@ -216,7 +216,7 @@ class LiveScatter(QtAwareCallback):
     """
     def __init__(self, x, y, I, *, xlim=None, ylim=None,
                  clim=None, cmap='viridis', ax=None, **kwargs):
-        super().__init__()
+        super().__init__(use_teleporter=kwargs.pop('use_teleporter', True))
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
         if ax is None:
@@ -359,8 +359,8 @@ class LiveGrid(QtAwareCallback):
     def __init__(self, raster_shape, I, *,
                  clim=None, cmap='viridis',
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
-                 ax=None, x_positive='right', y_positive='up'):
-        super().__init__()
+                 ax=None, x_positive='right', y_positive='up', **kwargs):
+        super().__init__(**kwargs)
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
         if ax is None:
