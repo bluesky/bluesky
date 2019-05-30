@@ -1292,14 +1292,13 @@ def default_during_task(blocking_event):
     if 'matplotlib' not in sys.modules:
         # We are not using matplotlib + Qt. Just wait on the Event.
         blocking_event.wait()
-    # Figure out if we are using matplotlib with a Qt backend, and do so
+    # Figure out if we are using matplotlib with which backend
     # without importing anything that is not already imported.
     else:
         import matplotlib
-        if matplotlib.get_backend() not in ('Qt4Agg', 'Qt5Agg'):
-            # We are not using matplotlib + Qt. Just wait on the Event.
-            blocking_event.wait()
-        else:
+        backend = matplotlib.get_backend().lower()
+        # if with a Qt backend, do the scary thing
+        if 'qt' in backend:
             from matplotlib.backends.qt_compat import QtCore, QtWidgets
             app = QtWidgets.QApplication.instance()
             if app is None:
@@ -1407,3 +1406,15 @@ def default_during_task(blocking_event):
                     cleanup()
                 finally:
                     sys.excepthook = old_sys_handler
+        elif 'ipympl' in backend:
+            Gcf = matplotlib._pylab_helpers.Gcf
+            while True:
+                done = blocking_event.wait(.1)
+                for f_mgr in Gcf.get_all_fig_managers():
+                    if f_mgr.canvas.figure.stale:
+                        f_mgr.canvas.draw()
+                if done:
+                    return
+        else:
+            # We are not using matplotlib + Qt. Just wait on the Event.
+            blocking_event.wait()
