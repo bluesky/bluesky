@@ -930,7 +930,8 @@ class RunEngine:
                         exc = None
                     # if the main task exception is not None, re-raise
                     # it (unless it is a canceled error)
-                    if exc is not None and not isinstance(exc, _RunEnginePanic):
+                    if (exc is not None
+                             and not isinstance(exc, _RunEnginePanic)):
                         raise exc
 
     def install_suspender(self, suspender):
