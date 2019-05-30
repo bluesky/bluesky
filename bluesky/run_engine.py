@@ -941,7 +941,7 @@ class RunEngine:
                     if not task_finished or num_threads != 1:
                         self._state = 'panicked'
                 except Exception as raised_er:
-                    self._task_fut.cancel()
+                    self.halt()
                     self._interrupted = True
                     raise raised_er
             finally:
