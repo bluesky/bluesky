@@ -620,6 +620,32 @@ def test_sigint_many_hits_pln(RE):
     assert RE.state == 'idle'
 
 
+def test_sigint_many_hits_panic(RE):
+    pid = os.getpid()
+
+    def sim_kill(n=1):
+        for j in range(n):
+            print('KILL', j)
+            ttime.sleep(0.05)
+            os.kill(pid, signal.SIGINT)
+
+    def hanging_plan():
+        "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
+        yield Msg('null')
+        ttime.sleep(10)
+        yield Msg('null')
+
+    start_time = ttime.time()
+    timer = threading.Timer(0.2, sim_kill, (11,))
+    timer.start()
+    with pytest.raises(RunEngineInterrupted):
+        RE(hanging_plan())
+    # Check that hammering SIGINT escaped from that 10-second sleep.
+    assert ttime.time() - start_time < 2
+    # The KeyboardInterrupt will have been converted to a hard pause.
+    assert RE.state == 'panicked'
+
+
 @pytest.mark.skipif(sys.version_info < (3, 5),
                     reason="requires python3.5")
 def test_sigint_many_hits_cb(RE):

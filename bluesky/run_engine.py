@@ -12,7 +12,6 @@ import functools
 import inspect
 from contextlib import ExitStack
 import threading
-import ctypes
 import weakref
 
 import concurrent
@@ -918,7 +917,8 @@ class RunEngine:
                 try:
                     self._during_task(self._blocking_event)
                 except KeyboardInterrupt:
-                    ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                    import ctypes
+                    self._interrupted = True
                     # we can not interrupt a python thread from the outside
                     # but there is an API to schedule an exception to be raised
                     # the next time that thread would interpret byte code.
@@ -928,14 +928,18 @@ class RunEngine:
                     #   own C extension to call this.
                     #
                     # Here we cheat a bit and use ctypes.
+                    num_threads = ctypes.pythonapi.PyThreadState_SetAsyncExc(
                         ctypes.c_ulong(self._th.ident),
                         ctypes.py_object(_RunEnginePanic))
-                    self._interrupted = True
-                    self._blocking_event.wait(1)
                     # however, if the thread is in a system call (such
                     # as sleep or I/O) there is no way to interrupt it
                     # (per decree of Guido) thus we give it a second
                     # to sort it's self out
+                    task_finished = self._blocking_event.wait(1)
+                    # before giving up and putting the RE in a
+                    # non-recoverable panicked state.
+                    if not task_finished or num_threads != 1:
+                        self._state = 'panicked'
                 except Exception as raised_er:
                     self._task_fut.cancel()
                     self._interrupted = True

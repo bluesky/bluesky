@@ -12,7 +12,7 @@ def RE(request):
     RE = RunEngine({}, loop=loop)
 
     def clean_event_loop():
-        if RE.state != 'idle':
+        if RE.state not in ('idle', 'panicked'):
             try:
                 RE.halt()
             except TransitionError:
