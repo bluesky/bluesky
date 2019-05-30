@@ -23,6 +23,7 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    run_wrapper, rewindable_wrapper,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
+from super_state_machine.errors import TransitionError
 
 
 def test_states():
@@ -36,6 +37,14 @@ def test_states():
                                                      'suspending',
                                                      'panicked',
                                                      ]
+
+
+def test_panic_trap(RE):
+    RE._state = 'panicked'
+    for k in RunEngineStateMachine.States.states():
+        if k != 'panicked':
+            with pytest.raises(TransitionError):
+                RE._state = k
 
 
 def test_state_is_readonly(RE):
