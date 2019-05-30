@@ -17,7 +17,10 @@ def _get_teleporter():
 
 
 class QtAwareCallback(CallbackBase):
-    def __init__(self, *args, use_teleporter=True, **kwargs):
+    def __init__(self, *args, use_teleporter=None, **kwargs):
+        if use_teleporter is None:
+            import matplotlib
+            use_teleporter = 'qt' in matplotlib.get_backend()
         if use_teleporter:
             Teleporter = _get_teleporter()
             self.__teleporter = Teleporter()
@@ -75,7 +78,7 @@ class LivePlot(QtAwareCallback):
     def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, fig=None, epoch='run', **kwargs):
         import matplotlib.pyplot as plt
-        super().__init__(use_teleporter=kwargs.pop('use_teleporter', True))
+        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
         if fig is not None:
             if ax is not None:
                 raise ValueError("Values were given for both `fig` and `ax`. "
@@ -216,7 +219,7 @@ class LiveScatter(QtAwareCallback):
     """
     def __init__(self, x, y, I, *, xlim=None, ylim=None,
                  clim=None, cmap='viridis', ax=None, **kwargs):
-        super().__init__(use_teleporter=kwargs.pop('use_teleporter', True))
+        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
         if ax is None:
