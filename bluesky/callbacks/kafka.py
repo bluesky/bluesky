@@ -22,29 +22,31 @@ class Publisher:
     address : string
         Address of a running Kafka server as a string like
         ``'127.0.0.1:9092'``
-    topic : string
-        Kafka topic string
     serializer: function, optional
         optional function to serialize data. Default is pickle.dumps
 
     Example
     -------
 
-    Publish from a RunEngine to a Kafka server on localhost on port 9092 with topic 'some-topic'.
+    Publish from a RunEngine to a Kafka server on localhost on port 9092.
 
-    >>> publisher = Publisher('localhost:9092', 'some-topic')
+    >>> publisher = Publisher('localhost:9092')
     >>> RE = RunEngine({})
     >>> RE.subscribe(publisher)
     """
-    def __init__(self, address, *, topic, serializer=pickle.dumps):
+    def __init__(self, address, *, serializer=pickle.dumps):
         self.address = address
-        self.topic = topic
         self.producer = Producer({'bootstrap.servers': self.address})
         self._serializer = serializer
 
     def __call__(self, name, doc):
+        print(f'name: {name}')
+        print(f'doc:\n{doc}')
         doc = copy.deepcopy(doc)
-        self.producer.produce(self.topic, self._serializer(doc), callback=delivery_report)
+        self.producer.poll(0)
+        self.producer.produce(name, self._serializer(doc), callback=delivery_report)
+        print('flush')
+        self.producer.flush()
 
     def close(self):
         pass
