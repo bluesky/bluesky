@@ -632,7 +632,7 @@ def test_sigint_many_hits_panic(RE):
     def hanging_plan():
         "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
         yield Msg('null')
-        ttime.sleep(10)
+        ttime.sleep(3)
         yield Msg('null')
 
     start_time = ttime.time()
@@ -640,10 +640,28 @@ def test_sigint_many_hits_panic(RE):
     timer.start()
     with pytest.raises(RunEngineInterrupted):
         RE(hanging_plan())
-    # Check that hammering SIGINT escaped from that 10-second sleep.
-    assert ttime.time() - start_time < 2
-    # The KeyboardInterrupt will have been converted to a hard pause.
+    # Check that hammering SIGINT escaped from that 3-second sleep.
+    assert (ttime.time() - start_time) < 2
+    # The KeyboardInterrupt but because we could not shut down, panic!
     assert RE.state == 'panicked'
+
+    with pytest.raises(RuntimeError):
+        RE([])
+
+    with pytest.raises(RuntimeError):
+        RE.stop()
+
+    with pytest.raises(RuntimeError):
+        RE.halt()
+
+    with pytest.raises(RuntimeError):
+        RE.abort()
+
+    with pytest.raises(RuntimeError):
+        RE.resume()
+
+    with pytest.raises(RuntimeError):
+        RE.request_pause()
 
 
 @pytest.mark.skipif(sys.version_info < (3, 5),

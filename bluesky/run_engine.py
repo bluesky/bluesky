@@ -757,6 +757,10 @@ class RunEngine:
         uids : list
             list of uids (i.e. RunStart Document uids) of run(s)
         """
+        if self.state == 'panicked':
+            raise RuntimeError("The RunEngine is panicked and "
+                               "cannot be recovered. "
+                               "You must restart bluesky.")
         # This scheme lets us make 'plan' and 'subs' POSITIONAL ONLY, reserving
         # all keyword arguments for user metdata.
         arguments = _call_sig.bind(self, *args, **metadata_kw).arguments
@@ -849,6 +853,11 @@ class RunEngine:
         uids : list
             list of Header uids (a.k.a RunStart uids) of run(s)
         """
+        if self.state == 'panicked':
+            raise RuntimeError("The RunEngine is panicked and "
+                               "cannot be recovered. "
+                               "You must restart bluesky.")
+
         # The state machine does not capture the whole picture.
         if not self._state.is_paused:
             raise TransitionError("The RunEngine is the {0} state. "
@@ -1202,6 +1211,11 @@ class RunEngine:
         return self.__interpterer_helper(self._halt_coro())
 
     def __interpterer_helper(self, coro):
+        if self.state == 'panicked':
+            raise RuntimeError("The RunEngine is panicked and "
+                               "cannot be recovered. "
+                               "You must restart bluesky.")
+
 
         coro_event = threading.Event()
         task = None
