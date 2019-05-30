@@ -919,10 +919,23 @@ class RunEngine:
                     self._during_task(self._blocking_event)
                 except KeyboardInterrupt:
                     ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                    # we can not interrupt a python thread from the outside
+                    # but there is an API to schedule an exception to be raised
+                    # the next time that thread would interpret byte code.
+                    # The documentation of this function includes the sentence
+                    #
+                    #   To prevent naive misuse, you must write your
+                    #   own C extension to call this.
+                    #
+                    # Here we cheat a bit and use ctypes.
                         ctypes.c_ulong(self._th.ident),
                         ctypes.py_object(_RunEnginePanic))
                     self._interrupted = True
                     self._blocking_event.wait(1)
+                    # however, if the thread is in a system call (such
+                    # as sleep or I/O) there is no way to interrupt it
+                    # (per decree of Guido) thus we give it a second
+                    # to sort it's self out
                 except Exception as raised_er:
                     self._task_fut.cancel()
                     self._interrupted = True
