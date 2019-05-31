@@ -298,7 +298,7 @@ class BestEffortCallback(QtAwareCallback):
                         MAR = 2
                         if (1/MAR < data_aspect_ratio < MAR):
                             aspect = 'equal'
-                            ax.set_aspect(aspect, adjustable='box-forced')
+                            ax.set_aspect(aspect, adjustable='box')
                         else:
                             aspect = 'auto'
                             ax.set_aspect(aspect, adjustable='datalim')
