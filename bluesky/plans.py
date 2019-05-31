@@ -805,6 +805,12 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
                              "argument 'num'.")
         num = args[-1]
         args = args[:-1]
+
+    if not (float(num).is_integer() and num > 0.0):
+        raise ValueError(f"The parameter `num` is expected to be a number of steps (not step size!) "
+                         f"It must therefore be a whole number. The given value was {num}.")
+    num = int(num)
+
     md_args = list(chain(*((repr(motor), start, stop)
                            for motor, start, stop in partition(3, args))))
     motor_names = tuple(motor.name for motor, start, stop
