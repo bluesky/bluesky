@@ -174,18 +174,6 @@ class BestEffortCallback(QtAwareCallback):
                 fixed_dim_fields.extend(fields)
             self.dim_fields = fixed_dim_fields
 
-        # ## TABLE ## #
-
-        if stream_name == self.dim_stream:
-            # Ensure that no independent variables ('dimensions') are
-            # duplicated here.
-            columns = [c for c in columns if c not in self.all_dim_fields]
-
-            if self._table_enabled:
-                # plot everything, independent or dependent variables
-                self._table = LiveTable(list(self.all_dim_fields) + columns)
-                self._table('start', self._start_doc)
-                self._table('descriptor', doc)
 
         # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
 
@@ -341,6 +329,7 @@ class BestEffortCallback(QtAwareCallback):
                     live_scatter('start', self._start_doc)
                     live_scatter('descriptor', doc)
                     self._live_scatters[doc['uid']][I_key] = live_scatter
+
         else:
             raise NotImplementedError("we do not support 3D+ in BEC yet "
                                       "(and it should have bailed above)")
@@ -348,6 +337,18 @@ class BestEffortCallback(QtAwareCallback):
             fig.tight_layout()
         except ValueError:
             pass
+        # ## TABLE ## #
+
+        if stream_name == self.dim_stream:
+            # Ensure that no independent variables ('dimensions') are
+            # duplicated here.
+            columns = [c for c in columns if c not in self.all_dim_fields]
+
+            if self._table_enabled:
+                # plot everything, independent or dependent variables
+                self._table = LiveTable(list(self.all_dim_fields) + columns)
+                self._table('start', self._start_doc)
+                self._table('descriptor', doc)
 
     def event(self, doc):
         descriptor = self._descriptors[doc['descriptor']]
