@@ -17,12 +17,13 @@ ophyd
 pandas
 pims
 pyepics
+pyqt5
 pytest
 pytest-faulthandler
 pyyaml
 pyzmq
 requests
-streamz
 sphinx==1.6.4
 sphinx_rtd_theme
+streamz
 tifffile
