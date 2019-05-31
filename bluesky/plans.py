@@ -112,7 +112,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
     motors = []
     pos_lists = []
     length = None
-    for motor, pos_list in partition(2,args):
+    for motor, pos_list in partition(2, args):
         pos_list = list(pos_list)  # Ensure list (accepts any finite iterable).
         lengths[motor.name] = len(pos_list)
         if not length:
@@ -123,7 +123,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
                        list(lengths.values()))
 
     if not length_check:
-        raise ValueError("The lengths of all lists in *args must be the same"
+        raise ValueError("The lengths of all lists in *args must be the same. "
                          "However the lengths in args are : "
                          "{}".format(lengths))
 
@@ -246,7 +246,7 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
         simple left-to-right trajectory.
 
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -277,7 +277,7 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
            'plan_name': 'list_grid_scan',
            'plan_pattern': 'outer_list_product',
            'plan_pattern_args': dict(args=md_args).update(
-                {'snake_axes':snake_axes}),
+                {'snake_axes': snake_axes}),
            'plan_pattern_module': plan_patterns.__name__,
            'motors': tuple(motor_names),
            'hints': {},
@@ -297,8 +297,8 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
 def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
                        md=None):
     """
-    Scan over a mesh; each motor is on an independent trajectory.Each point is
-    relative to the current postion.
+    Scan over a mesh; each motor is on an independent trajectory. Each point is
+    relative to the current position.
 
     Parameters
     ----------
@@ -323,7 +323,7 @@ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
         simple left-to-right trajectory.
 
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -868,7 +868,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     cycler : Cycler
         list of dictionaries mapping motors to positions
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -974,7 +974,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
     num : integer
         number of points
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -1061,7 +1061,7 @@ def grid_scan(detectors, *args, per_step=None, md=None):
         indicating whether to following snake-like, winding trajectory or a
         simple left-to-right trajectory.
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -1133,7 +1133,7 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -1190,7 +1190,7 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     num : integer
         number of points
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -1320,7 +1320,7 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -1389,7 +1389,7 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -1444,7 +1444,7 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -1519,7 +1519,7 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
+        hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
     md : dict, optional
@@ -1570,7 +1570,7 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     y_num : float
         Number of y axis points.
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for cutomizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plans.one_nd_step` (the default) for
         details.
     md : dict, optional
@@ -1637,7 +1637,7 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
     y_num : float
         Number of y axis points.
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for cutomizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plans.one_nd_step` (the default) for
         details.
     md : dict, optional
@@ -1801,7 +1801,7 @@ def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
         will move between ``start / 2`` and ``stop / 2``
 
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
+        hook for cutomizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
 

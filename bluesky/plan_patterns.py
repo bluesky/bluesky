@@ -280,7 +280,7 @@ def inner_list_product(args):
                         ``...,``
                         ``motorN, position_listN``)
         Motors can be any 'settable' object (motor, temp controller, etc.)
-        ``position_list``'s are a list of postiions, all lists must have the
+        ``position_list``'s are lists of positions, all lists must have the
         same length.
     Returns
     -------
@@ -321,7 +321,7 @@ def outer_list_product(args, snake_axes):
 
     See Also
     --------
-    `bluesky.plan_patterns.inner_list_product`
+    :func:`bluesky.plan_patterns.inner_list_product`
 
     Returns
     -------
@@ -344,8 +344,8 @@ def outer_list_product(args, snake_axes):
                 snaking.append(True)
         else:
             raise ValueError('The snake_axes arg to ``outer_list_product`` '
-                             'must be either False (do not snake any axes), '
-                             'True (snake all axes) or a list of axes to '
+                             'must be either "False" (do not snake any axes), '
+                             '"True" (snake all axes) or a list of axes to '
                              'snake. Instead it is {}.'.format(snake_axes))
 
         c = cycler(motor, pos_list)
