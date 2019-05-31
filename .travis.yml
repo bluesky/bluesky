@@ -37,6 +37,10 @@ matrix:
     - os: osx
       language: generic
       env: PYTHON=3.7
+    - os: linux
+      python: nightly
+  allow_failures:
+    - python: nightly
 
 before_install:
   - |
