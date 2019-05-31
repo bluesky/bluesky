@@ -1406,7 +1406,7 @@ def default_during_task(blocking_event):
                     cleanup()
                 finally:
                     sys.excepthook = old_sys_handler
-        elif 'ipympl' in backend:
+        elif 'ipympl' in backend or 'nbagg' in backend:
             Gcf = matplotlib._pylab_helpers.Gcf
             while True:
                 done = blocking_event.wait(.1)
