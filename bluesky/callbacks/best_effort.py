@@ -245,6 +245,10 @@ class BestEffortCallback(QtAwareCallback):
                                          **share_kwargs)
         axes = fig.axes
 
+        # Ensure that no independent variables ('dimensions') are
+        # duplicated here.
+        columns = [c for c in columns if c not in self.all_dim_fields]
+
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
         if ndims == 1:
@@ -337,13 +341,10 @@ class BestEffortCallback(QtAwareCallback):
             fig.tight_layout()
         except ValueError:
             pass
+
         # ## TABLE ## #
 
         if stream_name == self.dim_stream:
-            # Ensure that no independent variables ('dimensions') are
-            # duplicated here.
-            columns = [c for c in columns if c not in self.all_dim_fields]
-
             if self._table_enabled:
                 # plot everything, independent or dependent variables
                 self._table = LiveTable(list(self.all_dim_fields) + columns)
