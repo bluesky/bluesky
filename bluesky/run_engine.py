@@ -195,13 +195,17 @@ class RunEngine:
 
         The required signature is ::
 
-              def blocking_func(ev : Threading.Event) -> None:
+              def blocking_func(ev: Threading.Event) -> None:
                   "Returns when ev is set"
 
         The default value handles the cases of:
            - Matplotlib is not imported (just wait on the event)
-           - Matplotlib is imported, but not using a Qt backend (just wait on the event)
-           - Matplotlib is imported and using a Qt backend (run the Qt app)
+           - Matplotlib is imported, but not using a Qt, notebook or ipympl
+             backend (just wait on the event)
+           - Matplotlib is imported and using a Qt backend (run the Qt app
+             on the main thread until the run finishes)
+           - Matplotlib is imported and using a nbagg or ipympl backend (
+             wait on the event and poll to push updates to the browser)
 
     Attributes
     ----------
