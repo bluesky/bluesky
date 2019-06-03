@@ -138,6 +138,19 @@ def single_gen(msg):
 
 
 class SignalHandler:
+    """Context manager for signal handing
+
+    If multiple signals come in quickly, they may not all be seen, quoting
+    the libc manual:
+
+      Remember that if there is a particular signal pending for your
+      process, additional signals of that same type that arrive in the
+      meantime might be discarded. For example, if a SIGINT signal is
+      pending when another SIGINT signal arrives, your program will
+      probably only see one of them when you unblock this signal.
+
+    https://www.gnu.org/software/libc/manual/html_node/Checking-for-Pending-Signals.html
+    """
     def __init__(self, sig, log=None):
         self.sig = sig
         self.interrupted = False
