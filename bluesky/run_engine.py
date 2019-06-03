@@ -1290,7 +1290,9 @@ class RunEngine:
                             task.cancel()
                         self._state = 'aborting'
                         continue
-                # currently only using this
+                # currently only using 'suspending' to get us into the
+                # block above, we do not have a 'suspended' state
+                # (yet)
                 if self._state == 'suspending':
                     self._state = 'running'
                 if not self._run_permit.is_set():
