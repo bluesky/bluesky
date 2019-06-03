@@ -1145,7 +1145,7 @@ class RunEngine:
         :meth:`RunEngine.halt`
         :meth:`RunEngine.stop`
         """
-        return self.__interpterer_helper(self._abort_coro(reason))
+        return self.__interrupter_helper(self._abort_coro(reason))
 
     async def _abort_coro(self, reason):
         if self._state.is_idle:
@@ -1178,7 +1178,7 @@ class RunEngine:
         :meth:`RunEngine.abort`
         :meth:`RunEngine.halt`
         """
-        return self.__interpterer_helper(self._stop_coro())
+        return self.__interrupter_helper(self._stop_coro())
 
     async def _stop_coro(self):
         if self._state.is_idle:
@@ -1202,14 +1202,13 @@ class RunEngine:
         :meth:`RunEngine.abort`
         :meth:`RunEngine.stop`
         '''
-        return self.__interpterer_helper(self._halt_coro())
+        return self.__interrupter_helper(self._halt_coro())
 
-    def __interpterer_helper(self, coro):
+    def __interrupter_helper(self, coro):
         if self.state == 'panicked':
             raise RuntimeError("The RunEngine is panicked and "
                                "cannot be recovered. "
                                "You must restart bluesky.")
-
 
         coro_event = threading.Event()
         task = None
