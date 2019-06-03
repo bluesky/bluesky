@@ -2,7 +2,15 @@ import asyncio
 import copy
 import pickle
 import warnings
+
+import msgpack
+import msgpack_numpy
+
 from ..run_engine import Dispatcher, DocumentNames
+
+
+def msgpack_serialize(document)
+    return msgpack.packb(document, default=msgpack_numpy.encode)
 
 
 class Publisher:
@@ -37,7 +45,7 @@ class Publisher:
     >>> RE.subscribe(publisher)
     """
     def __init__(self, address, *, prefix=b'',
-                 RE=None, zmq=None, serializer=pickle.dumps):
+                 RE=None, zmq=None, serializer=msgpack_serialize):
         if RE is not None:
             warnings.warn("The RE argument to Publisher is deprecated and "
                           "will be removed in a future release of bluesky. "
