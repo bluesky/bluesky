@@ -62,7 +62,7 @@ for a function that passed the `~Thread.Event` and is responsible for
 blocking until it is set.  This function can do other things (such as
 run the Qt event loop) during that time.  The required signature is ::
 
-  def blocking_func(ev : Threading.Event) -> None:
+  def blocking_func(ev: Threading.Event) -> None:
       "Returns when ev is set"
 
 
