@@ -10,7 +10,7 @@ from collections import deque, defaultdict, ChainMap
 from enum import Enum
 import functools
 import inspect
-from contextlib import ExitStack, nullcontext
+from contextlib import ExitStack
 import threading
 import weakref
 
@@ -118,7 +118,9 @@ class LoggingPropertyMachine(PropertyMachine):
             obj.state_hook(value, old_value)
 
     def __get__(self, instance, owner):
-        with instance._state_lock if instance is not None else nullcontext():
+        if instance is None:
+            return super().__get__(instance, owner)
+        with instance._state_lock:
             return super().__get__(instance, owner)
 
 
