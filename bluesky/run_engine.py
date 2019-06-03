@@ -683,21 +683,11 @@ class RunEngine:
             If True, pause at the next checkpoint.
             False by default.
         """
-        coro_event = threading.Event()
-        task = None
-
-        def end_cb(fut):
-            coro_event.set()
-
-        def start_task():
-            nonlocal task
-            task = self.loop.create_task(self._request_pause_coro(defer))
-            task.add_done_callback(end_cb)
-
-        self.loop.call_soon_threadsafe(start_task)
-
-        coro_event.wait()
-        return task.result()
+        future = asyncio.run_coroutine_threadsafe(
+            self._request_pause_coro(defer),
+            loop=self.loop)
+        # TODO add a timeout here?
+        return future.result()
 
     async def _request_pause_coro(self, defer=False):
         # We are pausing. Cancel any deferred pause previously requested.
