@@ -1,7 +1,7 @@
 bluesky
 =======
 
-[![Build Status](https://travis-ci.org/NSLS-II/bluesky.svg)](https://travis-ci.org/NSLS-II/bluesky)
+[![Build Status](https://travis-ci.org/bluesky/bluesky.svg)](https://travis-ci.org/bluesky/bluesky)
 
 a Python data collection interface for experimental science
 
