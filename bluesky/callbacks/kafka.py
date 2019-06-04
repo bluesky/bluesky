@@ -101,8 +101,12 @@ class RemoteDispatcher(Dispatcher):
         while True:
             msg = self.consumer.poll()
             name = msg.topic()
-            doc = self._deserializer(msg.value())
-            self.process(DocumentNames[name], doc)
+
+            if msg.value() is None:
+                print(f'{name} doc is None')
+            else:
+                doc = self._deserializer(msg.value())
+                self.process(DocumentNames[name], doc)
 
     def start(self):
         if self.closed:
