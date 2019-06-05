@@ -8,7 +8,6 @@ import threading
 import time
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count
-import cloudpickle
 
 
 def test_zmq(RE, hw):
@@ -188,6 +187,7 @@ def test_zmq_no_RE(RE):
 
 
 def test_zmq_no_RE_newserializer(RE):
+    cloudpickle = pytest.importorskip('cloudpickle')
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
     def start_proxy():

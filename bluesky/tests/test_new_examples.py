@@ -61,6 +61,8 @@ import bluesky.plans as bp
 
 from bluesky.utils import all_safe_rewind
 
+import threading
+
 
 @pytest.mark.parametrize(
     'plan,plan_args,plan_kwargs,msgs',
@@ -617,9 +619,7 @@ def test_plan_md(RE, hw):
 
 
 def test_infinite_count(RE, hw):
-    loop = RE.loop
-
-    loop.call_later(2, RE.stop)
+    threading.Timer(1, RE.stop).start()
     docs = defaultdict(list)
 
     def collector(name, doc):

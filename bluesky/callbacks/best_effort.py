@@ -16,13 +16,14 @@ import time
 from warnings import warn
 import weakref
 
-from .core import CallbackBase, LiveTable
-from .mpl_plotting import LivePlot, LiveGrid, LiveScatter
+from .core import LiveTable
+from .mpl_plotting import LivePlot, LiveGrid, LiveScatter, QtAwareCallback
 from .fitting import PeakStats
 
 
-class BestEffortCallback(CallbackBase):
-    def __init__(self, *, fig_factory=None, table_enabled=True):
+class BestEffortCallback(QtAwareCallback):
+    def __init__(self, *, fig_factory=None, table_enabled=True, **kwargs):
+        super().__init__(**kwargs)
         # internal state
         self._start_doc = None
         self._descriptors = {}
@@ -85,12 +86,11 @@ class BestEffortCallback(CallbackBase):
         "Do not plot anything."
         self._plots_enabled = False
 
-    def __call__(self, name, doc):
+    def __call__(self, name, doc, *args, **kwargs):
         if not (self._table_enabled or self._baseline_enabled or
                 self._plots_enabled):
             return
-
-        super().__call__(name, doc)
+        super().__call__(name, doc, *args, **kwargs)
 
     def start(self, doc):
         self.clear()
@@ -174,18 +174,6 @@ class BestEffortCallback(CallbackBase):
                 fixed_dim_fields.extend(fields)
             self.dim_fields = fixed_dim_fields
 
-        # ## TABLE ## #
-
-        if stream_name == self.dim_stream:
-            # Ensure that no independent variables ('dimensions') are
-            # duplicated here.
-            columns = [c for c in columns if c not in self.all_dim_fields]
-
-            if self._table_enabled:
-                # plot everything, independent or dependent variables
-                self._table = LiveTable(list(self.all_dim_fields) + columns)
-                self._table('start', self._start_doc)
-                self._table('descriptor', doc)
 
         # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
 
@@ -257,6 +245,10 @@ class BestEffortCallback(CallbackBase):
                                          **share_kwargs)
         axes = fig.axes
 
+        # Ensure that no independent variables ('dimensions') are
+        # duplicated here.
+        columns = [c for c in columns if c not in self.all_dim_fields]
+
         # ## LIVE PLOT AND PEAK ANALYSIS ## #
 
         if ndims == 1:
@@ -310,7 +302,7 @@ class BestEffortCallback(CallbackBase):
                         MAR = 2
                         if (1/MAR < data_aspect_ratio < MAR):
                             aspect = 'equal'
-                            ax.set_aspect(aspect, adjustable='box-forced')
+                            ax.set_aspect(aspect, adjustable='box')
                         else:
                             aspect = 'auto'
                             ax.set_aspect(aspect, adjustable='datalim')
@@ -341,6 +333,7 @@ class BestEffortCallback(CallbackBase):
                     live_scatter('start', self._start_doc)
                     live_scatter('descriptor', doc)
                     self._live_scatters[doc['uid']][I_key] = live_scatter
+
         else:
             raise NotImplementedError("we do not support 3D+ in BEC yet "
                                       "(and it should have bailed above)")
@@ -348,6 +341,15 @@ class BestEffortCallback(CallbackBase):
             fig.tight_layout()
         except ValueError:
             pass
+
+        # ## TABLE ## #
+
+        if stream_name == self.dim_stream:
+            if self._table_enabled:
+                # plot everything, independent or dependent variables
+                self._table = LiveTable(list(self.all_dim_fields) + columns)
+                self._table('start', self._start_doc)
+                self._table('descriptor', doc)
 
     def event(self, doc):
         descriptor = self._descriptors[doc['descriptor']]

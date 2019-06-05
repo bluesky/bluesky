@@ -8,10 +8,11 @@ import uuid
 from functools import reduce
 from weakref import ref, WeakKeyDictionary
 import types
+import importlib
 import inspect
 from inspect import Parameter, Signature
 import itertools
-from collections import Iterable
+from collections.abc import Iterable
 import numpy as np
 from cycler import cycler
 import logging
@@ -137,6 +138,19 @@ def single_gen(msg):
 
 
 class SignalHandler:
+    """Context manager for signal handing
+
+    If multiple signals come in quickly, they may not all be seen, quoting
+    the libc manual:
+
+      Remember that if there is a particular signal pending for your
+      process, additional signals of that same type that arrive in the
+      meantime might be discarded. For example, if a SIGINT signal is
+      pending when another SIGINT signal arrives, your program will
+      probably only see one of them when you unblock this signal.
+
+    https://www.gnu.org/software/libc/manual/html_node/Checking-for-Pending-Signals.html
+    """
     def __init__(self, sig, log=None):
         self.sig = sig
         self.interrupted = False
@@ -161,6 +175,8 @@ class SignalHandler:
                 self.release()
                 orig_func(signum, frame)
 
+            self.handle_signals()
+
         signal.signal(self.sig, handler)
         return self
 
@@ -174,6 +190,9 @@ class SignalHandler:
         self.released = True
         return True
 
+    def handle_signals(self):
+        ...
+
 
 class SigintHandler(SignalHandler):
     def __init__(self, RE):
@@ -183,45 +202,40 @@ class SigintHandler(SignalHandler):
         self.num_sigints_processed = 0  # count SIGINTs processed
 
     def __enter__(self):
-        self.RE.loop.call_later(0.1, self.check_for_signals)
         return super().__enter__()
 
-    def check_for_signals(self):
+    def handle_signals(self):
         # Check for pause requests from keyboard.
+        # TODO, there is a possible race condition between the two
+        # pauses here
         if self.RE.state.is_running and (not self.RE._interrupted):
-            if self.count > self.num_sigints_processed:
-                self.num_sigints_processed = self.count
-                self.log.debug("RunEngine caught a new SIGINT")
+            if (self.last_sigint_time is None or
+                    time.time() - self.last_sigint_time > 10):
+                # reset the counter to 1
+                # It's been 10 seconds since the last SIGINT. Reset.
+                self.count = 1
+                if self.last_sigint_time is not None:
+                    self.log.debug("It has been 10 seconds since the "
+                                   "last SIGINT. Resetting SIGINT "
+                                   "handler.")
+                # weeee push these to threads to not block the main thread
+                threading.Thread(target=self.RE.request_pause,
+                                 args=(True,)).start()
+                print("A 'deferred pause' has been requested. The "
+                      "RunEngine will pause at the next checkpoint. "
+                      "To pause immediately, hit Ctrl+C again in the "
+                      "next 10 seconds.")
+
                 self.last_sigint_time = time.time()
+            elif self.count == 2:
+                print('trying a second time')
+                # - Ctrl-C twice within 10 seconds -> hard pause
+                self.log.debug("RunEngine detected two SIGINTs. "
+                               "A hard pause will be requested.")
 
-                if self.count == 1:
-                    # Ctrl-C once -> request a deferred pause
-                    if not self.RE._deferred_pause_requested:
-                        self.RE.loop.call_soon(self.RE.request_pause, True)
-                        print("A 'deferred pause' has been requested. The "
-                              "RunEngine will pause at the next checkpoint. "
-                              "To pause immediately, hit Ctrl+C again in the "
-                              "next 10 seconds.")
-                elif self.count > 1:
-                    # - Ctrl-C twice within 10 seconds -> hard pause
-                    self.log.debug("RunEngine detected two SIGINTs. "
-                                   "A hard pause will be requested.")
-                    self.RE.loop.call_soon(self.RE.request_pause, False)
-            else:
-                # No new SIGINTs to process.
-                if self.num_sigints_processed > 0:
-                    if time.time() - self.last_sigint_time > 10:
-                        self.log.debug("It has been 10 seconds since the "
-                                       "last SIGINT. Resetting SIGINT "
-                                       "handler.")
-                        # It's been 10 seconds since the last SIGINT. Reset.
-                        self.num_sigints_processed = 0
-                        self.count = 0
-                        self.interrupted = False
-                        self.last_sigint_time = None
-
-        if not self.released:
-            self.RE.loop.call_later(0.1, self.check_for_signals)
+                threading.Thread(target=self.RE.request_pause,
+                                 args=(False,)).start()
+            self.last_sigint_time = time.time()
 
 
 class CallbackRegistry:
@@ -771,10 +785,10 @@ def install_kicker(loop=None, update_rate=0.03):
 def install_qt_kicker(loop=None, update_rate=0.03):
     """Install a periodic callback to integrate Qt and asyncio event loops.
 
-    If a version of the Qt bindings are not already imported, this function
-    will do nothing.
-
-    It is safe to call this function multiple times.
+    DEPRECATED: This functionality is now handled automatically by default and
+    is configurable via the RunEngine's new ``during_task`` parameter. Calling
+    this function now has no effect. It will be removed in a future release of
+    bluesky.
 
     Parameters
     ----------
@@ -782,37 +796,9 @@ def install_qt_kicker(loop=None, update_rate=0.03):
     update_rate : number
         Seconds between periodic updates. Default is 0.03.
     """
-    if loop is None:
-        loop = asyncio.get_event_loop()
-    global _QT_KICKER_INSTALLED
-    if loop in _QT_KICKER_INSTALLED:
-        return
-    if not any(p in sys.modules for p in ['PyQt4', 'pyside', 'PyQt5']):
-        return
-    import matplotlib.backends.backend_qt5
-    from matplotlib.backends.backend_qt5 import _create_qApp
-    from matplotlib._pylab_helpers import Gcf
-
-    _create_qApp()
-    qApp = matplotlib.backends.backend_qt5.qApp
-
-    try:
-        _draw_all = Gcf.draw_all  # mpl version >= 1.5
-    except AttributeError:
-        # slower, but backward-compatible
-        def _draw_all():
-            for f_mgr in Gcf.get_all_fig_managers():
-                f_mgr.canvas.draw_idle()
-
-    def _qt_kicker():
-        # The RunEngine Event Loop interferes with the qt event loop. Here we
-        # kick it to keep it going.
-        _draw_all()
-
-        qApp.processEvents()
-        loop.call_later(update_rate, _qt_kicker)
-
-    _QT_KICKER_INSTALLED[loop] = loop.call_soon(_qt_kicker)
+    warnings.warn("bluesky.utils.install_qt_kicker is no longer necessary and "
+                  "has no effect. Please remove your use of it. It may be "
+                  "removed in a future release of bluesky.")
 
 
 def install_nb_kicker(loop=None, update_rate=0.03):
@@ -1298,3 +1284,150 @@ def merge_cycler(cyc):
             output_data.append(cycler(c, input_data[c]))
 
     return reduce(operator.add, output_data)
+
+
+_qapp = None
+
+
+def default_during_task(blocking_event):
+    """
+    The default setting for the RunEngine's during_task parameter.
+
+    This makes it possible for plots that use matplotlib's Qt backend to update
+    live during data acquisition.
+
+    It solves the problem that Qt must be run from the main thread.
+    If matplotlib and a known Qt binding are already imported, run the
+    matplotlib qApp until the task completes. If not, there is no need to
+    handle qApp: just wait on the task.
+    """
+    global _qapp
+    if 'matplotlib' not in sys.modules:
+        # We are not using matplotlib + Qt. Just wait on the Event.
+        blocking_event.wait()
+    # Figure out if we are using matplotlib with which backend
+    # without importing anything that is not already imported.
+    else:
+        import matplotlib
+        backend = matplotlib.get_backend().lower()
+        # if with a Qt backend, do the scary thing
+        if 'qt' in backend:
+            from matplotlib.backends.qt_compat import QtCore, QtWidgets
+            app = QtWidgets.QApplication.instance()
+            if app is None:
+                _qapp = app = QtWidgets.QApplication([b'bluesky'])
+            assert app is not None
+            event_loop = QtCore.QEventLoop()
+
+            def start_killer_thread():
+                def exit_loop():
+                    blocking_event.wait()
+                    # If the above wait ends quickly, we need to avoid the race
+                    # condition where this thread might try to exit the qApp
+                    # before it even starts.  Therefore, we use QTimer, below,
+                    # which will not start running until the qApp event loop is
+                    # running.
+                    event_loop.exit()
+
+                threading.Thread(target=exit_loop).start()
+
+            # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
+            # adapted from code at
+            # https://bitbucket.org/tortoisehg/thg/commits/550e1df5fbad
+            if os.name == 'posix' and hasattr(signal, 'set_wakeup_fd'):
+                # Wake up Python interpreter via pipe so that SIGINT
+                # can be handled immediately.
+                # (http://qt-project.org/doc/qt-4.8/unix-signals.html)
+                # Updated docs:
+                # https://doc.qt.io/qt-5/unix-signals.html
+                import fcntl
+                rfd, wfd = os.pipe()
+                for fd in (rfd, wfd):
+                    flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+                    fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+                wakeupsn = QtCore.QSocketNotifier(rfd,
+                                                  QtCore.QSocketNotifier.Read)
+                origwakeupfd = signal.set_wakeup_fd(wfd)
+
+                def cleanup():
+                    wakeupsn.setEnabled(False)
+                    rfd = wakeupsn.socket()
+                    wfd = signal.set_wakeup_fd(origwakeupfd)
+                    os.close(rfd)
+                    os.close(wfd)
+
+                def handleWakeup(inp):
+                    # here Python signal handler will be invoked
+                    # this book-keeping is to drain the pipe
+                    wakeupsn.setEnabled(False)
+                    rfd = wakeupsn.socket()
+                    try:
+                        os.read(rfd, 4096)
+                    except OSError as inst:
+                        print('failed to read wakeup fd: %s\n' % inst)
+
+                    wakeupsn.setEnabled(True)
+
+                wakeupsn.activated.connect(handleWakeup)
+
+            else:
+                # On Windows, non-blocking anonymous pipe or socket is
+                # not available.
+
+                def null():
+                    ...
+
+                # we need to 'kick' the python interpreter so it sees
+                # system signals
+                # https://stackoverflow.com/a/4939113/380231
+                kick_timer = QtCore.QTimer()
+                kick_timer.timeout.connect(null)
+                kick_timer.start(50)
+
+                cleanup = kick_timer.stop
+
+            # we also need to make sure that the qApp never sees
+            # exceptions raised by python inside of a c++ callback (as
+            # it will segfault its self because due to the way the
+            # code is called there is no clear way to propgate that
+            # back to the python code.
+            vals = (None, None, None)
+
+            old_sys_handler = sys.excepthook
+
+            def my_exception_hook(exctype, value, traceback):
+                nonlocal vals
+                vals = (exctype, value, traceback)
+                event_loop.exit()
+                old_sys_handler(exctype, value, traceback)
+
+            # this kill the Qt event loop when the plan is finished
+            killer_timer = QtCore.QTimer()
+            killer_timer.setSingleShot(True)
+            killer_timer.timeout.connect(start_killer_thread)
+            killer_timer.start(0)
+
+            try:
+                sys.excepthook = my_exception_hook
+                event_loop.exec_()
+                # make sure any pending signals are processed
+                event_loop.processEvents()
+                if vals[1] is not None:
+                    raise vals[1]
+            finally:
+                try:
+                    cleanup()
+                finally:
+                    sys.excepthook = old_sys_handler
+        elif 'ipympl' in backend or 'nbagg' in backend:
+            Gcf = matplotlib._pylab_helpers.Gcf
+            while True:
+                done = blocking_event.wait(.1)
+                for f_mgr in Gcf.get_all_fig_managers():
+                    if f_mgr.canvas.figure.stale:
+                        f_mgr.canvas.draw()
+                if done:
+                    return
+        else:
+            # We are not using matplotlib + Qt. Just wait on the Event.
+            blocking_event.wait()

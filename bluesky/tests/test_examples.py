@@ -14,6 +14,9 @@ import asyncio
 import time as ttime
 import numpy as np
 from numpy.testing import assert_array_equal
+import time
+import threading
+from functools import partial
 
 
 def test_msgs(RE, hw):
@@ -105,7 +108,9 @@ def test_deferred_pause1(RE):
 
 def test_deferred_pause2(RE):
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('pause', defer=True),
+        RE([Msg('pause', defer=True),
+            Msg('checkpoint'),
+            Msg('pause', defer=True),
             Msg('checkpoint')])
     assert RE.state == 'paused'
     with pytest.raises(RunEngineInterrupted):
@@ -132,16 +137,19 @@ def test_deferred_pause_no_checkpoint(RE):
 def test_pause_from_outside(RE):
     assert RE.state == 'idle'
 
-    def local_pause():
+    def local_pause(delay):
+        time.sleep(delay)
         RE.request_pause()
 
-    RE.loop.call_later(1, local_pause)
+    th = threading.Thread(target=partial(local_pause, 1))
+    th.start()
     with pytest.raises(RunEngineInterrupted):
         RE(checkpoint_forever())
     assert RE.state == 'paused'
 
     # Cue up a second pause requests in 2 seconds.
-    RE.loop.call_later(2, local_pause)
+    th = threading.Thread(target=partial(local_pause, 2))
+    th.start()
     with pytest.raises(RunEngineInterrupted):
         RE.resume()
     assert RE.state == 'paused'
@@ -277,19 +285,19 @@ def test_suspend(RE, hw):
     assert RE.state == 'idle'
 
     def local_suspend():
-        RE.request_suspend(ev.wait())
+        RE.request_suspend(ev.wait)
 
     def resume_cb():
-        ev.set()
+        RE.loop.call_soon_threadsafe(ev.set)
 
     out = []
 
     def ev_cb(name, ev):
         out.append(ev)
     # trigger the suspend right after the check point
-    RE.loop.call_later(.1, local_suspend)
+    threading.Timer(.1, local_suspend).start()
     # wait a second and then resume
-    RE.loop.call_later(1, resume_cb)
+    threading.Timer(1, resume_cb).start()
     # grab the start time
     start = ttime.time()
     # run, this will not return until it is done
@@ -301,23 +309,25 @@ def test_suspend(RE, hw):
 
 
 def test_pause_resume(RE):
+    from bluesky.utils import ts_msg_hook
+    RE.msg_hook = ts_msg_hook
     ev = asyncio.Event(loop=RE.loop)
 
     def done():
         print("Done")
-        ev.set()
+        RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
 
     def sim_kill():
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(1, sim_kill)
-    RE.loop.call_later(1.1, sim_kill)
-    RE.loop.call_later(2, done)
+    threading.Timer(1, sim_kill).start()
+    threading.Timer(1.5, sim_kill).start()
+    threading.Timer(2, done).start()
 
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
@@ -327,6 +337,7 @@ def test_pause_resume(RE):
     assert RE.state == 'idle'
     stop = ttime.time()
 
+    time.sleep(3)
     assert mid - start > 1
     assert stop - start > 2
 
@@ -336,19 +347,19 @@ def test_pause_abort(RE):
 
     def done():
         print("Done")
-        ev.set()
+        RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
 
     def sim_kill():
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(.1, sim_kill)
-    RE.loop.call_later(.2, sim_kill)
-    RE.loop.call_later(1, done)
+    threading.Timer(.1, sim_kill).start()
+    threading.Timer(.2, sim_kill).start()
+    threading.Timer(1, done).start()
 
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
@@ -358,7 +369,6 @@ def test_pause_abort(RE):
     assert RE.state == 'idle'
     stop = ttime.time()
 
-    RE.loop.run_until_complete(ev.wait())
     assert mid - start > .1
     assert stop - start < 1
 
@@ -368,26 +378,25 @@ def test_abort(RE):
 
     def done():
         print("Done")
-        ev.set()
+        RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
 
     def sim_kill():
         os.kill(pid, signal.SIGINT)
 
-    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait(), ]), ]
+    scan = [Msg('checkpoint'), Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(.1, sim_kill)
-    RE.loop.call_later(.2, sim_kill)
-    RE.loop.call_later(.3, done)
+    threading.Timer(.1, sim_kill).start()
+    threading.Timer(.2, sim_kill).start()
+    threading.Timer(.4, done).start()
     with pytest.raises(RunEngineInterrupted):
         RE(scan)
     stop = ttime.time()
 
-    RE.loop.run_until_complete(ev.wait())
     assert RE.state == 'paused'
-    assert stop - start < .3
+    assert stop - start < .4
     RE.abort()
     assert RE.state == 'idle'
 
@@ -594,12 +603,14 @@ def test_failed_status_object(RE):
     class failer:
         def set(self, inp):
             st = StatusBase()
-            RE.loop.call_later(1, lambda: st._finished(success=False))
+            threading.Timer(1, st._finished,
+                            kwargs=dict(success=False)).start()
             return st
 
         def trigger(self):
             st = StatusBase()
-            RE.loop.call_later(1, lambda: st._finished(success=False))
+            threading.Timer(1, st._finished,
+                            kwargs=dict(success=False)).start()
             return st
 
         def stop(self, *, success=False):
