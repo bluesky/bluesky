@@ -3,6 +3,7 @@ import bluesky.plans as bp
 from bluesky import Msg
 import asyncio
 import time as ttime
+import math
 import numpy as np
 import numpy.testing
 import pytest
