@@ -453,6 +453,38 @@ Demo:
 This works for any number of motors, not just two. Try importing ``motor3``
 from ``ophyd.sim`` and running a 3-motor scan.
 
+To move motors along arbitrary trajectories instead of equally-spaced points,
+use :func:`~bluesky.plans.list_scan` and :func:`~bluesky.plans.rel_list_scan`.
+
+.. code-block:: python
+
+    from bluesky.plans import list_scan
+
+    # Scan motor1 and motor2 jointly through a 5-point trajectory.
+    RE(list_scan(dets, motor1, [1, 1, 3, 5, 8], motor2, [25, 16, 9, 4, 1]))
+
+Demo:
+
+.. ipython:: python
+   :suppress:
+
+   from bluesky.plans import list_scan
+
+.. ipython:: python
+
+    RE(list_scan(dets,
+                 motor1, [1, 1, 3, 5, 8],
+                 motor2, [25, 16, 9, 4, 1]))
+
+.. plot::
+
+    from bluesky.plans import list_scan
+    from ophyd.sim import det4, motor1, motor2
+    dets = [det4]
+    RE(list_scan(dets,
+                 motor1, [1, 1, 3, 5, 8],
+                 motor2, [25, 16, 9, 4, 1]))
+
 Scan Multiple Motors in a Grid
 ------------------------------
 
@@ -540,8 +572,42 @@ axes do. Example:
                  motor2, -0.1, 0.1, 5, False))
                  motor3, -200, 200, 5, False))
 
+To move motors along arbitrary trajectories instead of equally-spaced points,
+use :func:`~bluesky.plans.list_grid_scan` and
+:func:`~bluesky.plans.rel_list_grid_scan`.
+
+.. code-block:: python
+
+    from bluesky.plans import list_grid_scan
+
+    RE(list_grid_scan(dets,
+                      motor1, [1, 1, 2, 3, 5],
+                      motor2, [25, 16, 9]))
+
+Demo:
+
+.. ipython:: python
+   :suppress:
+
+   from bluesky.plans import list_grid_scan
+
+.. ipython:: python
+
+    RE(list_grid_scan(dets,
+                      motor1, [1, 1, 2, 3, 5],
+                      motor2, [25, 16, 9]))
+
+.. plot::
+
+    from bluesky.plans import list_grid_scan
+    from ophyd.sim import det4, motor1, motor2
+    dets = [det4]
+    RE(list_grid_scan(dets,
+                      motor1, [1, 1, 2, 3, 5],
+                      motor2, [25, 16, 9]))
+
 See :ref:`multi-dimensional_scans` to handle more specialized cases, including
-unequal step spacing and combinations of :func:`~bluesky.plans.scan`-like and
+combinations of :func:`~bluesky.plans.scan`-like and
 :func:`~bluesky.plans.grid_scan`-like movement.
 
 More generally, the :doc:`plans` documentation includes more exotic
