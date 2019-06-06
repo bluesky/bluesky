@@ -67,18 +67,27 @@ def count(detectors, num=1, delay=None, *, md=None):
     return (yield from inner_count())
 
 
-def list_scan(detectors, motor, steps, *, per_step=None, md=None):
+def list_scan(detectors, *args, per_step=None, md=None):
     """
-    Scan over one variable in steps.
+    Scan over one or more variables in steps simultaneously (inner product).
 
     Parameters
     ----------
     detectors : list
         list of 'readable' objects
-    motor : object
-        any 'settable' object (motor, temp controller, etc.)
-    steps : list
-        list of positions
+    *args :
+        For one dimension, ``motor, [point1, point2, ....]``.
+        In general:
+
+        .. code-block:: python
+
+            motor1, [point1, point2, ...],
+            motor2, [point1, point2, ...],
+            ...,
+            motorN, [point1, point2, ...]
+
+        Motors can be any 'settable' object (motor, temp controller, etc.)
+
     per_step : callable, optional
         hook for customizing action of inner loop (messages per step)
         Expected signature:
@@ -89,40 +98,76 @@ def list_scan(detectors, motor, steps, *, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.rel_list_scan`
+    :func:`bluesky.plans.list_grid_scan`
+    :func:`bluesky.plans.rel_list_grid_scan`
     """
+    if len(args) % 2 != 0:
+            raise ValueError("The list of arguments must contain a list of "
+                             "points for each defined motor")
+
+    md = md or {}  # reset md if it is None.
+
+    # set some variables and check that all lists are the same length
+    lengths = {}
+    motors = []
+    pos_lists = []
+    length = None
+    for motor, pos_list in partition(2, args):
+        pos_list = list(pos_list)  # Ensure list (accepts any finite iterable).
+        lengths[motor.name] = len(pos_list)
+        if not length:
+            length = len(pos_list)
+        motors.append(motor)
+        pos_lists.append(pos_list)
+    length_check = all(elem == list(lengths.values())[0] for elem in
+                       list(lengths.values()))
+
+    if not length_check:
+        raise ValueError("The lengths of all lists in *args must be the same. "
+                         "However the lengths in args are : "
+                         "{}".format(lengths))
+
+    md_args = list(chain(*((repr(motor), pos_list)
+                           for motor, pos_list in partition(2, args))))
+    motor_names = list(lengths.keys())
+
     _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor.name],
-           'num_points': len(steps),
-           'num_intervals': len(steps) - 1,
+           'motors': motor_names,
+           'num_points': length,
+           'num_intervals': length - 1,
            'plan_args': {'detectors': list(map(repr, detectors)),
-                         'motor': repr(motor), 'steps': steps,
+                         'args': md_args,
                          'per_step': repr(per_step)},
            'plan_name': 'list_scan',
-           'plan_pattern': 'array',
-           'plan_pattern_module': 'numpy',
-           'plan_pattern_args': dict(object=steps),
+           'plan_pattern': 'inner_list_product',
+           'plan_pattern_module': plan_patterns.__name__,
+           'plan_pattern_args': dict(args=md_args),
            'hints': {},
            }
     _md.update(md or {})
-    try:
-        dimensions = [(motor.hints['fields'], 'primary')]
-    except (AttributeError, KeyError):
-        pass
-    else:
-        _md['hints'].setdefault('dimensions', dimensions)
-    if per_step is None:
-        per_step = bps.one_1d_step
 
-    @bpp.stage_decorator(list(detectors) + [motor])
-    @bpp.run_decorator(md=_md)
-    def inner_list_scan():
-        for step in steps:
-            yield from per_step(detectors, motor, step)
+    x_fields = []
+    for motor in motors:
+        x_fields.extend(getattr(motor, 'hints', {}).get('fields', []))
 
-    return (yield from inner_list_scan())
+    default_dimensions = [(x_fields, 'primary')]
+
+    default_hints = {}
+    if len(x_fields) > 0:
+        default_hints.update(dimensions=default_dimensions)
+
+    # now add default_hints and override any hints from the original md (if
+    # exists)
+    _md['hints'] = default_hints
+    _md['hints'].update(md.get('hints', {}) or {})
+
+    full_cycler = plan_patterns.inner_list_product(args)
+
+    return (yield from scan_nd(detectors, full_cycler, per_step=per_step,
+                               md=_md))
 
 
-def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
+def rel_list_scan(detectors, *args, per_step=None, md=None):
     """
     Scan over one variable in steps relative to current position.
 
@@ -130,6 +175,20 @@ def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     ----------
     detectors : list
         list of 'readable' objects
+    *args :
+        For one dimension, ``motor, [point1, point2, ....]``.
+        In general:
+
+        .. code-block:: python
+
+            motor1, [point1, point2, ...],
+            motor2, [point1, point2, ...],
+            ...,
+            motorN, [point1, point2, ...]
+
+        Motors can be any 'settable' object (motor, temp controller, etc.)
+        point1, point2 etc are relative to the current location.
+
     motor : object
         any 'settable' object (motor, temp controller, etc.)
     steps : list
@@ -143,17 +202,151 @@ def rel_list_scan(detectors, motor, steps, *, per_step=None, md=None):
     See Also
     --------
     :func:`bluesky.plans.list_scan`
+    :func:`bluesky.plans.list_grid_scan`
+    :func:`bluesky.plans.rel_list_grid_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
     _md = {'plan_name': 'rel_list_scan'}
     _md.update(md or {})
 
-    @bpp.reset_positions_decorator([motor])
-    @bpp.relative_set_decorator([motor])
+    motors= [motor for motor, pos_list in partition(2, args)]
+
+    @bpp.reset_positions_decorator(motors)
+    @bpp.relative_set_decorator(motors)
     def inner_relative_list_scan():
-        return (yield from list_scan(detectors, motor, steps,
-                                     per_step=per_step, md=_md))
+        return (yield from list_scan(detectors, *args, per_step=per_step,
+                                     md=_md))
     return (yield from inner_relative_list_scan())
+
+
+def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+    """
+    Scan over a mesh; each motor is on an independent trajectory.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+
+    args
+        patterned like (``motor1, position_list1,``
+                        ``motor2, position_list2,``
+                        ``motor3, position_list3,``
+                        ``...,``
+                        ``motorN, position_listN``)
+
+        The first motor is the "slowest", the outer loop. ``position_list``'s
+        are lists of positions, all lists must have the same length. Motors
+        can be any 'settable' object (motor, temp controller, etc.).
+
+    snake_axes : boolean or iterable, optional
+        which axes should be snaked, either ``False`` (do not snake any axes),
+        ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
+        is defined as following snake-like, winding trajectory instead of a
+        simple left-to-right trajectory.
+
+    per_step : callable, optional
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    :func:`bluesky.plans.rel_list_grid_scan`
+    :func:`bluesky.plans.list_scan`
+    :func:`bluesky.plans.rel_list_scan`
+    """
+
+    full_cycler = plan_patterns.outer_list_product(args, snake_axes)
+
+    md_args = []
+    motor_names = []
+    motors = []
+    for i, (motor, pos_list) in enumerate(partition(2, args)):
+        md_args.extend([repr(motor), pos_list])
+        motor_names.append(motor.name)
+        motors.append(motor)
+    _md = {'shape': tuple(len(pos_list)
+                          for motor, pos_list in partition(2, args)),
+           'snake_axes': snake_axes,
+           'plan_args': {'detectors': list(map(repr, detectors)),
+                         'args': md_args,
+                         'per_step': repr(per_step)},
+           'plan_name': 'list_grid_scan',
+           'plan_pattern': 'outer_list_product',
+           'plan_pattern_args': dict(args=md_args).update(
+                {'snake_axes': snake_axes}),
+           'plan_pattern_module': plan_patterns.__name__,
+           'motors': tuple(motor_names),
+           'hints': {},
+           }
+    _md.update(md or {})
+    _md['hints'].setdefault('gridding', 'rectilinear')
+    try:
+        _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
+                                               for m in motors])
+    except (AttributeError, KeyError):
+        ...
+
+    return (yield from scan_nd(detectors, full_cycler,
+                               per_step=per_step, md=_md))
+
+
+def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
+                       md=None):
+    """
+    Scan over a mesh; each motor is on an independent trajectory. Each point is
+    relative to the current position.
+
+    Parameters
+    ----------
+    detectors : list
+        list of 'readable' objects
+
+    args
+        patterned like (``motor1, position_list1,``
+                        ``motor2, position_list2,``
+                        ``motor3, position_list3,``
+                        ``...,``
+                        ``motorN, position_listN``)
+
+        The first motor is the "slowest", the outer loop. ``position_list``'s
+        are lists of positions, all lists must have the same length. Motors
+        can be any 'settable' object (motor, temp controller, etc.).
+
+    snake_axes : boolean or Iterable, optional
+        which axes should be snaked, either ``False`` (do not snake any axes),
+        ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
+        is defined as following snake-like, winding trajectory instead of a
+        simple left-to-right trajectory.
+
+    per_step : callable, optional
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
+    md : dict, optional
+        metadata
+
+    See Also
+    --------
+    :func:`bluesky.plans.list_grid_scan`
+    :func:`bluesky.plans.list_scan`
+    :func:`bluesky.plans.rel_list_scan`
+    """
+    _md = {'plan_name': 'rel_list_grid_scan'}
+    _md.update(md or {})
+
+    motors = [motor for motor, pos_list in partition(2, args)]
+
+    @bpp.reset_positions_decorator(motors)
+    @bpp.relative_set_decorator(motors)
+    def inner_relative_list_grid_scan():
+        return (yield from list_grid_scan(detectors, *args,
+                                          snake_axes=snake_axes,
+                                          per_step=per_step, md=_md))
+    return (yield from inner_relative_list_grid_scan())
 
 
 def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
@@ -675,9 +868,9 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     cycler : Cycler
         list of dictionaries mapping motors to positions
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -781,9 +974,9 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
     num : integer
         number of points
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -874,9 +1067,9 @@ def grid_scan(detectors, *args, per_step=None, md=None):
         indicating whether to following snake-like, winding trajectory or a
         simple left-to-right trajectory.
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -946,9 +1139,9 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
         is a boolean indicating whether to following snake-like, winding
         trajectory or a simple left-to-right trajectory.
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -1003,9 +1196,9 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     num : integer
         number of points
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -1137,9 +1330,9 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -1209,9 +1402,9 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -1264,9 +1457,9 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -1339,9 +1532,9 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     tilt : float, optional
         Tilt angle in radians, default 0.0
     per_step : callable, optional
-        hook for customizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for customizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
     md : dict, optional
         metadata
 
@@ -1374,9 +1567,9 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     detectors : list
         list of 'readable' objects
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_center : float
         x center
     y_center : float
@@ -1390,8 +1583,8 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     y_num : float
         Number of y axis points.
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plans.one_nd_step (the default) for
+        hook for cutomizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plans.one_nd_step` (the default) for
         details.
     md : dict, optional
         metadata
@@ -1445,9 +1638,9 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
     detectors : list
         list of 'readable' objects
     x_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     y_motor : object
-        any 'setable' object (motor, temp controller, etc.)
+        any 'settable' object (motor, temp controller, etc.)
     x_range : float
         x width of spiral
     y_range : float
@@ -1457,8 +1650,8 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
     y_num : float
         Number of y axis points.
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plans.one_nd_step (the default) for
+        hook for cutomizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plans.one_nd_step` (the default) for
         details.
     md : dict, optional
         metadata
@@ -1621,9 +1814,9 @@ def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
         will move between ``start / 2`` and ``stop / 2``
 
     per_step : callable, optional
-        hook for cutomizing action of inner loop (messages per step)
-        See docstring of bluesky.plan_stubs.one_nd_step (the default) for
-        details.
+        hook for cutomizing action of inner loop (messages per step).
+        See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
+        for details.
 
     md : dict, optional
         metadata

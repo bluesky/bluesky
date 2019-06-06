@@ -8,6 +8,7 @@ import numpy.testing
 import pytest
 
 
+
 def test_scan_num(RE, hw):
     RE(bp.scan([hw.det], hw.motor1, -1, 1, num=1))
     RE(bp.scan([hw.det], hw.motor1, -1, 1, num=1.0))
@@ -180,11 +181,41 @@ def test_ascan(RE, hw):
     traj_checker(RE, scan, traj)
 
 
+def test_multi_motor_list_scan(RE, hw):
+    expected_data = [
+        {'motor2': 18, 'motor2_setpoint': 18, 'det': 1,
+         'motor1': 6, 'motor1_setpoint': 6},
+        {'motor2': 28, 'motor2_setpoint': 28, 'det': 1,
+         'motor1': 7, 'motor1_setpoint': 7},
+        {'motor2': 38, 'motor2_setpoint': 38, 'det': 1,
+         'motor1': 8, 'motor1_setpoint': 8}]
+
+    scan = bp.list_scan([hw.det], hw.motor1, [6, 7, 8],
+                        hw.motor2, [18, 28, 38])
+    multi_traj_checker(RE, scan, expected_data)
+
+
 def test_dscan(RE, hw):
     traj = np.array([1, 2, 3])
     hw.motor.set(-4)
     scan = bp.rel_list_scan([hw.det], hw.motor, traj)
     traj_checker(RE, scan, traj - 4)
+
+
+def test_multi_motor_rel_list_scan(RE, hw):
+    expected_data = [
+        {'motor2': 18, 'motor2_setpoint': 18, 'det': 1,
+         'motor1': 6, 'motor1_setpoint': 6},
+        {'motor2': 28, 'motor2_setpoint': 28, 'det': 1,
+         'motor1': 7, 'motor1_setpoint': 7},
+        {'motor2': 38, 'motor2_setpoint': 38, 'det': 1,
+         'motor1': 8, 'motor1_setpoint': 8}]
+
+    hw.motor1.set(5)
+    hw.motor2.set(8)
+    scan = bp.rel_list_scan([hw.det], hw.motor1, np.array([1, 2, 3]),
+                            hw.motor2, np.array([10, 20, 30]))
+    multi_traj_checker(RE, scan, expected_data)
 
 
 def test_dscan_list_input(RE, hw):
@@ -193,6 +224,134 @@ def test_dscan_list_input(RE, hw):
     hw.motor.set(-4)
     scan = bp.rel_list_scan([hw.det], hw.motor, traj)
     traj_checker(RE, scan, np.array(traj) - 4)
+
+
+def test_multi_motor_rel_list_scan_list_input(RE, hw):
+    expected_data = [
+        {'motor2': 18, 'motor2_setpoint': 18, 'det': 1,
+         'motor1': 6, 'motor1_setpoint': 6},
+        {'motor2': 28, 'motor2_setpoint': 28, 'det': 1,
+         'motor1': 7, 'motor1_setpoint': 7},
+        {'motor2': 38, 'motor2_setpoint': 38, 'det': 1,
+         'motor1': 8, 'motor1_setpoint': 8}]
+
+    hw.motor1.set(5)
+    hw.motor2.set(8)
+    scan = bp.rel_list_scan([hw.det], hw.motor1, [1, 2, 3],
+                            hw.motor2, [10, 20, 30])
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_list_grid_scan(RE, hw):
+    expected_data = []
+    for motor1_pos in [6, 7, 8]:
+        for motor2_pos in [18, 28, 38]:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+    scan = bp.list_grid_scan([hw.det], hw.motor1, [6, 7, 8],
+                             hw.motor2, [18, 28, 38])
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_list_grid_scan_snake(RE, hw):
+    expected_data = []
+    for motor1_pos in [6, 7, 8]:
+        if motor1_pos == 7:
+            motor2_list = [38, 28, 18]
+        else:
+            motor2_list = [18, 28, 38]
+        for motor2_pos in motor2_list:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    scan = bp.list_grid_scan([hw.det], hw.motor1, [6, 7, 8],
+                             hw.motor2, [18, 28, 38], snake_axes=True)
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_list_grid_scan_snake_list(RE, hw):
+    expected_data = []
+    for motor1_pos in [6, 7, 8]:
+        if motor1_pos == 7:
+            motor2_list = [38, 28, 18]
+        else:
+            motor2_list = [18, 28, 38]
+        for motor2_pos in motor2_list:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    scan = bp.list_grid_scan([hw.det], hw.motor1, [6, 7, 8],
+                             hw.motor2, [18, 28, 38], snake_axes=[hw.motor2])
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_rel_list_grid_scan(RE, hw):
+    expected_data = []
+    for motor1_pos in [6, 7, 8]:
+        for motor2_pos in [18, 28, 38]:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    hw.motor1.set(5)
+    hw.motor2.set(8)
+    scan = bp.rel_list_grid_scan([hw.det], hw.motor1, [1, 2, 3],
+                                 hw.motor2, [10, 20, 30])
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_rel_list_grid_scan_snake(RE, hw):
+    expected_data = []
+    for motor1_pos in [6, 7, 8]:
+        if motor1_pos == 7:
+            motor2_list = [38, 28, 18]
+        else:
+            motor2_list = [18, 28, 38]
+        for motor2_pos in motor2_list:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    hw.motor1.set(5)
+    hw.motor2.set(8)
+    scan = bp.rel_list_grid_scan([hw.det], hw.motor1, [1, 2, 3],
+                                 hw.motor2, [10, 20, 30], snake_axes=True)
+    multi_traj_checker(RE, scan, expected_data)
+
+
+def test_rel_list_grid_scan_snake_list(RE, hw):
+    expected_data = []
+    for motor1_pos in [6, 7, 8]:
+        if motor1_pos == 7:
+            motor2_list = [38, 28, 18]
+        else:
+            motor2_list = [18, 28, 38]
+        for motor2_pos in motor2_list:
+            expected_data.append({'motor2': motor2_pos,
+                                  'motor2_setpoint': motor2_pos,
+                                  'det': 1.0,
+                                  'motor1': motor1_pos,
+                                  'motor1_setpoint': motor1_pos})
+
+    hw.motor1.set(5)
+    hw.motor2.set(8)
+    scan = bp.rel_list_grid_scan([hw.det], hw.motor1, [1, 2, 3],
+                                 hw.motor2, [10, 20, 30],
+                                 snake_axes=[hw.motor2])
+    multi_traj_checker(RE, scan, expected_data)
 
 
 def test_lin_ascan(RE, hw):
@@ -351,8 +510,9 @@ def test_wait_for(RE):
 
     def done():
         ev.set()
-    scan = [Msg('wait_for', None, [ev.wait(), ]), ]
-    RE.loop.call_later(2, done)
+    scan = [Msg('wait_for', None, [ev.wait, ]), ]
+    RE.loop.call_soon_threadsafe(
+        RE.loop.call_later, 2, done)
     start = ttime.time()
     RE(scan)
     stop = ttime.time()
@@ -597,7 +757,7 @@ def test_spiral_square(RE, hw):
 
     approx_multi_traj_checker(RE, plan,
                               square_spiral_data, decimal=2)
-                              
+
 
 def test_rel_spiral_square(RE, hw):
     motor1 = hw.motor1

@@ -107,10 +107,13 @@ def test_straight_through_stream(RE, hw):
     events = d.event[desc['uid']]
     print(desc)
     print([evt['data'] for evt in events])
-    assert all([evt['data'][key] <= 0
-                for evt in events
-                for key in evt['data'].keys()])
-    assert all([key in desc['data_keys'] for key in events[0]['data'].keys()])
+    tmp_valid = all([evt['data'][key] <= 0
+                     for evt in events
+                     for key in evt['data'].keys()])
+    assert tmp_valid
+    tmp_valid = all([key in desc['data_keys']
+                     for key in events[0]['data'].keys()])
+    assert tmp_valid
 
 
 @requires_streamz

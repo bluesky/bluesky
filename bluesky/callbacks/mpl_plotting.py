@@ -2,11 +2,41 @@ from collections import ChainMap
 from cycler import cycler
 import numpy as np
 import warnings
-
+import functools
 from .core import CallbackBase, get_obj_fields
 
 
-class LivePlot(CallbackBase):
+# use function + LRU cache to hide Matplotib import until needed
+@functools.lru_cache(maxsize=1)
+def _get_teleporter():
+    from matplotlib.backends.qt_compat import QtCore
+
+    class Teleporter(QtCore.QObject):
+        name_doc_escape = QtCore.Signal(str, dict, bool)
+    return Teleporter
+
+
+class QtAwareCallback(CallbackBase):
+    def __init__(self, *args, use_teleporter=None, **kwargs):
+        if use_teleporter is None:
+            import matplotlib
+            use_teleporter = 'qt' in matplotlib.get_backend()
+        if use_teleporter:
+            Teleporter = _get_teleporter()
+            self.__teleporter = Teleporter()
+            self.__teleporter.name_doc_escape.connect(self.__call__)
+        else:
+            self.__teleporter = None
+        super().__init__(*args, **kwargs)
+
+    def __call__(self, name, doc, escape=False):
+        if not escape and self.__teleporter is not None:
+            self.__teleporter.name_doc_escape.emit(name, doc, True)
+        else:
+            return CallbackBase.__call__(self, name, doc)
+
+
+class LivePlot(QtAwareCallback):
     """
     Build a function that updates a plot from a stream of Events.
 
@@ -48,7 +78,7 @@ class LivePlot(CallbackBase):
     def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, fig=None, epoch='run', **kwargs):
         import matplotlib.pyplot as plt
-        super().__init__()
+        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
         if fig is not None:
             if ax is not None:
                 raise ValueError("Values were given for both `fig` and `ax`. "
@@ -156,7 +186,7 @@ class LivePlot(CallbackBase):
         super().stop(doc)
 
 
-class LiveScatter(CallbackBase):
+class LiveScatter(QtAwareCallback):
     """Plot scattered 2D data in a "heat map".
 
     Alternatively, if the data is placed on a regular grid, you can use
@@ -189,6 +219,7 @@ class LiveScatter(CallbackBase):
     """
     def __init__(self, x, y, I, *, xlim=None, ylim=None,
                  clim=None, cmap='viridis', ax=None, **kwargs):
+        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
         if ax is None:
@@ -278,7 +309,7 @@ class LiveMesh(LiveScatter):
         super().__init__(*args, **kwargs)
 
 
-class LiveGrid(CallbackBase):
+class LiveGrid(QtAwareCallback):
     """Plot gridded 2D data in a "heat map".
 
     This assumes that readings are placed on a regular grid and can be placed
@@ -331,7 +362,8 @@ class LiveGrid(CallbackBase):
     def __init__(self, raster_shape, I, *,
                  clim=None, cmap='viridis',
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
-                 ax=None, x_positive='right', y_positive='up'):
+                 ax=None, x_positive='right', y_positive='up', **kwargs):
+        super().__init__(**kwargs)
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
         if ax is None:
@@ -369,8 +401,8 @@ class LiveGrid(CallbackBase):
                             extent=extent, aspect=self.aspect,
                             origin='lower')
 
-        # make sure the 'positive direction' of the axes matches what is defined in
-        #axes_positive
+        # make sure the 'positive direction' of the axes matches what
+        # is defined in axes_positive
         xmin, xmax = self.ax.get_xlim()
         if ((xmin > xmax and self.x_positive == 'right') or
                 (xmax > xmin and self.x_positive == 'left')):

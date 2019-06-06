@@ -2,11 +2,96 @@
  Release History
 =================
 
+v1.6.0 (2019-05-??)
+===================
+
+Event loop re-factor
+--------------------
+
+Previously, we had been repeatedly starting and stopping the asyncio
+event loop in `~bluesky.RunEngine.__call__`,
+`~bluesky.RunEngine.request_pause`, `~bluesky.RunEngine.stop`, in
+`~bluesky.RunEngine.abort`, `~bluesky.RunEngine.halt`, and
+`~bluesky.RunEngine.resume`.  This worked, but is bad practice.  It
+complicates attempts to integrate with the event loop with other
+tools.  Further, because as of tornado 5, tornado reports its self as
+an asyncio event loop so attempts to start another asyncio event loop
+inside of a task fails which means bluesky will not run in a jupyter
+notebook.  To fix this we now continuously run the event loop on a
+background thread and the `~bluesky.RunEngine` object manages the
+interaction with creating tasks on that event loop.  To first order,
+users should not notice this change, however details of how
+
+API Changes
+~~~~~~~~~~~
+
+``install_qt_kicker`` deprecated
+++++++++++++++++++++++++++++++++
+
+Previously, we were running the asyncio event loop on the main thread
+and blocked until it returned.  This meant that if you were using
+Matplotlib and Qt for plots they would effectively be "frozen" because
+the Qt event loop was not being given a chance to run.  We worked
+around this by installing a 'kicker' task onto the asyncio event loop
+that would periodically spin the Qt event loop to keep the figures
+responsive (both to addition of new data from callbacks and from user
+interaction).
+
+Now that we are running the event loop on a background thread this no
+longer works because the Qt event loop must be run on the main thread.
+Instead we use *during_task* to block the main thread by running the
+Qt event loop directly.
+
+*during_task* kwarg to :meth:`RunEngine.__init__`
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+We need to block the main thread in `.RunEngine.__call__` (and
+`.RunEngine.resume`) until the user supplied plan is complete.
+Previously, we would do this by calling ``self.loop.run_forever()`` to
+start the asyncio event loop.  We would then stop the event loop an
+the bottom of `.RunEngine._run` and in `~.RunEngine.request_pause` to
+un-block the main thread and return control to the user terminal.
+Now we must find an alternative way to achieve this effect.
+
+There is a a `Threading.Event` on the `.RunEngine` that will be set
+when the task for `.RunEngine._run` in completed, however we can not
+simple wait on that event as that would again cause the Qt windows to
+freeze.  We also do not want to bake a Matplotlib / Qt dependency
+directly into the `.RunEngine` so we added a hook, set at init time,
+for a function that passed the `~Thread.Event` and is responsible for
+blocking until it is set.  This function can do other things (such as
+run the Qt event loop) during that time.  The required signature is ::
+
+  def blocking_func(ev: Threading.Event) -> None:
+      "Returns when ev is set"
+
+
+The default hook will handle the case of the Matplotilb Qt backend and
+the case of Matplotlib not being imported.
+
+
+``'wait_for'`` Msg now expects callables rather than futures
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Messages are stashed and re-run when plans are interrupted which would
+result in re-using the coroutines passed through.  This has always
+been broken, but due to the way were stopping the event loop to pause
+the scan it was passing tests.
+
+Instead of directly passing the values passed into `asyncio.wait`, we
+now expect that the iterable passed in is callables with the signature
+::
+
+  def fut_fac() -> awaitable:
+      'This must work multiple times'
+
+
 v1.5.3 (2019-05-27)
 ===================
 
 This release removes the dependency on an old version of the ``jsonschema``
 library and requires the latest version of the ``event-model`` library.
+
 
 v1.5.2 (2019-03-11)
 ===================
