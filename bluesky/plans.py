@@ -270,6 +270,8 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
         motors.append(motor)
     _md = {'shape': tuple(len(pos_list)
                           for motor, pos_list in partition(2, args)),
+           'extents': tuple([min(pos_list), max(pos_list)]
+                            for motor, pos_list in partition(2, args)),
            'snake_axes': snake_axes,
            'plan_args': {'detectors': list(map(repr, detectors)),
                          'args': md_args,
