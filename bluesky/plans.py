@@ -285,7 +285,6 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
            'hints': {},
            }
     _md.update(md or {})
-    _md['hints'].setdefault('gridding', 'rectilinear')
     try:
         _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
                                                for m in motors])
