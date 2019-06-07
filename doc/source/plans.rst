@@ -44,6 +44,8 @@ documentation.
    rel_scan
    list_scan
    rel_list_scan
+   list_grid_scan
+   rel_list_grid_scan
    log_scan
    rel_log_scan
    grid_scan
@@ -166,15 +168,35 @@ Multi-dimensional scans
 
 See :ref:`tutorial_multiple_motors` in the tutorial for an introduction to the
 common cases of moving multiple motors in coordination (i.e. moving X and Y
-along a diagonal) with :func:`~bluesky.plans.scan` or in a grid with
-:func:`~bluesky.plans.grid_scan` with equal spacing.
+along a diagonal) or in a grid. The key examples are reproduced here. Again,
+see the section linked for further explanation.
 
-Both :func:`~bluesky.plan.scan` and :func:`~bluesky.plans.grid_scan` are built
-on a more general-purpose plan, :func:`~bluesky.plan.scan_nd`, which we can use
-for more specialized cases, such as:
+.. code-block:: python
 
-* grids or trajectories with unequally-spaced steps
-* moving some motors together
+    from ophyd.sim import det, motor1, motor2, motor3
+    from bluesky.plans import scan, grid_scan, list_scan, list_grid_scan
+
+    RE(scan(dets,
+            motor1, -1.5, 1.5,  # scan motor1 from -1.5 to 1.5
+            motor2, -0.1, 0.1,  # ...while scanning motor2 from -0.1 to 0.1
+            11))  # ...both in 11 steps
+
+    # Scan motor1 and motor2 jointly through a 5-point trajectory.
+    RE(list_scan(dets, motor1, [1, 1, 3, 5, 8], motor2, [25, 16, 9, 4, 1]))
+
+    # Scan a 3 x 5 x 2 grid.
+    RE(grid_scan([det],
+                 motor1, -1.5, 1.5, 3,  # no snake parameter for first motor
+                 motor2, -0.1, 0.1, 5, False))
+                 motor3, -200, 200, 5, False))
+
+    # Scan a grid with abitrary spacings given as specific positions.
+    RE(list_grid_scan([det],
+                      motor1, [1, 1, 2, 3, 5],
+                      motor2, [25, 16, 9]))
+
+All of these plans are built on a more general-purpose plan,
+:func:`~bluesky.plan.scan_nd`, which we can use for more specialized cases.
 
 Some jargon: we speak of :func:`~bluesky.plans.scan`-like joint movement as an
 "inner product" of trajectories and :func:`~bluesky.plans.grid_scan`-like
@@ -216,8 +238,14 @@ incorporating these trajectories, use our general N-dimensional scan plan,
    :toctree: generated
    :nosignatures:
 
+   scan
+   rel_scan
    grid_scan
    rel_grid_scan
+   list_scan
+   rel_list_scan
+   list_grid_scan
+   rel_list_grid_scan
    scan_nd
 
 Spiral trajectories

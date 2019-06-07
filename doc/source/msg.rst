@@ -254,7 +254,7 @@ Ex ::
     from asyncio.futures import Future
     future = Future()
     future.done() # will give false
-    RE(Msg('wait_for', future))
+    RE(Msg('wait_for', [lambda : future ,]))
     # this sets the future to done
     future.set_result(3)
     future.done() # will give True
@@ -446,7 +446,7 @@ Expected message object is::
 
     Msg('stop', obj)
 
-This amounts to calling ``obj.stop()``. 
+This amounts to calling ``obj.stop()``.
 
 
 Registering Custom Commands

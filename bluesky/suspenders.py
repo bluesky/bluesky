@@ -133,7 +133,7 @@ class SuspenderBase(metaclass=ABCMeta):
                     self.__make_event()
                     cb = partial(
                         self.RE.request_suspend,
-                        self._ev.wait(),
+                        self._ev.wait,
                         pre_plan=self._pre_plan,
                         post_plan=self._post_plan,
                         justification=self._get_justification())
@@ -164,6 +164,9 @@ class SuspenderBase(metaclass=ABCMeta):
                     print("Suspender {!r} reports a return to nominal "
                           "conditions. Will sleep for {} seconds and then "
                           "release suspension at {}.".format(self, sleep, ts))
+                    # we can use call_later here because this function is scheduled
+                    # to be run in the event loop thread by the `call_soon_threadsafe`
+                    # call just below.
                     loop.call_later(sleep, ev.set)
                 loop.call_soon_threadsafe(local)
         # clear that we have an event
@@ -185,7 +188,7 @@ class SuspenderBase(metaclass=ABCMeta):
         '''
         if not self.tripped:
             return [], ''
-        return [self.__make_event().wait()], self._get_justification()
+        return [self.__make_event().wait], self._get_justification()
 
     @property
     def tripped(self):

@@ -23,12 +23,28 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    run_wrapper, rewindable_wrapper,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
+from super_state_machine.errors import TransitionError
 
 
 def test_states():
     assert RunEngineStateMachine.States.states() == ['idle',
                                                      'running',
-                                                     'paused']
+                                                     'pausing',
+                                                     'paused',
+                                                     'halting',
+                                                     'stopping',
+                                                     'aborting',
+                                                     'suspending',
+                                                     'panicked',
+                                                     ]
+
+
+def test_panic_trap(RE):
+    RE._state = 'panicked'
+    for k in RunEngineStateMachine.States.states():
+        if k != 'panicked':
+            with pytest.raises(TransitionError):
+                RE._state = k
 
 
 def test_state_is_readonly(RE):
@@ -40,7 +56,8 @@ def test_verbose(RE, hw):
     RE.verbose = True
     assert RE.verbose
     # Emit all four kinds of document, exercising the logging.
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det), Msg('save'),
+    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det),
+        Msg('save'),
         Msg('close_run')])
 
 
@@ -507,17 +524,26 @@ def _make_unrewindable_suspender_marker():
 
 @_make_unrewindable_suspender_marker()
 def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
+    from bluesky.utils import ts_msg_hook
     msgs = []
-
+    loop = RE.loop
     def collector(msg):
+        ts_msg_hook(msg)
         msgs.append(msg)
 
     RE.msg_hook = collector
 
-    ev = asyncio.Event(loop=RE.loop)
-    loop = RE.loop
-    loop.call_later(.5, partial(RE.request_suspend, fut=ev.wait()))
-    loop.call_later(1, ev.set)
+    ev = asyncio.Event(loop=loop)
+
+    threading.Timer(.5, RE.request_suspend,
+                    kwargs=dict(fut=ev.wait)).start()
+
+    def verbose_set():
+        print('seting')
+        ev.set()
+    loop.call_soon_threadsafe(
+        loop.call_later, 1, verbose_set)
+
     RE(plan(motor, det))
     assert [m.command for m in msgs] == msg_seq
 
@@ -546,21 +572,24 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
 
 
 def test_sigint_three_hits(RE, hw):
+    import time
     motor = hw.motor
-    motor.delay = 0.3
+    motor.delay = 1
 
     pid = os.getpid()
 
     def sim_kill(n=1):
         for j in range(n):
-            print('KILL')
+            time.sleep(.02)
             os.kill(pid, signal.SIGINT)
 
     lp = RE.loop
     motor.loop = lp
-    lp.call_later(.02, sim_kill, 3)
-    lp.call_later(.02, sim_kill, 3)
-    lp.call_later(.02, sim_kill, 3)
+    start = time.monotonic()
+    threading.Timer(.05, sim_kill, (3,)).start()
+    threading.Timer(.1, sim_kill, (3,)).start()
+    threading.Timer(.2, sim_kill, (3,)).start()
+
     start_time = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(finalize_wrapper(abs_set(motor, 1, wait=True),
@@ -585,7 +614,8 @@ def test_sigint_many_hits_pln(RE):
 
     def hanging_plan():
         "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
-        ttime.sleep(10)
+        for j in range(100):
+            ttime.sleep(.1)
         yield Msg('null')
 
     start_time = ttime.time()
@@ -597,6 +627,50 @@ def test_sigint_many_hits_pln(RE):
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
     assert RE.state == 'idle'
+
+
+def test_sigint_many_hits_panic(RE):
+    pid = os.getpid()
+
+    def sim_kill(n=1):
+        for j in range(n):
+            print('KILL', j, ttime.monotonic() - start_time)
+            ttime.sleep(0.05)
+            os.kill(pid, signal.SIGINT)
+
+    def hanging_plan():
+        "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
+        yield Msg('null')
+        ttime.sleep(5)
+        yield Msg('null')
+
+    start_time = ttime.monotonic()
+    timer = threading.Timer(0.2, sim_kill, (11,))
+    timer.start()
+    with pytest.raises(RunEngineInterrupted):
+        RE(hanging_plan())
+    # Check that hammering SIGINT escaped from that 5-second sleep.
+    assert (ttime.monotonic() - start_time) < 2.5
+    # The KeyboardInterrupt but because we could not shut down, panic!
+    assert RE.state == 'panicked'
+
+    with pytest.raises(RuntimeError):
+        RE([])
+
+    with pytest.raises(RuntimeError):
+        RE.stop()
+
+    with pytest.raises(RuntimeError):
+        RE.halt()
+
+    with pytest.raises(RuntimeError):
+        RE.abort()
+
+    with pytest.raises(RuntimeError):
+        RE.resume()
+
+    with pytest.raises(RuntimeError):
+        RE.request_pause()
 
 
 @pytest.mark.skipif(sys.version_info < (3, 5),
@@ -616,7 +690,8 @@ def test_sigint_many_hits_cb(RE):
             yield Msg('null')
 
     def hanging_callback(name, doc):
-        ttime.sleep(10)
+        for j in range(100):
+            ttime.sleep(.1)
 
     start_time = ttime.time()
     timer = threading.Timer(0.2, sim_kill, (11,))
@@ -757,6 +832,9 @@ def test_finalizer_closeable():
 
 def test_invalid_generator(RE, hw, capsys):
     motor = hw.motor
+    from bluesky.utils import ts_msg_hook
+
+    RE.msg_hook = ts_msg_hook
 
     # this is not a valid generator as it will try to yield if it
     # is throw a GeneratorExit
@@ -772,10 +850,10 @@ def test_invalid_generator(RE, hw, capsys):
         yield Msg('pause')
 
     def post_plan(motor):
-        yield Msg('set', motor, 5)
+        yield Msg('set', motor, 500)
 
     def pre_suspend_plan():
-        yield Msg('set', motor, 5)
+        yield Msg('set', motor, -500)
         raise GeneratorExit('this one')
 
     def make_plan():
@@ -788,8 +866,8 @@ def test_invalid_generator(RE, hw, capsys):
     capsys.readouterr()
     try:
         RE.resume()
-    except GeneratorExit as sf:
-        assert sf.args[0] == 'this one'
+    except ValueError as sf:
+        assert sf.__cause__.args[0] == 'this one'
 
     actual_err, _ = capsys.readouterr()
     expected_prefix = 'The plan '
@@ -823,7 +901,7 @@ def test_exception_cascade_REside(RE):
         RE(pausing_plan())
     ev = asyncio.Event(loop=RE.loop)
     ev.set()
-    RE.request_suspend(ev.wait(), pre_plan=pre_plan())
+    RE.request_suspend(ev.wait, pre_plan=pre_plan())
     with pytest.raises(KeyError):
         RE.resume()
     assert except_hit
@@ -854,28 +932,28 @@ def test_exception_cascade_planside(RE):
         RE(pausing_plan())
     ev = asyncio.Event(loop=RE.loop)
     ev.set()
-    RE.request_suspend(ev.wait(), pre_plan=pre_plan())
+    RE.request_suspend(ev.wait, pre_plan=pre_plan())
     with pytest.raises(RuntimeError):
         RE.resume()
     assert except_hit
 
 
 def test_sideband_cancel(RE):
+    loop = RE.loop
     ev = asyncio.Event(loop=RE.loop)
 
     def done():
-        print("Done")
         ev.set()
 
     def side_band_kill():
-        RE._task.cancel()
+        RE.loop.call_soon_threadsafe(RE._task.cancel)
 
-    scan = [Msg('wait_for', None, [ev.wait(), ]), ]
+    scan = [Msg('wait_for', None, [ev.wait, ]), ]
     assert RE.state == 'idle'
     start = ttime.time()
-    RE.loop.call_later(.5, side_band_kill)
-    RE.loop.call_later(2, done)
-
+    threading.Timer(.5, side_band_kill).start()
+    loop.call_soon_threadsafe(
+        loop.call_later, 2, done)
     RE(scan)
     assert RE.state == 'idle'
     assert RE._task.cancelled()
@@ -1049,7 +1127,7 @@ def test_halt_async(RE):
             except_hit = True
             raise
 
-    RE.loop.call_later(.1, RE.halt)
+    threading.Timer(.1, RE.halt).start()
     start = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(sleeping_plan())
@@ -1076,7 +1154,7 @@ def test_prompt_stop(RE, cancel_func):
             except_hit = True
             raise
 
-    RE.loop.call_later(.1, partial(cancel_func, RE))
+    threading.Timer(.1, partial(cancel_func, RE)).start()
     start = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(sleeping_plan())
@@ -1121,7 +1199,8 @@ def test_state_hook(RE):
         RE([Msg('open_run'), Msg('pause'), Msg('close_run')])
     RE.resume()
     expected = [('running', 'idle'),
-                ('paused', 'running'),
+                ('pausing', 'running'),
+                ('paused', 'pausing'),
                 ('running', 'paused'),
                 ('idle', 'running')]
     assert states == expected
@@ -1382,11 +1461,11 @@ def test_force_stop_exit_status(bail_func, status, RE):
 
     @run_decorator()
     def bad_plan():
+        print('going in')
         yield Msg('pause')
-    try:
+    with pytest.raises(RunEngineInterrupted):
         RE(bad_plan())
-    except:
-        ...
+
     rs, = getattr(RE, bail_func)()
 
     assert len(d.start) == 1

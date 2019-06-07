@@ -11,18 +11,34 @@ from enum import Enum
 import functools
 import inspect
 from contextlib import ExitStack
+import threading
+import weakref
+
+import concurrent
 
 from event_model import DocumentNames, schema_validators
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
 
+try:
+    from asyncio import current_task
+except ImportError:
+    # handle py < 3,7
+    from asyncio.tasks import Task
+    current_task = Task.current_task
+    del Task
+
 from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
                     AsyncInput, new_uid, NoReplayAllowed,
                     RequestAbort, RequestStop, RunEngineInterrupted,
                     IllegalMessageSequence, FailedPause, FailedStatus,
                     InvalidCommand, PlanHalt, Msg, ensure_generator,
-                    single_gen, short_uid)
+                    single_gen, short_uid, default_during_task)
+
+
+class _RunEnginePanic(Exception):
+    ...
 
 
 class RunEngineStateMachine(StateMachine):
@@ -41,8 +57,19 @@ class RunEngineStateMachine(StateMachine):
     class States(Enum):
         """state.name = state.value"""
         IDLE = 'idle'
+
         RUNNING = 'running'
+
+        PAUSING = 'pausing'
         PAUSED = 'paused'
+
+        HALTING = 'halting'
+        STOPPING = 'stopping'
+        ABORTING = 'aborting'
+
+        SUSPENDING = 'suspending'
+
+        PANICKED = 'panicked'
 
         @classmethod
         def states(cls):
@@ -55,9 +82,17 @@ class RunEngineStateMachine(StateMachine):
             # Notice that 'transitions' and 'named_transitions' have
             # opposite to <--> from structure.
             # from_state : [valid_to_states]
-            'idle': ['running'],
-            'running': ['idle', 'paused'],
-            'paused': ['idle', 'running'],
+            'idle': ['running', 'panicked'],
+            'running': ['idle', 'pausing', 'halting', 'stopping',
+                        'aborting', 'suspending', 'panicked'],
+            'pausing': ['paused', 'idle', 'halting', 'aborting', 'panicked'],
+            'suspending': ['running', 'halting', 'aborting', 'panicked'],
+            'paused': ['idle', 'running', 'halting', 'stopping', 'aborting',
+                       'panicked'],
+            'halting': ['idle', 'panicked'],
+            'stopping': ['idle', 'panicked'],
+            'aborting': ['idle', 'panicked'],
+            'panicked': []
         }
         named_checkers = [
             ('can_pause', 'paused'),
@@ -72,13 +107,21 @@ class LoggingPropertyMachine(PropertyMachine):
         super().__init__(machine_type)
 
     def __set__(self, obj, value):
-        old_value = self.__get__(obj)
-        super().__set__(obj, value)
-        value = self.__get__(obj)
+        own = type(obj)
+        old_value = self.__get__(obj, own)
+        with obj._state_lock:
+            super().__set__(obj, value)
+        value = self.__get__(obj, own)
         obj.log.info("Change state on %r from %r -> %r",
                      obj, old_value, value)
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return super().__get__(instance, owner)
+        with instance._state_lock:
+            return super().__get__(instance, owner)
 
 
 # See RunEngine.__call__.
@@ -91,6 +134,15 @@ _call_sig = Signature(
 
 def default_scan_id_source(md):
     return md.get('scan_id', 0) + 1
+
+
+def _state_locked(func):
+    @functools.wraps(func)
+    def inner(self, *args, **kwargs):
+        with self._state_lock:
+            return func(self, *args, **kwargs)
+
+    return inner
 
 
 class RunEngine:
@@ -139,6 +191,23 @@ class RunEngine:
         customized function to get a scan_id from any source.
         Expected signature: f(md)
         Expected return: updated scan_id value
+
+    during_task : callable, optional
+        Function to be run to block the main thread during `RE.__call__`
+
+        The required signature is ::
+
+              def blocking_func(ev: Threading.Event) -> None:
+                  "Returns when ev is set"
+
+        The default value handles the cases of:
+           - Matplotlib is not imported (just wait on the event)
+           - Matplotlib is imported, but not using a Qt, notebook or ipympl
+             backend (just wait on the event)
+           - Matplotlib is imported and using a Qt backend (run the Qt app
+             on the main thread until the run finishes)
+           - Matplotlib is imported and using a nbagg or ipympl backend (
+             wait on the event and poll to push updates to the browser)
 
     Attributes
     ----------
@@ -216,10 +285,21 @@ class RunEngine:
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
-                 scan_id_source=default_scan_id_source):
+                 scan_id_source=default_scan_id_source,
+                 during_task=default_during_task):
         if loop is None:
-            loop = asyncio.get_event_loop()
+            loop = get_bluesky_event_loop()
+        self._th = _ensure_event_loop_running(loop)
+        self._state_lock = threading.RLock()
         self._loop = loop
+        self._during_task = during_task
+
+        # When set, RunEngine.__call__ should stop blocking.
+        self._blocking_event = threading.Event()
+
+        # When cleared, RunEngine._run will pause until set.
+        self._run_permit = asyncio.Event(loop=loop)
+        self.loop.call_soon_threadsafe(self._run_permit.set)
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
@@ -297,6 +377,7 @@ class RunEngine:
         self._exit_status = 'success'  # optimistic default
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
+        self._task_fut = None  # future proxy to the task above
         self._status_tasks = deque()  # from self._status_object_completed
         self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the plan instance from __call__
@@ -500,6 +581,7 @@ class RunEngine:
         self._interruptions_desc_uid = None
         self._interruptions_counter = count(1)
 
+    @_state_locked
     def _clear_call_cache(self):
         "Clean up for a new __call__ (which may encompass multiple runs)."
         self._metadata_per_call.clear()
@@ -515,6 +597,7 @@ class RunEngine:
         self._exit_status = 'success'
         self._reason = ''
         self._task = None
+        self._task_fut = None
         self._status_tasks.clear()
         self._pardon_failures = asyncio.Event(loop=self.loop)
         self._plan = None
@@ -602,44 +685,28 @@ class RunEngine:
             If True, pause at the next checkpoint.
             False by default.
         """
+        future = asyncio.run_coroutine_threadsafe(
+            self._request_pause_coro(defer),
+            loop=self.loop)
+        # TODO add a timeout here?
+        return future.result()
+
+    async def _request_pause_coro(self, defer=False):
+        # We are pausing. Cancel any deferred pause previously requested.
         if defer:
             self._deferred_pause_requested = True
             print("Deferred pause acknowledged. Continuing to checkpoint.")
             return
 
-        # We are pausing. Cancel any deferred pause previously requested.
+        print("Pausing...")
+
         self._deferred_pause_requested = False
         self._interrupted = True
-        print("Pausing...")
-        self._state = 'paused'
+        self._state = 'pausing'
+
         self._record_interruption('pause')
-        if not self.resumable:
-            # cannot resume, so we cannot pause.  Abort the plan.
-            print("No checkpoint; cannot pause.")
-            print("Aborting: running cleanup and marking "
-                  "exit_status as 'abort'...")
-            self._exception = FailedPause()
-            self._task.cancel()
-            for task in self._status_tasks:
-                task.cancel()
-            return
-        # stop accepting new tasks in the event loop (existing tasks will
-        # still be processed)
-        self.loop.stop()
-        # Remove any monitoring callbacks, but keep refs in
-        # self._monitor_params to re-instate them later.
-        for obj, (cb, kwargs) in list(self._monitor_params.items()):
-            obj.clear_sub(cb)
-        # During pause, all motors should be stopped. Call stop() on every
-        # object we ever set().
-        self._stop_movable_objects(success=True)
-        # Notify Devices of the pause in case they want to clean up.
-        for obj in self._objs_seen:
-            if hasattr(obj, 'pause'):
-                try:
-                    obj.pause()
-                except NoReplayAllowed:
-                    self._reset_checkpoint_state_meth()
+
+        self._task.cancel()
 
     def _record_interruption(self, content):
         """
@@ -686,6 +753,10 @@ class RunEngine:
         uids : list
             list of uids (i.e. RunStart Document uids) of run(s)
         """
+        if self.state == 'panicked':
+            raise RuntimeError("The RunEngine is panicked and "
+                               "cannot be recovered. "
+                               "You must restart bluesky.")
         # This scheme lets us make 'plan' and 'subs' POSITIONAL ONLY, reserving
         # all keyword arguments for user metdata.
         arguments = _call_sig.bind(self, *args, **metadata_kw).arguments
@@ -747,29 +818,24 @@ class RunEngine:
         if futs:
             self._plan_stack.append(single_gen(Msg('wait_for', None, futs)))
             self._response_stack.append(None)
+        self.log.info("Executing plan %r", self._plan)
 
-        # Handle all context managers
-        with ExitStack() as stack:
-            for mgr in self.context_managers:
-                stack.enter_context(mgr(self))
-            self._task = self.loop.create_task(self._run())
-            self.log.info("Executing plan %r", self._plan)
-            try:
-                self.loop.run_forever()
-            finally:
-                if self._task.done():
-                    # get exceptions from the main task
-                    try:
-                        exc = self._task.exception()
-                    except asyncio.CancelledError:
-                        exc = None
-                    # if the main task exception is not None, re-raise
-                    # it (unless it is a canceled error)
-                    if exc is not None:
-                        raise exc
+        def _build_task():
+            # make sure _run will block at the top
+            self._run_permit.clear()
+            self._blocking_event.clear()
+            self._task_fut = asyncio.run_coroutine_threadsafe(self._run(),
+                                                              loop=self.loop)
 
-            if self._interrupted:
-                raise RunEngineInterrupted(self.pause_msg) from None
+            def set_blocking_event(future):
+                self._blocking_event.set()
+
+            self._task_fut.add_done_callback(set_blocking_event)
+
+        self._resume_task(init_func=_build_task)
+
+        if self._interrupted:
+            raise RunEngineInterrupted(self.pause_msg) from None
 
         return tuple(self._run_start_uids)
 
@@ -783,6 +849,11 @@ class RunEngine:
         uids : list
             list of Header uids (a.k.a RunStart uids) of run(s)
         """
+        if self.state == 'panicked':
+            raise RuntimeError("The RunEngine is panicked and "
+                               "cannot be recovered. "
+                               "You must restart bluesky.")
+
         # The state machine does not capture the whole picture.
         if not self._state.is_paused:
             raise TransitionError("The RunEngine is the {0} state. "
@@ -801,10 +872,10 @@ class RunEngine:
         for obj in self._objs_seen:
             if hasattr(obj, 'resume'):
                 obj.resume()
-        self._resume_event_loop()
+        self._resume_task()
         if self._interrupted:
             raise RunEngineInterrupted(self.pause_msg) from None
-        return self._run_start_uids
+        return tuple(self._run_start_uids)
 
     def _rewind(self):
         '''Clean up in preparation for resuming from a pause or suspension.
@@ -827,28 +898,69 @@ class RunEngine:
             self._bundling = False
         return new_plan
 
-    def _resume_event_loop(self):
-        # may be called by 'resume' or 'abort'
-        self._state = 'running'
+    def _resume_task(self, *, init_func=None):
+        # Clear the blocking Event so that we can wait on it below.
+        # The task will set it when it is done, as it was previously
+        # configured to do it __call__.
+        self._blocking_event.clear()
 
         # Handle all context managers
         with ExitStack() as stack:
             for mgr in self.context_managers:
                 stack.enter_context(mgr(self))
-            if self._task.done():
+
+            if init_func is not None:
+                init_func()
+
+            if self._task_fut is None or self._task_fut.done():
                 return
+
+            # The _run task is waiting on this Event. Let is continue.
+            self.loop.call_soon_threadsafe(self._run_permit.set)
             try:
-                self.loop.run_forever()
+                # Block until plan is complete or exception is raised.
+                try:
+                    self._during_task(self._blocking_event)
+                except KeyboardInterrupt:
+                    import ctypes
+                    self._interrupted = True
+                    # we can not interrupt a python thread from the outside
+                    # but there is an API to schedule an exception to be raised
+                    # the next time that thread would interpret byte code.
+                    # The documentation of this function includes the sentence
+                    #
+                    #   To prevent naive misuse, you must write your
+                    #   own C extension to call this.
+                    #
+                    # Here we cheat a bit and use ctypes.
+                    num_threads = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+                        ctypes.c_ulong(self._th.ident),
+                        ctypes.py_object(_RunEnginePanic))
+                    # however, if the thread is in a system call (such
+                    # as sleep or I/O) there is no way to interrupt it
+                    # (per decree of Guido) thus we give it a second
+                    # to sort it's self out
+                    task_finished = self._blocking_event.wait(1)
+                    # before giving up and putting the RE in a
+                    # non-recoverable panicked state.
+                    if not task_finished or num_threads != 1:
+                        self._state = 'panicked'
+                except Exception as raised_er:
+                    self.halt()
+                    self._interrupted = True
+                    raise raised_er
             finally:
-                if self._task.done():
+                if self._task_fut.done():
                     # get exceptions from the main task
                     try:
-                        exc = self._task.exception()
-                    except asyncio.CancelledError:
+                        exc = self._task_fut.exception()
+                    except (asyncio.CancelledError,
+                            concurrent.futures.CancelledError):
                         exc = None
                     # if the main task exception is not None, re-raise
                     # it (unless it is a canceled error)
-                    if exc is not None:
+                    if (exc is not None
+                            and not isinstance(exc, _RunEnginePanic)):
                         raise exc
 
     def install_suspender(self, suspender):
@@ -896,8 +1008,7 @@ class RunEngine:
             suspender.remove()
         self._suspenders.discard(suspender)
 
-    @asyncio.coroutine
-    def _remove_suspender(self, msg):
+    async def _remove_suspender(self, msg):
         """
         See :meth: `RunEngine.remove_suspender`
 
@@ -944,17 +1055,24 @@ class RunEngine:
             explanation of why the suspension has been requested
 
         """
-        if not self.resumable:
-            print("No checkpoint; cannot suspend.")
-            print("Aborting: running cleanup and marking "
-                  "exit_status as 'abort'...")
-            self._interrupted = True
-            self._exception = FailedPause()
-            self._task.cancel()
-        else:
-            print("Suspending....To get prompt hit Ctrl-C twice to pause.")
-            ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            print("Suspension occurred at {}.".format(ts))
+
+        print("Suspending....To get prompt hit Ctrl-C twice to pause.")
+        ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print("Suspension occurred at {}.".format(ts))
+
+        async def _request_suspend(pre_plan, post_plan, justification):
+            if not self.resumable:
+                print("No checkpoint; cannot suspend.")
+                print("Aborting: running cleanup and marking "
+                      "exit_status as 'abort'...")
+                self._interrupted = True
+                with self._state_lock:
+                    self._exception = FailedPause()
+                was_paused = self._state == 'paused'
+                self._state = 'aborting'
+                if not was_paused:
+                    self._task.cancel()
+
             if justification is not None:
                 print("Justification for this suspension:\n%s" % justification)
             self._record_interruption('suspend')
@@ -1011,6 +1129,14 @@ class RunEngine:
             # The event loop is still running. The pre_plan will be processed,
             # and then the RunEngine will be hung up on processing the
             # 'wait_for' message until `fut` is set.
+            if not self._state == 'paused':
+                self._state = 'suspending'
+                # bump the _run task out of what ever it is awaiting
+                self._task.cancel()
+
+        self.loop.call_soon_threadsafe(
+            self.loop.create_task,
+            _request_suspend(pre_plan, post_plan, justification))
 
     def abort(self, reason=''):
         """
@@ -1021,20 +1147,29 @@ class RunEngine:
         :meth:`RunEngine.halt`
         :meth:`RunEngine.stop`
         """
+        return self.__interrupter_helper(self._abort_coro(reason))
+
+    async def _abort_coro(self, reason):
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Aborting: running cleanup and marking "
               "exit_status as 'abort'...")
         self._interrupted = True
         self._reason = reason
-        self._exception = RequestAbort()
-        self._task.cancel()
+
+        self._exit_status = 'abort'
+
+        was_paused = self._state == 'paused'
+        self._state = 'aborting'
+        if was_paused:
+            with self._state_lock:
+                self._exception = RequestAbort()
+        else:
+            self._task.cancel()
         for task in self._status_tasks:
             task.cancel()
-        self._exit_status = 'abort'
-        if self._state == 'paused':
-            self._resume_event_loop()
-        return self._run_start_uids
+
+        return tuple(self._run_start_uids)
 
     def stop(self):
         """
@@ -1045,16 +1180,20 @@ class RunEngine:
         :meth:`RunEngine.abort`
         :meth:`RunEngine.halt`
         """
+        return self.__interrupter_helper(self._stop_coro())
+
+    async def _stop_coro(self):
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Stopping: running cleanup and marking exit_status "
               "as 'success'...")
+
         self._interrupted = True
-        self._exception = RequestStop()
-        self._task.cancel()
-        if self._state == 'paused':
-            self._resume_event_loop()
-        return self._run_start_uids
+        was_paused = self._state == 'paused'
+        self._state = 'stopping'
+        if not was_paused:
+            self._task.cancel()
+        return tuple(self._run_start_uids)
 
     def halt(self):
         '''
@@ -1065,17 +1204,47 @@ class RunEngine:
         :meth:`RunEngine.abort`
         :meth:`RunEngine.stop`
         '''
+        return self.__interrupter_helper(self._halt_coro())
+
+    def __interrupter_helper(self, coro):
+        if self.state == 'panicked':
+            raise RuntimeError("The RunEngine is panicked and "
+                               "cannot be recovered. "
+                               "You must restart bluesky.")
+
+        coro_event = threading.Event()
+        task = None
+
+        def end_cb(fut):
+            coro_event.set()
+
+        def start_task():
+            nonlocal task
+            task = self.loop.create_task(coro)
+            task.add_done_callback(end_cb)
+
+        was_paused = self._state == 'paused'
+        self.loop.call_soon_threadsafe(start_task)
+        coro_event.wait()
+        if was_paused:
+            self._resume_task()
+
+        return task.result()
+
+    async def _halt_coro(self):
         if self._state.is_idle:
             raise TransitionError("RunEngine is already idle.")
         print("Halting: skipping cleanup and marking exit_status as "
               "'abort'...")
         self._interrupted = True
-        self._exception = PlanHalt()
-        self._exit_status = 'abort'
-        self._task.cancel()
-        if self._state == 'paused':
-            self._resume_event_loop()
-        return self._run_start_uids
+        with self._state_lock:
+            self._exception = PlanHalt()
+            self._exit_status = 'abort'
+        was_paused = self._state == 'paused'
+        self._state = 'halting'
+        if not was_paused:
+            self._task.cancel()
+        return tuple(self._run_start_uids)
 
     def _stop_movable_objects(self, *, success=True):
         "Call obj.stop() for all objects we have moved. Log any exceptions."
@@ -1090,8 +1259,7 @@ class RunEngine:
                 except Exception:
                     self.log.exception("Failed to stop %r.", obj)
 
-    @asyncio.coroutine
-    def _run(self):
+    async def _run(self):
         """Pull messages from the plan, process them, send results back.
 
         Upon exit, clean up.
@@ -1101,14 +1269,65 @@ class RunEngine:
         - Try to remove any monitoring subscriptions left on by the plan.
         - If interrupting the middle of a run, try to emit a RunStop document.
         """
+        await self._run_permit.wait()
+        # grab the current task.  We need to do this here because the
+        # object returned by `run_coroutine_threadsafe` is a future
+        # that acts as a proxy that does not have the correct behavior
+        # when `.cancel` is called on it.
+        with self._state_lock:
+            self._task = current_task(self.loop)
+        stashed_exception = None
         debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
-        pending_cancel_exception = None
         self._reason = ''
         # sentinel to decide if need to add to the response stack or not
         sentinel = object()
         try:
             self._state = 'running'
             while True:
+                if self._state in ('pausing', 'suspending'):
+                    if not self.resumable:
+                        self._run_permit.set()
+                        stashed_exception = FailedPause()
+                        for task in self._status_tasks:
+                            task.cancel()
+                        self._state = 'aborting'
+                        continue
+                # currently only using 'suspending' to get us into the
+                # block above, we do not have a 'suspended' state
+                # (yet)
+                if self._state == 'suspending':
+                    self._state = 'running'
+                if not self._run_permit.is_set():
+                    # A pause has been requested. First, put everything in a
+                    # resting state.
+                    assert self._state == 'pausing'
+                    # Remove any monitoring callbacks, but keep refs in
+                    # self._monitor_params to re-instate them later.
+                    for obj, (cb, kwargs) in self._monitor_params.items():
+                        obj.clear_sub(cb)
+                    # During pause, all motors should be stopped. Call stop()
+                    # on every object we ever set().
+                    self._stop_movable_objects(success=True)
+                    # Notify Devices of the pause in case they want to
+                    # clean up.
+                    for obj in self._objs_seen:
+                        if hasattr(obj, 'pause'):
+                            try:
+                                obj.pause()
+                            except NoReplayAllowed:
+                                self._reset_checkpoint_state_meth()
+                    self._state = 'paused'
+                    # Let RunEngine.__call__ return...
+                    self._blocking_event.set()
+
+                    await self._run_permit.wait()
+                    if self._state == 'paused':
+                        # may be called by 'resume', 'stop', 'abort', 'halt'
+                        self._state = 'running'
+
+                    # If we are here, we have come back to life either to
+                    # continue (resume) or to clean up before exiting.
+
                 assert len(self._response_stack) == len(self._plan_stack)
                 # set resp to the sentinel so that if we fail in the sleep
                 # we do not add an extra response
@@ -1117,7 +1336,7 @@ class RunEngine:
                     # the new response to be added
                     new_response = None
 
-                    # This 'yield from' must be here to ensure that
+                    # This 'await' must be here to ensure that
                     # this coroutine breaks out of its current behavior
                     # before trying to get the next message from the
                     # top of the generator stack in case there has
@@ -1129,18 +1348,24 @@ class RunEngine:
                     # This sleep has to be inside of this try block so
                     # that any of the 'async' exceptions get thrown in the
                     # correct place
-                    yield from asyncio.sleep(0, loop=self.loop)
+                    await asyncio.sleep(0, loop=self.loop)
                     # always pop off a result, we are either sending it back in
                     # or throwing an exception in, in either case the left hand
                     # side of the yield in the plan will be moved past
                     resp = self._response_stack.pop()
+                    # if any status tasks have failed, grab the exceptions.
+                    # give priority to things pushed in from outside
+                    with self._state_lock:
+                        if self._exception is not None:
+                            stashed_exception = self._exception
+                            self._exception = None
                     # The case where we have a stashed exception
-                    if (self._exception is not None or
+                    if (stashed_exception is not None or
                             isinstance(resp, Exception)):
                         # throw the exception at the current plan
                         try:
                             msg = self._plan_stack[-1].throw(
-                                self._exception or resp)
+                                stashed_exception or resp)
                         except Exception as e:
                             # The current plan did not handle it,
                             # maybe the next plan (if any) would like
@@ -1150,7 +1375,7 @@ class RunEngine:
                             # it a new response
                             resp = sentinel
                             if len(self._plan_stack):
-                                self._exception = e
+                                stashed_exception = e
                                 continue
                             # no plans left and still an unhandled exception
                             # re-raise to exit the infinite loop
@@ -1159,7 +1384,7 @@ class RunEngine:
                         # clear the stashed exception, the top plan
                         # handled it.
                         else:
-                            self._exception = None
+                            stashed_exception = None
                     # The normal case of clean operation
                     else:
                         try:
@@ -1185,7 +1410,7 @@ class RunEngine:
                             # it a new response
                             resp = sentinel
                             if len(self._plan_stack):
-                                self._exception = e
+                                stashed_exception = e
                                 continue
                             # or reraise to get out of the infinite loop
                             else:
@@ -1221,7 +1446,7 @@ class RunEngine:
                         # this is one of two places that 'async'
                         # exceptions (coming in via throw) can be
                         # raised
-                        new_response = yield from coro(msg)
+                        new_response = await coro(msg)
 
                     # special case `CancelledError` and let the outer
                     # exception block deal with it.
@@ -1244,17 +1469,34 @@ class RunEngine:
                     print("An unknown external library has improperly raised "
                           "KeyboardInterrupt. Intercepting and triggering "
                           "a HALT.")
-                    self.loop.call_soon(self.halt)
+                    await self._halt_coro()
                 except asyncio.CancelledError as e:
+                    if self._state == 'pausing':
+                        # if we got a CancelledError and we are in the
+                        # 'pausing' state clear the run permit and
+                        # bounce to the top
+                        self._run_permit.clear()
+                        continue
+                    if self._state in ('halting', 'stopping', 'aborting'):
+                        # if we got this while just keep going in tear-down
+                        exception_map = {'halting': PlanHalt,
+                                         'stopping': RequestStop,
+                                         'aborting': RequestAbort}
+                        # if the exception is not set bounce to the top
+                        if stashed_exception is None:
+                            stashed_exception = exception_map[self.state]
+                        continue
+                    if self._state == 'suspending':
+                        # just bounce to the top
+                        continue
                     # if we are handling this twice, raise and leave the plans
                     # alone
-                    if self._exception is e:
+                    if stashed_exception is e:
                         raise e
                     # the case where FailedPause, RequestAbort or a coro
                     # raised error is not already stashed in _exception
-                    if self._exception is None:
-                        self._exception = e
-                    pending_cancel_exception = e
+                    if stashed_exception is None:
+                        stashed_exception = e
                 finally:
                     # if we poped a response and did not pop a plan, we need
                     # to put the new response back on the stack
@@ -1264,13 +1506,17 @@ class RunEngine:
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             # TODO Is the sleep here necessary?
-            yield from asyncio.sleep(0, loop=self.loop)
+            await asyncio.sleep(0, loop=self.loop)
         except (FailedPause, RequestAbort, asyncio.CancelledError,
                 PlanHalt):
             self._exit_status = 'abort'
             # TODO Is the sleep here necessary?
-            yield from asyncio.sleep(0, loop=self.loop)
+            await asyncio.sleep(0, loop=self.loop)
             self.log.exception("Run aborted")
+        except GeneratorExit as err:
+            self._exit_status = 'fail'  # Exception raises during 'running'
+            self._reason = str(err)
+            raise ValueError from err
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
             self._reason = str(err)
@@ -1286,7 +1532,7 @@ class RunEngine:
             # Some might not support partial collection. We swallow errors.
             for obj in list(self._uncollected):
                 try:
-                    yield from self._collect(Msg('collect', obj))
+                    await self._collect(Msg('collect', obj))
                 except Exception:
                     self.log.exception("Failed to collect %r.", obj)
             # in case we were interrupted between 'stage' and 'unstage'
@@ -1308,7 +1554,7 @@ class RunEngine:
             # Emit RunStop if necessary.
             if self._run_is_open:
                 try:
-                    yield from self._close_run(Msg('close_run'))
+                    await self._close_run(Msg('close_run'))
                 except Exception:
                     self.log.error(
                         "Failed to close run %r.", self._run_start_uid)
@@ -1316,38 +1562,36 @@ class RunEngine:
             for p in self._plan_stack:
                 try:
                     p.close()
-                except RuntimeError as e:
+                except RuntimeError:
                     print('The plan {!r} tried to yield a value on close.  '
                           'Please fix your plan.'.format(p))
 
-            self.loop.stop()
             self._state = 'idle'
-        # if the task was cancelled
-        if pending_cancel_exception is not None:
-            raise pending_cancel_exception
+
         self.log.info("Cleaned up from plan %r", self._plan)
+        if isinstance(stashed_exception, asyncio.CancelledError):
+            raise stashed_exception
 
-    @asyncio.coroutine
-    def _wait_for(self, msg):
-        """Instruct the RunEngine to wait until msg.obj has completed. Better
-        yet, see the docstring for ``asyncio.wait`` for what msg.obj should
-        be...
-
-        TODO: Get someone who knows how this works to check this note, since
-        it is almost assuredly total bs
+    async def _wait_for(self, msg):
+        """Instruct the RunEngine to wait for futures
 
         Expected message object is:
 
-            Msg('wait_for', None, futures, **kwargs)
+            Msg('wait_for', None, awaitable_factories, **kwargs)
 
-        Where ``obj`` and **kwargs are the position and keyword-only arguments
-        for ``asyncio.await``
+        The keyword arguments will be passed through to `asyncio.wait`.
+
+        The callables in awaitable_factories must have the signature ::
+
+           def fut_fac() -> awaitable:
+               'This must work multiple times'
+
         """
         futs, = msg.args
-        yield from asyncio.wait(futs, loop=self.loop, **msg.kwargs)
+        futs = [f() for f in futs]
+        await asyncio.wait(futs, loop=self.loop, **msg.kwargs)
 
-    @asyncio.coroutine
-    def _open_run(self, msg):
+    async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
 
         Expected message object is:
@@ -1384,9 +1628,9 @@ class RunEngine:
         self.md_validator(dict(md))
 
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
-        yield from self.emit(DocumentNames.start, doc)
+        await self.emit(DocumentNames.start, doc)
         self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
         if self.record_interruptions:
@@ -1397,12 +1641,11 @@ class RunEngine:
                                       name='interruptions',
                                       data_keys={'interruption': dk},
                                       run_start=self._run_start_uid)
-            yield from self.emit(DocumentNames.descriptor, interruptions_desc)
+            await self.emit(DocumentNames.descriptor, interruptions_desc)
 
         return self._run_start_uid
 
-    @asyncio.coroutine
-    def _close_run(self, msg):
+    async def _close_run(self, msg):
         """Instruct the RunEngine to write the RunStop document
 
         Expected message object is:
@@ -1442,13 +1685,12 @@ class RunEngine:
                    reason=reason,
                    num_events=num_events)
         self._clear_run_cache()
-        yield from self.emit(DocumentNames.stop, doc)
+        await self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
         return doc['run_start']
 
-    @asyncio.coroutine
-    def _create(self, msg):
+    async def _create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
          an Event document
 
@@ -1487,8 +1729,7 @@ class RunEngine:
                     "Msg('create') now requires a stream name, given as "
                     "Msg('create', name) or Msg('create', name=name)") from None
 
-    @asyncio.coroutine
-    def _read(self, msg):
+    async def _read(self, msg):
         """
         Add a reading to the open event bundle.
 
@@ -1551,8 +1792,7 @@ class RunEngine:
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
 
-    @asyncio.coroutine
-    def _monitor(self, msg):
+    async def _monitor(self, msg):
         """
         Monitor a signal. Emit event documents asynchronously.
 
@@ -1613,12 +1853,11 @@ class RunEngine:
             self.dispatcher.process(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
-        yield from self.emit(DocumentNames.descriptor, desc_doc)
+        await self.emit(DocumentNames.descriptor, desc_doc)
         obj.subscribe(emit_event, **kwargs)
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
-    @asyncio.coroutine
-    def _unmonitor(self, msg):
+    async def _unmonitor(self, msg):
         """
         Stop monitoring; i.e., remove the callback emitting event documents.
 
@@ -1633,10 +1872,9 @@ class RunEngine:
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
-    @asyncio.coroutine
-    def _save(self, msg):
+    async def _save(self, msg):
         """Save the event that is currently being bundled
 
         Expected message object is:
@@ -1703,7 +1941,7 @@ class RunEngine:
                        data_keys=data_keys, uid=descriptor_uid,
                        configuration=config, name=desc_key,
                        hints=hints, object_keys=object_keys)
-            yield from self.emit(DocumentNames.descriptor, doc)
+            await self.emit(DocumentNames.descriptor, doc)
             self.log.debug("Emitted Event Descriptor with name %r containing "
                            "data keys %r (uid=%r)", desc_key,
                            data_keys.keys(), descriptor_uid)
@@ -1716,7 +1954,7 @@ class RunEngine:
             # Add a 'run_start' field to the resource document on its way out.
             if name == 'resource':
                 doc['run_start'] = self._run_start_uid
-            yield from self.emit(DocumentNames(name), doc)
+            await self.emit(DocumentNames(name), doc)
 
         # Event documents
         seq_num = next(self._sequence_counters[seq_num_key])
@@ -1736,12 +1974,11 @@ class RunEngine:
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid, filled=filled)
-        yield from self.emit(DocumentNames.event, doc)
+        await self.emit(DocumentNames.event, doc)
         self.log.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
                        event_uid)
 
-    @asyncio.coroutine
-    def _drop(self, msg):
+    async def _drop(self, msg):
         """Drop the event that is currently being bundled
 
         Expected message object is:
@@ -1761,8 +1998,7 @@ class RunEngine:
         self._bundle_name = None
         self.log.debug("Dropped open event bundle")
 
-    @asyncio.coroutine
-    def _kickoff(self, msg):
+    async def _kickoff(self, msg):
         """Start a flyscan object
 
         Parameters
@@ -1811,12 +2047,11 @@ class RunEngine:
         except AttributeError:
             # for ophyd < v0.8.0
             ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait())
+        self._groups[group].add(p_event.wait)
         self._status_objs[group].add(ret)
         return ret
 
-    @asyncio.coroutine
-    def _complete(self, msg):
+    async def _complete(self, msg):
         """
         Tell a flyer, 'stop collecting, whenever you are ready'.
 
@@ -1851,12 +2086,11 @@ class RunEngine:
         except AttributeError:
             # for ophyd < v0.8.0
             ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait())
+        self._groups[group].add(p_event.wait)
         self._status_objs[group].add(ret)
         return ret
 
-    @asyncio.coroutine
-    def _collect(self, msg):
+    async def _collect(self, msg):
         """
         Collect data cached by a flyer and emit descriptor and event documents.
 
@@ -1880,7 +2114,7 @@ class RunEngine:
                 # Add a 'run_start' field to the resource document on its way out.
                 if name == 'resource':
                     doc['run_start'] = self._run_start_uid
-                yield from self.emit(DocumentNames(name), doc)
+                await self.emit(DocumentNames(name), doc)
 
         named_data_keys = obj.describe_collect()
         # e.g., {name_for_desc1: data_keys_for_desc1,
@@ -1902,7 +2136,7 @@ class RunEngine:
                            data_keys=data_keys, uid=descriptor_uid,
                            name=stream_name, hints=hints,
                            object_keys=object_keys)
-                yield from self.emit(DocumentNames.descriptor, doc)
+                await self.emit(DocumentNames.descriptor, doc)
                 self.log.debug("Emitted Event Descriptor with name %r "
                                "containing data keys %r (uid=%r)", stream_name,
                                data_keys.keys(), descriptor_uid)
@@ -1941,24 +2175,22 @@ class RunEngine:
             if stream:
                 self.log.debug("Emitted Event with data keys %r (uid=%r)",
                                ev['data'].keys(), ev['uid'])
-                yield from self.emit(DocumentNames.event, ev)
+                await self.emit(DocumentNames.event, ev)
             else:
                 bulk_data[descriptor_uid].append(ev)
 
         if not stream:
-            yield from self.emit(DocumentNames.bulk_events, bulk_data)
+            await self.emit(DocumentNames.bulk_events, bulk_data)
             self.log.debug("Emitted bulk events for descriptors with uids "
                            "%r", bulk_data.keys())
 
-    @asyncio.coroutine
-    def _null(self, msg):
+    async def _null(self, msg):
         """
         A no-op message, mainly for debugging and testing.
         """
         pass
 
-    @asyncio.coroutine
-    def _set(self, msg):
+    async def _set(self, msg):
         """
         Set a device and cache the returned status object.
 
@@ -1990,13 +2222,12 @@ class RunEngine:
         except AttributeError:
             # for ophyd < v0.8.0
             ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait())
+        self._groups[group].add(p_event.wait)
         self._status_objs[group].add(ret)
 
         return ret
 
-    @asyncio.coroutine
-    def _trigger(self, msg):
+    async def _trigger(self, msg):
         """
         Trigger a device and cache the returned status object.
 
@@ -2022,13 +2253,12 @@ class RunEngine:
         except AttributeError:
             # for ophyd < v0.8.0
             ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait())
+        self._groups[group].add(p_event.wait)
         self._status_objs[group].add(ret)
 
         return ret
 
-    @asyncio.coroutine
-    def _wait(self, msg):
+    async def _wait(self, msg):
         """Block progress until every object that was triggered or set
         with the keyword argument `group=<GROUP>` is done.
 
@@ -2052,7 +2282,7 @@ class RunEngine:
                     # the information these encapsulate to create a progress
                     # bar.
                     self.waiting_hook(status_objs)
-                yield from self._wait_for(Msg('wait_for', None, futs))
+                await self._wait_for(Msg('wait_for', None, futs))
             finally:
                 if self.waiting_hook is not None:
                     # Notify the waiting_hook function that we have moved on by
@@ -2074,12 +2304,13 @@ class RunEngine:
             tells us whether the __call__ this status object is over
         """
         if not ret.success and not pardon_failures.is_set():
-            self._exception = FailedStatus(ret)
-            self._task.cancel()
+            # TODO: need a better channel to move this information back
+            # to the run task.
+            with self._state_lock:
+                self._exception = FailedStatus(ret)
         p_event.set()
 
-    @asyncio.coroutine
-    def _sleep(self, msg):
+    async def _sleep(self, msg):
         """Sleep the event loop
 
         Expected message object is:
@@ -2088,10 +2319,9 @@ class RunEngine:
 
         where `sleep_time` is in seconds
         """
-        yield from asyncio.sleep(*msg.args, loop=self.loop)
+        await asyncio.sleep(*msg.args, loop=self.loop)
 
-    @asyncio.coroutine
-    def _pause(self, msg):
+    async def _pause(self, msg):
         """Request the run engine to pause
 
         Expected message object is:
@@ -2101,10 +2331,9 @@ class RunEngine:
         See RunEngine.request_pause() docstring for explanation of the three
         keyword arguments in the `Msg` signature
         """
-        self.request_pause(*msg.args, **msg.kwargs)
+        await self._request_pause_coro(*msg.args, **msg.kwargs)
 
-    @asyncio.coroutine
-    def _resume(self, msg):
+    async def _resume(self, msg):
         """Request the run engine to resume
 
         Expected message object is:
@@ -2122,8 +2351,7 @@ class RunEngine:
             if hasattr(obj, 'resume'):
                 obj.resume()
 
-    @asyncio.coroutine
-    def _checkpoint(self, msg):
+    async def _checkpoint(self, msg):
         """Instruct the RunEngine to create a checkpoint so that we can rewind
         to this point if necessary
 
@@ -2135,14 +2363,14 @@ class RunEngine:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
 
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
         if self._deferred_pause_requested:
             # We are at a checkpoint; we are done deferring the pause.
             # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
-            yield from asyncio.sleep(0.5, loop=self.loop)
-            self.request_pause(defer=False)
+            await asyncio.sleep(0.5, loop=self.loop)
+            await self._request_pause_coro(defer=False)
 
     def _reset_checkpoint_state(self):
         self._reset_checkpoint_state_meth()
@@ -2162,8 +2390,7 @@ class RunEngine:
 
     _reset_checkpoint_state_coro = asyncio.coroutine(_reset_checkpoint_state)
 
-    @asyncio.coroutine
-    def _clear_checkpoint(self, msg):
+    async def _clear_checkpoint(self, msg):
         """Clear a set checkpoint
 
         Expected message object is:
@@ -2175,8 +2402,7 @@ class RunEngine:
         # clear stashed
         self._teed_sequence_counters.clear()
 
-    @asyncio.coroutine
-    def _rewindable(self, msg):
+    async def _rewindable(self, msg):
         '''Set rewindable state of RunEngine
 
         Expected message object is:
@@ -2190,8 +2416,7 @@ class RunEngine:
 
         return self.rewindable
 
-    @asyncio.coroutine
-    def _configure(self, msg):
+    async def _configure(self, msg):
         """Configure an object
 
         Expected message object is:
@@ -2221,8 +2446,7 @@ class RunEngine:
         self._cache_config(obj)
         return old, new
 
-    @asyncio.coroutine
-    def _stage(self, msg):
+    async def _stage(self, msg):
         """Instruct the RunEngine to stage the object
 
         Expected message object is:
@@ -2235,11 +2459,10 @@ class RunEngine:
             return []
         result = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
         return result
 
-    @asyncio.coroutine
-    def _unstage(self, msg):
+    async def _unstage(self, msg):
         """Instruct the RunEngine to unstage the object
 
         Expected message object is:
@@ -2253,11 +2476,10 @@ class RunEngine:
         result = obj.unstage()
         # use `discard()` to ignore objects that are not in the staged set.
         self._staged.discard(obj)
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
         return result
 
-    @asyncio.coroutine
-    def _stop(self, msg):
+    async def _stop(self, msg):
         """
         Stop a device.
 
@@ -2267,8 +2489,7 @@ class RunEngine:
         """
         return msg.obj.stop()  # nominally, this returns None
 
-    @asyncio.coroutine
-    def _subscribe(self, msg):
+    async def _subscribe(self, msg):
         """
         Add a subscription after the run has started.
 
@@ -2297,11 +2518,10 @@ class RunEngine:
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
         return token
 
-    @asyncio.coroutine
-    def _unsubscribe(self, msg):
+    async def _unsubscribe(self, msg):
         """
         Remove a subscription during a call -- useful for a multi-run call
         where subscriptions are wanted for some runs but not others.
@@ -2321,10 +2541,9 @@ class RunEngine:
             token, = args
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
-    @asyncio.coroutine
-    def _input(self, msg):
+    async def _input(self, msg):
         """
         Process a 'input' Msg. Expected Msg:
 
@@ -2334,10 +2553,9 @@ class RunEngine:
         prompt = msg.kwargs.get('prompt', '')
         async_input = AsyncInput(self.loop)
         async_input = functools.partial(async_input, end='', flush=True)
-        return (yield from async_input(prompt))
+        return (await async_input(prompt))
 
-    @asyncio.coroutine
-    def emit(self, name, doc):
+    async def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)
@@ -2421,8 +2639,7 @@ class Dispatcher:
             self._token_mapping[public_token] = private_tokens
             return public_token
 
-        if name not in DocumentNames:
-            name = DocumentNames[name]
+        name = DocumentNames[name]
         private_token = self.cb_registry.connect(name, func)
         public_token = next(self._counter)
         self._token_mapping[public_token] = [private_token]
@@ -2502,3 +2719,35 @@ def _default_md_validator(md):
             "GOOD: sample='dirt' "
             "GOOD: sample={'color': 'red', 'number': 5} "
             "BAD: sample=[1, 2] ")
+
+
+def _ensure_event_loop_running(loop):
+    """
+    Run an asyncio event loop forever on a background thread.
+
+    This is idempotent: if the loop is already running nothing will be done.
+    """
+    if not loop.is_running():
+        th = threading.Thread(target=loop.run_forever, daemon=True)
+        th.start()
+        _ensure_event_loop_running.loop_to_thread[loop] = th
+    else:
+        th = _ensure_event_loop_running.loop_to_thread[loop]
+    return th
+
+
+_ensure_event_loop_running.loop_to_thread = weakref.WeakKeyDictionary()
+
+_bluesky_event_loop = None
+
+
+def get_bluesky_event_loop():
+    global _bluesky_event_loop
+    if _bluesky_event_loop is None:
+        _bluesky_event_loop = asyncio.new_event_loop()
+    return _bluesky_event_loop
+
+
+def set_bluesky_event_loop(loop):
+    global _bluesky_event_loop
+    _bluesky_event_loop = loop
