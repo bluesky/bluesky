@@ -1,16 +1,12 @@
 import asyncio
 import copy
-import pickle
+from functools import partial
 import warnings
 
 import msgpack
 import msgpack_numpy
 
 from ..run_engine import Dispatcher, DocumentNames
-
-
-def msgpack_serialize(document)
-    return msgpack.packb(document, default=msgpack_numpy.encode)
 
 
 class Publisher:
@@ -45,7 +41,10 @@ class Publisher:
     >>> RE.subscribe(publisher)
     """
     def __init__(self, address, *, prefix=b'',
-                 RE=None, zmq=None, serializer=msgpack_serialize):
+                 RE=None, zmq=None,
+                 serializer=partial(msgpack.packb,
+                                    use_bin_type=True,
+                                    default=msgpack_numpy.encode)):
         if RE is not None:
             warnings.warn("The RE argument to Publisher is deprecated and "
                           "will be removed in a future release of bluesky. "
@@ -224,7 +223,10 @@ class RemoteDispatcher(Dispatcher):
     """
     def __init__(self, address, *, prefix=b'',
                  loop=None, zmq=None, zmq_asyncio=None,
-                 deserializer=pickle.loads):
+                 deserializer=partial(msgpack.unpackb,
+                                      use_list=True,
+                                      raw=False,
+                                      object_hook=msgpack_numpy.decode)):
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
         if b' ' in prefix:
