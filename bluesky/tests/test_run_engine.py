@@ -579,14 +579,18 @@ def test_sigint_three_hits(RE, hw):
     pid = os.getpid()
 
     def sim_kill(n):
+        print('the timer has fired')
         for j in range(n):
             time.sleep(.02)
+            print(f'sending kill signal {j}')
             os.kill(pid, signal.SIGINT)
+            print(f'sent kill signal {j}')
 
     lp = RE.loop
     motor.loop = lp
 
     def self_sig_int_plan():
+        print('about to start the timer')
         threading.Timer(.05, sim_kill, (3,)).start()
         yield from abs_set(motor, 1, wait=True)
 
