@@ -1359,6 +1359,7 @@ def default_during_task(blocking_event):
                 def handleWakeup(inp):
                     # here Python signal handler will be invoked
                     # this book-keeping is to drain the pipe
+                    print('in wakeup handler')
                     wakeupsn.setEnabled(False)
                     rfd = wakeupsn.socket()
                     try:
