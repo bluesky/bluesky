@@ -578,7 +578,7 @@ def test_sigint_three_hits(RE, hw):
 
     pid = os.getpid()
 
-    def sim_kill(n=1):
+    def sim_kill(n):
         for j in range(n):
             time.sleep(.02)
             os.kill(pid, signal.SIGINT)
@@ -588,8 +588,6 @@ def test_sigint_three_hits(RE, hw):
 
     def self_sig_int_plan():
         threading.Timer(.05, sim_kill, (3,)).start()
-        threading.Timer(.1, sim_kill, (3,)).start()
-        threading.Timer(.2, sim_kill, (3,)).start()
         yield from abs_set(motor, 1, wait=True)
 
     start_time = ttime.time()
