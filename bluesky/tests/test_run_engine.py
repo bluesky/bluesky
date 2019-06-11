@@ -587,10 +587,10 @@ def test_sigint_three_hits(RE, hw):
     pid = os.getpid()
 
     def sim_kill(n, m):
-        ts_print(f'the {n} timer has fired')
+        ts_print(f'the {m} timer has fired')
         for j in range(n):
             ttime.sleep(.05)
-            ts_print(f'sig int {j} of timer {n}')
+            ts_print(f'sig int {j} of timer {m}')
             os.kill(pid, signal.SIGINT)
 
     lp = RE.loop
@@ -600,6 +600,7 @@ def test_sigint_three_hits(RE, hw):
     threading.Timer(.1, sim_kill, (3, 2,)).start()
     threading.Timer(.15, sim_kill, (3, 3,)).start()
     ts_print('all timers started')
+
     def self_sig_int_plan():
         ts_print('about to move the motor')
         yield from abs_set(motor, 1, wait=True)
