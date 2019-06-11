@@ -574,7 +574,7 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
 def test_sigint_three_hits(RE, hw):
     import time
     motor = hw.motor
-    motor.delay = 1
+    motor.delay = .5
 
     pid = os.getpid()
 
@@ -595,10 +595,13 @@ def test_sigint_three_hits(RE, hw):
         RE(finalize_wrapper(self_sig_int_plan(),
                             abs_set(motor, 0, wait=True)))
     end_time = ttime.time()
-    assert end_time - start_time < 0.2  # not enough time for motor to cleanup
+    # not enough time for motor to cleanup, but long enough to start
+    assert 0.05 < end_time - start_time < 0.2
     RE.abort()  # now cleanup
+
     done_cleanup_time = ttime.time()
-    assert done_cleanup_time - end_time > 0.3
+    # this should be 0.5 (the motor.delay) above, leave sloppy for CI
+    assert 0.6 > done_cleanup_time - end_time > 0.3
 
 
 @pytest.mark.skipif(sys.version_info < (3, 5),
