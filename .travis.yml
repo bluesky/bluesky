@@ -26,21 +26,12 @@ addons:
 matrix:
   fast_finish: true
   include:
-    - os: linux
-      python: 3.6
-      env: PUBLISH_DOCS=1
-    - os: linux
-      python: 3.7
     - os: osx
       language: generic
       env: PYTHON=3.6
     - os: osx
       language: generic
       env: PYTHON=3.7
-    - os: linux
-      python: nightly
-  allow_failures:
-    - python: nightly
 
 before_install:
   - |
