@@ -572,34 +572,45 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
 
 
 def test_sigint_three_hits(RE, hw):
+    import time
+    t0 = time.monotonic()
+
+    def ts_print(*args, **kwargs):
+        print(f'{time.monotonic() - t0}: ', *args, **kwargs)
+
     motor = hw.motor
     motor.delay = .5
 
     pid = os.getpid()
 
     def sim_kill(n):
-        print(f'the {n} timer has fired')
+        ts_print(f'the {n} timer has fired')
         os.kill(pid, signal.SIGINT)
 
     lp = RE.loop
     motor.loop = lp
 
     def self_sig_int_plan():
-        print('about to start the timers')
+        ts_print('about to start the timers')
         threading.Timer(.05, sim_kill, (1,)).start()
-        threading.Timer(.1, sim_kill, (1,)).start()
-        threading.Timer(.15, sim_kill, (1,)).start()
+        threading.Timer(.1, sim_kill, (2,)).start()
+        threading.Timer(.15, sim_kill, (3,)).start()
+        ts_print('all timers started')
         yield from abs_set(motor, 1, wait=True)
+        ts_print('should never see this')
 
     start_time = ttime.time()
+    ts_print('about to start RE')
     with pytest.raises(RunEngineInterrupted):
         RE(finalize_wrapper(self_sig_int_plan(),
                             abs_set(motor, 0, wait=True)))
+    ts_print('out of RE')
     end_time = ttime.time()
     # not enough time for motor to cleanup, but long enough to start
     assert 0.05 < end_time - start_time < 0.4
+    ts_print('about RE.abort')
     RE.abort()  # now cleanup
-
+    ts_print('done RE.abort')
     done_cleanup_time = ttime.time()
     # this should be 0.5 (the motor.delay) above, leave sloppy for CI
     assert 0.6 > done_cleanup_time - end_time > 0.3
