@@ -2,6 +2,9 @@ dist: xenial
 language: python
 sudo: false
 
+services:
+   - xvfb
+
 env:
   global:
     # Doctr deploy key for NSLS-II/NSLS-II.github.io
