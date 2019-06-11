@@ -585,14 +585,16 @@ def test_sigint_three_hits(RE, hw):
 
     lp = RE.loop
     motor.loop = lp
-    start = time.monotonic()
-    threading.Timer(.05, sim_kill, (3,)).start()
-    threading.Timer(.1, sim_kill, (3,)).start()
-    threading.Timer(.2, sim_kill, (3,)).start()
+
+    def self_sig_int_plan():
+        threading.Timer(.05, sim_kill, (3,)).start()
+        threading.Timer(.1, sim_kill, (3,)).start()
+        threading.Timer(.2, sim_kill, (3,)).start()
+        yield from abs_set(motor, 1, wait=True)
 
     start_time = ttime.time()
     with pytest.raises(RunEngineInterrupted):
-        RE(finalize_wrapper(abs_set(motor, 1, wait=True),
+        RE(finalize_wrapper(self_sig_int_plan(),
                             abs_set(motor, 0, wait=True)))
     end_time = ttime.time()
     assert end_time - start_time < 0.2  # not enough time for motor to cleanup
