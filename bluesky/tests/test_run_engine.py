@@ -581,7 +581,7 @@ def test_sigint_three_hits(RE, hw):
     def sim_kill(n):
         print('the timer has fired')
         for j in range(n):
-            time.sleep(.02)
+            time.sleep(.05)
             print(f'sending kill signal {j}')
             os.kill(pid, signal.SIGINT)
             print(f'sent kill signal {j}')
