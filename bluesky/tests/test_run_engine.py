@@ -580,7 +580,7 @@ def test_sigint_three_hits(RE, hw):
 
     def sim_kill(n):
         for j in range(n):
-            time.sleep(.02)
+            time.sleep(.05)
             os.kill(pid, signal.SIGINT)
 
     lp = RE.loop
