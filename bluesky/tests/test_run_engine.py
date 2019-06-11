@@ -572,26 +572,23 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
 
 
 def test_sigint_three_hits(RE, hw):
-    import time
     motor = hw.motor
     motor.delay = .5
 
     pid = os.getpid()
 
     def sim_kill(n):
-        print('the timer has fired')
-        for j in range(n):
-            time.sleep(.05)
-            print(f'sending kill signal {j}')
-            os.kill(pid, signal.SIGINT)
-            print(f'sent kill signal {j}')
+        print(f'the {n} timer has fired')
+        os.kill(pid, signal.SIGINT)
 
     lp = RE.loop
     motor.loop = lp
 
     def self_sig_int_plan():
-        print('about to start the timer')
-        threading.Timer(.05, sim_kill, (3,)).start()
+        print('about to start the timers')
+        threading.Timer(.05, sim_kill, (1,)).start()
+        threading.Timer(.1, sim_kill, (1,)).start()
+        threading.Timer(.15, sim_kill, (1,)).start()
         yield from abs_set(motor, 1, wait=True)
 
     start_time = ttime.time()
@@ -600,7 +597,7 @@ def test_sigint_three_hits(RE, hw):
                             abs_set(motor, 0, wait=True)))
     end_time = ttime.time()
     # not enough time for motor to cleanup, but long enough to start
-    assert 0.05 < end_time - start_time < 0.2
+    assert 0.05 < end_time - start_time < 0.4
     RE.abort()  # now cleanup
 
     done_cleanup_time = ttime.time()
