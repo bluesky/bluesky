@@ -592,13 +592,13 @@ def test_sigint_three_hits(RE, hw):
 
     lp = RE.loop
     motor.loop = lp
-
+    ts_print('about to start the timers')
+    threading.Timer(.05, sim_kill, (1,)).start()
+    threading.Timer(.1, sim_kill, (2,)).start()
+    threading.Timer(.15, sim_kill, (3,)).start()
+    ts_print('all timers started')
     def self_sig_int_plan():
-        ts_print('about to start the timers')
-        threading.Timer(.05, sim_kill, (1,)).start()
-        threading.Timer(.1, sim_kill, (2,)).start()
-        threading.Timer(.15, sim_kill, (3,)).start()
-        ts_print('all timers started')
+        ts_print('about to move the motor')
         yield from abs_set(motor, 1, wait=True)
         ts_print('should never see this')
 
