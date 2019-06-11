@@ -573,6 +573,9 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
 
 def test_sigint_three_hits(RE, hw):
     import time
+    from bluesky.utils import ts_msg_hook
+    RE.msg_hook = ts_msg_hook
+
     t0 = time.monotonic()
 
     def ts_print(*args, **kwargs):
