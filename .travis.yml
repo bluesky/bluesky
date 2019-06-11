@@ -76,7 +76,7 @@ install:
 script:
   # ensure that callbacks import without matplotlib
   - python -c 'import sys, bluesky.callbacks; assert "matplotlib" not in sys.modules'
-  - coverage run run_tests.py
+  - pytest -vs bluesky/tests/test_run_engine.py -k sigint
   - coverage report -m
   - set -e
   - make -C doc html
