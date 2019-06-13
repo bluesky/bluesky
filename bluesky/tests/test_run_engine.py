@@ -571,6 +571,10 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
     assert motor.position == 1024
 
 
+@pytest.mark.skipif(
+    os.environ.get('TRAVIS', None) == 'true' and sys.platform == 'darwin',
+    reason=("The file-descriptor wake up based signal handling "
+            "does not work on travis on OSX"))
 def test_sigint_three_hits(RE, hw):
     import time
     motor = hw.motor
