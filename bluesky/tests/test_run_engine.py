@@ -605,7 +605,7 @@ def test_sigint_three_hits(RE, hw):
 
     done_cleanup_time = ttime.time()
     # this should be 0.5 (the motor.delay) above, leave sloppy for CI
-    assert 0.6 > done_cleanup_time - end_time > 0.3
+    assert 0.3 < done_cleanup_time - end_time < 0.6
 
 
 @pytest.mark.skipif(sys.version_info < (3, 5),
