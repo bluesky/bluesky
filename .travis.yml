@@ -1,5 +1,7 @@
 dist: xenial
 language: python
+services:
+  - docker
 sudo: false
 
 env:
@@ -55,6 +57,9 @@ before_install:
         conda list
     fi
 
+  - docker --version
+  - docker-compose --version
+
 install:
   - env | sort -u
   - export GIT_FULL_HASH=`git rev-parse HEAD`
@@ -72,6 +77,9 @@ install:
   - git clean -xfd
   # make sure the sqlite file exists to avoid race conditions
   - python -c "from bluesky.utils import get_history; get_history()"
+
+before_script:
+  - sudo docker-compose -f scripts/kafka-docker-compose.yml up
 
 script:
   # ensure that callbacks import without matplotlib
