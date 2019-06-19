@@ -82,4 +82,5 @@ def test_kafka(RE, hw):
     dispatcher_proc.terminate()
     dispatcher_proc.join()
 
-    assert (remote_accumulator == local_accumulator)
+    # numpy arrays cause trouble sometimes, so wrap accumulators in list()
+    assert list(remote_accumulator) == list(local_accumulator)
