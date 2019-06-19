@@ -2,8 +2,16 @@
  Release History
 =================
 
-v1.6.0 (2019-06-19)
-===================
+v1.6.0 (Pre-release)
+====================
+
+The most important change in this release is a complete reworking of how
+bluesky interacts with the asyncio event loop. This resolves a long-running
+issue of bluesky being incompatible with ``tornado >4``, which often tripped up
+users in the context of using bluesky from Jupyter notebooks.
+
+There are several other new features and fixes, including new plans and more
+helpful error messages, enumerated further below.
 
 Event loop re-factor
 --------------------
@@ -79,12 +87,34 @@ been broken, but due to the way were stopping the event loop to pause
 the scan it was passing tests.
 
 Instead of directly passing the values passed into `asyncio.wait`, we
-now expect that the iterable passed in is callables with the signature
-::
+now expect that the iterable passed in is callables with the signature::
 
   def fut_fac() -> awaitable:
       'This must work multiple times'
 
+Features
+--------
+
+* Generalized :func:`~bluesky.plans.list_scan` to work on any number of motors,
+  not just one. In v1.2.0, :func:`~bluesky.plans.scan` was generalized in the
+  same way.
+* Added :func:`~bluesky.plans.list_grid_scan`.
+* Raise a more helpful error message if the ``num`` parameter given to
+  `~bluesky.plans.scan` is not a whole number, as can happen if ``num`` is
+  mistaken to mean "step size".
+* Report the version of bluesky and (if available) ophyd in the metadata.
+* Add a more helpful error message if the value returned from some call to
+  ``obj.read()`` returns ``None`` instead of the expected dict.
+* If the user tries to start a :class:`~bluesky.callbacks.zmq.RemoteDispatcher`
+  after it has been stopped, raise a more helpful error message.
+
+Bug Fixes
+---------
+
+* The ``state`` attribute of the ``RunEngine`` is now a read-only property, as
+  it should have always been.
+* In the Best-Effort Callback, do not assume that the RunStart document
+  includes ``'scan_id'``, which is an optional key.
 
 v1.5.3 (2019-05-27)
 ===================
