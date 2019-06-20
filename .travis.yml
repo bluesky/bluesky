@@ -1,8 +1,9 @@
 dist: xenial
 language: python
+sudo: false
+
 services:
   - docker
-sudo: false
 
 env:
   global:
@@ -79,7 +80,7 @@ install:
   - python -c "from bluesky.utils import get_history; get_history()"
 
 before_script:
-  - sudo docker-compose -f scripts/kafka-docker-compose.yml up
+  - sudo docker-compose -f scripts/kafka-docker-compose.yml up &
 
 script:
   # ensure that callbacks import without matplotlib
