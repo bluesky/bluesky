@@ -80,8 +80,8 @@ install:
   - python -c "from bluesky.utils import get_history; get_history()"
 
 before_script:
-  - sudo docker-compose -f scripts/kafka-docker-compose.yml up &
-  - sleep 30
+  - sudo docker-compose -f scripts/kafka-docker-compose.yml up > kafka.log &
+  - sleep 60
 
 script:
   # ensure that callbacks import without matplotlib
