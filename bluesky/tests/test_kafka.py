@@ -16,7 +16,7 @@ def kafka_available():
         consumer_params = {
             'bootstrap.servers': '127.0.0.1',
             'group.id': 'kafka-unit-test',
-            'auto.offset.reset': 'earliest'
+            'auto.offset.reset': 'latest'
         }
         consumer = Consumer(consumer_params)
         consumer.list_topics(timeout=5)
