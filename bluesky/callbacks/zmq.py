@@ -59,7 +59,7 @@ class Publisher:
         self.RE = RE
         url = "tcp://%s:%d" % self.address
         self._prefix = bytes(prefix)
-        self._context = zmq.Context()
+        self._context = zmq.Context.instance()
         self._socket = self._context.socket(zmq.PUB)
         self._socket.connect(url)
         if RE:
@@ -198,7 +198,7 @@ class RemoteDispatcher(Dispatcher):
         User-defined bytestring used to distinguish between multiple
         Publishers. If set, messages without this prefix will be ignored.
         If unset, no mesages will be ignored.
-    loop : zmq.asyncio.ZMQEventLoop, optional
+    loop : event loop, optional
     zmq : object, optional
         By default, the 'zmq' module is imported and used. Anything else
         mocking its interface is accepted.
@@ -235,10 +235,10 @@ class RemoteDispatcher(Dispatcher):
         self.address = (address[0], int(address[1]))
 
         if loop is None:
-            loop = zmq_asyncio.ZMQEventLoop()
+            loop = asyncio.new_event_loop()
         self.loop = loop
         asyncio.set_event_loop(self.loop)
-        self._context = zmq_asyncio.Context()
+        self._context = zmq_asyncio.Context.instance()
         self._socket = self._context.socket(zmq.SUB)
         url = "tcp://%s:%d" % self.address
         self._socket.connect(url)
