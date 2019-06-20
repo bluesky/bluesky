@@ -25,12 +25,12 @@ def kafka_available():
         return False
 
 
-kafka_not_available = pytest.mark.skipif(
-    not kafka_available(), reason='Failed to connect to Kafka on 127.0.0.1'
+kafka_is_available = pytest.mark.skipif(
+    kafka_available(), reason='Failed to connect to Kafka on 127.0.0.1'
 )
 
 
-@kafka_not_available
+@kafka_is_available
 def test_kafka(RE, hw):
     # COMPONENT 1
     # A Kafka server must be running
