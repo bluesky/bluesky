@@ -81,7 +81,7 @@ install:
 
 before_script:
   - sudo docker-compose -f scripts/kafka-docker-compose.yml up > kafka.log &
-  - sleep 60
+  - sleep 30
 
 script:
   # ensure that callbacks import without matplotlib
