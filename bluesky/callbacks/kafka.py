@@ -1,10 +1,11 @@
 import copy
 from functools import partial
+import pickle
 
 from confluent_kafka import Consumer, Producer
 
-import msgpack
-import msgpack_numpy
+#import msgpack
+#import msgpack_numpy
 
 from ..run_engine import Dispatcher, DocumentNames
 
@@ -43,9 +44,10 @@ class Publisher:
     >>> RE.subscribe(publisher)
     """
     def __init__(self, address, *,
-                 serializer = partial(msgpack.packb,
-                                      use_bin_type=True,
-                                      default=msgpack_numpy.encode)):
+                 serializer=pickle.dumps):
+                 #serializer = partial(msgpack.packb,
+                 #                     use_bin_type=True,
+                 #                    default=msgpack_numpy.encode)):
         self.address = address
         self.producer = Producer(
             {
@@ -95,10 +97,11 @@ class RemoteDispatcher(Dispatcher):
     """
     def __init__(self, address, *,
                  group_id='kafka-bluesky',
-                 deserializer=partial(msgpack.unpackb,
-                                      use_list=True,
-                                      raw=False,
-                                      object_hook=msgpack_numpy.decode)):
+                 deserializer=pickle.loads):
+                 #deserializer=partial(msgpack.unpackb,
+                 #                     use_list=True,
+                 #                     raw=False,
+                 #                     object_hook=msgpack_numpy.decode)):
         self.address = address
         self._deserializer = deserializer
 
