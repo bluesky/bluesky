@@ -1,5 +1,5 @@
 import copy
-from functools import partial
+#from functools import partial
 import pickle
 
 from confluent_kafka import Consumer, Producer
@@ -108,7 +108,7 @@ class RemoteDispatcher(Dispatcher):
         consumer_params = {
             'bootstrap.servers': self.address,
             'group.id': group_id,
-            'auto.offset.reset': 'earliest'
+            'auto.offset.reset': 'latest'
         }
         self.consumer = Consumer(consumer_params)
         self.consumer.subscribe(topics=['start', 'descriptor', 'event', 'stop'])
