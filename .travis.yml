@@ -56,10 +56,10 @@ before_install:
         conda env list
         conda info
         conda list
+    else
+        docker --version
+        docker-compose --version
     fi
-
-  - docker --version
-  - docker-compose --version
 
 install:
   - env | sort -u
@@ -80,8 +80,11 @@ install:
   - python -c "from bluesky.utils import get_history; get_history()"
 
 before_script:
-  - sudo docker-compose -f scripts/kafka-docker-compose.yml up > kafka.log &
-  - sleep 30
+  - |
+    if [ "$TRAVIS_OS_NAME" != "osx" ]; then
+        sudo docker-compose -f scripts/kafka-docker-compose.yml up > kafka.log &
+        sleep 30
+    fi
 
 script:
   # ensure that callbacks import without matplotlib
