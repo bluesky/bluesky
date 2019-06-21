@@ -2,25 +2,33 @@
  Release History
 =================
 
-v1.6.0 (2019-05-??)
-===================
+v1.6.0 (Pre-release)
+====================
+
+The most important change in this release is a complete reworking of how
+bluesky interacts with the asyncio event loop. This resolves a long-running
+issue of bluesky being incompatible with ``tornado >4``, which often tripped up
+users in the context of using bluesky from Jupyter notebooks.
+
+There are several other new features and fixes, including new plans and more
+helpful error messages, enumerated further below.
 
 Event loop re-factor
 --------------------
 
-Previously, we had been repeatedly starting and stopping the asyncio
-event loop in `~bluesky.RunEngine.__call__`,
-`~bluesky.RunEngine.request_pause`, `~bluesky.RunEngine.stop`, in
-`~bluesky.RunEngine.abort`, `~bluesky.RunEngine.halt`, and
-`~bluesky.RunEngine.resume`.  This worked, but is bad practice.  It
-complicates attempts to integrate with the event loop with other
-tools.  Further, because as of tornado 5, tornado reports its self as
-an asyncio event loop so attempts to start another asyncio event loop
-inside of a task fails which means bluesky will not run in a jupyter
-notebook.  To fix this we now continuously run the event loop on a
-background thread and the `~bluesky.RunEngine` object manages the
-interaction with creating tasks on that event loop.  To first order,
-users should not notice this change, however details of how
+Previously, the :class:`~bluesky.RunEngine` had been repeatedly starting and
+stopping the asyncio event loop in :meth:`~bluesky.RunEngine.__call__`,
+:meth:`~bluesky.RunEngine.request_pause`, :meth:`~bluesky.RunEngine.stop`, in
+:meth:`~bluesky.RunEngine.abort`, :meth:`~bluesky.RunEngine.halt`, and
+:meth:`~bluesky.RunEngine.resume`.  This worked, but is bad practice.  It
+complicates attempts to integrate with the event loop with other tools.
+Further, because as of tornado 5, tornado reports its self as an asyncio event
+loop so attempts to start another asyncio event loop inside of a task fails
+which means bluesky will not run in a jupyter notebook.  To fix this we now
+continuously run the event loop on a background thread and the
+:class:`~bluesky.RunEngine` object manages the interaction with creating tasks
+on that event loop.  To first order, users should not notice this change,
+however details of how
 
 API Changes
 ~~~~~~~~~~~
@@ -45,22 +53,23 @@ Qt event loop directly.
 *during_task* kwarg to :meth:`RunEngine.__init__`
 +++++++++++++++++++++++++++++++++++++++++++++++++
 
-We need to block the main thread in `.RunEngine.__call__` (and
-`.RunEngine.resume`) until the user supplied plan is complete.
+We need to block the main thread in :meth:`~bluesky.RunEngine.__call__` (and
+:meth:`~bluesky.RunEngine.resume`) until the user supplied plan is complete.
 Previously, we would do this by calling ``self.loop.run_forever()`` to
 start the asyncio event loop.  We would then stop the event loop an
-the bottom of `.RunEngine._run` and in `~.RunEngine.request_pause` to
-un-block the main thread and return control to the user terminal.
-Now we must find an alternative way to achieve this effect.
+the bottom of :meth:`~bluesky.RunEngine._run` and in
+:meth:`~bluesky.RunEngine.request_pause` to un-block the main thread and return
+control to the user terminal.  Now we must find an alternative way to achieve
+this effect.
 
-There is a a `Threading.Event` on the `.RunEngine` that will be set
-when the task for `.RunEngine._run` in completed, however we can not
-simple wait on that event as that would again cause the Qt windows to
-freeze.  We also do not want to bake a Matplotlib / Qt dependency
-directly into the `.RunEngine` so we added a hook, set at init time,
-for a function that passed the `~Thread.Event` and is responsible for
-blocking until it is set.  This function can do other things (such as
-run the Qt event loop) during that time.  The required signature is ::
+There is a a :class:`threading.Event` on the :class:`~bluesky.RunEngine` that
+will be set when the task for :meth:`~bluesky.RunEngine._run` in completed,
+however we can not simple wait on that event as that would again cause the Qt
+windows to freeze.  We also do not want to bake a Matplotlib / Qt dependency
+directly into the :class:`~bluesky.RunEngine` so we added a hook, set at init
+time, for a function that passed the :class:`threading.Event` and is
+responsible for blocking until it is set.  This function can do other things
+(such as run the Qt event loop) during that time.  The required signature is ::
 
   def blocking_func(ev: Threading.Event) -> None:
       "Returns when ev is set"
@@ -78,13 +87,35 @@ result in re-using the coroutines passed through.  This has always
 been broken, but due to the way were stopping the event loop to pause
 the scan it was passing tests.
 
-Instead of directly passing the values passed into `asyncio.wait`, we
-now expect that the iterable passed in is callables with the signature
-::
+Instead of directly passing the values passed into :func:`asyncio.wait`, we
+now expect that the iterable passed in is callables with the signature::
 
   def fut_fac() -> awaitable:
       'This must work multiple times'
 
+Features
+--------
+
+* Generalized :func:`~bluesky.plans.list_scan` to work on any number of motors,
+  not just one. In v1.2.0, :func:`~bluesky.plans.scan` was generalized in the
+  same way.
+* Added :func:`~bluesky.plans.list_grid_scan`.
+* Raise a more helpful error message if the ``num`` parameter given to
+  `~bluesky.plans.scan` is not a whole number, as can happen if ``num`` is
+  mistaken to mean "step size".
+* Report the version of bluesky and (if available) ophyd in the metadata.
+* Add a more helpful error message if the value returned from some call to
+  ``obj.read()`` returns ``None`` instead of the expected dict.
+* If the user tries to start a :class:`~bluesky.callbacks.zmq.RemoteDispatcher`
+  after it has been stopped, raise a more helpful error message.
+
+Bug Fixes
+---------
+
+* The ``state`` attribute of the ``RunEngine`` is now a read-only property, as
+  it should have always been.
+* In the Best-Effort Callback, do not assume that the RunStart document
+  includes ``'scan_id'``, which is an optional key.
 
 v1.5.3 (2019-05-27)
 ===================
