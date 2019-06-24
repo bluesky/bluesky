@@ -81,18 +81,17 @@ install:
 
 before_script:
   - |
-    if [ "$TRAVIS_OS_NAME" != "osx" ]; then
-        sudo docker-compose -f scripts/kafka-docker-compose.yml up > kafka_zookeeper.log &
-        sleep 30
-    else
+    if [ "$TRAVIS_OS_NAME" == "osx" ]; then
         brew cask install homebrew/cask-versions/adoptopenjdk8
         brew install kafka
-        zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties > zookeeper.log &
-        sleep 15
-        kafka-server-start /usr/local/etc/kafka/server.properties > kafka.log &
-        sleep 15
+        brew services start zookeeper
+        brew services start kafka
+        sleep 60
         kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic macos_test
         kafka-topics --list --bootstrap-server localhost:9092
+    else
+        sudo docker-compose -f scripts/kafka-docker-compose.yml up > kafka_zookeeper.log &
+        sleep 60
     fi
 
 script:
