@@ -85,6 +85,7 @@ before_script:
         sudo docker-compose -f scripts/kafka-docker-compose.yml up > kafka_zookeeper.log &
         sleep 30
     else
+        brew cask install homebrew/cask-versions/adoptopenjdk8
         brew install kafka
         zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties > zookeeper.log &
         sleep 15
