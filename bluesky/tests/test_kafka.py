@@ -90,7 +90,7 @@ def test_kafka(RE, hw):
 
     # numpy arrays cause trouble sometimes
     assert len(remote_accumulator) == len(local_accumulator)
-    assert remote_accumulator == local_accumulator
+    assert sorted(remote_accumulator) == sorted(local_accumulator)
 
 
 from multiprocessing.managers import BaseManager
