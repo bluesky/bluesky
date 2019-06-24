@@ -131,3 +131,4 @@ doc/source/generated/*.rst
 .pytest_cache
 
 .vscode/settings.json
+.vscode/tags
