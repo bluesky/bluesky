@@ -1,4 +1,5 @@
 import multiprocessing
+import pprint
 import time
 
 import numpy as np
@@ -81,6 +82,11 @@ def test_kafka(RE, hw):
 
     dispatcher_proc.terminate()
     dispatcher_proc.join()
+
+    print('local_accumulator:')
+    pprint.pprint(local_accumulator)
+    print('remote_accumulator:')
+    pprint.pprint(remote_accumulator)
 
     # numpy arrays cause trouble sometimes
     assert len(remote_accumulator) == len(local_accumulator)
