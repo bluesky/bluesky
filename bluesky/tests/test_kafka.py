@@ -58,7 +58,7 @@ def test_kafka(RE, hw):
     dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher,
                                               daemon=True, args=(queue,))
     dispatcher_proc.start()
-    time.sleep(5)  # As above, give this plenty of time to start.
+    time.sleep(10)  # As above, give this plenty of time to start.
 
     local_accumulator = []
     def local_cb(name, doc):
@@ -83,4 +83,5 @@ def test_kafka(RE, hw):
     dispatcher_proc.join()
 
     # numpy arrays cause trouble sometimes
+    assert len(remote_accumulator) == len(local_accumulator)
     assert remote_accumulator == local_accumulator
