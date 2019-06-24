@@ -127,7 +127,7 @@ def test_kafka_queue_mgr(RE, hw):
 
     def start_dispatcher():
         def put_in_queue(name, doc):
-            print('putting ', name, 'in queue')
+            print(f'dispatcher putting {name} in queue')
             QueueManager.register('get_queue')
             m = QueueManager(address=('', 50000), authkey=b'justatest')
             m.connect()
@@ -179,4 +179,4 @@ def test_kafka_queue_mgr(RE, hw):
 
     # numpy arrays cause trouble sometimes
     assert len(remote_accumulator) == len(local_accumulator)
-    assert remote_accumulator == local_accumulator
+    assert sorted(remote_accumulator) == sorted(local_accumulator)
