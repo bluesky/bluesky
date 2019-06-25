@@ -86,12 +86,10 @@ before_script:
         brew install kafka
         brew services start zookeeper
         brew services start kafka
-        sleep 60
-        kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic macos_test
-        kafka-topics --list --bootstrap-server localhost:9092
+        sleep 10
     else
         sudo docker-compose -f scripts/kafka-docker-compose.yml up > kafka_zookeeper.log &
-        sleep 60
+        sleep 20
     fi
 
 script:
