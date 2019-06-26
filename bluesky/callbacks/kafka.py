@@ -1,11 +1,7 @@
 import copy
-#from functools import partial
 import pickle
 
 from confluent_kafka import Consumer, Producer
-
-#import msgpack
-#import msgpack_numpy
 
 from ..run_engine import Dispatcher, DocumentNames
 
@@ -45,29 +41,22 @@ class Publisher:
     """
     def __init__(self, address, *,
                  serializer=pickle.dumps):
-                 #serializer = partial(msgpack.packb,
-                 #                     use_bin_type=True,
-                 #                    default=msgpack_numpy.encode)):
         self.address = address
-        self.producer = Producer(
-            {
-                'bootstrap.servers': self.address,
-            }
-        )
+        self.producer = Producer({'bootstrap.servers': self.address})
         self._serializer = serializer
 
     def __call__(self, name, doc):
         doc = copy.deepcopy(doc)
         try:
-            self.producer.produce(name,
-                                  self._serializer(doc),
+            self.producer.produce('bluesky-event',
+                                  self._serializer((name, doc)),
                                   callback=delivery_report)
             self.producer.poll(0)
         except BufferError as be:
             # poll(...) blocks until there is space on the queue
             self.producer.poll(10)
             # repeat produce(...) now that some time has passed
-            self.producer.produce(topic=name,
+            self.producer.produce(topic='bluesky-event',
                                   value=doc,
                                   callback=self.delivery_report)
 
@@ -98,10 +87,6 @@ class RemoteDispatcher(Dispatcher):
     def __init__(self, address, *,
                  group_id='kafka-bluesky',
                  deserializer=pickle.loads):
-                 #deserializer=partial(msgpack.unpackb,
-                 #                     use_list=True,
-                 #                     raw=False,
-                 #                     object_hook=msgpack_numpy.decode)):
         self.address = address
         self._deserializer = deserializer
 
@@ -111,7 +96,7 @@ class RemoteDispatcher(Dispatcher):
             'auto.offset.reset': 'latest'
         }
         self.consumer = Consumer(consumer_params)
-        self.consumer.subscribe(topics=['start', 'descriptor', 'event', 'stop'])
+        self.consumer.subscribe(topics=['bluesky-event'])
         self.closed = False
 
         super().__init__()
@@ -127,8 +112,7 @@ class RemoteDispatcher(Dispatcher):
                 print('Consumer error: {}'.format(msg.error()))
             else:
                 print('msg is "{}"'.format(msg.topic()))
-                name = msg.topic()
-                doc = self._deserializer(msg.value())
+                name, doc = self._deserializer(msg.value())
                 print(f'"{name}":\n{doc}')
                 self.process(DocumentNames[name], doc)
 
