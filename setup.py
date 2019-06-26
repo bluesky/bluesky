@@ -14,7 +14,7 @@ setuptools.setup(
     license="BSD (3-clause)",
     url="https://github.com/NSLS-II/bluesky",
     packages=setuptools.find_packages(),
-    scripts=glob.glob('scripts/*'),
+    ##scripts=glob.glob('scripts/*'),
     python_requires='>=3.6',
     install_requires=requirements,
     classifiers=[
@@ -22,4 +22,9 @@ setuptools.setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
     ],
+    entry_points={
+        'console_scripts': [
+            'bluesky-0MQ-proxy = scripts/bluesky-0MQ-proxy',
+        ]
+    },
 )
