@@ -67,10 +67,9 @@ def test_kafka(RE, hw):
         local_accumulator.append((name, doc))
 
     # Check that numpy stuff is sanitized by putting some in the start doc.
-    # md = {'stuff': {'nested': np.array([1, 2, 3])},
-    #      'scalar_stuff': np.float64(3),
-    #      'array_stuff': np.ones((3, 3))}
-    md = {}
+    md = {'stuff': {'nested': np.array([1, 2, 3])},
+         'scalar_stuff': np.float64(3),
+         'array_stuff': np.ones((3, 3))}
 
     RE.subscribe(local_cb)
     RE(count([hw.det]), md=md)
@@ -89,8 +88,7 @@ def test_kafka(RE, hw):
     pprint.pprint(remote_accumulator)
 
     # numpy arrays cause trouble sometimes
-    assert len(remote_accumulator) == len(local_accumulator)
-    assert sorted(remote_accumulator) == sorted(local_accumulator)
+    assert remote_accumulator == local_accumulator
 
 
 from multiprocessing.managers import BaseManager
