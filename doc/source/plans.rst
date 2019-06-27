@@ -109,6 +109,37 @@ Examples:
     RE.subscribe(bec)
     RE(count([noisy_det], num=5))
 
+.. note::
+
+   Why doesn't :func:`count` have an ``exposure_time`` parameter?
+
+   Modern CCD detectors typically parametrize exposure time with *multiple*
+   parameters. There is no one "exposure time" that can be applied to all
+   detectors.
+
+   Additionally, counts with multiple detectors as in ``count([det1, det2]))``
+   would need to provide a separate exposure time for each detector in the
+   general case, which would grow wordy.
+
+   We recommend either setting the time-related parameter(s) in advance:
+
+   .. code-block:: python
+
+      det.exposure_time.set(3)
+      det.acquire_period.set(3.5)
+
+   Or writing a custom plan that wraps :func:`count` and sets the exposure
+   time. This plan can encode the details that bluesky in general can't know.
+
+   .. code-block:: python
+
+      def count_with_time(detectors, num, delay, exposure_time, *, md=None):
+          # Assume all detectors have one exposure time component called
+          # 'exposure_time' that fully specifies its exposure.
+          for detector in detectors:
+              yield from bluesky.plans.mv(detector.exposure_time, exposure_time)
+          yield from bluesky.plans.count(detectors, num, delay, md=md)
+
 .. autosummary::
    :toctree: generated
    :nosignatures:
@@ -149,6 +180,46 @@ pseudo-axis. It's all the same to the plans. Examples:
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(scan([det], motor, 1, 5, 5))
+
+.. note::
+
+   Why don't scans have ``delay`` parameter?
+
+   You may have noticed that :func:`count` has a ``delay`` parameter but none
+   of the scans do. This is intentional.
+
+   The common reason for wanting a delay in a scan is to allow a motor to
+   settle or a temperature controller to reach equilibrium. It is better to
+   configure this on the respective devices, so that scans will always add the
+   appropriate delay for the particular device being scanned.
+
+   .. code-block:: python
+
+      motor.settle_time = 1
+      temperature_controller.settle_time = 10
+
+   For many cases, this is more convenient and more robust than typing a delay
+   parameter in every invocation of the scan. You only have to set it once, and
+   it applies thereafter.
+
+   This is why bluesky leaves ``delay`` out of the scans, to guide users toward
+   an approach that will likely be a better fit than the one that might occur
+   to them first. For situations where a ``delay`` parameter really is the
+   right tool for the job, it is of course always possible to add a ``delay``
+   parameter yourself by writing a custom plan. Here is one approach, using a
+   :ref:`per_step hook <per_step_hook>`.
+
+   .. code-block:: python
+
+      def scan_with_delay(*args, delay=0, **kwargs):
+
+          def one_nd_step_with_delay(detectors, step, pos_cache):
+              "Insert a sleeep after each step."
+              yield from bluesky.plans.one_nd_step(detectors, step, pos_cache)
+              yield from bluesky.sleep(delay)
+
+          kwargs.setdefault('per_step', per_step)
+          yield from scan(*args, **kwargs)
 
 .. autosummary::
    :toctree: generated
