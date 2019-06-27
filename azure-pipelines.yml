@@ -22,17 +22,28 @@ jobs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
 
+  - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
+    displayName: Add conda to PATH
+
+  - script: conda create --yes --quiet --name bluesky
+    displayName: Create Anaconda environment
+
+  - script: |
+      call activate bluesky
+      conda install matplotlib pyqt5
+    displayName: Install Anaconda packages
+
   - script: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt
       pip install -r dev-requirements.txt
       pip install .
-    displayName: 'Install dependencies'
+    displayName: Install dependencies
 
   - script: |
       set MPLBACKEND=Qt5Agg
       pytest bluesky/tests --doctest-modules --junitxml=junit/test-results.xml
-    displayName: 'pytest'
+    displayName: pytest
 
   - task: PublishTestResults@2
     inputs:
