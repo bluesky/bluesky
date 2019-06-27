@@ -1,13 +1,21 @@
-from bluesky import Msg
 import multiprocessing
 import os
-import numpy as np
 import pytest
 import signal
+from subprocess import run
 import threading
 import time
+
+import numpy as np
+
+from bluesky import Msg
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count
+
+
+def test_proxy_script():
+    p = run(['bluesky-0MQ-proxy', '-h'])
+    assert p.returncode == 0
 
 
 def test_zmq(RE, hw):
