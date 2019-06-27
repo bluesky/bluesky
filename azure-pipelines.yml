@@ -30,7 +30,7 @@ jobs:
 
   - script: |
       call activate bluesky
-      conda install matplotlib pyqt5
+      conda install matplotlib pyqt
     displayName: Install Anaconda packages
 
   - script: |
