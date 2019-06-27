@@ -25,13 +25,15 @@ jobs:
   - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
     displayName: Add conda to PATH
 
-  - script: conda create --yes --quiet --name bluesky python=$(python.version)
+  - script: |
+      conda update conda --yes
+      conda create --yes --quiet --name bluesky python=$(python.version)
     displayName: Create Anaconda environment
 
   - script: |
       call activate bluesky
-      conda install -c anaconda qt
-      conda install matplotlib pyqt
+      conda install -c anaconda qt sqlite
+      conda install matplotlib pyqt sqlite3
     displayName: Install Anaconda packages
 
   - script: |
