@@ -30,7 +30,7 @@ jobs:
     displayName: 'Install dependencies'
 
   - script: |
-      MPLBACKEND=Qt5Agg
+      set MPLBACKEND=Qt5Agg
       pytest bluesky/tests --doctest-modules --junitxml=junit/test-results.xml
     displayName: 'pytest'
 
