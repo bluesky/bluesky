@@ -137,7 +137,7 @@ Examples:
           # Assume all detectors have one exposure time component called
           # 'exposure_time' that fully specifies its exposure.
           for detector in detectors:
-              yield from bluesky.plans.mv(detector.exposure_time, exposure_time)
+              yield from bluesky.plan_stubs.mv(detector.exposure_time, exposure_time)
           yield from bluesky.plans.count(detectors, num, delay, md=md)
 
 .. autosummary::
@@ -183,7 +183,7 @@ pseudo-axis. It's all the same to the plans. Examples:
 
 .. note::
 
-   Why don't scans have ``delay`` parameter?
+   Why don't scans have a ``delay`` parameter?
 
    You may have noticed that :func:`count` has a ``delay`` parameter but none
    of the scans do. This is intentional.
@@ -214,12 +214,12 @@ pseudo-axis. It's all the same to the plans. Examples:
       def scan_with_delay(*args, delay=0, **kwargs):
 
           def one_nd_step_with_delay(detectors, step, pos_cache):
-              "Insert a sleeep after each step."
+              "Insert a sleep after each step."
               yield from bluesky.plans.one_nd_step(detectors, step, pos_cache)
               yield from bluesky.sleep(delay)
 
-          kwargs.setdefault('per_step', per_step)
-          yield from scan(*args, **kwargs)
+          kwargs.setdefault('per_step', one_nd_step_with_delay)
+          yield from bluesky.scan(*args, **kwargs)
 
 .. autosummary::
    :toctree: generated
