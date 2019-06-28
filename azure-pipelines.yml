@@ -26,7 +26,6 @@ jobs:
     displayName: Add conda to PATH
 
   - script: |
-      conda update conda --yes
       conda create --yes --quiet --name bluesky python=$(python.version)
     displayName: Create Anaconda environment
 
