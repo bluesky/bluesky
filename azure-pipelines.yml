@@ -31,9 +31,9 @@ jobs:
     displayName: Create Anaconda environment
 
   - script: |
-      call activate bluesky
+      conda activate bluesky
       conda install -c anaconda qt sqlite
-      conda install matplotlib pyqt sqlite3
+      conda install matplotlib pyqt
     displayName: Install Anaconda packages
 
   - script: |
