@@ -114,22 +114,38 @@ Examples:
    Why doesn't :func:`count` have an ``exposure_time`` parameter?
 
    Modern CCD detectors typically parametrize exposure time with *multiple*
-   parameters. There is no one "exposure time" that can be applied to all
-   detectors.
+   parameters (acquire time, acquire period, num exposures, ...) as do scalers
+   (preset time, auto count time). There is no one "exposure time" that can be
+   applied to all detectors.
 
-   Additionally, counts with multiple detectors as in ``count([det1, det2]))``
-   would need to provide a separate exposure time for each detector in the
-   general case, which would grow wordy.
+   Additionally, when using multiple detectors as in ``count([det1, det2]))``
+   the user would need to provide a separate exposure time for each detector in
+   the general case, which would grow wordy.
 
-   We recommend either setting the time-related parameter(s) in advance:
+   One option is to set the time-related parameter(s) as a separate step.
+
+   For interactive use:
 
    .. code-block:: python
 
+      # Just an example. Your detector might have different names or numbers of
+      # exposure-related parameters---which is the point.
       det.exposure_time.set(3)
       det.acquire_period.set(3.5)
 
-   Or writing a custom plan that wraps :func:`count` and sets the exposure
-   time. This plan can encode the details that bluesky in general can't know.
+   From a plan:
+
+   .. code-block:: python
+
+      # Just an example. Your detector might have different names or numbers of
+      # exposure-related parameters---which is the point.
+       yield from bluesky.plan_stubs.mv(
+           det.exposure_time, 3,
+           det.acquire_period, 3.5)
+
+   Another is to write a custom plan that wraps :func:`count` and sets the
+   exposure time. This plan can encode the details that bluesky in general
+   can't know.
 
    .. code-block:: python
 
