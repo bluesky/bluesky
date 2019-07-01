@@ -23,7 +23,7 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'bluesky-0MQ-proxy = bluesky.callbacks.zmq:main',
+            'bluesky-0MQ-proxy = bluesky.commandline.zmq_proxy:main',
         ]
     },
 )
