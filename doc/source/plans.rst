@@ -227,15 +227,20 @@ pseudo-axis. It's all the same to the plans. Examples:
 
    .. code-block:: python
 
+      import bluesky.plan_stubs
+
       def scan_with_delay(*args, delay=0, **kwargs):
+          "Accepts all the normal 'scan' parameters, plus an optional delay."
 
           def one_nd_step_with_delay(detectors, step, pos_cache):
-              "Insert a sleep after each step."
-              yield from bluesky.plans.one_nd_step(detectors, step, pos_cache)
-              yield from bluesky.sleep(delay)
+              "This is a copy of bluesky.plan_stubs.one_nd_step with a sleep added."
+              motors = step.keys()
+              yield from bluesky.plan_stubs.move_per_step(step, pos_cache)
+              yield from bluesky.plan_stubs.sleep(delay)
+              yield from bluesky.plan_stubs.trigger_and_read(list(detectors) + list(motors))
 
           kwargs.setdefault('per_step', one_nd_step_with_delay)
-          yield from bluesky.scan(*args, **kwargs)
+          yield from bluesky.plans.scan(*args, **kwargs)
 
 .. autosummary::
    :toctree: generated
