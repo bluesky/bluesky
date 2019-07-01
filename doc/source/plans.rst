@@ -118,7 +118,7 @@ Examples:
    (preset time, auto count time). There is no one "exposure time" that can be
    applied to all detectors.
 
-   Additionally, when using multiple detectors as in ``count([det1, det2]))``
+   Additionally, when using multiple detectors as in ``count([det1, det2]))``,
    the user would need to provide a separate exposure time for each detector in
    the general case, which would grow wordy.
 
