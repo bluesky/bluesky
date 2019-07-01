@@ -227,6 +227,7 @@ pseudo-axis. It's all the same to the plans. Examples:
 
    .. code-block:: python
 
+      import bluesky.plans
       import bluesky.plan_stubs
 
       def scan_with_delay(*args, delay=0, **kwargs):
