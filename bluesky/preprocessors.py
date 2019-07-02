@@ -1186,7 +1186,7 @@ class SupplementalData:
 
     * :func:`baseline_wrapper`
     * :func:`monitor_during_wrapper`
-    * :func:`flyer_during_wrapper`
+    * :func:`fly_during_wrapper`
 
     Parameters
     ----------
