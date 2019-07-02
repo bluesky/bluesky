@@ -1,6 +1,6 @@
-import threading
 import argparse
 import logging
+import threading
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from bluesky.log import set_handler
