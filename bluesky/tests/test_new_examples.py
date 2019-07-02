@@ -667,18 +667,18 @@ def test_per_step(RE, hw):
     # that the problem is with 'per_step':
 
     # You can't usage one_1d_step signature with more than one motor.
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeError) as excinfo:
         RE(scan([hw.det],
                 hw.motor, -1, 1,
                 hw.motor2, -1, 1,
                 3,
                 per_step=one_1d_step))
-    assert "Signature of per_step assumes 1D trajectory" in str(exc)
+    assert excinfo.match("Signature of per_step assumes 1D trajectory")
 
     # The signature must be either like one_1d_step or one_nd_step:
     def bad_sig(detectors, mtr, step):
         ...
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeError) as excinfo:
         RE(scan([hw.det], hw.motor, -1, 1, 3, per_step=bad_sig))
-    assert "per_step must be a callable with the signature" in str(exc)
+    assert excinfo.match("per_step must be a callable with the signature")
