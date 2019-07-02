@@ -109,6 +109,53 @@ Examples:
     RE.subscribe(bec)
     RE(count([noisy_det], num=5))
 
+.. note::
+
+   Why doesn't :func:`count` have an ``exposure_time`` parameter?
+
+   Modern CCD detectors typically parametrize exposure time with *multiple*
+   parameters (acquire time, acquire period, num exposures, ...) as do scalers
+   (preset time, auto count time). There is no one "exposure time" that can be
+   applied to all detectors.
+
+   Additionally, when using multiple detectors as in ``count([det1, det2]))``,
+   the user would need to provide a separate exposure time for each detector in
+   the general case, which would grow wordy.
+
+   One option is to set the time-related parameter(s) as a separate step.
+
+   For interactive use:
+
+   .. code-block:: python
+
+      # Just an example. Your detector might have different names or numbers of
+      # exposure-related parameters---which is the point.
+      det.exposure_time.set(3)
+      det.acquire_period.set(3.5)
+
+   From a plan:
+
+   .. code-block:: python
+
+      # Just an example. Your detector might have different names or numbers of
+      # exposure-related parameters---which is the point.
+       yield from bluesky.plan_stubs.mv(
+           det.exposure_time, 3,
+           det.acquire_period, 3.5)
+
+   Another is to write a custom plan that wraps :func:`count` and sets the
+   exposure time. This plan can encode the details that bluesky in general
+   can't know.
+
+   .. code-block:: python
+
+      def count_with_time(detectors, num, delay, exposure_time, *, md=None):
+          # Assume all detectors have one exposure time component called
+          # 'exposure_time' that fully specifies its exposure.
+          for detector in detectors:
+              yield from bluesky.plan_stubs.mv(detector.exposure_time, exposure_time)
+          yield from bluesky.plans.count(detectors, num, delay, md=md)
+
 .. autosummary::
    :toctree: generated
    :nosignatures:
@@ -149,6 +196,52 @@ pseudo-axis. It's all the same to the plans. Examples:
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(scan([det], motor, 1, 5, 5))
+
+.. note::
+
+   Why don't scans have a ``delay`` parameter?
+
+   You may have noticed that :func:`count` has a ``delay`` parameter but none
+   of the scans do. This is intentional.
+
+   The common reason for wanting a delay in a scan is to allow a motor to
+   settle or a temperature controller to reach equilibrium. It is better to
+   configure this on the respective devices, so that scans will always add the
+   appropriate delay for the particular device being scanned.
+
+   .. code-block:: python
+
+      motor.settle_time = 1
+      temperature_controller.settle_time = 10
+
+   For many cases, this is more convenient and more robust than typing a delay
+   parameter in every invocation of the scan. You only have to set it once, and
+   it applies thereafter.
+
+   This is why bluesky leaves ``delay`` out of the scans, to guide users toward
+   an approach that will likely be a better fit than the one that might occur
+   to them first. For situations where a ``delay`` parameter really is the
+   right tool for the job, it is of course always possible to add a ``delay``
+   parameter yourself by writing a custom plan. Here is one approach, using a
+   :ref:`per_step hook <per_step_hook>`.
+
+   .. code-block:: python
+
+      import bluesky.plans
+      import bluesky.plan_stubs
+
+      def scan_with_delay(*args, delay=0, **kwargs):
+          "Accepts all the normal 'scan' parameters, plus an optional delay."
+
+          def one_nd_step_with_delay(detectors, step, pos_cache):
+              "This is a copy of bluesky.plan_stubs.one_nd_step with a sleep added."
+              motors = step.keys()
+              yield from bluesky.plan_stubs.move_per_step(step, pos_cache)
+              yield from bluesky.plan_stubs.sleep(delay)
+              yield from bluesky.plan_stubs.trigger_and_read(list(detectors) + list(motors))
+
+          kwargs.setdefault('per_step', one_nd_step_with_delay)
+          yield from bluesky.plans.scan(*args, **kwargs)
 
 .. autosummary::
    :toctree: generated
