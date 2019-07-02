@@ -7,7 +7,7 @@ jobs:
 
 - job: 'Test'
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'Ubuntu 16.04'
   strategy:
     matrix:
       Python36:
@@ -22,31 +22,13 @@ jobs:
       versionSpec: '$(python.version)'
       architecture: 'x64'
 
-  - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
-    displayName: Add conda to PATH
+  - script: python -m pip install --upgrade pip && pip install -r requirements.txt
+    displayName: 'Install dependencies'
 
   - script: |
-      conda update conda
-      conda create --yes --quiet --name bluesky python=$(python.version)
-    displayName: Create Anaconda environment
-
-  - script: |
-      conda activate bluesky
-      conda install -c anaconda qt sqlite
-      conda install matplotlib pyqt
-    displayName: Install Anaconda packages
-
-  - script: |
-      python -m pip install --upgrade pip
-      pip install -r dev-requirements.txt
-      pip install .
-    displayName: Install dependencies
-
-  - script: |
-      set MPLBACKEND=Qt5Agg
+      pip install pytest
       pytest bluesky/tests --doctest-modules --junitxml=junit/test-results.xml
-    displayName: pytest
-
+    displayName: 'pytest'
   - task: PublishTestResults@2
     inputs:
       testResultsFiles: '**/test-results.xml'
@@ -56,7 +38,7 @@ jobs:
 - job: 'Publish'
   dependsOn: 'Test'
   pool:
-    vmImage: 'vs2017-win2016'
+    vmImage: 'Ubuntu 16.04'
 
   steps:
   - task: UsePythonVersion@0
