@@ -1,17 +1,15 @@
-#!/usr/bin/env python3
-import threading
 import argparse
 import logging
-import sys
+import threading
 
-from bluesky.callbacks.zmq import RemoteDispatcher
+from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from bluesky.log import set_handler
 
 
 logger = logging.getLogger('bluesky')
 
 
-def start_dispatcher(logfile):
+def start_dispatcher(host, port, logfile):
     """The dispatcher function
     Parameters
     ----------
@@ -19,14 +17,15 @@ def start_dispatcher(logfile):
         string come from user command. ex --logfile=temp.log
         logfile will be "temp.log". logfile could be empty.
     """
-    dispatcher = RemoteDispatcher('localhost:{out_port}'.format(out_port=out_port))
+    dispatcher = RemoteDispatcher((host, port))
     if logfile:
         set_handler(file=logfile)
+
     def log_writer(name, doc):
         """logger's wrapper function
-            This function will be use to fit .subscribe() method.
-            It has two arguments as .subscribe expect. Inside, it
-            call logger.* to write doc which is a dict as a str
+            This function will be used to fit .subscribe() method.
+            It has two arguments as .subscribe expects. Inside, it
+            calls logger.* to write doc which is a dict as a str
             into logfile
         """
         if name in ('start', 'stop'):
@@ -37,7 +36,7 @@ def start_dispatcher(logfile):
     dispatcher.start()
 
 
-if __name__ == "__main__":
+def main():
     DESC = "Start a 0MQ proxy for publishing bluesky documents over a network."
     parser = argparse.ArgumentParser(description=DESC)
     parser.add_argument('in_port', type=int, nargs=1,
@@ -57,11 +56,9 @@ if __name__ == "__main__":
         if args.verbose > 2:
             logger.setLevel('DEBUG')
         threading.Thread(target=start_dispatcher,
-                            args=(args.logfile,),
-                            daemon=True).start()  # Set daemon to all ipython exit
-                                                  # kill all threads
-    print("Loading...")
-    from bluesky.callbacks.zmq import Proxy  # this takes a couple seconds
+                         args=('localhost', out_port, args.logfile),
+                         daemon=True).start()  # Set daemon to all ipython exit
+                                               # kill all threads
     print("Connecting...")
     proxy = Proxy(in_port, out_port)
     print("Receiving on port %d; publishing to port %d." % (in_port, out_port))
@@ -70,3 +67,7 @@ if __name__ == "__main__":
         proxy.start()
     except KeyboardInterrupt:
         print("Interrupted. Exiting...")
+
+
+if __name__ == "__main__":
+    main()
