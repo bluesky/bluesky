@@ -59,8 +59,6 @@ def main():
                          args=('localhost', out_port, args.logfile),
                          daemon=True).start()  # Set daemon to all ipython exit
                                                # kill all threads
-    print("Loading...")
-    ##from bluesky.callbacks.zmq import Proxy  # this takes a couple seconds
     print("Connecting...")
     proxy = Proxy(in_port, out_port)
     print("Receiving on port %d; publishing to port %d." % (in_port, out_port))
