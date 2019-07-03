@@ -101,7 +101,7 @@ Features
   same way.
 * Added :func:`~bluesky.plans.list_grid_scan`.
 * Raise a more helpful error message if the ``num`` parameter given to
-  `~bluesky.plans.scan` is not a whole number, as can happen if ``num`` is
+  :func:`~bluesky.plans.scan` is not a whole number, as can happen if ``num`` is
   mistaken to mean "step size".
 * Report the version of bluesky and (if available) ophyd in the metadata.
 * Add a more helpful error message if the value returned from some call to
