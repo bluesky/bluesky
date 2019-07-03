@@ -24,7 +24,7 @@ def start_dispatcher(host, port, logfile):
     def log_writer(name, doc):
         """logger's wrapper function
             This function will be used to fit .subscribe() method.
-            It has two arguments as .subscribe expectd. Inside, it
+            It has two arguments as .subscribe expects. Inside, it
             calls logger.* to write doc which is a dict as a str
             into logfile
         """
