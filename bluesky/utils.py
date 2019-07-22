@@ -23,6 +23,10 @@ import time
 from tqdm import tqdm
 from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
 import warnings
+
+import msgpack
+import msgpack_numpy
+import zict
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import groupby
@@ -705,6 +709,36 @@ def all_safe_rewind(devices):
     return True
 
 
+class PersistentDict(zict.Func):
+    def __init__(self, directory):
+        self._directory = directory
+        self._file = zict.File(directory)
+        super().__init__(self._dump, self._load, self._file)
+
+    @property
+    def directory(self):
+        return self._directory
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {dict(self)!r}>"
+
+    @staticmethod
+    def _dump(obj):
+        "Encode as msgpack using numpy-aware encoder."
+        # See https://github.com/msgpack/msgpack-python#string-and-binary-type
+        # for more on use_bin_type.
+        return msgpack.packb(
+            obj,
+            default=msgpack_numpy.encode,
+            use_bin_type=True)
+
+    def _load(self, file):
+        return msgpack.unpackb(
+            file,
+            object_hook=msgpack_numpy.decode,
+            raw=False)
+
+
 SEARCH_PATH = []
 ENV_VAR = 'BLUESKY_HISTORY_PATH'
 if ENV_VAR in os.environ:
@@ -715,7 +749,7 @@ SEARCH_PATH.extend([os.path.expanduser('~/.config/bluesky/bluesky_history.db'),
 
 def get_history():
     """
-    Return a dict-like object for stashing metadata.
+    DEPRECATED: Return a dict-like object for stashing metadata.
 
     If historydict is not installed, return a dict.
 

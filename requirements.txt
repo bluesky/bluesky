@@ -1,7 +1,10 @@
 cycler
 event-model>=1.10.0
 historydict
+msgpack
+msgpack-numpy
 numpy
 super_state_machine
 toolz
 tqdm
+zict

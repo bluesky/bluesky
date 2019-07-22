@@ -266,34 +266,32 @@ dictionary interface. The simplest is just a plain Python dictionary.
 
     RE.md = {}
 
-To persist metadata between sessions, bluesky uses
-:class:`~historydict.HistoryDict` --- a Python dictionary backed by a sqlite
-database file. Any changes made to ``RE.md`` are synced to the file before
-IPython exits.
-
-The easiest way to create a :class:`~historydict.HistoryDict` is to use the
-convenience function, :func:`~bluesky.utils.get_history`. It searches for a
-pre-existing history file in one of several standard locations and, if it
-doesn't find one, it creates a new one. (See the
-:func:`~bluesky.utils.get_history` documentation below for details, including
-the search path.)
+To persist metadata between sessions, bluesky recommends
+:class:`bluesky.utils.PersistentDict` --- a Python dictionary synced with a
+directory of files on disk. Any changes made to ``RE.md`` are synced to the
+file, so the contents of ``RE.md`` can persist between sessions.
 
 .. code-block:: python
 
-    from bluesky.utils import get_history
-    RE.md = get_history()
+    from bluesky.utils import import PersistentDict
+    RE.md = PersistentDict('some/path/here')
 
-Alternatively, create a ``HistoryDict`` manually anywhere you please:
+Bluesky does not provide a strong recommendation on that path; that a detail
+left to the local deployment.
+
+Bluesky formerly recommended using :class:`~historydict.HistoryDict` --- a
+Python dictionary backed by a sqlite database file. This approach proved
+problematic with the threading introduced in bluesky v1.6.0, so it is no longer
+recommended. If you have been following that recommendation, you should migrate
+your metadata from `~historydict.HistoryDict` to
+:class:`~bluesky.utils.PersistentDict`. First, update your configuration to
+make ``RE.md`` a :class:`~bluesky.utils.PersistentDict` as shown above. Then,
+migrate like so:
 
 .. code-block:: python
 
-    from historydict import HistoryDict
-    RE.md = HistoryDict('your/path/here')
-
-.. autofunction:: bluesky.utils.get_history
-
-See also the
-`historydict documentation <https://github.com/Nikea/historydict#historydict>`_.
+   old_md = get_history()
+   RE.md.update(old_md)
 
 .. warning::
 
