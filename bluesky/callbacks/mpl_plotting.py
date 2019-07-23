@@ -20,7 +20,7 @@ class QtAwareCallback(CallbackBase):
     def __init__(self, *args, use_teleporter=None, **kwargs):
         if use_teleporter is None:
             import matplotlib
-            use_teleporter = 'qt' in matplotlib.get_backend()
+            use_teleporter = 'qt' in matplotlib.get_backend().lower()
         if use_teleporter:
             Teleporter = _get_teleporter()
             self.__teleporter = Teleporter()
