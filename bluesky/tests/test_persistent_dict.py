@@ -1,8 +1,9 @@
 import collections.abc
 
-from bluesky.utils import PersistentDict
 import numpy
 from numpy.testing import assert_array_equal
+
+from ..utils import PersistentDict
 
 
 def test_persistent_dict(tmp_path):
