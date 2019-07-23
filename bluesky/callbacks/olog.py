@@ -1,8 +1,9 @@
+import logging
+from collections import defaultdict
 from io import StringIO
 from pprint import pformat
-import logging
+
 from . import CallbackBase
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 

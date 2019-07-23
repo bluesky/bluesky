@@ -3,6 +3,7 @@
 
 import logging
 import sys
+
 try:
     import colorama
     colorama.init()

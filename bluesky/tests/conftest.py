@@ -1,8 +1,10 @@
 import asyncio
-from bluesky.run_engine import RunEngine, TransitionError
-import numpy as np
 import os
+
 import pytest
+
+import numpy as np
+from bluesky.run_engine import RunEngine, TransitionError
 
 
 @pytest.fixture(scope='function')

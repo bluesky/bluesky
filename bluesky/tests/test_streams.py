@@ -1,12 +1,12 @@
 import math
+
 import pytest
 
 import numpy as np
-
 from bluesky.callbacks import CallbackCounter
+from bluesky.callbacks.stream import LiveDispatcher
 from bluesky.examples import stepscan
 from bluesky.tests.utils import DocCollector
-from bluesky.callbacks.stream import LiveDispatcher
 
 # Do not run these test if streamz is not installed
 try:

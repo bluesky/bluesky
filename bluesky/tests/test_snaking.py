@@ -1,6 +1,6 @@
-from bluesky.utils import snake_cyclers
 from cycler import cycler
 
+from bluesky.utils import snake_cyclers
 
 x = cycler('x', [1,2,3])
 y = cycler('y', [1,2])

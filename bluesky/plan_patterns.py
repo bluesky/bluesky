@@ -1,16 +1,19 @@
+import collections
 import functools
 import operator
-import collections
+
+from cycler import cycler
 
 import numpy as np
-from cycler import cycler
+
+from .utils import snake_cyclers
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
 except ImportError:
     from toolz import partition
 
-from .utils import snake_cyclers
 
 
 def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,

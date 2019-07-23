@@ -1,8 +1,9 @@
-import pytest
 import jsonschema
-from event_model import DocumentNames, schema_validators
-from bluesky.utils import new_uid
+import pytest
+
 from bluesky.examples import simple_scan
+from bluesky.utils import new_uid
+from event_model import DocumentNames, schema_validators
 
 
 def test_custom_metadata(RE, hw):

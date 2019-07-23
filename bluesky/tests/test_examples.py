@@ -1,22 +1,29 @@
-import pytest
-from bluesky.examples import (simple_scan, sleepy, wait_one,
-                              wait_multiple, conditional_pause,
-                              checkpoint_forever, simple_scan_saving,
-                              stepscan, fly_gen, conditional_break,
-                              )
-from bluesky.callbacks.mpl_plotting import LivePlot
-from bluesky import (Msg, IllegalMessageSequence,
-                     RunEngineInterrupted, FailedStatus)
-import bluesky.plan_stubs as bps
+import asyncio
 import os
 import signal
-import asyncio
-import time as ttime
-import numpy as np
-from numpy.testing import assert_array_equal
-import time
 import threading
+import time as ttime
 from functools import partial
+
+import pytest
+
+import bluesky.plan_stubs as bps
+import numpy as np
+from bluesky import FailedStatus, IllegalMessageSequence, Msg, RunEngineInterrupted
+from bluesky.callbacks.mpl_plotting import LivePlot
+from bluesky.examples import (
+    checkpoint_forever,
+    conditional_break,
+    conditional_pause,
+    fly_gen,
+    simple_scan,
+    simple_scan_saving,
+    sleepy,
+    stepscan,
+    wait_multiple,
+    wait_one,
+)
+from numpy.testing import assert_array_equal
 
 
 def test_msgs(RE, hw):

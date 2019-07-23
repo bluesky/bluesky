@@ -1,12 +1,16 @@
 import itertools
-import uuid
-from cycler import cycler
-from . import utils
 import operator
-from functools import reduce
-from collections.abc import Iterable
 import time
+import uuid
 import warnings
+from collections.abc import Iterable
+from functools import reduce
+
+from cycler import cycler
+
+from . import utils
+from .utils import Msg, all_safe_rewind, ensure_generator, separate_devices
+from .utils import short_uid as _short_uid
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -15,8 +19,6 @@ except ImportError:
     from toolz import partition
 
 
-from .utils import (separate_devices, all_safe_rewind, Msg, ensure_generator,
-                    short_uid as _short_uid)
 
 
 def create(name='primary'):

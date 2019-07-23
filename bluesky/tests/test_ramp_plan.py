@@ -1,12 +1,14 @@
+import time
+
+import pytest
+
+import numpy as np
+from bluesky import Msg
+from bluesky.plan_stubs import trigger_and_read
+from bluesky.plans import ramp_plan
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector
-from bluesky.plans import ramp_plan
-from bluesky.plan_stubs import trigger_and_read
-from bluesky import Msg
 from bluesky.utils import RampFail
-import numpy as np
-import time
-import pytest
 
 
 @requires_ophyd

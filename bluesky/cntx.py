@@ -4,15 +4,18 @@
 # was little used and finally deprecated in v0.10.0. It will be removed in a
 # future release. It should not be used.
 
-from functools import wraps
-from contextlib import contextmanager
 import warnings
+from contextlib import contextmanager
+from functools import wraps
 
-from .utils import (normalize_subs_input, root_ancestor,
-                    separate_devices,
-                    Msg, single_gen)
-
-from .plan_stubs import (broadcast_msg, trigger_and_read)
+from .plan_stubs import broadcast_msg, trigger_and_read
+from .utils import (
+    Msg,
+    normalize_subs_input,
+    root_ancestor,
+    separate_devices,
+    single_gen,
+)
 
 
 def planify(func):

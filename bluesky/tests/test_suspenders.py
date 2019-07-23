@@ -1,20 +1,24 @@
-import pytest
 import asyncio
-from functools import partial
-from bluesky.preprocessors import suspend_wrapper
-from bluesky.suspenders import (SuspendBoolHigh,
-                                SuspendBoolLow,
-                                SuspendFloor,
-                                SuspendCeil,
-                                SuspendWhenOutsideBand,
-                                SuspendInBand,
-                                SuspendOutBand)
-from bluesky.tests.utils import MsgCollector
-from bluesky import Msg
-import time as ttime
-from bluesky.run_engine import RunEngineInterrupted
 import threading
-import time
+import time as ttime
+from functools import partial
+
+import pytest
+
+from bluesky import Msg
+from bluesky.preprocessors import suspend_wrapper
+from bluesky.run_engine import RunEngineInterrupted
+from bluesky.suspenders import (
+    SuspendBoolHigh,
+    SuspendBoolLow,
+    SuspendCeil,
+    SuspendFloor,
+    SuspendInBand,
+    SuspendOutBand,
+    SuspendWhenOutsideBand,
+)
+from bluesky.tests.utils import MsgCollector
+
 
 @pytest.mark.parametrize(
     'klass,sc_args,start_val,fail_val,resume_val,wait_time',

@@ -1,8 +1,11 @@
-from collections import ChainMap
-from cycler import cycler
-import numpy as np
-import warnings
 import functools
+import warnings
+from collections import ChainMap
+
+from cycler import cycler
+
+import numpy as np
+
 from .core import CallbackBase, get_obj_fields
 
 

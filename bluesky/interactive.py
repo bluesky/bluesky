@@ -1,6 +1,8 @@
-import matplotlib.widgets as mwidgets
-from bluesky.plans import grid_scan
 from collections import ChainMap
+
+import matplotlib.widgets as mwidgets
+
+from bluesky.plans import grid_scan
 
 
 class ROIPlanCreator:

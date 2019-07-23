@@ -1,7 +1,8 @@
+from ophyd.sim import SynGauss, det, motor, noisy_det
+
 import numpy as np
-from bluesky.plans import scan
-from ophyd.sim import motor, noisy_det, det, SynGauss
 from bluesky.callbacks.fitting import PeakStats
+from bluesky.plans import scan
 
 
 def get_ps(x, y, shift=0.5):

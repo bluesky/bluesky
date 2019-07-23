@@ -1,12 +1,13 @@
-from bluesky.callbacks import collector, CallbackCounter
-import bluesky.plans as bp
-from bluesky import Msg
 import asyncio
 import time as ttime
-import numpy as np
-import numpy.testing
+
 import pytest
 
+import bluesky.plans as bp
+import numpy as np
+import numpy.testing
+from bluesky import Msg
+from bluesky.callbacks import CallbackCounter, collector
 
 
 def test_scan_num(RE, hw):

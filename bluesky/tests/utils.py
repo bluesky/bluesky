@@ -1,9 +1,9 @@
-from functools import wraps
+import contextlib
+import sys
+import tempfile
 import time
 from collections import defaultdict
-import contextlib
-import tempfile
-import sys
+from functools import wraps
 
 
 @contextlib.contextmanager

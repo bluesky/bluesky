@@ -1,6 +1,6 @@
 import warnings
-from .utils import Msg
 
+from .utils import Msg
 
 try:
     import ophyd.sim

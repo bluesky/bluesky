@@ -1,17 +1,20 @@
 import asyncio
+import gc
+import itertools
 import os
 import random
 import signal
 import time as ttime
+import uuid
 from pprint import pprint
+
+from ophyd.sim import MockFlyer, Syn2DGauss, SynAxis, SynGauss
+
+import bluesky.examples as bse
 from bluesky import IllegalMessageSequence
 from bluesky.tests.utils import setup_test_run_engine
 from bluesky.utils import Msg, RunEngineInterrupted
-import bluesky.examples as bse
-from ophyd.sim import MockFlyer, SynGauss, Syn2DGauss, SynAxis
-import uuid
-import itertools
-import gc
+
 # random.seed(2016)
 
 

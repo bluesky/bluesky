@@ -1,8 +1,10 @@
 import os
 import time as ttime
-from .core import CallbackBase
-from ..utils import ensure_uid
+
 import numpy as np
+
+from ..utils import ensure_uid
+from .core import CallbackBase
 
 
 class BrokerCallbackBase(CallbackBase):

@@ -1,10 +1,10 @@
-import pytest
-
-from functools import reduce
 import operator
+from functools import reduce
 
-from bluesky.utils import ensure_generator, Msg, merge_cycler
+import pytest
 from cycler import cycler
+
+from bluesky.utils import Msg, ensure_generator, merge_cycler
 
 
 def test_single_msg_to_gen():

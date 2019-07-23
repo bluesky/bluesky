@@ -1,13 +1,13 @@
 import logging
 import time as ttime
-from collections import Iterable, ChainMap
+from collections import ChainMap, Iterable
 
 import numpy as np
 from event_model import DocumentNames, schema_validators
 
-from .core import CallbackBase
 from ..run_engine import Dispatcher
 from ..utils import new_uid
+from .core import CallbackBase
 
 
 class LiveDispatcher(CallbackBase):

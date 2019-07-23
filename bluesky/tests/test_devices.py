@@ -1,11 +1,13 @@
 import itertools
 
-from bluesky.utils import ancestry, share_ancestor, separate_devices
+import pytest
+
+from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import trigger_and_read
 from bluesky.preprocessors import run_decorator
-from bluesky import Msg, RunEngineInterrupted
-import pytest
-from bluesky.tests import requires_ophyd, ophyd
+from bluesky.tests import ophyd, requires_ophyd
+from bluesky.utils import ancestry, separate_devices, share_ancestor
+
 from .utils import DocCollector
 
 if ophyd:

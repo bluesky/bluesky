@@ -1,5 +1,6 @@
-import bluesky.simulators as _bs
 from warnings import warn
+
+import bluesky.simulators as _bs
 
 
 def print_summary(plan):

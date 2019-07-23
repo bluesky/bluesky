@@ -1,15 +1,13 @@
 import uuid
-import pytest
 from collections import deque
 from itertools import zip_longest
 
+import pytest
+
 from bluesky import Msg
-
-from bluesky.preprocessors import (msg_mutator, stub_wrapper,
-                                   plan_mutator, pchain, single_gen as
-                                   single_message_gen,
-                                   finalize_wrapper)
-
+from bluesky.preprocessors import finalize_wrapper, msg_mutator, pchain, plan_mutator
+from bluesky.preprocessors import single_gen as single_message_gen
+from bluesky.preprocessors import stub_wrapper
 from bluesky.utils import ensure_generator
 
 

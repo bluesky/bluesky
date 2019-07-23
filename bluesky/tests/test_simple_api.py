@@ -1,4 +1,5 @@
 import pytest
+
 import bluesky.plans as bp
 from bluesky.callbacks.best_effort import BestEffortCallback
 

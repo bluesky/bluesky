@@ -1,24 +1,30 @@
 #%matplotlib qt5
 import matplotlib.pyplot as plt
-plt.ion()
+# do it manually
+from cycler import cycler
+from databroker import Broker
+from databroker.tests.utils import temp_config
+from ophyd.sim import det4, motor1, motor2, motor3
+
 import numpy as np
+from bluesky import RunEngine
+from bluesky.callbacks.best_effort import BestEffortCallback
+from bluesky.plan_stubs import mov
+from bluesky.plans import (
+    inner_product_scan,
+    outer_product_scan,
+    relative_inner_product_scan,
+    relative_outer_product_scan,
+    scan_nd,
+)
 from bluesky.utils import install_qt_kicker
+
+plt.ion()
 install_qt_kicker()
 
 
-from bluesky.plans import (relative_outer_product_scan,
-                           relative_inner_product_scan,
-                           outer_product_scan,
-                           inner_product_scan,
-                           scan_nd)
-from bluesky.plan_stubs import mov
 
-from ophyd.sim import det4, motor1, motor2, motor3
-from bluesky import RunEngine
-from bluesky.callbacks.best_effort import BestEffortCallback
 
-from databroker.tests.utils import temp_config
-from databroker import Broker
 
 
 # db setup
@@ -55,8 +61,6 @@ RE(relative_inner_product_scan([det4], 10, motor1, -1, 0, motor2, -2,
 RE(inner_product_scan([det4], 10, motor1, -1, 0, motor2, -2, 0))
 
 
-# do it manually
-from cycler import cycler
 
 
 mot1_cycl = cycler(motor1, np.linspace(-1, 0, 10))
@@ -93,4 +97,3 @@ md = {'shape': (10, 20),
      }
 
 RE(scan_nd([det4], mot1_cycl*mot2_cycl), **md)
-

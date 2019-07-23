@@ -1,25 +1,47 @@
 import asyncio
-from datetime import datetime
-import time as ttime
-import sys
-import logging
-from warnings import warn
-from inspect import Parameter, Signature
-from itertools import count, tee
-from collections import deque, defaultdict, ChainMap
-from enum import Enum
+import concurrent
 import functools
 import inspect
-from contextlib import ExitStack
+import logging
+import sys
 import threading
+import time as ttime
 import weakref
+from collections import ChainMap, defaultdict, deque
+from contextlib import ExitStack
+from datetime import datetime
+from enum import Enum
+from inspect import Parameter, Signature
+from itertools import count, tee
+from warnings import warn
 
-import concurrent
+from super_state_machine.errors import TransitionError
+from super_state_machine.extras import PropertyMachine
+from super_state_machine.machines import StateMachine
 
 from event_model import DocumentNames, schema_validators
-from super_state_machine.machines import StateMachine
-from super_state_machine.extras import PropertyMachine
-from super_state_machine.errors import TransitionError
+
+from .utils import (
+    AsyncInput,
+    CallbackRegistry,
+    FailedPause,
+    FailedStatus,
+    IllegalMessageSequence,
+    InvalidCommand,
+    Msg,
+    NoReplayAllowed,
+    PlanHalt,
+    RequestAbort,
+    RequestStop,
+    RunEngineInterrupted,
+    SigintHandler,
+    default_during_task,
+    ensure_generator,
+    new_uid,
+    normalize_subs_input,
+    short_uid,
+    single_gen,
+)
 
 try:
     from asyncio import current_task
@@ -29,12 +51,6 @@ except ImportError:
     current_task = Task.current_task
     del Task
 
-from .utils import (CallbackRegistry, SigintHandler, normalize_subs_input,
-                    AsyncInput, new_uid, NoReplayAllowed,
-                    RequestAbort, RequestStop, RunEngineInterrupted,
-                    IllegalMessageSequence, FailedPause, FailedStatus,
-                    InvalidCommand, PlanHalt, Msg, ensure_generator,
-                    single_gen, short_uid, default_during_task)
 
 
 class _RunEnginePanic(Exception):

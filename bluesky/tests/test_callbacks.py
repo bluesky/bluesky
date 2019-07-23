@@ -1,20 +1,28 @@
 from collections import defaultdict
-from bluesky.run_engine import Msg, RunEngineInterrupted
-from bluesky.examples import stepscan
-from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
-from bluesky.object_plans import AbsScanPlan
-from bluesky.preprocessors import run_wrapper, subs_wrapper
-from bluesky.plan_stubs import pause
-import bluesky.plans as bp
-from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit
-from bluesky.callbacks.mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
-                                            LiveFitPlot, LiveRaster, LiveMesh)
-from bluesky.callbacks.broker import BrokerCallbackBase
-from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
-import pytest
-import numpy as np
-import matplotlib.pyplot as plt
 from sqlite3 import InterfaceError
+
+import matplotlib.pyplot as plt
+import pytest
+
+import bluesky.plans as bp
+import numpy as np
+from bluesky.callbacks import CallbackCounter, LiveFit, LiveTable
+from bluesky.callbacks.broker import BrokerCallbackBase
+from bluesky.callbacks.mpl_plotting import (
+    LiveFitPlot,
+    LiveGrid,
+    LiveMesh,
+    LivePlot,
+    LiveRaster,
+    LiveScatter,
+)
+from bluesky.examples import stepscan
+from bluesky.object_plans import AbsScanPlan
+from bluesky.plan_stubs import pause
+from bluesky.plans import count, grid_scan, inner_product_scan, scan
+from bluesky.preprocessors import run_wrapper, subs_wrapper
+from bluesky.run_engine import Msg, RunEngineInterrupted
+from bluesky.tests.utils import DocCollector, MsgCollector, _print_redirect
 
 
 def exception_raiser(name, doc):

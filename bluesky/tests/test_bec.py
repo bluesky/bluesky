@@ -1,11 +1,13 @@
 import ast
-import pytest
+
 import jsonschema
-from bluesky.plans import scan, grid_scan
-import bluesky.preprocessors as bpp
+import pytest
+
 import bluesky.plan_stubs as bps
-from bluesky.preprocessors import SupplementalData
+import bluesky.preprocessors as bpp
 from bluesky.callbacks.best_effort import BestEffortCallback
+from bluesky.plans import grid_scan, scan
+from bluesky.preprocessors import SupplementalData
 
 
 def test_hints(RE, hw):

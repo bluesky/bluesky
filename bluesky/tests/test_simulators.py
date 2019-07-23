@@ -1,10 +1,14 @@
-from bluesky.plans import scan
-from bluesky.simulators import (print_summary, print_summary_wrapper,
-                                summarize_plan,
-                                check_limits, LimitsExceeded,
-                                plot_raster_path)
 import pytest
-from bluesky.plans import grid_scan
+
+from bluesky.plans import grid_scan, scan
+from bluesky.simulators import (
+    LimitsExceeded,
+    check_limits,
+    plot_raster_path,
+    print_summary,
+    print_summary_wrapper,
+    summarize_plan,
+)
 
 
 def test_print_summary(hw):

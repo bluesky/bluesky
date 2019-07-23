@@ -1,15 +1,23 @@
 from __future__ import generator_stop
 
-from collections import OrderedDict, deque, ChainMap
-from collections.abc import Iterable
 import uuid
-from .utils import (normalize_subs_input, root_ancestor,
-                    separate_devices,
-                    Msg, ensure_generator, single_gen,
-                    short_uid as _short_uid, make_decorator,
-                    RunEngineControlException, merge_axis)
+from collections import ChainMap, OrderedDict, deque
+from collections.abc import Iterable
 from functools import wraps
-from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read)
+
+from .plan_stubs import close_run, mv, open_run, pause, trigger_and_read
+from .utils import (
+    Msg,
+    RunEngineControlException,
+    ensure_generator,
+    make_decorator,
+    merge_axis,
+    normalize_subs_input,
+    root_ancestor,
+    separate_devices,
+)
+from .utils import short_uid as _short_uid
+from .utils import single_gen
 
 
 def plan_mutator(plan, msg_proc):

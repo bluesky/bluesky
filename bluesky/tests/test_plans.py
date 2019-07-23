@@ -1,11 +1,11 @@
+import pandas as pd
 import pytest
-from bluesky.tests.utils import DocCollector
+
+import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 import bluesky.preprocessors as bpp
-import bluesky.plan_stubs as bps
 import numpy as np
-import pandas as pd
-from bluesky.tests.utils import MsgCollector
+from bluesky.tests.utils import DocCollector, MsgCollector
 
 
 def _validate_start(start, expected_values):

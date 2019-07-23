@@ -6,16 +6,19 @@
 # ip.register_magics(BlueskyMagics)
 
 import asyncio
-import warnings
-from bluesky.utils import ProgressBarManager
-from bluesky import RunEngine, RunEngineInterrupted
-from IPython.core.magic import Magics, magics_class, line_magic
-from traitlets import MetaHasTraits
-import numpy as np
 import collections
+import warnings
 from operator import attrgetter
-from . import plans as bp
+
+from IPython.core.magic import Magics, line_magic, magics_class
+from traitlets import MetaHasTraits
+
+import numpy as np
+from bluesky import RunEngine, RunEngineInterrupted
+from bluesky.utils import ProgressBarManager
+
 from . import plan_stubs as bps
+from . import plans as bp
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython

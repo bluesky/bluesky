@@ -1,29 +1,40 @@
 import asyncio
-from event_model import DocumentNames
-import threading
-import types
 import os
 import signal
 import sys
-from collections import defaultdict
+import threading
 import time as ttime
-import pytest
-from bluesky.tests import requires_ophyd
-from bluesky.run_engine import (RunEngineStateMachine,
-                                TransitionError, IllegalMessageSequence,
-                                NoReplayAllowed, FailedStatus,
-                                RunEngineInterrupted)
-from bluesky import Msg
+import types
+from collections import defaultdict
 from functools import partial
-from bluesky.tests.utils import MsgCollector, DocCollector
-from bluesky.plans import (fly, count, grid_scan)
-from bluesky.plan_stubs import (abs_set, trigger_and_read)
-from bluesky.preprocessors import (finalize_wrapper, run_decorator,
-                                   reset_positions_decorator,
-                                   run_wrapper, rewindable_wrapper,
-                                   subs_wrapper, baseline_wrapper,
-                                   SupplementalData)
+
+import pytest
 from super_state_machine.errors import TransitionError
+
+from bluesky import Msg
+from bluesky.plan_stubs import abs_set, trigger_and_read
+from bluesky.plans import count, fly, grid_scan
+from bluesky.preprocessors import (
+    SupplementalData,
+    baseline_wrapper,
+    finalize_wrapper,
+    reset_positions_decorator,
+    rewindable_wrapper,
+    run_decorator,
+    run_wrapper,
+    subs_wrapper,
+)
+from bluesky.run_engine import (
+    FailedStatus,
+    IllegalMessageSequence,
+    NoReplayAllowed,
+    RunEngineInterrupted,
+    RunEngineStateMachine,
+    TransitionError,
+)
+from bluesky.tests import requires_ophyd
+from bluesky.tests.utils import DocCollector, MsgCollector
+from event_model import DocumentNames
 
 
 def test_states():

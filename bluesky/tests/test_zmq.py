@@ -1,13 +1,13 @@
 import multiprocessing
 import os
 import signal
-from subprocess import run
 import threading
 import time
+from subprocess import run
 
-import numpy as np
 import pytest
 
+import numpy as np
 from bluesky import Msg
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count

@@ -1,10 +1,12 @@
-from bluesky.magics import BlueskyMagics
-import bluesky.plans as bp
-import bluesky.plan_stubs as bps
 import os
-import pytest
 import signal
 from types import SimpleNamespace
+
+import pytest
+
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
+from bluesky.magics import BlueskyMagics
 
 
 class FakeIPython:

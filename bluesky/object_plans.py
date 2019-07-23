@@ -4,20 +4,36 @@
 # was deprecated in v0.10.0. It will be removed in a future release. It should
 # not be used. To build 'reusable' plans we now recommend `functools.partial`.
 
-from . import utils
 import warnings
 from collections import defaultdict
+
+from . import preprocessors as bpp
+from . import utils
+from .plans import (
+    adaptive_scan,
+    count,
+    grid_scan,
+    inner_product_scan,
+    list_scan,
+    log_scan,
+    rel_adaptive_scan,
+    rel_grid_scan,
+    rel_list_scan,
+    rel_log_scan,
+    rel_scan,
+    rel_spiral,
+    rel_spiral_fermat,
+    relative_inner_product_scan,
+    scan,
+    scan_nd,
+    spiral,
+    spiral_fermat,
+    tweak,
+)
 
 # The code below adds no new logic, but it wraps the generators above in
 # classes for an alternative interface that is more stateful.
 
-from . import preprocessors as bpp
-from .plans import (count, list_scan, rel_list_scan, log_scan,
-                    rel_scan, adaptive_scan, rel_adaptive_scan,
-                    scan_nd, inner_product_scan, relative_inner_product_scan,
-                    grid_scan, scan, tweak, spiral, spiral_fermat,
-                    rel_spiral_fermat, rel_spiral, rel_log_scan,
-                    rel_grid_scan)
 
 
 class Plan(utils.Struct):

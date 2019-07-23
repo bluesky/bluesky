@@ -1,28 +1,30 @@
-from collections import namedtuple
 import asyncio
-import os
-import sys
-import signal
-import operator
-import uuid
-from functools import reduce
-from weakref import ref, WeakKeyDictionary
-import types
+import datetime
 import importlib
 import inspect
-from inspect import Parameter, Signature
 import itertools
-from collections.abc import Iterable
-import numpy as np
-from cycler import cycler
 import logging
-import datetime
-from functools import wraps, partial
+import operator
+import os
+import signal
+import sys
 import threading
 import time
+import types
+import uuid
+import warnings
+from collections import namedtuple
+from collections.abc import Iterable
+from functools import partial, reduce, wraps
+from inspect import Parameter, Signature
+from weakref import WeakKeyDictionary, ref
+
+from cycler import cycler
 from tqdm import tqdm
 from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
-import warnings
+
+import numpy as np
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import groupby

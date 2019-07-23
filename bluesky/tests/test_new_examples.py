@@ -1,67 +1,67 @@
+import threading
 from collections import defaultdict
-import pytest
-from bluesky import Msg, RunEngineInterrupted
-from bluesky.plan_stubs import (
-    create,
-    save,
-    drop,
-    read,
-    monitor,
-    unmonitor,
-    null,
-    abs_set,
-    rel_set,
-    trigger,
-    sleep,
-    wait,
-    checkpoint,
-    clear_checkpoint,
-    pause,
-    deferred_pause,
-    kickoff,
-    collect,
-    configure,
-    stage,
-    unstage,
-    subscribe,
-    unsubscribe,
-    install_suspender,
-    remove_suspender,
-    open_run,
-    close_run,
-    wait_for,
-    mv,
-    mvr,
-    trigger_and_read,
-    stop,
-    repeater,
-    caching_repeater,
-    repeat,
-    one_1d_step,
-    one_nd_step)
-from bluesky.preprocessors import (
-    finalize_wrapper,
-    fly_during_wrapper,
-    reset_positions_wrapper,
-    monitor_during_wrapper,
-    lazily_stage_wrapper,
-    relative_set_wrapper,
-    subs_wrapper,
-    suspend_wrapper,
-    fly_during_decorator,
-    subs_decorator,
-    monitor_during_decorator,
-    inject_md_wrapper,
-    finalize_decorator,
-    configure_count_time_wrapper)
 
-from bluesky.plans import count, scan, rel_scan, inner_product_scan
+import pytest
 
 import bluesky.plans as bp
-
+from bluesky import Msg, RunEngineInterrupted
+from bluesky.plan_stubs import (
+    abs_set,
+    caching_repeater,
+    checkpoint,
+    clear_checkpoint,
+    close_run,
+    collect,
+    configure,
+    create,
+    deferred_pause,
+    drop,
+    install_suspender,
+    kickoff,
+    monitor,
+    mv,
+    mvr,
+    null,
+    one_1d_step,
+    one_nd_step,
+    open_run,
+    pause,
+    read,
+    rel_set,
+    remove_suspender,
+    repeat,
+    repeater,
+    save,
+    sleep,
+    stage,
+    stop,
+    subscribe,
+    trigger,
+    trigger_and_read,
+    unmonitor,
+    unstage,
+    unsubscribe,
+    wait,
+    wait_for,
+)
+from bluesky.plans import count, inner_product_scan, rel_scan, scan
+from bluesky.preprocessors import (
+    configure_count_time_wrapper,
+    finalize_decorator,
+    finalize_wrapper,
+    fly_during_decorator,
+    fly_during_wrapper,
+    inject_md_wrapper,
+    lazily_stage_wrapper,
+    monitor_during_decorator,
+    monitor_during_wrapper,
+    relative_set_wrapper,
+    reset_positions_wrapper,
+    subs_decorator,
+    subs_wrapper,
+    suspend_wrapper,
+)
 from bluesky.utils import all_safe_rewind
-
-import threading
 
 
 @pytest.mark.parametrize(

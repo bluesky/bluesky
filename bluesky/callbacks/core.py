@@ -1,13 +1,13 @@
 """
 Useful callbacks for the Run Engine
 """
-from itertools import count
-import warnings
-from collections import deque, namedtuple, OrderedDict
-import time as ttime
-
-from datetime import datetime
 import logging
+import time as ttime
+import warnings
+from collections import OrderedDict, deque, namedtuple
+from datetime import datetime
+from itertools import count
+
 from ..utils import ensure_uid
 
 

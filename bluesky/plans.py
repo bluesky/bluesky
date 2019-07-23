@@ -1,25 +1,26 @@
-import sys
 import inspect
-from itertools import chain
-from functools import partial
-
-from collections import defaultdict
+import sys
 import time
+from collections import defaultdict
+from functools import partial
+from itertools import chain
 
 import numpy as np
+
+from . import plan_patterns
+from . import plan_stubs as bps
+from . import preprocessors as bpp
+from . import utils
+from .utils import Msg
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
 except ImportError:
     from toolz import partition
 
-from . import plan_patterns
 
-from . import utils
-from .utils import Msg
 
-from . import preprocessors as bpp
-from . import plan_stubs as bps
 
 
 def count(detectors, num=1, delay=None, *, md=None):

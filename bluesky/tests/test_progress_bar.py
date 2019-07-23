@@ -1,9 +1,10 @@
-from bluesky.utils import ProgressBar, ProgressBarManager
+import time
+from collections import OrderedDict
+
+from bluesky import RunEngine
 from bluesky.plan_stubs import mv
 from bluesky.tests import requires_ophyd
-from bluesky import RunEngine
-from collections import OrderedDict
-import time
+from bluesky.utils import ProgressBar, ProgressBarManager
 
 
 @requires_ophyd

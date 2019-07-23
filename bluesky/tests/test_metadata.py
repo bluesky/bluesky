@@ -1,5 +1,7 @@
-import bluesky
 import ophyd
+
+import bluesky
+
 
 def test_blueskyversion(RE):
     assert RE.md['versions'].get('bluesky') == bluesky.__version__
