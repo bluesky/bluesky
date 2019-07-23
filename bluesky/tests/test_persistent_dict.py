@@ -4,6 +4,7 @@ import numpy
 from numpy.testing import assert_array_equal
 
 from ..utils import PersistentDict
+from ..plans import count
 
 
 def test_persistent_dict(tmp_path):
@@ -24,6 +25,30 @@ def test_persistent_dict(tmp_path):
     # Smoke test the accessor and the __repr__.
     assert d.directory == tmp_path
     d.__repr__()
+
+
+def test_integration(tmp_path, RE, hw):
+    """
+    Test integration with RE.
+
+    Not looking for anything *specific* here, just general paranoia in case
+    unforseen future changes create a bad interaction between PersistentDict
+    and RE, as happened with HistoryDict and RE.
+    """
+    d = PersistentDict(tmp_path)
+    d['a'] = 1
+    d['b'] = (1, 2)
+    d['c'] = numpy.zeros((5, 5))
+    d['d'] = {'a': 10, 'b': numpy.ones((5, 5))}
+    expected = dict(d)
+    expected['scan_id'] = 1
+
+    RE.md = d
+    RE(count([hw.det]))
+    recursive_assert_equal(RE.md, expected)
+
+    reloaded = PersistentDict(tmp_path)
+    recursive_assert_equal(reloaded, expected)
 
 
 def recursive_assert_equal(actual, expected):
