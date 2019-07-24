@@ -23,7 +23,7 @@ from .fitting import PeakStats
 
 class BestEffortCallback(QtAwareCallback):
     def __init__(self, *, fig_factory=None, table_enabled=True, **kwargs):
-        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
+        super().__init__(**kwargs)
         # internal state
         self._start_doc = None
         self._descriptors = {}
