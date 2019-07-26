@@ -102,8 +102,8 @@ def list_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.rel_list_grid_scan`
     """
     if len(args) % 2 != 0:
-            raise ValueError("The list of arguments must contain a list of "
-                             "points for each defined motor")
+        raise ValueError("The list of arguments must contain a list of "
+                         "points for each defined motor")
 
     md = md or {}  # reset md if it is None.
 
@@ -209,7 +209,7 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
     _md = {'plan_name': 'rel_list_scan'}
     _md.update(md or {})
 
-    motors= [motor for motor, pos_list in partition(2, args)]
+    motors = [motor for motor, pos_list in partition(2, args)]
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
@@ -279,7 +279,7 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
            'plan_name': 'list_grid_scan',
            'plan_pattern': 'outer_list_product',
            'plan_pattern_args': dict(args=md_args).update(
-                {'snake_axes': snake_axes}),
+               {'snake_axes': snake_axes}),
            'plan_pattern_module': plan_patterns.__name__,
            'motors': tuple(motor_names),
            'hints': {},
@@ -921,6 +921,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                                 "but {} motors are specified.".format(dims))
             motor, = cycler.keys
             user_per_step = per_step
+
             def adapter(detectors, step, pos_cache):
                 # one_nd_step 'step' parameter is a dict; one_id_step 'step'
                 # parameter is a value
@@ -1001,8 +1002,9 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
         args = args[:-1]
 
     if not (float(num).is_integer() and num > 0.0):
-        raise ValueError(f"The parameter `num` is expected to be a number of steps (not step size!) "
-                         f"It must therefore be a whole number. The given value was {num}.")
+        raise ValueError(f"The parameter `num` is expected to be a number of "
+                         f"steps (not step size!) It must therefore be a "
+                         f"whole number. The given value was {num}.")
     num = int(num)
 
     md_args = list(chain(*((repr(motor), start, stop)
@@ -1718,7 +1720,7 @@ def ramp_plan(go_plan,
 
         In seconds
 
-    pre_data_enable: Bool, optional
+    take_pre_data: Bool, optional
         If True, add a pre data at beginning
 
     period : float, optional
@@ -1742,7 +1744,7 @@ def ramp_plan(go_plan,
             fail_time = time.time() + timeout
 
         # take a 'pre' data point
-        if take_pre_data == True:
+        if take_pre_data:
             yield from inner_plan_func()
         # start the ramp
         status = (yield from go_plan)
