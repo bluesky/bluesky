@@ -256,7 +256,7 @@ beginning of each scan, is stored in ``RE.md['scan_id']``.
 Persistence Between Sessions
 ----------------------------
 
-We provide way to save the contents of the metadata stash ``RE.md`` between
+We provide a way to save the contents of the metadata stash ``RE.md`` between
 sessions (e.g., exiting and re-opening IPython).
 
 In general, the ``RE.md`` attribute may be anything that supports the
