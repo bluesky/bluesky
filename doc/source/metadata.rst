@@ -273,7 +273,7 @@ file, so the contents of ``RE.md`` can persist between sessions.
 
 .. code-block:: python
 
-    from bluesky.utils import import PersistentDict
+    from bluesky.utils import PersistentDict
     RE.md = PersistentDict('some/path/here')
 
 Bluesky does not provide a strong recommendation on that path; that a detail
