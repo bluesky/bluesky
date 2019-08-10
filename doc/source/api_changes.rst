@@ -117,6 +117,12 @@ Bug Fixes
 * In the Best-Effort Callback, do not assume that the RunStart document
   includes ``'scan_id'``, which is an optional key.
 
+v1.5.4 (2019-08-09)
+===================
+
+Support Maplotlib 3.1 and above. (Do not use deprecated and removed aspect
+adjustable values.)
+
 v1.5.3 (2019-05-27)
 ===================
 
