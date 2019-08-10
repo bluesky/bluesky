@@ -2,10 +2,11 @@
  Release History
 =================
 
-v1.5.4 (2019-08)
-================
+v1.5.4 (2019-08-09)
+===================
 
-Support Maplotlib 3.1 and above (do not use deprecated and removed aspect adjustable values).
+Support Maplotlib 3.1 and above. (Do not use deprecated and removed aspect
+adjustable values.)
 
 
 v1.5.3 (2019-05-27)
