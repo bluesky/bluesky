@@ -2,6 +2,13 @@
  Release History
 =================
 
+
+v1.5.5 (2019-08-16)
+===================
+
+Support fix ``bluesky.utils.register_transform`` with IPython >= 7
+
+
 v1.5.4 (2019-08-09)
 ===================
 
