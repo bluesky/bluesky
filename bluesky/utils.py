@@ -894,36 +894,51 @@ def update_sub_lists(out, inp):
             out[k] = list(v)
 
 
-def register_transform(RE, *, prefix='<'):
+def register_transform(RE, *, prefix='<', ip=None):
     '''Register RunEngine IPython magic convenience transform
-
     Assuming the default parameters
-
     This maps `< stuff(*args, **kwargs)` -> `RE(stuff(*args, **kwargs))`
-
     RE is assumed to be available in the global namespace
-
     Parameters
     ----------
     RE : str
         The name of a valid RunEngine instance in the global IPython namespace
-
     prefix : str, optional
         The prefix to trigger this transform on.  If this collides with
         valid python syntax or an existing transform you are on your own.
+    ip : IPython shell, optional
+        If not passed, uses `IPython.get_ipython()` to get the current shell
     '''
     import IPython
-    from IPython.core.inputtransformer import StatelessInputTransformer
 
-    @StatelessInputTransformer.wrap
-    def tr_re(line):
-        if line.startswith(prefix):
-            line = line[len(prefix):].strip()
-            return '{}({})'.format(RE, line)
-        return line
-    ip = IPython.get_ipython()
-    ip.input_splitter.logical_line_transforms.append(tr_re())
-    ip.input_transformer_manager.logical_line_transforms.append(tr_re())
+    if ip is None:
+        ip = IPython.get_ipython()
+
+    if IPython.__version__ >= '7':
+        def tr_re(lines):
+            if len(lines) != 1:
+                return lines
+            line, = lines
+            head, split, tail = line.partition(prefix)
+            if split == prefix and head.strip() == '':
+                line = f'{RE}({tail.strip()})\n'
+
+            return [line]
+
+        ip.input_transformers_post.append(tr_re)
+
+    else:
+        from IPython.core.inputtransformer import StatelessInputTransformer
+
+        @StatelessInputTransformer.wrap
+        def tr_re(line):
+            if line.startswith(prefix):
+                line = line[len(prefix):].strip()
+                return '{}({})'.format(RE, line)
+            return line
+
+        ip.input_splitter.logical_line_transforms.append(tr_re())
+        ip.input_transformer_manager.logical_line_transforms.append(tr_re())
 
 
 class AsyncInput:
