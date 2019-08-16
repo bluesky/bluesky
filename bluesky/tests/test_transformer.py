@@ -6,7 +6,7 @@ def transform_cell():
     IPython = pytest.importorskip('IPython')
     ip = IPython.core.interactiveshell.InteractiveShell()
     register_transform('RE', prefix='<', ip=ip)
-    if IPython.__version__ > '7':
+    if IPython.__version__ >= '7':
         return ip.transform_cell
     else:
         return ip.input_splitter.transform_cell

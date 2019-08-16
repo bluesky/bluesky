@@ -914,7 +914,7 @@ def register_transform(RE, *, prefix='<', ip=None):
     if ip is None:
         ip = IPython.get_ipython()
 
-    if IPython.__version__ > '7.0':
+    if IPython.__version__ >= '7':
         def tr_re(lines):
             if len(lines) != 1:
                 return lines
