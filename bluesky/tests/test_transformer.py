@@ -30,7 +30,7 @@ def test_no_transform(transform_cell, cell):
                           '<fly(a, b, c), md={"a": "aardvark"}\n',
                           '  <b\n',
                           '<a, c=d\n'])
-def test_nransform(transform_cell, cell):
+def test_transform(transform_cell, cell):
     new_cell = transform_cell(cell)
 
     assert f'RE({cell.lstrip("< ").strip()})\n' == new_cell
