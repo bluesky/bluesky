@@ -1387,7 +1387,7 @@ def default_during_task(blocking_event):
                     wakeupsn.setEnabled(False)
                     rfd = wakeupsn.socket()
                     wfd = signal.set_wakeup_fd(origwakeupfd)
-                    os.close(rfd)
+                    os.close(int(rfd))
                     os.close(wfd)
 
                 def handleWakeup(inp):
@@ -1396,7 +1396,7 @@ def default_during_task(blocking_event):
                     wakeupsn.setEnabled(False)
                     rfd = wakeupsn.socket()
                     try:
-                        os.read(rfd, 4096)
+                        os.read(int(rfd), 4096)
                     except OSError as inst:
                         print('failed to read wakeup fd: %s\n' % inst)
 
