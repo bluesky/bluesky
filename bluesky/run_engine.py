@@ -209,6 +209,22 @@ class RunEngine:
            - Matplotlib is imported and using a nbagg or ipympl backend (
              wait on the event and poll to push updates to the browser)
 
+    acquire_baton : callable, optional
+        A function to acquire a "baton" on init.
+
+
+        The required signature is ::
+
+            def acquire_baton() -> Callable[[], None]:
+                "Returns function to check if baton still held"
+
+        This function will be called once during `RunEngine.__init__`.  If
+        the baton can not be acquired should raise.
+
+        The returned callable will be called once pre
+       `RunEngine.__call__` and should either return or raise.
+
+
     Attributes
     ----------
     md
@@ -286,14 +302,17 @@ class RunEngine:
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
                  scan_id_source=default_scan_id_source,
-                 during_task=default_during_task):
+                 during_task=default_during_task, acquire_baton=None):
         if loop is None:
             loop = get_bluesky_event_loop()
         self._th = _ensure_event_loop_running(loop)
         self._state_lock = threading.RLock()
         self._loop = loop
         self._during_task = during_task
-
+        if acquire_baton is not None:
+            self._check_baton = acquire_baton()
+        else:
+            self._check_baton = None
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
 
@@ -753,6 +772,8 @@ class RunEngine:
         uids : list
             list of uids (i.e. RunStart Document uids) of run(s)
         """
+        if self._check_baton:
+            self._check_baton()
         if self.state == 'panicked':
             raise RuntimeError("The RunEngine is panicked and "
                                "cannot be recovered. "
