@@ -12,7 +12,7 @@ else:
     warnings.warn("""
 The simulated hardware objects in the bluesky.examples module have been
 moved to ophyd.sim. Update imports to suppress this warning.
-    """)
+    """, stacklevel=2)
     from ophyd.sim import *
 
 
