@@ -222,7 +222,7 @@ class RunEngine:
         the baton can not be acquired should raise.
 
         The returned callable will be called once pre
-       `RunEngine.__call__` and should either return or raise.
+        `RunEngine.__call__` and should either return or raise.
 
 
     Attributes
