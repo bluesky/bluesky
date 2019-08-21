@@ -939,10 +939,9 @@ class AsyncInput:
     def got_input(self):
         asyncio.ensure_future(self.q.put(sys.stdin.readline()), loop=self.loop)
 
-    @asyncio.coroutine
-    def __call__(self, prompt, end='\n', flush=False):
+    async def __call__(self, prompt, end='\n', flush=False):
         print(prompt, end=end, flush=flush)
-        return (yield from self.q.get()).rstrip('\n')
+        return (await self.q.get()).rstrip('\n')
 
 
 def new_uid():

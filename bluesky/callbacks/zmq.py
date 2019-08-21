@@ -164,7 +164,7 @@ class Proxy:
             self._frontend = frontend
             self._backend = backend
             self._context = context
-        
+
     def start(self):
         if self.closed:
             raise RuntimeError("This Proxy has already been started and "
@@ -246,11 +246,10 @@ class RemoteDispatcher(Dispatcher):
 
         super().__init__()
 
-    @asyncio.coroutine
-    def _poll(self):
+    async def _poll(self):
         our_prefix = self._prefix  # local var to save an attribute lookup
         while True:
-            message = yield from self._socket.recv()
+            message = await self._socket.recv()
             prefix, name, doc = message.split(b' ', 2)
             name = name.decode()
             if (not our_prefix) or prefix == our_prefix:
