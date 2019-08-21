@@ -1,6 +1,5 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg, RunEngineInterrupted
-from bluesky.examples import stepscan
 from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
 from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
@@ -15,6 +14,19 @@ import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 from sqlite3 import InterfaceError
+
+
+# copied from examples.py to avoid import
+def stepscan(det, motor):
+    yield Msg('open_run')
+    for i in range(-5, 5):
+        yield Msg('create', name='primary')
+        yield Msg('set', motor, i)
+        yield Msg('trigger', det)
+        yield Msg('read', motor)
+        yield Msg('read', det)
+        yield Msg('save')
+    yield Msg('close_run')
 
 
 def exception_raiser(name, doc):
