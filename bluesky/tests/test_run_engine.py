@@ -9,10 +9,8 @@ from collections import defaultdict
 import time as ttime
 import pytest
 from bluesky.tests import requires_ophyd
-from bluesky.run_engine import (RunEngineStateMachine,
-                                TransitionError, IllegalMessageSequence,
-                                NoReplayAllowed, FailedStatus,
-                                RunEngineInterrupted)
+from bluesky.run_engine import (RunEngineStateMachine, NoReplayAllowed,
+                                FailedStatus, RunEngineInterrupted)
 from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
@@ -23,6 +21,8 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    run_wrapper, rewindable_wrapper,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
+from bluesky.utils import (IllegalRunSequence, IllegalBundlingSequence,
+                           IllegalMonitorSequence)
 from super_state_machine.errors import TransitionError
 
 
@@ -165,8 +165,9 @@ def test_flyer_with_collect_asset_documents(RE):
     from ophyd.sim import det, new_trivial_flyer, trivial_flyer
     from bluesky.preprocessors import fly_during_wrapper
     assert hasattr(new_trivial_flyer, 'collect_asset_docs')
-    assert hasattr(trivial_flyer, 'collec_asset_docs') == False
-    RE(fly_during_wrapper(count([det], num=5), [new_trivial_flyer, trivial_flyer]))
+    assert hasattr(trivial_flyer, 'collec_asset_docs') is False
+    RE(fly_during_wrapper(count([det], num=5),
+                          [new_trivial_flyer, trivial_flyer]))
 
 
 @requires_ophyd
@@ -239,28 +240,43 @@ def test_unstage_and_log_errors(RE):
 
 
 def test_open_run_twice_is_illegal(RE):
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('open_run')])
+    illegal_message = Msg('open_run')
+    with pytest.raises(IllegalRunSequence) as excep_info:
+        RE([Msg('open_run'), illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
 
 def test_saving_without_an_open_bundle_is_illegal(RE):
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('save')])
+    illegal_message = Msg('save')
+    with pytest.raises(IllegalBundlingSequence) as excep_info:
+        RE([Msg('open_run'), illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
 
 def test_dropping_without_an_open_bundle_is_illegal(RE):
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('drop')])
+    illegal_message = Msg('drop')
+    with pytest.raises(IllegalBundlingSequence) as excep_info:
+        RE([Msg('open_run'), illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
 
 def test_opening_a_bundle_without_a_run_is_illegal(RE):
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('create', name='primary')])
+    illegal_message = Msg('create', name='primary')
+    with pytest.raises(IllegalRunSequence) as excep_info:
+        RE([illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
 
 def test_checkpoint_inside_a_bundle_is_illegal(RE):
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('create', name='primary'), Msg('checkpoint')])
+    illegal_message = Msg('checkpoint')
+    with pytest.raises(IllegalBundlingSequence) as excep_info:
+        RE([Msg('open_run'), Msg('create', name='primary'), illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
 
 def test_redundant_monitors_are_illegal(RE):
@@ -285,21 +301,34 @@ def test_redundant_monitors_are_illegal(RE):
 
     dummy = Dummy('dummy')
 
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('monitor', dummy),
-            Msg('monitor', dummy)])
+    illegal_message = Msg('monitor', dummy)
+    with pytest.raises(IllegalMonitorSequence) as excep_info:
+        RE([Msg('open_run'), Msg('monitor', dummy), illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
     # Monitoring, unmonitoring, and monitoring again is legal.
     RE([Msg('open_run'), Msg('monitor', dummy), Msg('unmonitor', dummy),
         Msg('monitor', dummy)])
 
     # Monitoring outside a run is illegal.
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('monitor', dummy)])
+    with pytest.raises(IllegalRunSequence) as excep_info:
+        RE([illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
+    illegal_message = Msg('unmonitor', dummy)
     # Unmonitoring something that was never monitored is illegal.
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('unmonitor', dummy)])
+    with pytest.raises(IllegalMonitorSequence) as excep_info:
+        RE([Msg('open_run'), illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
+
+    # unonitoring outside a run is illegal.
+    with pytest.raises(IllegalRunSequence) as excep_info:
+        RE([illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
 
 def test_flying_outside_a_run_is_illegal(RE, hw):
@@ -329,8 +358,11 @@ def test_flying_outside_a_run_is_illegal(RE, hw):
         Msg('close_run')])
 
     # It is not legal to kickoff outside of a run.
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg('kickoff', flyer)])
+    illegal_message = Msg('kickoff', flyer)
+    with pytest.raises(IllegalRunSequence) as excep_info:
+        RE([illegal_message])
+    # check that the exception has the right attributes
+    assert excep_info.value.msg is illegal_message
 
 
 def test_empty_bundle(RE, hw):
@@ -341,14 +373,15 @@ def test_empty_bundle(RE, hw):
 
     # In this case, an Event should be emitted.
     mutable.clear()
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det), Msg('save')],
-       {'event': cb})
+    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det),
+        Msg('save')], {'event': cb})
     assert 'flag' in mutable
 
     # In this case, an Event should not be emitted because the bundle is
-    # emtpy (i.e., there are no readings.)
+    # empty (i.e., there are no readings.)
     mutable.clear()
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('save')], {'event': cb})
+    RE([Msg('open_run'), Msg('create', name='primary'), Msg('save')],
+       {'event': cb})
     assert 'flag' not in mutable
 
 
@@ -528,6 +561,7 @@ def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
     from bluesky.utils import ts_msg_hook
     msgs = []
     loop = RE.loop
+
     def collector(msg):
         ts_msg_hook(msg)
         msgs.append(msg)

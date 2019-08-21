@@ -64,6 +64,32 @@ class NoReplayAllowed(Exception):
 
 
 class IllegalMessageSequence(Exception):
+    '''Base exception to raise for wrong message sequences.
+
+    Parameters
+    ----------
+    msg : Msg Object
+        the message object that was passed into the command which raised the
+        error.
+    '''
+
+    def __init__(self, msg, *args, **kwargs):
+        self.msg = msg
+        super().__init__(*args, **kwargs)
+
+
+class IllegalRunSequence(IllegalMessageSequence):
+    '''Exception to raise for wrong message sequence for open_run/close_run.'''
+    pass
+
+
+class IllegalBundlingSequence(IllegalMessageSequence):
+    '''Exception to raise for wrong message sequence for create/save/drop.'''
+    pass
+
+
+class IllegalMonitorSequence(IllegalMessageSequence):
+    '''Exception to raise for wrong message sequence for monitor/unmonitor.'''
     pass
 
 
