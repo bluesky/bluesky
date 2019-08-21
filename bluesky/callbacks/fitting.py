@@ -136,10 +136,12 @@ def center_of_mass(input, labels=None, index=None):
     index : int or sequence of ints, optional
         Labels for which to calculate centers-of-mass. If not specified,
         all labels greater than zero are used.  Only used with `labels`.
+
     Returns
     -------
     center_of_mass : tuple, or list of tuples
         Coordinates of centers-of-mass.
+
     Examples
     --------
     >>> a = np.array(([0,0,0,0],
@@ -189,8 +191,8 @@ class PeakStats(CollectThenCompute):
         If not None, number of points at beginning and end to use
         for quick and dirty background subtraction.
 
-    Note
-    ----
+    Notes
+    -----
     It is assumed that the two fields, x and y, are recorded in the same
     Event stream.
 
