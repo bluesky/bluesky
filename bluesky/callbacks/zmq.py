@@ -264,7 +264,7 @@ class RemoteDispatcher(Dispatcher):
         try:
             self._task = self.loop.create_task(self._poll())
             self.loop.run_forever()
-        except:
+        except BaseException:
             self.stop()
             raise
 
