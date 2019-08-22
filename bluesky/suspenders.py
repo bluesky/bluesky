@@ -538,14 +538,16 @@ class SuspendWhenChanged(SuspenderBase):
     USE CASE:
     
     :class:`~SuspendWhenChanged()` is useful when ``signal`` is an EPICS enumeration 
-    ([``mbbo`` record](https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output))
+    (`"mbbo" record(<https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output>`_)
     used with a multi-instrument facility.  
-    Choices are the instruments allowed to control any shared hardware.
-    The ``signal``, set by instrument staff outside of bluesky,
-    names which instrument is allowed to control the hardware.
-    Other instruments not matching ``signal`` are expected **not** to 
-    control the hardware (they could use simulators instead or not operate
-    the shared hardware).
+    Choices predefined in the mbbo record are the 
+    names of instruments allowed to control any shared hardware.
+    
+    * The ``signal``, set by instrument staff outside of bluesky,
+      names which instrument is allowed to control the hardware.
+    * Other instruments not matching ``signal`` are expected **not** to 
+      control the hardware (they could use simulators instead or not operate
+      the shared hardware).
     
     Since a decision of hardware *vs.* simulators is made at the 
     time a bluesky session starts and ophyd objects are first created, the 
@@ -554,7 +556,9 @@ class SuspendWhenChanged(SuspenderBase):
     If there is a mechanism engineered to toggle ophyd signals between 
     hardware and simulators, one might consider ``allow_resume=False``.
     
-    USAGE::
+    EXAMPLE:
+    
+    .. code-block:: python
 
         # pause if this value changes in our session
         # note: this suspender is designed to require Bluesky restart if value changes
@@ -579,18 +583,21 @@ class SuspendWhenChanged(SuspenderBase):
     
     sleep : float, optional
         How long to wait in seconds after the resume condition is met
-        before marking the event as done.  Defaults to 0
+        before marking the event as done.  Defaults to ``0``.
 
     pre_plan : iterable or iterator or generator function, optional
-            a generator, list, or similar containing `Msg` objects
+        a generator, list, or similar containing `Msg` objects
 
     post_plan : iterable or iterator or generator function, optional
-            a generator, list, or similar containing `Msg` objects
+        a generator, list, or similar containing `Msg` objects
 
     tripped_message : str, optional
         Message to include in the trip notification
 
-    Example EPICS database for 2-BM-A and 2-BM-B::
+    Example EPICS database for APS 2-BM-A and 2-BM-B
+    ------------------------------------------------
+    
+    .. code-block:: text
 
         record(mbbo, "2bm:instrument_in_use") {
             # instrument team sets this
