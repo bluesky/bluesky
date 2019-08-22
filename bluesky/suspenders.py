@@ -600,6 +600,10 @@ class SuspendWhenChanged(SuspenderBase):
             field(ZRST, "none")
             field(ONST, "2-BM-A")
             field(TWST, "2-BM-B")
+            # THST
+            # FRST
+            # FVST
+            # ...
         }
     
     NOTE: Always make the zero choice (``ZRST``) in the mbbo record to be 'none'.
