@@ -621,6 +621,10 @@ class SuspendWhenChanged(SuspenderBase):
     This allows the instrument staff to designate that *no* instrument is allowed 
     to control the shared hardware.  Start the names of the allowed instruments
     with ``ONST``.
+    
+    It is convenient for the multi-instrument facility to make this definition
+    in EPICS rather than in a specific bluesky session.  The EPICS value could be
+    useful in other contexts of instrument control beyond the realm of bluesky.
     """
     
     def __init__(self, signal, *, 
