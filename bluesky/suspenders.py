@@ -535,7 +535,8 @@ class SuspendWhenChanged(SuspenderBase):
     
     .. note: this suspender is designed to require bluesky restart if value changes
     
-    USE CASE:
+    Use Case
+    --------
     
     :class:`~SuspendWhenChanged()` is useful when ``signal`` is an EPICS enumeration 
     (`"mbbo" record(<https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output>`_)
@@ -556,7 +557,8 @@ class SuspendWhenChanged(SuspenderBase):
     If there is a mechanism engineered to toggle ophyd signals between 
     hardware and simulators, one might consider ``allow_resume=False``.
     
-    EXAMPLE:
+    Example
+    -------
     
     .. code-block:: python
 
@@ -585,11 +587,13 @@ class SuspendWhenChanged(SuspenderBase):
         How long to wait in seconds after the resume condition is met
         before marking the event as done.  Defaults to ``0``.
 
-    pre_plan : iterable or iterator or generator function, optional
-        a generator, list, or similar containing `Msg` objects
+    pre_plan : iterable or callable, optional
+       Plan to execute just before suspending. If callable, must
+       take no arguments.
 
-    post_plan : iterable or iterator or generator function, optional
-        a generator, list, or similar containing `Msg` objects
+    post_plan : iterable or callable, optional
+        Plan to execute just before resuming. If callable, must
+        take no arguments.
 
     tripped_message : str, optional
         Message to include in the trip notification
@@ -613,9 +617,10 @@ class SuspendWhenChanged(SuspenderBase):
             # ...
         }
     
-    NOTE: Always make the zero choice (``ZRST``) in the mbbo record to be 'none'.
+    NOTE: **Always** make the zero choice (``ZRST``) in the mbbo record to be 'none'.
     This allows the instrument staff to designate that *no* instrument is allowed 
-    to control the shared hardware.
+    to control the shared hardware.  Start the names of the allowed instruments
+    with ``ONST``.
     """
     
     def __init__(self, signal, *, 
@@ -643,9 +648,11 @@ class SuspendWhenChanged(SuspenderBase):
         if not self.tripped:
             return ''
 
-        just = f'Signal {self._sig.name}'
-        just += f', got "{self._sig.get()}"'
-        just += f', expected "{self.expected_value}"'
+        just = (
+            f'Signal {self._sig.name}'
+            f', got "{self._sig.get()}"'
+            f', expected "{self.expected_value}"'
+            )
         if not self.allow_resume:
             just += '.  "RE.abort()" and then restart session to use new configuration.'
         return ': '.join(
