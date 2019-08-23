@@ -574,7 +574,7 @@ class SuspendWhenChanged(SuspenderBase):
         The signal to watch for changes to determine if the
         scan should be suspended
 
-    expected_value : number (float or int)
+    expected_value : str, float, or int
         RunEngine operations will be suspended when signal deviates
         from this value.  If `None` (default), set to value of 
         ``signal`` when object is created.
