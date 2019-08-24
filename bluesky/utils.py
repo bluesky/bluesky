@@ -1477,3 +1477,12 @@ def default_during_task(blocking_event):
         else:
             # We are not using matplotlib + Qt. Just wait on the Event.
             blocking_event.wait()
+
+
+def _rearrange_into_parallel_dicts(readings):
+    data = {}
+    timestamps = {}
+    for key, payload in readings.items():
+        data[key] = payload['value']
+        timestamps[key] = payload['timestamp']
+    return data, timestamps
