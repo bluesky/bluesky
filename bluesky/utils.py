@@ -48,11 +48,11 @@ class RunEngineControlException(Exception):
 
 
 class RequestAbort(RunEngineControlException):
-    pass
+    exit_status = 'abort'
 
 
 class RequestStop(RunEngineControlException):
-    pass
+    exit_status = 'success'
 
 
 class RunEngineInterrupted(Exception):

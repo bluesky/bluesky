@@ -95,9 +95,7 @@ class RunBundler:
         reason = msg.kwargs.get("reason", None)
         if reason is None:
             reason = ""
-        exit_status = msg.kwargs.get("exit_status", None)
-        if exit_status is None:
-            exit_status = "success"
+        exit_status = msg.kwargs["exit_status"]
         doc = dict(
             run_start=self._run_start_uid,
             time=ttime.time(),

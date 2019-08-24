@@ -318,7 +318,7 @@ def run_wrapper(plan, *, md=None):
 
     def except_plan(e):
         if isinstance(e, RunEngineControlException):
-            yield from close_run()
+            yield from close_run(exit_status=e.exit_status)
         else:
             yield from close_run(exit_status='fail', reason=str(e))
 
