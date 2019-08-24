@@ -13,7 +13,7 @@ from .utils import (
 
 
 class RunBundler:
-    def __init__(self, md, record_interruptions, emit, log, *, loop):
+    def __init__(self, md, record_interruptions, emit, emit_sync, log, *, loop):
         # state stolen from the RE
         self._bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
@@ -39,6 +39,7 @@ class RunBundler:
         self.record_interruptions = record_interruptions
         # this is RE.emit, but lifted to this context
         self.emit = emit
+        self.emit_sync = emit_sync
         self.log = log
 
         self.loop = loop
@@ -240,7 +241,7 @@ class RunBundler:
                 seq_num=next(seq_num_counter),
                 uid=new_uid(),
             )
-            self.emit(DocumentNames.event, doc)
+            self.emit_sync(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
         await self.emit(DocumentNames.descriptor, desc_doc)
@@ -263,7 +264,7 @@ class RunBundler:
                 data={"interruption": content},
                 timestamps={"interruption": ttime.time()},
             )
-            self.emit(DocumentNames.event, doc)
+            self.emit_sync(DocumentNames.event, doc)
 
     def _rewind(self):
         self._sequence_counters.clear()

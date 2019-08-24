@@ -1571,7 +1571,7 @@ class RunEngine:
         self.md_validator(dict(md))
 
         current_run = self._run_bundlers[run_key] = RunBundler(
-            md, self.record_interruptions, self.emit, self.log,
+            md, self.record_interruptions, self.emit, self.emit_sync, self.log,
             loop=self.loop)
 
         new_uid = await current_run._open_run(msg)
@@ -2245,10 +2245,13 @@ class RunEngine:
         async_input = functools.partial(async_input, end='', flush=True)
         return (await async_input(prompt))
 
-    async def emit(self, name, doc):
+    def emit_sync(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)
+
+    async def emit(self, name, doc):
+        self.emit_sync(name, doc)
 
 
 class Dispatcher:
