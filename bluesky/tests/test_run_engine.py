@@ -64,9 +64,10 @@ def test_verbose(RE, hw):
 def test_reset(RE):
     with pytest.raises(RunEngineInterrupted):
         RE([Msg('open_run'), Msg('pause')])
-    assert RE._run_start_uid is not None
+
+    assert len(RE._run_bundlers) > 0
     RE.reset()
-    assert RE._run_start_uid is None
+    assert len(RE._run_bundlers) == 0
 
 
 def test_running_from_paused_state_raises(RE):
