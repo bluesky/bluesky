@@ -1725,10 +1725,9 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'create' message must be sent, to "
-                                         "open an event bundle, before that "
-                                         "bundle can be dropped with 'drop'."
-                                         ) from ke
+            raise IllegalMessageSequence(
+                "A 'drop' message was sent but no " "run is open."
+            ) from ke
         await current_run._drop(msg)
 
     async def _kickoff(self, msg):

@@ -434,12 +434,13 @@ class RunBundler:
         self._teed_sequence_counters.clear()
 
     async def _drop(self, msg):
-        if not self._run_is_open:
-            # sanity check -- this should be caught by 'create' which makes
-            # this code path impossible
+        if not self._bundling:
             raise IllegalMessageSequence(
-                "A 'drop' message was sent but no " "run is open."
+                "A 'create' message must be sent, to "
+                "open an event bundle, before that "
+                "bundle can be dropped with 'drop'."
             )
+
         self._bundling = False
         self._bundle_name = None
         self.log.debug("Dropped open event bundle")
