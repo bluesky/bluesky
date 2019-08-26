@@ -1,6 +1,7 @@
 import logging
 import time as ttime
-from collections import Iterable, ChainMap
+from collections.abc import Iterable
+from collections import ChainMap
 
 import numpy as np
 from event_model import DocumentNames, schema_validators

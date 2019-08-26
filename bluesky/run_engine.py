@@ -979,8 +979,7 @@ class RunEngine:
         self._suspenders.add(suspender)
         suspender.install(self)
 
-    @asyncio.coroutine
-    def _install_suspender(self, msg):
+    async def _install_suspender(self, msg):
         """
         See :meth: `RunEngine.install_suspender`
 
@@ -2388,7 +2387,8 @@ class RunEngine:
             self._sequence_counters[key] = counter_copy1
             self._teed_sequence_counters[key] = counter_copy2
 
-    _reset_checkpoint_state_coro = asyncio.coroutine(_reset_checkpoint_state)
+    async def _reset_checkpoint_state_coro(self):
+        self._reset_checkpoint_state()
 
     async def _clear_checkpoint(self, msg):
         """Clear a set checkpoint

@@ -1,9 +1,10 @@
 import pytest
-from bluesky.examples import (simple_scan, sleepy, wait_one,
-                              wait_multiple, conditional_pause,
-                              checkpoint_forever, simple_scan_saving,
-                              stepscan, fly_gen, conditional_break,
-                              )
+with pytest.warns(UserWarning):
+    from bluesky.examples import (simple_scan, sleepy, wait_one,
+                                  wait_multiple, conditional_pause,
+                                  checkpoint_forever, simple_scan_saving,
+                                  stepscan, fly_gen, conditional_break,
+                                  )
 from bluesky.callbacks.mpl_plotting import LivePlot
 from bluesky import (Msg, IllegalMessageSequence,
                      RunEngineInterrupted, FailedStatus)

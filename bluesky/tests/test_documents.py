@@ -2,7 +2,14 @@ import pytest
 import jsonschema
 from event_model import DocumentNames, schema_validators
 from bluesky.utils import new_uid
-from bluesky.examples import simple_scan
+from bluesky.run_engine import Msg
+
+
+def simple_scan(motor):
+    yield Msg('open_run')
+    yield Msg('set', motor, 5)
+    yield Msg('read', motor)
+    yield Msg('close_run')
 
 
 def test_custom_metadata(RE, hw):
