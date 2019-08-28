@@ -10,11 +10,13 @@ from bluesky.callbacks.mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
                                             LiveFitPlot, LiveRaster, LiveMesh)
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
+from event_model import compose_run
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 from sqlite3 import InterfaceError
-
+from io import StringIO
+import time
 
 # copied from examples.py to avoid import
 def stepscan(det, motor):
@@ -476,3 +478,44 @@ def test_plotting_hints(RE, hw, db):
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
                  True, hw.motor3, -2, 0, 2, True))
     assert dc.start[-1]['hints'] == hint
+
+
+def test_broken_table():
+    start_doc, descriptor_factory, *_ = compose_run()
+    desc, compose_event, _ = descriptor_factory(
+        name="primary",
+        data_keys={
+            "x": {"dtype": "integer", "source": "", "shape": []},
+            "y": {"dtype": "number", "source": "", "shape": []},
+        },
+    )
+
+    ev1 = compose_event(
+        data={"x": 1, "y": 2.0}, timestamps={k: time.time() for k in ("x", "y")}
+    )
+    ev2 = compose_event(
+        data={"x": 1, "y": 2}, timestamps={k: time.time() for k in ("x", "y")}
+    )
+    ev3 = compose_event(
+        data={"x": 1.0, "y": 2.0}, timestamps={k: time.time() for k in ("x", "y")}
+    )
+    ev4 = compose_event(
+        data={"x": 1.0, "y": "aardvark"},
+        timestamps={k: time.time() for k in ("x", "y")},
+    )
+
+    sio = StringIO()
+    LT = LiveTable(["x", "y"], out=lambda s: sio.write(s + "\n"))
+    LT("start", start_doc)
+    LT("descriptor", desc)
+    LT("event", ev1)
+    LT("event", ev2)
+    LT("event", ev3)
+    LT("event", ev4)
+
+    sio.seek(0)
+    lines = sio.readlines()
+
+    assert len(lines) == 7
+    for ln in lines[-2:]:
+        assert ln.strip() == "failed to format row"

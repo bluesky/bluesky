@@ -12,6 +12,7 @@ from ..utils import ensure_uid
 
 
 class CallbackBase:
+    log = None
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
         return getattr(self, name)(doc)
@@ -220,6 +221,7 @@ class LiveTable(CallbackBase):
         self._out = out
 
     def descriptor(self, doc):
+
         def patch_up_precision(p):
             try:
                 return int(p)
@@ -285,27 +287,34 @@ class LiveTable(CallbackBase):
         super().descriptor(doc)
 
     def event(self, doc):
-        # shallow copy so we can mutate
-        if ensure_uid(doc['descriptor']) not in self._descriptors:
-            return
-        data = dict(doc['data'])
-        self._count += 1
-        if not self._count % self._header_interval:
-            self._print(self._sep_format)
-            self._print(self._header)
-            self._print(self._sep_format)
-        fmt_time = str(datetime.fromtimestamp(doc['time']).time())
-        data[self.ev_time_key] = fmt_time
-        data['seq_num'] = doc['seq_num']
-        cols = [f.format(**{k: data[k]})
-                # Show data[k] if k exists in this Event and is 'filled'.
-                # (The latter is only applicable if the data is
-                # externally-stored -- hence the fallback to `True`.)
-                if ((k in data) and doc.get('filled', {}).get(k, True))
-                # Otherwise use a placeholder of whitespace.
-                else ' ' * self._format_info[k].width
-                for k, f in self._data_formats.items()]
-        self._print('|' + '|'.join(cols) + '|')
+        try:
+            # shallow copy so we can mutate
+            if ensure_uid(doc['descriptor']) not in self._descriptors:
+                return
+            data = dict(doc['data'])
+            self._count += 1
+            if not self._count % self._header_interval:
+                self._print(self._sep_format)
+                self._print(self._header)
+                self._print(self._sep_format)
+            fmt_time = str(datetime.fromtimestamp(doc['time']).time())
+            data[self.ev_time_key] = fmt_time
+            data['seq_num'] = doc['seq_num']
+            cols = [f.format(**{k: data[k]})
+                    # Show data[k] if k exists in this Event and is 'filled'.
+                    # (The latter is only applicable if the data is
+                    # externally-stored -- hence the fallback to `True`.)
+                    if ((k in data) and doc.get('filled', {}).get(k, True))
+                    # Otherwise use a placeholder of whitespace.
+                    else ' ' * self._format_info[k].width
+                    for k, f in self._data_formats.items()]
+            self._print('|' + '|'.join(cols) + '|')
+        except Exception as ex:
+            if self.log is not None:
+                self.log.exception(ex)
+            self._print('{{k:*^{self._min_width}}}'
+                        .format(self=self)
+                        .format(k=' failed to format row '))
         super().event(doc)
 
     def stop(self, doc):
