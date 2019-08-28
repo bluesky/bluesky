@@ -1,21 +1,30 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg, RunEngineInterrupted
-from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
+from bluesky.plans import scan, grid_scan, count, inner_product_scan
 from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.plan_stubs import pause
 import bluesky.plans as bp
-from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit
-from bluesky.callbacks.mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
-                                            LiveFitPlot, LiveRaster, LiveMesh)
+from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit, CallbackBase
+from bluesky.callbacks.core import make_callback_safe, make_class_safe
+from bluesky.callbacks.mpl_plotting import (
+    LiveScatter,
+    LivePlot,
+    LiveGrid,
+    LiveFitPlot,
+    LiveRaster,
+    LiveMesh,
+)
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
-from event_model import compose_run
+from event_model import compose_run, DocumentNames
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 from sqlite3 import InterfaceError
 from io import StringIO
+from unittest.mock import MagicMock
+from itertools import permutations
 import time
 
 # copied from examples.py to avoid import
@@ -519,3 +528,32 @@ def test_broken_table():
     assert len(lines) == 7
     for ln in lines[-2:]:
         assert ln.strip() == "failed to format row"
+
+
+def test_callback_safe():
+    @make_callback_safe
+    def test_function(to_fail):
+        if to_fail:
+            raise RuntimeError
+        return to_fail
+
+    assert test_function(True) is None
+    assert test_function(False) is False
+
+
+def test_callback_safe_logger():
+    from unittest.mock import MagicMock
+    from types import SimpleNamespace
+
+    logger = SimpleNamespace(exception=MagicMock())
+
+    @make_callback_safe(logger=logger)
+    def test_function(to_fail):
+        if to_fail:
+            raise RuntimeError
+        return to_fail
+
+    assert test_function(True) is None
+    assert logger.exception.call_count == 1
+    assert test_function(False) is False
+    assert logger.exception.call_count == 1

@@ -5,6 +5,7 @@ from itertools import count
 import warnings
 from collections import deque, namedtuple, OrderedDict
 import time as ttime
+from functools import wraps as _wraps, partial as _partial
 
 from datetime import datetime
 import logging
@@ -351,3 +352,19 @@ class LiveTable(CallbackBase):
     def _print(self, out_str):
         self._rows.append(out_str)
         self._out(out_str)
+
+
+def make_callback_safe(func=None, *, logger=None):
+    if func is None:
+        return _partial(make_callback_safe, logger=logger)
+
+    @_wraps(func)
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as ex:
+            if logger is not None:
+                logger.exception(ex)
+
+    return inner
+
