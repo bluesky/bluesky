@@ -10,6 +10,11 @@ from functools import wraps as _wraps, partial as _partial
 from datetime import datetime
 import logging
 from ..utils import ensure_uid
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def make_callback_safe(func=None, *, logger=None):
     if func is None:
         return _partial(make_callback_safe, logger=logger)
@@ -179,6 +184,7 @@ class CollectThenCompute(CallbackBase):
         raise NotImplementedError("This method must be defined by a subclass.")
 
 
+@make_class_safe(logger=logger)
 class LiveTable(CallbackBase):
     '''Live updating table
 
