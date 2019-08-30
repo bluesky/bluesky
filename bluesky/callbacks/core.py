@@ -10,6 +10,34 @@ from functools import wraps as _wraps, partial as _partial
 from datetime import datetime
 import logging
 from ..utils import ensure_uid
+def make_callback_safe(func=None, *, logger=None):
+    if func is None:
+        return _partial(make_callback_safe, logger=logger)
+
+    @_wraps(func)
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as ex:
+            if logger is not None:
+                logger.exception(ex)
+
+    return inner
+
+
+def make_class_safe(cls=None, *, to_wrap=None, logger=None):
+    from event_model import DocumentNames
+
+    if cls is None:
+        return _partial(make_class_safe, to_wrap=to_wrap, logger=logger)
+
+    if to_wrap is None:
+        to_wrap = ['__call__']
+
+    for f_name in to_wrap:
+        setattr(cls, f_name, make_callback_safe(getattr(cls, f_name), logger=logger))
+
+    return cls
 
 
 class CallbackBase:
@@ -352,33 +380,3 @@ class LiveTable(CallbackBase):
     def _print(self, out_str):
         self._rows.append(out_str)
         self._out(out_str)
-
-
-def make_callback_safe(func=None, *, logger=None):
-    if func is None:
-        return _partial(make_callback_safe, logger=logger)
-
-    @_wraps(func)
-    def inner(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as ex:
-            if logger is not None:
-                logger.exception(ex)
-
-    return inner
-
-
-def make_class_safe(cls=None, *, to_wrap=None, logger=None):
-    from event_model import DocumentNames
-
-    if cls is None:
-        return _partial(make_class_safe, to_wrap=to_wrap, logger=logger)
-
-    if to_wrap is None:
-        to_wrap = ['__call__']
-
-    for f_name in to_wrap:
-        setattr(cls, f_name, make_callback_safe(getattr(cls, f_name), logger=logger))
-
-    return cls
