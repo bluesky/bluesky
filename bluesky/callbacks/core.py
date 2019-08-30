@@ -368,3 +368,17 @@ def make_callback_safe(func=None, *, logger=None):
 
     return inner
 
+
+def make_class_safe(cls=None, *, to_wrap=None, logger=None):
+    from event_model import DocumentNames
+
+    if cls is None:
+        return _partial(make_class_safe, to_wrap=to_wrap, logger=logger)
+
+    if to_wrap is None:
+        to_wrap = ['__call__']
+
+    for f_name in to_wrap:
+        setattr(cls, f_name, make_callback_safe(getattr(cls, f_name), logger=logger))
+
+    return cls

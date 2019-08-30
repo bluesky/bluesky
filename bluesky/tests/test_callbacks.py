@@ -557,3 +557,117 @@ def test_callback_safe_logger():
     assert logger.exception.call_count == 1
     assert test_function(False) is False
     assert logger.exception.call_count == 1
+
+
+@pytest.fixture
+def EvilBaseClass(request):
+    class MyError(RuntimeError):
+        ...
+
+    class EvilCallback(CallbackBase):
+        my_excepttion_type = MyError
+
+        def event(self, doc):
+            raise MyError
+
+        def bulk_events(self, doc):
+            raise MyError
+
+        def resource(self, doc):
+            raise MyError
+
+        def datum(self, doc):
+            raise MyError
+
+        def bulk_datum(self, doc):
+            raise MyError
+
+        def descriptor(self, doc):
+            raise MyError
+
+        def start(self, doc):
+            raise MyError
+
+        def stop(self, doc):
+            raise MyError
+
+        def event_page(self, doc):
+            raise MyError
+
+        def datum_page(self, doc):
+            raise MyError
+
+    return EvilCallback
+
+
+def test_callbackclass(EvilBaseClass):
+    ecb = EvilBaseClass()
+    for n in DocumentNames:
+        with pytest.raises(EvilBaseClass.my_excepttion_type):
+            ecb(n.name, {})
+
+
+def test_callbackclass_safe(EvilBaseClass):
+    @make_class_safe
+    class SafeEvilBaseClass(EvilBaseClass):
+        ...
+
+    scb = SafeEvilBaseClass()
+    for n in DocumentNames:
+        scb(n.name, {})
+
+
+def test_callbackclass_safe_logger(EvilBaseClass):
+    logger = MagicMock()
+
+    @make_class_safe(logger=logger)
+    class SafeEvilBaseClass2(EvilBaseClass):
+        ...
+
+    scb = SafeEvilBaseClass2()
+    for n in DocumentNames:
+        scb(n.name, {})
+
+    assert logger.exception.call_count == len(DocumentNames)
+
+
+@pytest.mark.parametrize(
+    "documents",
+    (
+        list(
+            set(
+                tuple(sorted(x, key=lambda x: x.name))
+                for x in permutations(DocumentNames, 1)
+            )
+        )
+        + list(
+            set(
+                tuple(sorted(x, key=lambda x: x.name))
+                for x in permutations(DocumentNames, 2)
+            )
+        )
+        + list(
+            set(
+                tuple(sorted(x, key=lambda x: x.name))
+                for x in permutations(DocumentNames, 3)
+            )
+        )
+        + [list(DocumentNames)]
+    ),
+)
+def test_callbackclass_safe_filtered(EvilBaseClass, documents):
+    logger = MagicMock()
+
+    @make_class_safe(logger=logger, to_wrap=tuple(x.name for x in documents))
+    class SafeEvilBaseClass2(EvilBaseClass):
+        ...
+
+    scb = SafeEvilBaseClass2()
+    for n in documents:
+        scb(n.name, {})
+
+    for n in set(DocumentNames) - set(documents):
+        with pytest.raises(EvilBaseClass.my_excepttion_type):
+            scb(n.name, {})
+
+    assert logger.exception.call_count == len(documents)
