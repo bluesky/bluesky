@@ -12,7 +12,8 @@ from functools import wraps as _wraps, partial as _partial
 from datetime import datetime
 import logging
 from ..utils import ensure_uid
-import logging
+from event_model import DocumentNames
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,6 @@ def make_callback_safe(func=None, *, logger=None):
 
 
 def make_class_safe(cls=None, *, to_wrap=None, logger=None):
-    from event_model import DocumentNames
 
     if cls is None:
         return _partial(make_class_safe, to_wrap=to_wrap, logger=logger)
@@ -51,6 +51,7 @@ def make_class_safe(cls=None, *, to_wrap=None, logger=None):
 
 class CallbackBase:
     log = None
+
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
         return getattr(self, name)(doc)
