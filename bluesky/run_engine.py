@@ -148,7 +148,8 @@ def _state_locked(func):
 
 
 def _extract_run_key(msg):
-    return 'key'
+    return msg.run or _extract_run_key.__default_run
+_extract_run_key.__default_run = object()
 
 
 class RunEngine:
