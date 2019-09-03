@@ -1765,7 +1765,7 @@ class RunEngine:
             raise IllegalMessageSequence("A 'kickoff' message was sent but no "
                                          "run is open.") from ke
 
-        _, obj, args, kwargs = msg
+        _, obj, args, kwargs, _ = msg
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
 
@@ -2131,7 +2131,7 @@ class RunEngine:
                 raise IllegalMessageSequence(
                     "Cannot configure after 'create' but before 'save'"
                     "Aborting!")
-        _, obj, args, kwargs = msg
+        _, obj, args, kwargs, _ = msg
 
         old, new = obj.configure(*args, **kwargs)
         if current_run:
@@ -2145,7 +2145,7 @@ class RunEngine:
 
             Msg('stage', object)
         """
-        _, obj, args, kwargs = msg
+        _, obj, args, kwargs, _ = msg
         # If an object has no 'stage' method, assume there is nothing to do.
         if not hasattr(obj, 'stage'):
             return []
@@ -2161,7 +2161,7 @@ class RunEngine:
 
             Msg('unstage', object)
         """
-        _, obj, args, kwargs = msg
+        _, obj, args, kwargs, _ = msg
         # If an object has no 'unstage' method, assume there is nothing to do.
         if not hasattr(obj, 'unstage'):
             return []
@@ -2207,7 +2207,7 @@ class RunEngine:
         information.
         """
         self.log.debug("Adding subscription %r", msg)
-        _, obj, args, kwargs = msg
+        _, obj, args, kwargs, _ = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
         await self._reset_checkpoint_state_coro()
@@ -2226,7 +2226,7 @@ class RunEngine:
         where ``TOKEN`` is the return value from ``RunEngine._subscribe()``
         """
         self.log.debug("Removing subscription %r", msg)
-        _, obj, args, kwargs = msg
+        _, obj, args, kwargs, _ = msg
         try:
             token = kwargs['token']
         except KeyError:

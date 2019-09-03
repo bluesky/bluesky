@@ -25,6 +25,7 @@ import warnings
 import msgpack
 import msgpack_numpy
 import zict
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import groupby
@@ -32,15 +33,14 @@ except ImportError:
     from toolz import groupby
 
 
-class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
+class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     __slots__ = ()
 
-    def __new__(cls, command, obj=None, *args, **kwargs):
-        return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
+    def __new__(cls, command, obj=None, *args, run=None, **kwargs):
+        return super(Msg, cls).__new__(cls, command, obj, args, kwargs, run)
 
     def __repr__(self):
-        return '{}: ({}), {}, {}'.format(
-            self.command, self.obj, self.args, self.kwargs)
+        return "{}: ({}), {}, {}".format(self.command, self.obj, self.args, self.kwargs)
 
 
 class RunEngineControlException(Exception):

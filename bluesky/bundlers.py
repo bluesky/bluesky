@@ -124,7 +124,7 @@ class RunBundler:
         self._asset_docs_cache.clear()
         self._objs_read.clear()
         self._bundling = True
-        command, obj, args, kwargs = msg
+        command, obj, args, kwargs, _ = msg
         try:
             self._bundle_name = kwargs["name"]
         except KeyError:
