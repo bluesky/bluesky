@@ -631,6 +631,7 @@ def test_callbackclass_safe_logger(EvilBaseClass):
     assert logger.exception.call_count == len(DocumentNames)
 
 
+@pytest.mark.parametrize("strict", ["1", None])
 @pytest.mark.parametrize(
     "documents",
     (
@@ -655,7 +656,11 @@ def test_callbackclass_safe_logger(EvilBaseClass):
         + [list(DocumentNames)]
     ),
 )
-def test_callbackclass_safe_filtered(EvilBaseClass, documents):
+def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, strict):
+    if strict is not None:
+        monkeypatch.setenv("BLUESKY_DEBUG_CALLBACKS", strict)
+    else:
+        monkeypatch.delenv("BLUESKY_DEBUG_CALLBACKS", raising=False)
     logger = MagicMock()
 
     @make_class_safe(logger=logger, to_wrap=tuple(x.name for x in documents))
@@ -664,7 +669,11 @@ def test_callbackclass_safe_filtered(EvilBaseClass, documents):
 
     scb = SafeEvilBaseClass2()
     for n in documents:
-        scb(n.name, {})
+        if strict:
+            with pytest.raises(EvilBaseClass.my_excepttion_type):
+                scb(n.name, {})
+        else:
+            scb(n.name, {})
 
     for n in set(DocumentNames) - set(documents):
         with pytest.raises(EvilBaseClass.my_excepttion_type):

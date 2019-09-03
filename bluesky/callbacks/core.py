@@ -3,6 +3,8 @@ Useful callbacks for the Run Engine
 """
 from itertools import count
 import warnings
+import os
+
 from collections import deque, namedtuple, OrderedDict
 import time as ttime
 from functools import wraps as _wraps, partial as _partial
@@ -26,6 +28,8 @@ def make_callback_safe(func=None, *, logger=None):
         except Exception as ex:
             if logger is not None:
                 logger.exception(ex)
+            if os.environ.get('BLUESKY_DEBUG_CALLBACKS', False):
+                raise ex
 
     return inner
 
@@ -350,6 +354,8 @@ class LiveTable(CallbackBase):
             self._print('{{k:*^{self._min_width}}}'
                         .format(self=self)
                         .format(k=' failed to format row '))
+            if os.environ.get('BLUESKY_DEBUG_CALLBACKS', False):
+                raise ex
         super().event(doc)
 
     def stop(self, doc):
