@@ -1293,3 +1293,22 @@ class SupplementalData:
         plan = monitor_during_wrapper(plan, self.monitors)
         plan = baseline_wrapper(plan, self.baseline)
         return (yield from plan)
+
+
+def define_run_wrapper(plan, run_id):
+    """
+    Add a run id to each message in wrapped plan
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    run_id : str
+        The run to set on each Msg
+    """
+    def _set_run_id(msg):
+        return msg._replace(run=run_id)
+
+    return (yield from msg_mutator(plan, _set_run_id))
+
+define_run_decorator = make_decorator(define_run_wrapper)
