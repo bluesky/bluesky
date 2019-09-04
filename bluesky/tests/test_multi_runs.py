@@ -8,7 +8,6 @@ from bluesky.tests.utils import DocCollector
 
 def test_multirun_smoke(RE, hw):
     dc = DocCollector()
-    RE.subscribe(dc.insert)
 
     def interlaced_plan(dets, motor):
         to_read = (motor, *dets)
@@ -24,7 +23,7 @@ def test_multirun_smoke(RE, hw):
         for rid in run_ids:
             yield from drw(bps.close_run(), run_id=rid)
 
-    RE(interlaced_plan([hw.det], hw.motor))
+    RE(interlaced_plan([hw.det], hw.motor), dc.insert)
 
     assert len(dc.start) == 3
     for start in dc.start:
