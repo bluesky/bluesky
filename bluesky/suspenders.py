@@ -525,3 +525,141 @@ class SuspendOutBand(_SuspendBandBase):
                 )
         return ': '.join(s for s in (just, self._tripped_message)
                          if s)
+
+
+class SuspendWhenChanged(SuspenderBase):
+    """
+    Suspend when the monitored value deviates from the expected.
+    
+    Only resume if allowed AND when monitored equals expected.
+    
+    .. note: this suspender is designed to require bluesky restart if value changes
+    
+    Use Case
+    --------
+    
+    :class:`~SuspendWhenChanged()` is useful when ``signal`` is an EPICS enumeration 
+    (`"mbbo" record(<https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output>`_)
+    used with a multi-instrument facility.  
+    Choices predefined in the mbbo record are the 
+    names of instruments allowed to control any shared hardware.
+    
+    * The ``signal``, set by instrument staff outside of bluesky,
+      names which instrument is allowed to control the hardware.
+    * Other instruments not matching ``signal`` are expected **not** to 
+      control the hardware (they could use simulators instead or not operate
+      the shared hardware).
+    
+    Since a decision of hardware *vs.* simulators is made at the 
+    time a bluesky session starts and ophyd objects are first created, the 
+    session needs to be aware immediately if the ``signal`` is changed.  
+    The default value of ``allow_resume=False`` defends this decision.
+    If there is a mechanism engineered to toggle ophyd signals between 
+    hardware and simulators, one might consider ``allow_resume=False``.
+    
+    Example
+    -------
+    
+    .. code-block:: python
+
+        # pause if this value changes in our session
+        # note: this suspender is designed to require Bluesky restart if value changes
+        suspend_instrument_in_use = SuspendWhenChanged(instrument_in_use)
+        RE.install_suspender(suspend_instrument_in_use)
+    
+    Parameters
+    ----------
+
+    signal : `ophyd.Signal`
+        The signal to watch for changes to determine if the
+        scan should be suspended
+
+    expected_value : str, float, or int
+        RunEngine operations will be suspended when signal deviates
+        from this value.  If `None` (default), set to value of 
+        ``signal`` when object is created.
+
+    allow_resume : bool
+        Should RunEngine be allowed to resume once ``signal.value == expected``
+        again?  Default value of ``False`` is expected for intended use case.
+    
+    sleep : float, optional
+        How long to wait in seconds after the resume condition is met
+        before marking the event as done.  Defaults to ``0``.
+
+    pre_plan : iterable or callable, optional
+       Plan to execute just before suspending. If callable, must
+       take no arguments.
+
+    post_plan : iterable or callable, optional
+        Plan to execute just before resuming. If callable, must
+        take no arguments.
+
+    tripped_message : str, optional
+        Message to include in the trip notification
+
+    Example EPICS database for APS 2-BM-A and 2-BM-B
+    ------------------------------------------------
+    
+    .. code-block:: text
+
+        record(mbbo, "2bm:instrument_in_use") {
+            # instrument team sets this
+            # For additional field names, see
+            # https://epics.anl.gov/EpicsDocumentation/AppDevManuals/RecordRef/Recordref-25.html#HEADING25-15
+            field(DESC, "instrument using beam now")
+            field(ZRST, "none")
+            field(ONST, "2-BM-A")
+            field(TWST, "2-BM-B")
+            # THST
+            # FRST
+            # FVST
+            # ...
+        }
+    
+    NOTE: **Always** make the zero choice (``ZRST``) in the mbbo record to be 'none'.
+    This allows the instrument staff to designate that *no* instrument is allowed 
+    to control the shared hardware.  Start the names of the allowed instruments
+    with ``ONST``.
+    
+    It is convenient for the multi-instrument facility to make this definition
+    in EPICS rather than in a specific bluesky session.  The EPICS value could be
+    useful in other contexts of instrument control beyond the realm of bluesky.
+    """
+    
+    def __init__(self, signal, *, 
+                expected_value=None,
+                allow_resume=False,
+                sleep=0, pre_plan=None, post_plan=None, tripped_message='',
+                **kwargs):
+        
+        self.expected_value = expected_value or signal.value
+        self.allow_resume = allow_resume
+        super().__init__(signal, 
+            sleep=sleep, 
+            pre_plan=pre_plan, 
+            post_plan=post_plan, 
+            tripped_message=tripped_message,
+            **kwargs)
+
+    def _should_suspend(self, value):
+        return value != self.expected_value
+
+    def _should_resume(self, value):
+        return self.allow_resume and value == self.expected_value
+
+    def _get_justification(self):
+        if not self.tripped:
+            return ''
+
+        just = (
+            f'Signal {self._sig.name}'
+            f', got "{self._sig.get()}"'
+            f', expected "{self.expected_value}"'
+            )
+        if not self.allow_resume:
+            just += '.  "RE.abort()" and then restart session to use new configuration.'
+        return ': '.join(
+            s 
+            for s in (just, self._tripped_message)
+            if s)

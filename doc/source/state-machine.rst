@@ -305,6 +305,7 @@ Built-in Suspenders
    bluesky.suspenders.SuspendFloor
    bluesky.suspenders.SuspendCeil
    bluesky.suspenders.SuspendWhenOutsideBand
+   bluesky.suspenders.SuspendWhenChanged
 
 .. _checkpoints:
 
