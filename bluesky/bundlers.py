@@ -21,7 +21,6 @@ class RunBundler:
         self._objs_read = deque()  # objects read in one Event
         self._read_cache = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
-        self._run_start_uid = None  # uid of currently-open run
         self._describe_cache = dict()  # cache of all obj.describe() output
         self._config_desc_cache = dict()  # " obj.describe_configuration()
         self._config_values_cache = dict()  # " obj.read_configuration() values
