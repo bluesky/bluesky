@@ -534,6 +534,7 @@ class SuspendWhenChanged(SuspenderBase):
     Only resume if allowed AND when monitored equals expected.
     
     .. note:
+
        This suspender is designed to require bluesky restart if value changes
     
     Use Case
