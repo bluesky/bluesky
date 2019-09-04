@@ -535,7 +535,7 @@ class SuspendWhenChanged(SuspenderBase):
     
     .. note:
 
-       This suspender is designed to require bluesky restart if value changes
+       This suspender is designed to require bluesky restart if value changes.
     
     Use Case
     --------
