@@ -533,7 +533,8 @@ class SuspendWhenChanged(SuspenderBase):
     
     Only resume if allowed AND when monitored equals expected.
     
-    .. note: this suspender is designed to require bluesky restart if value changes
+    .. note:
+       This suspender is designed to require bluesky restart if value changes
     
     Use Case
     --------
@@ -555,7 +556,7 @@ class SuspendWhenChanged(SuspenderBase):
     session needs to be aware immediately if the ``signal`` is changed.  
     The default value of ``allow_resume=False`` defends this decision.
     If there is a mechanism engineered to toggle ophyd signals between 
-    hardware and simulators, one might consider ``allow_resume=False``.
+    hardware and simulators, one might consider ``allow_resume=True``.
     
     Example
     -------
