@@ -73,11 +73,9 @@ class RunBundler:
 
         if not self._run_is_open:
             raise IllegalMessageSequence(
-                "A 'close_run' message was received "
-                "but there is no run open. If this "
-                "occurred after a pause/resume, add "
-                "a 'checkpoint' message after the "
-                "'close_run' message."
+                "A 'close_run' message was received but there is no run "
+                "open. If this occurred after a pause/resume, add "
+                "a 'checkpoint' message after the 'close_run' message."
             )
         self.log.debug("Stopping run %r", self._run_start_uid)
         # Clear any uncleared monitoring callbacks.
