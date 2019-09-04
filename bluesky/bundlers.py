@@ -154,9 +154,9 @@ class RunBundler:
                 known_keys = self._describe_cache[read_obj].keys()
                 if set(known_keys) & cur_keys:
                     raise ValueError(
-                        "Data keys (field names) from {0!r} "
-                        "collide with those from {1!r}"
-                        "".format(obj, read_obj)
+                        f"Data keys (field names) from {obj!r} "
+                        f"collide with those from {read_obj!r}. "
+                        f"The colliding keys are {set(known_keys) & cur_keys}"
                     )
 
             # add this object to the cache of things we have read
