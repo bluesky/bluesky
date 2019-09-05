@@ -34,7 +34,7 @@ def make_callback_safe(func=None, *, logger=None):
                 else:
                     msg = (
                         f"An exception raised in the callback {func} "
-                        + "is being suppressed to not interupt plan "
+                        + "is being suppressed to not interrupt plan "
                         + "execution.  To investigate try setting the "
                         + "BLUESKY_DEBUG_CALLBACKS env to '1'"
                     )
