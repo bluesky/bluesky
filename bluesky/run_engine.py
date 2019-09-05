@@ -1231,6 +1231,7 @@ class RunEngine:
         self._reason = ''
         # sentinel to decide if need to add to the response stack or not
         sentinel = object()
+        exit_reason = ''
         try:
             self._state = 'running'
             while True:
@@ -1468,14 +1469,16 @@ class RunEngine:
             self.log.exception("Run aborted")
         except GeneratorExit as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
-            self._reason = str(err)
+            exit_reason = str(err)
             raise ValueError from err
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
-            self._reason = str(err)
+            exit_reason = str(err)
             self.log.exception("Run aborted")
             raise err
         finally:
+            if not exit_reason:
+                exit_reason = self._reason
             # Some done_callbacks may still be alive in other threads.
             # Block them from creating new 'failed status' tasks on the loop.
             self._pardon_failures.set()
@@ -1498,11 +1501,14 @@ class RunEngine:
 
             sys.stdout.flush()
             # Emit RunStop if necessary.
-            for run in self._run_bundlers.values():
+            for key, run in self._run_bundlers.items():
                 if run._run_is_open:
                     try:
                         await run._close_run(
-                            Msg('close_run', exit_status=self._exit_status))
+                            Msg('close_run',
+                                exit_status=self._exit_status,
+                                reason=exit_reason,
+                                run_id=key))
                     except Exception:
                         self.log.error(
                             "Failed to close run %r.", run)
