@@ -33,3 +33,25 @@ def test_multirun_smoke(RE, hw):
     for stop in dc.stop.values():
         for start in dc.start:
             assert start["time"] < stop["time"]
+
+
+def test_multirun_smoke(RE, hw):
+    dc = DocCollector()
+
+    def interlaced_plan(dets, motor):
+        to_read = (motor, *dets)
+        run_ids = list("abc")
+        for rid in run_ids:
+            yield from drw(bps.open_run(md={rid: rid}), run_id=rid)
+        raise Exception('womp womp')
+
+    with pytest.raises(Exception):
+        RE(interlaced_plan([hw.det], hw.motor), dc.insert)
+
+
+    assert len(dc.start) == len(dc.stop)
+    assert len(dc.start) == 3
+
+    for v in dc.stop.values():
+        assert v['exit_stats'] == 'fail'
+        assert v['reason'] == 'womp womp'
