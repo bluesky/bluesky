@@ -16,7 +16,7 @@ except ImportError:
 
 
 from .utils import (separate_devices, all_safe_rewind, Msg, ensure_generator,
-                    short_uid as _short_uid)
+                    short_uid as _short_uid, IllegalMessageSequence)
 
 
 def create(name='primary'):
@@ -773,6 +773,7 @@ def trigger_and_read(devices, name='primary'):
     msg : Msg
         messages to 'trigger', 'wait' and 'read'
     """
+
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
         yield from null()
@@ -798,8 +799,13 @@ def trigger_and_read(devices, name='primary'):
         yield from save()
         return ret
     from .preprocessors import rewindable_wrapper
-    return (yield from rewindable_wrapper(inner_trigger_and_read(),
-                                          rewindable))
+    try:
+        return (yield from rewindable_wrapper(inner_trigger_and_read(),
+                                              rewindable))
+    except IllegalMessageSequence as excep:
+        excep_str = ('While performing a "trigger_and_read" the following '
+                     f'message sequence issue occurred: {excep!r}')
+        raise type(excep)(excep.msg, excep_str) from excep
 
 
 def broadcast_msg(command, objs, *args, **kwargs):

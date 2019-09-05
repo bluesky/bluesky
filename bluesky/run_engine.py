@@ -1651,7 +1651,7 @@ class RunEngine:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
             raise IllegalRunSequence(msg, "Cannot bundle readings without an "
-                                     "open run. That is, 'create'must be "
+                                     "open run. That is, 'create' must be "
                                      "preceded by 'open_run'.") from ke
 
         return (await current_run.create(msg))

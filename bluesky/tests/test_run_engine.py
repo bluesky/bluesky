@@ -365,6 +365,11 @@ def test_flying_outside_a_run_is_illegal(RE, hw):
     assert excep_info.value.msg is illegal_message
 
 
+def test_trigger_and_read_without_an_open_run_is_illegal(RE, hw):
+    with pytest.raises(IllegalRunSequence) as excep_info:
+        RE(trigger_and_read([hw.det]))
+
+
 def test_empty_bundle(RE, hw):
     mutable = {}
 
