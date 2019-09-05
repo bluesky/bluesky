@@ -804,7 +804,7 @@ def trigger_and_read(devices, name='primary'):
                                               rewindable))
     except IllegalMessageSequence as excep:
         excep_str = ('While performing a "trigger_and_read" the following '
-                     f'message sequence issue occurred: {excep!r}')
+                     f'message sequence issue occurred:        {excep!r}')
         raise type(excep)(excep.msg, excep_str) from excep
 
 
@@ -910,8 +910,13 @@ def one_1d_step(detectors, motor, step):
         yield Msg('set', motor, step, group=grp)
         yield Msg('wait', None, group=grp)
 
-    yield from move()
-    return (yield from trigger_and_read(list(detectors) + [motor]))
+    try:
+        yield from move()
+        return (yield from trigger_and_read(list(detectors) + [motor]))
+    except IllegalMessageSequence as excep:
+        excep_str = ('While performing a "one_1d_step" the following message '
+                     f'sequence issue occured:        {excep!r}')
+        raise type(excep)(excep.msg, excep_str) from excep
 
 
 def move_per_step(step, pos_cache):
@@ -954,8 +959,13 @@ def one_nd_step(detectors, step, pos_cache):
         mapping motors to their last-set positions
     """
     motors = step.keys()
-    yield from move_per_step(step, pos_cache)
-    yield from trigger_and_read(list(detectors) + list(motors))
+    try:
+        yield from move_per_step(step, pos_cache)
+        yield from trigger_and_read(list(detectors) + list(motors))
+    except IllegalMessageSequence as excep:
+        excep_str = ('While performing a "one_nd_step" the following message '
+                     f'sequence issue occured:        {excep!r}')
+        raise type(excep)(excep.msg, excep_str) from excep
 
 
 def repeat(plan, num=1, delay=None):

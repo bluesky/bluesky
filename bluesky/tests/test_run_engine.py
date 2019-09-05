@@ -15,7 +15,8 @@ from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
 from bluesky.plans import (fly, count, grid_scan)
-from bluesky.plan_stubs import (abs_set, trigger_and_read)
+from bluesky.plan_stubs import (abs_set, trigger_and_read, one_1d_step,
+                                one_nd_step)
 from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    reset_positions_decorator,
                                    run_wrapper, rewindable_wrapper,
@@ -366,8 +367,18 @@ def test_flying_outside_a_run_is_illegal(RE, hw):
 
 
 def test_trigger_and_read_without_an_open_run_is_illegal(RE, hw):
-    with pytest.raises(IllegalRunSequence) as excep_info:
+    with pytest.raises(IllegalRunSequence):
         RE(trigger_and_read([hw.det]))
+
+
+def test_one_1d_step_without_an_open_run_is_illegal(RE, hw):
+    with pytest.raises(IllegalRunSequence):
+        RE(one_1d_step([hw.det], hw.motor, 0))
+
+
+def test_one_nd_step_without_an_open_run_is_illegal(RE, hw):
+    with pytest.raises(IllegalRunSequence):
+        RE(one_nd_step([hw.det], {hw.motor: 1}, {hw.motor: 0}))
 
 
 def test_empty_bundle(RE, hw):
