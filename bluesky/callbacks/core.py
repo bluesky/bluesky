@@ -26,11 +26,21 @@ def make_callback_safe(func=None, *, logger=None):
     def inner(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except Exception as ex:
+        except Exception:
+            debug_mode = os.environ.get("BLUESKY_DEBUG_CALLBACKS", False)
             if logger is not None:
-                logger.exception(ex)
-            if os.environ.get('BLUESKY_DEBUG_CALLBACKS', False):
-                raise ex
+                if debug_mode:
+                    msg = f"Exception in {func}"
+                else:
+                    msg = (
+                        f"An exception raised in the callback {func} "
+                        + "is being suppressed to not interupt plan "
+                        + "execution.  To investigate try setting the "
+                        + "BLUESKY_DEBUG_CALLBACKS env to '1'"
+                    )
+                logger.exception()
+            if debug_mode:
+                raise
 
     return inner
 
