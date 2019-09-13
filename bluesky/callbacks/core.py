@@ -12,7 +12,6 @@ from functools import wraps as _wraps, partial as _partial
 from datetime import datetime
 import logging
 from ..utils import ensure_uid
-from event_model import DocumentNames
 
 
 logger = logging.getLogger(__name__)
