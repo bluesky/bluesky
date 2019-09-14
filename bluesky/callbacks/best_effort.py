@@ -16,11 +16,15 @@ import time
 from warnings import warn
 import weakref
 
-from .core import LiveTable
+from .core import LiveTable, make_class_safe
 from .mpl_plotting import LivePlot, LiveGrid, LiveScatter, QtAwareCallback
 from .fitting import PeakStats
+import logging
+
+logger = logging.getLogger(__name__)
 
 
+@make_class_safe(logger=logger)
 class BestEffortCallback(QtAwareCallback):
     def __init__(self, *, fig_factory=None, table_enabled=True, **kwargs):
         super().__init__(**kwargs)

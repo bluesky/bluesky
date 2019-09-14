@@ -1,20 +1,31 @@
 from collections import defaultdict
 from bluesky.run_engine import Msg, RunEngineInterrupted
-from bluesky.plans import (scan, grid_scan, count, inner_product_scan)
+from bluesky.plans import scan, grid_scan, count, inner_product_scan
 from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.plan_stubs import pause
 import bluesky.plans as bp
-from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit
-from bluesky.callbacks.mpl_plotting import (LiveScatter, LivePlot, LiveGrid,
-                                            LiveFitPlot, LiveRaster, LiveMesh)
+from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit, CallbackBase
+from bluesky.callbacks.core import make_callback_safe, make_class_safe
+from bluesky.callbacks.mpl_plotting import (
+    LiveScatter,
+    LivePlot,
+    LiveGrid,
+    LiveFitPlot,
+    LiveRaster,
+    LiveMesh,
+)
 from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
+from event_model import compose_run, DocumentNames
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
 from sqlite3 import InterfaceError
-
+from io import StringIO
+from unittest.mock import MagicMock
+from itertools import permutations
+import time
 
 # copied from examples.py to avoid import
 def stepscan(det, motor):
@@ -476,3 +487,196 @@ def test_plotting_hints(RE, hw, db):
     RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
                  True, hw.motor3, -2, 0, 2, True))
     assert dc.start[-1]['hints'] == hint
+
+
+def test_broken_table():
+    start_doc, descriptor_factory, *_ = compose_run()
+    desc, compose_event, _ = descriptor_factory(
+        name="primary",
+        data_keys={
+            "x": {"dtype": "integer", "source": "", "shape": []},
+            "y": {"dtype": "number", "source": "", "shape": []},
+        },
+    )
+
+    ev1 = compose_event(
+        data={"x": 1, "y": 2.0}, timestamps={k: time.time() for k in ("x", "y")}
+    )
+    ev2 = compose_event(
+        data={"x": 1, "y": 2}, timestamps={k: time.time() for k in ("x", "y")}
+    )
+    ev3 = compose_event(
+        data={"x": 1.0, "y": 2.0}, timestamps={k: time.time() for k in ("x", "y")}
+    )
+    ev4 = compose_event(
+        data={"x": 1.0, "y": "aardvark"},
+        timestamps={k: time.time() for k in ("x", "y")},
+    )
+
+    sio = StringIO()
+    LT = LiveTable(["x", "y"], out=lambda s: sio.write(s + "\n"))
+    LT("start", start_doc)
+    LT("descriptor", desc)
+    LT("event", ev1)
+    LT("event", ev2)
+    LT("event", ev3)
+    LT("event", ev4)
+
+    sio.seek(0)
+    lines = sio.readlines()
+
+    assert len(lines) == 7
+    for ln in lines[-2:]:
+        assert ln.strip() == "failed to format row"
+
+
+def test_callback_safe():
+    @make_callback_safe
+    def test_function(to_fail):
+        if to_fail:
+            raise RuntimeError
+        return to_fail
+
+    assert test_function(True) is None
+    assert test_function(False) is False
+
+
+def test_callback_safe_logger():
+    from unittest.mock import MagicMock
+    from types import SimpleNamespace
+
+    logger = SimpleNamespace(exception=MagicMock())
+
+    @make_callback_safe(logger=logger)
+    def test_function(to_fail):
+        if to_fail:
+            raise RuntimeError
+        return to_fail
+
+    assert test_function(True) is None
+    assert logger.exception.call_count == 1
+    assert test_function(False) is False
+    assert logger.exception.call_count == 1
+
+
+@pytest.fixture
+def EvilBaseClass(request):
+    class MyError(RuntimeError):
+        ...
+
+    class EvilCallback(CallbackBase):
+        my_excepttion_type = MyError
+
+        def event(self, doc):
+            raise MyError
+
+        def bulk_events(self, doc):
+            raise MyError
+
+        def resource(self, doc):
+            raise MyError
+
+        def datum(self, doc):
+            raise MyError
+
+        def bulk_datum(self, doc):
+            raise MyError
+
+        def descriptor(self, doc):
+            raise MyError
+
+        def start(self, doc):
+            raise MyError
+
+        def stop(self, doc):
+            raise MyError
+
+        def event_page(self, doc):
+            raise MyError
+
+        def datum_page(self, doc):
+            raise MyError
+
+    return EvilCallback
+
+
+def test_callbackclass(EvilBaseClass):
+    ecb = EvilBaseClass()
+    for n in DocumentNames:
+        with pytest.raises(EvilBaseClass.my_excepttion_type):
+            ecb(n.name, {})
+
+
+def test_callbackclass_safe(EvilBaseClass):
+    @make_class_safe
+    class SafeEvilBaseClass(EvilBaseClass):
+        ...
+
+    scb = SafeEvilBaseClass()
+    for n in DocumentNames:
+        scb(n.name, {})
+
+
+def test_callbackclass_safe_logger(EvilBaseClass):
+    logger = MagicMock()
+
+    @make_class_safe(logger=logger)
+    class SafeEvilBaseClass2(EvilBaseClass):
+        ...
+
+    scb = SafeEvilBaseClass2()
+    for n in DocumentNames:
+        scb(n.name, {})
+
+    assert logger.exception.call_count == len(DocumentNames)
+
+
+@pytest.mark.parametrize("strict", ["1", None])
+@pytest.mark.parametrize(
+    "documents",
+    (
+        list(
+            set(
+                tuple(sorted(x, key=lambda x: x.name))
+                for x in permutations(DocumentNames, 1)
+            )
+        )
+        + list(
+            set(
+                tuple(sorted(x, key=lambda x: x.name))
+                for x in permutations(DocumentNames, 2)
+            )
+        )
+        + list(
+            set(
+                tuple(sorted(x, key=lambda x: x.name))
+                for x in permutations(DocumentNames, 3)
+            )
+        )
+        + [list(DocumentNames)]
+    ),
+)
+def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, strict):
+    if strict is not None:
+        monkeypatch.setenv("BLUESKY_DEBUG_CALLBACKS", strict)
+    else:
+        monkeypatch.delenv("BLUESKY_DEBUG_CALLBACKS", raising=False)
+    logger = MagicMock()
+
+    @make_class_safe(logger=logger, to_wrap=tuple(x.name for x in documents))
+    class SafeEvilBaseClass2(EvilBaseClass):
+        ...
+
+    scb = SafeEvilBaseClass2()
+    for n in documents:
+        if strict:
+            with pytest.raises(EvilBaseClass.my_excepttion_type):
+                scb(n.name, {})
+        else:
+            scb(n.name, {})
+
+    for n in set(DocumentNames) - set(documents):
+        with pytest.raises(EvilBaseClass.my_excepttion_type):
+            scb(n.name, {})
+
+    assert logger.exception.call_count == len(documents)

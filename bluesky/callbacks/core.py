@@ -3,15 +3,64 @@ Useful callbacks for the Run Engine
 """
 from itertools import count
 import warnings
+import os
+
 from collections import deque, namedtuple, OrderedDict
 import time as ttime
+from functools import wraps as _wraps, partial as _partial
 
 from datetime import datetime
 import logging
 from ..utils import ensure_uid
 
 
+logger = logging.getLogger(__name__)
+
+
+def make_callback_safe(func=None, *, logger=None):
+    if func is None:
+        return _partial(make_callback_safe, logger=logger)
+
+    @_wraps(func)
+    def inner(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            debug_mode = os.environ.get("BLUESKY_DEBUG_CALLBACKS", False)
+            if logger is not None:
+                if debug_mode:
+                    msg = f"Exception in {func}"
+                else:
+                    msg = (
+                        f"An exception raised in the callback {func} "
+                        "is being suppressed to not interrupt plan "
+                        "execution.  To investigate try setting the "
+                        "BLUESKY_DEBUG_CALLBACKS env to '1'"
+                    )
+                logger.exception(msg)
+            if debug_mode:
+                raise
+
+    return inner
+
+
+def make_class_safe(cls=None, *, to_wrap=None, logger=None):
+
+    if cls is None:
+        return _partial(make_class_safe, to_wrap=to_wrap, logger=logger)
+
+    if to_wrap is None:
+        to_wrap = ['__call__']
+
+    for f_name in to_wrap:
+        setattr(cls, f_name, make_callback_safe(getattr(cls, f_name), logger=logger))
+
+    return cls
+
+
 class CallbackBase:
+    log = None
+
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
         return getattr(self, name)(doc)
@@ -149,6 +198,7 @@ class CollectThenCompute(CallbackBase):
         raise NotImplementedError("This method must be defined by a subclass.")
 
 
+@make_class_safe(logger=logger)
 class LiveTable(CallbackBase):
     '''Live updating table
 
@@ -220,6 +270,7 @@ class LiveTable(CallbackBase):
         self._out = out
 
     def descriptor(self, doc):
+
         def patch_up_precision(p):
             try:
                 return int(p)
@@ -285,27 +336,36 @@ class LiveTable(CallbackBase):
         super().descriptor(doc)
 
     def event(self, doc):
-        # shallow copy so we can mutate
-        if ensure_uid(doc['descriptor']) not in self._descriptors:
-            return
-        data = dict(doc['data'])
-        self._count += 1
-        if not self._count % self._header_interval:
-            self._print(self._sep_format)
-            self._print(self._header)
-            self._print(self._sep_format)
-        fmt_time = str(datetime.fromtimestamp(doc['time']).time())
-        data[self.ev_time_key] = fmt_time
-        data['seq_num'] = doc['seq_num']
-        cols = [f.format(**{k: data[k]})
-                # Show data[k] if k exists in this Event and is 'filled'.
-                # (The latter is only applicable if the data is
-                # externally-stored -- hence the fallback to `True`.)
-                if ((k in data) and doc.get('filled', {}).get(k, True))
-                # Otherwise use a placeholder of whitespace.
-                else ' ' * self._format_info[k].width
-                for k, f in self._data_formats.items()]
-        self._print('|' + '|'.join(cols) + '|')
+        try:
+            # shallow copy so we can mutate
+            if ensure_uid(doc['descriptor']) not in self._descriptors:
+                return
+            data = dict(doc['data'])
+            self._count += 1
+            if not self._count % self._header_interval:
+                self._print(self._sep_format)
+                self._print(self._header)
+                self._print(self._sep_format)
+            fmt_time = str(datetime.fromtimestamp(doc['time']).time())
+            data[self.ev_time_key] = fmt_time
+            data['seq_num'] = doc['seq_num']
+            cols = [f.format(**{k: data[k]})
+                    # Show data[k] if k exists in this Event and is 'filled'.
+                    # (The latter is only applicable if the data is
+                    # externally-stored -- hence the fallback to `True`.)
+                    if ((k in data) and doc.get('filled', {}).get(k, True))
+                    # Otherwise use a placeholder of whitespace.
+                    else ' ' * self._format_info[k].width
+                    for k, f in self._data_formats.items()]
+            self._print('|' + '|'.join(cols) + '|')
+        except Exception as ex:
+            if self.log is not None:
+                self.log.exception(ex)
+            self._print('{{k:*^{self._min_width}}}'
+                        .format(self=self)
+                        .format(k=' failed to format row '))
+            if os.environ.get('BLUESKY_DEBUG_CALLBACKS', False):
+                raise ex
         super().event(doc)
 
     def stop(self, doc):

@@ -3,8 +3,10 @@ from cycler import cycler
 import numpy as np
 import warnings
 import functools
-from .core import CallbackBase, get_obj_fields
+from .core import CallbackBase, get_obj_fields, make_class_safe
+import logging
 
+logger = logging.getLogger(__name__)
 
 # use function + LRU cache to hide Matplotib import until needed
 @functools.lru_cache(maxsize=1)
@@ -36,6 +38,7 @@ class QtAwareCallback(CallbackBase):
             return CallbackBase.__call__(self, name, doc)
 
 
+@make_class_safe(logger=logger)
 class LivePlot(QtAwareCallback):
     """
     Build a function that updates a plot from a stream of Events.
@@ -186,6 +189,7 @@ class LivePlot(QtAwareCallback):
         super().stop(doc)
 
 
+@make_class_safe(logger=logger)
 class LiveScatter(QtAwareCallback):
     """Plot scattered 2D data in a "heat map".
 
@@ -300,6 +304,7 @@ class LiveScatter(QtAwareCallback):
             self.sc.set_clim(*clim)
 
 
+@make_class_safe(logger=logger)
 class LiveMesh(LiveScatter):
     __doc__ = LiveScatter.__doc__
 
@@ -309,6 +314,7 @@ class LiveMesh(LiveScatter):
         super().__init__(*args, **kwargs)
 
 
+@make_class_safe(logger=logger)
 class LiveGrid(QtAwareCallback):
     """Plot gridded 2D data in a "heat map".
 
@@ -453,6 +459,7 @@ class LiveGrid(QtAwareCallback):
         self.im.set_array(self._Idata)
 
 
+@make_class_safe(logger=logger)
 class LiveRaster(LiveGrid):
     __doc__ = LiveGrid.__doc__
 
@@ -462,6 +469,7 @@ class LiveRaster(LiveGrid):
         super().__init__(*args, **kwargs)
 
 
+@make_class_safe(logger=logger)
 class LiveFitPlot(LivePlot):
     """
     Add a plot to an instance of LiveFit.
