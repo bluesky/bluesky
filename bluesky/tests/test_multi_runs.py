@@ -2,8 +2,8 @@ from bluesky import preprocessors as bpp
 from bluesky import plans as bp
 from bluesky import plan_stubs as bps
 from bluesky.preprocessors import define_run_wrapper as drw
-from ophyd.sim import motor, det
 from bluesky.tests.utils import DocCollector
+import pytest
 
 
 def test_multirun_smoke(RE, hw):
