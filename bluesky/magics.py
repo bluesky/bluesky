@@ -317,6 +317,7 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
         return obj_list
 
     if user_ns is None:
+        from IPython import get_ipython
         user_ns = get_ipython().user_ns
 
     for key, obj in user_ns.items():
