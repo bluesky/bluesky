@@ -19,7 +19,7 @@ from . import plan_stubs as bps
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
-    from cytools import partition
+    from cytoolz import partition
 except ImportError:
     from toolz import partition
 
