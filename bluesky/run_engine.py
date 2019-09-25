@@ -1726,7 +1726,8 @@ class RunEngine:
             except ValueError:
                 raise ValueError(
                     "Msg('create') now requires a stream name, given as "
-                    "Msg('create', name) or Msg('create', name=name)") from None
+                    "Msg('create', name) or Msg('create', name=name)"
+                ) from None
 
     async def _read(self, msg):
         """
@@ -2110,7 +2111,8 @@ class RunEngine:
         if hasattr(obj, 'collect_asset_docs'):
             # Resource and Datum documents
             for name, doc in obj.collect_asset_docs():
-                # Add a 'run_start' field to the resource document on its way out.
+                # Add a 'run_start' field to the resource document
+                # on its way out.
                 if name == 'resource':
                     doc['run_start'] = self._run_start_uid
                 await self.emit(DocumentNames(name), doc)
