@@ -13,15 +13,15 @@ def test_multirun_smoke(RE, hw):
         to_read = (motor, *dets)
         run_ids = list("abc")
         for rid in run_ids:
-            yield from drw(bps.open_run(md={rid: rid}), run_id=rid)
+            yield from drw(bps.open_run(md={rid: rid}), run=rid)
 
         for j in range(5):
             for i, rid in enumerate(run_ids):
                 yield from bps.mov(motor, j + 0.1 * i)
-                yield from drw(bps.trigger_and_read(to_read), run_id=rid)
+                yield from drw(bps.trigger_and_read(to_read), run=rid)
 
         for rid in run_ids:
-            yield from drw(bps.close_run(), run_id=rid)
+            yield from drw(bps.close_run(), run=rid)
 
     RE(interlaced_plan([hw.det], hw.motor), dc.insert)
 
@@ -41,8 +41,8 @@ def test_multirun_smoke_fail(RE, hw):
     def interlaced_plan(dets, motor):
         run_ids = list("abc")
         for rid in run_ids:
-            yield from drw(bps.open_run(md={rid: rid}), run_id=rid)
-        raise Exception('womp womp')
+            yield from drw(bps.open_run(md={rid: rid}), run=rid)
+        raise Exception("womp womp")
 
     with pytest.raises(Exception):
         RE(interlaced_plan([hw.det], hw.motor), dc.insert)
