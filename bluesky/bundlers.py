@@ -1,8 +1,7 @@
-import asyncio
 from collections import deque
 from itertools import count, tee
 import time as ttime
-from event_model import DocumentNames, schema_validators
+from event_model import DocumentNames
 from .utils import (
     new_uid,
     IllegalMessageSequence,
@@ -15,7 +14,7 @@ from .utils import (
 class RunBundler:
     def __init__(self, md, record_interruptions, emit, emit_sync, log, *, loop):
         # state stolen from the RE
-        self._bundling = False  # if we are in the middle of bundling readings
+        self.bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
         self._run_start_uid = None  # The (future) runstart uid
         self._objs_read = deque()  # objects read in one Event
@@ -29,7 +28,7 @@ class RunBundler:
         self._sequence_counters = dict()  # a seq_num counter per stream
         self._teed_sequence_counters = dict()  # for if we redo data-points
         self._monitor_params = dict()  # cache of {obj: (cb, kwargs)}
-        self._run_is_open = False
+        self.run_is_open = False
         self._uncollected = set()  # objects after kickoff(), before collect()
         # we expect the RE to take care of the composition
         self._md = md
@@ -43,8 +42,8 @@ class RunBundler:
 
         self.loop = loop
 
-    async def _open_run(self, msg):
-        self._run_is_open = True
+    async def open_run(self, msg):
+        self.run_is_open = True
         self._run_start_uid = new_uid()
         self._interruptions_desc_uid = None  # uid for a special Event Desc.
         self._interruptions_counter = count(1)  # seq_num, special Event stream
@@ -52,7 +51,7 @@ class RunBundler:
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **self._md)
         await self.emit(DocumentNames.start, doc)
         self.log.debug("Emitted RunStart (uid=%r)", doc["uid"])
-        await self._reset_checkpoint_state_coro()
+        await self.reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
         if self.record_interruptions:
@@ -69,9 +68,9 @@ class RunBundler:
 
         return self._run_start_uid
 
-    async def _close_run(self, msg):
+    async def close_run(self, msg):
 
-        if not self._run_is_open:
+        if not self.run_is_open:
             raise IllegalMessageSequence(
                 "A 'close_run' message was received but there is no run "
                 "open. If this occurred after a pause/resume, add "
@@ -104,12 +103,12 @@ class RunBundler:
         )
         await self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc["uid"])
-        await self._reset_checkpoint_state_coro()
-        self._run_is_open = False
+        await self.reset_checkpoint_state_coro()
+        self.run_is_open = False
         return doc["run_start"]
 
-    async def _create(self, msg):
-        if self._bundling:
+    async def create(self, msg):
+        if self.bundling:
             raise IllegalMessageSequence(
                 "A second 'create' message is not "
                 "allowed until the current event "
@@ -120,7 +119,7 @@ class RunBundler:
         self._read_cache.clear()
         self._asset_docs_cache.clear()
         self._objs_read.clear()
-        self._bundling = True
+        self.bundling = True
         command, obj, args, kwargs, _ = msg
         try:
             self._bundle_name = kwargs["name"]
@@ -133,8 +132,8 @@ class RunBundler:
                     "Msg('create', name) or Msg('create', name=name)"
                 ) from None
 
-    async def _read(self, msg, reading):
-        if self._bundling:
+    async def read(self, msg, reading):
+        if self.bundling:
             obj = msg.obj
             # if the object is not in the _describe_cache, cache it
             if obj not in self._describe_cache:
@@ -183,7 +182,7 @@ class RunBundler:
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
 
-    async def _monitor(self, msg):
+    async def monitor(self, msg):
         obj = msg.obj
         if msg.args:
             raise ValueError(
@@ -243,7 +242,7 @@ class RunBundler:
         await self.emit(DocumentNames.descriptor, desc_doc)
         obj.subscribe(emit_event, **kwargs)
 
-    def _record_interruption(self, content):
+    def record_interruption(self, content):
         """
         Emit an event in the 'interruptions' event stream.
 
@@ -262,15 +261,15 @@ class RunBundler:
             )
             self.emit_sync(DocumentNames.event, doc)
 
-    def _rewind(self):
+    def rewind(self):
         self._sequence_counters.clear()
         self._sequence_counters.update(self._teed_sequence_counters)
         # This is needed to 'cancel' an open bundling (e.g. create) if
         # the pause happens after a 'checkpoint', after a 'create', but
         # before the paired 'save'.
-        self._bundling = False
+        self.bundling = False
 
-    async def _unmonitor(self, msg):
+    async def unmonitor(self, msg):
 
         obj = msg.obj
         if obj not in self._monitor_params:
@@ -280,10 +279,10 @@ class RunBundler:
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
-        await self._reset_checkpoint_state_coro()
+        await self.reset_checkpoint_state_coro()
 
-    async def _save(self, msg):
-        if not self._bundling:
+    async def save(self, msg):
+        if not self.bundling:
             raise IllegalMessageSequence(
                 "A 'create' message must be sent, to "
                 "open an event bundle, before that "
@@ -292,7 +291,7 @@ class RunBundler:
 
         # Short-circuit if nothing has been read. (Do not create empty Events.)
         if not self._objs_read:
-            self._bundling = False
+            self.bundling = False
             self._bundle_name = None
             return
         # The Event Descriptor is uniquely defined by the set of objects
@@ -309,7 +308,7 @@ class RunBundler:
             counter_copy1, counter_copy2 = tee(counter)
             self._sequence_counters[seq_num_key] = counter_copy1
             self._teed_sequence_counters[seq_num_key] = counter_copy2
-        self._bundling = False
+        self.bundling = False
         self._bundle_name = None
 
         d_objs, doc = self._descriptors.get(desc_key, (None, None))
@@ -407,7 +406,7 @@ class RunBundler:
             else:
                 del self._monitor_params[obj]
 
-    def _reset_checkpoint_state(self):
+    def reset_checkpoint_state(self):
 
         # Keep a safe separate copy of the sequence counters to use if we
         # rewind and retake some data points.
@@ -416,39 +415,39 @@ class RunBundler:
             self._sequence_counters[key] = counter_copy1
             self._teed_sequence_counters[key] = counter_copy2
 
-    async def _reset_checkpoint_state_coro(self):
-        self._reset_checkpoint_state()
+    async def reset_checkpoint_state_coro(self):
+        self.reset_checkpoint_state()
 
-    async def _suspend_monitors(self):
+    async def suspend_monitors(self):
         for obj, (cb, kwargs) in self._monitor_params.items():
             obj.clear_sub(cb)
 
-    async def _restore_monitors(self):
+    async def restore_monitors(self):
         for obj, (cb, kwargs) in self._monitor_params.items():
             obj.subscribe(cb, **kwargs)
 
-    async def _clear_checkpoint(self, msg):
+    async def clear_checkpoint(self, msg):
         self._teed_sequence_counters.clear()
 
-    async def _drop(self, msg):
-        if not self._bundling:
+    async def drop(self, msg):
+        if not self.bundling:
             raise IllegalMessageSequence(
                 "A 'create' message must be sent, to "
                 "open an event bundle, before that "
                 "bundle can be dropped with 'drop'."
             )
 
-        self._bundling = False
+        self.bundling = False
         self._bundle_name = None
         self.log.debug("Dropped open event bundle")
 
-    async def _kickoff(self, msg):
+    async def kickoff(self, msg):
         self._uncollected.add(msg.obj)
 
-    async def _complete(self, msg):
+    async def complete(self, msg):
         ...
 
-    async def _collect(self, msg):
+    async def collect(self, msg):
         """
         Collect data cached by a flyer and emit descriptor and event documents.
 
@@ -459,7 +458,7 @@ class RunBundler:
         """
         obj = msg.obj
 
-        if not self._run_is_open:
+        if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
             # code path impossible
             raise IllegalMessageSequence(
@@ -561,11 +560,11 @@ class RunBundler:
     async def backstop_collect(self):
         for obj in list(self._uncollected):
             try:
-                await self._collect(Msg("collect", obj))
+                await self.collect(Msg("collect", obj))
             except Exception:
                 self.log.exception("Failed to collect %r.", obj)
 
-    async def _configure(self, msg):
+    async def configure(self, msg):
         obj = msg.obj
         # Invalidate any event descriptors that include this object.
         # New event descriptors, with this new configuration, will

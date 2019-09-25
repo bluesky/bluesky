@@ -678,8 +678,8 @@ class RunEngine:
         self._deferred_pause_requested = False
         self._interrupted = True
         self._state = 'pausing'
-        for run in self._run_bundlers.values():
-            run._record_interruption('pause')
+        for current_run in self._run_bundlers.values():
+            current_run.record_interruption('pause')
 
         self._task.cancel()
 
@@ -819,8 +819,8 @@ class RunEngine:
                                   "".format(self._state))
 
         self._interrupted = False
-        for run in self._run_bundlers.values():
-            run._record_interruption('resume')
+        for current_run in self._run_bundlers.values():
+            current_run.record_interruption('resume')
         new_plan = self._rewind()
         self._plan_stack.append(new_plan)
         self._response_stack.append(None)
@@ -846,8 +846,8 @@ class RunEngine:
         new_plan = ensure_generator(list(self._msg_cache))
         self._msg_cache = deque()
         if len_msg_cache:
-            for run in self._run_bundlers.values():
-                run._rewind()
+            for current_run in self._run_bundlers.values():
+                current_run.rewind()
 
         return new_plan
 
@@ -1027,8 +1027,8 @@ class RunEngine:
 
             if justification is not None:
                 print("Justification for this suspension:\n%s" % justification)
-            for run in self._run_bundlers.values():
-                run._record_interruption('resume')
+            for current_run in self._run_bundlers.values():
+                current_run.record_interruption('resume')
             # During suspend, all motors should be stopped. Call stop() on
             # every object we ever set().
             self._stop_movable_objects(success=True)
@@ -1254,8 +1254,8 @@ class RunEngine:
                     assert self._state == 'pausing'
                     # Remove any monitoring callbacks, but keep refs in
                     # self._monitor_params to re-instate them later.
-                    for run in self._run_bundlers.values():
-                        await run._suspend_monitors()
+                    for current_run in self._run_bundlers.values():
+                        await current_run.suspend_monitors()
                     # During pause, all motors should be stopped. Call stop()
                     # on every object we ever set().
                     self._stop_movable_objects(success=True)
@@ -1273,8 +1273,8 @@ class RunEngine:
 
                     await self._run_permit.wait()
                     # Restore any monitors
-                    for run in self._run_bundlers.values():
-                        await run._restore_monitors()
+                    for current_run in self._run_bundlers.values():
+                        await current_run.restore_monitors()
                     if self._state == 'paused':
                         # may be called by 'resume', 'stop', 'abort', 'halt'
                         self._state = 'running'
@@ -1484,13 +1484,13 @@ class RunEngine:
             self._pardon_failures.set()
             # call stop() on every movable object we ever set()
             self._stop_movable_objects(success=True)
-            for run in self._run_bundlers.values():
+            for current_run in self._run_bundlers.values():
                 # Clear any uncleared monitoring callbacks.
-                run.clear_monitors()
+                current_run.clear_monitors()
                 # Try to collect any flyers that were kicked off but
                 # not finished.  Some might not support partial
                 # collection. We swallow errors.
-                await run.backstop_collect()
+                await current_run.backstop_collect()
             # in case we were interrupted between 'stage' and 'unstage'
             for obj in list(self._staged):
                 try:
@@ -1501,17 +1501,17 @@ class RunEngine:
 
             sys.stdout.flush()
             # Emit RunStop if necessary.
-            for key, run in self._run_bundlers.items():
-                if run._run_is_open:
+            for key, current_run in self._run_bundlers.items():
+                if current_run.run_is_open:
                     try:
-                        await run._close_run(
+                        await current_run.close_run(
                             Msg('close_run',
                                 exit_status=self._exit_status,
                                 reason=exit_reason,
                                 run_id=key))
                     except Exception:
                         self.log.error(
-                            "Failed to close run %r.", run)
+                            "Failed to close run %r.", current_run)
             self._run_bundlers.clear()
 
             for p in self._plan_stack:
@@ -1585,7 +1585,7 @@ class RunEngine:
             md, self.record_interruptions, self.emit, self.emit_sync, self.log,
             loop=self.loop)
 
-        new_uid = await current_run._open_run(msg)
+        new_uid = await current_run.open_run(msg)
         self._run_start_uids.append(new_uid)
         return new_uid
 
@@ -1607,7 +1607,7 @@ class RunEngine:
             raise IllegalMessageSequence("A 'close_run' message was not "
                                          "received before the 'open_run' "
                                          "message") from ke
-        ret = (await current_run._close_run(msg))
+        ret = (await current_run.close_run(msg))
         del self._run_bundlers[run_key]
         return ret
 
@@ -1633,7 +1633,7 @@ class RunEngine:
             raise IllegalMessageSequence("Cannot bundle readings without "
                                          "an open run. That is, 'create' must "
                                          "be preceded by 'open_run'.") from ke
-        return (await current_run._create(msg))
+        return (await current_run.create(msg))
 
     async def _read(self, msg):
         """
@@ -1658,7 +1658,7 @@ class RunEngine:
         except KeyError:
             ...
         else:
-            await current_run._read(msg, ret)
+            await current_run.read(msg, ret)
 
         return ret
 
@@ -1685,7 +1685,7 @@ class RunEngine:
         except KeyError as ke:
             raise IllegalMessageSequence("A 'monitor' message was sent but no "
                                          "run is open.") from ke
-        await current_run._monitor(msg)
+        await current_run.monitor(msg)
         await self._reset_checkpoint_state_coro()
 
     async def _unmonitor(self, msg):
@@ -1703,7 +1703,7 @@ class RunEngine:
             raise IllegalMessageSequence(
                 "A 'unmonitor' message was sent but no "
                 "run is open.") from ke
-        await current_run._unmonitor(msg)
+        await current_run.unmonitor(msg)
         await self._reset_checkpoint_state_coro()
 
     async def _save(self, msg):
@@ -1723,7 +1723,7 @@ class RunEngine:
                 "A 'save' message was sent but no " "run is open."
             ) from ke
 
-        await current_run._save(msg)
+        await current_run.save(msg)
 
     async def _drop(self, msg):
         """Drop the event that is currently being bundled
@@ -1739,7 +1739,7 @@ class RunEngine:
             raise IllegalMessageSequence(
                 "A 'drop' message was sent but no " "run is open."
             ) from ke
-        await current_run._drop(msg)
+        await current_run.drop(msg)
 
     async def _kickoff(self, msg):
         """Start a flyscan object
@@ -1780,7 +1780,7 @@ class RunEngine:
         p_event = asyncio.Event(loop=self.loop)
         pardon_failures = self._pardon_failures
 
-        await current_run._kickoff(msg)
+        await current_run.kickoff(msg)
 
         def done_callback():
             self.log.debug(
@@ -1826,7 +1826,7 @@ class RunEngine:
             raise IllegalMessageSequence("A 'complete' message was sent but no "
                                          "run is open.") from ke
 
-        await current_run._complete(msg)
+        await current_run.complete(msg)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         ret = msg.obj.complete(*msg.args, **kwargs)
@@ -1885,7 +1885,7 @@ class RunEngine:
             raise IllegalMessageSequence("A 'collect' message was sent but no "
                                          "run is open.") from ke
 
-        return (await current_run._collect(msg))
+        return (await current_run.collect(msg))
 
     async def _null(self, msg):
         """
@@ -2047,8 +2047,8 @@ class RunEngine:
         keyword arguments in the `Msg` signature
         """
         # Re-instate monitoring callbacks.
-        for run in self._run_bundlers.values():
-            await run._restore_monitors()
+        for current_run in self._run_bundlers.values():
+            await current_run.restore_monitors()
         # Notify Devices of the resume in case they want to clean up.
         for obj in self._objs_seen:
             if hasattr(obj, 'resume'):
@@ -2062,8 +2062,8 @@ class RunEngine:
 
             Msg('checkpoint')
         """
-        for run in self._run_bundlers.values():
-            if run._bundling:
+        for current_run in self._run_bundlers.values():
+            if current_run.bundling:
                 raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                              "and before 'save'. Aborting!")
 
@@ -2084,8 +2084,8 @@ class RunEngine:
             return
 
         self._msg_cache = deque()
-        for run in self._run_bundlers.values():
-            run._reset_checkpoint_state()
+        for current_run in self._run_bundlers.values():
+            current_run.reset_checkpoint_state()
 
     async def _reset_checkpoint_state_coro(self):
         self._reset_checkpoint_state()
@@ -2100,8 +2100,8 @@ class RunEngine:
         # clear message cache
         self._msg_cache = None
         # clear stashed
-        for run in self._run_bundlers.values():
-            await run._clear_checkpoint(msg)
+        for current_run in self._run_bundlers.values():
+            await current_run.clear_checkpoint(msg)
 
     async def _rewindable(self, msg):
         '''Set rewindable state of RunEngine
@@ -2134,7 +2134,7 @@ class RunEngine:
         except KeyError:
             current_run = None
         else:
-            if current_run._bundling:
+            if current_run.bundling:
                 raise IllegalMessageSequence(
                     "Cannot configure after 'create' but before 'save'"
                     "Aborting!")
@@ -2142,7 +2142,7 @@ class RunEngine:
 
         old, new = obj.configure(*args, **kwargs)
         if current_run:
-            await current_run._configure(msg)
+            await current_run.configure(msg)
         return old, new
 
     async def _stage(self, msg):
