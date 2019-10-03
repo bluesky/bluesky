@@ -284,9 +284,18 @@ def print_summary_wrapper(plan):
     ------
     msg : `Msg`
     """
-
     read_cache = []
-    for msg in plan:
+    value = None
+    excep = None
+    while True:
+        try:
+            if excep is None:
+                msg = plan.send(value)
+            else:
+                msg = plan.throw(excep)
+                excep = None
+        except StopIteration as e:
+            return e.value
         cmd = msg.command
         if cmd == 'open_run':
             print('{:=^80}'.format(' Open Run '))
@@ -301,7 +310,10 @@ def print_summary_wrapper(plan):
             read_cache.append(msg.obj.name)
         elif cmd == 'save':
             print('  Read {}'.format(read_cache))
-        yield msg
+        try:
+            value = yield msg
+        except Exception as e:
+            excep = e
 
 
 def run_wrapper(plan, *, md=None):
