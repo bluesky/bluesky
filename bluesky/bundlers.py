@@ -526,7 +526,16 @@ class RunBundler:
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'bulk_events' subscription once.
         stream = msg.kwargs.get("stream", False)
+        # If True, accumulate all the Events in memory and return them at the
+        # end, providing the plan access to the Events. If False, do not
+        # accumulate, and return None.
+        return_payload = msg.kwargs.get('return_payload', True)
+        payload = []
+
         for ev in obj.collect():
+            if return_payload:
+                payload.append(ev)
+
             objs_read = frozenset(ev["data"])
             stream_name, descriptor_uid = local_descriptors[objs_read]
             seq_num = next(self._sequence_counters[stream_name])
@@ -556,6 +565,8 @@ class RunBundler:
             self.log.debug(
                 "Emitted bulk events for descriptors with uids " "%r", bulk_data.keys()
             )
+        if return_payload:
+            return payload
 
     async def backstop_collect(self):
         for obj in list(self._uncollected):
