@@ -19,7 +19,7 @@ from . import plan_stubs as bps
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
-    from cytools import partition
+    from cytoolz import partition
 except ImportError:
     from toolz import partition
 
@@ -317,6 +317,7 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
         return obj_list
 
     if user_ns is None:
+        from IPython import get_ipython
         user_ns = get_ipython().user_ns
 
     for key, obj in user_ns.items():

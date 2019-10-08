@@ -25,6 +25,7 @@ import warnings
 import msgpack
 import msgpack_numpy
 import zict
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import groupby
@@ -32,15 +33,14 @@ except ImportError:
     from toolz import groupby
 
 
-class Msg(namedtuple('Msg_base', ['command', 'obj', 'args', 'kwargs'])):
+class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     __slots__ = ()
 
-    def __new__(cls, command, obj=None, *args, **kwargs):
-        return super(Msg, cls).__new__(cls, command, obj, args, kwargs)
+    def __new__(cls, command, obj=None, *args, run=None, **kwargs):
+        return super(Msg, cls).__new__(cls, command, obj, args, kwargs, run)
 
     def __repr__(self):
-        return '{}: ({}), {}, {}'.format(
-            self.command, self.obj, self.args, self.kwargs)
+        return f"{self.command}[{self.run}]: ({self.obj}), {self.args}, {self.kwargs}"
 
 
 class RunEngineControlException(Exception):
@@ -48,11 +48,11 @@ class RunEngineControlException(Exception):
 
 
 class RequestAbort(RunEngineControlException):
-    pass
+    exit_status = 'abort'
 
 
 class RequestStop(RunEngineControlException):
-    pass
+    exit_status = 'success'
 
 
 class RunEngineInterrupted(Exception):
@@ -1477,3 +1477,12 @@ def default_during_task(blocking_event):
         else:
             # We are not using matplotlib + Qt. Just wait on the Event.
             blocking_event.wait()
+
+
+def _rearrange_into_parallel_dicts(readings):
+    data = {}
+    timestamps = {}
+    for key, payload in readings.items():
+        data[key] = payload['value']
+        timestamps[key] = payload['timestamp']
+    return data, timestamps

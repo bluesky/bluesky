@@ -318,7 +318,7 @@ def run_wrapper(plan, *, md=None):
 
     def except_plan(e):
         if isinstance(e, RunEngineControlException):
-            yield from close_run()
+            yield from close_run(exit_status=e.exit_status)
         else:
             yield from close_run(exit_status='fail', reason=str(e))
 
@@ -1293,3 +1293,22 @@ class SupplementalData:
         plan = monitor_during_wrapper(plan, self.monitors)
         plan = baseline_wrapper(plan, self.baseline)
         return (yield from plan)
+
+
+def define_run_wrapper(plan, run):
+    """
+    Add a run id to each message in wrapped plan
+
+    Parameters
+    ----------
+    plan : iterable or iterator
+        a generator, list, or similar containing `Msg` objects
+    run_id : str
+        The run to set on each Msg
+    """
+    def _set_run_id(msg):
+        return msg._replace(run=run)
+
+    return (yield from msg_mutator(plan, _set_run_id))
+
+define_run_decorator = make_decorator(define_run_wrapper)
