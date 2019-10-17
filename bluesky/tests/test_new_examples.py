@@ -642,7 +642,7 @@ def test_no_rewind_device(hw):
 
 def test_monitor(RE, hw):
     from ophyd.sim import SynSignal
-    signal = SynSignal(name='signal')
+    signal = SynSignal(name='signal', value=0.0)
     RE(monitor_during_wrapper(count([hw.det], 5), [signal]))
 
 
