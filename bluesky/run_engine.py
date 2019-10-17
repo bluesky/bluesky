@@ -1,11 +1,10 @@
 import asyncio
 from datetime import datetime
-import time as ttime
 import sys
 import logging
 from warnings import warn
 from inspect import Parameter, Signature
-from itertools import count, tee
+from itertools import count
 from collections import deque, defaultdict, ChainMap
 from enum import Enum
 import functools
@@ -37,7 +36,6 @@ from .utils import (
     FailedStatus,
     IllegalBundlingSequence,
     IllegalMessageSequence,
-    IllegalMonitorSequence,
     IllegalRunSequence,
     InvalidCommand,
     Msg,
@@ -49,9 +47,7 @@ from .utils import (
     SigintHandler,
     default_during_task,
     ensure_generator,
-    new_uid,
     normalize_subs_input,
-    short_uid,
     single_gen,
 )
 
