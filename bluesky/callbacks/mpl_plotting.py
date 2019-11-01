@@ -6,6 +6,10 @@ import warnings
 from .core import CallbackBase, get_obj_fields
 
 
+class QtAwareCallback():
+    pass
+
+
 class LivePlot(CallbackBase):
     """
     Build a function that updates a plot from a stream of Events.
