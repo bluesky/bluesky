@@ -1843,6 +1843,22 @@ def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
         md=_md))
 
 
+def submit_info(info, plan_name='info', field_name='info'):
+    """
+    Submit info into the metadata of the start document.
+
+    Parameters
+    ----------
+    info : any serializable object
+        the information to submit
+    plan_name : str, optional
+        the name of the plan (useful for further searches)
+    field_name : str, optional
+        the name of the field under which the info will appear in the metadata
+    """
+    yield from count([], md={'plan_name': plan_name, field_name: info})
+
+
 relative_list_scan = rel_list_scan  # back-compat
 relative_scan = rel_scan  # back-compat
 relative_log_scan = rel_log_scan  # back-compat
