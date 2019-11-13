@@ -214,7 +214,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
         abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
-def mv(*args):
+def mv(*args, **kwargs):
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
@@ -224,6 +224,8 @@ def mv(*args):
     ----------
     args :
         device1, value1, device2, value2, ...
+    kwargs :
+        passed to obj.set()
 
     Yields
     ------
@@ -242,7 +244,7 @@ def mv(*args):
                   obj, val in partition(2, args)])
     step, = utils.merge_cycler(cyl)
     for obj, val in step.items():
-        ret = yield Msg('set', obj, val, group=group)
+        ret = yield Msg('set', obj, val, group=group, **kwargs)
         status_objects.append(ret)
     yield Msg('wait', None, group=group)
     return tuple(status_objects)
