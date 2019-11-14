@@ -215,7 +215,6 @@ class PeakStats(CollectThenCompute):
         self.cen = None
         self.max = None
         self.min = None
-        self.nlls = None
         self.crossings = None
         self.fwhm = None
         self.lin_bkg = None
@@ -235,7 +234,6 @@ class PeakStats(CollectThenCompute):
         self.cen = None
         self.max = None
         self.min = None
-        self.nlls = None
         self.crossings = None
         self.fwhm = None
         self.lin_bkg = None
