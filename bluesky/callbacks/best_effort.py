@@ -443,7 +443,7 @@ class BestEffortCallback(QtAwareCallback):
 
 
 class PeakResults:
-    ATTRS = ('com', 'cen', 'max', 'min', 'fwhm', 'nlls')
+    ATTRS = ('com', 'cen', 'max', 'min', 'fwhm')
 
     def __init__(self):
         for attr in self.ATTRS:
