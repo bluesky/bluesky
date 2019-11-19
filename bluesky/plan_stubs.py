@@ -255,7 +255,7 @@ def mv(*args, group=None, **kwargs):
 mov = mv  # synonym
 
 
-def mvr(*args):
+def mvr(*args, group=None, **kwargs):
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
@@ -265,6 +265,10 @@ def mvr(*args):
     ----------
     args :
         device1, value1, device2, value2, ...
+    group : string, optional
+        Used to mark these as a unit to be waited on.
+    kwargs :
+        passed to obj.set()
 
     Yields
     ------
@@ -283,7 +287,7 @@ def mvr(*args):
 
     @relative_set_decorator(objs)
     def inner_mvr():
-        return (yield from mv(*args))
+        return (yield from mv(*args, group=group, **kwargs))
 
     return (yield from inner_mvr())
 
