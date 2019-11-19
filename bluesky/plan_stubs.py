@@ -214,7 +214,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
         abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
-def mv(*args, **kwargs):
+def mv(*args, group=None, **kwargs):
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
@@ -224,6 +224,8 @@ def mv(*args, **kwargs):
     ----------
     args :
         device1, value1, device2, value2, ...
+    group : string, optional
+        Used to mark these as a unit to be waited on.
     kwargs :
         passed to obj.set()
 
@@ -236,7 +238,7 @@ def mv(*args, **kwargs):
     :func:`bluesky.plan_stubs.abs_set`
     :func:`bluesky.plan_stubs.mvr`
     """
-    group = str(uuid.uuid4())
+    group = group or str(uuid.uuid4())
     status_objects = []
 
     cyl = reduce(operator.add,
