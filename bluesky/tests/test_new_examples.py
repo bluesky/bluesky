@@ -140,6 +140,15 @@ def test_mv(hw):
     assert actual[2] == Msg('wait', None)
 
 
+def test_mv_with_timeout(hw):
+    # special-case mv because the group is not configurable
+    # move motors first to ensure that movement is absolute, not relative
+    actual = list(mv(hw.motor1, 1, hw.motor2, 2, timeout=42))
+    for msg in actual[:2]:
+        msg.command == 'set'
+        msg.kwargs['timeout'] == 42
+
+
 def test_mvr(RE, hw):
     # special-case mv because the group is not configurable
     # move motors first to ensure that movement is relative, not absolute
@@ -154,6 +163,15 @@ def test_mvr(RE, hw):
         msg.command == 'set'
     assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])
     assert actual[2] == Msg('wait', None)
+
+
+def test_mvr_with_timeout(hw):
+    # special-case mv because the group is not configurable
+    # move motors first to ensure that movement is absolute, not relative
+    actual = list(mvr(hw.motor1, 1, hw.motor2, 2, timeout=42))
+    for msg in actual[:2]:
+        msg.command == 'set'
+        msg.kwargs['timeout'] == 42
 
 
 def strip_group(plan):

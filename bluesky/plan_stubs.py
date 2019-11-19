@@ -214,7 +214,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
         abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
-def mv(*args):
+def mv(*args, group=None, **kwargs):
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
@@ -224,6 +224,10 @@ def mv(*args):
     ----------
     args :
         device1, value1, device2, value2, ...
+    group : string, optional
+        Used to mark these as a unit to be waited on.
+    kwargs :
+        passed to obj.set()
 
     Yields
     ------
@@ -234,7 +238,7 @@ def mv(*args):
     :func:`bluesky.plan_stubs.abs_set`
     :func:`bluesky.plan_stubs.mvr`
     """
-    group = str(uuid.uuid4())
+    group = group or str(uuid.uuid4())
     status_objects = []
 
     cyl = reduce(operator.add,
@@ -242,7 +246,7 @@ def mv(*args):
                   obj, val in partition(2, args)])
     step, = utils.merge_cycler(cyl)
     for obj, val in step.items():
-        ret = yield Msg('set', obj, val, group=group)
+        ret = yield Msg('set', obj, val, group=group, **kwargs)
         status_objects.append(ret)
     yield Msg('wait', None, group=group)
     return tuple(status_objects)
@@ -251,7 +255,7 @@ def mv(*args):
 mov = mv  # synonym
 
 
-def mvr(*args):
+def mvr(*args, group=None, **kwargs):
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
@@ -261,6 +265,10 @@ def mvr(*args):
     ----------
     args :
         device1, value1, device2, value2, ...
+    group : string, optional
+        Used to mark these as a unit to be waited on.
+    kwargs :
+        passed to obj.set()
 
     Yields
     ------
@@ -279,7 +287,7 @@ def mvr(*args):
 
     @relative_set_decorator(objs)
     def inner_mvr():
-        return (yield from mv(*args))
+        return (yield from mv(*args, group=group, **kwargs))
 
     return (yield from inner_mvr())
 
