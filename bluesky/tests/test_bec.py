@@ -128,8 +128,9 @@ def test_plot_prune_fifo(RE, hw):
     assert len(bec._live_plots[uuid]) == 1
 
     # get reference key for our detector
-    # should be same as hw.ab_det.name, skip that test
     det_name = next(iter(bec._live_plots[uuid]))
+    # should be same as hw.ab_det.name, prove it now
+    assert det_name == hw.ab_det.name
 
     # get the LivePlot object
     lp = bec._live_plots[uuid][det_name]
