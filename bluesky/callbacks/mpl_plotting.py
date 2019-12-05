@@ -17,7 +17,7 @@ def _get_teleporter():
     from matplotlib.backends.qt_compat import QtCore
 
     class Teleporter(QtCore.QObject):
-        name_doc_escape = QtCore.Signal(str, dict, bool)
+        name_doc_escape = QtCore.Signal(str, dict)
     return Teleporter
 
 
@@ -29,16 +29,16 @@ class QtAwareCallback(CallbackBase):
         if use_teleporter:
             Teleporter = _get_teleporter()
             self.__teleporter = Teleporter()
-            self.__teleporter.name_doc_escape.connect(self.__call__)
+            self.__teleporter.name_doc_escape.connect(self._dispatch)
         else:
             self.__teleporter = None
         super().__init__(*args, **kwargs)
 
     def __call__(self, name, doc, escape=False):
         if not escape and self.__teleporter is not None:
-            self.__teleporter.name_doc_escape.emit(name, doc, True)
+            self.__teleporter.name_doc_escape.emit(name, doc)
         else:
-            return CallbackBase.__call__(self, name, doc)
+            self._dispatch(self, name, doc)
 
 
 @make_class_safe(logger=logger)
