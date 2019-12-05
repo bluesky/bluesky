@@ -139,7 +139,7 @@ def test_plot_prune_fifo(RE, hw):
     assert len(lp.ax.lines) == num_pruned
 
     # prune the LivePlot (has no effect since we have exact number to keep)
-    bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det)
+    bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det.a)
     assert len(lp.ax.lines) == num_pruned
 
     # add more lines to the LivePlot
@@ -153,5 +153,5 @@ def test_plot_prune_fifo(RE, hw):
     assert len(lp.ax.lines) == num_pruned * 2
 
     # prune again, this time reduces number of lines
-    bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det)
+    bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det.a)
     assert len(lp.ax.lines) == num_pruned
