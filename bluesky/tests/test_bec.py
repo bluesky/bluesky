@@ -125,6 +125,7 @@ def test_plot_prune_fifo(RE, hw):
 
     # get the reference key for our LivePlot dict
     uuid = next(iter(bec._live_plots))
+    assert len(bec._live_plots[uuid]) == 1
 
     # get reference key for our detector
     # should be same as hw.ab_det.name, skip that test
