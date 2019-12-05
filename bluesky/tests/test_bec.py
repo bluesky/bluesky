@@ -134,7 +134,7 @@ def test_plot_prune_fifo(RE, hw):
     assert len(lp.ax.lines) == num_pruned
 
     # add more lines to the LivePlot
-    RE(bps.repeater(num_pruned, scan, [hw.ab_det], hw.motor, 1, 5, 5))
+    RE(bps.repeat(scan([hw.ab_det], hw.motor, 1, 5, 5), num=num_pruned))
 
     # get the LivePlot object, again, in case the UUID was changed
     liveplots_list = list(bec._live_plots.values())
