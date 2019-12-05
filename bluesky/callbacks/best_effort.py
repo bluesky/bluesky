@@ -461,11 +461,6 @@ class BestEffortCallback(QtAwareCallback):
             instance of ophyd.Signal (or subclass), 
             independent (x) axis
 
-        Returns
-        -------
-        lp: object or None
-            instance of LivePlot or None (if not found)
-
         """
         assert num_lines >= 0, "num_lines must be 0 or greater"
         for liveplot in self._live_plots.values():
