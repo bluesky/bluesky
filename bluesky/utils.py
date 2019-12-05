@@ -1506,7 +1506,7 @@ def plot_prune_fifo(bec, n, y, x):
     n: int
         number of plots to keep
     
-    y : object
+    y: object
         instance of ophyd.Signal (or subclass), 
         dependent (y) axis
     
