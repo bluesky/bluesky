@@ -137,7 +137,7 @@ def test_plot_prune_fifo(RE, hw):
     assert lp is not None
     assert len(lp.ax.lines) == num_pruned
 
-    # prune the LivePlot (this is no-op since we have exact number to keep)
+    # prune the LivePlot (has no effect since we have exact number to keep)
     bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det)
     assert len(lp.ax.lines) == num_pruned
 
