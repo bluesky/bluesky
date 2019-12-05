@@ -109,3 +109,49 @@ def test_plot_ints(RE):
         RE(count([s], num=35))
 
     assert len(record) == 0
+
+
+def test_plot_prune_fifo(RE, hw):
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+    num_pruned = 2
+
+    # create the LivePlot
+    RE(bps.repeater(num_pruned, scan, [hw.ab_det], hw.motor, 1, 5, 5))
+
+    # test it
+    assert len(bec._live_plots) == 1
+
+    # get the reference key for our LivePlot dict
+    uuid = next(iter(bec._live_plots))
+    assert len(bec._live_plots[uuid]) == 1
+
+    # get reference key for our detector
+    det_name = next(iter(bec._live_plots[uuid]))
+    # should be same as hw.ab_det.a.name (`.a` comes from .read_attrs[0]), prove it now
+    assert det_name == hw.ab_det.a.name
+
+    # get the LivePlot object
+    lp = bec._live_plots[uuid][det_name]
+
+    assert lp is not None
+    assert len(lp.ax.lines) == num_pruned
+
+    # prune the LivePlot (has no effect since we have exact number to keep)
+    bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det.a)
+    assert len(lp.ax.lines) == num_pruned
+
+    # add more lines to the LivePlot
+    RE(bps.repeater(num_pruned, scan, [hw.ab_det], hw.motor, 1, 5, 5))
+
+    # get the LivePlot object, again, in case the UUID was changed
+    assert len(bec._live_plots) == 1
+    uuid = next(iter(bec._live_plots))
+    lp = bec._live_plots[uuid][det_name]
+    assert lp is not None
+    assert len(lp.ax.lines) == num_pruned * 2
+
+    # prune again, this time reduces number of lines
+    bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det.a)
+    assert len(lp.ax.lines) == num_pruned
