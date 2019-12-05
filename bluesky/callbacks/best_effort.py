@@ -478,9 +478,11 @@ class BestEffortCallback(QtAwareCallback):
                     or (len(tr._x) == 2 
                         and tr._x[0] != tr._x[1])
             ]
+            print(f"found these lines: {lines}")
             if len(lines) > num_lines:
                 print(f"Limiting LivePlot({y_signal.name}) to {num_lines} lines.")
                 keepers = lines[-num_lines:]
+                print(f"keepers: {keepers}")
                 for tr in lp.ax.lines:
                     if tr not in keepers:
                         tr.remove()
