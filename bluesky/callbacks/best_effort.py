@@ -441,7 +441,7 @@ class BestEffortCallback(QtAwareCallback):
         self._buffer = StringIO()
         self._baseline_toggle = True
 
-    def plot_prune_fifo(self, *, num_lines, x_signal, y_signal):
+    def plot_prune_fifo(self, num_lines, x_signal, y_signal):
         """
         Find the plot with axes x_signal and y_signal.  Replot with only the last *num_lines* lines.
 
