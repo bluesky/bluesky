@@ -153,5 +153,7 @@ def test_plot_prune_fifo(RE, hw):
     assert len(lp.ax.lines) == num_pruned * 2
 
     # prune again, this time reduces number of lines
+    print(f"before: {lp.ax.lines}")
     bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det.a)
+    print(f"after: {lp.ax.lines}")
     assert len(lp.ax.lines) == num_pruned
