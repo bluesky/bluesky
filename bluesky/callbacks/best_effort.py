@@ -484,9 +484,10 @@ class BestEffortCallback(QtAwareCallback):
                 print(f"Limiting LivePlot({y_signal.name}) to {num_lines} lines.")
                 keepers = lines[-num_lines:]
                 print(f"keepers: {keepers}")
-                for tr in lp.ax.lines:
+                for tr in lines:
                     print(f"checking: {tr}")
                     if tr not in keepers:
+                        print(f"removing {tr}")
                         tr.remove()
                 lp.ax.legend()
                 if num_lines > 0:
