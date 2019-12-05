@@ -453,7 +453,7 @@ class BestEffortCallback(QtAwareCallback):
         Parameters
         ----------
         num_lines: int
-            number of lines (plotted scans) to keep
+            number of lines (plotted scans) to keep, must be >= 0
         y_signal: object
             instance of ophyd.Signal (or subclass), 
             dependent (y) axis
@@ -480,7 +480,10 @@ class BestEffortCallback(QtAwareCallback):
             ]
             if len(lines) > n:
                 print(f"limiting LivePlot({y_signal.name}) to {num_lines} lines")
-                lp.ax.lines = lines[-num_lines:]
+                keepers = lines[-num_lines:]
+                for tr in lp.ax.lines:
+                    if tr not in keepers:
+                        tr.remove()
                 lp.ax.legend()
                 if num_lines > 0:
                     lp.update_plot()
