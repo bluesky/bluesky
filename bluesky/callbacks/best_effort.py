@@ -459,7 +459,7 @@ class BestEffortCallback(QtAwareCallback):
             instance of ophyd.Signal (or subclass), 
             dependent (y) axis
         """
-        if num_lines >= 0:
+        if num_lines < 0:
             emsg = (f"Argument 'num_lines' (given as {num_lines})"
                     " must be >= 0.")
             raise ValueError(emsg)
