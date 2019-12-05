@@ -1510,7 +1510,7 @@ def plot_prune_fifo(bec, n, y, x):
         instance of ophyd.Signal (or subclass), 
         dependent (y) axis
     
-    x : object
+    x: object
         instance of ophyd.Signal (or subclass), 
         independent (x) axis
     """
