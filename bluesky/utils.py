@@ -1488,39 +1488,36 @@ def _rearrange_into_parallel_dicts(readings):
     return data, timestamps
 
 
-def plot_prune_fifo(bec, n, y, x):
+def plot_prune_fifo(bec, num_lines, y_signal, x_signal):
     """
-    Find the plot with axes x and y and replot with only the last *n* lines.
+    Find the plot with axes x_signal and y_signal.  Replot with only the last *num_lines* lines.
 
-    Note: this is not a bluesky plan.  Call it as normal Python function.
+    .. note:: This is not a bluesky plan.  Call it as a normal Python function.
 
-    EXAMPLE::
+    Example to remove all scans but the last:
+    >>> plot_prune_fifo(bec, 1, noisy, m1)
 
-        plot_prune_fifo(bec, 1, noisy, m1)
-
-    PARAMETERS
-    
+    Parameters
+    ----------
     bec: object
         instance of BestEffortCallback
-    
-    n: int
-        number of plots to keep
-    
-    y: object
+    num_lines: int
+        number of lines (plotted scans) to keep
+    y_signal: object
         instance of ophyd.Signal (or subclass), 
         dependent (y) axis
-    
-    x: object
+    x_signal: object
         instance of ophyd.Signal (or subclass), 
         independent (x) axis
+
     """
-    assert n >= 0, "n must be 0 or greater"
+    assert num_lines >= 0, "num_lines must be 0 or greater"
     for liveplot in bec._live_plots.values():
-        lp = liveplot.get(y.name)
-        if lp is None or lp.x != x.name or lp.y != y.name:
+        lp = liveplot.get(y_signal.name)
+        if lp is None or lp.x != x_signal.name or lp.y != y_signal.name:
             continue
 
-        # pick out only the traces that contain plot data
+        # pick out only the lines that contain plot data
         # skipping the lines that show peak centers
         lines = [
             tr
@@ -1531,9 +1528,9 @@ def plot_prune_fifo(bec, n, y, x):
                     and tr._x[0] != tr._x[1])
         ]
         if len(lines) > n:
-            print(f"limiting LivePlot({y.name}) to {n} traces")
-            lp.ax.lines = lines[-n:]
+            print(f"limiting LivePlot({y_signal.name}) to {num_lines} lines")
+            lp.ax.lines = lines[-num_lines:]
             lp.ax.legend()
-            if n > 0:
+            if num_lines > 0:
                 lp.update_plot()
         return lp
