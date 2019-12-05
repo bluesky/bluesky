@@ -1500,7 +1500,7 @@ def plot_prune_fifo(bec, n, y, x):
 
     PARAMETERS
     
-    bec : object
+    bec: object
         instance of BestEffortCallback
     
     n : int
