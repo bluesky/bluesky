@@ -1490,7 +1490,7 @@ def _rearrange_into_parallel_dicts(readings):
 
 def plot_prune_fifo(bec, n, y, x):
     """
-    find the plot with axes x and y and replot with only the last *n* lines
+    Find the plot with axes x and y and replot with only the last *n* lines.
 
     Note: this is not a bluesky plan.  Call it as normal Python function.
 
