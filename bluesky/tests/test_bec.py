@@ -109,3 +109,40 @@ def test_plot_ints(RE):
         RE(count([s], num=35))
 
     assert len(record) == 0
+
+
+def test_plot_prune_fifo(RE, hw):
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+
+    num_pruned = 2
+
+    # create the LivePlot
+    RE(bps.repeater(num_pruned, scan, [hw.ab_det], hw.motor, 1, 5, 5))
+    
+    # get the LivePlot object
+    liveplots_list = list(bec._live_plots.values())
+
+    # test it
+    assert len(liveplots_list) == 1
+    lp = liveplots_list[0].get(hw.ab_det.name)
+    assert lp is not None
+    assert len(lp.ax.lines) == num_pruned
+
+    # prune the LivePlot (this is no-op since we have exact number to keep)
+    bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det)
+    assert len(lp.ax.lines) == num_pruned
+
+    # add more lines to the LivePlot
+    RE(bps.repeater(num_pruned, scan, [hw.ab_det], hw.motor, 1, 5, 5))
+
+    # get the LivePlot object, again, in case the UUID was changed
+    liveplots_list = list(bec._live_plots.values())
+    assert len(liveplots_list) == 1
+    lp = liveplots_list[0].get(hw.ab_det.name)
+    assert lp is not None
+    assert len(lp.ax.lines) == num_pruned*2
+
+    # prune again, this time reduces number of lines
+    bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det)
+    assert len(lp.ax.lines) == num_pruned
