@@ -441,34 +441,34 @@ class BestEffortCallback(QtAwareCallback):
         self._buffer = StringIO()
         self._baseline_toggle = True
 
-    def plot_prune_fifo(self, *, num_lines, y_signal, x_signal):
+    def plot_prune_fifo(self, *, num_lines, x_signal, y_signal):
         """
         Find the plot with axes x_signal and y_signal.  Replot with only the last *num_lines* lines.
 
-        .. note:: This is not a bluesky plan.  Call it as a normal Python function.
-
         Example to remove all scans but the last:
-        >>> bec.plot_prune_fifo(1, noisy, m1)
+        >>> bec.plot_prune_fifo(1, m1, noisy)
 
         Parameters
         ----------
         num_lines: int
             number of lines (plotted scans) to keep, must be >= 0
-        y_signal: object
-            instance of ophyd.Signal (or subclass), 
-            dependent (y) axis
         x_signal: object
             instance of ophyd.Signal (or subclass), 
             independent (x) axis
-
+        y_signal: object
+            instance of ophyd.Signal (or subclass), 
+            dependent (y) axis
         """
-        assert num_lines >= 0, "num_lines must be 0 or greater"
+        if num_lines >= 0:
+            emsg = (f"Argument 'num_lines' (given as {num_lines})"
+                    " must be >= 0.")
+            raise ValueError(emsg)
         for liveplot in self._live_plots.values():
             lp = liveplot.get(y_signal.name)
             if lp is None or lp.x != x_signal.name or lp.y != y_signal.name:
                 continue
 
-            # pick out only the lines that contain plot data
+            # pick out only the lines that contain plot data,
             # skipping the lines that show peak centers
             lines = [
                 tr
@@ -479,7 +479,7 @@ class BestEffortCallback(QtAwareCallback):
                         and tr._x[0] != tr._x[1])
             ]
             if len(lines) > num_lines:
-                print(f"limiting LivePlot({y_signal.name}) to {num_lines} lines")
+                print(f"Limiting LivePlot({y_signal.name}) to {num_lines} lines.")
                 keepers = lines[-num_lines:]
                 for tr in lp.ax.lines:
                     if tr not in keepers:
