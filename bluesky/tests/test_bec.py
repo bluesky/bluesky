@@ -149,7 +149,7 @@ def test_plot_prune_fifo(RE, hw):
     uuid = next(iter(bec._live_plots))
     lp = bec._live_plots[uuid][det_name]
     assert lp is not None
-    assert len(lp.ax.lines) == num_pruned*2
+    assert len(lp.ax.lines) == num_pruned * 2
 
     # prune again, this time reduces number of lines
     bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det)
