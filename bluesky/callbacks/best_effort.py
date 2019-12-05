@@ -478,7 +478,7 @@ class BestEffortCallback(QtAwareCallback):
                     or (len(tr._x) == 2 
                         and tr._x[0] != tr._x[1])
             ]
-            if len(lines) > n:
+            if len(lines) > num_lines:
                 print(f"limiting LivePlot({y_signal.name}) to {num_lines} lines")
                 keepers = lines[-num_lines:]
                 for tr in lp.ax.lines:
