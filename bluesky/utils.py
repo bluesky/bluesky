@@ -1503,7 +1503,7 @@ def plot_prune_fifo(bec, n, y, x):
     bec: object
         instance of BestEffortCallback
     
-    n : int
+    n: int
         number of plots to keep
     
     y : object
