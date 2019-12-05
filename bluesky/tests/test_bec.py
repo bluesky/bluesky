@@ -118,14 +118,16 @@ def test_plot_prune_fifo(RE, hw):
     num_pruned = 2
 
     # create the LivePlot
-    RE(bps.repeater(num_pruned, scan,[hw.ab_det], hw.motor, 1, 5, 5))
+    RE(bps.repeater(num_pruned, scan, [hw.ab_det], hw.motor, 1, 5, 5))
     
     # get the LivePlot object
     liveplots_list = list(bec._live_plots.values())
 
     # test it
     assert len(liveplots_list) == 1
-    lp = liveplots_list[0].get(hw.ab_det.name)
+
+    # get the LivePlot object
+    lp = list(liveplots_list[0].values())[0]
     assert lp is not None
     assert len(lp.ax.lines) == num_pruned
 
@@ -134,12 +136,12 @@ def test_plot_prune_fifo(RE, hw):
     assert len(lp.ax.lines) == num_pruned
 
     # add more lines to the LivePlot
-    RE(bps.repeater(num_pruned, scan,[hw.ab_det], hw.motor, 1, 5, 5))
+    RE(bps.repeater(num_pruned, scan, [hw.ab_det], hw.motor, 1, 5, 5))
 
     # get the LivePlot object, again, in case the UUID was changed
     liveplots_list = list(bec._live_plots.values())
     assert len(liveplots_list) == 1
-    lp = liveplots_list[0].get(hw.ab_det.name)
+    lp = list(liveplots_list[0].values())[0]
     assert lp is not None
     assert len(lp.ax.lines) == num_pruned*2
 
