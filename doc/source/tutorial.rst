@@ -51,7 +51,7 @@ Before You Begin
 
   .. code-block:: bash
 
-    conda install -c lightsource2-tag bluesky ophyd databroker ipython matplotlib
+    conda install -c nsls2forge bluesky ophyd databroker ipython matplotlib
 
 * Start IPython:
 
