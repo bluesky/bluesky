@@ -1,11 +1,10 @@
 import asyncio
 from datetime import datetime
-import time as ttime
 import sys
 import logging
 from warnings import warn
 from inspect import Parameter, Signature
-from itertools import count, tee
+from itertools import count
 from collections import deque, defaultdict, ChainMap
 from enum import Enum
 import functools
@@ -30,13 +29,27 @@ except ImportError:
     current_task = Task.current_task
     del Task
 
-from .utils import (CallbackRegistry, SigintHandler,
-                    normalize_subs_input, AsyncInput,
-                    NoReplayAllowed, RequestAbort, RequestStop,
-                    RunEngineInterrupted, IllegalMessageSequence,
-                    FailedPause, FailedStatus, InvalidCommand,
-                    PlanHalt, Msg, ensure_generator, single_gen,
-                    default_during_task)
+from .utils import (
+    AsyncInput,
+    CallbackRegistry,
+    FailedPause,
+    FailedStatus,
+    IllegalBundlingSequence,
+    IllegalMessageSequence,
+    IllegalRunSequence,
+    InvalidCommand,
+    Msg,
+    NoReplayAllowed,
+    PlanHalt,
+    RequestAbort,
+    RequestStop,
+    RunEngineInterrupted,
+    SigintHandler,
+    default_during_task,
+    ensure_generator,
+    normalize_subs_input,
+    single_gen,
+)
 
 
 class _RunEnginePanic(Exception):
@@ -1559,9 +1572,9 @@ class RunEngine:
         # TODO extract this from the Msg
         run_key = _extract_run_key(msg)
         if run_key in self._run_bundlers:
-            raise IllegalMessageSequence("A 'close_run' message was not "
-                                         "received before the 'open_run' "
-                                         "message")
+            raise IllegalRunSequence(msg, "A 'close_run' message was not "
+                                     "received before the 'open_run' "
+                                     "message")
 
         # Run scan_id calculation method
         self.md['scan_id'] = self.scan_id_source(self.md)
@@ -1604,9 +1617,12 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'close_run' message was not "
-                                         "received before the 'open_run' "
-                                         "message") from ke
+            raise IllegalRunSequence(msg, "A 'close_run' message was received "
+                                     "but there is no run open. If this "
+                                     "occurred after a pause/resume, add a "
+                                     "'checkpoint' message after the "
+                                     "'close_run' message.") from ke
+
         ret = (await current_run.close_run(msg))
         del self._run_bundlers[run_key]
         return ret
@@ -1630,9 +1646,10 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("Cannot bundle readings without "
-                                         "an open run. That is, 'create' must "
-                                         "be preceded by 'open_run'.") from ke
+            raise IllegalRunSequence(msg, "Cannot bundle readings without an "
+                                     "open run. That is, 'create' must be "
+                                     "preceded by 'open_run'.") from ke
+
         return (await current_run.create(msg))
 
     async def _read(self, msg):
@@ -1683,8 +1700,9 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'monitor' message was sent but no "
-                                         "run is open.") from ke
+            raise IllegalRunSequence(msg, "A 'monitor' message was sent but "
+                                     "no run is open.") from ke
+
         await current_run.monitor(msg)
         await self._reset_checkpoint_state_coro()
 
@@ -1700,7 +1718,7 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence(
+            raise IllegalRunSequence(msg,
                 "A 'unmonitor' message was sent but no "
                 "run is open.") from ke
         await current_run.unmonitor(msg)
@@ -1719,9 +1737,8 @@ class RunEngine:
         except KeyError as ke:
             # sanity check -- this should be caught by 'create' which makes
             # this code path impossible
-            raise IllegalMessageSequence(
-                "A 'save' message was sent but no " "run is open."
-            ) from ke
+            raise IllegalRunSequence(msg, "A 'save' message was sent but no "
+                                     "run is open.") from ke
 
         await current_run.save(msg)
 
@@ -1736,9 +1753,9 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence(
-                "A 'drop' message was sent but no " "run is open."
-            ) from ke
+            raise IllegalRunSequence(msg, "A 'drop' message was sent but no "
+                                     "run is open.") from ke
+
         await current_run.drop(msg)
 
     async def _kickoff(self, msg):
@@ -1769,8 +1786,8 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'kickoff' message was sent but no "
-                                         "run is open.") from ke
+            raise IllegalRunSequence(msg, "A 'kickoff' message was sent but "
+                                     "no run is open.") from ke
 
         _, obj, args, kwargs, _ = msg
         kwargs = dict(msg.kwargs)
@@ -1882,8 +1899,10 @@ class RunEngine:
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
-            raise IllegalMessageSequence("A 'collect' message was sent but no "
-                                         "run is open.") from ke
+            # sanity check -- 'kickoff' should catch this and make this
+            # code path impossible
+            raise IllegalRunSequence(msg, "A 'collect' message was sent but "
+                                     "no run is open.") from ke
 
         return (await current_run.collect(msg))
 
@@ -2064,8 +2083,9 @@ class RunEngine:
         """
         for current_run in self._run_bundlers.values():
             if current_run.bundling:
-                raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
-                                             "and before 'save'. Aborting!")
+                raise IllegalBundlingSequence(msg, "Cannot 'checkpoint' after "
+                                              "'create' and before 'save'. "
+                                              "Aborting!")
 
         await self._reset_checkpoint_state_coro()
 
@@ -2135,9 +2155,11 @@ class RunEngine:
             current_run = None
         else:
             if current_run.bundling:
-                raise IllegalMessageSequence(
-                    "Cannot configure after 'create' but before 'save'"
+                raise IllegalBundlingSequence(
+                    msg,
+                    "Cannot configure after 'create' but before 'save'. "
                     "Aborting!")
+
         _, obj, args, kwargs, _ = msg
 
         old, new = obj.configure(*args, **kwargs)

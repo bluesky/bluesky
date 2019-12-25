@@ -3,11 +3,13 @@ from itertools import count, tee
 import time as ttime
 from event_model import DocumentNames
 from .utils import (
-    new_uid,
+    IllegalBundlingSequence,
     IllegalMessageSequence,
-    _rearrange_into_parallel_dicts,
-    short_uid,
+    IllegalMonitorSequence,
     Msg,
+    _rearrange_into_parallel_dicts,
+    new_uid,
+    short_uid,
 )
 
 
@@ -109,13 +111,11 @@ class RunBundler:
 
     async def create(self, msg):
         if self.bundling:
-            raise IllegalMessageSequence(
-                "A second 'create' message is not "
-                "allowed until the current event "
-                "bundle is closed with a 'save' or "
-                "drop"
-                "message."
-            )
+            raise IllegalBundlingSequence(msg, "A second 'create' message is "
+                                          "not allowed until the current event"
+                                          " bundle is closed with a 'save' or "
+                                          "'drop' message.")
+
         self._read_cache.clear()
         self._asset_docs_cache.clear()
         self._objs_read.clear()
@@ -191,10 +191,10 @@ class RunBundler:
         kwargs = dict(msg.kwargs)
         name = kwargs.pop("name", short_uid("monitor"))
         if obj in self._monitor_params:
-            raise IllegalMessageSequence(
-                "A 'monitor' message was sent for {}"
-                "which is already monitored".format(obj)
-            )
+            raise IllegalMonitorSequence(msg, "A 'monitor' message was sent "
+                                         "for {} which is already "
+                                         "monitored".format(obj))
+
         descriptor_uid = new_uid()
         data_keys = obj.describe()
         config = {obj.name: {"data": {}, "timestamps": {}}}
@@ -273,9 +273,10 @@ class RunBundler:
 
         obj = msg.obj
         if obj not in self._monitor_params:
-            raise IllegalMessageSequence(
-                f"Cannot 'unmonitor' {obj}; it is not " "being monitored."
-            )
+            raise IllegalMonitorSequence(msg,
+                                         f"Cannot 'unmonitor' {obj}; it is "
+                                         "not being monitored.")
+
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
@@ -283,11 +284,10 @@ class RunBundler:
 
     async def save(self, msg):
         if not self.bundling:
-            raise IllegalMessageSequence(
-                "A 'create' message must be sent, to "
-                "open an event bundle, before that "
-                "bundle can be saved with 'save'."
-            )
+            raise IllegalBundlingSequence(msg, "A 'create' message must be "
+                                          "sent, to open an event bundle, "
+                                          "before that bundle can be saved "
+                                          "with 'save'.")
 
         # Short-circuit if nothing has been read. (Do not create empty Events.)
         if not self._objs_read:
@@ -431,11 +431,10 @@ class RunBundler:
 
     async def drop(self, msg):
         if not self.bundling:
-            raise IllegalMessageSequence(
-                "A 'create' message must be sent, to "
-                "open an event bundle, before that "
-                "bundle can be dropped with 'drop'."
-            )
+            raise IllegalBundlingSequence(msg, "A 'create' message must be "
+                                          "sent, to open an event bundle, "
+                                          "before that bundle can be dropped "
+                                          "with 'drop'.")
 
         self.bundling = False
         self._bundle_name = None
