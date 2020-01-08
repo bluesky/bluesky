@@ -1141,8 +1141,12 @@ class RunEngine:
         self._interrupted = True
         was_paused = self._state == 'paused'
         self._state = 'stopping'
-        if not was_paused:
+        if was_paused:
+            with self._state_lock:
+                self._exception = RequestStop
+        else:
             self._task.cancel()
+
         return tuple(self._run_start_uids)
 
     def halt(self):
@@ -1187,13 +1191,15 @@ class RunEngine:
         print("Halting: skipping cleanup and marking exit_status as "
               "'abort'...")
         self._interrupted = True
-        with self._state_lock:
-            self._exception = PlanHalt()
-            self._exit_status = 'abort'
         was_paused = self._state == 'paused'
         self._state = 'halting'
-        if not was_paused:
+        if was_paused:
+            with self._state_lock:
+                self._exception = PlanHalt
+                self._exit_status = 'abort'
+        else:
             self._task.cancel()
+
         return tuple(self._run_start_uids)
 
     def _stop_movable_objects(self, *, success=True):

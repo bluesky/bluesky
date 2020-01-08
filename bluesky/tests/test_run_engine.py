@@ -12,18 +12,20 @@ from bluesky.tests import requires_ophyd
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
                                 NoReplayAllowed, FailedStatus,
-                                RunEngineInterrupted)
+                                RunEngineInterrupted,
+                                RequestStop,
+                                RequestAbort,
+                                PlanHalt)
 from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
 from bluesky.plans import (fly, count, grid_scan)
-from bluesky.plan_stubs import (abs_set, trigger_and_read)
+from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint)
 from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    reset_positions_decorator,
                                    run_wrapper, rewindable_wrapper,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
-from super_state_machine.errors import TransitionError
 
 
 def test_states():
@@ -570,6 +572,27 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
     assert motor.position == 14
     unpause_func(RE)
     assert motor.position == 1024
+
+
+@pytest.mark.parametrize('unpause_func,excp',
+                         [(lambda RE: RE.stop(), RequestStop),
+                          (lambda RE: RE.abort(), RequestAbort),
+                          (lambda RE: RE.halt(), GeneratorExit)])
+def test_exit_raise(RE, unpause_func, excp):
+
+    flag = False
+    @reset_positions_decorator()
+    def simple_plan():
+        nonlocal flag
+        try:
+            yield from checkpoint()
+            yield Msg('pause')
+        except excp:
+            flag = True
+    with pytest.raises(RunEngineInterrupted):
+        RE(simple_plan())
+    unpause_func(RE)
+    assert flag
 
 
 @pytest.mark.skipif(
