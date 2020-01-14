@@ -1115,7 +1115,8 @@ class ProgressBar:
         if all(x is not None for x in (current, initial, target)):
             # Display a proper progress bar.
             total = round(_L2norm(target, initial), precision or 3)
-            n = round(_L2norm(current, initial), precision or 3)
+            # make sure we ignore overshoot to prevent tqdm from exploding.
+            n = np.clip(round(_L2norm(current, initial), precision or 3), 0, total)
             # Compute this only if the status object did not provide it.
             if time_elapsed is None:
                 time_elapsed = time.time() - self.creation_time
