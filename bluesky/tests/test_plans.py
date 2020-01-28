@@ -192,3 +192,16 @@ def test_pseudo_mv(hw, RE, pln):
     expecte_objs = [p, None]
     assert len(m_col.msgs) == 2
     assert [m.obj for m in m_col.msgs] == expecte_objs
+
+
+def test_submit_info(RE):
+    col = DocCollector()
+    RE.subscribe(col.insert)
+    info = 'test message'
+    RE(bp.submit_info(info=info))
+
+    st = col.start[0]
+
+    assert st['plan_name'] == 'info'
+    assert 'info' in st
+    assert st['info'] == info
