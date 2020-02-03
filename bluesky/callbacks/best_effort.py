@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from pprint import pformat
 import re
 import sys
+import threading
 import time
 from warnings import warn
 import weakref
@@ -530,28 +531,38 @@ class LivePlotPlusPeaks(LivePlot):
     __instances = weakref.WeakKeyDictionary()  # map ax to list of instances
 
     def __init__(self, *args, peak_results, **kwargs):
+        self.__setup_lock = threading.Lock()
+        self.__setup_event = threading.Event()
         super().__init__(*args, **kwargs)
         self.peak_results = peak_results
 
-        ax = self.ax  # for brevity
-        if ax not in self.__visible:
-            # This is the first instance of LivePlotPlusPeaks on these axes.
-            # Set up matplotlib event handling.
+        def setup():
+            # Run this code in start() so that it runs on the correct thread.
+            with self.__setup_lock:
+                if self.__setup_event.is_set():
+                    return
+                self.__setup_event.set()
+            ax = self.ax  # for brevity
+            if ax not in self.__visible:
+                # This is the first instance of LivePlotPlusPeaks on these axes.
+                # Set up matplotlib event handling.
 
-            self.__visible[ax] = False
+                self.__visible[ax] = False
 
-            def toggle(event):
-                if event.key == 'P':
-                    self.__visible[ax] = ~self.__visible[ax]
-                    for instance in self.__instances[ax]:
-                        instance.check_visibility()
+                def toggle(event):
+                    if event.key == 'P':
+                        self.__visible[ax] = ~self.__visible[ax]
+                        for instance in self.__instances[ax]:
+                            instance.check_visibility()
 
-            ax.figure.canvas.mpl_connect('key_press_event', toggle)
+                ax.figure.canvas.mpl_connect('key_press_event', toggle)
 
-        if ax not in self.__instances:
-            self.__instances[ax] = []
-        self.__instances[ax].append(self)
-        self.__arts = None
+            if ax not in self.__instances:
+                self.__instances[ax] = []
+            self.__instances[ax].append(self)
+            self.__arts = None
+
+        self.__setup = setup
 
     def check_visibility(self):
         if self.__visible[self.ax]:
@@ -579,6 +590,10 @@ class LivePlotPlusPeaks(LivePlot):
             vlines.append(self.ax.axvline(val, label=label, **style))
         self.__labeled[self.ax] = None
         self.__arts = vlines
+
+    def start(self, doc):
+        super().start(doc)
+        self.__setup()
 
     def stop(self, doc):
         self.check_visibility()

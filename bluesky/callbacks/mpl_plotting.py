@@ -1,6 +1,7 @@
 from collections import ChainMap
 from cycler import cycler
 import numpy as np
+import threading
 import warnings
 import functools
 from .core import CallbackBase, get_obj_fields, make_class_safe
@@ -80,44 +81,57 @@ class LivePlot(QtAwareCallback):
     """
     def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, fig=None, epoch='run', **kwargs):
-        import matplotlib.pyplot as plt
         super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
-        if fig is not None:
-            if ax is not None:
-                raise ValueError("Values were given for both `fig` and `ax`. "
-                                 "Only one can be used; prefer ax.")
-            warnings.warn("The `fig` keyword arugment of LivePlot is "
-                          "deprecated and will be removed in the future. "
-                          "Instead, use the new keyword argument `ax` to "
-                          "provide specific Axes to plot on.")
-            ax = fig.gca()
-        if ax is None:
-            fig, ax = plt.subplots()
-        self.ax = ax
+        self.__setup_lock = threading.Lock()
+        self.__setup_event = threading.Event()
 
-        if legend_keys is None:
-            legend_keys = []
-        self.legend_keys = ['scan_id'] + legend_keys
-        if x is not None:
-            self.x, *others = get_obj_fields([x])
-        else:
-            self.x = 'seq_num'
-        self.y, *others = get_obj_fields([y])
-        self.ax.set_ylabel(y)
-        self.ax.set_xlabel(x or 'sequence #')
-        if xlim is not None:
-            self.ax.set_xlim(*xlim)
-        if ylim is not None:
-            self.ax.set_ylim(*ylim)
-        self.ax.margins(.1)
-        self.kwargs = kwargs
-        self.lines = []
-        self.legend = None
-        self.legend_title = " :: ".join([name for name in self.legend_keys])
-        self._epoch_offset = None  # used if x == 'time'
-        self._epoch = epoch
+        def setup():
+            # Run this code in start() so that it runs on the correct thread.
+            nonlocal y, x, legend_keys, xlim, ylim, ax, fig, epoch, kwargs
+            import matplotlib.pyplot as plt
+            with self.__setup_lock:
+                if self.__setup_event.is_set():
+                    return
+                self.__setup_event.set()
+            if fig is not None:
+                if ax is not None:
+                    raise ValueError("Values were given for both `fig` and `ax`. "
+                                    "Only one can be used; prefer ax.")
+                warnings.warn("The `fig` keyword arugment of LivePlot is "
+                            "deprecated and will be removed in the future. "
+                            "Instead, use the new keyword argument `ax` to "
+                            "provide specific Axes to plot on.")
+                ax = fig.gca()
+            if ax is None:
+                fig, ax = plt.subplots()
+            self.ax = ax
+
+            if legend_keys is None:
+                legend_keys = []
+            self.legend_keys = ['scan_id'] + legend_keys
+            if x is not None:
+                self.x, *others = get_obj_fields([x])
+            else:
+                self.x = 'seq_num'
+            self.y, *others = get_obj_fields([y])
+            self.ax.set_ylabel(y)
+            self.ax.set_xlabel(x or 'sequence #')
+            if xlim is not None:
+                self.ax.set_xlim(*xlim)
+            if ylim is not None:
+                self.ax.set_ylim(*ylim)
+            self.ax.margins(.1)
+            self.kwargs = kwargs
+            self.lines = []
+            self.legend = None
+            self.legend_title = " :: ".join([name for name in self.legend_keys])
+            self._epoch_offset = None  # used if x == 'time'
+            self._epoch = epoch
+
+        self.__setup = setup
 
     def start(self, doc):
+        self.__setup()
         # The doc is not used; we just use the signal that a new run began.
         self._epoch_offset = doc['time']  # used if self.x == 'time'
         self.x_data, self.y_data = [], []
@@ -224,40 +238,52 @@ class LiveScatter(QtAwareCallback):
     def __init__(self, x, y, I, *, xlim=None, ylim=None,
                  clim=None, cmap='viridis', ax=None, **kwargs):
         super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
-        import matplotlib.pyplot as plt
-        import matplotlib.colors as mcolors
-        if ax is None:
-            fig, ax = plt.subplots()
-            fig.show()
-        ax.cla()
-        self.x = x
-        self.y = y
-        self.I = I
-        ax.set_xlabel(x)
-        ax.set_ylabel(y)
-        ax.set_aspect('equal')
-        self._sc = []
-        self.ax = ax
-        ax.margins(.1)
-        self._xdata, self._ydata, self._Idata = [], [], []
-        self._norm = mcolors.Normalize()
-        self._minx, self._maxx, self._miny, self._maxy = (None,)*4
+        self.__setup_lock = threading.Lock()
+        self.__setup_event = threading.Event()
+        def setup():
+            # Run this code in start() so that it runs on the correct thread.
+            nonlocal x, y, I, xlim, ylim, clim, cmap, ax, kwargs
+            with self.__setup_lock:
+                if self.__setup_event.is_set():
+                    return
+                self.__setup_event.set()
+            import matplotlib.pyplot as plt
+            import matplotlib.colors as mcolors
+            if ax is None:
+                fig, ax = plt.subplots()
+                fig.show()
+            ax.cla()
+            self.x = x
+            self.y = y
+            self.I = I
+            ax.set_xlabel(x)
+            ax.set_ylabel(y)
+            ax.set_aspect('equal')
+            self._sc = []
+            self.ax = ax
+            ax.margins(.1)
+            self._xdata, self._ydata, self._Idata = [], [], []
+            self._norm = mcolors.Normalize()
+            self._minx, self._maxx, self._miny, self._maxy = (None,)*4
 
-        self.xlim = xlim
-        self.ylim = ylim
-        if xlim is not None:
-            ax.set_xlim(xlim)
-        if ylim is not None:
-            ax.set_ylim(ylim)
-        if clim is not None:
-            self._norm.vmin, self._norm.vmax = clim
-        self.clim = clim
-        self.cmap = cmap
-        self.kwargs = kwargs
-        self.kwargs.setdefault('edgecolor', 'face')
-        self.kwargs.setdefault('s', 50)
+            self.xlim = xlim
+            self.ylim = ylim
+            if xlim is not None:
+                ax.set_xlim(xlim)
+            if ylim is not None:
+                ax.set_ylim(ylim)
+            if clim is not None:
+                self._norm.vmin, self._norm.vmax = clim
+            self.clim = clim
+            self.cmap = cmap
+            self.kwargs = kwargs
+            self.kwargs.setdefault('edgecolor', 'face')
+            self.kwargs.setdefault('s', 50)
+
+        self.__setup = setup
 
     def start(self, doc):
+        self.__setup()
         self._xdata.clear()
         self._ydata.clear()
         self._Idata.clear()
@@ -370,30 +396,43 @@ class LiveGrid(QtAwareCallback):
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
                  ax=None, x_positive='right', y_positive='up', **kwargs):
         super().__init__(**kwargs)
-        import matplotlib.pyplot as plt
-        import matplotlib.colors as mcolors
-        if ax is None:
-            fig, ax = plt.subplots()
-        ax.cla()
-        self.I = I
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.set_aspect(aspect)
-        self.ax = ax
-        self._Idata = np.ones(raster_shape) * np.nan
-        self._norm = mcolors.Normalize()
-        if clim is not None:
-            self._norm.vmin, self._norm.vmax = clim
-        self.clim = clim
-        self.cmap = cmap
-        self.raster_shape = raster_shape
-        self.im = None
-        self.extent = extent
-        self.aspect = aspect
-        self.x_positive = x_positive
-        self.y_positive = y_positive
+        self.__setup_lock = threading.Lock()
+        self.__setup_event = threading.Event()
+        def setup():
+            # Run this code in start() so that it runs on the correct thread.
+            nonlocal raster_shape, I, clim, cmap, xlabel, ylabel, extent
+            nonlocal aspect, ax, x_positive, y_positive, kwargs
+            with self.__setup_lock:
+                if self.__setup_event.is_set():
+                    return
+                self.__setup_event.set()
+            import matplotlib.pyplot as plt
+            import matplotlib.colors as mcolors
+            if ax is None:
+                fig, ax = plt.subplots()
+            ax.cla()
+            self.I = I
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            ax.set_aspect(aspect)
+            self.ax = ax
+            self._Idata = np.ones(raster_shape) * np.nan
+            self._norm = mcolors.Normalize()
+            if clim is not None:
+                self._norm.vmin, self._norm.vmax = clim
+            self.clim = clim
+            self.cmap = cmap
+            self.raster_shape = raster_shape
+            self.im = None
+            self.extent = extent
+            self.aspect = aspect
+            self.x_positive = x_positive
+            self.y_positive = y_positive
+
+        self.__setup = setup
 
     def start(self, doc):
+        self.__setup()
         if self.im is not None:
             raise RuntimeError("Can not re-use LiveGrid")
         self._Idata = np.ones(self.raster_shape) * np.nan
@@ -514,6 +553,7 @@ class LiveFitPlot(LivePlot):
         return self._livefit
 
     def start(self, doc):
+        super().start(doc)
         self.livefit.start(doc)
         self.x, = self.livefit.independent_vars.keys()  # in case it changed
         if self._has_been_run:
@@ -523,7 +563,6 @@ class LiveFitPlot(LivePlot):
         self._has_been_run = True
         self.init_guess_line, = self.ax.plot([], [], color='grey', label=label)
         self.lines.append(self.init_guess_line)
-        super().start(doc)
         # Put fit above other lines (default 2) but below text (default 3).
         [line.set_zorder(2.5) for line in self.lines]
 
