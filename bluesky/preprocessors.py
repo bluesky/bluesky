@@ -473,6 +473,9 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
     raise an error in the RunEngine (or otherwise), the second plan
     will attempted to be run anyway.
 
+    See :func:`contingency_wrapper` for a more complex and more
+    feature-complete error-handling preprocessor.
+
     Parameters
     ----------
     plan : iterable or iterator
@@ -484,11 +487,16 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
     pause_for_debug : bool, optional
         If the plan should pause before running the clean final_plan in
         the case of an Exception.  This is intended as a debugging tool only.
+
     Yields
     ------
     msg : Msg
         messages from `plan` until it terminates or an error is raised, then
         messages from `final_plan`
+
+    See Also
+    --------
+    :func:`contingency_wrapper`
     '''
     # If final_plan is a generator *function* (as opposed to a generator
     # *instance*), call it.
@@ -528,23 +536,22 @@ def contingency_wrapper(plan, *,
                         pause_for_debug=False):
     '''try...except...else...finally helper
 
-    Run the first plan and then the second.  If any of the messages
-    raise an error in the RunEngine (or otherwise), the second plan
-    will attempted to be run anyway.
+    See :func:`finalize_wrapper` for a simplified but less powerful
+    error-handling preprocessor.
 
     Parameters
     ----------
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
     except_plan : generator function, optional
-        this will be called with the exception as the only input.  The
+        This will be called with the exception as the only input.  The
         plan does not need to re-raise, but may if you want to change the
         exception.
 
         Only subclasses of `Exception` will be passed in, will not see
         `GeneratorExit`, `SystemExit`, or `KeyboardInterrupt`
     else_plan : generator function, optional
-        well be called with no arguments if plan completes without raising
+        This will be called with no arguments if plan completes without raising
     final_plan : generator function, optional
         a generator, list, or similar containing `Msg` objects or a callable
         that reurns one; attempted to be run no matter what happens in the
@@ -552,11 +559,16 @@ def contingency_wrapper(plan, *,
     pause_for_debug : bool, optional
         If the plan should pause before running the clean final_plan in
         the case of an Exception.  This is intended as a debugging tool only.
+
     Yields
     ------
     msg : Msg
         messages from `plan` until it terminates or an error is raised, then
         messages from `final_plan`
+
+    See Also
+    --------
+    :func:`finalize_wrapper`
     '''
     cleanup = True
     try:
