@@ -900,10 +900,10 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def count_step(detectors, take_reading=trigger_and_read):
-    """Inner loop of a count scan.
+def one_shot(detectors, take_reading=trigger_and_read):
+    """Inner loop of a count.
 
-    This is the default function for ``per_step`` in count plans.
+    This is the default function for ``per_shot`` in count plans.
 
     Parameters
     ----------

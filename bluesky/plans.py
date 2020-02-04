@@ -22,7 +22,7 @@ from . import preprocessors as bpp
 from . import plan_stubs as bps
 
 
-def count(detectors, num=1, delay=None, *, per_step=None, md=None):
+def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     """
     Take one or more readings from detectors.
 
@@ -36,7 +36,7 @@ def count(detectors, num=1, delay=None, *, per_step=None, md=None):
         If None, capture data until canceled
     delay : iterable or scalar, optional
         Time delay in seconds between successive readings; default is 0.
-    per_step : callable, optional
+    per_shot : callable, optional
         hook for customizing action of inner loop (messages per step)
         Expected signature ::
 
@@ -65,13 +65,13 @@ def count(detectors, num=1, delay=None, *, per_step=None, md=None):
     _md.update(md or {})
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
-    if per_step is None:
-        per_step = bps.count_step
+    if per_shot is None:
+        per_shot = bps.one_shot
 
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
     def inner_count():
-        return (yield from bps.repeat(partial(per_step, detectors),
+        return (yield from bps.repeat(partial(per_shot, detectors),
                                       num=num, delay=delay))
 
     return (yield from inner_count())
