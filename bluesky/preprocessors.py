@@ -544,14 +544,14 @@ def contingency_wrapper(plan, *,
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
     except_plan : generator function, optional
-        this will be called with the exception as the only input.  The
+        This will be called with the exception as the only input.  The
         plan does not need to re-raise, but may if you want to change the
         exception.
 
         Only subclasses of `Exception` will be passed in, will not see
         `GeneratorExit`, `SystemExit`, or `KeyboardInterrupt`
     else_plan : generator function, optional
-        well be called with no arguments if plan completes without raising
+        This will be called with no arguments if plan completes without raising
     final_plan : generator function, optional
         a generator, list, or similar containing `Msg` objects or a callable
         that reurns one; attempted to be run no matter what happens in the
