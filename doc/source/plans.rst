@@ -647,6 +647,7 @@ a generator instance. The corresponding functions named
 
     baseline_decorator
     baseline_wrapper
+    contingency_wrapper
     finalize_decorator
     finalize_wrapper
     fly_during_decorator
