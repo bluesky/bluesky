@@ -222,6 +222,11 @@ Bug Fixes
 * Fix a critical typo that made
   :class:`~bluesky.callbacks.mpl_plotting.LiveGrid` unusable.
 
+Note that the 1.4.x series is not compatible with newer versions of matplotlib;
+it needs a version lower than 3.1.0 due to an API change in matplotlib. The
+1.5.x series is compatible with matplotlib versions before and after the
+change.
+
 v1.4.0 (2018-09-05)
 ===================
 
