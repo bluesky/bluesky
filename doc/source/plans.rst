@@ -534,6 +534,7 @@ Combinations of the above that are often convenient:
     trigger_and_read
     one_1d_step
     one_nd_step
+    one_shot
     move_per_step
 
 Special utilities:

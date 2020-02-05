@@ -900,11 +900,53 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def one_1d_step(detectors, motor, step):
+def one_shot(detectors, take_reading=trigger_and_read):
+    """Inner loop of a count.
+
+    This is the default function for ``per_shot`` in count plans.
+
+    Parameters
+    ----------
+    detectors : Iterable[OphydObj]
+        devices to read
+
+    take_reading : plan, optional
+        function to do the actual acquisition ::
+
+           def take_reading(dets, name='primary'):
+                yield from ...
+
+        Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
+
+        Defaults to `trigger_and_read`
+    """
+    yield Msg('checkpoint')
+    yield from take_reading(list(detectors))
+
+
+def one_1d_step(detectors, motor, step, take_reading=trigger_and_read):
     """
     Inner loop of a 1D step scan
 
     This is the default function for ``per_step`` param in 1D plans.
+
+    Parameters
+    ----------
+    detectors : iterable
+        devices to read
+    motor : Settable
+        The motor to move
+    step : Any
+        Where to move the motor to
+    take_reading : plan, optional
+        function to do the actual acquisition ::
+
+           def take_reading(dets, name='primary'):
+                yield from ...
+
+        Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
+
+        Defaults to `trigger_and_read`
     """
     def move():
         grp = _short_uid('set')
@@ -913,7 +955,7 @@ def one_1d_step(detectors, motor, step):
         yield Msg('wait', None, group=grp)
 
     yield from move()
-    return (yield from trigger_and_read(list(detectors) + [motor]))
+    return (yield from take_reading(list(detectors) + [motor]))
 
 
 def move_per_step(step, pos_cache):
@@ -940,7 +982,7 @@ def move_per_step(step, pos_cache):
     yield Msg('wait', None, group=grp)
 
 
-def one_nd_step(detectors, step, pos_cache):
+def one_nd_step(detectors, step, pos_cache, take_reading=trigger_and_read):
     """
     Inner loop of an N-dimensional step scan
 
@@ -954,10 +996,19 @@ def one_nd_step(detectors, step, pos_cache):
         mapping motors to positions in this step
     pos_cache : dict
         mapping motors to their last-set positions
+    take_reading : plan, optional
+        function to do the actual acquisition ::
+
+           def take_reading(dets, name='primary'):
+                yield from ...
+
+        Callable[List[OphydObj], Optional[str]] -> Generator[Msg], optional
+
+        Defaults to `trigger_and_read`
     """
     motors = step.keys()
     yield from move_per_step(step, pos_cache)
-    yield from trigger_and_read(list(detectors) + list(motors))
+    yield from take_reading(list(detectors) + list(motors))
 
 
 def repeat(plan, num=1, delay=None):
