@@ -563,7 +563,8 @@ class RunBundler:
         if not stream:
             await self.emit(DocumentNames.bulk_events, bulk_data)
             self.log.debug(
-                "Emitted bulk events for descriptors with uids " "%r", bulk_data.keys()
+                "Emitted bulk events for descriptors with uids %r",
+                bulk_data.keys()
             )
         if return_payload:
             return payload
