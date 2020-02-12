@@ -16,7 +16,6 @@ except ImportError:
 __all__ = ('color_logs', 'config_bluesky_logging', 'get_handler', 'LogFormatter',
            'set_handler', 'logger', 'state_logger', 'doc_logger', 'msg_logger')
 
-
 def _stderr_supports_color():
     try:
         if hasattr(sys.stderr, 'isatty') and sys.stderr.isatty():
@@ -102,8 +101,6 @@ class LogFormatter(logging.Formatter):
 
     def format(self, record):
         message = []
-        if hasattr(record, 'msg_command'):
-            message.append('msg')
         message.append(record.getMessage())
         record.message = ' '.join(message)
         record.asctime = self.formatTime(record, self.datefmt)

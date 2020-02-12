@@ -9,8 +9,7 @@ from itertools import count, tee
 from collections import deque, defaultdict, ChainMap
 from enum import Enum
 import functools
-import inspect
-from contextlib import ExitStack
+import inspect from contextlib import ExitStack
 import threading
 import weakref
 from .bundlers import RunBundler
@@ -116,9 +115,8 @@ class LoggingPropertyMachine(PropertyMachine):
         with obj._state_lock:
             super().__set__(obj, value)
         value = self.__get__(obj, own)
-        tags = {'old_status': old_value,
-                'direction': '--->>>',
-                'new_status': value}
+        tags = {'old_state': old_value,
+                'new_state': value}
         state_logger.info("Change state on %r from %r -> %r",
                            obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
