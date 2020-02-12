@@ -141,7 +141,7 @@ logger = logging.getLogger('bluesky')
 doc_logger = logging.getLogger('bluesky.emit_document')
 msg_logger = logging.getLogger('bluesky.RE.msg')
 state_logger = logging.getLogger('bluesky.RE.state')
-current_handler = None
+current_handler = logger.handlers[0]
 
 
 def validate_level(level) -> int:
