@@ -1,6 +1,6 @@
+os: linux
 dist: xenial
 language: python
-sudo: false
 
 env:
   global:
@@ -20,7 +20,7 @@ addons:
     packages:
       - qtbase5-dev
 
-matrix:
+jobs:
   fast_finish: true
   include:
     - os: linux
@@ -78,7 +78,7 @@ install:
 script:
   # ensure that callbacks import without matplotlib
   - python -c 'import sys, bluesky.callbacks; assert "matplotlib" not in sys.modules'
-  - coverage run run_tests.py
+  - coverage run -m pytest -v
   - coverage report -m
   - set -e
   - make -C doc html
