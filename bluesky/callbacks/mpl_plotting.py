@@ -14,6 +14,14 @@ logger = logging.getLogger(__name__)
 def _get_teleporter():
     from matplotlib.backends.qt_compat import QtCore
 
+    if not threading.current_thread() is threading.main_thread():
+        raise RuntimeError(
+            "A bluesky QtAwareCallback was instantiated from a backgrond "
+            "thread before the bluesky qt 'teleporter' was created. "
+            "To avoid this issue, "
+            "call bluesky.mpl_plotting.initialize_teleporter() "
+            "from the main thread first.")
+
     def handle_teleport(name, doc, obj):
         obj(name, doc, escape=True)
 
