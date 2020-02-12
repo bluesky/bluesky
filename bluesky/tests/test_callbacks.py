@@ -678,3 +678,23 @@ def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, stri
             scb(n.name, {})
 
     assert logger.exception.call_count == len(documents)
+
+
+def test_in_plan_qt_callback(RE, hw):
+    from bluesky.callbacks.mpl_plotting import _get_teleporter
+
+    _get_teleporter()
+
+    def my_plan():
+        motor = hw.motor
+        det = hw.det
+
+        motor.delay = 1
+
+        plan = bp.scan([det], motor, -5, 5, 25)
+        plan = subs_wrapper(
+            bp.scan([det], motor, -5, 5, 25), LivePlot(det.name, motor.name)
+        )
+        return (yield from plan)
+
+    RE(my_plan())

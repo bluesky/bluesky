@@ -14,9 +14,15 @@ logger = logging.getLogger(__name__)
 def _get_teleporter():
     from matplotlib.backends.qt_compat import QtCore
 
+    def handle_teleport(name, doc, obj):
+        obj(name, doc, escape=True)
+
     class Teleporter(QtCore.QObject):
-        name_doc_escape = QtCore.Signal(str, dict, bool)
-    return Teleporter
+        name_doc_escape = QtCore.Signal(str, dict, object)
+
+    t = Teleporter()
+    t.name_doc_escape.connect(handle_teleport)
+    return t
 
 
 class QtAwareCallback(CallbackBase):
@@ -25,16 +31,14 @@ class QtAwareCallback(CallbackBase):
             import matplotlib
             use_teleporter = 'qt' in matplotlib.get_backend().lower()
         if use_teleporter:
-            Teleporter = _get_teleporter()
-            self.__teleporter = Teleporter()
-            self.__teleporter.name_doc_escape.connect(self.__call__)
+            self.__teleporter = _get_teleporter()
         else:
             self.__teleporter = None
         super().__init__(*args, **kwargs)
 
-    def __call__(self, name, doc, escape=False):
+    def __call__(self, name, doc, *, escape=False):
         if not escape and self.__teleporter is not None:
-            self.__teleporter.name_doc_escape.emit(name, doc, True)
+            self.__teleporter.name_doc_escape.emit(name, doc, self)
         else:
             return CallbackBase.__call__(self, name, doc)
 
