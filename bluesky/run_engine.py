@@ -1750,10 +1750,6 @@ class RunEngine:
     async def _kickoff(self, msg):
         """Start a flyscan object
 
-        Parameters
-        ----------
-        msg : Msg
-
         Special kwargs for the 'Msg' object in this function:
         group : str
             The blocking group to this flyer to
@@ -1861,17 +1857,13 @@ class RunEngine:
         return ret
 
     async def _collect(self, msg):
-        """Collect data cached by a flyer and emit documents
-
-        Parameters
-        ----------
-        msg : Msg
+        """
+        Collect data cached by a flyer and emit documents
 
         Expected message object is:
 
             Msg('collect', flyer_object)
             Msg('collect', flyer_object, stream=True, return_payload=False)
-
         """
         run_key = _extract_run_key(msg)
         try:
