@@ -68,7 +68,8 @@ RE = RunEngine({})
 
 # New standard configuration steps!
 
-from bluesky.plans import scan, grid_scan, SupplementalData
+from bluesky.plans import scan, grid_scan
+from bluesky.preprocessors import SupplementalData
 diag = SupplementalData()
 RE.preprocessors.append(diag)
 

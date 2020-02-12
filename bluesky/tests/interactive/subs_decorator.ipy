@@ -1,0 +1,19 @@
+from bluesky import RunEngine
+from bluesky.plans import scan
+from bluesky.preprocessors import subs_decorator
+from bluesky.callbacks.mpl_plotting import LivePlot
+from ophyd.sim import det, motor
+
+RE = RunEngine()
+
+
+# Instatiate Live plot at plan definition time.
+
+
+@subs_decorator(LivePlot('det', 'motor'))
+def scan_with_plot(*args, **kwargs):
+    return (yield from scan(*args, **kwargs))
+
+
+motor.delay = 0.3
+RE(scan_with_plot([det], motor, -10, 10, 20))

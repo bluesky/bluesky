@@ -1,0 +1,25 @@
+from bluesky import RunEngine
+from bluesky.plans import scan
+from bluesky.preprocessors import subs_decorator
+from bluesky.callbacks.mpl_plotting import LivePlot, initialize_qt_teleporter
+from ophyd.sim import det, motor
+
+RE = RunEngine()
+
+# First initalize qt teleporter.
+initialize_qt_teleporter()
+
+
+# Instantiate LivePlot during plan execution.
+
+
+def scan_with_dynamic_plot(*args, **kwargs):
+
+    @subs_decorator(LivePlot('det', 'motor'))
+    def inner_scan_with_dynamic_plot(*args, **kwargs):
+        return (yield from scan(*args, **kwargs))
+
+    return (yield from inner_scan_with_dynamic_plot(*args, **kwargs))
+
+
+RE(scan_with_dynamic_plot([det], motor, -10, 10, 20))
