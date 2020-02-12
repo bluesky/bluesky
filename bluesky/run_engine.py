@@ -1861,28 +1861,17 @@ class RunEngine:
         return ret
 
     async def _collect(self, msg):
-        """Start a flyscan object
+        """Collect data cached by a flyer and emit documents
 
         Parameters
         ----------
         msg : Msg
 
-        Special kwargs for the 'Msg' object in this function:
-        group : str
-            The blocking group to this flyer to
-
         Expected message object is:
 
-        If `flyer_object` has a `kickoff` function that takes no arguments:
+            Msg('collect', flyer_object)
+            Msg('collect', flyer_object, stream=True, return_payload=False)
 
-            Msg('kickoff', flyer_object)
-            Msg('kickoff', flyer_object, group=<name>)
-
-        If `flyer_object` has a `kickoff` function that takes
-        `(start, stop, steps)` as its function arguments:
-
-            Msg('kickoff', flyer_object, start, stop, step)
-            Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
         run_key = _extract_run_key(msg)
         try:
