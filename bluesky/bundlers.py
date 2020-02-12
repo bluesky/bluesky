@@ -69,7 +69,15 @@ class RunBundler:
         return self._run_start_uid
 
     async def close_run(self, msg):
+        """Instruct the RunEngine to write the RunStop document
 
+        Expected message object is:
+
+            Msg('close_run', None, exit_status=None, reason=None)
+
+        if *exit_stats* and *reason* are not provided, use the values
+        stashed on the RE.
+        """
         if not self.run_is_open:
             raise IllegalMessageSequence(
                 "A 'close_run' message was received but there is no run "
@@ -108,6 +116,20 @@ class RunBundler:
         return doc["run_start"]
 
     async def create(self, msg):
+        """Trigger the run engine to start bundling future obj.read() calls for
+         an Event document
+
+        Expected message object is:
+
+            Msg('create', None, name='primary')
+            Msg('create', name='primary')
+
+        Note that the `name` kwarg will be the 'name' field of the resulting
+        descriptor. So descriptor['name'] = msg.kwargs['name'].
+
+        Also note that changing the 'name' of the Event will create a new
+        Descriptor document.
+        """
         if self.bundling:
             raise IllegalMessageSequence(
                 "A second 'create' message is not "
@@ -133,6 +155,13 @@ class RunBundler:
                 ) from None
 
     async def read(self, msg, reading):
+        """
+        Add a reading to the open event bundle.
+
+        Expected message object is:
+
+            Msg('read', obj)
+        """
         if self.bundling:
             obj = msg.obj
             # if the object is not in the _describe_cache, cache it
@@ -183,6 +212,21 @@ class RunBundler:
         self._config_ts_cache[obj] = config_ts
 
     async def monitor(self, msg):
+        """
+        Monitor a signal. Emit event documents asynchronously.
+
+        A descriptor document is emitted immediately. Then, a closure is
+        defined that emits Event documents associated with that descriptor
+        from a separate thread. This process is not related to the main
+        bundling process (create/read/save).
+
+        Expected message object is:
+
+            Msg('monitor', obj, **kwargs)
+            Msg('monitor', obj, name='event-stream-name', **kwargs)
+
+        where kwargs are passed through to ``obj.subscribe()``
+        """
         obj = msg.obj
         if msg.args:
             raise ValueError(
@@ -270,7 +314,13 @@ class RunBundler:
         self.bundling = False
 
     async def unmonitor(self, msg):
+        """
+        Stop monitoring; i.e., remove the callback emitting event documents.
 
+        Expected message object is:
+
+            Msg('unmonitor', obj)
+        """
         obj = msg.obj
         if obj not in self._monitor_params:
             raise IllegalMessageSequence(
@@ -282,6 +332,12 @@ class RunBundler:
         await self.reset_checkpoint_state_coro()
 
     async def save(self, msg):
+        """Save the event that is currently being bundled
+
+        Expected message object is:
+
+            Msg('save')
+        """
         if not self.bundling:
             raise IllegalMessageSequence(
                 "A 'create' message must be sent, to "
@@ -430,6 +486,12 @@ class RunBundler:
         self._teed_sequence_counters.clear()
 
     async def drop(self, msg):
+        """Drop the event that is currently being bundled
+
+        Expected message object is:
+
+            Msg('drop')
+        """
         if not self.bundling:
             raise IllegalMessageSequence(
                 "A 'create' message must be sent, to "
@@ -442,19 +504,53 @@ class RunBundler:
         self.log.debug("Dropped open event bundle")
 
     async def kickoff(self, msg):
+        """Start a flyscan object
+
+        Special kwargs for the 'Msg' object in this function:
+        group : str
+            The blocking group to this flyer to
+
+        Expected message object is:
+
+        If `flyer_object` has a `kickoff` function that takes no arguments:
+
+            Msg('kickoff', flyer_object)
+            Msg('kickoff', flyer_object, group=<name>)
+
+        If `flyer_object` has a `kickoff` function that takes
+        `(start, stop, steps)` as its function arguments:
+
+            Msg('kickoff', flyer_object, start, stop, step)
+            Msg('kickoff', flyer_object, start, stop, step, group=<name>)
+        """
         self._uncollected.add(msg.obj)
 
     async def complete(self, msg):
+        """
+        Tell a flyer, 'stop collecting, whenever you are ready'.
+
+        The flyer returns a status object. Some flyers respond to this
+        command by stopping collection and returning a finished status
+        object immediately. Other flyers finish their given course and
+        finish whenever they finish, irrespective of when this command is
+        issued.
+
+        Expected message object is:
+
+            Msg('complete', flyer, group=<GROUP>)
+
+        where <GROUP> is a hashable identifier.
+        """
         ...
 
     async def collect(self, msg):
         """
-        Collect data cached by a flyer and emit descriptor and event documents.
+        Collect data cached by a flyer and emit documents.
 
         Expect message object is
 
             Msg('collect', obj)
-            Msg('collect', obj, stream=True)
+            Msg('collect', flyer_object, stream=True, return_payload=False)
         """
         obj = msg.obj
 
@@ -526,7 +622,16 @@ class RunBundler:
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'bulk_events' subscription once.
         stream = msg.kwargs.get("stream", False)
+        # If True, accumulate all the Events in memory and return them at the
+        # end, providing the plan access to the Events. If False, do not
+        # accumulate, and return None.
+        return_payload = msg.kwargs.get('return_payload', True)
+        payload = []
+
         for ev in obj.collect():
+            if return_payload:
+                payload.append(ev)
+
             objs_read = frozenset(ev["data"])
             stream_name, descriptor_uid = local_descriptors[objs_read]
             seq_num = next(self._sequence_counters[stream_name])
@@ -554,8 +659,11 @@ class RunBundler:
         if not stream:
             await self.emit(DocumentNames.bulk_events, bulk_data)
             self.log.debug(
-                "Emitted bulk events for descriptors with uids " "%r", bulk_data.keys()
+                "Emitted bulk events for descriptors with uids %r",
+                bulk_data.keys()
             )
+        if return_payload:
+            return payload
 
     async def backstop_collect(self):
         for obj in list(self._uncollected):
@@ -565,6 +673,16 @@ class RunBundler:
                 self.log.exception("Failed to collect %r.", obj)
 
     async def configure(self, msg):
+        """Configure an object
+
+        Expected message object is:
+
+            Msg('configure', object, *args, **kwargs)
+
+        which results in this call:
+
+            object.configure(*args, **kwargs)
+        """
         obj = msg.obj
         # Invalidate any event descriptors that include this object.
         # New event descriptors, with this new configuration, will
