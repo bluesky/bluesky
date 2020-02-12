@@ -1,10 +1,13 @@
 from bluesky import RunEngine
 from bluesky.plans import scan
 from bluesky.preprocessors import subs_decorator
-from bluesky.callbacks.mpl_plotting import LivePlot
+from bluesky.callbacks.mpl_plotting import LivePlot, initialize_qt_teleporter
 from ophyd.sim import det, motor
 
 RE = RunEngine()
+
+# First initalize qt teleporter.
+initialize_qt_teleporter()
 
 
 # Instantiate LivePlot during plan execution.
