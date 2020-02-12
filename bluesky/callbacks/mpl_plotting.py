@@ -25,7 +25,7 @@ def initialize_qt_teleporter():
     RuntimeError
         If called from any thread but the main thread
     """
-    if not threading.current_thread() is threading.main_thread():
+    if threading.current_thread() is not threading.main_thread():
         raise RuntimeError(
             "initialize_qt_teleporter() may only be called from the main "
             "thread.")
@@ -37,7 +37,7 @@ def initialize_qt_teleporter():
 def _get_teleporter():
     from matplotlib.backends.qt_compat import QtCore
 
-    if not threading.current_thread() is threading.main_thread():
+    if threading.current_thread() is not threading.main_thread():
         raise RuntimeError(
             "A bluesky QtAwareCallback was instantiated from a backgrond "
             "thread before the bluesky qt 'teleporter' was created. "
