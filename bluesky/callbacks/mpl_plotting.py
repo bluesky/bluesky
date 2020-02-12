@@ -9,6 +9,29 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+# The purpose of initialize_teleporter, _get_teleporter, and QtAwareCallback is
+# to ensure that Qt GUI events are processed on the main thread.
+
+
+def initialize_qt_teleporter():
+    """
+    Set up the bluesky Qt 'teleporter'.
+
+    This makes it safe to instantiate QtAwareCallback from a background thread.
+
+    Raises
+    ------
+    RuntimeError
+        If called from any thread but the main thread
+    """
+    if not threading.current_thread() is threading.main_thread():
+        raise RuntimeError(
+            "initialize_qt_teleporter() may only be called from the main "
+            "thread.")
+    _get_teleporter()
+
+
 # use function + LRU cache to hide Matplotib import until needed
 @functools.lru_cache(maxsize=1)
 def _get_teleporter():
