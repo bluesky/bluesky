@@ -1,6 +1,6 @@
+os: linux
 dist: xenial
 language: python
-sudo: false
 
 env:
   global:
@@ -20,7 +20,7 @@ addons:
     packages:
       - qtbase5-dev
 
-matrix:
+jobs:
   fast_finish: true
   include:
     - os: linux
