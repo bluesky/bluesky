@@ -406,13 +406,10 @@ class RunBundler:
                 object_keys=object_keys,
             )
             await self.emit(DocumentNames.descriptor, doc)
-            self.log.debug(
-                "Emitted Event Descriptor with name %r containing "
-                "data keys %r (uid=%r)",
-                desc_key,
-                data_keys.keys(),
-                descriptor_uid,
-            )
+            doc_logger.debug("[descriptor] document is emitted with name %r containing "
+                         "data keys %r (run_uid=%r)", name, data_keys.keys(),
+                         self._run_start_uid,
+                         extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
             self._descriptors[desc_key] = (objs_read, doc)
 
         descriptor_uid = doc["uid"]
@@ -450,9 +447,8 @@ class RunBundler:
             filled=filled,
         )
         await self.emit(DocumentNames.event, doc)
-        self.log.debug(
-            "Emitted Event with data keys %r (uid=%r)", data.keys(), event_uid
-        )
+        doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)", data.keys(),
+                 self._run_start_uid, extra={'doc_name': 'event', 'doc_uid': self._run_start_uid})
 
     def clear_monitors(self):
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
