@@ -9,7 +9,7 @@ from itertools import count, tee
 from collections import deque, defaultdict, ChainMap
 from enum import Enum
 import functools
-import inspect 
+import inspect
 from contextlib import ExitStack
 import threading
 import weakref
