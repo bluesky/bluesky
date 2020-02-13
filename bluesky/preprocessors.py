@@ -1319,7 +1319,9 @@ def define_run_wrapper(plan, run):
         The run to set on each Msg
     """
     def _set_run_id(msg):
-        return msg._replace(run=run)
+        if not isinstance(msg.run, str):
+            msg = msg._replace(run=run)
+        return msg
 
     return (yield from msg_mutator(plan, _set_run_id))
 
