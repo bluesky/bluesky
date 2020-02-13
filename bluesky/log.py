@@ -3,6 +3,7 @@
 import logging
 import sys
 import warnings
+
 try:
     import colorama
     colorama.init()
@@ -13,8 +14,10 @@ try:
 except ImportError:
     curses = None
 
-__all__ = ('color_logs', 'config_bluesky_logging', 'get_handler', 'LogFormatter',
-           'set_handler', 'logger', 'state_logger', 'doc_logger', 'msg_logger')
+__all__ = ('color_logs', 'config_bluesky_logging', 'get_handler',
+           'LogFormatter', 'set_handler', 'logger', 'state_logger',
+           'doc_logger', 'msg_logger')
+
 
 def _stderr_supports_color():
     try:
@@ -141,7 +144,7 @@ logger = logging.getLogger('bluesky')
 doc_logger = logging.getLogger('bluesky.emit_document')
 msg_logger = logging.getLogger('bluesky.RE.msg')
 state_logger = logging.getLogger('bluesky.RE.state')
-current_handler = logger.handlers[0]
+current_handler = None
 
 
 def validate_level(level) -> int:
