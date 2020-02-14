@@ -1307,7 +1307,7 @@ class SupplementalData:
         return (yield from plan)
 
 
-def define_run_wrapper(plan, run):
+def set_run_name_wrapper(plan, run_name):
     """
     Add a run id to each message in wrapped plan
 
@@ -1315,14 +1315,17 @@ def define_run_wrapper(plan, run):
     ----------
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
-    run_id : str
+    run_name : str
         The run to set on each Msg
     """
+
+    if not isinstance(run_name, str):
+        raise ValueError(f"run name must be a string: passed value {run_name} is of type {type(run_name)}")
     def _set_run_id(msg):
         if not isinstance(msg.run, str):
-            msg = msg._replace(run=run)
+            msg = msg._replace(run=run_name)
         return msg
 
     return (yield from msg_mutator(plan, _set_run_id))
 
-define_run_decorator = make_decorator(define_run_wrapper)
+set_run_name_decorator = make_decorator(set_run_name_wrapper)
