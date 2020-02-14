@@ -1316,7 +1316,7 @@ def set_run_name_wrapper(plan, run):
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
     run : str
-        The run to set on each Msg
+        The run name to set on each Msg
     """
 
     if not isinstance(run, str):
