@@ -146,11 +146,6 @@ def _state_locked(func):
     return inner
 
 
-def _extract_run_key(msg):
-    return msg.run or _extract_run_key.__default_run
-_extract_run_key.__default_run = object()
-
-
 class RunEngine:
     """The Run Engine execute messages and emits Documents.
 
@@ -1562,7 +1557,7 @@ class RunEngine:
         the RunStart document
         """
         # TODO extract this from the Msg
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         if run_key in self._run_bundlers:
             raise IllegalMessageSequence("A 'close_run' message was not "
                                          "received before the 'open_run' "
@@ -1605,7 +1600,7 @@ class RunEngine:
         stashed on the RE.
         """
         # TODO extract this from the Msg
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -1631,7 +1626,7 @@ class RunEngine:
         Also note that changing the 'name' of the Event will create a new
         Descriptor document.
         """
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -1657,7 +1652,7 @@ class RunEngine:
                 f"The read of {obj.name} returned None. "
                 "This is a bug in your object implementation, "
                 "`read` must return a dictionary.")
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError:
@@ -1684,7 +1679,7 @@ class RunEngine:
         where kwargs are passed through to ``obj.subscribe()``
         """
 
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -1701,7 +1696,7 @@ class RunEngine:
 
             Msg('unmonitor', obj)
         """
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -1718,7 +1713,7 @@ class RunEngine:
 
             Msg('save')
         """
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -1737,7 +1732,7 @@ class RunEngine:
 
             Msg('drop')
         """
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -1766,7 +1761,7 @@ class RunEngine:
             Msg('kickoff', flyer_object, start, stop, step)
             Msg('kickoff', flyer_object, start, stop, step, group=<name>)
         """
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -1820,7 +1815,7 @@ class RunEngine:
 
         where <GROUP> is a hashable identifier.
         """
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -1864,7 +1859,7 @@ class RunEngine:
             Msg('collect', flyer_object)
             Msg('collect', flyer_object, stream=True, return_payload=False)
         """
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError as ke:
@@ -2114,7 +2109,7 @@ class RunEngine:
 
             object.configure(*args, **kwargs)
         """
-        run_key = _extract_run_key(msg)
+        run_key = msg.run
         try:
             current_run = self._run_bundlers[run_key]
         except KeyError:
