@@ -1,7 +1,7 @@
 from bluesky import preprocessors as bpp
 from bluesky import plans as bp
 from bluesky import plan_stubs as bps
-from bluesky.preprocessors import define_run_wrapper as drw
+from bluesky.preprocessors import set_run_name_wrapper as srnw
 from bluesky.tests.utils import DocCollector
 import pytest
 
@@ -13,15 +13,15 @@ def test_multirun_smoke(RE, hw):
         to_read = (motor, *dets)
         run_ids = list("abc")
         for rid in run_ids:
-            yield from drw(bps.open_run(md={rid: rid}), run=rid)
+            yield from srnw(bps.open_run(md={rid: rid}), run=rid)
 
         for j in range(5):
             for i, rid in enumerate(run_ids):
                 yield from bps.mov(motor, j + 0.1 * i)
-                yield from drw(bps.trigger_and_read(to_read), run=rid)
+                yield from srnw(bps.trigger_and_read(to_read), run=rid)
 
         for rid in run_ids:
-            yield from drw(bps.close_run(), run=rid)
+            yield from srnw(bps.close_run(), run=rid)
 
     RE(interlaced_plan([hw.det], hw.motor), dc.insert)
 
@@ -41,7 +41,7 @@ def test_multirun_smoke_fail(RE, hw):
     def interlaced_plan(dets, motor):
         run_ids = list("abc")
         for rid in run_ids:
-            yield from drw(bps.open_run(md={rid: rid}), run=rid)
+            yield from srnw(bps.open_run(md={rid: rid}), run=rid)
         raise Exception("womp womp")
 
     with pytest.raises(Exception):
