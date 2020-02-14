@@ -16,6 +16,7 @@ import threading
 import time
 from warnings import warn
 import weakref
+from event_model import unpack_event_page
 
 from .core import LiveTable, make_class_safe
 from .mpl_plotting import LivePlot, LiveGrid, LiveScatter, QtAwareCallback
@@ -398,6 +399,10 @@ class BestEffortCallback(QtAwareCallback):
             peak_stats = self._peak_stats.get(doc['descriptor'], {}).get(y_key)
             if peak_stats is not None:
                 peak_stats('event', doc)
+
+    def event_page(self, doc):
+        for d in unpack_event_page(doc):
+            self.event(d)
 
     def stop(self, doc):
         if self._table is not None:
