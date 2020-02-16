@@ -1307,7 +1307,7 @@ class SupplementalData:
         return (yield from plan)
 
 
-def set_run_name_wrapper(plan, run):
+def set_run_id_wrapper(plan, run):
     """
     Add a run id to each message in wrapped plan
 
@@ -1328,4 +1328,4 @@ def set_run_name_wrapper(plan, run):
 
     return (yield from msg_mutator(plan, _set_run_id))
 
-set_run_name_decorator = make_decorator(set_run_name_wrapper)
+set_run_name_decorator = make_decorator(set_run_id_wrapper)
