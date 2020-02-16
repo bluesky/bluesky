@@ -5,7 +5,7 @@ import sys
 import logging
 from warnings import warn
 from inspect import Parameter, Signature
-from itertools import count, tee
+from itertools import count
 from collections import deque, defaultdict, ChainMap
 from enum import Enum
 import functools
