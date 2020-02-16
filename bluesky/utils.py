@@ -1359,7 +1359,12 @@ def default_during_task(blocking_event):
         backend = matplotlib.get_backend().lower()
         # if with a Qt backend, do the scary thing
         if 'qt' in backend:
+
             from matplotlib.backends.qt_compat import QtCore, QtWidgets
+            from .callbacks.mpl_plotting import initialize_qt_teleporter
+
+            initialize_qt_teleporter()
+
             app = QtWidgets.QApplication.instance()
             if app is None:
                 _qapp = app = QtWidgets.QApplication([b'bluesky'])
