@@ -1,28 +1,29 @@
 from bluesky import preprocessors as bpp
 from bluesky import plans as bp
 from bluesky import plan_stubs as bps
-from bluesky.preprocessors import set_run_name_wrapper as srnw
+from bluesky.preprocessors import set_run_id_wrapper as sridw
 import bluesky.preprocessors as bsp
 from bluesky.tests.utils import DocCollector
 import pytest
 
 
 def test_multirun_smoke(RE, hw):
+    """Test on interlaced runs (using wrapper on each command)"""
     dc = DocCollector()
 
     def interlaced_plan(dets, motor):
         to_read = (motor, *dets)
         run_names = ["run_one", "run_two", "run_three"]
         for rid in run_names:
-            yield from srnw(bps.open_run(md={rid: rid}), run=rid)
+            yield from sridw(bps.open_run(md={rid: rid}), run=rid)
 
         for j in range(5):
             for i, rid in enumerate(run_names):
                 yield from bps.mov(motor, j + 0.1 * i)
-                yield from srnw(bps.trigger_and_read(to_read), run=rid)
+                yield from sridw(bps.trigger_and_read(to_read), run=rid)
 
         for rid in run_names:
-            yield from srnw(bps.close_run(), run=rid)
+            yield from sridw(bps.close_run(), run=rid)
 
     RE(interlaced_plan([hw.det], hw.motor), dc.insert)
 
@@ -37,7 +38,7 @@ def test_multirun_smoke(RE, hw):
 
 
 def test_multirun_smoke_nested(RE, hw):
-
+    """Test on nested runs (using decorator on each plan)"""
     dc = DocCollector()
     to_read = (hw.motor, hw.det)
 
@@ -76,8 +77,8 @@ def test_multirun_smoke_nested(RE, hw):
             assert start["time"] < stop["time"]
 
 
-def test_multirun_run_name(RE, hw):
-    # Check if string type is checked for run name
+def test_multirun_run_id_type(RE, hw):
+    """Test calls to wrapper with run ID set to different types"""
 
     dc = DocCollector()
 
@@ -85,28 +86,28 @@ def test_multirun_run_name(RE, hw):
     def empty_plan():
         yield from bps.mov(hw.motor, 5)
 
-    # Check if the wrapper accepts integer
-    with pytest.raises(ValueError, match="run name must be a string"):
+    # The wrapper is expected to raise an exception if called with run ID = None
+    with pytest.raises(ValueError, match="run ID can not be None"):
         def plan1():
-            yield from srnw(empty_plan(), 50)
+            yield from sridw(empty_plan(), None)
         RE(plan1(), dc.insert)
 
-    # Check if the parameter is a reference (as default value)
-    with pytest.raises(ValueError, match="run name must be a string"):
-        def plan2():
-            yield from srnw(empty_plan(), object())
-        RE(plan2(), dc.insert)
-    with pytest.raises(ValueError, match="run name must be a string"):
-        def plan3():
-            yield from srnw(empty_plan(), run=object())
-        RE(plan3(), dc.insert)
+    # Check with run ID of type reference
+    def plan2():
+        yield from sridw(empty_plan(), object())
+    RE(plan2(), dc.insert)
+
+    # Check with run ID of type 'int'
+    def plan3():
+        yield from sridw(empty_plan(), 10)
+    RE(plan3(), dc.insert)
 
     # Check if call with correct parameter type are successful
     def plan4():
-        yield from srnw(empty_plan(), "run_name")
+        yield from sridw(empty_plan(), "run_name")
     RE(plan4(), dc.insert)
     def plan5():
-        yield from srnw(empty_plan(), run="run_name")
+        yield from sridw(empty_plan(), run="run_name")
     RE(plan5(), dc.insert)
 
 
@@ -116,7 +117,7 @@ def test_multirun_smoke_fail(RE, hw):
     def interlaced_plan(dets, motor):
         run_names = ["run_one", "run_two", "run_three"]
         for rid in run_names:
-            yield from srnw(bps.open_run(md={rid: rid}), run=rid)
+            yield from sridw(bps.open_run(md={rid: rid}), run=rid)
         raise Exception("womp womp")
 
     with pytest.raises(Exception):
