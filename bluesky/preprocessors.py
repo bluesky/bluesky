@@ -1315,14 +1315,17 @@ def set_run_id_wrapper(plan, run):
     ----------
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
-    run : str
-        The run name to set on each Msg
+    run : str or any other type except None
+        The run ID to set on each Msg. It is recommended that run ID represents
+        informative string for better readability of plans. But value of any other
+        type can be used if needed.
     """
+    if run is None:
+        raise ValueError(f"run ID can not be None")
 
-    if not isinstance(run, str):
-        raise ValueError(f"run name must be a string: passed value {run} is of type {type(run)}")
     def _set_run_id(msg):
-        if not isinstance(msg.run, str):
+        # Replace only the default value None
+        if msg.run is None:
             msg = msg._replace(run=run)
         return msg
 
