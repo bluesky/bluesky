@@ -61,43 +61,7 @@ def make_class_safe(cls=None, *, to_wrap=None, logger=None):
 
 class CallbackBase(DocumentRouter):
     log = None
-"""
-    def __call__(self, name, doc):
-        "Dispatch to methods expecting particular doc types."
-        return getattr(self, name)(doc)
 
-    def event(self, doc):
-        pass
-
-    def event_page(self, doc):
-        for d in unpack_event_page(doc):
-            self.event(d)
-
-    def bulk_events(self, doc):
-        pass
-
-    def resource(self, doc):
-        pass
-
-    def datum(self, doc):
-        pass
-
-    def datum_page(self, doc):
-        for d in unpack_datum_page(doc):
-            self.datum(d)
-
-    def bulk_datum(self, doc):
-        pass
-
-    def descriptor(self, doc):
-        pass
-
-    def start(self, doc):
-        pass
-
-    def stop(self, doc):
-        pass
-"""
 
 class CallbackCounter:
     "As simple as it sounds: count how many times a callback is called."
