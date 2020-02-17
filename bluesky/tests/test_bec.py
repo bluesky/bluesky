@@ -90,6 +90,23 @@ def test_live_grid(RE, hw):
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
 
 
+def test_multirun_nested_plan(RE, hw):
+
+    @bpp.set_run_id_decorator(run="inner_run")
+    def plan_inner():
+        yield from scan([hw.det1], hw.motor, 1, 5, 5)
+
+    @bpp.set_run_id_decorator(run="outer_run")
+    def plan_outer():
+        yield from grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True)
+        # Call inner plan from within the plan
+        yield from plan_inner()
+        # Run another set of commands
+        yield from grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True)
+
+    RE(plan_outer())
+
+
 @pytest.mark.xfail(not (jsonschema.__version__.split('.') < ['3', ]),
                    reason='Deprecations in jsonschema')
 def test_plot_ints(RE):
