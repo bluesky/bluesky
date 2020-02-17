@@ -13,6 +13,7 @@ from datetime import datetime
 import logging
 from ..utils import ensure_uid
 
+from event_model import unpack_event_page, unpack_datum_page
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,10 @@ class CallbackBase:
     def event(self, doc):
         pass
 
+    def event_page(self, doc):
+        for d in unpack_event_page(doc):
+            self.event(d)
+
     def bulk_events(self, doc):
         pass
 
@@ -76,6 +81,10 @@ class CallbackBase:
 
     def datum(self, doc):
         pass
+
+    def datum_page(self, doc):
+        for d in unpack_datum_page(doc):
+            self.datum(d)
 
     def bulk_datum(self, doc):
         pass

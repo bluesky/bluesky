@@ -400,9 +400,9 @@ class BestEffortCallback(QtAwareCallback):
             if peak_stats is not None:
                 peak_stats('event', doc)
 
-    def event_page(self, doc):
-        for d in unpack_event_page(doc):
-            self.event(d)
+    #def event_page(self, doc):
+    #    for d in unpack_event_page(doc):
+    #        self.event(d)
 
     def stop(self, doc):
         if self._table is not None:
