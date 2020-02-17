@@ -13,7 +13,7 @@ from datetime import datetime
 import logging
 from ..utils import ensure_uid
 
-from event_model import unpack_event_page, unpack_datum_page
+from event_model import DocumentRouter
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +59,9 @@ def make_class_safe(cls=None, *, to_wrap=None, logger=None):
     return cls
 
 
-class CallbackBase:
+class CallbackBase(DocumentRouter):
     log = None
-
+"""
     def __call__(self, name, doc):
         "Dispatch to methods expecting particular doc types."
         return getattr(self, name)(doc)
@@ -97,7 +97,7 @@ class CallbackBase:
 
     def stop(self, doc):
         pass
-
+"""
 
 class CallbackCounter:
     "As simple as it sounds: count how many times a callback is called."
