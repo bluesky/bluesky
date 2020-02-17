@@ -48,18 +48,18 @@ def test_multirun_smoke_nested(RE, hw):
             yield from bps.mov(hw.motor, j)
             yield from bps.trigger_and_read(to_read)
 
-    @bsp.set_run_name_decorator("run_one")
+    @bsp.set_run_id_decorator("run_one")
     @bsp.run_decorator(md={})
     def plan_inner():
         yield from some_plan()
 
-    @bsp.set_run_name_decorator("run_two")
+    @bsp.set_run_id_decorator("run_two")
     @bsp.run_decorator(md={})
     def plan_middle():
         yield from some_plan()
         yield from plan_inner()
 
-    @bsp.set_run_name_decorator(run="run_three")  # Try kwarg
+    @bsp.set_run_id_decorator(run="run_three")  # Try kwarg
     @bsp.run_decorator(md={})
     def plan_outer():
         yield from some_plan()

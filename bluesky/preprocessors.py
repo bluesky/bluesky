@@ -1331,4 +1331,4 @@ def set_run_id_wrapper(plan, run):
 
     return (yield from msg_mutator(plan, _set_run_id))
 
-set_run_name_decorator = make_decorator(set_run_id_wrapper)
+set_run_id_decorator = make_decorator(set_run_id_wrapper)
