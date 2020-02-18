@@ -1631,3 +1631,11 @@ def test_broken_read_exception(RE):
     obj = Dummy('broken read')
     with pytest.raises(RuntimeError):
         RE([Msg('read', obj)])
+
+
+def test_self_describe(RE):
+    def inner():
+        cls = yield Msg('RE_class')
+        assert type(RE) is cls
+
+    RE(inner())

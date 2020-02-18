@@ -381,6 +381,7 @@ class RunEngine:
             'monitor': self._monitor,
             'unmonitor': self._unmonitor,
             'null': self._null,
+            'RE_class': self._RE_class,
             'stop': self._stop,
             'set': self._set,
             'trigger': self._trigger,
@@ -1879,6 +1880,12 @@ class RunEngine:
         A no-op message, mainly for debugging and testing.
         """
         pass
+
+    async def _RE_class(self, msg):
+        """
+        A no-op message, mainly for debugging and testing.
+        """
+        return type(self)
 
     async def _set(self, msg):
         """
