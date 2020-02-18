@@ -129,17 +129,6 @@ color_log_format = ("%(color)s[%(levelname)1.1s %(asctime)s.%(msecs)03d "
                     "%(module)15s:%(lineno)5d]%(end_color)s %(message)s")
 
 
-def color_logs(color):
-    """
-    If True, add colorful logging handler and ensure plain one is removed.
-
-    If False, do the opposite.
-    """
-    warnings.warn(f"The function color_logs is deprecated. "
-                  f"Use `config_bluesky_logging(color={color})` instead.")
-    config_bluesky_logging(color=color)
-
-
 logger = logging.getLogger('bluesky')
 doc_logger = logging.getLogger('bluesky.emit_document')
 msg_logger = logging.getLogger('bluesky.RE.msg')
