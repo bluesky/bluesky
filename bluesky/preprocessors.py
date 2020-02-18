@@ -1307,20 +1307,28 @@ class SupplementalData:
         return (yield from plan)
 
 
-def define_run_wrapper(plan, run):
+def set_run_key_wrapper(plan, run):
     """
-    Add a run id to each message in wrapped plan
+    Add a run key to each message in wrapped plan
 
     Parameters
     ----------
     plan : iterable or iterator
         a generator, list, or similar containing `Msg` objects
-    run_id : str
-        The run to set on each Msg
+    run : str or any other type except None
+        The run key to set on each Msg. It is recommended that run key represents
+        informative string for better readability of plans. But value of any other
+        type can be used if needed.
     """
-    def _set_run_id(msg):
-        return msg._replace(run=run)
+    if run is None:
+        raise ValueError(f"run ID can not be None")
 
-    return (yield from msg_mutator(plan, _set_run_id))
+    def _set_run_key(msg):
+        # Replace only the default value None
+        if msg.run is None:
+            msg = msg._replace(run=run)
+        return msg
 
-define_run_decorator = make_decorator(define_run_wrapper)
+    return (yield from msg_mutator(plan, _set_run_key))
+
+set_run_key_decorator = make_decorator(set_run_key_wrapper)
