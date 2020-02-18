@@ -1,7 +1,7 @@
 from bluesky import preprocessors as bpp
 from bluesky import plans as bp
 from bluesky import plan_stubs as bps
-from bluesky.preprocessors import set_run_id_wrapper as sridw
+from bluesky.preprocessors import set_run_key_wrapper as srkw
 import bluesky.preprocessors as bsp
 from bluesky.tests.utils import DocCollector
 import pytest
@@ -15,15 +15,15 @@ def test_multirun_smoke(RE, hw):
         to_read = (motor, *dets)
         run_names = ["run_one", "run_two", "run_three"]
         for rid in run_names:
-            yield from sridw(bps.open_run(md={rid: rid}), run=rid)
+            yield from srkw(bps.open_run(md={rid: rid}), run=rid)
 
         for j in range(5):
             for i, rid in enumerate(run_names):
                 yield from bps.mov(motor, j + 0.1 * i)
-                yield from sridw(bps.trigger_and_read(to_read), run=rid)
+                yield from srkw(bps.trigger_and_read(to_read), run=rid)
 
         for rid in run_names:
-            yield from sridw(bps.close_run(), run=rid)
+            yield from srkw(bps.close_run(), run=rid)
 
     RE(interlaced_plan([hw.det], hw.motor), dc.insert)
 
@@ -48,18 +48,18 @@ def test_multirun_smoke_nested(RE, hw):
             yield from bps.mov(hw.motor, j)
             yield from bps.trigger_and_read(to_read)
 
-    @bsp.set_run_id_decorator("run_one")
+    @bsp.set_run_key_decorator("run_one")
     @bsp.run_decorator(md={})
     def plan_inner():
         yield from some_plan()
 
-    @bsp.set_run_id_decorator("run_two")
+    @bsp.set_run_key_decorator("run_two")
     @bsp.run_decorator(md={})
     def plan_middle():
         yield from some_plan()
         yield from plan_inner()
 
-    @bsp.set_run_id_decorator(run="run_three")  # Try kwarg
+    @bsp.set_run_key_decorator(run="run_three")  # Try kwarg
     @bsp.run_decorator(md={})
     def plan_outer():
         yield from some_plan()
@@ -77,8 +77,8 @@ def test_multirun_smoke_nested(RE, hw):
             assert start["time"] < stop["time"]
 
 
-def test_multirun_run_id_type(RE, hw):
-    """Test calls to wrapper with run ID set to different types"""
+def test_multirun_run_key_type(RE, hw):
+    """Test calls to wrapper with run key set to different types"""
 
     dc = DocCollector()
 
@@ -89,25 +89,25 @@ def test_multirun_run_id_type(RE, hw):
     # The wrapper is expected to raise an exception if called with run ID = None
     with pytest.raises(ValueError, match="run ID can not be None"):
         def plan1():
-            yield from sridw(empty_plan(), None)
+            yield from srkw(empty_plan(), None)
         RE(plan1(), dc.insert)
 
     # Check with run ID of type reference
     def plan2():
-        yield from sridw(empty_plan(), object())
+        yield from srkw(empty_plan(), object())
     RE(plan2(), dc.insert)
 
     # Check with run ID of type 'int'
     def plan3():
-        yield from sridw(empty_plan(), 10)
+        yield from srkw(empty_plan(), 10)
     RE(plan3(), dc.insert)
 
     # Check if call with correct parameter type are successful
     def plan4():
-        yield from sridw(empty_plan(), "run_name")
+        yield from srkw(empty_plan(), "run_name")
     RE(plan4(), dc.insert)
     def plan5():
-        yield from sridw(empty_plan(), run="run_name")
+        yield from srkw(empty_plan(), run="run_name")
     RE(plan5(), dc.insert)
 
 
@@ -117,7 +117,7 @@ def test_multirun_smoke_fail(RE, hw):
     def interlaced_plan(dets, motor):
         run_names = ["run_one", "run_two", "run_three"]
         for rid in run_names:
-            yield from sridw(bps.open_run(md={rid: rid}), run=rid)
+            yield from srkw(bps.open_run(md={rid: rid}), run=rid)
         raise Exception("womp womp")
 
     with pytest.raises(Exception):
