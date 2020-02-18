@@ -95,7 +95,7 @@ def test_live_grid(RE, hw):
 def test_multirun_nested_plan(capsys, caplog, RE, hw):
     # This test only checks if the plan runs without crashing. If BEC crashes,
     #   the plan will still run, but data will not be displayed.
-    @bpp.set_run_id_decorator(run="inner_run")
+    @bpp.set_run_key_decorator(run="inner_run")
     def plan_inner():
         yield from grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True)
 
@@ -104,7 +104,7 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
             yield from bps.mov(hw.motor, n * 0.1 + 1)
             yield from bps.trigger_and_read([hw.det1])
 
-    @bpp.set_run_id_decorator(run="outer_run")
+    @bpp.set_run_key_decorator(run="outer_run")
     @bpp.stage_decorator([hw.det1, hw.motor])
     @bpp.run_decorator(md={})
     def plan_outer():
