@@ -30,6 +30,7 @@ install:
   - export GIT_FULL_HASH=`git rev-parse HEAD`
   - pip install --upgrade pip
   - pip install --upgrade cython
+  - pip install --upgrade numpy
   - pip install --quiet --upgrade --global-option='--without-libyaml' pyyaml
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
