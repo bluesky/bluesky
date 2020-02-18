@@ -356,7 +356,7 @@ class BestEffortCallback(QtAwareCallback):
         if stream_name == self.dim_stream:
             if self._table_enabled:
                 # plot everything, independent or dependent variables
-                self._table = LiveTable(list(self.all_dim_fields) + columns)
+                self._table = LiveTable(list(self.all_dim_fields) + columns, separator_lines=False)
                 self._table('start', self._start_doc)
                 self._table('descriptor', doc)
 
