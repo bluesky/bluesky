@@ -303,6 +303,7 @@ class LiveTable(CallbackBase):
 
         self._count = 0
 
+        self._print("\n")
         self._print(self._sep_format)
         self._print(self._header)
         self._print(self._sep_format)
@@ -363,6 +364,7 @@ class LiveTable(CallbackBase):
         self._out(wm)
         if self.logbook:
             self.logbook('\n'.join([wm] + self._rows))
+        self._print("\n")
         super().stop(doc)
 
     def start(self, doc):
