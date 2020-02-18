@@ -1336,6 +1336,19 @@ def merge_cycler(cyc):
 _qapp = None
 
 
+def initialize_backend():
+    """
+    Initialize backend. Currently on Qt backend is supported. The function
+    is initalizing the 'teleporter' if Qt backend is used.
+    """
+    if 'matplotlib' in sys.modules:
+        import matplotlib
+        backend = matplotlib.get_backend().lower()
+        if 'qt' in backend:
+            from .callbacks.mpl_plotting import initialize_qt_teleporter
+            initialize_qt_teleporter()
+
+
 def default_during_task(blocking_event):
     """
     The default setting for the RunEngine's during_task parameter.
@@ -1361,10 +1374,6 @@ def default_during_task(blocking_event):
         if 'qt' in backend:
 
             from matplotlib.backends.qt_compat import QtCore, QtWidgets
-            from .callbacks.mpl_plotting import initialize_qt_teleporter
-
-            initialize_qt_teleporter()
-
             app = QtWidgets.QApplication.instance()
             if app is None:
                 _qapp = app = QtWidgets.QApplication([b'bluesky'])

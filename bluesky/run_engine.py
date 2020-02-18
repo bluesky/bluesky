@@ -341,6 +341,9 @@ class RunEngine:
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
 
+        from .utils import initialize_backend
+        initialize_backend()
+
         # The RunEngine keeps track of a *lot* of state.
         # All flags and caches are defined here with a comment. Good luck.
 
