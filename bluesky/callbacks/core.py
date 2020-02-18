@@ -195,6 +195,9 @@ class LiveTable(CallbackBase):
     extra_pad : int, optional
          Number of extra spaces to put around the printed data, defaults to 1
 
+    separator_lines : bool, optional
+        Add empty lines before and after the printed table, default True
+
     logbook : callable, optional
         Must take a sting as the first positional argument
 
@@ -219,7 +222,7 @@ class LiveTable(CallbackBase):
 
     def __init__(self, fields, *, stream_name='primary',
                  print_header_interval=50,
-                 min_width=12, default_prec=3, extra_pad=1,
+                 min_width=12, default_prec=3, extra_pad=1, separator_lines=True,
                  logbook=None, out=print):
         super().__init__()
         self._header_interval = print_header_interval
@@ -233,6 +236,7 @@ class LiveTable(CallbackBase):
         self._extra_pad = ' ' * extra_pad
         self._min_width = min_width
         self._default_prec = default_prec
+        self._separator_lines = separator_lines
         self._format_info = OrderedDict([
             ('seq_num', self._fm_sty(10 + self._pad_len, '', 'd')),
             (self.ev_time_key, self._fm_sty(10 + 2 * extra_pad, 10, 's'))
@@ -303,7 +307,8 @@ class LiveTable(CallbackBase):
 
         self._count = 0
 
-        self._print("\n")
+        if self._separator_lines:
+            self._print("\n")
         self._print(self._sep_format)
         self._print(self._header)
         self._print(self._sep_format)
@@ -364,7 +369,8 @@ class LiveTable(CallbackBase):
         self._out(wm)
         if self.logbook:
             self.logbook('\n'.join([wm] + self._rows))
-        self._print("\n")
+        if self._separator_lines:
+            self._print("\n")
         super().stop(doc)
 
     def start(self, doc):
