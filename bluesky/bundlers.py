@@ -266,7 +266,9 @@ class RunBundler:
         doc_logger.debug("[descriptor] document is emitted with name %r containing "
                          "data keys %r (run_uid=%r)", name, data_keys.keys(),
                          self._run_start_uid,
-                         extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
+                         extra={'doc_name': 'descriptor',
+                                'doc_uid': descriptor_uid,
+                                'data_keys': data_keys.keys()})
         seq_num_counter = count(1)
 
         def emit_event(*args, **kwargs):
@@ -409,7 +411,9 @@ class RunBundler:
             doc_logger.debug("[descriptor] document is emitted with name %r containing "
                          "data keys %r (run_uid=%r)", name, data_keys.keys(),
                          self._run_start_uid,
-                         extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
+                         extra={'doc_name': 'descriptor',
+                                'doc_uid': descriptor_uid,
+                                'data_keys': data_keys.keys()})
             self._descriptors[desc_key] = (objs_read, doc)
 
         descriptor_uid = doc["uid"]
@@ -448,7 +452,10 @@ class RunBundler:
         )
         await self.emit(DocumentNames.event, doc)
         doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)", data.keys(),
-                 self._run_start_uid, extra={'doc_name': 'event', 'doc_uid': self._run_start_uid})
+                 self._run_start_uid,
+                 extra={'doc_name': 'event',
+                        'doc_uid': self._run_start_uid,
+                        'data_keys': data.keys()})
 
     def clear_monitors(self):
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
@@ -596,7 +603,9 @@ class RunBundler:
                 doc_logger.debug("[descriptor] document is emitted with name %r "
                     "containing data keys %r (run_uid=%r)", stream_name,
                     data_keys.keys(), self._run_start_uid,
-                    extra={'doc_name': 'descriptor', 'doc_uid': descriptor_uid})
+                    extra={'doc_name': 'descriptor',
+                           'doc_uid': descriptor_uid,
+                           'data_keys': data_keys.keys()})
                 self._descriptors[desc_key] = (objs_read, doc)
                 self._sequence_counters[desc_key] = count(1)
             else:
@@ -643,7 +652,10 @@ class RunBundler:
             if stream:
                 doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)",
                      ev['data'].keys(), self._run_start_uid,
-                     event_uid, extra={'doc_name': 'event', 'doc_uid': ev['uid']})
+                     event_uid,
+                     extra={'doc_name': 'event',
+                            'doc_uid': ev['uid'],
+                            'data_keys': ev['data'].keys()})
                 await self.emit(DocumentNames.event, ev)
             else:
                 bulk_data[descriptor_uid].append(ev)

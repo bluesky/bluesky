@@ -40,7 +40,7 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         return super(Msg, cls).__new__(cls, command, obj, args, kwargs, run)
 
     def __repr__(self):
-        return f"{self.command}({self.obj}), {self.args}, {self.kwargs}"
+        return f"{self.command}({self.obj}, *{self.args}, **{self.kwargs}, run={self.run})"
 
 
 class RunEngineControlException(Exception):
