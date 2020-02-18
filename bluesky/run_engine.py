@@ -14,6 +14,7 @@ from contextlib import ExitStack
 import threading
 import weakref
 from .bundlers import RunBundler
+from .utils import initialize_backend
 
 import concurrent
 
@@ -341,7 +342,6 @@ class RunEngine:
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
 
-        from .utils import initialize_backend
         initialize_backend()
 
         # The RunEngine keeps track of a *lot* of state.
