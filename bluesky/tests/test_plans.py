@@ -192,3 +192,30 @@ def test_pseudo_mv(hw, RE, pln):
     expecte_objs = [p, None]
     assert len(m_col.msgs) == 2
     assert [m.obj for m in m_col.msgs] == expecte_objs
+
+
+def test_reset_user_position(RE):
+    from ophyd.sim import SynAxis as _SynAxis
+
+    class SynAxis(_SynAxis):
+        def set_current_position(self, pos):
+            self.sim_state['setpoint'] = pos
+            self.sim_state['readback'] = pos
+
+    ax = SynAxis(name='test')
+
+    def test_plan(obj):
+        ret = yield from bps.read(obj)
+        if ret is not None:
+            assert ret[obj.readback.name]['value'] == 0
+            assert ret[obj.setpoint.name]['value'] == 0
+
+        ret = yield from bps.reset_user_position(obj, 15)
+        assert ret == (0, 15)
+
+        ret = yield from bps.read(obj)
+        if ret is not None:
+            assert ret[obj.readback.name]['value'] == 15
+            assert ret[obj.setpoint.name]['value'] == 15
+
+    RE(test_plan(ax))

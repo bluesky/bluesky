@@ -377,6 +377,7 @@ class RunEngine:
             'null': self._null,
             'stop': self._stop,
             'set': self._set,
+            'reset_user_position': self._reset_user_position,
             'trigger': self._trigger,
             'sleep': self._sleep,
             'wait': self._wait,
@@ -1910,6 +1911,44 @@ class RunEngine:
         self._status_objs[group].add(ret)
 
         return ret
+
+    @staticmethod
+    async def _reset_user_position(msg):
+        """
+        Reset the user coordinate system on a motor
+
+        Expected message object is:
+
+            Msg('reset_user_position', obj, new_position)
+
+        The object passed in must have:
+
+           - position attribute
+           - set_current_position method
+
+        Returns
+        -------
+        old_value, new_value
+        """
+        obj = msg.obj
+
+        (new_value,) = msg.args
+
+        try:
+            old_value = obj.position
+        except AttributeError as ex:
+            raise ValueError(
+                "Expected a positioner (must have) position attribute "
+                f"but the object {obj.name} does not."
+            ) from ex
+        try:
+            obj.set_current_position(new_value)
+        except AttributeError as ex:
+            raise ValueError(
+                "Expected object to have set_current_position method "
+                f"but the object {obj.name} does not."
+            ) from ex
+        return (old_value, new_value)
 
     async def _trigger(self, msg):
         """

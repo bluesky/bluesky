@@ -1084,3 +1084,43 @@ def repeat(plan, num=1, delay=None):
                     yield Msg('sleep', None, d)
 
     return (yield from repeated_plan())
+
+
+def reset_user_position(obj, value, *, verbose=False):
+    """
+    Repeat a plan num times with delay and checkpoint between each repeat.
+
+    This is different from ``repeater`` and ``caching_repeater`` in that it
+    adds ``checkpoint`` and optionally ``sleep`` messages if delay is provided.
+    This is intended for users who need the structure of ``count`` but do not
+    want to reimplement the control flow.
+
+    Parameters
+    ----------
+    obj : EpicsMotor
+        Must have position attribute and set_current_position methods
+
+    value : number
+        What to set the current user position to.
+
+    verbose : bool, optional
+        If we should print out a log of what we are doing
+
+    Returns
+    -------
+    old_value : number
+        Where the user setpoint was before
+
+    new_value : number
+        Where the user setpoint is now
+
+    """
+    ret = yield Msg('reset_user_position', obj, value)
+    if ret is not None:
+        old_value, new_value = ret
+    else:
+        old_value = None
+        new_value = value
+    if verbose:
+        print(f"{obj.name} reset from {old_value} to {new_value}")
+    return old_value, new_value
