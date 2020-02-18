@@ -157,7 +157,7 @@ def test_table(RE, hw):
         assert hw.det.describe()['det']['dtype'] == 'number'
         assert hw.motor.describe()['motor']['dtype'] == 'number'
 
-        table = LiveTable(['det', 'motor'], min_width=16, extra_pad=2)
+        table = LiveTable(['det', 'motor'], min_width=16, extra_pad=2, separator_lines=False)
         ad_scan = bp.adaptive_scan([hw.det], 'det', hw.motor,
                                    -15.0, 5., .01, 1, .05,
                                    True)
@@ -171,7 +171,6 @@ def test_table(RE, hw):
     for ln, kn in zip(fout, KNOWN_TABLE.split('\n')):
         # this is to strip the `\n` from the print output
         ln = ln.rstrip()
-
         if ln[0] == '+':
             # test the full line on the divider lines
             assert ln == kn
@@ -523,7 +522,8 @@ def test_broken_table():
     sio.seek(0)
     lines = sio.readlines()
 
-    assert len(lines) == 7
+    # The instance of LiveTable will include two empty separator lines by default
+    assert len(lines) == 9
     for ln in lines[-2:]:
         assert ln.strip() == "failed to format row"
 
