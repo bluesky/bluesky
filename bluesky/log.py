@@ -15,8 +15,7 @@ except ImportError:
     curses = None
 
 __all__ = ('color_logs', 'config_bluesky_logging', 'get_handler',
-           'LogFormatter', 'set_handler', 'logger', 'state_logger',
-           'doc_logger', 'msg_logger')
+           'LogFormatter', 'set_handler')
 
 
 def _stderr_supports_color():
