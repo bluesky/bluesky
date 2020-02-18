@@ -101,11 +101,8 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
 
     def sequence():
         for n in range(5):
-            yield from bps.create()
-            yield from bps.abs_set(hw.motor, n * 0.1 + 1, group="motor")
-            yield from bps.wait(group="motor")
-            yield from bps.read(hw.det1)
-            yield from bps.save()
+            yield from bps.mov(hw.motor, n * 0.1 + 1)
+            yield from bps.trigger_and_read([hw.det1])
 
     @bpp.set_run_id_decorator(run="outer_run")
     @bpp.stage_decorator([hw.det1, hw.motor])
