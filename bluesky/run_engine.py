@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-import time as ttime
 import sys
 import logging
 from warnings import warn
