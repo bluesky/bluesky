@@ -19,7 +19,7 @@ import concurrent
 
 from event_model import DocumentNames, schema_validators
 import jsonschema
-from .log import msg_logger, state_logger
+from .log import logger, msg_logger, state_logger, ComposableLogAdapter
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
@@ -117,7 +117,9 @@ class LoggingPropertyMachine(PropertyMachine):
             super().__set__(obj, value)
         value = self.__get__(obj, own)
         tags = {'old_state': old_value,
-                'new_state': value}
+                'new_state': value,
+                'RE': self}
+
         state_logger.info("Change state on %r from %r -> %r",
                            obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
@@ -314,8 +316,7 @@ class RunEngine:
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
-        logger_name = 'bluesky.RE.{id}'.format(id=id(self))
-        self.log = logging.getLogger(logger_name)
+        self.log = ComposableLogAdapter(logger, {'RE': self})
 
         if md is None:
             md = {}

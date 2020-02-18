@@ -36,6 +36,17 @@ def _stderr_supports_color():
     return False
 
 
+class ComposableLogAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        # The logging.LoggerAdapter siliently ignores `extra` in this usage:
+        # log_adapter.debug(msg, extra={...})
+        # and passes through log_adapater.extra instead. This subclass merges
+        # the extra passed via keyword argument with the extra in the
+        # attribute, giving precedence to the keyword argument.
+        kwargs["extra"] = {**self.extra, **kwargs.get('extra', {})}
+        return msg, kwargs
+
+
 class LogFormatter(logging.Formatter):
     """Log formatter for bluesky records.
 
