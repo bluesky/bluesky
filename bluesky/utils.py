@@ -1336,162 +1336,175 @@ def merge_cycler(cyc):
 _qapp = None
 
 
-def initialize_backend():
-    """
-    Initialize backend. Currently on Qt backend is supported. The function
-    is initalizing the 'teleporter' if Qt backend is used.
-    """
-    if 'matplotlib' in sys.modules:
-        import matplotlib
-        backend = matplotlib.get_backend().lower()
-        if 'qt' in backend:
-            from .callbacks.mpl_plotting import initialize_qt_teleporter
-            initialize_qt_teleporter()
+class DuringTask:
+
+    def initialize(self):
+        pass
+
+    def block(self, blocking_event):
+        pass
 
 
-def default_during_task(blocking_event):
-    """
-    The default setting for the RunEngine's during_task parameter.
+class DefaultDuringTask(DuringTask):
 
-    This makes it possible for plots that use matplotlib's Qt backend to update
-    live during data acquisition.
+    def initialize(self):
+        """
+        Initialize backend. Currently on Qt backend is supported. The function
+        is initalizing the 'teleporter' if Qt backend is used.
+        """
+        if 'matplotlib' in sys.modules:
+            import matplotlib
+            backend = matplotlib.get_backend().lower()
+            if 'qt' in backend:
+                from .callbacks.mpl_plotting import initialize_qt_teleporter
+                initialize_qt_teleporter()
 
-    It solves the problem that Qt must be run from the main thread.
-    If matplotlib and a known Qt binding are already imported, run the
-    matplotlib qApp until the task completes. If not, there is no need to
-    handle qApp: just wait on the task.
-    """
-    global _qapp
-    if 'matplotlib' not in sys.modules:
-        # We are not using matplotlib + Qt. Just wait on the Event.
-        blocking_event.wait()
-    # Figure out if we are using matplotlib with which backend
-    # without importing anything that is not already imported.
-    else:
-        import matplotlib
-        backend = matplotlib.get_backend().lower()
-        # if with a Qt backend, do the scary thing
-        if 'qt' in backend:
+    def block(self, blocking_event):
+        """
+        The default setting for the RunEngine's during_task parameter.
 
-            from matplotlib.backends.qt_compat import QtCore, QtWidgets
-            app = QtWidgets.QApplication.instance()
-            if app is None:
-                _qapp = app = QtWidgets.QApplication([b'bluesky'])
-            assert app is not None
-            event_loop = QtCore.QEventLoop()
+        This makes it possible for plots that use matplotlib's Qt backend to update
+        live during data acquisition.
 
-            def start_killer_thread():
-                def exit_loop():
-                    blocking_event.wait()
-                    # If the above wait ends quickly, we need to avoid the race
-                    # condition where this thread might try to exit the qApp
-                    # before it even starts.  Therefore, we use QTimer, below,
-                    # which will not start running until the qApp event loop is
-                    # running.
-                    event_loop.exit()
-
-                threading.Thread(target=exit_loop).start()
-
-            # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
-            # adapted from code at
-            # https://bitbucket.org/tortoisehg/thg/commits/550e1df5fbad
-            if os.name == 'posix' and hasattr(signal, 'set_wakeup_fd'):
-                # Wake up Python interpreter via pipe so that SIGINT
-                # can be handled immediately.
-                # (http://qt-project.org/doc/qt-4.8/unix-signals.html)
-                # Updated docs:
-                # https://doc.qt.io/qt-5/unix-signals.html
-                import fcntl
-                rfd, wfd = os.pipe()
-                for fd in (rfd, wfd):
-                    flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-                    fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-                wakeupsn = QtCore.QSocketNotifier(rfd,
-                                                  QtCore.QSocketNotifier.Read)
-                origwakeupfd = signal.set_wakeup_fd(wfd)
-
-                def cleanup():
-                    wakeupsn.setEnabled(False)
-                    rfd = wakeupsn.socket()
-                    wfd = signal.set_wakeup_fd(origwakeupfd)
-                    os.close(int(rfd))
-                    os.close(wfd)
-
-                def handleWakeup(inp):
-                    # here Python signal handler will be invoked
-                    # this book-keeping is to drain the pipe
-                    wakeupsn.setEnabled(False)
-                    rfd = wakeupsn.socket()
-                    try:
-                        os.read(int(rfd), 4096)
-                    except OSError as inst:
-                        print('failed to read wakeup fd: %s\n' % inst)
-
-                    wakeupsn.setEnabled(True)
-
-                wakeupsn.activated.connect(handleWakeup)
-
-            else:
-                # On Windows, non-blocking anonymous pipe or socket is
-                # not available.
-
-                def null():
-                    ...
-
-                # we need to 'kick' the python interpreter so it sees
-                # system signals
-                # https://stackoverflow.com/a/4939113/380231
-                kick_timer = QtCore.QTimer()
-                kick_timer.timeout.connect(null)
-                kick_timer.start(50)
-
-                cleanup = kick_timer.stop
-
-            # we also need to make sure that the qApp never sees
-            # exceptions raised by python inside of a c++ callback (as
-            # it will segfault its self because due to the way the
-            # code is called there is no clear way to propgate that
-            # back to the python code.
-            vals = (None, None, None)
-
-            old_sys_handler = sys.excepthook
-
-            def my_exception_hook(exctype, value, traceback):
-                nonlocal vals
-                vals = (exctype, value, traceback)
-                event_loop.exit()
-                old_sys_handler(exctype, value, traceback)
-
-            # this kill the Qt event loop when the plan is finished
-            killer_timer = QtCore.QTimer()
-            killer_timer.setSingleShot(True)
-            killer_timer.timeout.connect(start_killer_thread)
-            killer_timer.start(0)
-
-            try:
-                sys.excepthook = my_exception_hook
-                event_loop.exec_()
-                # make sure any pending signals are processed
-                event_loop.processEvents()
-                if vals[1] is not None:
-                    raise vals[1]
-            finally:
-                try:
-                    cleanup()
-                finally:
-                    sys.excepthook = old_sys_handler
-        elif 'ipympl' in backend or 'nbagg' in backend:
-            Gcf = matplotlib._pylab_helpers.Gcf
-            while True:
-                done = blocking_event.wait(.1)
-                for f_mgr in Gcf.get_all_fig_managers():
-                    if f_mgr.canvas.figure.stale:
-                        f_mgr.canvas.draw()
-                if done:
-                    return
-        else:
+        It solves the problem that Qt must be run from the main thread.
+        If matplotlib and a known Qt binding are already imported, run the
+        matplotlib qApp until the task completes. If not, there is no need to
+        handle qApp: just wait on the task.
+        """
+        global _qapp
+        if 'matplotlib' not in sys.modules:
             # We are not using matplotlib + Qt. Just wait on the Event.
             blocking_event.wait()
+        # Figure out if we are using matplotlib with which backend
+        # without importing anything that is not already imported.
+        else:
+            import matplotlib
+            backend = matplotlib.get_backend().lower()
+            # if with a Qt backend, do the scary thing
+            if 'qt' in backend:
+
+                from matplotlib.backends.qt_compat import QtCore, QtWidgets
+                app = QtWidgets.QApplication.instance()
+                if app is None:
+                    _qapp = app = QtWidgets.QApplication([b'bluesky'])
+                assert app is not None
+                event_loop = QtCore.QEventLoop()
+
+                def start_killer_thread():
+                    def exit_loop():
+                        blocking_event.wait()
+                        # If the above wait ends quickly, we need to avoid the race
+                        # condition where this thread might try to exit the qApp
+                        # before it even starts.  Therefore, we use QTimer, below,
+                        # which will not start running until the qApp event loop is
+                        # running.
+                        event_loop.exit()
+
+                    threading.Thread(target=exit_loop).start()
+
+                # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
+                # adapted from code at
+                # https://bitbucket.org/tortoisehg/thg/commits/550e1df5fbad
+                if os.name == 'posix' and hasattr(signal, 'set_wakeup_fd'):
+                    # Wake up Python interpreter via pipe so that SIGINT
+                    # can be handled immediately.
+                    # (http://qt-project.org/doc/qt-4.8/unix-signals.html)
+                    # Updated docs:
+                    # https://doc.qt.io/qt-5/unix-signals.html
+                    import fcntl
+                    rfd, wfd = os.pipe()
+                    for fd in (rfd, wfd):
+                        flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+                        fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+                    wakeupsn = QtCore.QSocketNotifier(rfd,
+                                                      QtCore.QSocketNotifier.Read)
+                    origwakeupfd = signal.set_wakeup_fd(wfd)
+
+                    def cleanup():
+                        wakeupsn.setEnabled(False)
+                        rfd = wakeupsn.socket()
+                        wfd = signal.set_wakeup_fd(origwakeupfd)
+                        os.close(int(rfd))
+                        os.close(wfd)
+
+                    def handleWakeup(inp):
+                        # here Python signal handler will be invoked
+                        # this book-keeping is to drain the pipe
+                        wakeupsn.setEnabled(False)
+                        rfd = wakeupsn.socket()
+                        try:
+                            os.read(int(rfd), 4096)
+                        except OSError as inst:
+                            print('failed to read wakeup fd: %s\n' % inst)
+
+                        wakeupsn.setEnabled(True)
+
+                    wakeupsn.activated.connect(handleWakeup)
+
+                else:
+                    # On Windows, non-blocking anonymous pipe or socket is
+                    # not available.
+
+                    def null():
+                        ...
+
+                    # we need to 'kick' the python interpreter so it sees
+                    # system signals
+                    # https://stackoverflow.com/a/4939113/380231
+                    kick_timer = QtCore.QTimer()
+                    kick_timer.timeout.connect(null)
+                    kick_timer.start(50)
+
+                    cleanup = kick_timer.stop
+
+                # we also need to make sure that the qApp never sees
+                # exceptions raised by python inside of a c++ callback (as
+                # it will segfault its self because due to the way the
+                # code is called there is no clear way to propgate that
+                # back to the python code.
+                vals = (None, None, None)
+
+                old_sys_handler = sys.excepthook
+
+                def my_exception_hook(exctype, value, traceback):
+                    nonlocal vals
+                    vals = (exctype, value, traceback)
+                    event_loop.exit()
+                    old_sys_handler(exctype, value, traceback)
+
+                # this kill the Qt event loop when the plan is finished
+                killer_timer = QtCore.QTimer()
+                killer_timer.setSingleShot(True)
+                killer_timer.timeout.connect(start_killer_thread)
+                killer_timer.start(0)
+
+                try:
+                    sys.excepthook = my_exception_hook
+                    event_loop.exec_()
+                    # make sure any pending signals are processed
+                    event_loop.processEvents()
+                    if vals[1] is not None:
+                        raise vals[1]
+                finally:
+                    try:
+                        cleanup()
+                    finally:
+                        sys.excepthook = old_sys_handler
+            elif 'ipympl' in backend or 'nbagg' in backend:
+                Gcf = matplotlib._pylab_helpers.Gcf
+                while True:
+                    done = blocking_event.wait(.1)
+                    for f_mgr in Gcf.get_all_fig_managers():
+                        if f_mgr.canvas.figure.stale:
+                            f_mgr.canvas.draw()
+                    if done:
+                        return
+            else:
+                # We are not using matplotlib + Qt. Just wait on the Event.
+                blocking_event.wait()
+
+
+default_during_task = DefaultDuringTask()
 
 
 def _rearrange_into_parallel_dicts(readings):

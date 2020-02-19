@@ -14,7 +14,6 @@ from contextlib import ExitStack
 import threading
 import weakref
 from .bundlers import RunBundler
-from .utils import initialize_backend
 
 import concurrent
 
@@ -195,12 +194,17 @@ class RunEngine:
         Expected signature: f(md)
         Expected return: updated scan_id value
 
-    during_task : callable, optional
-        Function to be run to block the main thread during `RE.__call__`
+    during_task : reference to an object of class DuringTask, optional
+        Class methods: ``initialize()`` to be run in ``RE.__init__``
+        to initialize the backend; ``block()`` to be to be run to block
+        the main thread during `RE.__call__`
 
-        The required signature is ::
+        The required signatures for the class methods ::
 
-              def blocking_func(ev: Threading.Event) -> None:
+              def initialize() -> None:
+                   "Returns once initialization code is completed"
+
+              def block(ev: Threading.Event) -> None:
                   "Returns when ev is set"
 
         The default value handles the cases of:
@@ -342,7 +346,7 @@ class RunEngine:
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
 
-        initialize_backend()
+        self._during_task.initialize()
 
         # The RunEngine keeps track of a *lot* of state.
         # All flags and caches are defined here with a comment. Good luck.
@@ -871,7 +875,7 @@ class RunEngine:
             try:
                 # Block until plan is complete or exception is raised.
                 try:
-                    self._during_task(self._blocking_event)
+                    self._during_task.block(self._blocking_event)
                 except KeyboardInterrupt:
                     import ctypes
                     self._interrupted = True
