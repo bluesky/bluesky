@@ -1384,7 +1384,9 @@ class RunEngine:
                     # if we have a message hook, call it
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
-                    debug(msg, extra={'msg_command': msg.command})
+                    debug("%s(%r, *%r **%r, run=%r)",
+                          msg.command, msg.obj, msg.args, msg.kwargs,
+                          msg.run, extra={'msg_command': msg.command})
 
                     # update the running set of all objects we have seen
                     self._objs_seen.add(msg.obj)
