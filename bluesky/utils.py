@@ -1342,7 +1342,7 @@ class DuringTask:
         pass
 
     def block(self, blocking_event):
-        pass
+        blocking_event.wait()
 
 
 class DefaultDuringTask(DuringTask):
