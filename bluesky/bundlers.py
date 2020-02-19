@@ -51,8 +51,9 @@ class RunBundler:
 
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **self._md)
         await self.emit(DocumentNames.start, doc)
-        doc_logger.debug("[start] document is emitted (run_uid=%r)", doc['uid'],
-        extra={'doc_name': 'start', 'doc_uid': doc['uid']})
+        doc_logger.debug("[start] document is emitted (run_uid=%r)", self._run_start_uid,
+        extra={'doc_name': 'start',
+               'run_uid': self._run_start_uid})
         await self.reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
@@ -113,7 +114,8 @@ class RunBundler:
         )
         await self.emit(DocumentNames.stop, doc)
         doc_logger.debug("[stop] document is emitted (run_uid=%r)", self._run_start_uid,
-                         extra={'doc_name': 'stop', 'doc_uid': doc['uid']})
+                         extra={'doc_name': 'stop',
+                                'run_uid': self._run_start_uid})
         await self.reset_checkpoint_state_coro()
         self.run_is_open = False
         return doc["run_start"]
@@ -267,7 +269,7 @@ class RunBundler:
                          "data keys %r (run_uid=%r)", name, data_keys.keys(),
                          self._run_start_uid,
                          extra={'doc_name': 'descriptor',
-                                'doc_uid': descriptor_uid,
+                                'run_uid': self._run_start_uid,
                                 'data_keys': data_keys.keys()})
         seq_num_counter = count(1)
 
@@ -412,7 +414,7 @@ class RunBundler:
                          "data keys %r (run_uid=%r)", name, data_keys.keys(),
                          self._run_start_uid,
                          extra={'doc_name': 'descriptor',
-                                'doc_uid': descriptor_uid,
+                                'run_uid': self._run_start_uid,
                                 'data_keys': data_keys.keys()})
             self._descriptors[desc_key] = (objs_read, doc)
 
@@ -454,7 +456,7 @@ class RunBundler:
         doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)", data.keys(),
                  self._run_start_uid,
                  extra={'doc_name': 'event',
-                        'doc_uid': self._run_start_uid,
+                        'run_uid': self._run_start_uid,
                         'data_keys': data.keys()})
 
     def clear_monitors(self):
@@ -604,7 +606,7 @@ class RunBundler:
                     "containing data keys %r (run_uid=%r)", stream_name,
                     data_keys.keys(), self._run_start_uid,
                     extra={'doc_name': 'descriptor',
-                           'doc_uid': descriptor_uid,
+                           'run_uid': self._run_start_uid,
                            'data_keys': data_keys.keys()})
                 self._descriptors[desc_key] = (objs_read, doc)
                 self._sequence_counters[desc_key] = count(1)
@@ -654,7 +656,7 @@ class RunBundler:
                      ev['data'].keys(), self._run_start_uid,
                      event_uid,
                      extra={'doc_name': 'event',
-                            'doc_uid': ev['uid'],
+                            'run_uid': self._run_start_uid,
                             'data_keys': ev['data'].keys()})
                 await self.emit(DocumentNames.event, ev)
             else:
@@ -664,7 +666,8 @@ class RunBundler:
             await self.emit(DocumentNames.bulk_events, bulk_data)
             doc_logger.debug("[bulk events] document is emitted for descriptors (run_uid=%r)",
                     self._run_start_uid,
-                    extra={'doc_name': 'bulk_events'})
+                    extra={'doc_name': 'bulk_events',
+                           'run_uid': self._run_start_uid})
         if return_payload:
             return payload
 
