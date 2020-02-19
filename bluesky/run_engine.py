@@ -17,6 +17,8 @@ from .bundlers import RunBundler
 import concurrent
 
 from event_model import DocumentNames, schema_validators
+import jsonschema
+from .log import logger, msg_logger, state_logger, ComposableLogAdapter
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
 from super_state_machine.errors import TransitionError
@@ -113,8 +115,12 @@ class LoggingPropertyMachine(PropertyMachine):
         with obj._state_lock:
             super().__set__(obj, value)
         value = self.__get__(obj, own)
-        obj.log.info("Change state on %r from %r -> %r",
-                     obj, old_value, value)
+        tags = {'old_state': old_value,
+                'new_state': value,
+                'RE': self}
+
+        state_logger.info("Change state on %r from %r -> %r",
+                           obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
 
@@ -304,8 +310,7 @@ class RunEngine:
 
         # Make a logger for this specific RE instance, using the instance's
         # Python id, to keep from mixing output from separate instances.
-        logger_name = "bluesky.RE.{id}".format(id=id(self))
-        self.log = logging.getLogger(logger_name)
+        self.log = ComposableLogAdapter(logger, {'RE': self})
 
         if md is None:
             md = {}
@@ -1228,7 +1233,7 @@ class RunEngine:
         with self._state_lock:
             self._task = current_task(self.loop)
         stashed_exception = None
-        debug = logging.getLogger('{}.msg'.format(self.log.name)).debug
+        debug = msg_logger.debug
         self._reason = ''
         # sentinel to decide if need to add to the response stack or not
         sentinel = object()
@@ -1374,7 +1379,9 @@ class RunEngine:
                     # if we have a message hook, call it
                     if self.msg_hook is not None:
                         self.msg_hook(msg)
-                    debug(msg)
+                    debug("%s(%r, *%r **%r, run=%r)",
+                          msg.command, msg.obj, msg.args, msg.kwargs,
+                          msg.run, extra={'msg_command': msg.command})
 
                     # update the running set of all objects we have seen
                     self._objs_seen.add(msg.obj)

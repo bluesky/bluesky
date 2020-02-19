@@ -1,8 +1,9 @@
 # The LogFormatter is adapted light from tornado, which is licensed under
 # Apache 2.0. See other_licenses/ in the repository directory.
-
 import logging
 import sys
+import warnings
+
 try:
     import colorama
     colorama.init()
@@ -13,7 +14,8 @@ try:
 except ImportError:
     curses = None
 
-__all__ = ('set_handler',)
+__all__ = ('color_logs', 'config_bluesky_logging', 'get_handler',
+           'LogFormatter', 'set_handler')
 
 
 def _stderr_supports_color():
@@ -34,23 +36,28 @@ def _stderr_supports_color():
     return False
 
 
+class ComposableLogAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        # The logging.LoggerAdapter siliently ignores `extra` in this usage:
+        # log_adapter.debug(msg, extra={...})
+        # and passes through log_adapater.extra instead. This subclass merges
+        # the extra passed via keyword argument with the extra in the
+        # attribute, giving precedence to the keyword argument.
+        kwargs["extra"] = {**self.extra, **kwargs.get('extra', {})}
+        return msg, kwargs
+
+
 class LogFormatter(logging.Formatter):
-    """Log formatter used in Tornado, modified for Python3-only bluesky.
+    """Log formatter for bluesky records.
+
+    Adapted from the log formatter used in Tornado.
     Key features of this formatter are:
+
     * Color support when logging to a terminal that supports it.
     * Timestamps on every log line.
-    * Robust against str/bytes encoding problems.
-    This formatter is enabled automatically by
-    `tornado.options.parse_command_line` or `tornado.options.parse_config_file`
-    (unless ``--logging=none`` is used).
-    Color support on Windows versions that do not support ANSI color codes is
-    enabled by use of the colorama__ library. Applications that wish to use
-    this must first initialize colorama with a call to ``colorama.init``.
-    See the colorama documentation for details.
-    __ https://pypi.python.org/pypi/colorama
-    .. versionchanged:: 4.5
-       Added support for ``colorama``. Changed the constructor
-       signature to be compatible with `logging.config.dictConfig`.
+    * Includes extra record attributes (old_state, new_state, msg_command,
+      doc_name, doc_uid) when present.
+
     """
     DEFAULT_FORMAT = \
         '%(color)s[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s'
@@ -106,7 +113,9 @@ class LogFormatter(logging.Formatter):
             self._normal = ''
 
     def format(self, record):
-        record.message = record.getMessage()
+        message = []
+        message.append(record.getMessage())
+        record.message = ' '.join(message)
         record.asctime = self.formatTime(record, self.datefmt)
 
         try:
@@ -125,22 +134,59 @@ class LogFormatter(logging.Formatter):
         return formatted.replace("\n", "\n    ")
 
 
-plain_log_format = "[%(levelname)1.1s %(asctime)s.%(msecs)03d %(module)s:%(lineno)d] %(message)s"
+plain_log_format = "[%(levelname)1.1s %(asctime)s.%(msecs)03d %(module)15s:%(lineno)5d] %(message)s"
 color_log_format = ("%(color)s[%(levelname)1.1s %(asctime)s.%(msecs)03d "
-                    "%(module)s:%(lineno)d]%(end_color)s %(message)s")
+                    "%(module)15s:%(lineno)5d]%(end_color)s %(message)s")
+
+
 logger = logging.getLogger('bluesky')
+doc_logger = logging.getLogger('bluesky.emit_document')
+msg_logger = logging.getLogger('bluesky.RE.msg')
+state_logger = logging.getLogger('bluesky.RE.state')
+current_handler = None
 
 
-current_handler = None  # overwritten below
+def validate_level(level) -> int:
+    '''
+    Return a int for level comparison
+
+    '''
+    if isinstance(level, int):
+        levelno = level
+    elif isinstance(level, str):
+        levelno = logging.getLevelName(level)
+
+    if isinstance(levelno, int):
+        return levelno
+    else:
+        raise ValueError("Your level is illegal, please use one of python logging string")
 
 
-def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
+def _set_handler_with_logger(logger_name='bluesky', file=sys.stdout, datefmt='%H:%M:%S', color=True,
+                             level='WARNING'):
+    if isinstance(file, str):
+        handler = logging.FileHandler(file)
+    else:
+        handler = logging.StreamHandler(file)
+    levelno = validate_level(level)
+    handler.setLevel(levelno)
+    if color:
+        format = color_log_format
+    else:
+        format = plain_log_format
+    handler.setFormatter(
+        LogFormatter(format, datefmt=datefmt))
+    logging.getLogger(logger_name).addHandler(handler)
+    if logger.getEffectiveLevel() > levelno:
+        logger.setLevel(levelno)
+
+
+def config_bluesky_logging(file=sys.stdout, datefmt='%H:%M:%S', color=True, level='WARNING'):
     """
     Set a new handler on the ``logging.getLogger('bluesky')`` logger.
 
-    This function is run at import time with default paramters. If it is run
-    again by the user, the handler from the previous invocation is removed (if
-    still present) and replaced.
+    If this is called more than once, the handler from the previous invocation
+    is removed (if still present) and replaced.
 
     Parameters
     ----------
@@ -150,6 +196,9 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
         Date format. Default is ``'%H:%M:%S'``.
     color : boolean
         Use ANSI color codes. True by default.
+    level : str or int
+        Python logging level, given as string or corresponding integer.
+        Default is 'WARNING'.
 
     Returns
     -------
@@ -160,22 +209,28 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
     --------
     Log to a file.
 
-    >>> set_handler(file='/tmp/what_is_happening.txt')
+    >>> config_bluesky_logging(file='/tmp/what_is_happening.txt')
 
     Include the date along with the time. (The log messages will always include
     microseconds, which are configured separately, not as part of 'datefmt'.)
 
-    >>> set_handler(datefmt="%Y-%m-%d %H:%M:%S")
+    >>> config_bluesky_logging(datefmt="%Y-%m-%d %H:%M:%S")
 
     Turn off ANSI color codes.
 
-    >>> set_handler(color=False)
+    >>> config_bluesky_logging(color=False)
+
+    Increase verbosity: show level INFO or higher.
+
+    >>> config_bluesky_logging(level='INFO')
     """
     global current_handler
     if isinstance(file, str):
         handler = logging.FileHandler(file)
     else:
         handler = logging.StreamHandler(file)
+    levelno = validate_level(level)
+    handler.setLevel(levelno)
     if color:
         format = color_log_format
     else:
@@ -186,8 +241,18 @@ def set_handler(file=sys.stdout, datefmt='%H:%M:%S', color=True):
         logger.removeHandler(current_handler)
     logger.addHandler(handler)
     current_handler = handler
+    if logger.getEffectiveLevel() > levelno:
+        logger.setLevel(levelno)
     return handler
 
 
-# Add a handler with the default parameters at import time.
-current_handler = set_handler()
+set_handler = config_bluesky_logging  # for back-compat
+
+
+def get_handler():
+    """
+    Return the handler configured by the most recent call to :func:`config_bluesky_logging`.
+
+    If :func:`config_bluesky_logging` has not yet been called, this returns ``None``.
+    """
+    return current_handler
