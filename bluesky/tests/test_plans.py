@@ -1,7 +1,6 @@
 import pytest
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
-import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
 import numpy as np
 import pandas as pd
