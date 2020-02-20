@@ -36,7 +36,7 @@ from .utils import (CallbackRegistry, SigintHandler,
                     RunEngineInterrupted, IllegalMessageSequence,
                     FailedPause, FailedStatus, InvalidCommand,
                     PlanHalt, Msg, ensure_generator, single_gen,
-                    default_during_task)
+                    DefaultDuringTask)
 
 
 class _RunEnginePanic(Exception):
@@ -195,14 +195,10 @@ class RunEngine:
         Expected return: updated scan_id value
 
     during_task : reference to an object of class DuringTask, optional
-        Class methods: ``initialize()`` to be run in ``RE.__init__``
-        to initialize the backend; ``block()`` to be to be run to block
+        Class methods: ``block()`` to be run to block
         the main thread during `RE.__call__`
 
         The required signatures for the class methods ::
-
-              def initialize() -> None:
-                   "Returns once initialization code is completed"
 
               def block(ev: Threading.Event) -> None:
                   "Returns when ev is set"
@@ -293,13 +289,12 @@ class RunEngine:
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
                  scan_id_source=default_scan_id_source,
-                 during_task=default_during_task):
+                 during_task=None):
         if loop is None:
             loop = get_bluesky_event_loop()
         self._th = _ensure_event_loop_running(loop)
         self._state_lock = threading.RLock()
         self._loop = loop
-        self._during_task = during_task
 
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
@@ -346,7 +341,9 @@ class RunEngine:
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
 
-        self._during_task.initialize()
+        if during_task is None:
+            during_task = DefaultDuringTask()
+        self._during_task = during_task
 
         # The RunEngine keeps track of a *lot* of state.
         # All flags and caches are defined here with a comment. Good luck.

@@ -1338,7 +1338,7 @@ _qapp = None
 
 class DuringTask:
 
-    def initialize(self):
+    def __init__(self):
         pass
 
     def block(self, blocking_event):
@@ -1347,7 +1347,7 @@ class DuringTask:
 
 class DefaultDuringTask(DuringTask):
 
-    def initialize(self):
+    def __init__(self):
         """
         Initialize backend. Currently on Qt backend is supported. The function
         is initalizing the 'teleporter' if Qt backend is used.
