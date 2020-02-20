@@ -1,6 +1,6 @@
 import sys
 import inspect
-from itertools import chain
+from itertools import chain, zip_longest
 from functools import partial
 
 from collections import defaultdict
@@ -920,9 +920,25 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     else:
         # Ensure that the user-defined per-step has the expected signature.
         sig = inspect.signature(per_step)
+
+        def _verify_1d_step(sig):
+            for name, (p_name, p) in zip_longest(['detectors', 'motor', 'step'], sig.parameters.items()):
+                # this is one of the first 3 positional arguements, check that the name matches
+                if name is not None:
+                    if name != p_name:
+                        return False
+                # it is any extra arguements, check that they do not have
+                else:
+                    if p.kind is p.VAR_KEYWORD or p.kind is p.VAR_KEYWORD:
+                        continue
+                    if p.default is p.empty:
+                        return False
+
+            return True
+
         if sig == inspect.signature(bps.one_nd_step):
             pass
-        elif sig == inspect.signature(bps.one_1d_step):
+        elif _verify_1d_step(sig):
             # Accept this signature for back-compat reasons (because
             # inner_product_scan was renamed scan).
             dims = len(list(cycler.keys))
