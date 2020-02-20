@@ -290,6 +290,7 @@ migrate like so:
 
 .. code-block:: python
 
+   from bluesky.utils import get_history
    old_md = get_history()
    RE.md.update(old_md)
 
