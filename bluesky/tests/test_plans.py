@@ -4,6 +4,7 @@ import bluesky.plans as bp
 import bluesky.plan_stubs as bps
 import numpy as np
 import pandas as pd
+import re
 from bluesky.tests.utils import MsgCollector
 
 
@@ -246,7 +247,7 @@ def _bad_per_step_factory():
 def test_bad_per_step_signature(hw, per_step):
     with pytest.raises(
         TypeError,
-        message=(
+        match=re.escape(
             "per_step must be a callable with the signature "
             "<Signature (detectors, step, pos_cache)> or "
             "<Signature (detectors, motor, step)>."
