@@ -1,10 +1,10 @@
 import pytest
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
-import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
 import numpy as np
 import pandas as pd
+import re
 from bluesky.tests.utils import MsgCollector
 
 
@@ -192,3 +192,65 @@ def test_pseudo_mv(hw, RE, pln):
     expecte_objs = [p, None]
     assert len(m_col.msgs) == 2
     assert [m.obj for m in m_col.msgs] == expecte_objs
+
+
+def _good_per_step_factory():
+    def per_step_old(detectors, motor, step):
+        yield from bps.null()
+
+    def per_step_extra(detectors, motor, step, some_kwarg=None):
+        yield from bps.null()
+
+    def per_step_exact(detectors, motor, step, take_reading=None):
+        yield from bps.null()
+
+    def per_step_kwargs(detectors, motor, step, **kwargs):
+        yield from bps.null()
+
+    return pytest.mark.parametrize(
+        "per_step",
+        [per_step_old, per_step_extra, per_step_exact, per_step_kwargs],
+        ids=["no kwargs", "extra kwargs", "exact signature", "with kwargs"],
+    )
+
+
+@_good_per_step_factory()
+def test_good_per_step_signature(hw, per_step):
+
+    list(bp.scan([hw.det], hw.motor, -1, 1, 5, per_step=per_step))
+
+
+def _bad_per_step_factory():
+    def too_few(detectors, motor):
+        "no body"
+
+    def too_many(detectors, motor, step, bob):
+        "no body"
+
+    def extra_required_kwarg(detectors, motor, step, *, some_kwarg):
+        "no body"
+
+    def wrong_names(a, b, c, take_reading=None):
+        "no body"
+
+    def per_step_only_args(*args):
+        "no body"
+
+    return pytest.mark.parametrize(
+        "per_step",
+        [too_few, too_many, extra_required_kwarg, wrong_names, per_step_only_args],
+        ids=["too few", "too many", "required kwarg", "bad name", "args only"],
+    )
+
+
+@_bad_per_step_factory()
+def test_bad_per_step_signature(hw, per_step):
+    with pytest.raises(
+        TypeError,
+        match=re.escape(
+            "per_step must be a callable with the signature "
+            "<Signature (detectors, step, pos_cache)> or "
+            "<Signature (detectors, motor, step)>."
+        ),
+    ):
+        list(bp.scan([hw.det], hw.motor, -1, 1, 5, per_step=per_step))
