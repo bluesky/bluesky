@@ -222,19 +222,19 @@ def test_good_per_step_signature(hw, per_step):
 
 def _bad_per_step_factory():
     def too_few(detectors, motor):
-        yield from bps.null()
+        "no body"
 
     def too_many(detectors, motor, step, bob):
-        yield from bps.null()
+        "no body"
 
     def extra_required_kwarg(detectors, motor, step, *, some_kwarg):
-        yield from bps.null()
+        "no body"
 
     def wrong_names(a, b, c, take_reading=None):
-        yield from bps.null()
+        "no body"
 
     def per_step_only_args(*args):
-        yield from bps.null()
+        "no body"
 
     return pytest.mark.parametrize(
         "per_step",
