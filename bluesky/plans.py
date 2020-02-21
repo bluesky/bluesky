@@ -922,6 +922,8 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         sig = inspect.signature(per_step)
 
         def _verify_1d_step(sig):
+            if len(sig.parameters) < 3:
+                return False
             for name, (p_name, p) in zip_longest(['detectors', 'motor', 'step'], sig.parameters.items()):
                 # this is one of the first 3 positional arguements, check that the name matches
                 if name is not None:
