@@ -16,6 +16,7 @@ import threading
 import time
 from warnings import warn
 import weakref
+from event_model import unpack_event_page
 
 from .core import LiveTable, make_class_safe
 from .mpl_plotting import LivePlot, LiveGrid, LiveScatter, QtAwareCallback
@@ -142,7 +143,7 @@ class BestEffortCallback(QtAwareCallback):
         # Print heading.
         tt = datetime.fromtimestamp(self._start_doc['time']).utctimetuple()
         if self._heading_enabled:
-            print("Transient Scan ID: {0}     Time: {1}".format(
+            print("\n\nTransient Scan ID: {0}     Time: {1}".format(
                 self._start_doc.get('scan_id', ''),
                 time.strftime("%Y-%m-%d %H:%M:%S", tt)))
             print("Persistent Unique Scan ID: '{0}'".format(
@@ -355,7 +356,7 @@ class BestEffortCallback(QtAwareCallback):
         if stream_name == self.dim_stream:
             if self._table_enabled:
                 # plot everything, independent or dependent variables
-                self._table = LiveTable(list(self.all_dim_fields) + columns)
+                self._table = LiveTable(list(self.all_dim_fields) + columns, separator_lines=False)
                 self._table('start', self._start_doc)
                 self._table('descriptor', doc)
 

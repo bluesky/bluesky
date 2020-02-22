@@ -37,7 +37,7 @@ from .utils import (CallbackRegistry, SigintHandler,
                     RunEngineInterrupted, IllegalMessageSequence,
                     FailedPause, FailedStatus, InvalidCommand,
                     PlanHalt, Msg, ensure_generator, single_gen,
-                    default_during_task)
+                    DefaultDuringTask)
 
 
 class _RunEnginePanic(Exception):
@@ -199,12 +199,13 @@ class RunEngine:
         Expected signature: f(md)
         Expected return: updated scan_id value
 
-    during_task : callable, optional
-        Function to be run to block the main thread during `RE.__call__`
+    during_task : reference to an object of class DuringTask, optional
+        Class methods: ``block()`` to be run to block
+        the main thread during `RE.__call__`
 
-        The required signature is ::
+        The required signatures for the class methods ::
 
-              def blocking_func(ev: Threading.Event) -> None:
+              def block(ev: Threading.Event) -> None:
                   "Returns when ev is set"
 
         The default value handles the cases of:
@@ -293,13 +294,12 @@ class RunEngine:
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
                  scan_id_source=default_scan_id_source,
-                 during_task=default_during_task):
+                 during_task=None):
         if loop is None:
             loop = get_bluesky_event_loop()
         self._th = _ensure_event_loop_running(loop)
         self._state_lock = threading.RLock()
         self._loop = loop
-        self._during_task = during_task
 
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
@@ -344,6 +344,10 @@ class RunEngine:
         self.waiting_hook = None
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
+
+        if during_task is None:
+            during_task = DefaultDuringTask()
+        self._during_task = during_task
 
         # The RunEngine keeps track of a *lot* of state.
         # All flags and caches are defined here with a comment. Good luck.
@@ -873,7 +877,7 @@ class RunEngine:
             try:
                 # Block until plan is complete or exception is raised.
                 try:
-                    self._during_task(self._blocking_event)
+                    self._during_task.block(self._blocking_event)
                 except KeyboardInterrupt:
                     import ctypes
                     self._interrupted = True

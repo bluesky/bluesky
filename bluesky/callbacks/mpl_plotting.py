@@ -39,7 +39,7 @@ def _get_teleporter():
 
     if threading.current_thread() is not threading.main_thread():
         raise RuntimeError(
-            "A bluesky QtAwareCallback was instantiated from a backgrond "
+            "A bluesky QtAwareCallback was instantiated from a background "
             "thread before the bluesky qt 'teleporter' was created. "
             "To avoid this issue, "
             "call bluesky.mpl_plotting.initialize_teleporter() "

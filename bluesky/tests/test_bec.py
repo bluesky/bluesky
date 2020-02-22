@@ -1,11 +1,13 @@
 import ast
 import pytest
 import jsonschema
+import re
 from bluesky.plans import scan, grid_scan
 import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
+from event_model import RunRouter
 
 
 def test_hints(RE, hw):
@@ -88,6 +90,65 @@ def test_live_grid(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
+
+
+def test_multirun_nested_plan(capsys, caplog, RE, hw):
+    # This test only checks if the plan runs without crashing. If BEC crashes,
+    #   the plan will still run, but data will not be displayed.
+    @bpp.set_run_key_decorator(run="inner_run")
+    def plan_inner():
+        yield from grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True)
+
+    def sequence():
+        for n in range(5):
+            yield from bps.mov(hw.motor, n * 0.1 + 1)
+            yield from bps.trigger_and_read([hw.det1])
+
+    @bpp.set_run_key_decorator(run="outer_run")
+    @bpp.stage_decorator([hw.det1, hw.motor])
+    @bpp.run_decorator(md={})
+    def plan_outer():
+        yield from sequence()
+        # Call inner plan from within the plan
+        yield from plan_inner()
+        # Run another set of commands
+        yield from sequence()
+
+    # The first test should fail. We check if expected error message is printed in case
+    #   of failure.
+    bec = BestEffortCallback()
+    bec_token = RE.subscribe(bec)
+    RE(plan_outer())
+
+    captured = capsys.readouterr()
+
+    # Check for the number of runs (the number of times UID is printed in the output)
+    scan_uid_substr = "Persistent Unique Scan ID"
+    n_runs = captured.out.count(scan_uid_substr)
+    assert n_runs == 2, "scan output contains incorrect number of runs"
+    # Check if the expected error message is printed once the callback fails. The same
+    #   substring will be used in the second part of the test to check if BEC did not fail.
+    err_msg_substr = "is being suppressed to not interrupt plan execution"
+    assert err_msg_substr in str(caplog.text), \
+        "Best Effort Callback failed, but expected error message was not printed"
+
+    RE.unsubscribe(bec_token)
+    caplog.clear()
+
+    # The second test should succeed, i.e. the error message should not be printed
+    def wrapper(name, doc):
+        bec = BestEffortCallback()
+        bec(name, doc)
+        return [bec], []
+    rr = RunRouter([wrapper])
+    RE.subscribe(rr)
+    RE(plan_outer())
+
+    captured = capsys.readouterr()
+    n_runs = captured.out.count(scan_uid_substr)
+    assert n_runs == 2, "scan output contains incorrect number of runs"
+    assert err_msg_substr not in caplog.text, \
+        "Best Effort Callback failed while executing nested plans"
 
 
 @pytest.mark.xfail(not (jsonschema.__version__.split('.') < ['3', ]),
