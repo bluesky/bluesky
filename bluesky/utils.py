@@ -1349,8 +1349,8 @@ class DefaultDuringTask(DuringTask):
 
     def __init__(self):
         """
-        Initialize backend. Currently on Qt backend is supported. The function
-        is initalizing the 'teleporter' if Qt backend is used.
+        Initialize backend. Currently only the Qt backend is supported. The function
+        is initializing the 'teleporter' if Qt backend is used.
         """
         if 'matplotlib' in sys.modules:
             import matplotlib
@@ -1459,8 +1459,8 @@ class DefaultDuringTask(DuringTask):
 
                 # we also need to make sure that the qApp never sees
                 # exceptions raised by python inside of a c++ callback (as
-                # it will segfault its self because due to the way the
-                # code is called there is no clear way to propgate that
+                # it will segfault itself because due to the way the
+                # code is called there is no clear way to propagate that
                 # back to the python code.
                 vals = (None, None, None)
 
