@@ -1007,11 +1007,12 @@ def ensure_uid(doc_or_uid):
 
 def ts_msg_hook(msg, file=sys.stdout):
     t = '{:%H:%M:%S.%f}'.format(datetime.datetime.now())
-    msg_fmt = '{: <17s} -> {!s: <15s} args: {}, kwargs: {}'.format(
+    msg_fmt = "{: <17s} -> {!s: <15s} args: {}, kwargs: {}, run: {}".format(
         msg.command,
         msg.obj.name if hasattr(msg.obj, 'name') else msg.obj,
         msg.args,
-        msg.kwargs)
+        msg.kwargs,
+        "'{}'".format(msg.run) if isinstance(msg.run, str) else msg.run)
     print('{} {}'.format(t, msg_fmt), file=file)
 
 
