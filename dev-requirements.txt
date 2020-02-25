@@ -19,7 +19,7 @@ pims
 pyepics
 pytest
 pyyaml
-pyzmq==16.0.4
+pyzmq
 requests
 streamz
 sphinx==1.6.4
