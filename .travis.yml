@@ -1,5 +1,4 @@
 language: python
-sudo: false
 env:
   global:
     - secure: "UC5rEkKAKQHvpCojJAedrx1aVsplZ0xOq5xdFME3UxrKDOsihRIDBYV6YOnpDcWVxzI3iZAJOJG1rNqMZ/4pOnI/DQ5n2nCIbqZlhPh6xPbr//g88Y3dlQifPWbC6pqmh+WJCfde99lYNDI2XauD4AvRARI9MnRP9vGF0gyTbUMeA0ybLdXScawnhL48Gh7nj64R7e0F1SgF1iEXaU0LvWUW2UK9yIg/kqWfL0XKpgpvxcy0n+VGe9gbwiA70F3nd7iZ/aM7K1MRiLeppCbj3xlLwGE4mw6svF5uim6oYZoDp0si70Ux2yw7TNOYpn82dTBIq1KU59jGUyP/rH/nx0erPzCUJFak8YQTSrbhO08u/baRt5Qb0KWfqGJZcHzPknRC66PzI47zO5ol9qvnIo68xfuIrlJZRhTF7ewNWzmJP5MeJ85mgoQSTmZYyCgFTYDcPdoePerhjBepYngvT1EzS9BPTuUXhStH7lRgbriGVreOQ9bDvW5hTb/n9CKmI/XhQBOGy7T1HYAaIP1N+rlQw0lmp2uYIvZ53wGjqoKB+yLBpAAzXPBbK3sjDtuquou/jEqvyJnL9/VEbohPfIK3AlTTC0zIDi5QZq/h4zqMIKOybd3jmvT4P+Pvy8YGolXtlV6P/erA05GAOXijs/pki/BVcGsHNNjr1xRE0qU="
@@ -9,7 +8,7 @@ cache:
     - $HOME/.cache/pip
     - $HOME/.cache/matplotlib
 
-matrix:
+jobs:
   fast_finish: true
   include:
     - os: linux
@@ -18,10 +17,12 @@ matrix:
       python: 3.7
     - os: linux
       python: 3.8
-    - python: nightly
+    - os: linux
+      python: nightly
 
   allow_failures:
-    - python: nightly
+    - os: linux
+      python: nightly
 
 before_install:
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x16"
@@ -44,6 +45,8 @@ install:
   - git clean -xfd
   # make sure the sqlite file exists to avoid race conditions
   - python -c "from bluesky.utils import get_history; get_history()"
+  - conda list
+  - pip list
 
 script:
   # ensure that callbacks import without matplotlib
