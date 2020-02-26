@@ -851,8 +851,7 @@ class RunEngine:
         self._suspenders.add(suspender)
         suspender.install(self)
 
-    @asyncio.coroutine
-    def _install_suspender(self, msg):
+    async def _install_suspender(self, msg):
         """
         See :meth: `RunEngine.install_suspender`
 
@@ -880,8 +879,7 @@ class RunEngine:
             suspender.remove()
         self._suspenders.discard(suspender)
 
-    @asyncio.coroutine
-    def _remove_suspender(self, msg):
+    async def _remove_suspender(self, msg):
         """
         See :meth: `RunEngine.remove_suspender`
 
@@ -1074,8 +1072,7 @@ class RunEngine:
                 except Exception:
                     self.log.exception("Failed to stop %r.", obj)
 
-    @asyncio.coroutine
-    def _run(self):
+    async def _run(self):
         """Pull messages from the plan, process them, send results back.
 
         Upon exit, clean up.
@@ -1113,7 +1110,7 @@ class RunEngine:
                     # This sleep has to be inside of this try block so
                     # that any of the 'async' exceptions get thrown in the
                     # correct place
-                    yield from asyncio.sleep(0, loop=self.loop)
+                    await asyncio.sleep(0, loop=self.loop)
                     # always pop off a result, we are either sending it back in
                     # or throwing an exception in, in either case the left hand
                     # side of the yield in the plan will be moved past
@@ -1205,7 +1202,7 @@ class RunEngine:
                         # this is one of two places that 'async'
                         # exceptions (coming in via throw) can be
                         # raised
-                        new_response = yield from coro(msg)
+                        new_response = await coro(msg)
 
                     # special case `CancelledError` and let the outer
                     # exception block deal with it.
@@ -1248,12 +1245,12 @@ class RunEngine:
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             # TODO Is the sleep here necessary?
-            yield from asyncio.sleep(0, loop=self.loop)
+            await asyncio.sleep(0, loop=self.loop)
         except (FailedPause, RequestAbort, asyncio.CancelledError,
                 PlanHalt):
             self._exit_status = 'abort'
             # TODO Is the sleep here necessary?
-            yield from asyncio.sleep(0, loop=self.loop)
+            await asyncio.sleep(0, loop=self.loop)
             self.log.exception("Run aborted")
         except Exception as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
@@ -1270,7 +1267,7 @@ class RunEngine:
             # Some might not support partial collection. We swallow errors.
             for obj in list(self._uncollected):
                 try:
-                    yield from self._collect(Msg('collect', obj))
+                    await self._collect(Msg('collect', obj))
                 except Exception:
                     self.log.exception("Failed to collect %r.", obj)
             # in case we were interrupted between 'stage' and 'unstage'
@@ -1292,7 +1289,7 @@ class RunEngine:
             # Emit RunStop if necessary.
             if self._run_is_open:
                 try:
-                    yield from self._close_run(Msg('close_run'))
+                    await self._close_run(Msg('close_run'))
                 except Exception:
                     self.log.error(
                         "Failed to close run %r.", self._run_start_uid)
@@ -1311,8 +1308,7 @@ class RunEngine:
             raise pending_cancel_exception
         self.log.info("Cleaned up from plan %r", self._plan)
 
-    @asyncio.coroutine
-    def _wait_for(self, msg):
+    async def _wait_for(self, msg):
         """Instruct the RunEngine to wait until msg.obj has completed. Better
         yet, see the docstring for ``asyncio.wait`` for what msg.obj should
         be...
@@ -1328,10 +1324,9 @@ class RunEngine:
         for ``asyncio.await``
         """
         futs, = msg.args
-        yield from asyncio.wait(futs, loop=self.loop, **msg.kwargs)
+        await asyncio.wait(futs, loop=self.loop, **msg.kwargs)
 
-    @asyncio.coroutine
-    def _open_run(self, msg):
+    async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
 
         Expected message object is:
@@ -1368,9 +1363,9 @@ class RunEngine:
         self.md_validator(dict(md))
 
         doc = dict(uid=self._run_start_uid, time=ttime.time(), **md)
-        yield from self.emit(DocumentNames.start, doc)
+        await self.emit(DocumentNames.start, doc)
         self.log.debug("Emitted RunStart (uid=%r)", doc['uid'])
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
         if self.record_interruptions:
@@ -1381,12 +1376,11 @@ class RunEngine:
                                       name='interruptions',
                                       data_keys={'interruption': dk},
                                       run_start=self._run_start_uid)
-            yield from self.emit(DocumentNames.descriptor, interruptions_desc)
+            await self.emit(DocumentNames.descriptor, interruptions_desc)
 
         return self._run_start_uid
 
-    @asyncio.coroutine
-    def _close_run(self, msg):
+    async def _close_run(self, msg):
         """Instruct the RunEngine to write the RunStop document
 
         Expected message object is:
@@ -1426,13 +1420,12 @@ class RunEngine:
                    reason=reason,
                    num_events=num_events)
         self._clear_run_cache()
-        yield from self.emit(DocumentNames.stop, doc)
+        await self.emit(DocumentNames.stop, doc)
         self.log.debug("Emitted RunStop (uid=%r)", doc['uid'])
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
         return doc['run_start']
 
-    @asyncio.coroutine
-    def _create(self, msg):
+    async def _create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
          an Event document
 
@@ -1471,8 +1464,7 @@ class RunEngine:
                     "Msg('create') now requires a stream name, given as "
                     "Msg('create', name) or Msg('create', name=name)") from None
 
-    @asyncio.coroutine
-    def _read(self, msg):
+    async def _read(self, msg):
         """
         Add a reading to the open event bundle.
 
@@ -1529,8 +1521,7 @@ class RunEngine:
         self._config_values_cache[obj] = config_values
         self._config_ts_cache[obj] = config_ts
 
-    @asyncio.coroutine
-    def _monitor(self, msg):
+    async def _monitor(self, msg):
         """
         Monitor a signal. Emit event documents asynchronously.
 
@@ -1591,12 +1582,11 @@ class RunEngine:
             self.dispatcher.process(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
-        yield from self.emit(DocumentNames.descriptor, desc_doc)
+        await self.emit(DocumentNames.descriptor, desc_doc)
         obj.subscribe(emit_event, **kwargs)
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
-    @asyncio.coroutine
-    def _unmonitor(self, msg):
+    async def _unmonitor(self, msg):
         """
         Stop monitoring; i.e., remove the callback emitting event documents.
 
@@ -1611,10 +1601,9 @@ class RunEngine:
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
-    @asyncio.coroutine
-    def _save(self, msg):
+    async def _save(self, msg):
         """Save the event that is currently being bundled
 
         Expected message object is:
@@ -1681,7 +1670,7 @@ class RunEngine:
                        data_keys=data_keys, uid=descriptor_uid,
                        configuration=config, name=desc_key,
                        hints=hints, object_keys=object_keys)
-            yield from self.emit(DocumentNames.descriptor, doc)
+            await self.emit(DocumentNames.descriptor, doc)
             self.log.debug("Emitted Event Descriptor with name %r containing "
                            "data keys %r (uid=%r)", desc_key,
                            data_keys.keys(), descriptor_uid)
@@ -1694,7 +1683,7 @@ class RunEngine:
             # Add a 'run_start' field to the resource document on its way out.
             if name == 'resource':
                 doc['run_start'] = self._run_start_uid
-            yield from self.emit(DocumentNames(name), doc)
+            await self.emit(DocumentNames(name), doc)
 
         # Event documents
         seq_num = next(self._sequence_counters[seq_num_key])
@@ -1714,12 +1703,11 @@ class RunEngine:
         doc = dict(descriptor=descriptor_uid,
                    time=ttime.time(), data=data, timestamps=timestamps,
                    seq_num=seq_num, uid=event_uid, filled=filled)
-        yield from self.emit(DocumentNames.event, doc)
+        await self.emit(DocumentNames.event, doc)
         self.log.debug("Emitted Event with data keys %r (uid=%r)", data.keys(),
                        event_uid)
 
-    @asyncio.coroutine
-    def _drop(self, msg):
+    async def _drop(self, msg):
         """Drop the event that is currently being bundled
 
         Expected message object is:
@@ -1739,8 +1727,7 @@ class RunEngine:
         self._bundle_name = None
         self.log.debug("Dropped open event bundle")
 
-    @asyncio.coroutine
-    def _kickoff(self, msg):
+    async def _kickoff(self, msg):
         """Start a flyscan object
 
         Parameters
@@ -1793,8 +1780,7 @@ class RunEngine:
         self._status_objs[group].add(ret)
         return ret
 
-    @asyncio.coroutine
-    def _complete(self, msg):
+    async def _complete(self, msg):
         """
         Tell a flyer, 'stop collecting, whenever you are ready'.
 
@@ -1833,8 +1819,7 @@ class RunEngine:
         self._status_objs[group].add(ret)
         return ret
 
-    @asyncio.coroutine
-    def _collect(self, msg):
+    async def _collect(self, msg):
         """
         Collect data cached by a flyer and emit descriptor and event documents.
 
@@ -1858,7 +1843,7 @@ class RunEngine:
                 # Add a 'run_start' field to the resource document on its way out.
                 if name == 'resource':
                     doc['run_start'] = self._run_start_uid
-                yield from self.emit(DocumentNames(name), doc)
+                await self.emit(DocumentNames(name), doc)
 
         named_data_keys = obj.describe_collect()
         # e.g., {name_for_desc1: data_keys_for_desc1,
@@ -1880,7 +1865,7 @@ class RunEngine:
                            data_keys=data_keys, uid=descriptor_uid,
                            name=stream_name, hints=hints,
                            object_keys=object_keys)
-                yield from self.emit(DocumentNames.descriptor, doc)
+                await self.emit(DocumentNames.descriptor, doc)
                 self.log.debug("Emitted Event Descriptor with name %r "
                                "containing data keys %r (uid=%r)", stream_name,
                                data_keys.keys(), descriptor_uid)
@@ -1919,24 +1904,22 @@ class RunEngine:
             if stream:
                 self.log.debug("Emitted Event with data keys %r (uid=%r)",
                                ev['data'].keys(), ev['uid'])
-                yield from self.emit(DocumentNames.event, ev)
+                await self.emit(DocumentNames.event, ev)
             else:
                 bulk_data[descriptor_uid].append(ev)
 
         if not stream:
-            yield from self.emit(DocumentNames.bulk_events, bulk_data)
+            await self.emit(DocumentNames.bulk_events, bulk_data)
             self.log.debug("Emitted bulk events for descriptors with uids "
                            "%r", bulk_data.keys())
 
-    @asyncio.coroutine
-    def _null(self, msg):
+    async def _null(self, msg):
         """
         A no-op message, mainly for debugging and testing.
         """
         pass
 
-    @asyncio.coroutine
-    def _set(self, msg):
+    async def _set(self, msg):
         """
         Set a device and cache the returned status object.
 
@@ -1973,8 +1956,7 @@ class RunEngine:
 
         return ret
 
-    @asyncio.coroutine
-    def _trigger(self, msg):
+    async def _trigger(self, msg):
         """
         Trigger a device and cache the returned status object.
 
@@ -2005,8 +1987,7 @@ class RunEngine:
 
         return ret
 
-    @asyncio.coroutine
-    def _wait(self, msg):
+    async def _wait(self, msg):
         """Block progress until every object that was triggered or set
         with the keyword argument `group=<GROUP>` is done.
 
@@ -2030,7 +2011,7 @@ class RunEngine:
                     # the information these encapsulate to create a progress
                     # bar.
                     self.waiting_hook(status_objs)
-                yield from self._wait_for(Msg('wait_for', None, futs))
+                await self._wait_for(Msg('wait_for', None, futs))
             finally:
                 if self.waiting_hook is not None:
                     # Notify the waiting_hook function that we have moved on by
@@ -2056,8 +2037,7 @@ class RunEngine:
             self._task.cancel()
         p_event.set()
 
-    @asyncio.coroutine
-    def _sleep(self, msg):
+    async def _sleep(self, msg):
         """Sleep the event loop
 
         Expected message object is:
@@ -2066,10 +2046,9 @@ class RunEngine:
 
         where `sleep_time` is in seconds
         """
-        yield from asyncio.sleep(*msg.args, loop=self.loop)
+        await asyncio.sleep(*msg.args, loop=self.loop)
 
-    @asyncio.coroutine
-    def _pause(self, msg):
+    async def _pause(self, msg):
         """Request the run engine to pause
 
         Expected message object is:
@@ -2081,8 +2060,7 @@ class RunEngine:
         """
         self.request_pause(*msg.args, **msg.kwargs)
 
-    @asyncio.coroutine
-    def _resume(self, msg):
+    async def _resume(self, msg):
         """Request the run engine to resume
 
         Expected message object is:
@@ -2100,8 +2078,7 @@ class RunEngine:
             if hasattr(obj, 'resume'):
                 obj.resume()
 
-    @asyncio.coroutine
-    def _checkpoint(self, msg):
+    async def _checkpoint(self, msg):
         """Instruct the RunEngine to create a checkpoint so that we can rewind
         to this point if necessary
 
@@ -2113,13 +2090,13 @@ class RunEngine:
             raise IllegalMessageSequence("Cannot 'checkpoint' after 'create' "
                                          "and before 'save'. Aborting!")
 
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
         if self._deferred_pause_requested:
             # We are at a checkpoint; we are done deferring the pause.
             # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
-            yield from asyncio.sleep(0.5, loop=self.loop)
+            await asyncio.sleep(0.5, loop=self.loop)
             self.request_pause(defer=False)
 
     def _reset_checkpoint_state(self):
@@ -2138,10 +2115,10 @@ class RunEngine:
             self._sequence_counters[key] = counter_copy1
             self._teed_sequence_counters[key] = counter_copy2
 
-    _reset_checkpoint_state_coro = asyncio.coroutine(_reset_checkpoint_state)
+    async def _reset_checkpoint_state_coro(self):
+        self._reset_checkpoint_state()
 
-    @asyncio.coroutine
-    def _clear_checkpoint(self, msg):
+    async def _clear_checkpoint(self, msg):
         """Clear a set checkpoint
 
         Expected message object is:
@@ -2153,8 +2130,7 @@ class RunEngine:
         # clear stashed
         self._teed_sequence_counters.clear()
 
-    @asyncio.coroutine
-    def _rewindable(self, msg):
+    async def _rewindable(self, msg):
         '''Set rewindable state of RunEngine
 
         Expected message object is:
@@ -2168,8 +2144,7 @@ class RunEngine:
 
         return self.rewindable
 
-    @asyncio.coroutine
-    def _configure(self, msg):
+    async def _configure(self, msg):
         """Configure an object
 
         Expected message object is:
@@ -2199,8 +2174,7 @@ class RunEngine:
         self._cache_config(obj)
         return old, new
 
-    @asyncio.coroutine
-    def _stage(self, msg):
+    async def _stage(self, msg):
         """Instruct the RunEngine to stage the object
 
         Expected message object is:
@@ -2213,11 +2187,10 @@ class RunEngine:
             return []
         result = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
         return result
 
-    @asyncio.coroutine
-    def _unstage(self, msg):
+    async def _unstage(self, msg):
         """Instruct the RunEngine to unstage the object
 
         Expected message object is:
@@ -2231,11 +2204,10 @@ class RunEngine:
         result = obj.unstage()
         # use `discard()` to ignore objects that are not in the staged set.
         self._staged.discard(obj)
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
         return result
 
-    @asyncio.coroutine
-    def _stop(self, msg):
+    async def _stop(self, msg):
         """
         Stop a device.
 
@@ -2245,8 +2217,7 @@ class RunEngine:
         """
         return msg.obj.stop()  # nominally, this returns None
 
-    @asyncio.coroutine
-    def _subscribe(self, msg):
+    async def _subscribe(self, msg):
         """
         Add a subscription after the run has started.
 
@@ -2275,11 +2246,10 @@ class RunEngine:
         _, obj, args, kwargs = msg
         token = self.subscribe(*args, **kwargs)
         self._temp_callback_ids.add(token)
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
         return token
 
-    @asyncio.coroutine
-    def _unsubscribe(self, msg):
+    async def _unsubscribe(self, msg):
         """
         Remove a subscription during a call -- useful for a multi-run call
         where subscriptions are wanted for some runs but not others.
@@ -2299,10 +2269,9 @@ class RunEngine:
             token, = args
         self.unsubscribe(token)
         self._temp_callback_ids.remove(token)
-        yield from self._reset_checkpoint_state_coro()
+        await self._reset_checkpoint_state_coro()
 
-    @asyncio.coroutine
-    def _input(self, msg):
+    async def _input(self, msg):
         """
         Process a 'input' Msg. Expected Msg:
 
@@ -2312,10 +2281,9 @@ class RunEngine:
         prompt = msg.kwargs.get('prompt', '')
         async_input = AsyncInput(self.loop)
         async_input = functools.partial(async_input, end='', flush=True)
-        return (yield from async_input(prompt))
+        return (await async_input(prompt))
 
-    @asyncio.coroutine
-    def emit(self, name, doc):
+    async def emit(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
         schema_validators[name].validate(doc)
         self.dispatcher.process(name, doc)

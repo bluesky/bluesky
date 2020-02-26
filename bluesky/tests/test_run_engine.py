@@ -89,8 +89,7 @@ def test_register(RE):
     mutable = {}
     RE.verbose = True
 
-    @asyncio.coroutine
-    def func(msg):
+    async def func(msg):
         mutable['flag'] = True
 
     def plan():
