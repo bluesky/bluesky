@@ -670,15 +670,3 @@ def test_async_trigger_delay(RE, hw):
 
     _time_test(bps.trigger, .5, hw.det, wait=True)
     _time_test(bps.abs_set, .5, hw.motor, 1, wait=True)
-
-
-def test_reg_reader(hw, db):
-    hw.img.reg = db.reg
-    det = hw.img
-    det.stage()
-    det.trigger()
-    reading = det.read().copy()
-    det.unstage()
-    datum_id = reading['img']['value']
-    arr = db.reg.retrieve(datum_id)
-    assert_array_equal(np.ones((10, 10)), arr)

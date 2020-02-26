@@ -128,7 +128,7 @@ def test_table(RE, hw):
         hw.det.precision = 2
         hw.motor.precision = 2
         hw.motor.setpoint.put(0.0)  # Make dtype 'number' not 'integer'.
-        hw.det.put(0.0)  # Make dtype 'number' not 'integer'.
+        hw.det.trigger()
         assert hw.det.describe()['det']['precision'] == 2
         assert hw.motor.describe()['motor']['precision'] == 2
         assert hw.det.describe()['det']['dtype'] == 'number'
