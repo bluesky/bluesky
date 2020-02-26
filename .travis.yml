@@ -45,7 +45,6 @@ install:
   - git clean -xfd
   # make sure the sqlite file exists to avoid race conditions
   - python -c "from bluesky.utils import get_history; get_history()"
-  - conda list
   - pip list
 
 script:
