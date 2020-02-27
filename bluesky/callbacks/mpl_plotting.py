@@ -6,6 +6,21 @@ import warnings
 from .core import CallbackBase, get_obj_fields
 
 
+class QtAwareCallback(CallbackBase):
+    """
+    This is a no-op shim class in order to provide forward-compat with 1.6.x.
+
+    Starting in bluesky 1.6.0, callbacks that interact with Qt, such as
+    live-updating matplotlib figures, need to inherit from this class due to a
+    major change in the RunEngine's concurrency model.
+
+    In bluesky 1.5.x and older, this component is not necessary, but a no-op
+    shim is provided here so that code written for later versions can also work
+    on 1.5.x.
+    """
+    pass
+
+
 class LivePlot(CallbackBase):
     """
     Build a function that updates a plot from a stream of Events.
