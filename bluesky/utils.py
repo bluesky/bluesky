@@ -19,6 +19,9 @@ import datetime
 from functools import wraps, partial
 import threading
 import time
+import zict
+import msgpack
+import msgpack_numpy
 from tqdm import tqdm
 from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
 import warnings
@@ -689,6 +692,36 @@ def all_safe_rewind(devices):
             if not rewindable:
                 return False
     return True
+
+
+class PersistentDict(zict.Func):
+    def __init__(self, directory):
+        self._directory = directory
+        self._file = zict.File(directory)
+        super().__init__(self._dump, self._load, self._file)
+
+    @property
+    def directory(self):
+        return self._directory
+
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {dict(self)!r}>"
+
+    @staticmethod
+    def _dump(obj):
+        "Encode as msgpack using numpy-aware encoder."
+        # See https://github.com/msgpack/msgpack-python#string-and-binary-type
+        # for more on use_bin_type.
+        return msgpack.packb(
+            obj,
+            default=msgpack_numpy.encode,
+            use_bin_type=True)
+
+    def _load(self, file):
+        return msgpack.unpackb(
+            file,
+            object_hook=msgpack_numpy.decode,
+            raw=False)
 
 
 SEARCH_PATH = []
