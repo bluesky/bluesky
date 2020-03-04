@@ -63,6 +63,21 @@ Before You Begin
 
   The flag ``--matplotlib=qt5`` is necessary for live-updating plots to work.
 
+  Or, if you wish you use bluesky from a Jupyter notebook, install a kernel like
+  so:
+
+  .. code-block:: python
+
+     ipython kernel install --user --name=bluesky-tutorial --display-name "Python (bluesky)"
+
+  You may start Jupyter from any environment where it is already installed, or
+  install it in this environment alongside bluesky and run it from there:
+
+  .. code-block:: python
+
+     pip install notebook
+     jupyter notebook
+
 If you get lost or confused...
 ==============================
 
