@@ -40,7 +40,7 @@ Before You Begin
 
 * Install the latest versions of bluesky and ophyd. Also install the databroker
   unless you plan to skip the sections about accessing saved data. If you want
-  to following along with the visualization examples, install matplotlib and
+  to follow along with the visualization examples, install matplotlib and
   PyQt5. Finally, install IPython (a Python interpreter designed by scientists
   for scientists).
 
