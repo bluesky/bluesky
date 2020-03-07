@@ -254,3 +254,74 @@ def test_bad_per_step_signature(hw, per_step):
         ),
     ):
         list(bp.scan([hw.det], hw.motor, -1, 1, 5, per_step=per_step))
+
+
+@pytest.mark.parametrize("val", [0, None, "aardvark"])
+def test_rd_dflt(val):
+    sig = Signal(value="0", name="sig")
+
+    def tester(obj, dflt):
+        ret = yield from bps.rd(obj, default_value=dflt)
+        assert ret is dflt
+
+    list(tester(sig, val))
+
+
+@pytest.mark.parametrize("val", [0, None, "aardvark"])
+def test_rd(RE, val):
+    sig = Signal(value=val, name="sig")
+
+    def tester(obj, val):
+        yield from bps.mv(sig, val)
+        ret = yield from bps.rd(obj, default_value=object())
+        assert ret == val
+
+    RE(tester(sig, val))
+
+
+def test_rd_fails(hw):
+    obj = hw.det
+
+    obj.noise.kind = "hinted"
+    hints = obj.hints.get("fields", [])
+    msg = re.escape(
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
+        + f"has {len(hints)} items hinted ({hints}).  We "
+    )
+    with pytest.raises(ValueError, match=msg):
+        list(bps.rd(obj))
+
+    obj.noise.kind = "normal"
+    obj.val.kind = "normal"
+    msg = re.escape(
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
+        + f"and has {len(obj.read_attrs)} read attrs.  We "
+    )
+    with pytest.raises(ValueError, match=msg):
+        list(bps.rd(obj))
+
+    obj.read_attrs = []
+
+    msg = re.escape(
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
+        + f"and has {len(obj.read_attrs)} read attrs.  We "
+    )
+    with pytest.raises(ValueError, match=msg):
+        list(bps.rd(obj))
+
+
+@pytest.mark.parametrize("kind", ["hinted", "normal"])
+def test_rd_device(hw, RE, kind):
+    called = False
+    hw.det.val.kind = kind
+
+    def tester(obj):
+        nonlocal called
+        direct_read = yield from bps.read(obj)
+        rd_read = yield from bps.rd(obj)
+
+        assert rd_read == direct_read["det"]["value"]
+        called = True
+
+    RE(tester(hw.det))
+    assert called

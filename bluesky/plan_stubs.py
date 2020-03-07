@@ -302,6 +302,82 @@ def mvr(*args, group=None, **kwargs):
 movr = mvr  # synonym
 
 
+def rd(obj, *, default_value=0):
+    """Reads a single-value non-triggered object
+
+    This is a helper plan to get the scalar value out of a Device (such as an EpicsMotor or a
+    single EpicsSignal).
+
+    For devices that have more than one read key the following rules are used:
+
+    - if exactly 1 field is hinted that value is used
+    - if no fields are hinted and there is exactly 1 value in the
+      reading that value is used
+    - if more than one field is hinted an Exception is raised
+    - if no fields are hinted and there is more than one key in the reading an
+      Exception is raised
+
+    The devices is not triggered and this plan does not create any Events
+
+    Parameters
+    ----------
+    obj : Device
+        The device to be read
+
+    default_value : Any
+        The value to return when not running in a "live" RunEngine (when
+        ret = yield from obj.read() returns None)
+
+    Returns
+    -------
+    val : Any or None
+        The "single" value of the device
+
+    """
+    hints = obj.hints.get("fields", [])
+    if len(hints) > 1:
+        msg = (
+            f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
+            + f"has {len(hints)} items hinted ({hints}).  We "
+            + "do not know how to pick out a single value.  Please "
+            "adjust the hinting by setting the kind of the components of "
+            "this device or by rd ing one of it's components"
+        )
+        raise ValueError(msg)
+    elif len(hints) == 0:
+        if hasattr(obj, "read_attrs"):
+            if len(obj.read_attrs) != 1:
+                msg = (
+                    f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
+                    + f"and has {len(obj.read_attrs)} read attrs.  We "
+                    "do not know how to pick out a single value.  Please "
+                    "adjust the hinting/read_attrs by setting the kind of "
+                    "the components of this device or by rd ing one of it's "
+                    "components"
+                )
+
+                raise ValueError(msg)
+
+            else:
+                hint = None
+    # len(hints) == 1
+    else:
+        (hint,) = hints
+
+    ret = yield from read(obj)
+
+    # list-ify mode
+    if ret is None:
+        return default_value
+
+    if hint is not None:
+        return ret[hint]["value"]
+
+    # handle the no hint 1 field case
+    (data,) = ret.values()
+    return data["value"]
+
+
 def stop(obj):
     """
     Stop a device.
