@@ -15,8 +15,13 @@ except ImportError:
     from toolz import partition
 
 
-from .utils import (separate_devices, all_safe_rewind, Msg, ensure_generator,
-                    short_uid as _short_uid)
+from .utils import (
+    separate_devices,
+    all_safe_rewind,
+    Msg,
+    ensure_generator,
+    short_uid as _short_uid,
+)
 
 
 def create(name='primary'):
@@ -210,8 +215,12 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.wait`
     """
     from .preprocessors import relative_set_wrapper
-    return (yield from relative_set_wrapper(
-        abs_set(obj, *args, group=group, wait=wait, **kwargs)))
+
+    return (
+        yield from relative_set_wrapper(
+            abs_set(obj, *args, group=group, wait=wait, **kwargs)
+        )
+    )
 
 
 def mv(*args, group=None, **kwargs):
@@ -241,10 +250,8 @@ def mv(*args, group=None, **kwargs):
     group = group or str(uuid.uuid4())
     status_objects = []
 
-    cyl = reduce(operator.add,
-                 [cycler(obj, [val]) for
-                  obj, val in partition(2, args)])
-    step, = utils.merge_cycler(cyl)
+    cyl = reduce(operator.add, [cycler(obj, [val]) for obj, val in partition(2, args)])
+    (step,) = utils.merge_cycler(cyl)
     for obj, val in step.items():
         ret = yield Msg('set', obj, val, group=group, **kwargs)
         status_objects.append(ret)
