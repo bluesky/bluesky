@@ -127,7 +127,7 @@ class SuspenderBase(metaclass=ABCMeta):
         with self._lock:
             if self._should_suspend(value):
                 self._tripped = True
-                loop = self.RE._loop
+                loop = self.RE._loop_for_kwargs
                 # this does dirty things with internal state
                 if (self._ev is None and self.RE is not None):
                     self.__make_event()
