@@ -334,7 +334,7 @@ def rd(obj, *, default_value=0):
         The "single" value of the device
 
     """
-    hints = obj.hints.get("fields", [])
+    hints = getattr(obj, 'hints', {}).get("fields", [])
     if len(hints) > 1:
         msg = (
             f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
