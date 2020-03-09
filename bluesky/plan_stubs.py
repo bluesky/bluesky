@@ -351,7 +351,7 @@ def rd(obj, *, default_value=0):
                     f"and has {len(obj.read_attrs)} read attrs.  We do not know how to "
                     "pick out a single value.  Please adjust the hinting/read_attrs by "
                     "setting the kind of the components of this device or by rd ing one "
-                    "of it's components"
+                    "of its components"
                 )
 
                 raise ValueError(msg)
@@ -379,7 +379,7 @@ def rd(obj, *, default_value=0):
             f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
             f"and has {len(ret)} read values.  We do not know how to pick out a "
             "single value.  Please adjust the hinting/read_attrs by setting the "
-            "kind of the components of this device or by rd ing one of it's components"
+            "kind of the components of this device or by rd ing one of its components"
         )
 
         raise ValueError(msg) from er
