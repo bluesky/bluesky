@@ -374,8 +374,21 @@ def rd(obj, *, default_value=0):
         return ret[hint]["value"]
 
     # handle the no hint 1 field case
-    (data,) = ret.values()
-    return data["value"]
+    try:
+        (data,) = ret.values()
+    except ValueError as er:
+        msg = (
+            f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
+            f"and has {len(ret)} read values.  We "
+            "do not know how to pick out a single value.  Please "
+            "adjust the hinting/read_attrs by setting the kind of "
+            "the components of this device or by rd ing one of it's "
+            "components"
+        )
+
+        raise ValueError(msg) from er
+    else:
+        return data["value"]
 
 
 def stop(obj):
