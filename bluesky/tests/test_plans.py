@@ -258,7 +258,8 @@ def test_bad_per_step_signature(hw, per_step):
 
 @pytest.mark.parametrize("val", [0, None, "aardvark"])
 def test_rd_dflt(val):
-    sig = Signal(value="0", name="sig")
+    ophyd = pytest.importorskip("ophyd")
+    sig = ophyd.Signal(value="0", name="sig")
 
     def tester(obj, dflt):
         ret = yield from bps.rd(obj, default_value=dflt)
@@ -269,7 +270,8 @@ def test_rd_dflt(val):
 
 @pytest.mark.parametrize("val", [0, None, "aardvark"])
 def test_rd(RE, val):
-    sig = Signal(value=val, name="sig")
+    ophyd = pytest.importorskip("ophyd")
+    sig = ophyd.Signal(value="0", name="sig")
 
     def tester(obj, val):
         yield from bps.mv(sig, val)
