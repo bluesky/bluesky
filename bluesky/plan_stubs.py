@@ -305,8 +305,8 @@ movr = mvr  # synonym
 def rd(obj, *, default_value=0):
     """Reads a single-value non-triggered object
 
-    This is a helper plan to get the scalar value out of a Device (such as an EpicsMotor or a
-    single EpicsSignal).
+    This is a helper plan to get the scalar value out of a Device
+    (such as an EpicsMotor or a single EpicsSignal).
 
     For devices that have more than one read key the following rules are used:
 
@@ -325,8 +325,15 @@ def rd(obj, *, default_value=0):
         The device to be read
 
     default_value : Any
-        The value to return when not running in a "live" RunEngine (when
-        ret = yield from obj.read() returns None)
+        The value to return when not running in a "live" RunEngine.
+        This come ups when ::
+
+           ret = yield Msg('read', obj)
+           assert ret is None
+
+        the plan is passed to `list` or some other iterator that
+        repeatedly sends `None` into the plan to advance the
+        generator.
 
     Returns
     -------
