@@ -49,6 +49,7 @@ Index
    progress-bar
    event_descriptors
    async
+   multi_run_plans
    debugging
    run_engine_api
    magics

@@ -53,8 +53,8 @@ asynchronously monitor the compeletion of having triggered or set a device.
 
         Subscribe to notifications about progress. Useful for progress bars.
 
-        Parameters
-        ----------
+        **Parameters**
+
         func : callable
             Expected to accept the keyword arguments:
 
