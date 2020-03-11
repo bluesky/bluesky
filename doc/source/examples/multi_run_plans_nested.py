@@ -8,17 +8,15 @@ from databroker import Broker
 from event_model import RunRouter
 
 from ophyd.sim import hw
-hw = hw()
+det1, det2, motor1, motor2 = hw().det1, hw().det2, hw().motor1, hw().motor2
 
 RE = RunEngine({})
 
 db = Broker.named("temp")
 RE.subscribe(db.insert)
 
-# Subscribe to BestEffortCallback via RunRouter
-#   Each run is subscribed to an independent
-#   instance of BestEffortCallback
 def factory(name, doc):
+    # Each run is subscribed to independent instance of BEC
     bec = BestEffortCallback()
     bec(name, doc)
     return [bec], []
@@ -26,27 +24,24 @@ def factory(name, doc):
 rr = RunRouter([factory])
 RE.subscribe(rr)
 
-# @bpp.set_run_key_decorator("run_2")
-# @bpp.run_decorator(md={})
+@bpp.set_run_key_decorator("run_2")
+@bpp.run_decorator(md={})
 def sim_plan_inner(npts):
-    def f():
-        for j in range(npts):
-            yield from bps.mov(hw.motor1, j * 0.1 + 1, hw.motor2, j * 0.2 - 2)
-            yield from bps.trigger_and_read([hw.motor1, hw.motor2, hw.det2])
-    f = bpp.run_wrapper(f(), md={})
-    return bpp.set_run_key_wrapper(f, "run_2")
-
+    for j in range(npts):
+        yield from bps.mov(motor1, j * 0.1 + 1, motor2, j * 0.2 - 2)
+        yield from bps.trigger_and_read([motor1, motor2, det2])
 
 @bpp.set_run_key_decorator("run_1")
 @bpp.run_decorator(md={})
 def sim_plan_outer(npts):
     for j in range(int(npts/2)):
-        yield from bps.mov(hw.motor, j)
-        yield from bps.trigger_and_read([hw.motor, hw.det])
+        yield from bps.mov(motor1, j)
+        yield from bps.trigger_and_read([motor1, det1])
 
     yield from sim_plan_inner(npts + 1)
 
     for j in range(int(npts/2), npts):
-        yield from bps.mov(hw.motor, j)
-        yield from bps.trigger_and_read([hw.motor, hw.det])
+        yield from bps.mov(motor1, j)
+        yield from bps.trigger_and_read([motor1, det1])
 
+# RE(sim_plan_outer(10))

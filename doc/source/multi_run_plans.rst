@@ -130,9 +130,19 @@ set up at the opening of each run.
 
     RE(plan_sequential_runs(10))
 
+.. ipython:: python
+    :suppress:
+
+    %run -m multi_run_plans_sequential
+
+.. ipython:: python
+
+    RE(plan_sequential_runs(10))
 
 Plans with Nested Runs
 ----------------------
+
+
 
 .. code-block:: python
 
@@ -146,17 +156,15 @@ Plans with Nested Runs
     from event_model import RunRouter
 
     from ophyd.sim import hw
-    hw = hw()
+    det1, det2, motor1, motor2 = hw().det1, hw().det2, hw().motor1, hw().motor2
 
     RE = RunEngine({})
 
     db = Broker.named("temp")
     RE.subscribe(db.insert)
 
-    # Subscribe to BestEffortCallback via RunRouter
-    #   Each run is subscribed to an independent
-    #   instance of BestEffortCallback
     def factory(name, doc):
+        # Each run is subscribed to independent instance of BEC
         bec = BestEffortCallback()
         bec(name, doc)
         return [bec], []
@@ -168,28 +176,183 @@ Plans with Nested Runs
     @bpp.run_decorator(md={})
     def sim_plan_inner(npts):
         for j in range(npts):
-            yield from bps.mov(hw.motor1, j * 0.1 + 1, hw.motor2, j * 0.2 - 2)
-            yield from bps.trigger_and_read([hw.motor1, hw.motor2, hw.det2])
+            yield from bps.mov(motor1, j * 0.1 + 1, motor2, j * 0.2 - 2)
+            yield from bps.trigger_and_read([motor1, motor2, det2])
 
     @bpp.set_run_key_decorator("run_1")
     @bpp.run_decorator(md={})
     def sim_plan_outer(npts):
         for j in range(int(npts/2)):
-            yield from bps.mov(hw.motor, j)
-            yield from bps.trigger_and_read([hw.motor, hw.det])
+            yield from bps.mov(motor1, j)
+            yield from bps.trigger_and_read([motor1, det1])
 
         yield from sim_plan_inner(npts + 1)
 
         for j in range(int(npts/2), npts):
-            yield from bps.mov(hw.motor, j)
-            yield from bps.trigger_and_read([hw.motor, hw.det])
-
+            yield from bps.mov(motor1, j)
+            yield from bps.trigger_and_read([motor1, det1])
 
 .. ipython:: python
     :suppress:
 
-    %run -m multi_run_plans_example1
+    %run -m multi_run_plans_nested
 
 .. ipython:: python
 
     RE(sim_plan_outer(10))
+
+The wrapper `bpp.set_run_key_wrapper` can be used instead of the decorator. For example
+the run `sim_plan_inner` from the previous example can be rewritten as follows:
+
+.. code-block:: python
+
+    def sim_plan_inner(npts):
+        def f():
+            for j in range(npts):
+                yield from bps.mov(motor1, j * 0.1 + 1, motor2, j * 0.2 - 2)
+                yield from bps.trigger_and_read([motor1, motor2, det2])
+        f = bpp.run_wrapper(f(), md={})
+        return bpp.set_run_key_wrapper(f, "run_2")
+
+Subscription to callbacks via RunRouter is more flexible and allows to subscribe each run
+to a separate set of callbacks. In the following example `run_key` is added to the start
+document metadata and used to distinguish between two runs in the function factory that
+performs callback subscriptions.
+
+.. code-block:: python
+
+    # Example: demo of the run 'sim_plan_inner' started from the run 'sim_plan_outer'
+
+    from bluesky import RunEngine
+    from bluesky.callbacks import LiveTable, LivePlot
+    import bluesky.preprocessors as bpp
+    import bluesky.plan_stubs as bps
+    from databroker import Broker
+    from event_model import RunRouter
+
+    from ophyd.sim import hw
+    det1, det2, motor1, motor2 = hw().det1, hw().det2, hw().motor1, hw().motor2
+
+    RE = RunEngine({})
+
+    db = Broker.named("temp")
+    RE.subscribe(db.insert)
+
+    def factory(name, doc):
+        cb_list = []
+        if doc["run_key"] == "run_1":
+            cb_list.append(LiveTable([motor1, det1]))
+            cb_list.append(LivePlot('det1', x='motor1'))
+        elif doc["run_key"] == "run_2":
+            cb_list.append(LiveTable([motor1, motor2, det2]))
+        for cb in cb_list:
+            cb(name, doc)
+        return cb_list, []
+
+    rr = RunRouter([factory])
+    RE.subscribe(rr)
+
+    @bpp.set_run_key_decorator("run_2")
+    @bpp.run_decorator(md={"run_key": "run_2"})
+    def sim_plan_inner(npts):
+        for j in range(npts):
+            yield from bps.mov(motor1, j * 0.1 + 1, motor2, j * 0.2 - 2)
+            yield from bps.trigger_and_read([motor1, motor2, det2])
+
+    @bpp.set_run_key_decorator("run_1")
+    @bpp.run_decorator(md={"run_key": "run_1"})
+    def sim_plan_outer(npts):
+        for j in range(int(npts/2)):
+            yield from bps.mov(motor1, j)
+            yield from bps.trigger_and_read([motor1, det1])
+
+        yield from sim_plan_inner(npts + 1)
+
+        for j in range(int(npts/2), npts):
+            yield from bps.mov(motor1, j)
+            yield from bps.trigger_and_read([motor1, det1])
+
+.. ipython:: python
+    :suppress:
+
+    %run -m multi_run_plans_select_cb
+
+.. ipython:: python
+
+    RE(sim_plan_outer(10))
+
+In some cases it may be necessary to implement a run that may be interrupted in the middle of execution
+and a new instance of the same run started by RunEngine. For example, the suspender pre- or post-plan
+may implement a complete run, which may be suspended before it is closed if the suspender is triggered again.
+This functionality may be implemented by generating unique run key for each instance of the run.
+
+The following example illustrates dynamic generation of run keys. The plan has no practical purpose
+besides demonstration of the principle. The plan that calls itself recursively multiple times until
+the global counter variable `n_calls` reaches the value of `n_calls_max`. The unique run key is generated at
+each function call.
+
+.. code-block:: python
+
+    # Example: demo of a plan using dynamically generated run key
+
+    from bluesky import RunEngine
+    from bluesky.callbacks.best_effort import BestEffortCallback
+    import bluesky.preprocessors as bpp
+    import bluesky.plan_stubs as bps
+    from databroker import Broker
+    from event_model import RunRouter
+
+    from ophyd.sim import hw
+    det1, motor1 = hw().det1, hw().motor1
+
+    RE = RunEngine({})
+
+    db = Broker.named("temp")
+    RE.subscribe(db.insert)
+
+    def factory(name, doc):
+        # Each run is subscribed to independent instance of BEC
+        bec = BestEffortCallback()
+        bec(name, doc)
+        return [bec], []
+
+    rr = RunRouter([factory])
+    RE.subscribe(rr)
+
+    # Current and maximum number plan calls
+    n_calls, n_calls_max = 0, 3
+
+    def sim_plan_recursive(npts):
+        global n_calls, n_calls_max
+
+        n_calls += 1  # Increment counter
+        if n_calls <= n_calls_max:
+            # Generate unique run key
+            run_key = f"run_key_{n_calls}"
+
+            @bpp.set_run_key_decorator(run_key)
+            @bpp.run_decorator(md={})
+            def plan(npts):
+
+                for j in range(int(npts/2)):
+                    yield from bps.mov(motor1, j)
+                    yield from bps.trigger_and_read([motor1, det1])
+
+                # Note, that the parameter value (number of scan points)
+                #   is increased at each iteration
+                yield from sim_plan_recursive(npts + 2)
+
+                for j in range(int(npts/2), npts):
+                    yield from bps.mov(motor1, j)
+                    yield from bps.trigger_and_read([motor1, det1])
+
+            yield from plan(npts)
+
+.. ipython:: python
+    :suppress:
+
+    %run -m multi_run_plans_recursive
+
+.. ipython:: python
+
+    RE(sim_plan_recursive(4))
