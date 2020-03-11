@@ -15,8 +15,13 @@ except ImportError:
     from toolz import partition
 
 
-from .utils import (separate_devices, all_safe_rewind, Msg, ensure_generator,
-                    short_uid as _short_uid)
+from .utils import (
+    separate_devices,
+    all_safe_rewind,
+    Msg,
+    ensure_generator,
+    short_uid as _short_uid,
+)
 
 
 def create(name='primary'):
@@ -210,8 +215,12 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.wait`
     """
     from .preprocessors import relative_set_wrapper
-    return (yield from relative_set_wrapper(
-        abs_set(obj, *args, group=group, wait=wait, **kwargs)))
+
+    return (
+        yield from relative_set_wrapper(
+            abs_set(obj, *args, group=group, wait=wait, **kwargs)
+        )
+    )
 
 
 def mv(*args, group=None, **kwargs):
@@ -241,10 +250,8 @@ def mv(*args, group=None, **kwargs):
     group = group or str(uuid.uuid4())
     status_objects = []
 
-    cyl = reduce(operator.add,
-                 [cycler(obj, [val]) for
-                  obj, val in partition(2, args)])
-    step, = utils.merge_cycler(cyl)
+    cyl = reduce(operator.add, [cycler(obj, [val]) for obj, val in partition(2, args)])
+    (step,) = utils.merge_cycler(cyl)
     for obj, val in step.items():
         ret = yield Msg('set', obj, val, group=group, **kwargs)
         status_objects.append(ret)
@@ -293,6 +300,98 @@ def mvr(*args, group=None, **kwargs):
 
 
 movr = mvr  # synonym
+
+
+def rd(obj, *, default_value=0):
+    """Reads a single-value non-triggered object
+
+    This is a helper plan to get the scalar value out of a Device
+    (such as an EpicsMotor or a single EpicsSignal).
+
+    For devices that have more than one read key the following rules are used:
+
+    - if exactly 1 field is hinted that value is used
+    - if no fields are hinted and there is exactly 1 value in the
+      reading that value is used
+    - if more than one field is hinted an Exception is raised
+    - if no fields are hinted and there is more than one key in the reading an
+      Exception is raised
+
+    The devices is not triggered and this plan does not create any Events
+
+    Parameters
+    ----------
+    obj : Device
+        The device to be read
+
+    default_value : Any
+        The value to return when not running in a "live" RunEngine.
+        This come ups when ::
+
+           ret = yield Msg('read', obj)
+           assert ret is None
+
+        the plan is passed to `list` or some other iterator that
+        repeatedly sends `None` into the plan to advance the
+        generator.
+
+    Returns
+    -------
+    val : Any or None
+        The "single" value of the device
+
+    """
+    hints = getattr(obj, 'hints', {}).get("fields", [])
+    if len(hints) > 1:
+        msg = (
+            f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
+            f"has {len(hints)} items hinted ({hints}).  We do not know how to "
+            "pick out a single value.  Please adjust the hinting by setting the "
+            "kind of the components of this device or by rd ing one of it's components"
+        )
+        raise ValueError(msg)
+    elif len(hints) == 0:
+        if hasattr(obj, "read_attrs"):
+            if len(obj.read_attrs) != 1:
+                msg = (
+                    f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
+                    f"and has {len(obj.read_attrs)} read attrs.  We do not know how to "
+                    "pick out a single value.  Please adjust the hinting/read_attrs by "
+                    "setting the kind of the components of this device or by rd ing one "
+                    "of its components"
+                )
+
+                raise ValueError(msg)
+
+            else:
+                hint = None
+    # len(hints) == 1
+    else:
+        (hint,) = hints
+
+    ret = yield from read(obj)
+
+    # list-ify mode
+    if ret is None:
+        return default_value
+
+    if hint is not None:
+        return ret[hint]["value"]
+
+    # handle the no hint 1 field case
+    try:
+        (data,) = ret.values()
+    except ValueError as er:
+        msg = (
+            f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
+            f"and has {len(ret)} read values.  We do not know how to pick out a "
+            "single value.  Please adjust the hinting/read_attrs by setting the "
+            "kind of the components of this device or by rd ing one of its components"
+        )
+
+        raise ValueError(msg) from er
+    else:
+        return data["value"]
 
 
 def stop(obj):
