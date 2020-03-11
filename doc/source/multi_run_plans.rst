@@ -60,10 +60,10 @@ Multi-Run Plans
     #import os
     #os.chdir("source")
     #print(f"path: {os.path.abspath(os.getcwd())}")
-    %run -m multi_run_plans_example1
+    #%run -m multi_run_plans_example1
     #print(f"path: {os.path.abspath(os.getcwd())}")
     #os.chdir("..")
 
 .. ipython:: python
 
-    RE(sim_plan_outer(10))
+    #RE(sim_plan_outer(10))
