@@ -39,27 +39,44 @@ Before You Begin
     conda activate bluesky-tutorial
 
 * Install the latest versions of bluesky and ophyd. Also install the databroker
-  unless you plan to skip the sections about accessing saved data. Finally,
-  install IPython (a Python interpreter designed by scientists for scientists).
+  unless you plan to skip the sections about accessing saved data. If you want
+  to follow along with the visualization examples, install matplotlib and
+  PyQt5. Finally, install IPython (a Python interpreter designed by scientists
+  for scientists).
 
   .. code-block:: bash
 
-     python3 -m pip install --upgrade bluesky ophyd databroker ipython matplotlib
+     python3 -m pip install --upgrade bluesky ophyd databroker matplotlib pyqt5 ipython
 
   Alternatively, if you are a conda user and you prefer conda packages, you can
   use:
 
   .. code-block:: bash
 
-    conda install -c nsls2forge bluesky ophyd databroker ipython matplotlib
+     conda install -c nsls2forge bluesky ophyd databroker matplotlib pyqt=5 ipython
 
 * Start IPython:
 
   .. code-block:: python
 
-    ipython --matplotlib=qt5
+     ipython --matplotlib=qt5
 
   The flag ``--matplotlib=qt5`` is necessary for live-updating plots to work.
+
+  Or, if you wish you use bluesky from a Jupyter notebook, install a kernel like
+  so:
+
+  .. code-block:: python
+
+     ipython kernel install --user --name=bluesky-tutorial --display-name "Python (bluesky)"
+
+  You may start Jupyter from any environment where it is already installed, or
+  install it in this environment alongside bluesky and run it from there:
+
+  .. code-block:: python
+
+     pip install notebook
+     jupyter notebook
 
 If you get lost or confused...
 ==============================
