@@ -2,6 +2,18 @@
  Release History
 =================
 
+v1.5.6 (2020-03-11)
+===================
+
+Added support for Python 3.8 and the following for forward-compatibility with
+1.6.0.
+
+* :class:`bluesky.utils.PersistentDict`
+* :class:`bluesky.callbacks.mpl_plotting.QtAwareCallback`
+
+See
+`the 1.5.6 GH milestone <https://github.com/bluesky/bluesky/milestone/19?closed=1>`_
+for the complete list of changes.
 
 v1.5.5 (2019-08-16)
 ===================
