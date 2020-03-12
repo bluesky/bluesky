@@ -533,15 +533,15 @@ class SuspendWhenChanged(SuspenderBase):
     
     Only resume if allowed AND when monitored equals expected.
     
-    .. note:
+    Notes
+    -----
 
-       This suspender is designed to require bluesky restart if value changes.
-    
-    Use Case
-    --------
-    
+    This suspender is designed to require bluesky restart if value changes.
+
+    USE CASE:
+
     :class:`~SuspendWhenChanged()` is useful when ``signal`` is an EPICS enumeration 
-    (`"mbbo" record(<https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output>`_)
+    (`"mbbo" <https://wiki-ext.aps.anl.gov/epics/index.php/RRM_3-14_Multi-Bit_Binary_Output>`_)
     used with a multi-instrument facility.  
     Choices predefined in the mbbo record are the 
     names of instruments allowed to control any shared hardware.
@@ -559,16 +559,7 @@ class SuspendWhenChanged(SuspenderBase):
     If there is a mechanism engineered to toggle ophyd signals between 
     hardware and simulators, one might consider ``allow_resume=True``.
     
-    Example
-    -------
-    
-    .. code-block:: python
 
-        # pause if this value changes in our session
-        # note: this suspender is designed to require Bluesky restart if value changes
-        suspend_instrument_in_use = SuspendWhenChanged(instrument_in_use)
-        RE.install_suspender(suspend_instrument_in_use)
-    
     Parameters
     ----------
 
@@ -600,9 +591,19 @@ class SuspendWhenChanged(SuspenderBase):
     tripped_message : str, optional
         Message to include in the trip notification
 
-    Example EPICS database for APS 2-BM-A and 2-BM-B
-    ------------------------------------------------
-    
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+        # pause if this value changes in our session
+        # note: this suspender is designed to require Bluesky restart if value changes
+        suspend_instrument_in_use = SuspendWhenChanged(instrument_in_use)
+        RE.install_suspender(suspend_instrument_in_use)
+
+    Example EPICS database for APS 2-BM-A and 2-BM-B:
+
     .. code-block:: text
 
         record(mbbo, "2bm:instrument_in_use") {
