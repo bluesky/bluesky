@@ -136,11 +136,10 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     caplog.clear()
 
     # The second test should succeed, i.e. the error message should not be printed
-    def wrapper(name, doc):
+    def factory(name, doc):
         bec = BestEffortCallback()
-        bec(name, doc)
         return [bec], []
-    rr = RunRouter([wrapper])
+    rr = RunRouter([factory])
     RE.subscribe(rr)
     RE(plan_outer())
 
