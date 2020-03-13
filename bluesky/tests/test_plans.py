@@ -1,3 +1,4 @@
+from distutils.version import LooseVersion
 import pytest
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
@@ -256,9 +257,16 @@ def test_bad_per_step_signature(hw, per_step):
         list(bp.scan([hw.det], hw.motor, -1, 1, 5, per_step=per_step))
 
 
+def require_ophyd_1_4_0():
+    ophyd = pytest.importorskip("ophyd")
+    if LooseVersion(ophyd.__version__) < LooseVersion('1.4.0'):
+        pytest.skip("Needs ophyd 1.4.0 for realistic ophyd.sim Devices.")
+
+
 @pytest.mark.parametrize("val", [0, None, "aardvark"])
 def test_rd_dflt(val):
     ophyd = pytest.importorskip("ophyd")
+    require_ophyd_1_4_0()
     sig = ophyd.Signal(value="0", name="sig")
 
     def tester(obj, dflt):
@@ -271,6 +279,7 @@ def test_rd_dflt(val):
 @pytest.mark.parametrize("val", [0, None, "aardvark"])
 def test_rd(RE, val):
     ophyd = pytest.importorskip("ophyd")
+    require_ophyd_1_4_0()
     sig = ophyd.Signal(value="0", name="sig")
 
     def tester(obj, val):
@@ -282,6 +291,7 @@ def test_rd(RE, val):
 
 
 def test_rd_fails(hw):
+    require_ophyd_1_4_0()
     obj = hw.det
 
     obj.noise.kind = "hinted"
@@ -314,6 +324,7 @@ def test_rd_fails(hw):
 
 @pytest.mark.parametrize("kind", ["hinted", "normal"])
 def test_rd_device(hw, RE, kind):
+    require_ophyd_1_4_0()
     called = False
     hw.det.val.kind = kind
 
