@@ -4,7 +4,7 @@ Debugging and Logging
 
 .. versionchanged:: 1.6.0
 
-   Bluesky's use of Python logging framework has been completely reworked to
+   Bluesky's use of Python's logging framework has been completely reworked to
    follow Python's documented best practices for libraries.
 
 Bluesky uses Python's logging framework, which enables sophisticated log
@@ -28,7 +28,7 @@ This is the recommended standard setup.
    config_bluesky_logging()
 
 It will display ``'bluesky'`` log records of ``WARNING`` level or higher in the
-terminal (standard out) with a formatting tailored to bluesky.
+terminal (standard out) with a format tailored to bluesky.
 
 Maximum verbosity
 -----------------
@@ -105,8 +105,8 @@ additional options---and scoped to the ``'bluesky'`` logger with bluesky's
 :class:`bluesky.log.LogFormatter`. It streamlines common use cases without
 interfering with more sophisticated use cases.
 
-We recommend that facilities using bluesky leave this functions for users and
-configuring any standardized, facility-managed logging handlers separately, as
+We recommend that facilities using bluesky leave this function for users and
+configure any standardized, facility-managed logging handlers separately, as
 described in the next section.
 
 .. autofunction:: bluesky.log.config_bluesky_logging
@@ -187,5 +187,5 @@ This makes DEBUG-level records *available* to all handlers. Our logstash
 handler, set to ``'INFO'``, will filter out DEBUG-level records.
 
 To globally disable the generation of any log records at or below a certain
-verbosity, which may be helpful for optimising performance, Python provides
+verbosity, which may be helpful for optimizing performance, Python provides
 :py:func:`logging.disable`.
