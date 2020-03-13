@@ -205,31 +205,7 @@ the previous run is closed), but run keys still may be assigned to all or some s
 In the following example, two preassembled plans are called in sequence. Run Engine is subscribed to
 a single instance of BestEffortCallback, which is set up at the opening of each run.
 
-.. code-block:: python
-
-    # Example: consecutive execution of single-run plans
-
-    from bluesky import RunEngine
-    from bluesky.callbacks.best_effort import BestEffortCallback
-    from databroker import Broker
-    from bluesky.plans import scan, rel_scan
-
-    from ophyd.sim import hw
-    hw = hw()
-
-    RE = RunEngine({})
-
-    db = Broker.named("temp")
-    RE.subscribe(db.insert)
-
-    bec = BestEffortCallback()
-    RE.subscribe(bec)
-
-    def plan_sequential_runs(npts):
-        # Single-run plans may be called consecutively. No special handling is required
-        #   as long as the previous scan is closed before the next one is opened
-        yield from scan([hw.det1], hw.motor1, -1, 1, npts)
-        yield from rel_scan([hw.det1, hw.det2], hw.motor1, -1, 1, npts)
+.. literalinclude:: examples/multi_run_plans_sequential.py
 
 .. ipython:: python
     :suppress:
@@ -255,53 +231,7 @@ of callback. Standard RunEngine subscription mechanism does not provide this cap
 subscription should be performed via `RunRouter`. The code in the following example demonstrates how
 to use `BestEffortCallback` to monitor data from multiple nested plans.
 
-.. code-block:: python
-
-    # Example: nested runs
-
-    from bluesky import RunEngine
-    from bluesky.callbacks.best_effort import BestEffortCallback
-    import bluesky.preprocessors as bpp
-    import bluesky.plan_stubs as bps
-    from databroker import Broker
-    from event_model import RunRouter
-
-    from ophyd.sim import hw
-    hw = hw()
-
-    RE = RunEngine({})
-
-    db = Broker.named("temp")
-    RE.subscribe(db.insert)
-
-    def factory(name, doc):
-        # Documents from each run is routed to an independent
-        #   instance of BestEffortCallback
-        bec = BestEffortCallback()
-        return [bec], []
-
-    rr = RunRouter([factory])
-    RE.subscribe(rr)
-
-    @bpp.set_run_key_decorator("run_2")
-    @bpp.run_decorator(md={})
-    def sim_plan_inner(npts):
-        for j in range(npts):
-            yield from bps.mov(hw.motor1, j * 0.1 + 1, hw.motor2, j * 0.2 - 2)
-            yield from bps.trigger_and_read([hw.motor1, hw.motor2, hw.det2])
-
-    @bpp.set_run_key_decorator("run_1")
-    @bpp.run_decorator(md={})
-    def sim_plan_outer(npts):
-        for j in range(int(npts/2)):
-            yield from bps.mov(hw.motor, j * 0.2)
-            yield from bps.trigger_and_read([hw.motor, hw.det])
-
-        yield from sim_plan_inner(npts + 1)
-
-        for j in range(int(npts/2), npts):
-            yield from bps.mov(hw.motor, j * 0.2)
-            yield from bps.trigger_and_read([hw.motor, hw.det])
+.. literalinclude:: examples/multi_run_plans_nested.py
 
 The output of the plan contains data from two scans with each plan assigned its own ID and UID. The tables
 for the scans are printed by two separate instances of `BestEffortCallback`. The data from two tables
@@ -335,60 +265,7 @@ to its own set of callbacks. In the following example `run_key` is added to the 
 document metadata and used to distinguish between two runs in the function factory that
 performs callback subscriptions.
 
-.. code-block:: python
-
-    # Example: subscribing runs to individual sets of callbacks
-
-    from bluesky import RunEngine
-    from bluesky.callbacks import LiveTable, LivePlot
-    import bluesky.preprocessors as bpp
-    import bluesky.plan_stubs as bps
-    from databroker import Broker
-    from event_model import RunRouter
-
-    from ophyd.sim import hw
-    hw = hw()
-
-    RE = RunEngine({})
-
-    db = Broker.named("temp")
-    RE.subscribe(db.insert)
-
-    def factory(name, doc):
-        # Runs may be subscribed to different sets of callbacks. Metadata from start
-        #   document may be used to identify, which run is currently being started.
-        #   In this example, the run key is explicitely added to the start document
-        #   and used to identify runs, but other data can be similarly used.
-        cb_list = []
-        if doc["run_key"] == "run_1":
-            cb_list.append(LiveTable([hw.motor1, hw.det1]))
-            cb_list.append(LivePlot('det1', x='motor1'))
-        elif doc["run_key"] == "run_2":
-            cb_list.append(LiveTable([hw.motor1, hw.motor2, hw.det2]))
-        return cb_list, []
-
-    rr = RunRouter([factory])
-    RE.subscribe(rr)
-
-    @bpp.set_run_key_decorator("run_2")
-    @bpp.run_decorator(md={"run_key": "run_2"})
-    def sim_plan_inner(npts):
-        for j in range(npts):
-            yield from bps.mov(hw.motor1, j * 0.1 + 1, hw.motor2, j * 0.2 - 2)
-            yield from bps.trigger_and_read([hw.motor1, hw.motor2, hw.det2])
-
-    @bpp.set_run_key_decorator("run_1")
-    @bpp.run_decorator(md={"run_key": "run_1"})
-    def sim_plan_outer(npts):
-        for j in range(int(npts/2)):
-            yield from bps.mov(hw.motor1, j)
-            yield from bps.trigger_and_read([hw.motor1, hw.det1])
-
-        yield from sim_plan_inner(npts + 1)
-
-        for j in range(int(npts/2), npts):
-            yield from bps.mov(hw.motor1, j)
-            yield from bps.trigger_and_read([hw.motor1, hw.det1])
+.. literalinclude:: examples/multi_run_plans_select_cb.py
 
 .. ipython:: python
     :suppress:
@@ -411,62 +288,7 @@ besides demonstration of the principle. The plan is calling itself recursively m
 the global counter `n_calls` reaches the maximum value of `n_calls_max`. The unique run key is generated
 before at each call.
 
-.. code-block:: python
-
-    # Example: recursive runs
-
-    from bluesky import RunEngine
-    from bluesky.callbacks.best_effort import BestEffortCallback
-    import bluesky.preprocessors as bpp
-    import bluesky.plan_stubs as bps
-    from databroker import Broker
-    from event_model import RunRouter
-
-    from ophyd.sim import hw
-    hw = hw()
-
-    RE = RunEngine({})
-
-    db = Broker.named("temp")
-    RE.subscribe(db.insert)
-
-    def factory(name, doc):
-        # Each run is subscribed to independent instance of BEC
-        bec = BestEffortCallback()
-        return [bec], []
-
-    rr = RunRouter([factory])
-    RE.subscribe(rr)
-
-    # Call counter and the maximum number calls
-    n_calls, n_calls_max = 0, 3
-
-    def sim_plan_recursive(npts):
-        global n_calls, n_calls_max
-
-        n_calls += 1  # Increment counter
-        if n_calls <= n_calls_max:
-            # Generate unique key for each run. The key generation algorithm
-            #   must only guarantee that execution of the runs that are assigned
-            #   the same key will never overlap in time.
-            run_key = f"run_key_{n_calls}"
-
-            @bpp.set_run_key_decorator(run_key)
-            @bpp.run_decorator(md={})
-            def plan(npts):
-
-                for j in range(int(npts/2)):
-                    yield from bps.mov(hw.motor1, j * 0.2)
-                    yield from bps.trigger_and_read([hw.motor1, hw.det1])
-
-                # Different parameter values may be passed to the recursively called plans
-                yield from sim_plan_recursive(npts + 2)
-
-                for j in range(int(npts/2), npts):
-                    yield from bps.mov(hw.motor1, j * 0.2)
-                    yield from bps.trigger_and_read([hw.motor1, hw.det1])
-
-            yield from plan(npts)
+.. literalinclude:: examples/multi_run_plans_recursive.py
 
 .. ipython:: python
     :suppress:

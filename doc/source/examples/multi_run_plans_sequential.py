@@ -21,5 +21,3 @@ def plan_sequential_runs(npts):
     #   as long as the previous scan is closed before the next one is opened
     yield from scan([hw.det1], hw.motor1, -1, 1, npts)
     yield from rel_scan([hw.det1, hw.det2], hw.motor1, -1, 1, npts)
-
-# RE(plan_sequential_runs(11))

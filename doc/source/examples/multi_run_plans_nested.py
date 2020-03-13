@@ -43,5 +43,3 @@ def sim_plan_outer(npts):
     for j in range(int(npts/2), npts):
         yield from bps.mov(hw.motor, j * 0.2)
         yield from bps.trigger_and_read([hw.motor, hw.det])
-
-# RE(sim_plan_outer(10))

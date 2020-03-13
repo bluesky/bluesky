@@ -52,5 +52,3 @@ def sim_plan_recursive(npts):
                 yield from bps.trigger_and_read([hw.motor1, hw.det1])
 
         yield from plan(npts)
-        
-# RE(sim_plan_recursive(4))
