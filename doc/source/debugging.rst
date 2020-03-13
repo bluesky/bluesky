@@ -27,8 +27,8 @@ This is the recommended standard setup.
    from bluesky import config_bluesky_logging
    config_bluesky_logging()
 
-It will display log records of ``WARNING`` level or higher in the terminal
-(standard out) with a formatting tailored to bluesky.
+It will display ``'bluesky'`` log records of ``WARNING`` level or higher in the
+terminal (standard out) with a formatting tailored to bluesky.
 
 Maximum verbosity
 -----------------
@@ -46,15 +46,6 @@ processes it, giving a clear indication of when plan execution is stuck.
    from bluesky import config_bluesky_logging
    config_bluesky_logging(level='DEBUG')
 
-.. important::
-
-   We strongly recommend setting levels on *handlers* not on *loggers*.
-   In previous versions of bluesky, we recommended adjusting the level on the
-   *logger*, as in ``RE.log.setLevel('DEBUG')``. We now recommended
-   that you *avoid* setting levels on loggers because it would affect all
-   handlers downstream, potentially inhibiting some other part of the program
-   from collecting the records it wants to collect.
-
 Log to a file
 -------------
 
@@ -65,6 +56,15 @@ out).
 
     from bluesky import config_bluesky_logging
     config_bluesky_logging(file='/tmp/bluesky.log', level='DEBUG')
+
+.. important::
+
+   We strongly recommend setting levels on *handlers* not on *loggers*.
+   In previous versions of bluesky, we recommended adjusting the level on the
+   *logger*, as in ``RE.log.setLevel('DEBUG')``. We now recommended
+   that you *avoid* setting levels on loggers because it would affect all
+   handlers downstream, potentially inhibiting some other part of the program
+   from collecting the records it wants to collect.
 
 .. _logger_api:
 
