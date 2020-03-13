@@ -2,11 +2,14 @@ import ast
 import pytest
 import jsonschema
 import re
+import time as ttime
+from datetime import datetime
 from bluesky.plans import scan, grid_scan
 import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
+from bluesky.utils import new_uid
 from event_model import RunRouter
 
 
@@ -90,6 +93,29 @@ def test_live_grid(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     RE(grid_scan([hw.det4], hw.motor1, 0, 1, 1, hw.motor2, 0, 1, 2, True))
+
+
+def test_push_start_document(capsys):
+    """ Pass the start document to BEC and verify if the scan information is printed correctly"""
+
+    bec = BestEffortCallback()
+
+    uid = new_uid()
+    time = ttime.time()
+    scan_id = 113435  # Just some arbitrary number
+
+    # Include minimum information needed to print the header
+    bec("start", {"scan_id": scan_id, "time": time, "uid": uid})
+
+    captured = capsys.readouterr()
+    assert f"Transient Scan ID: {scan_id}" in captured.out, \
+        "BestEffortCallback: Scan ID is not printed correctly"
+
+    tt = datetime.fromtimestamp(time).utctimetuple()
+    assert f"Time: {ttime.strftime('%Y-%m-%d %H:%M:%S', tt)}" in captured.out, \
+        "BestEffortCallback: Scan time is not printed correctly"
+    assert f"Persistent Unique Scan ID: '{uid}'" in captured.out, \
+        "BestEffortCallback: Scan UID is not printed correctly"
 
 
 def test_multirun_nested_plan(capsys, caplog, RE, hw):
