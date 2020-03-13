@@ -26,7 +26,7 @@ requests
 sphinx
 sphinx_rtd_theme
 streamz
-# These suitcases are test deps of databroker which we need to acces
+# These suitcases are test deps of databroker which we need to access
 # databroker fixtures.
 suitcase-jsonl
 suitcase-mongo
