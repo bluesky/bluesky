@@ -8,10 +8,11 @@ Debugging and Logging
    follow Python's documented best practices for libraries.
 
 Bluesky uses Python's logging framework, which enables sophisticated log
-management. Users who are familiar with that framework or who need to route
-logs to multiple destinations may wish to skip ahead to :ref:`logger_api`. But
-for common simple cases, including viewing logs in the terminal or writing them
-to a file, the next section illustrates streamlined, copy/paste-able examples.
+management. For common simple cases, including viewing logs in the terminal or
+writing them to a file, the next section illustrates streamlined,
+copy/paste-able examples. Users who are familiar with that framework or who
+need to route logs to multiple destinations may wish to skip ahead to
+:ref:`logger_api`.
 
 Useful Snippets
 ===============
@@ -67,6 +68,9 @@ out).
 
 .. _logger_api:
 
+Bluesky's Logging-Related API
+=============================
+
 Logger Names
 ------------
 
@@ -100,6 +104,10 @@ in one line, similar to Python's :py:func:`logging.basicConfig` but with some
 additional options---and scoped to the ``'bluesky'`` logger with bluesky's
 :class:`bluesky.log.LogFormatter`. It streamlines common use cases without
 interfering with more sophisticated use cases.
+
+We recommend that facilities using bluesky leave this functions for users and
+configuring any standardized, facility-managed logging handlers separately, as
+described in the next section.
 
 .. autofunction:: bluesky.log.config_bluesky_logging
 .. autofunction:: bluesky.log.get_handler
