@@ -27,6 +27,9 @@ jobs:
       python: 3.6
       env: PUBLISH_DOCS=1
     - os: linux
+      python: 3.6
+      env: OPHYD_MASTER=true
+    - os: linux
       python: 3.7
     - os: linux
       python: 3.8
@@ -66,7 +69,11 @@ install:
   - pip install --quiet --upgrade --global-option='--without-libyaml' pyyaml
   - pip install -r requirements.txt
   - pip install -r requirements-dev.txt
-  - pip install -U ophyd --pre
+  # Install ophyd master branch if build settings indicate to do so.
+  - |
+    if [ "$OPHYD_MASTER" = true ] ; then
+      pip install git+https://github.com/bluesky/ophyd@master
+    fi
   - pip install codecov
   - python setup.py install
   # Need to clean the python build directory (and other cruft) or pytest is
