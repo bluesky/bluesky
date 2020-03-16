@@ -510,7 +510,7 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
     except GeneratorExit:
         cleanup = False
         raise
-    except:
+    except BaseException:
         if pause_for_debug:
             yield from pause()
         raise
@@ -1063,10 +1063,10 @@ def relative_set_wrapper(plan, devices=None):
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-                return (pchain(
-                    __read_and_stash_a_motor(
-                        msg.obj, initial_positions, coupled_parents),
-                    single_gen(msg)), None)
+            return (pchain(
+                __read_and_stash_a_motor(
+                    msg.obj, initial_positions, coupled_parents),
+                single_gen(msg)), None)
         else:
             return None, None
 
@@ -1330,5 +1330,6 @@ def set_run_key_wrapper(plan, run):
         return msg
 
     return (yield from msg_mutator(plan, _set_run_key))
+
 
 set_run_key_decorator = make_decorator(set_run_key_wrapper)
