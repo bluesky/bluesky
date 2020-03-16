@@ -73,7 +73,6 @@ def summarize_plan(plan):
         ...
 
 
-
 print_summary = summarize_plan  # back-compat
 
 
