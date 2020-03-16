@@ -27,9 +27,9 @@ def test_old_module_name(hw):
     with pytest.warns(UserWarning):
         list(print_summary_wrapper(scan([det], motor, -1, 1, 10)))
     with pytest.warns(UserWarning):
-        plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15,
-                                  True)
+        plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
         plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
+
 
 def test_check_limits(hw):
     det = hw.det
@@ -55,6 +55,7 @@ def test_check_limits(hw):
     motor.limits = (2, 2)
     with pytest.warns(UserWarning):
         check_limits(scan([det], motor, -1, 1, 3))
+
 
 def test_plot_raster_path(hw):
     det = hw.det
