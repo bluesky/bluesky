@@ -120,9 +120,9 @@ Features
 * Added :func:`~bluesky.plan_stubs.rd`.
 * Added :class:`~bluesky.suspenders.SuspendWhenChanged`.
 * Added :func:`~bluesky.callbacks.core.make_callback_safe` and
+  :func:`~bluesky.callbacks.core.make_class_safe`.
 * Added a ``per_shot`` parameter to :func:`bluesky.plans.count`, analogous to
   the ``per_step`` parameter supported by plans that do scans.
-  :func:`~bluesky.callbacks.core.make_class_safe`.
 * Accept ``**kwargs`` to :func:`~bluesky.plan_stubs.mv` and
   :func:`~bluesky.plan_stubs.mvr`. Pass them through to all motors involved in
   the move. Notably, this allows plans to pass a ``timeout`` parameter through
