@@ -30,7 +30,7 @@ def make_callback_safe(func=None, *, logger=None):
 
     To debug the issue causing a failure, it can be convenient to turn this
     off and let the failures raise. To do this, set the environment variable
-    ``BLUESKY_DEBUG_CALLBACK=1``.
+    ``BLUESKY_DEBUG_CALLBACKS=1``.
 
     Parameters
     ----------
@@ -85,7 +85,7 @@ def make_class_safe(cls=None, *, to_wrap=None, logger=None):
 
     To debug the issue causing a failure, it can be convenient to turn this
     off and let the failures raise. To do this, set the environment variable
-    ``BLUESKY_DEBUG_CALLBACK=1``.
+    ``BLUESKY_DEBUG_CALLBACKS=1``.
 
     Parameters
     ----------
