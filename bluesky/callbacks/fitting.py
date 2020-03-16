@@ -189,8 +189,8 @@ class PeakStats(CollectThenCompute):
         If not None, number of points at beginning and end to use
         for quick and dirty background subtraction.
 
-    Note
-    ----
+    Notes
+    -----
     It is assumed that the two fields, x and y, are recorded in the same
     Event stream.
 

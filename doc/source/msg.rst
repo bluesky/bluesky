@@ -46,16 +46,20 @@ could print each message in the plan like so:
     for msg in plan:
         print(msg)
 
-A ``Msg`` has four members, accessible as attributes:
+A ``Msg`` has five members, accessible as attributes:
 
 - command
 - obj
 - args
 - kwargs
+- run
 
 where ``command`` must be one of a controlled list of commands, ``obj`` is the
-object (i.e. Device) to apply the command to, if applicable, and ``args`` and
-``kwargs`` are arguments to the command.
+object (i.e. Device) to apply the command to, if applicable, ``args`` and
+``kwargs`` are arguments to the command and ``run`` is a user-defined run key.
+The run key is used by Run Engine to associate each message with one of the open runs,
+manage the state of each open run, and route run data to a separate set of callbacks
+(see documentation on Multi-Run Plans).
 
 To execute the plan, the :doc:`RunEngine <run_engine>` consumes it, one message at a time.
 
