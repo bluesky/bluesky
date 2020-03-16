@@ -8,7 +8,6 @@ import numpy.testing
 import pytest
 
 
-
 def test_scan_num(RE, hw):
     RE(bp.scan([hw.det], hw.motor1, -1, 1, num=1))
     RE(bp.scan([hw.det], hw.motor1, -1, 1, num=1.0))
@@ -63,8 +62,8 @@ def approx_multi_traj_checker(RE, scan, expected_data, *, decimal=2):
 
 def test_outer_product_ascan(RE, hw):
     scan = bp.grid_scan([hw.det],
-                                 hw.motor1, 1, 3, 3,
-                                 hw.motor2, 10, 20, 2, False)
+                        hw.motor1, 1, 3, 3,
+                        hw.motor2, 10, 20, 2, False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -82,8 +81,8 @@ def test_outer_product_ascan(RE, hw):
 
 def test_outer_product_ascan_snaked(RE, hw):
     scan = bp.grid_scan([hw.det],
-                                 hw.motor1, 1, 3, 3,
-                                 hw.motor2, 10, 20, 2, True)
+                        hw.motor1, 1, 3, 3,
+                        hw.motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     expected_data = [
@@ -117,8 +116,8 @@ def test_inner_product_ascan(RE, hw):
 
 def test_outer_product_dscan(RE, hw):
     scan = bp.rel_grid_scan([hw.det],
-                                          hw.motor1, 1, 3, 3,
-                                          hw.motor2, 10, 20, 2, False)
+                            hw.motor1, 1, 3, 3,
+                            hw.motor2, 10, 20, 2, False)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     hw.motor1.set(5)
@@ -138,8 +137,8 @@ def test_outer_product_dscan(RE, hw):
 
 def test_outer_product_dscan_snaked(RE, hw):
     scan = bp.rel_grid_scan([hw.det],
-                                          hw.motor1, 1, 3, 3,
-                                          hw.motor2, 10, 20, 2, True)
+                            hw.motor1, 1, 3, 3,
+                            hw.motor2, 10, 20, 2, True)
     # Note: motor1 is the first motor specified, and so it is the "slow"
     # axis, matching the numpy convention.
     hw.motor1.set(5)
@@ -468,7 +467,7 @@ def test_tune_centroid(RE, hw):
 
     RE(scan1, {'event': [col, counter1]})
     RE(scan2, {'event': counter2})
-    #assert counter1.value > counter2.value
+    # assert counter1.value > counter2.value
     assert actual_traj[0] == 0
 
     actual_traj = []
@@ -566,10 +565,10 @@ def test_rel_spiral(RE, hw):
     motor1.set(start_x)
     motor2.set(start_y)
     scan = bp.rel_spiral([det],
-                              motor1, motor2,
-                              1.0, 1.0,
-                              0.1, 1.0,
-                              tilt=0.0)
+                         motor1, motor2,
+                         1.0, 1.0,
+                         0.1, 1.0,
+                         tilt=0.0)
 
     approx_multi_traj_checker(RE, scan,
                               _get_spiral_data(start_x, start_y),
@@ -648,10 +647,10 @@ def test_relative_fermat_spiral(RE, hw):
     motor1.set(start_x)
     motor2.set(start_y)
     scan = bp.rel_spiral_fermat([det],
-                                     motor1, motor2,
-                                     1.0, 1.0,
-                                     0.1, 1.0,
-                                     tilt=0.0)
+                                motor1, motor2,
+                                1.0, 1.0,
+                                0.1, 1.0,
+                                tilt=0.0)
 
     approx_multi_traj_checker(RE, scan,
                               _get_fermat_data(start_x, start_y),
@@ -672,7 +671,7 @@ def test_x2x_scan(RE, hw):
         d.update({'motor1_setpoint': d['motor1']})
         d.update({'motor2_setpoint': d['motor2']})
 
-    scan = bp.x2x_scan([hw.det], hw.motor1, hw.motor2, y_start, y_stop, y_num )
+    scan = bp.x2x_scan([hw.det], hw.motor1, hw.motor2, y_start, y_stop, y_num)
 
     multi_traj_checker(RE, scan, expected_traj)
 

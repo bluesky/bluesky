@@ -1,6 +1,7 @@
 import pytest
 from bluesky.utils import register_transform
 
+
 @pytest.fixture
 def transform_cell():
     IPython = pytest.importorskip('IPython')
@@ -14,6 +15,7 @@ def transform_cell():
 
 def test_register_transform_smoke(transform_cell):
     assert True
+
 
 @pytest.mark.parametrize('cell',
                          ['a < b\n',
