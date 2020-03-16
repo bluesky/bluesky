@@ -485,6 +485,7 @@ Plans for interacting with hardware:
     mvr
     trigger
     read
+    rd
     stage
     unstage
     configure

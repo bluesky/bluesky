@@ -2,8 +2,8 @@
  Release History
 =================
 
-v1.6.0 (Pre-release)
-====================
+v1.6.0 (2020-03-16)
+===================
 
 The most important change in this release is a complete reworking of how
 bluesky interacts with the asyncio event loop. This resolves a long-running
@@ -50,8 +50,8 @@ longer works because the Qt event loop must be run on the main thread.
 Instead we use *during_task* to block the main thread by running the
 Qt event loop directly.
 
-*during_task* kwarg to :meth:`RunEngine.__init__`
-+++++++++++++++++++++++++++++++++++++++++++++++++
+``during_task`` kwarg to :meth:`RunEngine.__init__`
++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 We need to block the main thread in :meth:`~bluesky.RunEngine.__call__` (and
 :meth:`~bluesky.RunEngine.resume`) until the user supplied plan is complete.
@@ -67,11 +67,13 @@ will be set when the task for :meth:`~bluesky.RunEngine._run` in completed,
 however we can not simple wait on that event as that would again cause the Qt
 windows to freeze.  We also do not want to bake a Matplotlib / Qt dependency
 directly into the :class:`~bluesky.RunEngine` so we added a hook, set at init
-time, for a function that passed the :class:`threading.Event` and is
-responsible for blocking until it is set.  This function can do other things
-(such as run the Qt event loop) during that time.  The required signature is ::
+time, for an object expected to implement the method ``block(event)``.
+While the RunEngine executes a plan, it is passed the :class:`threading.Event`
+and is responsible for blocking until the Event is set.  This function can do
+other things (such as run the Qt event loop) during that time.  The required
+signature is ::
 
-  def blocking_func(ev: Threading.Event) -> None:
+  def block(ev: Threading.Event) -> None:
       "Returns when ev is set"
 
 
@@ -93,13 +95,42 @@ now expect that the iterable passed in is callables with the signature::
   def fut_fac() -> awaitable:
       'This must work multiple times'
 
+The persistent dict used by ``RE.md`` must be thread-safe
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+By default, ``RE.md`` is an ordinary dictionary, but any dict-like object may
+be used. It is often convenient for the contents of that dictionary to persist
+between sessions. To achieve this, we formerly recommended using
+:class:`~historydict.HistoryDict`. Unfortunately,
+:class:`~historydict.HistoryDict` is not threadsafe and is not compatible with
+bluesky's new concurrency model. We now recommend using
+:class:`~bluesky.utils.PersistentDict`. See :ref:`md_persistence` for
+instructions on how to migrate existing metadata.
+
 Features
 --------
 
+* Added support for :doc:`multi_run_plans`.
+* Added better logging and convenience functions for managing it more easily.
+  See :doc:`debugging`.
 * Generalized :func:`~bluesky.plans.list_scan` to work on any number of motors,
   not just one. In v1.2.0, :func:`~bluesky.plans.scan` was generalized in the
   same way.
 * Added :func:`~bluesky.plans.list_grid_scan`.
+* Added :func:`~bluesky.plan_stubs.rd`.
+* Added :class:`~bluesky.suspenders.SuspendWhenChanged`.
+* Added :func:`~bluesky.callbacks.core.make_callback_safe` and
+* Added a ``per_shot`` parameter to :func:`bluesky.plans.count`, analogous to
+  the ``per_step`` parameter supported by plans that do scans.
+  :func:`~bluesky.callbacks.core.make_class_safe`.
+* Accept ``**kwargs`` to :func:`~bluesky.plan_stubs.mv` and
+  :func:`~bluesky.plan_stubs.mvr`. Pass them through to all motors involved in
+  the move. Notably, this allows plans to pass a ``timeout`` parameter through
+  the ``obj.set()``.
+* Added a new built-in RunEngine command, ``RE_class``, which sends the type of
+  the ``RunEngine`` into the generator. This allows the plan to know if it is
+  being consumed by the usual ``RunEngine``, a subclass, or some
+  non-responsive consumer like ``list``.
 * Raise a more helpful error message if the ``num`` parameter given to
   :func:`~bluesky.plans.scan` is not a whole number, as can happen if ``num`` is
   mistaken to mean "step size".
@@ -116,6 +147,19 @@ Bug Fixes
   it should have always been.
 * In the Best-Effort Callback, do not assume that the RunStart document
   includes ``'scan_id'``, which is an optional key.
+* The commandline utility ``bluesky-0MQ-proxy`` now works on Windows.
+* The IPython integrations have been updated for compatibility with IPython 7.
+* Added support for "adaptive fly scans" by enabling the ``'collect'`` message
+  to (optionally) return the Events it emitted.
+* Fixed bug in tqdm-based progress bar where tqdm could be handed a value it
+  considered invalid.
+
+Other API Changes
+-----------------
+
+* Removed attribute ``nnls`` from
+  :class:`bluesky.callbacks.best_effort.PeakResults`. It has always been
+  ``None`` (never implemented) and only served to cause confusion.
 
 v1.5.4 (2019-08-09)
 ===================
