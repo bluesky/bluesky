@@ -16,7 +16,6 @@ import threading
 import time
 from warnings import warn
 import weakref
-from event_model import unpack_event_page
 
 from .core import LiveTable, make_class_safe
 from .mpl_plotting import LivePlot, LiveGrid, LiveScatter, QtAwareCallback
@@ -211,7 +210,7 @@ class BestEffortCallback(QtAwareCallback):
             # Create a figure or reuse an existing one.
 
             fig_name = '{} vs {}'.format(' '.join(sorted(columns)),
-                                        ' '.join(sorted(dim_fields)))
+                                         ' '.join(sorted(dim_fields)))
             if self.overplot and len(dim_fields) == 1:
                 # If any open figure matches 'figname {number}', use it. If there
                 # are multiple, the most recently touched one will be used.
@@ -255,7 +254,7 @@ class BestEffortCallback(QtAwareCallback):
                             raise NotImplementedError("we now support 3D?!")
                     else:
                         ax = fig.add_subplot(len(columns), 1, 1 + i,
-                                            **share_kwargs)
+                                             **share_kwargs)
             axes = fig.axes
 
             # ## LIVE PLOT AND PEAK ANALYSIS ## #
@@ -268,11 +267,11 @@ class BestEffortCallback(QtAwareCallback):
                     dtype = doc['data_keys'][y_key]['dtype']
                     if dtype not in ('number', 'integer'):
                         warn("Omitting {} from plot because dtype is {}"
-                            "".format(y_key, dtype))
+                             "".format(y_key, dtype))
                         continue
                     # Create an instance of LivePlot and an instance of PeakStats.
                     live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax,
-                                                peak_results=self.peaks)
+                                                  peak_results=self.peaks)
                     live_plot('start', self._start_doc)
                     live_plot('descriptor', doc)
                     peak_stats = PeakStats(x=x_key, y=y_key)
@@ -297,14 +296,14 @@ class BestEffortCallback(QtAwareCallback):
                         shape = self._start_doc['shape']
                     except KeyError:
                         warn("Need both 'shape' and 'extents' in plan metadata to "
-                            "create LiveGrid.")
+                             "create LiveGrid.")
                     else:
                         data_range = np.array([float(np.diff(e)) for e in extents])
                         y_step, x_step = data_range / [max(1, s - 1) for s in shape]
                         adjusted_extent = [extents[1][0] - x_step / 2,
-                                        extents[1][1] + x_step / 2,
-                                        extents[0][0] - y_step / 2,
-                                        extents[0][1] + y_step / 2]
+                                           extents[1][1] + x_step / 2,
+                                           extents[0][0] - y_step / 2,
+                                           extents[0][1] + y_step / 2]
                         for I_key, ax in zip(columns, axes):
                             # MAGIC NUMBERS based on what tacaswell thinks looks OK
                             data_aspect_ratio = np.abs(data_range[1]/data_range[0])
@@ -317,10 +316,10 @@ class BestEffortCallback(QtAwareCallback):
                                 ax.set_aspect(aspect, adjustable='datalim')
 
                             live_grid = LiveGrid(shape, I_key,
-                                                xlabel=fast, ylabel=slow,
-                                                extent=adjusted_extent,
-                                                aspect=aspect,
-                                                ax=ax)
+                                                 xlabel=fast, ylabel=slow,
+                                                 extent=adjusted_extent,
+                                                 aspect=aspect,
+                                                 ax=ax)
 
                             live_grid('start', self._start_doc)
                             live_grid('descriptor', doc)
@@ -336,16 +335,16 @@ class BestEffortCallback(QtAwareCallback):
                         else:
                             xlim, ylim = extents
                         live_scatter = LiveScatter(x_key, y_key, I_key,
-                                                xlim=xlim, ylim=ylim,
-                                                # Let clim autoscale.
-                                                ax=ax)
+                                                   xlim=xlim, ylim=ylim,
+                                                   # Let clim autoscale.
+                                                   ax=ax)
                         live_scatter('start', self._start_doc)
                         live_scatter('descriptor', doc)
                         self._live_scatters[doc['uid']][I_key] = live_scatter
 
             else:
                 raise NotImplementedError("we do not support 3D+ in BEC yet "
-                                        "(and it should have bailed above)")
+                                          "(and it should have bailed above)")
             try:
                 fig.tight_layout()
             except ValueError:
@@ -455,10 +454,10 @@ class BestEffortCallback(QtAwareCallback):
         num_lines: int
             number of lines (plotted scans) to keep, must be >= 0
         x_signal: object
-            instance of ophyd.Signal (or subclass), 
+            instance of ophyd.Signal (or subclass),
             independent (x) axis
         y_signal: object
-            instance of ophyd.Signal (or subclass), 
+            instance of ophyd.Signal (or subclass),
             dependent (y) axis
         """
         if num_lines < 0:
@@ -475,10 +474,10 @@ class BestEffortCallback(QtAwareCallback):
             lines = [
                 tr
                 for tr in lp.ax.lines
-                if len(tr._x) != 2 
-                    or len(tr._y) != 2 
-                    or (len(tr._x) == 2 
-                        and tr._x[0] != tr._x[1])
+                if len(tr._x) != 2
+                or len(tr._y) != 2
+                or (len(tr._x) == 2
+                    and tr._x[0] != tr._x[1])
             ]
             if len(lines) > num_lines:
                 keepers = lines[-num_lines:]
@@ -573,8 +572,8 @@ class LivePlotPlusPeaks(LivePlot):
                 for artist in self.__arts:
                     artist.set_visible(True)
         elif self.__arts is not None:
-                for artist in self.__arts:
-                    artist.set_visible(False)
+            for artist in self.__arts:
+                artist.set_visible(False)
         self.ax.legend(loc='best')
         self.ax.figure.canvas.draw_idle()
 
