@@ -98,7 +98,7 @@ now expect that the iterable passed in is callables with the signature::
 The persistent dict used by ``RE.md`` must be thread-safe
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-By default, ``RE.md`` is an ordrinary dictionary, but any dict-like object may
+By default, ``RE.md`` is an ordinary dictionary, but any dict-like object may
 be used. It is often convenient for the contents of that dictionary to persist
 between sessions. To achieve this, we formerly recommended using
 :class:`~historydict.HistoryDict`. Unfortunately,
@@ -120,7 +120,7 @@ Features
 * Added :func:`~bluesky.plan_stubs.rd`.
 * Added :class:`~bluesky.suspenders.SuspendWhenChanged`.
 * Added :func:`~bluesky.callbacks.core.make_callback_safe` and
-* Added an ``per_shot`` parameter to :func:`bluesky.plans.count`, analogous to
+* Added a ``per_shot`` parameter to :func:`bluesky.plans.count`, analogous to
   the ``per_step`` parameter supported by plans that do scans.
   :func:`~bluesky.callbacks.core.make_class_safe`.
 * Accept ``**kwargs`` to :func:`~bluesky.plan_stubs.mv` and

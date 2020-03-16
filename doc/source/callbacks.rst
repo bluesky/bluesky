@@ -946,9 +946,9 @@ data collection. Sometimes, this is good: if, for example, the callback that is
 saving your data encounters an error, you want to know immediately rather than
 continuing to *think* you are collecting data when in fact it is being lost.
 But in many situations, such as visualization or first-pass data processing, it
-is usuallybetter for data collection to proceed even if a callback fails. These
-decorators may be used to wrap callbacks so that any errors they encounter are
-converted to log messages.
+is usually better for data collection to proceed even if a callback fails.
+These decorators may be used to wrap callbacks so that any errors they
+encounter are converted to log messages.
 
 .. autofunction:: bluesky.callbacks.core.make_callback_safe
 
