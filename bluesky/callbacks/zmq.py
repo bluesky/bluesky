@@ -146,7 +146,7 @@ class Proxy:
                 out_port = backend.bind_to_random_port("tcp://*")
             else:
                 backend.bind("tcp://*:%d" % out_port)
-        except:
+        except BaseException:
             # Clean up whichever components we have defined so far.
             try:
                 frontend.close()
