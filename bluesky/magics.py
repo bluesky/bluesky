@@ -23,6 +23,7 @@ try:
 except ImportError:
     from toolz import partition
 
+
 # This is temporarily here to allow for warnings to be printed
 # we changed positioners to a property but since we never instantiate
 # the class we need to add this
@@ -55,6 +56,7 @@ class MetaclassForClassProperties(MetaHasTraits, type):
 
     _positioners = []
     _detectors = []
+
 
 @magics_class
 class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
@@ -125,7 +127,6 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
         self._ensure_idle()
         return None
 
-
     @line_magic
     def ct(self, line):
         # If the deprecated BlueskyMagics.detectors list is non-empty, it has
@@ -164,9 +165,7 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
         self._ensure_idle()
         return None
 
-
     FMT_PREC = 6
-
 
     @line_magic
     def wa(self, line):
@@ -203,7 +202,7 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
                     devices = devices_dict[label]
                     all_children = [(k, getattr(obj, k))
                                     for _, obj in devices
-                                        for k in getattr(obj, 'read_attrs', [])]
+                                    for k in getattr(obj, 'read_attrs', [])]
                 except KeyError:
                     print('<no matches for this label>')
                     continue
@@ -212,12 +211,13 @@ class BlueskyMagics(Magics, metaclass=MetaclassForClassProperties):
                                if is_positioner(dev)]
                 if positioners:
                     _print_positioners(positioners, precision=self.FMT_PREC,
-                                        prefix=" "*2)
+                                       prefix=" "*2)
                     print()  # blank line
                 # Just display the top-level devices in the namespace (no
                 # children).
                 _print_devices(devices, prefix=" "*2)
                 print()  # blank line
+
 
 def _print_devices(devices, prefix=""):
     cols = ["Local variable name", "Ophyd name (to be recorded as metadata)"]
@@ -225,8 +225,10 @@ def _print_devices(devices, prefix=""):
     for name, obj in devices:
         print(prefix + "{:38} {:38s}".format(name, str(obj.name)))
 
+
 def is_positioner(dev):
     return hasattr(dev, 'position')
+
 
 def _print_positioners(positioners, sort=True, precision=6, prefix=""):
     '''
@@ -344,7 +346,6 @@ def get_labeled_devices(user_ns=None, maxdepth=6):
                             maxdepth=maxdepth-1).items():
                         items = [('.'.join([key, ot[0]]), ot[1]) for ot in v]
                         obj_list[c_key].extend(items)
-
 
     # Convert from defaultdict to normal dict before returning.
     return {k: sorted(v) for k, v in obj_list.items()}
