@@ -1,10 +1,4 @@
 import pytest
-with pytest.warns(UserWarning):
-    from bluesky.examples import (simple_scan, sleepy, wait_one,
-                                  wait_multiple, conditional_pause,
-                                  checkpoint_forever, simple_scan_saving,
-                                  stepscan, fly_gen, conditional_break,
-                                  )
 from bluesky.callbacks.mpl_plotting import LivePlot
 from bluesky import (Msg, IllegalMessageSequence,
                      RunEngineInterrupted, FailedStatus)
@@ -13,11 +7,16 @@ import os
 import signal
 import asyncio
 import time as ttime
-import numpy as np
-from numpy.testing import assert_array_equal
 import time
 import threading
 from functools import partial
+
+with pytest.warns(UserWarning):
+    from bluesky.examples import (simple_scan, sleepy, wait_one,
+                                  wait_multiple, conditional_pause,
+                                  checkpoint_forever, simple_scan_saving,
+                                  stepscan, fly_gen, conditional_break,
+                                  )
 
 
 def test_msgs(RE, hw):
@@ -620,11 +619,11 @@ def test_failed_status_object(RE):
     ff = failer()
     with pytest.raises(FailedStatus):
         RE([Msg('set', ff, None, group='a'),
-                  Msg('wait', None, group='a')])
+            Msg('wait', None, group='a')])
 
     with pytest.raises(FailedStatus):
         RE([Msg('trigger', ff, group='a'),
-                  Msg('wait', None, group='a')])
+            Msg('wait', None, group='a')])
 
 
 def test_rewindable_by_default(RE):
