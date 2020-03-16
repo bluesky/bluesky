@@ -942,18 +942,29 @@ Ignoring Callback Exceptions
 ----------------------------
 
 If an exception is raised while processing a callback, the error can interrupt
-data collection. Usually, this is good: if, for example, the callback that is
-saving your data encounters an error, you want to know immediately.
+data collection. Sometimes, this is good: if, for example, the callback that is
+saving your data encounters an error, you want to know immediately rather than
+continuing to *think* you are collecting data when in fact it is being lost.
+But in many situations, such as visualization or first-pass data processing, it
+is usuallybetter for data collection to proceed even if a callback fails. These
+decorators may be used to wrap callbacks so that any errors they encounter are
+converted to log messages.
 
-But if a "flaky" callback is causing errors, it is possible to convert errors
-to warnings like so.
+.. autofunction:: bluesky.callbacks.core.make_callback_safe
+
+.. autofunction:: bluesky.callbacks.core.make_class_safe
+
+It is also possible to configure the RunEngine to ignore *all* callback
+exceptions globally, but this feature is not recommended.
 
 .. code-block:: python
 
     RE.ignore_callback_exceptions = False
 
-This is ``False`` by default. In bluesky version 0.6.4 (September 2016) and
-earlier, this was ``True`` by default.
+.. versionchanged:: 0.6.4
+
+   In bluesky version 0.6.4 (September 2016) the default value was changed from
+   ``True`` to ``False``.
 
 .. _filtering:
 

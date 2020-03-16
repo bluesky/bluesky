@@ -253,6 +253,8 @@ beginning of each scan, is stored in ``RE.md['scan_id']``.
     runs also have randomly-generated 'uid' ("unique ID") which is globally
     unique forever.
 
+.. _md_persistence:
+
 Persistence Between Sessions
 ----------------------------
 
@@ -293,6 +295,10 @@ migrate like so:
    from bluesky.utils import get_history
    old_md = get_history()
    RE.md.update(old_md)
+
+The :class:`~bluesky.utils.PersistentDict` object has been back-ported to
+bluesky v1.5.6 as well. It is not available in 1.4.x or older, so once you move
+to the new system, you must run bluesky v1.5.6 or higher.
 
 .. warning::
 

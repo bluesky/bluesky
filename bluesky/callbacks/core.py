@@ -19,6 +19,34 @@ logger = logging.getLogger(__name__)
 
 
 def make_callback_safe(func=None, *, logger=None):
+    """
+    If the wrapped func raises any exceptions, log them but continue.
+
+    This is intended to ensure that any failures in non-critical callbacks do
+    not interrupt data acquisition. It should *not* be applied to any
+    critical callbacks, such as ones that perform data-saving, but is well
+    suited to callbacks that perform non-critical streaming visualization or
+    data processing.
+
+    To debug the issue causing a failure, it can be convenient to turn this
+    off and let the failures raise. To do this, set the environment variable
+    ``BLUESKY_DEBUG_CALLBACK=1``.
+
+    Parameters
+    ----------
+    func: callable
+    logger: logging.Logger, optional
+
+    Examples
+    --------
+
+    Decorate a callback to make sure it will not interrupt data acquisition if
+    it fails.
+
+    >>> @make_callback_safe
+    ... def callback(name, doc):
+    ...     ...
+    """
     if func is None:
         return _partial(make_callback_safe, logger=logger)
 
@@ -46,6 +74,36 @@ def make_callback_safe(func=None, *, logger=None):
 
 
 def make_class_safe(cls=None, *, to_wrap=None, logger=None):
+    """
+    If the wrapped func raises any exceptions, log them but continue.
+
+    This is intended to ensure that any failures in non-critical callbacks do
+    not interrupt data acquisition. It should *not* be applied to any
+    critical callbacks, such as ones that perform data-saving, but is well
+    suited to callbacks that perform non-critical streaming visualization or
+    data processing.
+
+    To debug the issue causing a failure, it can be convenient to turn this
+    off and let the failures raise. To do this, set the environment variable
+    ``BLUESKY_DEBUG_CALLBACK=1``.
+
+    Parameters
+    ----------
+    cls: callable
+    to_wrap: List[String], optional
+        Names of methods of cls to wrap. Default is ``['__call__']``.
+    logger: logging.Logger, optional
+
+    Examples
+    --------
+
+    Decorate a class to make sure it will not interrupt data acquisition if
+    it fails.
+
+    >>> @make_class_safe
+    ... class Callback(event_model.DocumentRouter):
+    ...     ...
+    """
 
     if cls is None:
         return _partial(make_class_safe, to_wrap=to_wrap, logger=logger)
