@@ -67,8 +67,9 @@ install:
   - if [ "$FLAKE_8" ]; then
         pip install flake8;
         flake8 .;
-        echo "The project code was verified by 'flake8'";
-        exit;
+        let res=$?;
+        echo "The project code was verified by 'flake8'. Exit code ($res).";
+        exit $res;
     fi
 
   - env | sort -u
