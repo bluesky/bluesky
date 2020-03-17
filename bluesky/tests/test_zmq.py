@@ -65,12 +65,12 @@ def test_zmq(RE, hw):
         local_accumulator.append((name, doc))
 
     # Check that numpy stuff is sanitized by putting some in the start doc.
-    # md = {'stuff': {'nested': np.array([1, 2, 3])},
-    #       'scalar_stuff': np.float64(3),
-    #       'array_stuff': np.ones((3, 3))}
+    md = {'stuff': {'nested': np.array([1, 2, 3])},
+          'scalar_stuff': np.float64(3),
+          'array_stuff': np.ones((3, 3))}
 
     # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
-    RE(count([hw.det]), local_cb)
+    RE(count([hw.det]), local_cb, **md)
     time.sleep(1)
 
     # Get the two documents from the queue (or timeout --- test will fail)
@@ -308,12 +308,12 @@ def test_zmq_prefix(RE, hw):
         local_accumulator.append((name, doc))
 
     # Check that numpy stuff is sanitized by putting some in the start doc.
-    # md = {'stuff': {'nested': np.array([1, 2, 3])},
-    #       'scalar_stuff': np.float64(3),
-    #       'array_stuff': np.ones((3, 3))}
+    md = {'stuff': {'nested': np.array([1, 2, 3])},
+          'scalar_stuff': np.float64(3),
+          'array_stuff': np.ones((3, 3))}
 
     # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
-    RE(count([hw.det]), local_cb)
+    RE(count([hw.det]), local_cb, **md)
     time.sleep(1)
 
     # Get the two documents from the queue (or timeout --- test will fail)
