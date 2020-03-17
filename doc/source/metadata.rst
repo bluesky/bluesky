@@ -1,7 +1,8 @@
 .. currentmodule:: bluesky.plans
 
-Recording Metadata
-==================
+====================
+ Recording Metadata
+====================
 
 Capturing useful metadata is the main objective of bluesky. The more
 information you can provide about what you are doing and why you are
@@ -61,13 +62,23 @@ you expect it to change during the experiment, then we think that
 should be treated as "data".  Either as an explicit part of the
 experimental plan or via :ref:`async_monitoring`.
 
+
+Adding to the Start Document
+============================
+
+
+When the RunEngine mints a Start document it includes structured data.  That
+information can be inject in via several mechanisms:
+
 1. entered interactively by the user at execution time
 2. provided in the code of the *plan*
 3. automatically inferred
 4. entered by user once and stashed for reuse on all future plans
 
-If there is a conflict between these sources, the first entry in this list
-wins.
+If there is a conflict between these sources, the higher entry in this
+list wins.  The "closer" to a user the information originated the
+higher priority it has.
+
 
 1. Interactively, for One Use
 -----------------------------
