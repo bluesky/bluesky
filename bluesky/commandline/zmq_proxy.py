@@ -58,7 +58,6 @@ def main():
         # Set daemon to kill all threads upon IPython exit
         threading.Thread(target=start_dispatcher,
                          args=('localhost', out_port, args.logfile),
-                         # Set daemon to all ipython exit kill all threads
                          daemon=True).start()
 
     print("Connecting...")
