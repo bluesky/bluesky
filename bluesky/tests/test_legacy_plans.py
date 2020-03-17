@@ -1,5 +1,5 @@
-import pytest
 import bluesky.plans as bp
+
 
 def test_legacy_plan_names():
     assert bp.outer_product_scan is bp.grid_scan
