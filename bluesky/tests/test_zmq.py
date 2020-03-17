@@ -4,8 +4,6 @@ import signal
 from subprocess import run
 import threading
 import time
-
-import numpy as np
 import pytest
 
 from bluesky import Msg
@@ -67,9 +65,9 @@ def test_zmq(RE, hw):
         local_accumulator.append((name, doc))
 
     # Check that numpy stuff is sanitized by putting some in the start doc.
-    md = {'stuff': {'nested': np.array([1, 2, 3])},
-          'scalar_stuff': np.float64(3),
-          'array_stuff': np.ones((3, 3))}
+    # md = {'stuff': {'nested': np.array([1, 2, 3])},
+    #       'scalar_stuff': np.float64(3),
+    #       'array_stuff': np.ones((3, 3))}
 
     # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
     RE(count([hw.det]), local_cb)
@@ -90,7 +88,6 @@ def test_zmq(RE, hw):
 def test_zmq_components():
     # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
     # process, which coverage misses.
-    pid = os.getpid()
 
     def delayed_sigint(delay):
         time.sleep(delay)
@@ -196,6 +193,7 @@ def test_zmq_no_RE(RE):
 
 def test_zmq_no_RE_newserializer(RE):
     cloudpickle = pytest.importorskip('cloudpickle')
+
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
@@ -207,14 +205,12 @@ def test_zmq_no_RE_newserializer(RE):
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
-
     p = Publisher('127.0.0.1:5567', serializer=cloudpickle.dumps)  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
     # it receives over a Queue to this process, so we can count them for our
     # test.
-
     def make_and_start_dispatcher(queue):
         def put_in_queue(name, doc):
             print('putting ', name, 'in queue')
@@ -274,12 +270,10 @@ def test_zmq_prefix(RE, hw):
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
-
     p = Publisher('127.0.0.1:5567', prefix=b'sb')  # noqa
     p2 = Publisher('127.0.0.1:5567', prefix=b'not_sb')  # noqa
     RE.subscribe(p)
     RE.subscribe(p2)
-
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
@@ -314,9 +308,9 @@ def test_zmq_prefix(RE, hw):
         local_accumulator.append((name, doc))
 
     # Check that numpy stuff is sanitized by putting some in the start doc.
-    md = {'stuff': {'nested': np.array([1, 2, 3])},
-          'scalar_stuff': np.float64(3),
-          'array_stuff': np.ones((3, 3))}
+    # md = {'stuff': {'nested': np.array([1, 2, 3])},
+    #       'scalar_stuff': np.float64(3),
+    #       'array_stuff': np.ones((3, 3))}
 
     # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
     RE(count([hw.det]), local_cb)
