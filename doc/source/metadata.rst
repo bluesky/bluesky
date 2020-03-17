@@ -192,6 +192,24 @@ If there is a conflict, ``RE`` keywords takes precedence. So
 would override the individual 'purpose' metadata from the plan, marking all
 three as purpose=test.
 
+If you define your own plans it is best practice have them take a keyword only
+argument ``md=None``.  This allows the hard-coded meta-data to be over-ridden
+later:
+
+.. code-block:: python
+
+    def plan(*, md=None):
+        md = md or {}  # handle the default case
+        # putting unpacking **md at the end means it "wins"
+        # and if the user calls
+        #    yield from plan(md={'purpose': bob})
+        # it will over-ride these values
+        yield from count([det], md={'purpose': 'calibration', **md})
+        yield from scan([det], motor, 1, 5, 5, md={'purpose': 'good data', **md})
+        yield from count([det], md={'purpose': 'sanity check', **md})
+
+This is consistent with all of the :ref:`preassembled_plans`.
+
 For more on injecting metadata via plans, refer to
 :ref:`this section <tutorial_plan_metadata>` of the tutorial.
 
