@@ -85,6 +85,7 @@ install:
   - pip list
 
 script:
+  - flake8
   # ensure that callbacks import without matplotlib
   - python -c 'import sys, bluesky.callbacks; assert "matplotlib" not in sys.modules'
   - coverage run -m pytest -v
