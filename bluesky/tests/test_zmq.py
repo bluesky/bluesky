@@ -12,6 +12,7 @@ from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count
 from event_model import sanitize_doc
 
+
 def test_proxy_script():
     p = run(['bluesky-0MQ-proxy', '-h'])
     assert p.returncode == 0
