@@ -55,10 +55,12 @@ def main():
         logger.setLevel('INFO')
         if args.verbose > 2:
             logger.setLevel('DEBUG')
+        # Set daemon to kill all threads upon IPython exit
         threading.Thread(target=start_dispatcher,
                          args=('localhost', out_port, args.logfile),
-                         daemon=True).start()  # Set daemon to all ipython exit
-        #                                        kill all threads
+                         # Set daemon to all ipython exit kill all threads
+                         daemon=True).start()
+
     print("Connecting...")
     proxy = Proxy(in_port, out_port)
     print("Receiving on port %d; publishing to port %d." % (in_port, out_port))
