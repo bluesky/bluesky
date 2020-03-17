@@ -4,11 +4,62 @@ Recording Metadata
 ==================
 
 Capturing useful metadata is the main objective of bluesky. The more
-information you can provide about what you are doing and why you are doing it,
-the more useful bluesky and downstream data search and analysis tools can be.
+information you can provide about what you are doing and why you are
+doing it, the more useful bluesky and downstream data search and
+analysis tools can be.
 
-When the RunEngine executes a plan, it attaches metadata to the data it
-collects. It captures metadata that has been:
+The term "metadata" can be a controversial term, one scientist's
+"data" is another's "metadata" and classification is context
+dependent.  The same exact information can be "data" in one
+experiment, but "metadata" in a different experiment done on the exact
+same hardware.
+The `Document Model
+<https://blueskyproject.io/event-model/data-model.html>`_ provides a framework
+for deciding _where_ to record a particular piece of information.
+
+There are somethings that we know a-priori before doing an experiment;
+where are we? who is the user? what sample are we looking at? what did
+the user just ask us to do?  These are all things that we can, in
+principle, know independent of the control system.  These are the
+prime candidates for inclusion in the `Start Document
+<https://blueskyproject.io/event-model/data-model.html#run-start-document>`_.
+Downstream DataBroker provides tools to do rich searches on this data.
+The more information you can include the better.
+
+There is some information that we need to is nominally independent of
+any particular device but we need to consult the controls system
+about.  For example the location of important, but un-scanned motors
+or the configuration of filters.  If the values *should* be fixed over
+the course of the experiment then this it is a good candidate for
+being a "baseline device" either via the `Supplemental pre-processor
+<https://blueskyproject.io/bluesky/tutorial.html#baseline-readings-and-other-supplemental-data>`_
+or explicitly in custom plans.  This will put the readings in a separate stream
+(which is a peer to the "primary" data).  In principle, these values could be
+read from the control system once and put into the Start document along with
+the a-priori information, however that has several draw backs:
+
+1. There is only ever 1 reading of the values so if they do drift during
+   data acquisition you will never know
+2. We can not automatically capture information about the device like
+   we do for data in Events.  This include things like the datatype,
+   units, and shape of the value and any configuration information the hardware
+   it is being read from.
+
+
+A third class of information that can be called "metadata" is
+configuration information of a pieces of hardware.  This is things
+like the velocity of a motor or the integration time of a detector.
+These readings are embeded in the `Descriptor
+<https://blueskyproject.io/event-model/data-model.html#event-descriptor>`_
+and are extracted from the hardware via the `read_configuration
+<https://blueskyproject.io/bluesky/hardware.html#ReadableDevice.read_configuration>`_
+method the hardware.  We expect that these values will not change over
+the course of the experiment so only read them once.
+
+Information that does not fall into one of these categories, because
+you expect it to change during the experiment, then we think that
+should be treated as "data".  Either as an explicit part of the
+experimental plan or via :ref:`async_monitoring`.
 
 1. entered interactively by the user at execution time
 2. provided in the code of the *plan*

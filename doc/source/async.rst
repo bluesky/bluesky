@@ -94,6 +94,8 @@ append to or extend its list of flyers to kick off during every run:
 
 They will be included with all plans until removed.
 
+.. _async_monitoring:
+
 Monitoring
 ----------
 
