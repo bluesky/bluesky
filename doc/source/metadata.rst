@@ -289,6 +289,19 @@ delete a key you want to stop using,
 or use any of the standard methods that apply to
 `dictionaries in Python <https://docs.python.org/3/library/stdtypes.html#typesmapping>`_.
 
+.. warning::
+
+
+   In general we recommend against putting device readings in the Start
+   document, however it is critical that you do not put device readings
+   in this dictionary.  The value will remain until you change it and not
+   track the state of the hardware.  This will result in recording incorrect
+   data!
+
+   This can be particularly dangerous if ``RE.md`` is backed by a
+   persistent data store (see next section)
+
+
 The ``scan_id``, an integer that the RunEngine automatically increments at the
 beginning of each scan, is stored in ``RE.md['scan_id']``.
 
