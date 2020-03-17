@@ -381,6 +381,7 @@ to the new system, you must run bluesky v1.5.6 or higher.
     ``RE`` may already be configured, and defining a new ``RE`` as above can
     result in data loss! If you aren't sure, it's safer to use ``RE.md = ...``.
 
+
 Allowed Data Types
 ------------------
 
@@ -390,6 +391,23 @@ Custom metadata keywords can be mapped to:
 * numbers --- e.g., ``attempt=5``
 * lists or tuples --- e.g., ``dimensions=[1, 3]``
 * (nested) dictionaries --- e.g., ``dimensions={'width': 1, 'height': 3}``
+
+
+Required Fields
+---------------
+
+The fields:
+
+* **uid**
+* **time**
+
+are reserved by the document model and cannot be set by the user.
+
+In current versions of bluesky, **no fields are universally required by bluesky
+itself**. It is possible specify your own required fields in local
+configuration. See :ref:`md_validator`. (At NSLS-II, there are facility-wide
+requirements coming soon.)
+
 
 Special Fields
 --------------
@@ -405,7 +423,7 @@ The fields:
 * **owner**
 * **group**
 * **project**
-  
+
 are optional but, to facilitate searchability, if they are not blank they must
 be strings. A non-string, like ``owner=5`` will produce an error that will
 interrupt scan execution immediately after it starts.
@@ -417,25 +435,11 @@ The **scan_id** field is expected to be an integer, and it is automatically
 incremented between runs. If a scan_id is not provided by the user or stashed
 in the persistent metadata from the previous run, it defaults to 1.
 
-The fields:
-
-* **uid**
-* **time**
-
-are reserved by the document model and cannot be set by the user.
-
-Required Fields
----------------
-
-In current versions of bluesky, **no fields are universally required by bluesky
-itself**. It is possible specify your own required fields in local
-configuration. See :ref:`md_validator`. (At NSLS-II, there are facility-wide
-requirements coming soon.)
 
 .. _md_validator:
 
-Metadata Validator
-------------------
+Validation
+----------
 
 Additional, customized metadata validation can be added to the RunEngine.
 For example, to ensure that a run will not be executed unless the parameter
