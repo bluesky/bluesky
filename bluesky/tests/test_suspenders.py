@@ -16,6 +16,7 @@ from bluesky.run_engine import RunEngineInterrupted
 import threading
 import time
 
+
 @pytest.mark.parametrize(
     'klass,sc_args,start_val,fail_val,resume_val,wait_time',
     [(SuspendBoolHigh, (), 0, 1, 0, .2),
@@ -27,7 +28,6 @@ import time
      (SuspendOutBand, (.5, 1.5), 0, 1, 0, .2)])  # deprecated
 def test_suspender(klass, sc_args, start_val, fail_val,
                    resume_val, wait_time, RE, hw):
-    loop = RE._loop
     sig = hw.bool_sig
     my_suspender = klass(sig,
                          *sc_args, sleep=wait_time)
@@ -191,7 +191,6 @@ def test_unresumable_suspend_fail(RE):
 
 def test_suspender_plans(RE, hw):
     'Tests that the suspenders can be installed via Msg'
-    loop = RE._loop
     sig = hw.bool_sig
     my_suspender = SuspendBoolHigh(sig, sleep=0.2)
 
