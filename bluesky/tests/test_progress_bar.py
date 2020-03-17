@@ -1,8 +1,6 @@
 from bluesky.utils import ProgressBar, ProgressBarManager
 from bluesky.plan_stubs import mv
 from bluesky.tests import requires_ophyd
-from bluesky import RunEngine
-from collections import OrderedDict
 import time
 
 
@@ -83,6 +81,7 @@ def test_tuple_progress():
     st.done = True
     pbar.update(0, name='foo')
 
+
 def test_mv_progress(RE, hw):
     motor1 = hw.motor1
     motor2 = hw.motor2
@@ -104,6 +103,7 @@ def test_mv_progress(RE, hw):
 def test_draw_before_update():
     class Status:
         done = False
+
         def watch(self, func):
             ...
 
