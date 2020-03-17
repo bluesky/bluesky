@@ -10,7 +10,7 @@ import pytest
 from bluesky import Msg
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count
-
+from event_model import sanitize_doc
 
 def test_proxy_script():
     p = run(['bluesky-0MQ-proxy', '-h'])
@@ -83,7 +83,9 @@ def test_zmq(RE, hw):
     dispatcher_proc.terminate()
     proxy_proc.join()
     dispatcher_proc.join()
-    assert remote_accumulator == local_accumulator
+    ra = sanitize_doc(remote_accumulator)
+    la = sanitize_doc(local_accumulator)
+    assert ra == la
 
 
 def test_zmq_components():
@@ -189,7 +191,9 @@ def test_zmq_no_RE(RE):
     dispatcher_proc.terminate()
     proxy_proc.join()
     dispatcher_proc.join()
-    assert remote_accumulator == local_accumulator
+    ra = sanitize_doc(remote_accumulator)
+    la = sanitize_doc(local_accumulator)
+    assert ra == la
 
 
 def test_zmq_no_RE_newserializer(RE):
@@ -256,7 +260,9 @@ def test_zmq_no_RE_newserializer(RE):
     dispatcher_proc.terminate()
     proxy_proc.join()
     dispatcher_proc.join()
-    assert remote_accumulator == local_accumulator
+    ra = sanitize_doc(remote_accumulator)
+    la = sanitize_doc(local_accumulator)
+    assert ra == la
 
 
 def test_zmq_prefix(RE, hw):
@@ -326,4 +332,6 @@ def test_zmq_prefix(RE, hw):
     dispatcher_proc.terminate()
     proxy_proc.join()
     dispatcher_proc.join()
-    assert remote_accumulator == local_accumulator
+    ra = sanitize_doc(remote_accumulator)
+    la = sanitize_doc(local_accumulator)
+    assert ra == la
