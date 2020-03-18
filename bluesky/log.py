@@ -2,7 +2,6 @@
 # Apache 2.0. See other_licenses/ in the repository directory.
 import logging
 import sys
-import warnings
 
 try:
     import colorama
@@ -14,7 +13,7 @@ try:
 except ImportError:
     curses = None
 
-__all__ = ('color_logs', 'config_bluesky_logging', 'get_handler',
+__all__ = ('config_bluesky_logging', 'get_handler',
            'LogFormatter', 'set_handler')
 
 

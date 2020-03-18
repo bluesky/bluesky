@@ -27,6 +27,7 @@ from unittest.mock import MagicMock
 from itertools import permutations
 import time
 
+
 # copied from examples.py to avoid import
 def stepscan(det, motor):
     yield Msg('open_run')

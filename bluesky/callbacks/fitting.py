@@ -1,5 +1,4 @@
 import warnings
-from cycler import cycler
 import numpy as np
 
 from .core import CallbackBase, CollectThenCompute

@@ -158,7 +158,7 @@ class OlogCallback(CallbackBase):
         from pyOlog import SimpleOlogClient
         self.client = SimpleOlogClient()
         # Check at init time we are in an IPython session.
-        from IPython import get_ipython
+        from IPython import get_ipython  # noqa: F401
 
     def start(self, doc):
         from IPython import get_ipython

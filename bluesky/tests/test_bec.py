@@ -1,7 +1,6 @@
 import ast
 import pytest
 import jsonschema
-import re
 import time as ttime
 from datetime import datetime
 from bluesky.plans import scan, grid_scan

@@ -1,4 +1,3 @@
-import logging
 import time as ttime
 from collections.abc import Iterable
 from collections import ChainMap
@@ -118,7 +117,7 @@ class LiveDispatcher(CallbackBase):
         # If we haven't described this configuration
         # Send a new document to our subscribers
         if (stream_name not in self._descriptors or
-            desc_id not in self._descriptors[stream_name]):
+                desc_id not in self._descriptors[stream_name]):
             # Create a new description document for the output of the stream
             data_keys = dict()
             # Parse the event document creating a new description. If the key

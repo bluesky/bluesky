@@ -1,5 +1,3 @@
-from bluesky import preprocessors as bpp
-from bluesky import plans as bp
 from bluesky import plan_stubs as bps
 from bluesky.preprocessors import set_run_key_wrapper as srkw
 import bluesky.preprocessors as bsp
@@ -106,6 +104,7 @@ def test_multirun_run_key_type(RE, hw):
     def plan4():
         yield from srkw(empty_plan(), "run_name")
     RE(plan4(), dc.insert)
+
     def plan5():
         yield from srkw(empty_plan(), run="run_name")
     RE(plan5(), dc.insert)

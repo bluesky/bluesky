@@ -4,6 +4,7 @@ coverage
 databroker
 doct
 doctr
+flake8
 ipython
 ipywidgets
 jinja2
@@ -23,6 +24,7 @@ pytest-faulthandler
 pyyaml
 pyzmq
 requests
+scipy
 sphinx
 sphinx_rtd_theme
 streamz

@@ -131,11 +131,11 @@ class LivePlot(QtAwareCallback):
             if fig is not None:
                 if ax is not None:
                     raise ValueError("Values were given for both `fig` and `ax`. "
-                                    "Only one can be used; prefer ax.")
+                                     "Only one can be used; prefer ax.")
                 warnings.warn("The `fig` keyword arugment of LivePlot is "
-                            "deprecated and will be removed in the future. "
-                            "Instead, use the new keyword argument `ax` to "
-                            "provide specific Axes to plot on.")
+                              "deprecated and will be removed in the future. "
+                              "Instead, use the new keyword argument `ax` to "
+                              "provide specific Axes to plot on.")
                 ax = fig.gca()
             if ax is None:
                 fig, ax = plt.subplots()
@@ -275,6 +275,7 @@ class LiveScatter(QtAwareCallback):
         super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
+
         def setup():
             # Run this code in start() so that it runs on the correct thread.
             nonlocal x, y, I, xlim, ylim, clim, cmap, ax, kwargs
@@ -290,7 +291,7 @@ class LiveScatter(QtAwareCallback):
             ax.cla()
             self.x = x
             self.y = y
-            self.I = I
+            self.I = I  # noqa: E741
             ax.set_xlabel(x)
             ax.set_ylabel(y)
             ax.set_aspect('equal')
@@ -333,7 +334,7 @@ class LiveScatter(QtAwareCallback):
     def event(self, doc):
         x = doc['data'][self.x]
         y = doc['data'][self.y]
-        I = doc['data'][self.I]
+        I = doc['data'][self.I]  # noqa: E741
         self.update(x, y, I)
         super().event(doc)
 
@@ -433,6 +434,7 @@ class LiveGrid(QtAwareCallback):
         super().__init__(**kwargs)
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
+
         def setup():
             # Run this code in start() so that it runs on the correct thread.
             nonlocal raster_shape, I, clim, cmap, xlabel, ylabel, extent
@@ -446,7 +448,7 @@ class LiveGrid(QtAwareCallback):
             if ax is None:
                 fig, ax = plt.subplots()
             ax.cla()
-            self.I = I
+            self.I = I  # noqa: E741
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
             ax.set_aspect(aspect)
@@ -521,7 +523,7 @@ class LiveGrid(QtAwareCallback):
         if self.snaking[1] and (pos[0] % 2):
             pos[1] = self.raster_shape[1] - pos[1] - 1
         pos = tuple(pos)
-        I = doc['data'][self.I]
+        I = doc['data'][self.I]  # noqa: E741
         self.update(pos, I)
         super().event(doc)
 

@@ -24,6 +24,9 @@ jobs:
   fast_finish: true
   include:
     - os: linux
+      python: 3.7
+      env: FLAKE_8=1
+    - os: linux
       python: 3.6
       env: PUBLISH_DOCS=1
     - os: linux
@@ -61,6 +64,14 @@ before_install:
     fi
 
 install:
+  - if [ "$FLAKE_8" ]; then
+        pip install flake8;
+        flake8 .;
+        let res=$?;
+        echo "The project code was verified by 'flake8'. Exit code ($res).";
+        exit $res;
+    fi
+
   - env | sort -u
   - export GIT_FULL_HASH=`git rev-parse HEAD`
   - pip install --upgrade pip

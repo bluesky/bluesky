@@ -4,13 +4,13 @@ import signal
 from subprocess import run
 import threading
 import time
-
 import numpy as np
 import pytest
 
 from bluesky import Msg
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count
+from event_model import sanitize_doc
 
 
 def test_proxy_script():
@@ -72,7 +72,7 @@ def test_zmq(RE, hw):
           'array_stuff': np.ones((3, 3))}
 
     # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
-    RE(count([hw.det]), local_cb)
+    RE(count([hw.det]), local_cb, **md)
     time.sleep(1)
 
     # Get the two documents from the queue (or timeout --- test will fail)
@@ -84,13 +84,14 @@ def test_zmq(RE, hw):
     dispatcher_proc.terminate()
     proxy_proc.join()
     dispatcher_proc.join()
-    assert remote_accumulator == local_accumulator
+    ra = sanitize_doc(remote_accumulator)
+    la = sanitize_doc(local_accumulator)
+    assert ra == la
 
 
 def test_zmq_components():
     # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
     # process, which coverage misses.
-    pid = os.getpid()
 
     def delayed_sigint(delay):
         time.sleep(delay)
@@ -191,11 +192,14 @@ def test_zmq_no_RE(RE):
     dispatcher_proc.terminate()
     proxy_proc.join()
     dispatcher_proc.join()
-    assert remote_accumulator == local_accumulator
+    ra = sanitize_doc(remote_accumulator)
+    la = sanitize_doc(local_accumulator)
+    assert ra == la
 
 
 def test_zmq_no_RE_newserializer(RE):
     cloudpickle = pytest.importorskip('cloudpickle')
+
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
     def start_proxy():
@@ -207,14 +211,12 @@ def test_zmq_no_RE_newserializer(RE):
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
-
     p = Publisher('127.0.0.1:5567', serializer=cloudpickle.dumps)  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
     # it receives over a Queue to this process, so we can count them for our
     # test.
-
     def make_and_start_dispatcher(queue):
         def put_in_queue(name, doc):
             print('putting ', name, 'in queue')
@@ -259,7 +261,9 @@ def test_zmq_no_RE_newserializer(RE):
     dispatcher_proc.terminate()
     proxy_proc.join()
     dispatcher_proc.join()
-    assert remote_accumulator == local_accumulator
+    ra = sanitize_doc(remote_accumulator)
+    la = sanitize_doc(local_accumulator)
+    assert ra == la
 
 
 def test_zmq_prefix(RE, hw):
@@ -274,12 +278,10 @@ def test_zmq_prefix(RE, hw):
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
-
     p = Publisher('127.0.0.1:5567', prefix=b'sb')  # noqa
     p2 = Publisher('127.0.0.1:5567', prefix=b'not_sb')  # noqa
     RE.subscribe(p)
     RE.subscribe(p2)
-
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
@@ -319,7 +321,7 @@ def test_zmq_prefix(RE, hw):
           'array_stuff': np.ones((3, 3))}
 
     # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
-    RE(count([hw.det]), local_cb)
+    RE(count([hw.det]), local_cb, **md)
     time.sleep(1)
 
     # Get the two documents from the queue (or timeout --- test will fail)
@@ -331,4 +333,6 @@ def test_zmq_prefix(RE, hw):
     dispatcher_proc.terminate()
     proxy_proc.join()
     dispatcher_proc.join()
-    assert remote_accumulator == local_accumulator
+    ra = sanitize_doc(remote_accumulator)
+    la = sanitize_doc(local_accumulator)
+    assert ra == la

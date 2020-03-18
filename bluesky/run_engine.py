@@ -1,7 +1,6 @@
 import asyncio
 from datetime import datetime
 import sys
-import logging
 from warnings import warn
 from inspect import Parameter, Signature
 from itertools import count
@@ -17,7 +16,6 @@ from .bundlers import RunBundler
 import concurrent
 
 from event_model import DocumentNames, schema_validators
-import jsonschema
 from .log import logger, msg_logger, state_logger, ComposableLogAdapter
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
@@ -120,7 +118,7 @@ class LoggingPropertyMachine(PropertyMachine):
                 'RE': self}
 
         state_logger.info("Change state on %r from %r -> %r",
-                           obj, old_value, value, extra=tags)
+                          obj, old_value, value, extra=tags)
         if obj.state_hook is not None:
             obj.state_hook(value, old_value)
 

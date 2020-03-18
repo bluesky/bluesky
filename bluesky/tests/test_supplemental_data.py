@@ -161,6 +161,7 @@ def test_uid_passthrough(RE, hw):
     sd.monitors = [hw.rand]
     sd.flyers = [hw.flyer1]
     hw.flyer1.loop = RE.loop
+
     def mycount2():
         uid = yield from sd(count([]))
         assert uid is not None

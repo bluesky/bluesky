@@ -337,7 +337,7 @@ def run_fuzz():
           set([msg.command for msg in message_objects]))
 
     num_message = 100
-    num_SIGINT = 10
+    # num_SIGINT = 10
     num_scans = 50
     num_shuffled_scans = 50
     random.shuffle(message_objects)

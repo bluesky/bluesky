@@ -14,8 +14,7 @@ from bluesky.run_engine import (RunEngineStateMachine,
                                 NoReplayAllowed, FailedStatus,
                                 RunEngineInterrupted,
                                 RequestStop,
-                                RequestAbort,
-                                PlanHalt)
+                                RequestAbort)
 from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
@@ -167,7 +166,7 @@ def test_flyer_with_collect_asset_documents(RE):
     from ophyd.sim import det, new_trivial_flyer, trivial_flyer
     from bluesky.preprocessors import fly_during_wrapper
     assert hasattr(new_trivial_flyer, 'collect_asset_docs')
-    assert hasattr(trivial_flyer, 'collec_asset_docs') == False
+    assert not hasattr(trivial_flyer, 'collec_asset_docs')
     RE(fly_during_wrapper(count([det], num=5), [new_trivial_flyer, trivial_flyer]))
 
 
@@ -530,6 +529,7 @@ def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
     from bluesky.utils import ts_msg_hook
     msgs = []
     loop = RE.loop
+
     def collector(msg):
         ts_msg_hook(msg)
         msgs.append(msg)

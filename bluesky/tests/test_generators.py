@@ -388,7 +388,7 @@ def test_insert_before():
         else:
             return None, None
 
-    ret = EchoRE(plan_mutator(target(), insert_before))
+    EchoRE(plan_mutator(target(), insert_before))
 
 
 def test_insert_after():
@@ -410,7 +410,7 @@ def test_insert_after():
         else:
             return None, None
 
-    ret = EchoRE(plan_mutator(target(), insert_after))
+    EchoRE(plan_mutator(target(), insert_after))
 
 
 def test_base_exception():
