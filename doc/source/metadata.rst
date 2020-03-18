@@ -30,7 +30,7 @@ The more information you can include the better.
 There is some information that we need to is nominally independent of
 any particular device but we need to consult the controls system
 about.  For example the location of important, but un-scanned motors
-or the configuration of filters.  If the values *should* be fixed over
+or the configuration of beam attenuators.  If the values *should* be fixed over
 the course of the experiment then this it is a good candidate for
 being a "baseline device" either via the `Supplemental pre-processor
 <https://blueskyproject.io/bluesky/tutorial.html#baseline-readings-and-other-supplemental-data>`_
@@ -40,21 +40,21 @@ read from the control system once and put into the Start document along with
 the a-priori information, however that has several draw backs:
 
 1. There is only ever 1 reading of the values so if they do drift during
-   data acquisition you will never know
+   data acquisition, you will never know.
 2. We can not automatically capture information about the device like
-   we do for data in Events.  This include things like the datatype,
-   units, and shape of the value and any configuration information the hardware
+   we do for data in Events.  This includes things like the datatype,
+   units, and shape of the value and any configuration information about the hardware
    it is being read from.
 
 
 A third class of information that can be called "metadata" is
-configuration information of a pieces of hardware.  This is things
+configuration information of pieces of hardware.  This is things
 like the velocity of a motor or the integration time of a detector.
-These readings are embeded in the `Descriptor
+These readings are embedded in the `Descriptor
 <https://blueskyproject.io/event-model/data-model.html#event-descriptor>`_
 and are extracted from the hardware via the `read_configuration
 <https://blueskyproject.io/bluesky/hardware.html#ReadableDevice.read_configuration>`_
-method the hardware.  We expect that these values will not change over
+method of the hardware.  We expect that these values will not change over
 the course of the experiment so only read them once.
 
 Information that does not fall into one of these categories, because
@@ -68,7 +68,7 @@ Adding to the Start Document
 
 
 When the RunEngine mints a Start document it includes structured data.  That
-information can be inject in via several mechanisms:
+information can be injected in via several mechanisms:
 
 1. entered interactively by the user at execution time
 2. provided in the code of the *plan*
@@ -192,7 +192,7 @@ If there is a conflict, ``RE`` keywords takes precedence. So
 would override the individual 'purpose' metadata from the plan, marking all
 three as purpose=test.
 
-If you define your own plans it is best practice have them take a keyword only
+If you define your own plans, it is best practice have them take a keyword only
 argument ``md=None``.  This allows the hard-coded meta-data to be over-ridden
 later:
 
@@ -317,7 +317,7 @@ or use any of the standard methods that apply to
    data!
 
    This can be particularly dangerous if ``RE.md`` is backed by a
-   persistent data store (see next section)
+   persistent data store (see next section).
 
 
 The ``scan_id``, an integer that the RunEngine automatically increments at the
