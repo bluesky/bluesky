@@ -10,15 +10,15 @@ doing it, the more useful bluesky and downstream data search and
 analysis tools can be.
 
 The term "metadata" can be a controversial term, one scientist's
-"data" is another's "metadata" and classification is context
-dependent.  The same exact information can be "data" in one
+"data" is another's "metadata" and classification is context- dependent.
+The same exact information can be "data" in one
 experiment, but "metadata" in a different experiment done on the exact
 same hardware.
 The `Document Model
 <https://blueskyproject.io/event-model/data-model.html>`_ provides a framework
 for deciding _where_ to record a particular piece of information.
 
-There are somethings that we know a-priori before doing an experiment;
+There are some things that we know *a priori* before doing an experiment;
 where are we? who is the user? what sample are we looking at? what did
 the user just ask us to do?  These are all things that we can, in
 principle, know independent of the control system.  These are the
@@ -27,7 +27,7 @@ prime candidates for inclusion in the `Start Document
 Downstream DataBroker provides tools to do rich searches on this data.
 The more information you can include the better.
 
-There is some information that we need to is nominally independent of
+There is some information that we need that is nominally independent of
 any particular device but we need to consult the controls system
 about.  For example the location of important, but un-scanned motors
 or the configuration of beam attenuators.  If the values *should* be fixed over
@@ -35,20 +35,19 @@ the course of the experiment then this it is a good candidate for
 being a "baseline device" either via the `Supplemental pre-processor
 <https://blueskyproject.io/bluesky/tutorial.html#baseline-readings-and-other-supplemental-data>`_
 or explicitly in custom plans.  This will put the readings in a separate stream
-(which is a peer to the "primary" data).  In principle, these values could be
+(which is a peer to the "primary" data).  In principle, these values *could* be
 read from the control system once and put into the Start document along with
-the a-priori information, however that has several draw backs:
+the *a priori* information, however that has several draw backs:
 
 1. There is only ever 1 reading of the values so if they do drift during
    data acquisition, you will never know.
-2. We can not automatically capture information about the device like
+2. We cannot automatically capture information about the device like
    we do for data in Events.  This includes things like the datatype,
-   units, and shape of the value and any configuration information about the hardware
-   it is being read from.
-
+   units, and shape of the value and any configuration information about the
+   hardware it is being read from.
 
 A third class of information that can be called "metadata" is
-configuration information of pieces of hardware.  This is things
+configuration information of pieces of hardware.  These are things
 like the velocity of a motor or the integration time of a detector.
 These readings are embedded in the `Descriptor
 <https://blueskyproject.io/event-model/data-model.html#event-descriptor>`_
@@ -58,14 +57,13 @@ method of the hardware.  We expect that these values will not change over
 the course of the experiment so only read them once.
 
 Information that does not fall into one of these categories, because
-you expect it to change during the experiment, then we think that
-should be treated as "data".  Either as an explicit part of the
+you expect it to change during the experiment,
+should be treated as "data", either as an explicit part of the
 experimental plan or via :ref:`async_monitoring`.
 
 
 Adding to the Start Document
 ============================
-
 
 When the RunEngine mints a Start document it includes structured data.  That
 information can be injected in via several mechanisms:
@@ -311,13 +309,15 @@ or use any of the standard methods that apply to
 
 
    In general we recommend against putting device readings in the Start
-   document, however it is critical that you do not put device readings
-   in this dictionary.  The value will remain until you change it and not
-   track the state of the hardware.  This will result in recording incorrect
-   data!
+   document. (The Start document is for who/what/why/when, things you
+   know before you start communicating with hardware.) It is *especially*
+   critical that you do not put device readings in the ``RE.md`` dictionary.
+   The value will remain until you change it and not track the state of the
+   hardware.  This will result in recording out-of-date, incorrect data!
 
    This can be particularly dangerous if ``RE.md`` is backed by a
-   persistent data store (see next section).
+   persistent data store (see next section) because out-of-date readings will
+   last across sessions.
 
 
 The ``scan_id``, an integer that the RunEngine automatically increments at the
