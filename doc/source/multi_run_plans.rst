@@ -6,19 +6,19 @@ Introduction
 
 This section is a brief tutorial on multi-run plans (introduced in Bluesky v1.6.0).
 A traditional single-run plan contains a set of instructions for performing only one run,
-which is assigned scan ID and UID. When multi-run plan is executed by Run Engine, multiple
+which is assigned a scan ID and a UID. When a multi-run plan is executed by the Run Engine, multiple
 runs can be performed as part of a single plan. Data from each run can be independently
-displayed and saved to the database via Databroker. The prior versions of Bluesky supported
+displayed and saved to the database via Databroker. Prior versions of Bluesky supported
 only sequential execution of multiple runs within a plan: building larger plans by creating
 a sequence of smaller plans and preassembled plans shipped with Bluesky is a standard
-practice. In Bluesky v1.6.0 a number of features was introduced that allow to implement plans
+practice. In Bluesky v1.6.0 a number of features were introduced to allow plans
 with nested runs. Two runs are considered nested if one 'outer' run is interrupted, another
 'inner' run is executed, and then the first run is resumed and completed. The number of levels
 of nesting is not limited by Bluesky. Interruptions can be initiated by the plan itself
 (simply by opening another run before closing currently executed run) or externally (e.g.
-by triggering a suspender and causing execution of pre- or post-plan). This tutorial include
-brief explanation of the new Bluesky features for supporting of multi-run plans and several
-examples that demonstrate implementation of the plans that contain sequential, nested and recursive
+by triggering a suspender and causing execution of pre- or post-plan). This tutorial includes
+a brief explanation of the new Bluesky features for supporting multi-run plans and several
+examples that demonstrates the implementation of the plans that contain sequential, nested and recursive
 runs.
 
 Definition of a 'Run'
@@ -27,7 +27,7 @@ Definition of a 'Run'
 From the point of view of Bluesky, a run is a sequence of instructions (messages) for controlling
 the instrumental equipment that starts with `open_run` and ends with `close_run` message.
 We may also apply the term 'run' to a block of code which generates such a sequence of messages.
-Data from each run is bundled together via assigned distinct Scan ID and UID. The set of documents
+Data from each run is bundled together via a assigned distinct Scan ID and UID. The set of documents
 is also generated for each run, including mandatory 'start' and 'stop' documents. The documents
 can be processed by callbacks (such as BestEffortCallback) and saved to the database via Databroker.
 
@@ -36,7 +36,7 @@ In the plan, the run may be defined by explicitely enclosing the code in `bps.op
 
 .. code-block:: python
 
-    # Using 'bps.open_run()' and 'bps.close_run()' stabs to define a run
+    # Using 'bps.open_run()' and 'bps.close_run()' stubs to define a run
 
     import bluesky.plan_stubs as bps
     from bluesky import RunEngine
