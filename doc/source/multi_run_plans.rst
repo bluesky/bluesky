@@ -18,7 +18,7 @@ of nesting is not limited by Bluesky. Interruptions can be initiated by the plan
 (simply by opening another run before closing currently executed run) or externally (e.g.
 by triggering a suspender and causing execution of pre- or post-plan). This tutorial includes
 a brief explanation of the new Bluesky features for supporting multi-run plans and several
-examples that demonstrates the implementation of the plans that contain sequential, nested and recursive
+examples that demonstrate the implementation of plans that contain sequential, nested and recursive
 runs.
 
 Definition of a 'Run'
@@ -198,11 +198,11 @@ replacing the default value `None` of the attribute `run` in each message genera
 the enclosed block with the user-defined run key.
 
 The `@bpp.set_run_key_decorator` and `bpp.set_run_key_wrapper` are primarily intended
-to be applied to a function that contains run implementation, but may be also used
+to be applied to a function that contains a run implementation, but may be also used
 with any block of plan code. For example, one may write a plan that simultaneously
 opens multiple runs and executes them in parallel by generating groups of messages
 with run ids of the open scans. This is currently not recommended and should be attempted
-only on the developer's own risk.
+only at the developer's own risk.
 
 Plans with Sequential Runs
 ---------------------------
@@ -232,10 +232,10 @@ Plans with Nested Runs
 The following example illustrates the use of `@bpp.set_run_key_decorator` to implement two nested runs:
 the 'outer' run interrupts measurements, calls the 'inner' run and then completes the measurements.
 The 'outer' and 'inner' runs are assigned different run ids ('run_1' and 'run_2'). Note that
-the `@bpp.set_run_key_decorator` for the 'outer' run does not overwrite run id of the 'inner' scan,
+the `@bpp.set_run_key_decorator` for the 'outer' run does not overwrite the run id of the 'inner' scan,
 despite the fact that it is generated inside the enclosed code, since the decorator is designed to replace
 the run id attribute of the message only if it has the default value of `None`, i.e. the run id of
-a message can be replaced by the decorator only once the first time it is processed by the decorator.
+a message can be replaced by the decorator only the first time it is processed by the decorator.
 
 If multiple runs are to be opened simultaneously, each run needs to be subscribed to its own instance
 of callback. Standard RunEngine subscription mechanism does not provide this capability. Instead,
