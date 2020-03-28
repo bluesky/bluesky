@@ -28,7 +28,11 @@ which means bluesky will not run in a jupyter notebook.  To fix this we now
 continuously run the event loop on a background thread and the
 :class:`~bluesky.RunEngine` object manages the interaction with creating tasks
 on that event loop.  To first order, users should not notice this change,
-however details of how
+however details of how manage both blocking the user prompt and how we
+suspend processing messages from a plan are radically different.
+One consequence of running the event loop on a background thread is
+that the code in plans and the callbacks is executed in that thread as well.
+This means that plans and callbacks must now be threadsafe.
 
 API Changes
 ~~~~~~~~~~~
@@ -49,6 +53,7 @@ Now that we are running the event loop on a background thread this no
 longer works because the Qt event loop must be run on the main thread.
 Instead we use *during_task* to block the main thread by running the
 Qt event loop directly.
+
 
 ``during_task`` kwarg to :meth:`RunEngine.__init__`
 +++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -106,6 +111,28 @@ between sessions. To achieve this, we formerly recommended using
 bluesky's new concurrency model. We now recommend using
 :class:`~bluesky.utils.PersistentDict`. See :ref:`md_persistence` for
 instructions on how to migrate existing metadata.
+
+Callbacks must be thread-safe
++++++++++++++++++++++++++++++
+
+Because callbacks now run on the background thread they must be
+thread-safe.  The place where this is most likely to come up is in the
+context of plotting which generally creates a GUI window.  Almost all
+GUI frameworks insist that they only be interacted with only on the
+main thread.  In the case of Qt we provide
+:class:`~bluesky.callbacks.mpl_plotting.QtAwareCallback` to manage
+moving Qt work back to the main thread (via a Qt ``Signal``).
+
+
+Plans must be thread-safe
++++++++++++++++++++++++++
+
+Because the plans now execute on the background thread they must be
+thread-safe if the touch any external state.  Similarly the callbacks,
+we expect that the most likely place for this to fail is with
+plotting.  In most cases this can be addressed by using a thread-safe
+version of the callback.
+
 
 Features
 --------
