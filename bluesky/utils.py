@@ -19,7 +19,8 @@ from functools import wraps, partial
 import threading
 import time
 from tqdm import tqdm
-from tqdm._utils import _environ_cols_wrapper, _term_move_up, _unicode
+from tqdm._utils import _term_move_up, _unicode
+from tqdm.utils import _screen_shape_wrapper
 import warnings
 
 import msgpack
@@ -1084,7 +1085,7 @@ class ProgressBar:
         self.meters = []
         self.status_objs = []
         # Determine terminal width.
-        self.ncols = _environ_cols_wrapper()(sys.stdout) or 79
+        self.ncols = _screen_shape_wrapper()(sys.stdout)[0] or 79
         self.fp = sys.stdout
         self.creation_time = time.time()
         self.delay_draw = delay_draw
