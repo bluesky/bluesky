@@ -19,8 +19,8 @@ from functools import wraps, partial
 import threading
 import time
 from tqdm import tqdm
-from tqdm._utils import _term_move_up, _unicode
-from tqdm.utils import _screen_shape_wrapper
+from tqdm._utils import _unicode
+from tqdm.utils import _screen_shape_wrapper, _term_move_up
 import warnings
 
 import msgpack
