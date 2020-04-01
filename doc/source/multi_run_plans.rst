@@ -6,19 +6,19 @@ Introduction
 
 This section is a brief tutorial on multi-run plans (introduced in Bluesky v1.6.0).
 A traditional single-run plan contains a set of instructions for performing only one run,
-which is assigned scan ID and UID. When multi-run plan is executed by Run Engine, multiple
+which is assigned a scan ID and a UID. When a multi-run plan is executed by the Run Engine, multiple
 runs can be performed as part of a single plan. Data from each run can be independently
-displayed and saved to the database via Databroker. The prior versions of Bluesky supported
+displayed and saved to the database via Databroker. Prior versions of Bluesky supported
 only sequential execution of multiple runs within a plan: building larger plans by creating
 a sequence of smaller plans and preassembled plans shipped with Bluesky is a standard
-practice. In Bluesky v1.6.0 a number of features was introduced that allow to implement plans
+practice. In Bluesky v1.6.0 a number of features were introduced to allow plans
 with nested runs. Two runs are considered nested if one 'outer' run is interrupted, another
 'inner' run is executed, and then the first run is resumed and completed. The number of levels
 of nesting is not limited by Bluesky. Interruptions can be initiated by the plan itself
 (simply by opening another run before closing currently executed run) or externally (e.g.
-by triggering a suspender and causing execution of pre- or post-plan). This tutorial include
-brief explanation of the new Bluesky features for supporting of multi-run plans and several
-examples that demonstrate implementation of the plans that contain sequential, nested and recursive
+by triggering a suspender and causing execution of pre- or post-plan). This tutorial includes
+a brief explanation of the new Bluesky features for supporting multi-run plans and several
+examples that demonstrate the implementation of plans that contain sequential, nested and recursive
 runs.
 
 Definition of a 'Run'
@@ -27,7 +27,7 @@ Definition of a 'Run'
 From the point of view of Bluesky, a run is a sequence of instructions (messages) for controlling
 the instrumental equipment that starts with `open_run` and ends with `close_run` message.
 We may also apply the term 'run' to a block of code which generates such a sequence of messages.
-Data from each run is bundled together via assigned distinct Scan ID and UID. The set of documents
+Data from each run is bundled together via an assigned distinct Scan ID and UID. The set of documents
 is also generated for each run, including mandatory 'start' and 'stop' documents. The documents
 can be processed by callbacks (such as BestEffortCallback) and saved to the database via Databroker.
 
@@ -36,7 +36,7 @@ In the plan, the run may be defined by explicitely enclosing the code in `bps.op
 
 .. code-block:: python
 
-    # Using 'bps.open_run()' and 'bps.close_run()' stabs to define a run
+    # Using 'bps.open_run()' and 'bps.close_run()' stubs to define a run
 
     import bluesky.plan_stubs as bps
     from bluesky import RunEngine
@@ -198,11 +198,11 @@ replacing the default value `None` of the attribute `run` in each message genera
 the enclosed block with the user-defined run key.
 
 The `@bpp.set_run_key_decorator` and `bpp.set_run_key_wrapper` are primarily intended
-to be applied to a function that contains run implementation, but may be also used
+to be applied to a function that contains a run implementation, but may be also used
 with any block of plan code. For example, one may write a plan that simultaneously
 opens multiple runs and executes them in parallel by generating groups of messages
 with run ids of the open scans. This is currently not recommended and should be attempted
-only on the developer's own risk.
+only at the developer's own risk.
 
 Plans with Sequential Runs
 ---------------------------
@@ -232,10 +232,10 @@ Plans with Nested Runs
 The following example illustrates the use of `@bpp.set_run_key_decorator` to implement two nested runs:
 the 'outer' run interrupts measurements, calls the 'inner' run and then completes the measurements.
 The 'outer' and 'inner' runs are assigned different run ids ('run_1' and 'run_2'). Note that
-the `@bpp.set_run_key_decorator` for the 'outer' run does not overwrite run id of the 'inner' scan,
+the `@bpp.set_run_key_decorator` for the 'outer' run does not overwrite the run id of the 'inner' scan,
 despite the fact that it is generated inside the enclosed code, since the decorator is designed to replace
 the run id attribute of the message only if it has the default value of `None`, i.e. the run id of
-a message can be replaced by the decorator only once the first time it is processed by the decorator.
+a message can be replaced by the decorator only the first time it is processed by the decorator.
 
 If multiple runs are to be opened simultaneously, each run needs to be subscribed to its own instance
 of callback. Standard RunEngine subscription mechanism does not provide this capability. Instead,
