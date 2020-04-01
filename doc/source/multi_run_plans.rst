@@ -27,7 +27,7 @@ Definition of a 'Run'
 From the point of view of Bluesky, a run is a sequence of instructions (messages) for controlling
 the instrumental equipment that starts with `open_run` and ends with `close_run` message.
 We may also apply the term 'run' to a block of code which generates such a sequence of messages.
-Data from each run is bundled together via a assigned distinct Scan ID and UID. The set of documents
+Data from each run is bundled together via an assigned distinct Scan ID and UID. The set of documents
 is also generated for each run, including mandatory 'start' and 'stop' documents. The documents
 can be processed by callbacks (such as BestEffortCallback) and saved to the database via Databroker.
 
