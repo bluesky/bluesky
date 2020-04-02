@@ -4,9 +4,13 @@ from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
 import numpy as np
+import numpy.testing as npt
 import pandas as pd
+import random
 import re
+import collections
 from bluesky.tests.utils import MsgCollector
+from bluesky.plan_patterns import chunk_outer_product_args, outer_product
 
 
 def _validate_start(start, expected_values):
@@ -338,3 +342,285 @@ def test_rd_device(hw, RE, kind):
 
     RE(tester(hw.det))
     assert called
+
+
+# ********  Tests for `grid_scan` and `rel_grid_scan` plans  ***********
+
+
+def _retrieve_motor_positions(doc_collector, motors):
+    """
+    Retrieves the motor positions for the completed run.
+
+    Parameters
+    ----------
+    `doc_collector`: DocCollector
+        DocCollector object that contains data from a single run
+    `motors`: list
+        the list of motors for which positions should be collected.
+
+    Returns
+    -------
+    the dictionary:
+    {'motor_name_1': list of positions,
+     'motor_name_2': list of positions, ...}
+
+    """
+    motor_names = [_.name for _ in motors]
+    # Get the event list for the first run
+    desc = next(iter(doc_collector.event.keys()))  # Descriptor
+    event_list = doc_collector.event[desc]
+
+    # Now collect the positions
+    positions = {k: [] for k in motor_names}
+    for event in event_list:
+        for name in positions.keys():
+            positions[name].append(event["data"][name])
+
+    return positions
+
+
+def _grid_scan_position_list(args, snake_axes):
+    """
+    Generates the lists of positions for each motor during the 'grid_scan'.
+
+    Parameters
+    ----------
+    args: list
+        list of arguments, same as the parameter `args` of the `grid_scan`
+    snake_axes: None, True, False or iterable
+        same meaning as `snake_axes` parameter of the `grid_scan`
+
+    Returns
+    -------
+    Tuple of the dictionary:
+        {'motor_name_1': list of positions,
+         'motor_name_2': list of positions, ...}
+    and the tuple that lists `snaking` status of each motor (matches the contents
+    of the 'snaking' field of the start document.
+    """
+    # If 'snake_axis' is specified, it always overwrides any snaking values specified in 'args'
+    chunk_args = list(chunk_outer_product_args(args))
+    if isinstance(snake_axes, collections.abc.Iterable):
+        for n, chunk in enumerate(chunk_args):
+            motor, start, stop, num, snake = chunk
+            if motor in snake_axes:
+                chunk_args[n] = tuple([motor, start, stop, num, True])
+            else:
+                chunk_args[n] = tuple([motor, start, stop, num, False])
+    elif snake_axes is True:
+        chunk_args = [(motor, start, stop, num, True) if n > 0
+                      else (motor, start, stop, num, False)
+                      for n, (motor, start, stop, num, _) in enumerate(chunk_args)]
+    elif snake_axes is False:
+        chunk_args = [(motor, start, stop, num, False)
+                      for (motor, start, stop, num, _) in chunk_args]
+    elif snake_axes is None:
+        pass
+    else:
+        raise ValueError(f"The value of 'snake_axes' is not iterable, boolean or None: '{snake_axes}'")
+
+    # Expected contents of the 'snaking' field in the start document
+    snaking = tuple([_[4] for _ in chunk_args])
+
+    # Now convert the chunked argument list to regular argument list before calling the cycler
+    args_modified = []
+    for n, chunk in enumerate(chunk_args):
+        if n > 0:
+            args_modified.extend(chunk)
+        else:
+            args_modified.extend(chunk[:-1])
+
+    # Note, that outer_product is used to generate the list of coordinate points
+    #   while the plan is executed, but it is tested elsewhere, so it can be trusted
+    full_cycler = outer_product(args=args_modified)
+    event_list = list(full_cycler)
+
+    # The list of motors
+    motors = [_[0] for _ in chunk_args]
+    motor_names = [_.name for _ in motors]
+
+    positions = {k: [] for k in motor_names}
+    for event in event_list:
+        for m, mn in zip(motors, motor_names):
+            positions[mn].append(event[m])
+
+    return positions, snaking
+
+
+@pytest.mark.parametrize("args, snake_axes", [
+    # Calls using new arguments
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6,
+      "motor2", 7, 8, 9),
+     None),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6,
+      "motor2", 7, 8, 9),
+     False),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6,
+      "motor2", 7, 8, 9),
+     True),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6,
+      "motor2", 7, 8, 9),
+     []),  # Empty list will disable snaking
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6,
+      "motor2", 7, 8, 9),
+     ["motor1"]),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6,
+      "motor2", 7, 8, 9),
+     ["motor2"]),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6,
+      "motor2", 7, 8, 9),
+     ["motor1", "motor2"]),
+
+    # Deprecated calls
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, True,
+      "motor2", 7, 8, 9, True),
+     None),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, True,
+      "motor2", 7, 8, 9, False),
+     None),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, False,
+      "motor2", 7, 8, 9, True),
+     None),
+
+    # Ignore the deprecated `snakeX` values in `args` if `snake_axis` is specified
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, True,
+      "motor2", 7, 8, 9, False),
+     True),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, True,
+      "motor2", 7, 8, 9, False),
+     False),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, True,
+      "motor2", 7, 8, 9, False),
+     False),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, False,
+      "motor2", 7, 8, 9, False),
+     ["motor1"]),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, False,
+      "motor2", 7, 8, 9, False),
+     ["motor1", "motor2"]),
+    (("motor", 1, 2, 3,
+      "motor1", 4, 5, 6, True,
+      "motor2", 7, 8, 9, True),
+     []),  # Empty list will disable snaking
+])
+@pytest.mark.parametrize("plan, is_relative", [
+    (bp.grid_scan, False),
+    (bp.rel_grid_scan, True)
+])
+def test_grid_scans(RE, hw, args, snake_axes, plan, is_relative):
+    """
+    Basic test of functionality of `grid_scan` and `rel_grid_scan`:
+    Tested:
+    - positions of the simulated motors at each step of the scan
+    - contents of the 'snaking' field of the start document
+    """
+
+    # Convert motor names to actual motors in the argument list using fixture 'hw'
+    args = [getattr(hw, _) if isinstance(_, str) else _ for _ in args]
+    # Do the same in `snake_axes` if it contains the list of motors
+    if isinstance(snake_axes, collections.abc.Iterable):
+        snake_axes = [getattr(hw, _) for _ in snake_axes]
+
+    # Place motors at random initial positions. Do it both for relative and
+    #   absolute scans. The absolute scans will ignore the inital positions
+    #   automatically.
+    motors = [_[0] for _ in chunk_outer_product_args(args)]
+    motors_pos = [2 * random.random() - 1 for _ in range(len(motors))]
+    for _motor, _pos in zip(motors, motors_pos):
+        RE(bps.mv(_motor, _pos))
+
+    c = DocCollector()
+    RE(plan([hw.det], *args, snake_axes=snake_axes), c.insert)
+    positions = _retrieve_motor_positions(c, [hw.motor, hw.motor1, hw.motor2])
+    # Retrieve snaking data from the start document
+    snaking = c.start[0]["snaking"]
+
+    # Generate the list of positions based on
+    positions_expected, snaking_expected = \
+        _grid_scan_position_list(args=args, snake_axes=snake_axes)
+
+    assert snaking == snaking_expected, \
+        "The contents of the 'snaking' field in the start document "\
+        "does not match the expected values"
+
+    assert set(positions.keys()) == set(positions_expected.keys()), \
+        "Different set of motors in dictionaries of actual and expected positions"
+
+    # The dictionary of the initial postiions
+    motor_pos_shift = {_motor.name: _pos for (_motor, _pos) in zip(motors, motors_pos)}
+
+    for name in positions_expected.keys():
+        # The positions should be shifted only if the plan is relative.
+        #   Absolute plans will ignore the initial motor positions
+        shift = motor_pos_shift[name] if is_relative else 0
+        npt.assert_array_almost_equal(
+            positions[name], np.array(positions_expected[name]) + shift,
+            err_msg=f"Expected and actual positions for the motor '{name}' don't match")
+
+
+@pytest.mark.parametrize("plan", [
+    bp.grid_scan,
+    bp.rel_grid_scan
+])
+def test_grid_scans_failing(RE, hw, plan):
+    """Test the failing cases of 'grid_scan' and 'rel_grid_scan'"""
+
+    # Multiple instance of the same motor in 'args'
+    with pytest.raises(ValueError,
+                       match="Some motors are listed multiple times in the argument list 'args'"):
+        args = (hw.motor, 1, 2, 3,
+                hw.motor1, 4, 5, 6, True,
+                hw.motor1, 7, 8, 9, False)
+        RE(plan([hw.det], *args))
+
+    # 'snake_axes' contains repeated elements
+    with pytest.raises(ValueError,
+                       match="The list of axes 'snake_axes' contains repeated elements"):
+        args = (hw.motor, 1, 2, 3,
+                hw.motor1, 4, 5, 6, True,
+                hw.motor2, 7, 8, 9, False)
+        snake_axes = [hw.motor1, hw.motor2, hw.motor1]
+        RE(plan([hw.det], *args, snake_axes=snake_axes))
+
+    # Snaking is enabled for the slowest motor
+    with pytest.raises(ValueError,
+                       match="The list of axes 'snake_axes' contains the slowest motor"):
+        args = (hw.motor, 1, 2, 3,
+                hw.motor1, 4, 5, 6, True,
+                hw.motor2, 7, 8, 9, False)
+        snake_axes = [hw.motor1, hw.motor]
+        RE(plan([hw.det], *args, snake_axes=snake_axes))
+
+    # Attempt to enable snaking for motors that are not controlled during the scan
+    with pytest.raises(ValueError,
+                       match="The list of axes 'snake_axes' contains motors "
+                             "that are not controlled during the scan"):
+        args = (hw.motor, 1, 2, 3,
+                hw.motor1, 4, 5, 6, True,
+                hw.motor2, 7, 8, 9, False)
+        snake_axes = [hw.motor1, hw.motor3]
+        RE(plan([hw.det], *args, snake_axes=snake_axes))
+
+    # The type of 'snake_axes' parameter is not allowed
+    for snake_axes in (10, 50.439, "some string"):
+        with pytest.raises(ValueError,
+                           match="Parameter 'snake_axes' is not iterable, boolean or None"):
+            args = (hw.motor, 1, 2, 3,
+                    hw.motor1, 4, 5, 6, True,
+                    hw.motor2, 7, 8, 9, False)
+            RE(plan([hw.det], *args, snake_axes=snake_axes))
