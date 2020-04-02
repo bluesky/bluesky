@@ -388,10 +388,19 @@ def chunk_outer_product_args(args):
     Parameters
     ----------
     args
-        patterned like (``motor1, start1, stop1, num1,```
-                        ``motor2, start2, stop2, num2, snake2,``
-                        ``motor3, start3, stop3, num3, snake3,`` ...
-                        ``motorN, startN, stopN, numN, snakeN``)
+        Two patterns are supported:
+
+        Pattern 1: (``motor1, start1, stop1, num1,```
+                    ``motor2, start2, stop2, num2,``
+                    ``motor3, start3, stop3, num3,`` ...
+                    ``motorN, startN, stopN, numN``)
+
+        Pattern 2: (``motor1, start1, stop1, num1,```
+                    ``motor2, start2, stop2, num2, snake2,``
+                    ``motor3, start3, stop3, num3, snake3,`` ...
+                    ``motorN, startN, stopN, numN, snakeN``)
+
+        In Pattern 2, all elements 'snakeX' must be boolean.
 
         The first motor is the "slowest", the outer loop. For all motors
         except the first motor, there is a "snake" argument: a boolean
@@ -405,15 +414,47 @@ def chunk_outer_product_args(args):
     Yields
     ------
     (motor, start, stop, num, snake)
+
+    The `snake` value is always `False` for Pattern 1
     '''
     args = list(args)
-    # The first (slowest) axis is never "snaked." Insert False to
-    # make it easy to iterate over the chunks or args..
-    args.insert(4, False)
-    if len(args) % 5 != 0:
+
+    # Detect if 'arg' matches pattern 1 (no snaking info) or pattern 2
+    #   pattern_no_snaking:  # True - Pattern 1, False - Pattern 2
+    if not (len(args) % 4):
+        # This includes the case, when only one motor is specified
+        #   (`args` has 4 elements).
+        pattern_no_snaking = True
+        # It is possible that this could still be Pattern 2, so check if
+        #   the last element is boolean. Pattern 1 can't have boolean
+        #   elements.
+        if not ((len(args) - 4) % 5) and any([isinstance(_, bool) for _ in args]):
+            # Pattern 2 must contain boolean 'snakeX' values, so if there are
+            # elements of boolean type in the list, then this is probably Pattern 2
+            pattern_no_snaking = False
+    elif not ((len(args) - 4) % 5):
+        pattern_no_snaking = False
+    else:
         raise ValueError("Wrong number of positional arguments "
                          "for 'chunk_outer_product_args'")
 
+    # For Pattern 2, verify that all 'snakeX' elements are boolean
+    if not pattern_no_snaking:
+        ind_snake = range(8, len(args), 5)
+        if not all([isinstance(args[_], bool) for _ in ind_snake]):
+            raise ValueError(f"Wrong positional arguments "
+                             f"for 'chunk_outer_product_args': "
+                             f"some of the provided 'chunk' values "
+                             f"are not boolean: '{args}'")
+
+    if pattern_no_snaking:
+        # Set 'snaked' to False for every motor
+        for n in range(1, int(len(args) / 4) + 1):
+            args.insert(5 * n - 1, False)
+    else:
+        # The first (slowest) axis is never "snaked." Insert False to
+        # make it easy to iterate over the chunks or args..
+        args.insert(4, False)
     yield from partition(5, args)
 
 
