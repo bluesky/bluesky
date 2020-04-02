@@ -2,7 +2,7 @@ import sys
 import inspect
 from itertools import chain, zip_longest
 from functools import partial
-
+import collections
 from collections import defaultdict
 import time
 
@@ -235,10 +235,9 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
 
     Parameters
     ----------
-    detectors : list
+    detectors: list
         list of 'readable' objects
-
-    args
+    args: list
         patterned like (``motor1, position_list1,``
                         ``motor2, position_list2,``
                         ``motor3, position_list3,``
@@ -248,18 +247,18 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
         The first motor is the "slowest", the outer loop. ``position_list``'s
         are lists of positions, all lists must have the same length. Motors
         can be any 'settable' object (motor, temp controller, etc.).
-
-    snake_axes : boolean or iterable, optional
+    snake_axes: boolean or iterable, optional
         which axes should be snaked, either ``False`` (do not snake any axes),
         ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
         is defined as following snake-like, winding trajectory instead of a
-        simple left-to-right trajectory.
-
-    per_step : callable, optional
+        simple left-to-right trajectory.The elements of the list are motors
+        that are listed in `args`. The list must not contain the slowest
+        (first) motor, since it can't be snaked.
+    per_step: callable, optional
         hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
-    md : dict, optional
+    md: dict, optional
         metadata
 
     See Also
@@ -331,7 +330,9 @@ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
         which axes should be snaked, either ``False`` (do not snake any axes),
         ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
         is defined as following snake-like, winding trajectory instead of a
-        simple left-to-right trajectory.
+        simple left-to-right trajectory.The elements of the list are motors
+        that are listed in `args`. The list must not contain the slowest
+        (first) motor, since it can't be snaked.
 
     per_step : callable, optional
         hook for customizing action of inner loop (messages per step).
@@ -1079,29 +1080,36 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
                                per_step=per_step, md=_md))
 
 
-def grid_scan(detectors, *args, per_step=None, md=None):
+def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
     Parameters
     ----------
-    detectors : list
+    detectors: list
         list of 'readable' objects
     ``*args``
         patterned like (``motor1, start1, stop1, num1,``
-                        ``motor2, start2, stop2, num2, snake2,``
-                        ``motor3, start3, stop3, num3, snake3,`` ...
-                        ``motorN, startN, stopN, numN, snakeN``)
+                        ``motor2, start2, stop2, num2,``
+                        ``motor3, start3, stop3, num3,`` ...
+                        ``motorN, startN, stopN, numN``)
 
         The first motor is the "slowest", the outer loop. For all motors
         except the first motor, there is a "snake" argument: a boolean
         indicating whether to following snake-like, winding trajectory or a
         simple left-to-right trajectory.
-    per_step : callable, optional
+    snake_axes: boolean or iterable, optional
+        which axes should be snaked, either ``False`` (do not snake any axes),
+        ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
+        is defined as following snake-like, winding trajectory instead of a
+        simple left-to-right trajectory. The elements of the list are motors
+        that are listed in `args`. The list must not contain the slowest
+        (first) motor, since it can't be snaked.
+    per_step: callable, optional
         hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
-    md : dict, optional
+    md: dict, optional
         metadata
 
     See Also
@@ -1110,9 +1118,92 @@ def grid_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    full_cycler = plan_patterns.outer_product(args=list(args))
+    # Notes: (not to be included in the documentation)
+    #   The deprecated function call with no 'snake_axes' argument and 'args'
+    #         patterned like (``motor1, start1, stop1, num1,``
+    #                         ``motor2, start2, stop2, num2, snake2,``
+    #                         ``motor3, start3, stop3, num3, snake3,`` ...
+    #                         ``motorN, startN, stopN, numN, snakeN``)
+    #         The first motor is the "slowest", the outer loop. For all motors
+    #         except the first motor, there is a "snake" argument: a boolean
+    #         indicating whether to following snake-like, winding trajectory or a
+    #         simple left-to-right trajectory.
+    #   Ideally, deprecated and new argument lists should not be mixed.
+    #   The function will still accept `args` in the old format even if `snake_axes` is
+    #   supplied, but if `snake_axes` is not `None` (the default value), it overrides
+    #   any values of `snakeX` in `args`.
 
     chunk_args = list(plan_patterns.chunk_outer_product_args(args))
+    # 'chunk_args' is a list of tuples of the form: (motor, start, stop, num, snake)
+    # If the function is called using deprecated pattern for arguments, then
+    # 'snake' may be set True for some motors, otherwise the 'snake' is always False.
+
+    # The list of controlled motors
+    motors = [_[0] for _ in chunk_args]
+
+    # Check that the same motor is not listed multiple times. This indicates an error in the script.
+    if len(set(motors)) != len(motors):
+        raise ValueError(f"Some motors are listed multiple times in the argument list 'args': "
+                         f"'{motors}'")
+
+    if snake_axes is not None:
+
+        def _set_snaking(chunk, value):
+            """Returns the tuple `chunk` with modified 'snake' value"""
+            _motor, _start, _stop, _num, _snake = chunk
+            return _motor, _start, _stop, _num, value
+
+        if isinstance(snake_axes, collections.abc.Iterable) and not isinstance(snake_axes, str):
+            # Always convert to a tuple (in case a `snake_axes` is an iterator)
+            snake_axes = tuple(snake_axes)
+
+            # Check if the list of axes (motors) contains repeated entries
+            if len(set(snake_axes)) != len(snake_axes):
+                raise ValueError(f"The list of axes 'snake_axes' contains repeated elements: "
+                                 f"'{snake_axes}'")
+
+            # Check if the snaking is enabled for the slowest motor
+            if len(motors) and (motors[0] in snake_axes):
+                raise ValueError(f"The list of axes 'snake_axes' contains the slowest motor: "
+                                 f"'{snake_axes}'")
+
+            # Check that all motors in the chunk_args are controlled in the scan
+            #   It is very likely that this is an error in the script
+            if any([_ not in motors for _ in snake_axes]):
+                raise ValueError(f"The list of axes 'snake_axes' contains motors "
+                                 f"that are not controlled during the scan: "
+                                 f"'{snake_axes}'")
+
+            # Enable snaking for the selected axes.
+            #   If the argument `snake_axes` is specified (not None), then
+            #   any `snakeX` values that could be specified in `args` are ignored.
+            for n, chunk in enumerate(chunk_args):
+                if n > 0:  # The slowest motor is never snaked
+                    motor = chunk[0]
+                    if motor in snake_axes:
+                        chunk_args[n] = _set_snaking(chunk, True)
+                    else:
+                        chunk_args[n] = _set_snaking(chunk, False)
+
+        elif snake_axes is True:  # 'snake_axes' has boolean value `True`
+            # Set all 'snake' values except for the slowest motor
+            chunk_args = [_set_snaking(_, True) if n > 0 else _
+                          for n, _ in enumerate(chunk_args)]
+        elif snake_axes is False:  # 'snake_axes' has boolean value `True`
+            # Set all 'snake' values
+            chunk_args = [_set_snaking(_, False) for _ in chunk_args]
+        else:
+            raise ValueError(f"Parameter 'snake_axes' is not iterable, boolean or None: "
+                             f"'{snake_axes}', type: {type(snake_axes)}")
+
+    # Prepare the argument list for the `outer_product` function
+    args_modified = []
+    for n, chunk in enumerate(chunk_args):
+        if n == 0:
+            args_modified.extend(chunk[:-1])
+        else:
+            args_modified.extend(chunk)
+    full_cycler = plan_patterns.outer_product(args=args_modified)
 
     md_args = []
     motor_names = []
@@ -1153,27 +1244,36 @@ def grid_scan(detectors, *args, per_step=None, md=None):
                                per_step=per_step, md=_md))
 
 
-def rel_grid_scan(detectors, *args, per_step=None, md=None):
+def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     """
     Scan over a mesh relative to current position.
 
     Parameters
     ----------
-    detectors : list
+    detectors: list
         list of 'readable' objects
     ``*args``
-        patterned like ``motor1, start1, stop1, num1, motor2, start2, stop2,
-        num2, snake2,`` ..., ``motorN, startN, stopN, numN, snakeN``
-        Motors can be any 'settable' object (motor, temp controller, etc.)
-        Notice that the first motor is followed by start, stop, num.
-        All other motors are followed by start, stop, num, snake where snake
-        is a boolean indicating whether to following snake-like, winding
-        trajectory or a simple left-to-right trajectory.
-    per_step : callable, optional
+        patterned like (``motor1, start1, stop1, num1,``
+                        ``motor2, start2, stop2, num2,``
+                        ``motor3, start3, stop3, num3,`` ...
+                        ``motorN, startN, stopN, numN``)
+
+        The first motor is the "slowest", the outer loop. For all motors
+        except the first motor, there is a "snake" argument: a boolean
+        indicating whether to following snake-like, winding trajectory or a
+        simple left-to-right trajectory.
+    snake_axes: boolean or iterable, optional
+        which axes should be snaked, either ``False`` (do not snake any axes),
+        ``True`` (snake all axes) or a list of axes to snake. "Snaking" an axis
+        is defined as following snake-like, winding trajectory instead of a
+        simple left-to-right trajectory. The elements of the list are motors
+        that are listed in `args`. The list must not contain the slowest
+        (first) motor, since it can't be snaked.
+    per_step: callable, optional
         hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
         for details.
-    md : dict, optional
+    md: dict, optional
         metadata
 
     See Also
@@ -1182,6 +1282,9 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.grid_scan`
     :func:`bluesky.plans.scan_nd`
     """
+    # Notes: the deprecated function call is also supported. See the notes
+    #   following the docstring for 'grid_scan' function
+
     _md = {'plan_name': 'rel_grid_scan'}
     _md.update(md or {})
     motors = [m[0] for m in
@@ -1191,6 +1294,7 @@ def rel_grid_scan(detectors, *args, per_step=None, md=None):
     @bpp.relative_set_decorator(motors)
     def inner_rel_grid_scan():
         return (yield from grid_scan(detectors, *args,
+                                     snake_axes=snake_axes,
                                      per_step=per_step, md=_md))
 
     return (yield from inner_rel_grid_scan())
