@@ -3,7 +3,7 @@ import pytest
 from functools import reduce
 import operator
 
-from bluesky.utils import ensure_generator, Msg, merge_cycler
+from bluesky.utils import ensure_generator, Msg, merge_cycler, Movable
 from cycler import cycler
 
 
@@ -100,3 +100,13 @@ def test_cycler_merge_mixed(hw, children):
 
     assert mcyc.keys == cyc.keys
     assert mcyc.by_key() == cyc.by_key()
+
+
+def test_Movable(hw):
+
+    obj_list = [(10, False), (1.05, False), ("some_string", False),
+                (hw.det, False), (hw.motor, True)]
+    for obj, result in obj_list:
+        assert isinstance(obj, Movable) == result, \
+            f"The object {obj} is incorrectly recognized "\
+            f"as {'' if result else 'not '}movable"
