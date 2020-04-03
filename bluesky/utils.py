@@ -11,6 +11,7 @@ import types
 import inspect
 from inspect import Parameter, Signature
 import itertools
+import abc
 from collections.abc import Iterable
 import numpy as np
 from cycler import cycler
@@ -1516,3 +1517,25 @@ def _rearrange_into_parallel_dicts(readings):
         data[key] = payload['value']
         timestamps[key] = payload['timestamp']
     return data, timestamps
+
+
+class Movable(metaclass=abc.ABCMeta):
+    """
+    Abstract base class for objects that satisfy the bluesky 'movable' interface.
+
+    Examples
+    --------
+
+    .. code-block:: python
+
+        m = hw.motor
+        # We need to detect if 'm' is a motor
+        if isinstance(m, Movable):
+            print(f"The object {m.name} is a motor")
+
+    """
+    @classmethod
+    def __subclasshook__(cls, C):
+        # If the following condition is True, the object C is recognized
+        #   to have Movable interface (e.g. a motor)
+        return bool(hasattr(C, 'name') and hasattr(C, 'set'))
