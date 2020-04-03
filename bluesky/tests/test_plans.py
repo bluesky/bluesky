@@ -38,8 +38,9 @@ def test_plan_header(RE, hw):
     ##
     args.append((bp.grid_scan([hw.det],
                               hw.motor, 1, 2, 3,
-                              hw.motor1, 4, 5, 6, True,
-                              hw.motor2, 7, 8, 9, True),
+                              hw.motor1, 4, 5, 6,
+                              hw.motor2, 7, 8, 9,
+                              snake_axes=True),
                  {'motors': ('motor', 'motor1', 'motor2'),
                   'extents': ([1, 2], [4, 5], [7, 8]),
                   'shape': (3, 6, 9),
@@ -70,7 +71,7 @@ def test_ops_dimension_hints(RE, hw):
     RE.subscribe(c.insert)
     rs, = RE(bp.grid_scan([det],
                           motor, -1, 1, 7,
-                          motor1, 0, 2, 3, False))
+                          motor1, 0, 2, 3))
 
     st = c.start[0]
 
@@ -88,7 +89,7 @@ def test_mesh_pseudo(hw, RE):
     RE.subscribe(d.insert)
     rs, = RE(bp.grid_scan([sig],
                           p3x3.pseudo1, 0, 3, 5,
-                          p3x3.pseudo2, 7, 10, 7, False))
+                          p3x3.pseudo2, 7, 10, 7))
     df = pd.DataFrame([_['data']
                        for _ in d.event[d.descriptor[rs][0]['uid']]])
 
@@ -113,7 +114,7 @@ def test_rmesh_pseudo(hw, RE):
     rs, = RE(bp.rel_grid_scan(
         [sig],
         p3x3.pseudo1, 0, 3, 5,
-        p3x3.pseudo2, 7, 10, 7, False))
+        p3x3.pseudo2, 7, 10, 7))
     df = pd.DataFrame([_['data']
                        for _ in d.event[d.descriptor[rs][0]['uid']]])
 
@@ -482,7 +483,7 @@ def _grid_scan_position_list(args, snake_axes):
     (("motor", 1, 2, 3,
       "motor1", 4, 5, 6, True,
       "motor2", 7, 8, 9, True),
-     None),
+     None),  # snake_axes may be only set to None
     (("motor", 1, 2, 3,
       "motor1", 4, 5, 6, True,
       "motor2", 7, 8, 9, False),
@@ -491,32 +492,6 @@ def _grid_scan_position_list(args, snake_axes):
       "motor1", 4, 5, 6, False,
       "motor2", 7, 8, 9, True),
      None),
-
-    # Ignore the deprecated `snakeX` values in `args` if `snake_axis` is specified
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, True,
-      "motor2", 7, 8, 9, False),
-     True),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, True,
-      "motor2", 7, 8, 9, False),
-     False),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, True,
-      "motor2", 7, 8, 9, False),
-     False),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, False,
-      "motor2", 7, 8, 9, False),
-     ["motor1"]),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, False,
-      "motor2", 7, 8, 9, False),
-     ["motor1", "motor2"]),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, True,
-      "motor2", 7, 8, 9, True),
-     []),  # Empty list will disable snaking
 ])
 @pytest.mark.parametrize("plan, is_relative", [
     (bp.grid_scan, False),
@@ -581,19 +556,27 @@ def test_grid_scans_failing(RE, hw, plan):
     """Test the failing cases of 'grid_scan' and 'rel_grid_scan'"""
 
     # Multiple instance of the same motor in 'args'
-    with pytest.raises(ValueError,
-                       match="Some motors are listed multiple times in the argument list 'args'"):
-        args = (hw.motor, 1, 2, 3,
-                hw.motor1, 4, 5, 6, True,
-                hw.motor1, 7, 8, 9, False)
-        RE(plan([hw.det], *args))
+    args_list = [
+        # New style
+        (hw.motor, 1, 2, 3,
+         hw.motor1, 4, 5, 6,
+         hw.motor1, 7, 8, 9),
+        # Old style
+        (hw.motor, 1, 2, 3,
+         hw.motor1, 4, 5, 6, True,
+         hw.motor1, 7, 8, 9, False)
+    ]
+    for args in args_list:
+        with pytest.raises(ValueError,
+                           match="Some motors are listed multiple times in the argument list 'args'"):
+            RE(plan([hw.det], *args))
 
     # 'snake_axes' contains repeated elements
     with pytest.raises(ValueError,
                        match="The list of axes 'snake_axes' contains repeated elements"):
         args = (hw.motor, 1, 2, 3,
-                hw.motor1, 4, 5, 6, True,
-                hw.motor2, 7, 8, 9, False)
+                hw.motor1, 4, 5, 6,
+                hw.motor2, 7, 8, 9)
         snake_axes = [hw.motor1, hw.motor2, hw.motor1]
         RE(plan([hw.det], *args, snake_axes=snake_axes))
 
@@ -601,8 +584,8 @@ def test_grid_scans_failing(RE, hw, plan):
     with pytest.raises(ValueError,
                        match="The list of axes 'snake_axes' contains the slowest motor"):
         args = (hw.motor, 1, 2, 3,
-                hw.motor1, 4, 5, 6, True,
-                hw.motor2, 7, 8, 9, False)
+                hw.motor1, 4, 5, 6,
+                hw.motor2, 7, 8, 9)
         snake_axes = [hw.motor1, hw.motor]
         RE(plan([hw.det], *args, snake_axes=snake_axes))
 
@@ -611,16 +594,24 @@ def test_grid_scans_failing(RE, hw, plan):
                        match="The list of axes 'snake_axes' contains motors "
                              "that are not controlled during the scan"):
         args = (hw.motor, 1, 2, 3,
-                hw.motor1, 4, 5, 6, True,
-                hw.motor2, 7, 8, 9, False)
+                hw.motor1, 4, 5, 6,
+                hw.motor2, 7, 8, 9)
         snake_axes = [hw.motor1, hw.motor3]
         RE(plan([hw.det], *args, snake_axes=snake_axes))
+
+    # Mix deprecated and new API ('snake_axes' is used while snaking is set in 'args'
+    with pytest.raises(ValueError,
+                       match="Mixing of deprecated and new API interface is not allowed"):
+        args = (hw.motor, 1, 2, 3,
+                hw.motor1, 4, 5, 6, True,
+                hw.motor2, 7, 8, 9, False)
+        RE(plan([hw.det], *args, snake_axes=False))
 
     # The type of 'snake_axes' parameter is not allowed
     for snake_axes in (10, 50.439, "some string"):
         with pytest.raises(ValueError,
                            match="Parameter 'snake_axes' is not iterable, boolean or None"):
             args = (hw.motor, 1, 2, 3,
-                    hw.motor1, 4, 5, 6, True,
-                    hw.motor2, 7, 8, 9, False)
+                    hw.motor1, 4, 5, 6,
+                    hw.motor2, 7, 8, 9)
             RE(plan([hw.det], *args, snake_axes=snake_axes))
