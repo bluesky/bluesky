@@ -1133,7 +1133,19 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     #   supplied, but if `snake_axes` is not `None` (the default value), it overrides
     #   any values of `snakeX` in `args`.
 
-    chunk_args = list(plan_patterns.chunk_outer_product_args(args))
+    args_pattern = plan_patterns.classify_outer_product_args_pattern(args)
+    if (snake_axes is not None) and \
+            (args_pattern == plan_patterns.OuterProductArgsPattern.PATTERN_2):
+        raise ValueError("Mixing of deprecated and new API interface is not allowed: "
+                         "the parameter 'snake_axes' can not be used if snaking is "
+                         "set as part of 'args'")
+
+    # For consistency, set 'snake_axes' to False if new API call is detected
+    if (snake_axes is None) and \
+            (args_pattern != plan_patterns.OuterProductArgsPattern.PATTERN_2):
+        snake_axes = False
+
+    chunk_args = list(plan_patterns.chunk_outer_product_args(args, args_pattern))
     # 'chunk_args' is a list of tuples of the form: (motor, start, stop, num, snake)
     # If the function is called using deprecated pattern for arguments, then
     # 'snake' may be set True for some motors, otherwise the 'snake' is always False.
@@ -1154,21 +1166,21 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
             return _motor, _start, _stop, _num, value
 
         if isinstance(snake_axes, collections.abc.Iterable) and not isinstance(snake_axes, str):
-            # Always convert to a tuple (in case a `snake_axes` is an iterator)
+            # Always convert to a tuple (in case a `snake_axes` is an iterator).
             snake_axes = tuple(snake_axes)
 
-            # Check if the list of axes (motors) contains repeated entries
+            # Check if the list of axes (motors) contains repeated entries.
             if len(set(snake_axes)) != len(snake_axes):
                 raise ValueError(f"The list of axes 'snake_axes' contains repeated elements: "
                                  f"'{snake_axes}'")
 
-            # Check if the snaking is enabled for the slowest motor
+            # Check if the snaking is enabled for the slowest motor.
             if len(motors) and (motors[0] in snake_axes):
                 raise ValueError(f"The list of axes 'snake_axes' contains the slowest motor: "
                                  f"'{snake_axes}'")
 
-            # Check that all motors in the chunk_args are controlled in the scan
-            #   It is very likely that this is an error in the script
+            # Check that all motors in the chunk_args are controlled in the scan.
+            #   It is very likely that the script running the plan has a bug.
             if any([_ not in motors for _ in snake_axes]):
                 raise ValueError(f"The list of axes 'snake_axes' contains motors "
                                  f"that are not controlled during the scan: "
