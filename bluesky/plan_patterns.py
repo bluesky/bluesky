@@ -1,6 +1,7 @@
 import functools
 import operator
 import collections
+from enum import Enum
 
 import numpy as np
 from cycler import cycler
@@ -10,7 +11,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .utils import snake_cyclers
+from .utils import snake_cyclers, Movable
 
 
 def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
@@ -382,12 +383,95 @@ def inner_product(num, args):
     return functools.reduce(operator.add, cyclers)
 
 
-def chunk_outer_product_args(args):
+class OuterProductArgsPattern(Enum):
+    PATTERN_1 = 1
+    PATTERN_2 = 2
+
+
+def classify_outer_product_args_pattern(args):
+    """
+    Classifies the pattern of grid scan arguments in the list `args`.
+    Checks the argument list for consistency, in particular checks
+    to location of movable objects (motors) in the list.
+    Should be used together with the function `chunk_outer_product_args`.
+
+    Parameters
+    ----------
+    args: iterable
+        The list of grid scan arguments. Two pattern of arguments
+        are supported. See the description of the identical parameter
+        for the `chunk_outer_product_args`.
+
+    Returns
+    -------
+    pattern: OuterProductArgsPattern
+        Detected pattern
+
+    Raises
+    ------
+    ValueError is raised if the pattern can not be identified or the list
+    is inconsistent.
+    """
+
+    args = list(args)
+    pattern = None
+
+    def _verify_motor_locations(args, pattern):
+        # Verify the motors are preset only at correct positions in the list
+        if pattern == OuterProductArgsPattern.PATTERN_1:
+            # Positions of the movable objects (motors)
+            pos_movable = list(range(0, len(args), 4))
+        elif pattern == OuterProductArgsPattern.PATTERN_2:
+            # Positions of the movable objects (motors)
+            pos_movable = [0] + list(range(4, len(args), 5))
+        else:
+            raise ValueError(f"Unknown pattern '{pattern}'")
+        for n, element in enumerate(args):
+            # Check if the element is the motor
+            flag = isinstance(element, Movable)
+            # If the element is expected to be the motor, then flip the flag
+            if n in pos_movable:
+                flag = not flag
+            # Now the flag is True if the motor is out of place in the list of arguments
+            if flag:
+                return False
+        return True
+
+    # div_4 - the correct number of elements for pattern 1, div_5 - for pattern 2
+    div_4, div_5 = not(len(args) % 4), (len(args) > 4) and not((len(args) - 4) % 5)
+
+    # Check the number of elements in 'args'
+    if not div_4 and not div_5:
+        raise ValueError(f"Wrong number of elements in 'args': len(args) = {len(args)}")
+
+    args_valid = False
+    if div_4 and not div_5:
+        pattern = OuterProductArgsPattern.PATTERN_1
+        args_valid = _verify_motor_locations(args, pattern)
+    elif not div_4 and div_5:
+        pattern = OuterProductArgsPattern.PATTERN_2
+        args_valid = _verify_motor_locations(args, pattern)
+    else:
+        for p in OuterProductArgsPattern:
+            if _verify_motor_locations(args, p):
+                pattern = p
+                args_valid = True
+                break
+
+    if not args_valid:
+        raise ValueError(f"Incorrect order of elements in the argument list 'args': "
+                         f"some of the movable objects (motors) are out of place "
+                         f"(args = {args})")
+
+    return pattern
+
+
+def chunk_outer_product_args(args, pattern=None):
     '''Scan over a mesh; each motor is on an independent trajectory.
 
     Parameters
     ----------
-    args
+    args: iterable
         Two patterns are supported:
 
         Pattern 1: (``motor1, start1, stop1, num1,```
@@ -400,16 +484,23 @@ def chunk_outer_product_args(args):
                     ``motor3, start3, stop3, num3, snake3,`` ...
                     ``motorN, startN, stopN, numN, snakeN``)
 
-        In Pattern 2, all elements 'snakeX' must be boolean.
+        All elements 'motorX' must be movable objects. There must be no
+        movable objects in the other positions in the list.
 
-        The first motor is the "slowest", the outer loop. For all motors
-        except the first motor, there is a "snake" argument: a boolean
+        In Pattern 2, the first motor is the "slowest", the outer loop. For all motors
+        except the first motor, there is a "snakeX" argument: a boolean
         indicating whether to following snake-like, winding trajectory or a
         simple left-to-right trajectory.
+    pattern: OuterProductArgsPattern
+        If pattern of 'args' is known, then it can be explicitely specified.
+        In this case the automated recognition of the pattern is not performed
+        and consistency of the argument list is not verified. Use
+        `classify_outer_product_args_pattern` to verify consistency of `args`.
 
     See Also
     --------
     `bluesky.plan_patterns.outer_product`
+    `bluesky.plan_patterns.classify_outer_product_args_pattern`
 
     Yields
     ------
@@ -417,44 +508,28 @@ def chunk_outer_product_args(args):
 
     The `snake` value is always `False` for Pattern 1
     '''
+
+    if pattern is None:
+        pattern = classify_outer_product_args_pattern(args)
+    else:
+        if not isinstance(pattern, OuterProductArgsPattern):
+            raise ValueError(f"The parameter 'pattern' must have type OuterProductArgsPattern: "
+                             "{type(pattern)} ")
+
     args = list(args)
 
-    # Detect if 'arg' matches pattern 1 (no snaking info) or pattern 2
-    #   pattern_no_snaking:  # True - Pattern 1, False - Pattern 2
-    if not (len(args) % 4):
-        # This includes the case, when only one motor is specified
-        #   (`args` has 4 elements).
-        pattern_no_snaking = True
-        # It is possible that this could still be Pattern 2, so check if
-        #   the last element is boolean. Pattern 1 can't have boolean
-        #   elements.
-        if not ((len(args) - 4) % 5) and any([isinstance(_, bool) for _ in args]):
-            # Pattern 2 must contain boolean 'snakeX' values, so if there are
-            # elements of boolean type in the list, then this is probably Pattern 2
-            pattern_no_snaking = False
-    elif not ((len(args) - 4) % 5):
-        pattern_no_snaking = False
-    else:
-        raise ValueError("Wrong number of positional arguments "
-                         "for 'chunk_outer_product_args'")
-
-    # For Pattern 2, verify that all 'snakeX' elements are boolean
-    if not pattern_no_snaking:
-        ind_snake = range(8, len(args), 5)
-        if not all([isinstance(args[_], bool) for _ in ind_snake]):
-            raise ValueError(f"Wrong positional arguments "
-                             f"for 'chunk_outer_product_args': "
-                             f"some of the provided 'chunk' values "
-                             f"are not boolean: '{args}'")
-
-    if pattern_no_snaking:
+    if pattern == OuterProductArgsPattern.PATTERN_1:
         # Set 'snaked' to False for every motor
         for n in range(1, int(len(args) / 4) + 1):
             args.insert(5 * n - 1, False)
-    else:
+    elif pattern == OuterProductArgsPattern.PATTERN_2:
         # The first (slowest) axis is never "snaked." Insert False to
         # make it easy to iterate over the chunks or args..
         args.insert(4, False)
+    else:
+        raise RuntimeError(f"Unsupported pattern: {pattern}. This is a bug. "
+                           f"You shouldn't have ended up on this branch.")
+
     yield from partition(5, args)
 
 
