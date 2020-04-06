@@ -1537,5 +1537,15 @@ class Movable(metaclass=abc.ABCMeta):
     @classmethod
     def __subclasshook__(cls, C):
         # If the following condition is True, the object C is recognized
-        #   to have Movable interface (e.g. a motor)
-        return bool(hasattr(C, 'name') and hasattr(C, 'set'))
+        # to have Movable interface (e.g. a motor)
+        EXPECTED_ATTRS = (
+            'name',
+            'parent',
+            'read',
+            'describe',
+            'read_configuration',
+            'describe_configuration'
+            'set',
+            'stop',
+        )
+        return all(hasattr(C, attr) for attr in EXPECTED_ATTRS)
