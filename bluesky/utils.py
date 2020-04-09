@@ -1544,7 +1544,7 @@ class Movable(metaclass=abc.ABCMeta):
             'read',
             'describe',
             'read_configuration',
-            'describe_configuration'
+            'describe_configuration',
             'set',
             'stop',
         )
