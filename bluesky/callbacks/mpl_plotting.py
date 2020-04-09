@@ -10,8 +10,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-# The purpose of initialize_teleporter, _get_teleporter, and QtAwareCallback is
-# to ensure that Qt GUI events are processed on the main thread.
+# The purpose of initialize_qt_teleporter, _get_teleporter, and QtAwareCallback
+# is to ensure that Qt GUI events are processed on the main thread.
 
 
 def initialize_qt_teleporter():
@@ -42,7 +42,7 @@ def _get_teleporter():
             "A bluesky QtAwareCallback was instantiated from a background "
             "thread before the bluesky qt 'teleporter' was created. "
             "To avoid this issue, "
-            "call bluesky.mpl_plotting.initialize_teleporter() "
+            "call bluesky.callbacks.mpl_plotting.initialize_qt_teleporter() "
             "from the main thread first.")
 
     def handle_teleport(name, doc, obj):
