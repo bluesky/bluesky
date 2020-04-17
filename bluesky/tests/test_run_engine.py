@@ -1423,6 +1423,7 @@ def test_flyer_descriptor(RE, hw):
     collector = []
     RE(fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
     descriptor = collector.pop()
+    assert 'configuration' in descriptor
     assert 'object_keys' in descriptor
 
 
