@@ -555,10 +555,10 @@ class RunBundler:
 
         Expect message object is
 
-            Msg('collect', obj)
+            Msg('collect', collect_obj)
             Msg('collect', flyer_object, stream=True, return_payload=False)
         """
-        obj = msg.obj
+        collect_obj = msg.obj
 
         if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
@@ -566,52 +566,63 @@ class RunBundler:
             raise IllegalMessageSequence(
                 "A 'collect' message was sent but no " "run is open."
             )
-        self._uncollected.discard(obj)
+        self._uncollected.discard(collect_obj)
 
-        if hasattr(obj, "collect_asset_docs"):
+        if hasattr(collect_obj, "collect_asset_docs"):
             # Resource and Datum documents
-            for name, doc in obj.collect_asset_docs():
+            for name, doc in collect_obj.collect_asset_docs():
                 # Add a 'run_start' field to the resource document on its way out.
                 if name == "resource":
                     doc["run_start"] = self._run_start_uid
                 await self.emit(DocumentNames(name), doc)
 
-        named_data_keys = obj.describe_collect()
-        # e.g., {name_for_desc1: data_keys_for_desc1,
-        #        name for_desc2: data_keys_for_desc2, ...}
+        collect_obj_configuration = {}
+        if hasattr(collect_obj, "read_configuration"):
+            doc_logger.debug("reading configuration from %s", collect_obj)
+            collect_obj_configuration = collect_obj.read_configuration()
+        else:
+            doc_logger.debug("%s has no read_configuration method", collect_obj)
+
         bulk_data = {}
-        local_descriptors = {}  # hashed on obj_read, not (name, objs_read)
-        for stream_name, data_keys in named_data_keys.items():
-            desc_key = stream_name
-            d_objs = frozenset(data_keys)
-            if desc_key not in self._descriptors:
+        local_descriptors = {}  # hashed on objs_read, not (name, objs_read)
+        # collect_obj.describe_collect() returns a dictionary like this:
+        #     {name_for_desc1: data_keys_for_desc1,
+        #      name_for_desc2: data_keys_for_desc2, ...}
+        for stream_name, stream_data_keys in collect_obj.describe_collect().items():
+            d_objs = frozenset(stream_data_keys)
+            if stream_name not in self._descriptors:
                 objs_read = d_objs
-                # We don't not have an Event Descriptor for this set.
+                # We do not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
-                object_keys = {obj.name: list(data_keys)}
+                stream_object_keys = {collect_obj.name: list(stream_data_keys)}
                 hints = {}
-                if hasattr(obj, "hints"):
-                    hints.update({obj.name: obj.hints})
+                # is this if block an error?
+                if hasattr(collect_obj, "hints"):
+                    hints.update({collect_obj.name: collect_obj.hints})
+                for obj_read in objs_read:
+                    if hasattr(obj_read, "hints"):
+                        hints[obj_read.name] = obj_read.hints
                 doc = dict(
                     run_start=self._run_start_uid,
                     time=ttime.time(),
-                    data_keys=data_keys,
+                    data_keys=stream_data_keys,
                     uid=descriptor_uid,
                     name=stream_name,
+                    configuration=collect_obj_configuration,
                     hints=hints,
-                    object_keys=object_keys,
+                    object_keys=stream_object_keys,
                 )
                 await self.emit(DocumentNames.descriptor, doc)
                 doc_logger.debug("[descriptor] document is emitted with name %r "
                                  "containing data keys %r (run_uid=%r)", stream_name,
-                                 data_keys.keys(), self._run_start_uid,
+                                 stream_data_keys.keys(), self._run_start_uid,
                                  extra={'doc_name': 'descriptor',
                                         'run_uid': self._run_start_uid,
-                                        'data_keys': data_keys.keys()})
-                self._descriptors[desc_key] = (objs_read, doc)
-                self._sequence_counters[desc_key] = count(1)
+                                        'data_keys': stream_data_keys.keys()})
+                self._descriptors[stream_name] = (objs_read, doc)
+                self._sequence_counters[stream_name] = count(1)
             else:
-                objs_read, doc = self._descriptors[desc_key]
+                objs_read, doc = self._descriptors[stream_name]
             if d_objs != objs_read:
                 raise RuntimeError(
                     "Mismatched objects read, "
@@ -633,7 +644,7 @@ class RunBundler:
         return_payload = msg.kwargs.get('return_payload', True)
         payload = []
 
-        for ev in obj.collect():
+        for ev in collect_obj.collect():
             if return_payload:
                 payload.append(ev)
 
