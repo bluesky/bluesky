@@ -54,3 +54,12 @@ RunEngine, and the ProgressBarManager, read about the ``watch`` method in the
 The implementation of the progress bar itself makes use of
 `tqdm <https://github.com/tqdm/tqdm/>`_, a lovely Python package for making
 a progress bar out of any iterable.
+
+Progress Bar API details
+------------------------
+
+.. autoclass:: bluesky.utils.ProgressBar
+   :members:
+
+.. autoclass:: bluesky.utils.ProgressBarManager
+   :members:

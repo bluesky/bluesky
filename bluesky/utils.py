@@ -1071,13 +1071,13 @@ def apply_to_dict_recursively(d, f):
 class ProgressBar:
     def __init__(self, status_objs, delay_draw=0.2):
         """
-        Represent status objects with a progress bars.
+        Represent status objects with a text-based progress bars in a terminal.
 
         Parameters
         ----------
-        status_objs : list
+        status_objs: list
             Status objects
-        delay_draw : float, optional
+        delay_draw: float, optional
             To avoid flashing progress bars that will complete quickly after
             they are displayed, delay drawing until the progress bar has been
             around for awhile. Default is 0.2 seconds.
@@ -1115,6 +1115,9 @@ class ProgressBar:
                unit='units', precision=None,
                fraction=None,
                time_elapsed=None, time_remaining=None):
+        """
+        This method is registered with Status.watch() to receive updates.
+        """
         if all(x is not None for x in (current, initial, target)):
             # Display a proper progress bar.
             total = round(_L2norm(target, initial), precision or 3)
@@ -1147,6 +1150,9 @@ class ProgressBar:
         self.draw()
 
     def draw(self):
+        """
+        (Re-)draw the display.
+        """
         with self.lock:
             if (time.time() - self.creation_time) < self.delay_draw:
                 return
@@ -1166,6 +1172,9 @@ class ProgressBar:
                 self.draw()
 
     def clear(self):
+        """
+        Clear the display.
+        """
         with self.lock:
             self.done = True
             if self.drawn:
@@ -1178,11 +1187,29 @@ class ProgressBar:
 
 
 class ProgressBarManager:
+    """
+    Create and clean up ProgressBars.
+
+    Parameters
+    ----------
+    delay_draw: float, optional
+        To avoid flashing progress bars that will complete quickly after
+        they are displayed, delay drawing until the progress bar has been
+        around for awhile. Default is 0.2 seconds.
+    """
     def __init__(self, delay_draw=0.2):
         self.delay_draw = delay_draw
         self.pbar = None
 
     def __call__(self, status_objs_or_none):
+        """
+        This is registered with RunEngine.waiting_hook.
+
+        Parameters
+        ----------
+        status_objs_or_none: Union[List[Status], None]
+            Status objects
+        """
         if status_objs_or_none is not None:
             # Start a new ProgressBar.
             if self.pbar is not None:
