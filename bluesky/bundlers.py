@@ -396,8 +396,6 @@ class RunBundler:
                 config[name]["data"] = self._config_values_cache[obj]
                 config[name]["timestamps"] = self._config_ts_cache[obj]
                 config[name]["data_keys"] = self._config_desc_cache[obj]
-                if hasattr(obj, "hints"):
-                    hints[name] = obj.hints
             descriptor_uid = new_uid()
             doc = dict(
                 run_start=self._run_start_uid,
