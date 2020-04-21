@@ -594,7 +594,6 @@ class RunBundler:
                 descriptor_uid = new_uid()
                 stream_object_keys = {collect_obj.name: list(stream_data_keys)}
                 hints = {}
-                # is this if block an error?
                 if hasattr(collect_obj, "hints"):
                     hints.update({collect_obj.name: collect_obj.hints})
                 for obj_read in objs_read:
