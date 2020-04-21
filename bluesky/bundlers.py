@@ -594,7 +594,6 @@ class RunBundler:
             if stream_name not in self._descriptors:
                 # We do not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
-                stream_object_keys = {collect_obj.name: list(stream_data_keys)}
                 hints = {}
                 if hasattr(collect_obj, "hints"):
                     hints.update({collect_obj.name: collect_obj.hints})
@@ -606,7 +605,7 @@ class RunBundler:
                     name=stream_name,
                     configuration=collect_obj_configuration,
                     hints=hints,
-                    object_keys=stream_object_keys,
+                    object_keys={collect_obj.name: list(stream_data_keys)},
                 )
                 await self.emit(DocumentNames.descriptor, doc)
                 doc_logger.debug("[descriptor] document is emitted with name %r "
