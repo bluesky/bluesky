@@ -379,7 +379,7 @@ class RunBundler:
                 "got {!s}".format(d_objs, objs_read)
             )
         if doc is None:
-            # We don't not have an Event Descriptor for this set.
+            # We do not have an Event Descriptor for this set.
             data_keys = {}
             config = {}
             object_keys = {}
