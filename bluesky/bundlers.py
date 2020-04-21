@@ -589,9 +589,9 @@ class RunBundler:
         #     {name_for_desc1: data_keys_for_desc1,
         #      name_for_desc2: data_keys_for_desc2, ...}
         for stream_name, stream_data_keys in collect_obj.describe_collect().items():
-            d_objs = frozenset(stream_data_keys)
+            # is it necessary to use a frozenset here? can we just use stream_data_keys?
+            frz_stream_data_keys = frozenset(stream_data_keys)
             if stream_name not in self._descriptors:
-                objs_read = d_objs
                 # We do not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
                 stream_object_keys = {collect_obj.name: list(stream_data_keys)}
