@@ -596,9 +596,6 @@ class RunBundler:
                 hints = {}
                 if hasattr(collect_obj, "hints"):
                     hints.update({collect_obj.name: collect_obj.hints})
-                for obj_read in objs_read:
-                    if hasattr(obj_read, "hints"):
-                        hints[obj_read.name] = obj_read.hints
                 doc = dict(
                     run_start=self._run_start_uid,
                     time=ttime.time(),
