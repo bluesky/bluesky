@@ -614,19 +614,20 @@ class RunBundler:
                                  extra={'doc_name': 'descriptor',
                                         'run_uid': self._run_start_uid,
                                         'data_keys': stream_data_keys.keys()})
-                self._descriptors[stream_name] = (objs_read, doc)
+                self._descriptors[stream_name] = (frz_stream_data_keys, doc)
                 self._sequence_counters[stream_name] = count(1)
             else:
                 objs_read, doc = self._descriptors[stream_name]
-            if d_objs != objs_read:
-                raise RuntimeError(
-                    "Mismatched objects read, "
-                    "expected {!s}, "
-                    "got {!s}".format(d_objs, objs_read)
-                )
+                # we only need to make this check when the else block is executed
+                if frz_stream_data_keys != objs_read:
+                    raise RuntimeError(
+                        "Mismatched objects read, "
+                        "expected {!s}, "
+                        "got {!s}".format(frz_stream_data_keys, objs_read)
+                    )
 
             descriptor_uid = doc["uid"]
-            local_descriptors[objs_read] = (stream_name, descriptor_uid)
+            local_descriptors[frz_stream_data_keys] = (stream_name, descriptor_uid)
 
             bulk_data[descriptor_uid] = []
 
