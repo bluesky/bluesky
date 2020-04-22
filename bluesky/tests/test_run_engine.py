@@ -1418,13 +1418,50 @@ def test_hints(RE):
 
 
 def test_flyer_descriptor(RE, hw):
-    flyers = [hw.flyer1]
-    hw.flyer1.loop = RE.loop
+    from ophyd.sim import TrivialFlyer
+
+    class Flyer(TrivialFlyer):
+        def read_configuration(self):
+            return {
+                "data_key_1": {"value": ""},
+                "data_key_2": {"value": 0},
+            }
+
+        def collect(self):
+            yield {
+                "data": {"data_key_1": "", "data_key_2": 0},
+                "timestamps": {"data_key_1": 0, "data_key_2": 0},
+                "time": 0
+            }
+
+        def describe_collect(self):
+            return {
+                "primary": {
+                    "data_key_1": {
+                        "dims": ("dim 1",),
+                        "dtype": "string",
+                        "shape": [],
+                        "source": "",
+                    },
+                    "data_key_2": {
+                        "dims": ("dim 1",),
+                        "dtype": "number",
+                        "shape": [],
+                        "source": "",
+                    },
+                }
+            }
+
+    flyers = [Flyer()]
     collector = []
+
     RE(fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
     descriptor = collector.pop()
     assert 'configuration' in descriptor
     assert 'object_keys' in descriptor
+
+    assert descriptor["configuration"]["data_key_1"]["value"] == ""
+    assert descriptor["configuration"]["data_key_2"]["value"] == 0
 
 
 def test_filled(RE, hw, db):
