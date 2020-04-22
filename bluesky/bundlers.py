@@ -589,8 +589,6 @@ class RunBundler:
         #     {name_for_desc1: data_keys_for_desc1,
         #      name_for_desc2: data_keys_for_desc2, ...}
         for stream_name, stream_data_keys in collect_obj.describe_collect().items():
-            # is it necessary to use a frozenset here? can we just use stream_data_keys?
-            frz_stream_data_keys = frozenset(stream_data_keys)
             if stream_name not in self._descriptors:
                 # We do not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
@@ -614,20 +612,19 @@ class RunBundler:
                                  extra={'doc_name': 'descriptor',
                                         'run_uid': self._run_start_uid,
                                         'data_keys': stream_data_keys.keys()})
-                self._descriptors[stream_name] = (frz_stream_data_keys, doc)
+                self._descriptors[stream_name] = (stream_data_keys, doc)
                 self._sequence_counters[stream_name] = count(1)
             else:
                 objs_read, doc = self._descriptors[stream_name]
-                # we only need to make this check when the else block is executed
-                if frz_stream_data_keys != objs_read:
+                if stream_data_keys != objs_read:
                     raise RuntimeError(
                         "Mismatched objects read, "
                         "expected {!s}, "
-                        "got {!s}".format(frz_stream_data_keys, objs_read)
+                        "got {!s}".format(stream_data_keys, objs_read)
                     )
 
             descriptor_uid = doc["uid"]
-            local_descriptors[frz_stream_data_keys] = (stream_name, descriptor_uid)
+            local_descriptors[frozenset(stream_data_keys)] = (stream_name, descriptor_uid)
 
             bulk_data[descriptor_uid] = []
 
