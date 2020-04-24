@@ -1421,16 +1421,24 @@ def test_flyer_descriptor(RE, hw):
     from ophyd.sim import TrivialFlyer
 
     class Flyer(TrivialFlyer):
+        name = "flyer"
+
         def read_configuration(self):
             return {
                 "data_key_1": {"value": ""},
-                "data_key_2": {"value": 0},
+                "data_key_2": {"value": 0}
             }
 
         def collect(self):
             yield {
-                "data": {"data_key_1": "", "data_key_2": 0},
-                "timestamps": {"data_key_1": 0, "data_key_2": 0},
+                "data": {
+                    "data_key_1": "",
+                    "data_key_2": 0
+                },
+                "timestamps": {
+                    "data_key_1": 0,
+                    "data_key_2": 0
+                },
                 "time": 0
             }
 
@@ -1448,20 +1456,26 @@ def test_flyer_descriptor(RE, hw):
                         "dtype": "number",
                         "shape": [],
                         "source": "",
-                    },
+                    }
                 }
             }
 
-    flyers = [Flyer()]
-    collector = []
+    flyers = [Flyer(), TrivialFlyer()]
+    descriptors = dict()
 
-    RE(fly(flyers), {'descriptor': lambda name, doc: collector.append(doc)})
-    descriptor = collector.pop()
-    assert 'configuration' in descriptor
-    assert 'object_keys' in descriptor
+    RE(
+        fly(flyers),
+        {'descriptor': lambda name, doc: descriptors.update({doc["name"]: doc})}
+    )
 
-    assert descriptor["configuration"]["data_key_1"]["value"] == ""
-    assert descriptor["configuration"]["data_key_2"]["value"] == 0
+    primary_descriptor = descriptors["primary"]
+    assert primary_descriptor["configuration"]["data_key_1"]["value"] == ""
+    assert primary_descriptor["configuration"]["data_key_2"]["value"] == 0
+    assert "flyer" in primary_descriptor["object_keys"]
+
+    trivial_flyer_descriptor = descriptors["stream_name"]
+    assert len(trivial_flyer_descriptor["configuration"]) == 0
+    assert "trivial_flyer" in trivial_flyer_descriptor["object_keys"]
 
 
 def test_filled(RE, hw, db):
