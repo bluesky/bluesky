@@ -1788,7 +1788,7 @@ class RunEngine:
 
         await current_run.kickoff(msg)
 
-        def done_callback():
+        def done_callback(status=None):
             self.log.debug(
                 "The object %r reports 'kickoff' is done " "with status %r",
                 msg.obj,
@@ -1840,7 +1840,7 @@ class RunEngine:
         p_event = asyncio.Event(loop=self.loop)
         pardon_failures = self._pardon_failures
 
-        def done_callback():
+        def done_callback(status=None):
             self.log.debug(
                 "The object %r reports 'complete' is done " "with status %r",
                 msg.obj,
@@ -1910,7 +1910,7 @@ class RunEngine:
         p_event = asyncio.Event(loop=self.loop)
         pardon_failures = self._pardon_failures
 
-        def done_callback():
+        def done_callback(status=None):
             self.log.debug("The object %r reports set is done "
                            "with status %r", msg.obj, ret.success)
             task = self._loop.call_soon_threadsafe(
@@ -1941,7 +1941,7 @@ class RunEngine:
         p_event = asyncio.Event(loop=self.loop)
         pardon_failures = self._pardon_failures
 
-        def done_callback():
+        def done_callback(status=None):
             self.log.debug("The object %r reports trigger is "
                            "done with status %r.", msg.obj, ret.success)
             task = self._loop.call_soon_threadsafe(
