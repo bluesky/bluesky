@@ -1426,18 +1426,32 @@ def test_flyer_descriptor(RE, hw):
         def read_configuration(self):
             return {
                 "data_key_1": {"value": ""},
-                "data_key_2": {"value": 0}
+                "data_key_2": {"value": 0},
+                "data_key_3": {"value": ""},
+                "data_key_4": {"value": 0}
             }
 
         def collect(self):
             yield {
                 "data": {
                     "data_key_1": "",
-                    "data_key_2": 0
+                    "data_key_2": 0,
                 },
                 "timestamps": {
                     "data_key_1": 0,
-                    "data_key_2": 0
+                    "data_key_2": 0,
+                },
+                "time": 0
+            }
+
+            yield {
+                "data": {
+                    "data_key_3": "",
+                    "data_key_4": 0
+                },
+                "timestamps": {
+                    "data_key_3": 0,
+                    "data_key_4": 0
                 },
                 "time": 0
             }
@@ -1457,7 +1471,22 @@ def test_flyer_descriptor(RE, hw):
                         "shape": [],
                         "source": "",
                     }
+                },
+                "secondary": {
+                    "data_key_3": {
+                        "dims": ("dim 1",),
+                        "dtype": "string",
+                        "shape": [],
+                        "source": "",
+                    },
+                    "data_key_4": {
+                        "dims": ("dim 1",),
+                        "dtype": "number",
+                        "shape": [],
+                        "source": "",
+                    }
                 }
+
             }
 
     flyers = [Flyer(), TrivialFlyer()]
@@ -1469,9 +1498,20 @@ def test_flyer_descriptor(RE, hw):
     )
 
     primary_descriptor = descriptors["primary"]
+    assert len(primary_descriptor["configuration"]) == 4
     assert primary_descriptor["configuration"]["data_key_1"]["value"] == ""
     assert primary_descriptor["configuration"]["data_key_2"]["value"] == 0
+    assert primary_descriptor["configuration"]["data_key_3"]["value"] == ""
+    assert primary_descriptor["configuration"]["data_key_4"]["value"] == 0
     assert "flyer" in primary_descriptor["object_keys"]
+
+    secondary_descriptor = descriptors["secondary"]
+    assert len(secondary_descriptor["configuration"]) == 4
+    assert secondary_descriptor["configuration"]["data_key_1"]["value"] == ""
+    assert secondary_descriptor["configuration"]["data_key_2"]["value"] == 0
+    assert secondary_descriptor["configuration"]["data_key_3"]["value"] == ""
+    assert secondary_descriptor["configuration"]["data_key_4"]["value"] == 0
+    assert "flyer" in secondary_descriptor["object_keys"]
 
     trivial_flyer_descriptor = descriptors["stream_name"]
     assert len(trivial_flyer_descriptor["configuration"]) == 0
