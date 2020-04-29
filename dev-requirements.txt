@@ -2,7 +2,6 @@ attrs
 cloudpickle
 coverage
 databroker
-suitcase.jsonl
 doct
 doctr
 ipython
