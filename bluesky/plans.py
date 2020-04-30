@@ -930,9 +930,9 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                 if name is not None:
                     if name != p_name:
                         return False
-                # it is any extra arguements, check that they do not have
+                # if there are any extra arguments, check that they have a default
                 else:
-                    if p.kind is p.VAR_KEYWORD or p.kind is p.VAR_KEYWORD:
+                    if p.kind is p.VAR_KEYWORD or p.kind is p.VAR_POSITIONAL:
                         continue
                     if p.default is p.empty:
                         return False
