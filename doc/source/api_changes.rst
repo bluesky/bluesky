@@ -2,6 +2,16 @@
  Release History
 =================
 
+v1.5.7 (2020-05-01)
+===================
+
+Bug Fixes
+---------
+
+This release fixes a bug that resulted in no configuration data related
+to fly scans being added to descriptors.
+
+
 v1.5.6 (2020-03-11)
 ===================
 
