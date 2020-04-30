@@ -24,4 +24,5 @@ requests
 streamz
 sphinx==1.6.4
 sphinx_rtd_theme
+suitcase.jsonl
 tifffile
