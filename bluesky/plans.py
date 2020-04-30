@@ -978,9 +978,10 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                 return (yield from user_per_step(detectors, motor, step))
             per_step = adapter
         else:
-            raise TypeError("per_step must be a callable with the signature "
+            raise TypeError("per_step must be a callable with the signature \n "
                             "<Signature (detectors, step, pos_cache)> or "
-                            "<Signature (detectors, motor, step)>.")
+                            "<Signature (detectors, motor, step)>. \n"
+                            "per_step signature received: {}".format(sig))
     pos_cache = defaultdict(lambda: None)  # where last position is stashed
     cycler = utils.merge_cycler(cycler)
     motors = list(cycler.keys)
