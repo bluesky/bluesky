@@ -1828,65 +1828,86 @@ class RunEngine:
             Msg('collect', obj)
             Msg('collect', obj, stream=True)
         """
-        obj = msg.obj
+        collect_obj = msg.obj
 
         if not self._run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
             # code path impossible
-            raise IllegalMessageSequence("A 'collect' message was sent but no "
-                                         "run is open.")
-        self._uncollected.discard(obj)
+            raise IllegalMessageSequence(
+                "A 'collect' message was sent but no " "run is open."
+            )
+        self._uncollected.discard(collect_obj)
 
-        if hasattr(obj, 'collect_asset_docs'):
+        if hasattr(collect_obj, "collect_asset_docs"):
             # Resource and Datum documents
-            for name, doc in obj.collect_asset_docs():
+            for name, doc in collect_obj.collect_asset_docs():
                 # Add a 'run_start' field to the resource document on its way out.
-                if name == 'resource':
-                    doc['run_start'] = self._run_start_uid
+                if name == "resource":
+                    doc["run_start"] = self._run_start_uid
                 await self.emit(DocumentNames(name), doc)
 
-        named_data_keys = obj.describe_collect()
-        # e.g., {name_for_desc1: data_keys_for_desc1,
-        #        name for_desc2: data_keys_for_desc2, ...}
-        bulk_data = {}
-        local_descriptors = {}  # hashed on obj_read, not (name, objs_read)
-        for stream_name, data_keys in named_data_keys.items():
-            desc_key = stream_name
-            d_objs = frozenset(data_keys)
-            if desc_key not in self._descriptors:
-                objs_read = d_objs
-                # We don't not have an Event Descriptor for this set.
-                descriptor_uid = new_uid()
-                object_keys = {obj.name: list(data_keys)}
-                hints = {}
-                if hasattr(obj, 'hints'):
-                    hints.update({obj.name: obj.hints})
-                doc = dict(run_start=self._run_start_uid, time=ttime.time(),
-                           data_keys=data_keys, uid=descriptor_uid,
-                           name=stream_name, hints=hints,
-                           object_keys=object_keys)
-                await self.emit(DocumentNames.descriptor, doc)
-                self.log.debug("Emitted Event Descriptor with name %r "
-                               "containing data keys %r (uid=%r)", stream_name,
-                               data_keys.keys(), descriptor_uid)
-                self._descriptors[desc_key] = (objs_read, doc)
-                self._sequence_counters[desc_key] = count(1)
-            else:
-                objs_read, doc = self._descriptors[desc_key]
-            if d_objs != objs_read:
-                raise RuntimeError("Mismatched objects read, "
-                                   "expected {!s}, "
-                                   "got {!s}".format(d_objs, objs_read))
+        collect_obj_configuration = {}
+        if hasattr(collect_obj, "read_configuration"):
+            self.log.debug("reading configuration from %s", collect_obj)
+            collect_obj_configuration = collect_obj.read_configuration()
+        else:
+            self.log.debug("%s has no read_configuration method", collect_obj)
 
-            descriptor_uid = doc['uid']
-            local_descriptors[objs_read] = (stream_name, descriptor_uid)
+        bulk_data = {}
+        local_descriptors = {}  # hashed on objs_read, not (name, objs_read)
+        # collect_obj.describe_collect() returns a dictionary like this:
+        #     {name_for_desc1: data_keys_for_desc1,
+        #      name_for_desc2: data_keys_for_desc2, ...}
+        for stream_name, stream_data_keys in collect_obj.describe_collect().items():
+            if stream_name not in self._descriptors:
+                # We do not have an Event Descriptor for this set.
+                descriptor_uid = new_uid()
+                hints = {}
+                if hasattr(collect_obj, "hints"):
+                    hints.update({collect_obj.name: collect_obj.hints})
+                doc = dict(
+                    run_start=self._run_start_uid,
+                    time=ttime.time(),
+                    data_keys=stream_data_keys,
+                    uid=descriptor_uid,
+                    name=stream_name,
+                    configuration=collect_obj_configuration,
+                    hints=hints,
+                    object_keys={collect_obj.name: list(stream_data_keys)},
+                )
+                await self.emit(DocumentNames.descriptor, doc)
+                self.log.debug("[descriptor] document is emitted with name %r "
+                                 "containing data keys %r (run_uid=%r)", stream_name,
+                                 stream_data_keys.keys(), self._run_start_uid,
+                                 extra={'doc_name': 'descriptor',
+                                        'run_uid': self._run_start_uid,
+                                        'data_keys': stream_data_keys.keys()})
+                self._descriptors[stream_name] = (stream_data_keys, doc)
+                self._sequence_counters[stream_name] = count(1)
+            else:
+                objs_read, doc = self._descriptors[stream_name]
+                if stream_data_keys != objs_read:
+                    raise RuntimeError(
+                        "Mismatched objects read, "
+                        "expected {!s}, "
+                        "got {!s}".format(stream_data_keys, objs_read)
+                    )
+
+            descriptor_uid = doc["uid"]
+            local_descriptors[frozenset(stream_data_keys)] = (stream_name, descriptor_uid)
 
             bulk_data[descriptor_uid] = []
 
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'bulk_events' subscription once.
-        stream = msg.kwargs.get('stream', False)
-        for ev in obj.collect():
+        stream = msg.kwargs.get("stream", False)
+        # If True, accumulate all the Events in memory and return them at the
+        # end, providing the plan access to the Events. If False, do not
+        # accumulate, and return None.
+        return_payload = msg.kwargs.get('return_payload', True)
+        payload = []
+
+        for ev in collect_obj.collect():
             objs_read = frozenset(ev['data'])
             stream_name, descriptor_uid = local_descriptors[objs_read]
             seq_num = next(self._sequence_counters[stream_name])
