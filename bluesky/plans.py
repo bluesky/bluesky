@@ -1931,7 +1931,7 @@ def fly(flyers, *, md=None):
     :func:`bluesky.preprocessors.fly_during_wrapper`
     :func:`bluesky.preprocessors.fly_during_decorator`
     """
-    yield from bps.open_run(md)
+    uid = yield from bps.open_run(md)
     for flyer in flyers:
         yield from bps.kickoff(flyer, wait=True)
     for flyer in flyers:
@@ -1939,6 +1939,7 @@ def fly(flyers, *, md=None):
     for flyer in flyers:
         yield from bps.collect(flyer)
     yield from bps.close_run()
+    return uid
 
 
 def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
