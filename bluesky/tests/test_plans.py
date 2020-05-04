@@ -1,5 +1,6 @@
 from distutils.version import LooseVersion
 import pytest
+import inspect
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
@@ -251,12 +252,15 @@ def _bad_per_step_factory():
 
 @_bad_per_step_factory()
 def test_bad_per_step_signature(hw, per_step):
+    sig = inspect.signature(per_step)
+    print(f'*** test bad_per_step {sig} ***\n')
     with pytest.raises(
         TypeError,
         match=re.escape(
-            "per_step must be a callable with the signature "
+           "per_step must be a callable with the signature \n "
             "<Signature (detectors, step, pos_cache)> or "
-            "<Signature (detectors, motor, step)>."
+            "<Signature (detectors, motor, step)>. \n"
+            "per_step signature received: {}".format(sig)
         ),
     ):
         list(bp.scan([hw.det], hw.motor, -1, 1, 5, per_step=per_step))
