@@ -214,6 +214,9 @@ def _good_per_step_factory():
     def per_step_kwargs(detectors, motor, step, **kwargs):
         yield from bps.null()
 
+    def per_nd_step(detectors, post_cache, *args, **kwargs):
+        yield from bps.null()
+
     return pytest.mark.parametrize(
         "per_step",
         [per_step_old, per_step_extra, per_step_exact, per_step_kwargs],
@@ -241,6 +244,15 @@ def _bad_per_step_factory():
         "no body"
 
     def per_step_only_args(*args):
+        "no body"
+
+    def per_nd_step_extra(detectors, step, pos_cache, extra_no_dflt):
+        "no body"
+
+    def per_nd_step_bad_pos(detectors, step, pos_cache, *, extra_no_dflt):
+        "no body"
+
+    def all_wrong(a, b, c=None, *args, d=None, g, **kwargs):
         "no body"
 
     return pytest.mark.parametrize(
