@@ -994,13 +994,13 @@ def caching_repeater(n, plan):
     """
     warnings.warn("The caching_repeater will be removed in a future version "
                   "of bluesky.", stacklevel=2)
-    it = range
     if n is None:
-        n = 0
-        it = itertools.count
+        gen = itertools.count(0)
+    else:
+        gen = range(n)
 
     lst_plan = list(plan)
-    for j in it(n):
+    for _ in gen:
         yield from (m for m in lst_plan)
 
 
