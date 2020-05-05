@@ -1565,7 +1565,7 @@ class RunEngine:
 
         """
         futs, = msg.args
-        futs = [f() for f in futs]
+        futs = [asyncio.ensure_future(f()) for f in futs]
         await asyncio.wait(futs, loop=self._loop_for_kwargs, **msg.kwargs)
 
     async def _open_run(self, msg):
