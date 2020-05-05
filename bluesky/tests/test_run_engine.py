@@ -1309,7 +1309,8 @@ def test_failures_kill_run(RE):
     dummy = Dummy()
 
     with pytest.raises(FailedStatus):
-        RE([Msg('set', dummy, 1), Msg('wait')])
+        RE([Msg('set', dummy, 1, group='test'),
+            Msg('wait', group='test')])
 
 
 def test_colliding_streams(RE, hw):
