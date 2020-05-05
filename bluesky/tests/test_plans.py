@@ -1,5 +1,6 @@
 from distutils.version import LooseVersion
 import pytest
+import inspect
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
@@ -213,6 +214,9 @@ def _good_per_step_factory():
     def per_step_kwargs(detectors, motor, step, **kwargs):
         yield from bps.null()
 
+    def per_nd_step(detectors, post_cache, *args, **kwargs):
+        yield from bps.null()
+
     return pytest.mark.parametrize(
         "per_step",
         [per_step_old, per_step_extra, per_step_exact, per_step_kwargs],
@@ -242,6 +246,15 @@ def _bad_per_step_factory():
     def per_step_only_args(*args):
         "no body"
 
+    def per_nd_step_extra(detectors, step, pos_cache, extra_no_dflt):
+        "no body"
+
+    def per_nd_step_bad_pos(detectors, step, pos_cache, *, extra_no_dflt):
+        "no body"
+
+    def all_wrong(a, b, c=None, *args, d=None, g, **kwargs):
+        "no body"
+
     return pytest.mark.parametrize(
         "per_step",
         [too_few, too_many, extra_required_kwarg, wrong_names, per_step_only_args],
@@ -251,12 +264,15 @@ def _bad_per_step_factory():
 
 @_bad_per_step_factory()
 def test_bad_per_step_signature(hw, per_step):
+    sig = inspect.signature(per_step)
+    print(f'*** test bad_per_step {sig} ***\n')
     with pytest.raises(
         TypeError,
         match=re.escape(
-            "per_step must be a callable with the signature "
+           "per_step must be a callable with the signature \n "
             "<Signature (detectors, step, pos_cache)> or "
-            "<Signature (detectors, motor, step)>."
+            "<Signature (detectors, motor, step)>. \n"
+            "per_step signature received: {}".format(sig)
         ),
     ):
         list(bp.scan([hw.det], hw.motor, -1, 1, 5, per_step=per_step))

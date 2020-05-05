@@ -930,9 +930,26 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                 if name is not None:
                     if name != p_name:
                         return False
-                # it is any extra arguements, check that they do not have
+                # if there are any extra arguments, check that they have a default
                 else:
-                    if p.kind is p.VAR_KEYWORD or p.kind is p.VAR_KEYWORD:
+                    if p.kind is p.VAR_KEYWORD or p.kind is p.VAR_POSITIONAL:
+                        continue
+                    if p.default is p.empty:
+                        return False
+
+            return True
+
+        def _verify_nd_step(sig):
+            if len(sig.parameters) < 3:
+                return False
+            for name, (p_name, p) in zip_longest(['detectors', 'step', 'pos_cache'], sig.parameters.items()):
+                # this is one of the first 3 positional arguements, check that the name matches
+                if name is not None:
+                    if name != p_name:
+                        return False
+                # if there are any extra arguments, check that they have a default
+                else:
+                    if p.kind is p.VAR_KEYWORD or p.kind is p.VAR_POSITIONAL:
                         continue
                     if p.default is p.empty:
                         return False
@@ -940,6 +957,9 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
             return True
 
         if sig == inspect.signature(bps.one_nd_step):
+            pass
+        elif _verify_nd_step(sig):
+            # check other signature for back-compatibility
             pass
         elif _verify_1d_step(sig):
             # Accept this signature for back-compat reasons (because
@@ -958,9 +978,10 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
                 return (yield from user_per_step(detectors, motor, step))
             per_step = adapter
         else:
-            raise TypeError("per_step must be a callable with the signature "
+            raise TypeError("per_step must be a callable with the signature \n "
                             "<Signature (detectors, step, pos_cache)> or "
-                            "<Signature (detectors, motor, step)>.")
+                            "<Signature (detectors, motor, step)>. \n"
+                            "per_step signature received: {}".format(sig))
     pos_cache = defaultdict(lambda: None)  # where last position is stashed
     cycler = utils.merge_cycler(cycler)
     motors = list(cycler.keys)
