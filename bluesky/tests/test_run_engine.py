@@ -25,6 +25,7 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    run_wrapper, rewindable_wrapper,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
+from .utils import _fabricate_asycio_event
 
 
 def test_states():
@@ -462,7 +463,7 @@ def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
 
     RE.msg_hook = collector
 
-    ev = asyncio.Event(loop=loop)
+    ev = _fabricate_asycio_event(loop)
 
     threading.Timer(.5, RE.request_suspend,
                     kwargs=dict(fut=ev.wait)).start()
@@ -858,7 +859,7 @@ def test_exception_cascade_REside(RE):
 
     with pytest.raises(RunEngineInterrupted):
         RE(pausing_plan())
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
     ev.set()
     RE.request_suspend(ev.wait, pre_plan=pre_plan())
     with pytest.raises(KeyError):
@@ -889,7 +890,7 @@ def test_exception_cascade_planside(RE):
 
     with pytest.raises(RunEngineInterrupted):
         RE(pausing_plan())
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
     ev.set()
     RE.request_suspend(ev.wait, pre_plan=pre_plan())
     with pytest.raises(RuntimeError):
@@ -899,7 +900,7 @@ def test_exception_cascade_planside(RE):
 
 def test_sideband_cancel(RE):
     loop = RE.loop
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
 
     def done():
         ev.set()

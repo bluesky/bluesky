@@ -15,6 +15,7 @@ import time as ttime
 from bluesky.run_engine import RunEngineInterrupted
 import threading
 import time
+from .utils import _fabricate_asycio_event
 
 
 @pytest.mark.parametrize(
@@ -179,7 +180,7 @@ def test_unresumable_suspend_fail(RE):
     m_coll = MsgCollector()
     RE.msg_hook = m_coll
 
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
     threading.Timer(.1, partial(RE.request_suspend, fut=ev.wait)).start()
     threading.Timer(1, ev.set).start()
     start = time.time()

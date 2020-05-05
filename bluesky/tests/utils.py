@@ -2,13 +2,14 @@ from collections import defaultdict
 import contextlib
 import tempfile
 import sys
-
+import threading
+import asyncio
 
 @contextlib.contextmanager
 def _print_redirect():
     old_stdout = sys.stdout
     try:
-        fout = tempfile.TemporaryFile(mode='w+', encoding='utf-8')
+        fout = tempfile.TemporaryFile(mode="w+", encoding="utf-8")
         sys.stdout = fout
         yield fout
     finally:
@@ -34,12 +35,29 @@ class DocCollector:
         self.event = {}
 
     def insert(self, name, doc):
-        if name == 'start':
+        if name == "start":
             self.start.append(doc)
-        elif name == 'stop':
-            self.stop[doc['run_start']] = doc
-        elif name == 'descriptor':
-            self.descriptor[doc['run_start']].append(doc)
-            self.event[doc['uid']] = []
+        elif name == "stop":
+            self.stop[doc["run_start"]] = doc
+        elif name == "descriptor":
+            self.descriptor[doc["run_start"]].append(doc)
+            self.event[doc["uid"]] = []
         else:
-            self.event[doc['descriptor']].append(doc)
+            self.event[doc["descriptor"]].append(doc)
+
+
+def _fabricate_asycio_event(loop):
+    th_ev = threading.Event()
+
+    aio_event = None
+
+    def really_make_the_event():
+        nonlocal aio_event
+        aio_event = asyncio.Event()
+        th_ev.set()
+
+    h = loop.call_soon_threadsafe(really_make_the_event)
+    if not th_ev.wait(0.1):
+        h.cancel()
+        raise Exception("failed to make asyncio event")
+    return aio_event

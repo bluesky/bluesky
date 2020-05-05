@@ -5,11 +5,11 @@ from bluesky import (Msg, IllegalMessageSequence,
 import bluesky.plan_stubs as bps
 import os
 import signal
-import asyncio
 import time as ttime
 import time
 import threading
 from functools import partial
+from .utils import _fabricate_asycio_event
 
 with pytest.warns(UserWarning):
     from bluesky.examples import (simple_scan, sleepy, wait_one,
@@ -267,7 +267,7 @@ def test_list_of_msgs(RE, hw):
 
 
 def test_suspend(RE, hw):
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
 
     test_list = [
         Msg('open_run'),
@@ -310,7 +310,7 @@ def test_suspend(RE, hw):
 def test_pause_resume(RE):
     from bluesky.utils import ts_msg_hook
     RE.msg_hook = ts_msg_hook
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
 
     def done():
         print("Done")
@@ -342,7 +342,7 @@ def test_pause_resume(RE):
 
 
 def test_pause_abort(RE):
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
 
     def done():
         print("Done")
@@ -373,7 +373,7 @@ def test_pause_abort(RE):
 
 
 def test_abort(RE):
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
 
     def done():
         print("Done")
