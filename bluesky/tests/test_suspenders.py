@@ -25,13 +25,22 @@ from .utils import _fabricate_asycio_event
      (SuspendFloor, (.5,), 1, 0, 1, .2),
      (SuspendCeil, (.5,), 0, 1, 0, .2),
      (SuspendWhenOutsideBand, (.5, 1.5), 1, 0, 1, .2),
-     (SuspendInBand, (.5, 1.5), 1, 0, 1, .2),  # renamed to WhenOutsideBand
-     (SuspendOutBand, (.5, 1.5), 0, 1, 0, .2)])  # deprecated
+     ((SuspendInBand, True), (.5, 1.5), 1, 0, 1, .2),  # renamed to WhenOutsideBand
+     ((SuspendOutBand, True), (.5, 1.5), 0, 1, 0, .2)])  # deprecated
 def test_suspender(klass, sc_args, start_val, fail_val,
                    resume_val, wait_time, RE, hw):
     sig = hw.bool_sig
-    my_suspender = klass(sig,
-                         *sc_args, sleep=wait_time)
+    try:
+        klass, deprecated = klass
+    except TypeError:
+        deprecated = False
+    if deprecated:
+        with pytest.warns(UserWarning):
+            my_suspender = klass(sig,
+                                 *sc_args, sleep=wait_time)
+    else:
+        my_suspender = klass(sig,
+                             *sc_args, sleep=wait_time)
     my_suspender.install(RE)
 
     def putter(val):
