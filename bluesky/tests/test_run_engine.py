@@ -1,4 +1,3 @@
-import asyncio
 from event_model import DocumentNames
 import threading
 import types

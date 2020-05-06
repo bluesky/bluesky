@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from functools import partial
 from bluesky.preprocessors import suspend_wrapper
 from bluesky.suspenders import (SuspendBoolHigh,
