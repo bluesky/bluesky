@@ -2,6 +2,57 @@
  Release History
 =================
 
+v1.6.1 (2020-05-06)
+===================
+
+Added
+-----
+
+* The plans :func:`~bluesky.plans.grid_scan` and
+  :func:`~bluesky.plans.rel_grid_scan` accept a new ``snake_axes`` parameter,
+  now matching what :func:`~bluesky.plans.list_grid_scan` and
+  :func:`~bluesky.plans.rel_list_grid_scan` do. This can be used to control
+  which axes follow and a back-and-forth "snake-like" trajectory.
+
+  .. code:: python
+
+     # Default - snaking is disabled
+     grid_scan([hw.det], hw.motor, 1, 2, 5, hw.motor1, 7, 2, 10, hw.motor2, 3, 5, 4)
+
+     # Snaking is explicitely disabled
+     grid_scan([hw.det], hw.motor, 1, 2, 5, hw.motor1, 7, 2, 10, hw.motor2, 3, 5, 4, snake_axes=False)
+
+     # Snaking can also be disabled by providing empty list of motors
+     grid_scan([hw.det], hw.motor, 1, 2, 5, hw.motor1, 7, 2, 10, hw.motor2, 3, 5, 4, snake_axes=[])
+
+     # Snaking is enabled for all motors except the slowest hw.motor
+     grid_scan([hw.det], hw.motor, 1, 2, 5, hw.motor1, 7, 2, 10, hw.motor2, 3, 5, 4, snake_axes=True)
+
+     # Snaking is enabled only for hw.motor1
+     grid_scan([hw.det], hw.motor, 1, 2, 5, hw.motor1, 7, 2, 10, hw.motor2, 3, 5, 4, snake_axes=[hw.motor1])
+
+     # Snaking is enabled only for hw.motor1 and hw.motor2
+     grid_scan([hw.det], hw.motor, 1, 2, 5, hw.motor1, 7, 2, 10, hw.motor2, 3, 5, 4, snake_axes=[hw.motor1, hw.motor2])
+
+  The old (harder to read) way of specifying "snake" parameters, interleaved
+  with the other parameters, is still supported for backward-compatibility.
+
+  .. code:: python
+
+     grid_scan([hw.det], hw.motor, 1, 2, 5, hw.motor1, 7, 2, 10, True, hw.motor2, 3, 5, 4, False)
+
+  The two styles---interleaved parameters vs. the new ``snake_axes``
+  parameter---cannot be mixed. Mixing them will cause a ``ValueError`` to be
+  raised.
+
+Fixed
+-----
+
+* Fixed a regression in v1.6.0 which accidentally broke some usages of the
+  ``per_step`` parameter in scans.
+* The plan :func:`bluesky.plans.fly` returned ``None`` by mistake. It now
+  returns the Run Start uid, as do all the other plans that module.
+
 v1.6.0 (2020-03-16)
 ===================
 
