@@ -519,17 +519,27 @@ We'll use a new plan, named :func:`~bluesky.plans.grid_scan`.
 
     from bluesky.plans import grid_scan
 
-Let's start with a 3x5 grid.
+Let's start with a 3x5x5 grid.
 
 .. code-block:: python
 
     RE(grid_scan(dets,
                  motor1, -1.5, 1.5, 3,  # scan motor1 from -1.5 to 1.5 in 3 steps
-                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1in 5
+                 motor2, -0.1, 0.1, 5,  # scan motor2 from -0.1 to 0.1 in 5 steps
+                 motor3, 10, -10, 5))  # scan motor3 from 10 to -10 in 5 steps
 
-That final parameter --- ``False`` --- designates whether ``motor2`` should
-"snake" back and forth along ``motor1``'s trajectory (``True``) or retread its
-positions in the same direction each time (``False``), as illustrated.
+The order of the motors controls how the grid is traversed. The "slowest" axis
+comes first. Numpy users will appreciate that this is consistent with numpy's
+convention for indexing multidimensional arrays.
+
+The optional parameter ``snake_axes`` can be used to control which motors'
+trajectories "snake" back and forth. A snake-like path is usually more
+efficient, but it is not suitable for certain hardware, so it is disabled by
+default. To enable snaking for specific axes, give a list like
+``snake_axes=[motor2]``.  Since the first (slowest) axis is only traversed
+once, it is not eligible to be included in ``snake_axes``. As a convenience,
+you may use ``snake_axes=True`` to enable snaking for all except that first
+axis.
 
 .. plot::
 
@@ -538,12 +548,12 @@ positions in the same direction each time (``False``), as illustrated.
     from bluesky.plans import grid_scan
     import matplotlib.pyplot as plt
 
-    true_plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
-    false_plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, False)
+    snaked = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, snake_axes=True)
+    not_snaked = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
-    plot_raster_path(true_plan, 'motor1', 'motor2', probe_size=.3, ax=ax1)
-    plot_raster_path(false_plan, 'motor1', 'motor2', probe_size=.3, ax=ax2)
+    plot_raster_path(snaked, 'motor1', 'motor2', probe_size=.3, ax=ax1)
+    plot_raster_path(not_snaked, 'motor1', 'motor2', probe_size=.3, ax=ax2)
     ax1.set_title('True')
     ax2.set_title('False')
     ax1.set_xlim(-6, 6)
@@ -562,7 +572,7 @@ Demo:
 
     RE(grid_scan(dets,
                  motor1, -1.5, 1.5, 3,  # scan motor1 from -1.5 to 1.5 in 3 steps
-                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1 in 5 steps
+                 motor2, -0.1, 0.1, 5))  # scan motor2 from -0.1 to 0.1 in 5 steps
 
 .. plot::
 
@@ -571,23 +581,7 @@ Demo:
     dets = [det4]
     RE(grid_scan(dets,
                  motor1, -1.5, 1.5, 3,  # scan motor1 from -1.5 to 1.5 in 3 steps
-                 motor2, -0.1, 0.1, 5, False))  # scan motor2 from -0.1 to 0.1 in 5 steps
-
-The order of the motors controls how the grid is traversed. The "slowest" axis
-comes first. Numpy users will appreciate that this is consistent with numpy's
-convention for indexing multidimensional arrays. Since the first (slowest) axis
-is only traversed once, it does not need a "snake" parameter. All subsequent
-axes do. Example:
-
-.. code-block:: python
-
-    from ophyd.sim import motor3
-
-    # a 3 x 5 x 2 grid
-    RE(grid_scan(dets,
-                 motor1, -1.5, 1.5, 3,  # no snake parameter for first motor
-                 motor2, -0.1, 0.1, 5, False))
-                 motor3, -200, 200, 5, False))
+                 motor2, -0.1, 0.1, 5))  # scan motor2 from -0.1 to 0.1 in 5 steps
 
 To move motors along arbitrary trajectories instead of equally-spaced points,
 use :func:`~bluesky.plans.list_grid_scan` and
