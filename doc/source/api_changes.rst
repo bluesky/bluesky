@@ -12,7 +12,7 @@ Added
   :func:`~bluesky.plans.rel_grid_scan` accept a new ``snake_axes`` parameter,
   now matching what :func:`~bluesky.plans.list_grid_scan` and
   :func:`~bluesky.plans.rel_list_grid_scan` do. This can be used to control
-  which axes follow and a back-and-forth "snake-like" trajectory.
+  which axes follow a back-and-forth "snake-like" trajectory.
 
   .. code:: python
 

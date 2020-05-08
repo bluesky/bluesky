@@ -533,7 +533,7 @@ comes first. Numpy users will appreciate that this is consistent with numpy's
 convention for indexing multidimensional arrays.
 
 The optional parameter ``snake_axes`` can be used to control which motors'
-trjaectories "snake" back and forth. A snake-like path is more usually more
+trajectories "snake" back and forth. A snake-like path is usually more
 efficient, but it is not suitable for certain hardware, so it is disabled by
 default. To enable snaking for specific axes, give a list like
 ``snake_axes=[motor2]``.  Since the first (slowest) axis is only traversed
