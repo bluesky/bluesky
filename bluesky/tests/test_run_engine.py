@@ -1426,10 +1426,10 @@ def test_flyer_descriptor(RE, hw):
 
         def read_configuration(self):
             return {
-                "data_key_1": {"value": ""},
-                "data_key_2": {"value": 0},
-                "data_key_3": {"value": ""},
-                "data_key_4": {"value": 0}
+                "config_key_1": {"value": "1", "timestamp": 1},
+                "config_key_2": {"value": 2, "timestamp": 2},
+                "config_key_3": {"value": "3", "timestamp": 3},
+                "config_key_4": {"value": 4, "timestamp": 4}
             }
 
         def collect(self):
