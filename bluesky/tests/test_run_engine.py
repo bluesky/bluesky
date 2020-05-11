@@ -1432,6 +1432,30 @@ def test_flyer_descriptor(RE, hw):
                 "config_key_4": {"value": 4, "timestamp": 4}
             }
 
+        def describe_configuration(self):
+            return {
+                "config_key_1": {
+                    "dtype": "string",
+                    "shape": [],
+                    "source": "PV:Config:1",
+                },
+                "config_key_2": {
+                    "dtype": "number",
+                    "shape": [],
+                    "source": "PV:Config:2",
+                },
+                "config_key_3": {
+                    "dtype": "string",
+                    "shape": [],
+                    "source": "PV:Config:3",
+                },
+                "config_key_4": {
+                    "dtype": "number",
+                    "shape": [],
+                    "source": "PV:Config:4",
+                }
+            }
+
         def collect(self):
             yield {
                 "data": {
