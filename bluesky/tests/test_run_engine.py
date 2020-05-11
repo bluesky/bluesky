@@ -1523,23 +1523,53 @@ def test_flyer_descriptor(RE, hw):
     )
 
     primary_descriptor = descriptors["primary"]
-    assert len(primary_descriptor["configuration"]) == 4
-    assert primary_descriptor["configuration"]["data_key_1"]["value"] == ""
-    assert primary_descriptor["configuration"]["data_key_2"]["value"] == 0
-    assert primary_descriptor["configuration"]["data_key_3"]["value"] == ""
-    assert primary_descriptor["configuration"]["data_key_4"]["value"] == 0
+    assert primary_descriptor["configuration"]["flyer"] == {
+        "data": {
+            "config_key_1": "1",
+            "config_key_2": 2,
+            "config_key_3": "3",
+            "config_key_4": 4
+        },
+        "timestamps": {
+            "config_key_1": 1,
+            "config_key_2": 2,
+            "config_key_3": 3,
+            "config_key_4": 4
+        },
+        "data_keys": {
+            "config_key_1": {
+                "dtype": "string",
+                "shape": [],
+                "source": "PV:Config:1",
+            },
+            "config_key_2": {
+                "dtype": "number",
+                "shape": [],
+                "source": "PV:Config:2",
+            },
+            "config_key_3": {
+                "dtype": "string",
+                "shape": [],
+                "source": "PV:Config:3",
+            },
+            "config_key_4": {
+                "dtype": "number",
+                "shape": [],
+                "source": "PV:Config:4",
+            }
+        }
+    }
+
     assert "flyer" in primary_descriptor["object_keys"]
 
     secondary_descriptor = descriptors["secondary"]
-    assert len(secondary_descriptor["configuration"]) == 4
-    assert secondary_descriptor["configuration"]["data_key_1"]["value"] == ""
-    assert secondary_descriptor["configuration"]["data_key_2"]["value"] == 0
-    assert secondary_descriptor["configuration"]["data_key_3"]["value"] == ""
-    assert secondary_descriptor["configuration"]["data_key_4"]["value"] == 0
+    assert len(secondary_descriptor["configuration"]["flyer"]["data"]) == 4
+    assert secondary_descriptor["configuration"]["flyer"] == primary_descriptor["configuration"]["flyer"]
+
     assert "flyer" in secondary_descriptor["object_keys"]
 
     trivial_flyer_descriptor = descriptors["stream_name"]
-    assert len(trivial_flyer_descriptor["configuration"]) == 0
+    assert len(trivial_flyer_descriptor["configuration"]["trivial_flyer"]["data"]) == 0
     assert "trivial_flyer" in trivial_flyer_descriptor["object_keys"]
 
 
