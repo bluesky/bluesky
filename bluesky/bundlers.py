@@ -576,10 +576,17 @@ class RunBundler:
                     doc["run_start"] = self._run_start_uid
                 await self.emit(DocumentNames(name), doc)
 
-        collect_obj_configuration = {}
+        collect_obj_config = {
+            "data": {},
+            "timestamps": {},
+            "data_keys": {}
+        }
         if hasattr(collect_obj, "read_configuration"):
             doc_logger.debug("reading configuration from %s", collect_obj)
-            collect_obj_configuration = collect_obj.read_configuration()
+            collect_obj_config["data_keys"].update(collect_obj.describe_configuration())
+            for collect_obj_config_key, config in collect_obj.read_configuration().items():
+                collect_obj_config["data"][collect_obj_config_key] = config["value"]
+                collect_obj_config["timestamps"][collect_obj_config_key] = config["timestamp"]
         else:
             doc_logger.debug("%s has no read_configuration method", collect_obj)
 
@@ -601,7 +608,7 @@ class RunBundler:
                     data_keys=stream_data_keys,
                     uid=descriptor_uid,
                     name=stream_name,
-                    configuration=collect_obj_configuration,
+                    configuration={collect_obj.name: collect_obj_config},
                     hints=hints,
                     object_keys={collect_obj.name: list(stream_data_keys)},
                 )
