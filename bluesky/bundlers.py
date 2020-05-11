@@ -432,8 +432,6 @@ class RunBundler:
         event_uid = new_uid()
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
-        for key in readings:
-            readings[key]["value"] = readings[key]["value"]
         data, timestamps = _rearrange_into_parallel_dicts(readings)
         # Mark all externally-stored data as not filled so that consumers
         # know that the corresponding data are identifies, not dereferenced
