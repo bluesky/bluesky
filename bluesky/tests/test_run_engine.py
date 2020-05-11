@@ -1485,13 +1485,13 @@ def test_flyer_descriptor(RE, hw):
             return {
                 "primary": {
                     "data_key_1": {
-                        "dims": ("dim 1",),
+                        "dims": [],
                         "dtype": "string",
                         "shape": [],
                         "source": "",
                     },
                     "data_key_2": {
-                        "dims": ("dim 1",),
+                        "dims": [],
                         "dtype": "number",
                         "shape": [],
                         "source": "",
@@ -1499,13 +1499,13 @@ def test_flyer_descriptor(RE, hw):
                 },
                 "secondary": {
                     "data_key_3": {
-                        "dims": ("dim 1",),
+                        "dims": [],
                         "dtype": "string",
                         "shape": [],
                         "source": "",
                     },
                     "data_key_4": {
-                        "dims": ("dim 1",),
+                        "dims": [],
                         "dtype": "number",
                         "shape": [],
                         "source": "",
