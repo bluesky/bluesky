@@ -564,7 +564,7 @@ class RunBundler:
             # sanity check -- 'kickoff' should catch this and make this
             # code path impossible
             raise IllegalMessageSequence(
-                "A 'collect' message was sent but no " "run is open."
+                "A 'collect' message was sent but no run is open."
             )
         self._uncollected.discard(collect_obj)
 
