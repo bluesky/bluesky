@@ -1421,16 +1421,8 @@ def test_hints(RE):
 def test_flyer_descriptor(RE, hw):
     from ophyd.sim import TrivialFlyer
 
-    class Flyer(TrivialFlyer):
-        name = "flyer"
-
-        def read_configuration(self):
-            return {
-                "config_key_1": {"value": "1", "timestamp": 1},
-                "config_key_2": {"value": 2, "timestamp": 2},
-                "config_key_3": {"value": "3", "timestamp": 3},
-                "config_key_4": {"value": 4, "timestamp": 4}
-            }
+    class FlyerDetector():
+        name = "flyer-detector"
 
         def describe_configuration(self):
             return {
@@ -1454,6 +1446,30 @@ def test_flyer_descriptor(RE, hw):
                     "shape": [],
                     "source": "PV:Config:4",
                 }
+            }
+
+        def read_configuration(self):
+            return {
+                "config_key_1": {"value": "1", "timestamp": 1},
+                "config_key_2": {"value": 2, "timestamp": 2},
+                "config_key_3": {"value": "3", "timestamp": 3},
+                "config_key_4": {"value": 4, "timestamp": 4}
+            }
+
+    class Flyer(TrivialFlyer):
+        name = "flyer"
+
+        def __init__(self):
+            self.detector = FlyerDetector()
+
+        def read_configuration(self):
+            return {
+                self.detector.name: self.detector.read_configuration()
+            }
+
+        def describe_configuration(self):
+            return {
+                self.detector.name: self.detector.describe_configuration()
             }
 
         def collect(self):
@@ -1523,7 +1539,7 @@ def test_flyer_descriptor(RE, hw):
     )
 
     primary_descriptor = descriptors["primary"]
-    assert primary_descriptor["configuration"]["flyer"] == {
+    assert primary_descriptor["configuration"]["flyer-detector"] == {
         "data": {
             "config_key_1": "1",
             "config_key_2": 2,
@@ -1563,13 +1579,13 @@ def test_flyer_descriptor(RE, hw):
     assert "flyer" in primary_descriptor["object_keys"]
 
     secondary_descriptor = descriptors["secondary"]
-    assert len(secondary_descriptor["configuration"]["flyer"]["data"]) == 4
-    assert secondary_descriptor["configuration"]["flyer"] == primary_descriptor["configuration"]["flyer"]
+    assert len(secondary_descriptor["configuration"]["flyer-detector"]["data"]) == 4
+    assert secondary_descriptor["configuration"]["flyer-detector"] == primary_descriptor["configuration"]["flyer-detector"]
 
     assert "flyer" in secondary_descriptor["object_keys"]
 
     trivial_flyer_descriptor = descriptors["stream_name"]
-    assert len(trivial_flyer_descriptor["configuration"]["trivial_flyer"]["data"]) == 0
+    assert len(trivial_flyer_descriptor["configuration"]) == 0
     assert "trivial_flyer" in trivial_flyer_descriptor["object_keys"]
 
 
