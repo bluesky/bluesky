@@ -581,6 +581,7 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
 def test_exit_raise(RE, unpause_func, excp):
 
     flag = False
+
     @reset_positions_decorator()
     def simple_plan():
         nonlocal flag
@@ -1580,7 +1581,7 @@ def test_flyer_descriptor(RE, hw):
 
     secondary_descriptor = descriptors["secondary"]
     assert len(secondary_descriptor["configuration"]["flyer-detector"]["data"]) == 4
-    assert secondary_descriptor["configuration"]["flyer-detector"] == primary_descriptor["configuration"]["flyer-detector"]
+    assert secondary_descriptor["configuration"] == primary_descriptor["configuration"]
 
     assert "flyer" in secondary_descriptor["object_keys"]
 
