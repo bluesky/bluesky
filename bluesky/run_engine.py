@@ -342,6 +342,7 @@ class RunEngine:
         self.waiting_hook = None
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
+        self.gui_mode = False
 
         if during_task is None:
             during_task = DefaultDuringTask()
@@ -419,6 +420,17 @@ class RunEngine:
         self.unsubscribe_lossless = self.dispatcher.unsubscribe
         self._subscribe_lossless = self.dispatcher.subscribe
         self._unsubscribe_lossless = self.dispatcher.unsubscribe
+
+    def set_gui_mode(self, val):
+        '''
+        Allow the RunEngine to know if it is running on the console (default) or as part of a GUI, if GUI then we want to
+        suppress the RunInterruptedException that is called when the RunEngine is paused because GUI applications have
+        other visual widgets that indicate next steps where as on the console the user must be explicitly told what those
+        options are.
+        :param val:
+        :return:
+        '''
+        self.gui_mode = val
 
     @property
     def commands(self):
@@ -795,7 +807,8 @@ class RunEngine:
         self._resume_task(init_func=_build_task)
 
         if self._interrupted:
-            raise RunEngineInterrupted(self.pause_msg) from None
+            if(not self.gui_mode):
+                raise RunEngineInterrupted(self.pause_msg) from None
 
         return tuple(self._run_start_uids)
 
@@ -832,7 +845,8 @@ class RunEngine:
                 obj.resume()
         self._resume_task()
         if self._interrupted:
-            raise RunEngineInterrupted(self.pause_msg) from None
+            if(not self.gui_mode):
+                raise RunEngineInterrupted(self.pause_msg) from None
         return tuple(self._run_start_uids)
 
     def _rewind(self):
