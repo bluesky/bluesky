@@ -1321,7 +1321,7 @@ def set_run_key_wrapper(plan, run):
         type can be used if needed.
     """
     if run is None:
-        raise ValueError(f"run ID can not be None")
+        raise ValueError("run ID can not be None")
 
     def _set_run_key(msg):
         # Replace only the default value None

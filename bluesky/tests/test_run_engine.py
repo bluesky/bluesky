@@ -581,6 +581,7 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
 def test_exit_raise(RE, unpause_func, excp):
 
     flag = False
+
     @reset_positions_decorator()
     def simple_plan():
         nonlocal flag
@@ -589,6 +590,7 @@ def test_exit_raise(RE, unpause_func, excp):
             yield Msg('pause')
         except excp:
             flag = True
+
     with pytest.raises(RunEngineInterrupted):
         RE(simple_plan())
     unpause_func(RE)
