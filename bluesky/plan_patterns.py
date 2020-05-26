@@ -513,8 +513,8 @@ def chunk_outer_product_args(args, pattern=None):
         pattern = classify_outer_product_args_pattern(args)
     else:
         if not isinstance(pattern, OuterProductArgsPattern):
-            raise ValueError(f"The parameter 'pattern' must have type OuterProductArgsPattern: "
-                             "{type(pattern)} ")
+            raise ValueError("The parameter 'pattern' must have type OuterProductArgsPattern: "
+                             f"{type(pattern)} ")
 
     args = list(args)
 

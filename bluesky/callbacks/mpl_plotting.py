@@ -270,7 +270,7 @@ class LiveScatter(QtAwareCallback):
     --------
     :class:`bluesky.callbacks.mpl_plotting.LiveGrid`.
     """
-    def __init__(self, x, y, I, *, xlim=None, ylim=None,
+    def __init__(self, x, y, I, *, xlim=None, ylim=None,  # noqa: E741
                  clim=None, cmap='viridis', ax=None, **kwargs):
         super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
         self.__setup_lock = threading.Lock()
@@ -278,7 +278,7 @@ class LiveScatter(QtAwareCallback):
 
         def setup():
             # Run this code in start() so that it runs on the correct thread.
-            nonlocal x, y, I, xlim, ylim, clim, cmap, ax, kwargs
+            nonlocal x, y, I, xlim, ylim, clim, cmap, ax, kwargs  # noqa: E741
             with self.__setup_lock:
                 if self.__setup_event.is_set():
                     return
@@ -338,7 +338,7 @@ class LiveScatter(QtAwareCallback):
         self.update(x, y, I)
         super().event(doc)
 
-    def update(self, x, y, I):
+    def update(self, x, y, I):  # noqa: E741
         # if one is None all are
         if self._minx is None:
             self._minx = x
@@ -427,7 +427,7 @@ class LiveGrid(QtAwareCallback):
     --------
     :class:`bluesky.callbacks.mpl_plotting.LiveScatter`.
     """
-    def __init__(self, raster_shape, I, *,
+    def __init__(self, raster_shape, I, *,  # noqa: E741
                  clim=None, cmap='viridis',
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
                  ax=None, x_positive='right', y_positive='up', **kwargs):
@@ -437,7 +437,7 @@ class LiveGrid(QtAwareCallback):
 
         def setup():
             # Run this code in start() so that it runs on the correct thread.
-            nonlocal raster_shape, I, clim, cmap, xlabel, ylabel, extent
+            nonlocal raster_shape, I, clim, cmap, xlabel, ylabel, extent  # noqa: E741
             nonlocal aspect, ax, x_positive, y_positive, kwargs
             with self.__setup_lock:
                 if self.__setup_event.is_set():
@@ -527,7 +527,7 @@ class LiveGrid(QtAwareCallback):
         self.update(pos, I)
         super().event(doc)
 
-    def update(self, pos, I):
+    def update(self, pos, I):  # noqa: E741
         self._Idata[pos] = I
         if self.clim is None:
             self.im.set_clim(np.nanmin(self._Idata), np.nanmax(self._Idata))
