@@ -562,7 +562,7 @@ class RunBundler:
             # sanity check -- 'kickoff' should catch this and make this
             # code path impossible
             raise IllegalMessageSequence(
-                "A 'collect' message was sent but no " "run is open."
+                "A 'collect' message was sent but no run is open."
             )
         self._uncollected.discard(collect_obj)
 
@@ -574,10 +574,19 @@ class RunBundler:
                     doc["run_start"] = self._run_start_uid
                 await self.emit(DocumentNames(name), doc)
 
-        collect_obj_configuration = {}
+        collect_obj_config = {}
         if hasattr(collect_obj, "read_configuration"):
             doc_logger.debug("reading configuration from %s", collect_obj)
-            collect_obj_configuration = collect_obj.read_configuration()
+
+            for component_name, component_config in collect_obj.read_configuration().items():
+                collect_obj_config[component_name] = {
+                    "data": {},
+                    "timestamps": {},
+                    "data_keys": collect_obj.describe_configuration()[component_name]
+                }
+                for config_key, config in component_config.items():
+                    collect_obj_config[component_name]["data"][config_key] = config["value"]
+                    collect_obj_config[component_name]["timestamps"][config_key] = config["timestamp"]
         else:
             doc_logger.debug("%s has no read_configuration method", collect_obj)
 
@@ -599,7 +608,7 @@ class RunBundler:
                     data_keys=stream_data_keys,
                     uid=descriptor_uid,
                     name=stream_name,
-                    configuration=collect_obj_configuration,
+                    configuration=collect_obj_config,
                     hints=hints,
                     object_keys={collect_obj.name: list(stream_data_keys)},
                 )
