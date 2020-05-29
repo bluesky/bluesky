@@ -251,7 +251,6 @@ def validate_dict_cb_opposite(key):
 def test_simple_fly(RE, hw):
     hw.flyer1.loop = RE.loop
     RE(fly_gen(hw.flyer1))
-    assert hw.flyer1._future.done()
 
 
 def test_list_of_msgs(RE, hw):

@@ -1304,15 +1304,55 @@ def test_hints(RE):
 def test_flyer_descriptor(RE, hw):
     from ophyd.sim import TrivialFlyer
 
-    class Flyer(TrivialFlyer):
-        name = "flyer"
+    class FlyerDetector():
+        name = "flyer-detector"
+
+        def describe_configuration(self):
+            return {
+                "config_key_1": {
+                    "dtype": "string",
+                    "shape": [],
+                    "source": "PV:Config:1",
+                },
+                "config_key_2": {
+                    "dtype": "number",
+                    "shape": [],
+                    "source": "PV:Config:2",
+                },
+                "config_key_3": {
+                    "dtype": "string",
+                    "shape": [],
+                    "source": "PV:Config:3",
+                },
+                "config_key_4": {
+                    "dtype": "number",
+                    "shape": [],
+                    "source": "PV:Config:4",
+                }
+            }
 
         def read_configuration(self):
             return {
-                "data_key_1": {"value": ""},
-                "data_key_2": {"value": 0},
-                "data_key_3": {"value": ""},
-                "data_key_4": {"value": 0}
+                "config_key_1": {"value": "1", "timestamp": 1},
+                "config_key_2": {"value": 2, "timestamp": 2},
+                "config_key_3": {"value": "3", "timestamp": 3},
+                "config_key_4": {"value": 4, "timestamp": 4}
+            }
+
+    class Flyer(TrivialFlyer):
+        name = "flyer"
+
+        def __init__(self):
+            self.detector = FlyerDetector()
+
+        def read_configuration(self):
+            return {
+                self.detector.name: self.detector.read_configuration()
+            }
+
+        def describe_configuration(self):
+            return {
+                self.detector.name: self.detector.describe_configuration()
             }
 
         def collect(self):
@@ -1344,13 +1384,13 @@ def test_flyer_descriptor(RE, hw):
             return {
                 "primary": {
                     "data_key_1": {
-                        "dims": ("dim 1",),
+                        "dims": [],
                         "dtype": "string",
                         "shape": [],
                         "source": "",
                     },
                     "data_key_2": {
-                        "dims": ("dim 1",),
+                        "dims": [],
                         "dtype": "number",
                         "shape": [],
                         "source": "",
@@ -1358,13 +1398,13 @@ def test_flyer_descriptor(RE, hw):
                 },
                 "secondary": {
                     "data_key_3": {
-                        "dims": ("dim 1",),
+                        "dims": [],
                         "dtype": "string",
                         "shape": [],
                         "source": "",
                     },
                     "data_key_4": {
-                        "dims": ("dim 1",),
+                        "dims": [],
                         "dtype": "number",
                         "shape": [],
                         "source": "",
@@ -1382,19 +1422,49 @@ def test_flyer_descriptor(RE, hw):
     )
 
     primary_descriptor = descriptors["primary"]
-    assert len(primary_descriptor["configuration"]) == 4
-    assert primary_descriptor["configuration"]["data_key_1"]["value"] == ""
-    assert primary_descriptor["configuration"]["data_key_2"]["value"] == 0
-    assert primary_descriptor["configuration"]["data_key_3"]["value"] == ""
-    assert primary_descriptor["configuration"]["data_key_4"]["value"] == 0
+    assert primary_descriptor["configuration"]["flyer-detector"] == {
+        "data": {
+            "config_key_1": "1",
+            "config_key_2": 2,
+            "config_key_3": "3",
+            "config_key_4": 4
+        },
+        "timestamps": {
+            "config_key_1": 1,
+            "config_key_2": 2,
+            "config_key_3": 3,
+            "config_key_4": 4
+        },
+        "data_keys": {
+            "config_key_1": {
+                "dtype": "string",
+                "shape": [],
+                "source": "PV:Config:1",
+            },
+            "config_key_2": {
+                "dtype": "number",
+                "shape": [],
+                "source": "PV:Config:2",
+            },
+            "config_key_3": {
+                "dtype": "string",
+                "shape": [],
+                "source": "PV:Config:3",
+            },
+            "config_key_4": {
+                "dtype": "number",
+                "shape": [],
+                "source": "PV:Config:4",
+            }
+        }
+    }
+
     assert "flyer" in primary_descriptor["object_keys"]
 
     secondary_descriptor = descriptors["secondary"]
-    assert len(secondary_descriptor["configuration"]) == 4
-    assert secondary_descriptor["configuration"]["data_key_1"]["value"] == ""
-    assert secondary_descriptor["configuration"]["data_key_2"]["value"] == 0
-    assert secondary_descriptor["configuration"]["data_key_3"]["value"] == ""
-    assert secondary_descriptor["configuration"]["data_key_4"]["value"] == 0
+    assert len(secondary_descriptor["configuration"]["flyer-detector"]["data"]) == 4
+    assert secondary_descriptor["configuration"] == primary_descriptor["configuration"]
+
     assert "flyer" in secondary_descriptor["object_keys"]
 
     trivial_flyer_descriptor = descriptors["stream_name"]
