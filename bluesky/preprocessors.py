@@ -352,7 +352,7 @@ def subs_wrapper(plan, subs):
          {'event': [func]} ->  {'all': [], 'start': [], 'stop': [],
                                 'event': [func], 'descriptor': []}
 
-         Signature of functions must confirm to `f(name, doc)` where
+         Signature of functions must conform to `f(name, doc)` where
          name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
          doc is a dictionary.
 
