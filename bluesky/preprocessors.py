@@ -1050,10 +1050,10 @@ def relative_set_wrapper(plan, devices=None):
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
         if (msg.command == 'set') and eligible and not seen:
-                return (pchain(
-                    __read_and_stash_a_motor(
-                        msg.obj, initial_positions, coupled_parents),
-                    single_gen(msg)), None)
+            return (pchain(
+                __read_and_stash_a_motor(
+                    msg.obj, initial_positions, coupled_parents),
+                single_gen(msg)), None)
         else:
             return None, None
 
