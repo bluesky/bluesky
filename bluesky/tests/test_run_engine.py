@@ -35,8 +35,12 @@ def test_verbose(RE, hw):
     RE.verbose = True
     assert RE.verbose
     # Emit all four kinds of document, exercising the logging.
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det), Msg('save'),
-        Msg('close_run')])
+    RE(
+        [
+            Msg('open_run'), Msg('create', name='primary'),
+            Msg('read', hw.det), Msg('save'), Msg('close_run')
+        ]
+    )
 
 
 def test_reset(RE):
@@ -141,8 +145,11 @@ def test_flyer_with_collect_asset_documents(RE):
     from ophyd.sim import det, new_trivial_flyer, trivial_flyer
     from bluesky.preprocessors import fly_during_wrapper
     assert hasattr(new_trivial_flyer, 'collect_asset_docs')
-    assert hasattr(trivial_flyer, 'collec_asset_docs') == False
-    RE(fly_during_wrapper(count([det], num=5), [new_trivial_flyer, trivial_flyer]))
+    assert hasattr(trivial_flyer, 'collec_asset_docs') is False
+    RE(
+        fly_during_wrapper(
+            count([det], num=5), [new_trivial_flyer, trivial_flyer])
+    )
 
 
 @requires_ophyd
@@ -317,14 +324,24 @@ def test_empty_bundle(RE, hw):
 
     # In this case, an Event should be emitted.
     mutable.clear()
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det), Msg('save')],
-       {'event': cb})
+    RE(
+        [
+            Msg('open_run'), Msg('create', name='primary'),
+            Msg('read', hw.det), Msg('save')
+        ],
+        {'event': cb}
+    )
     assert 'flag' in mutable
 
     # In this case, an Event should not be emitted because the bundle is
     # emtpy (i.e., there are no readings.)
     mutable.clear()
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('save')], {'event': cb})
+    RE(
+        [
+            Msg('open_run'), Msg('create', name='primary'), Msg('save')
+        ],
+        {'event': cb}
+    )
     assert 'flag' not in mutable
 
 
@@ -1418,7 +1435,10 @@ def test_flyer_descriptor(RE, hw):
 
     RE(
         fly(flyers),
-        {'descriptor': lambda name, doc: descriptors.update({doc["name"]: doc})}
+        {
+            'descriptor':
+                lambda name, doc: descriptors.update({doc["name"]: doc})
+        }
     )
 
     primary_descriptor = descriptors["primary"]
@@ -1462,8 +1482,13 @@ def test_flyer_descriptor(RE, hw):
     assert "flyer" in primary_descriptor["object_keys"]
 
     secondary_descriptor = descriptors["secondary"]
-    assert len(secondary_descriptor["configuration"]["flyer-detector"]["data"]) == 4
-    assert secondary_descriptor["configuration"] == primary_descriptor["configuration"]
+    assert len(
+        secondary_descriptor["configuration"]["flyer-detector"]["data"]
+    ) == 4
+    assert (
+        secondary_descriptor["configuration"]
+        == primary_descriptor["configuration"]
+    )
 
     assert "flyer" in secondary_descriptor["object_keys"]
 
@@ -1627,6 +1652,7 @@ def test_failing_describe_callback(RE, hw):
 
     with pytest.raises(TestException):
         RE(plan())
+
 
 def test_print_commands(RE):
     ''' test the printing of commands available.

@@ -202,7 +202,7 @@ class LiveScatter(CallbackBase):
     --------
     :class:`bluesky.callbacks.mpl_plotting.LiveGrid`.
     """
-    def __init__(self, x, y, I, *, xlim=None, ylim=None,
+    def __init__(self, x, y, I, *, xlim=None, ylim=None,  # noqa: E741
                  clim=None, cmap='viridis', ax=None, **kwargs):
         import matplotlib.pyplot as plt
         import matplotlib.colors as mcolors
@@ -212,7 +212,7 @@ class LiveScatter(CallbackBase):
         ax.cla()
         self.x = x
         self.y = y
-        self.I = I
+        self.I = I  # noqa: E741
         ax.set_xlabel(x)
         ax.set_ylabel(y)
         ax.set_aspect('equal')
@@ -252,11 +252,11 @@ class LiveScatter(CallbackBase):
     def event(self, doc):
         x = doc['data'][self.x]
         y = doc['data'][self.y]
-        I = doc['data'][self.I]
+        I = doc['data'][self.I]  # noqa: E741
         self.update(x, y, I)
         super().event(doc)
 
-    def update(self, x, y, I):
+    def update(self, x, y, I):  # noqa: E741
         # if one is None all are
         if self._minx is None:
             self._minx = x
@@ -343,7 +343,7 @@ class LiveGrid(CallbackBase):
     --------
     :class:`bluesky.callbacks.mpl_plotting.LiveScatter`.
     """
-    def __init__(self, raster_shape, I, *,
+    def __init__(self, raster_shape, I, *,  # noqa: E741
                  clim=None, cmap='viridis',
                  xlabel='x', ylabel='y', extent=None, aspect='equal',
                  ax=None, x_positive='right', y_positive='up'):
@@ -352,7 +352,7 @@ class LiveGrid(CallbackBase):
         if ax is None:
             fig, ax = plt.subplots()
         ax.cla()
-        self.I = I
+        self.I = I  # noqa: E741
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         ax.set_aspect(aspect)
@@ -384,8 +384,8 @@ class LiveGrid(CallbackBase):
                             extent=extent, aspect=self.aspect,
                             origin='lower')
 
-        # make sure the 'positive direction' of the axes matches what is defined in
-        #axes_positive
+        # make sure the 'positive direction' of the axes
+        # matches what is defined in axes_positive
         xmin, xmax = self.ax.get_xlim()
         if ((xmin > xmax and self.x_positive == 'right') or
                 (xmax > xmin and self.x_positive == 'left')):
@@ -424,11 +424,11 @@ class LiveGrid(CallbackBase):
         if self.snaking[1] and (pos[0] % 2):
             pos[1] = self.raster_shape[1] - pos[1] - 1
         pos = tuple(pos)
-        I = doc['data'][self.I]
+        I = doc['data'][self.I]  # noqa: E741
         self.update(pos, I)
         super().event(doc)
 
-    def update(self, pos, I):
+    def update(self, pos, I):  # noqa: E741
         self._Idata[pos] = I
         if self.clim is None:
             self.im.set_clim(np.nanmin(self._Idata), np.nanmax(self._Idata))
