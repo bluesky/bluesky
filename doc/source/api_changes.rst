@@ -2,6 +2,15 @@
  Release History
 =================
 
+v1.5.8 (2020-06-05)
+===================
+
+Fixed
+-----
+
+* Missing implementation details of :func:`~bluesky.run_engine.RunBundler.collect` have been added.
+  This is a back-ported fix released in 1.6.2.
+
 v1.5.7 (2020-05-01)
 ===================
 
