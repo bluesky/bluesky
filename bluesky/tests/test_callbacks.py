@@ -5,6 +5,7 @@ from bluesky.object_plans import AbsScanPlan
 from bluesky.preprocessors import run_wrapper, subs_wrapper
 from bluesky.plan_stubs import pause
 import bluesky.plans as bp
+import bluesky.preprocessors as bpp
 from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit, CallbackBase
 from bluesky.callbacks.core import make_callback_safe, make_class_safe
 from bluesky.callbacks.mpl_plotting import (
@@ -146,6 +147,25 @@ def test_table_warns():
                              'data_keys': {'field': {'dtype': 'array'}}})
 
 
+def test_table_external(RE, hw, db):
+    RE.subscribe(db.insert)
+    RE(count([hw.img]), LiveTable(['img']))
+
+
+def _compare_tables(fout, known_table):
+    for ln, kn in zip(fout, known_table.split('\n')):
+        # this is to strip the `\n` from the print output
+        ln = ln.rstrip()
+        if ln[0] == '+':
+            # test the full line on the divider lines
+            assert ln == kn
+        else:
+            # skip the 'time' column on data rows
+            # this is easier than faking up times in the scan!
+            assert ln[:16] == kn[:16]
+            assert ln[26:] == kn[26:]
+
+
 def test_table(RE, hw):
 
     with _print_redirect() as fout:
@@ -168,23 +188,7 @@ def test_table(RE, hw):
         RE.unsubscribe_lossless(token)
 
     fout.seek(0)
-
-    for ln, kn in zip(fout, KNOWN_TABLE.split('\n')):
-        # this is to strip the `\n` from the print output
-        ln = ln.rstrip()
-        if ln[0] == '+':
-            # test the full line on the divider lines
-            assert ln == kn
-        else:
-            # skip the 'time' column on data rows
-            # this is easier than faking up times in the scan!
-            assert ln[:16] == kn[:16]
-            assert ln[26:] == kn[26:]
-
-
-def test_table_external(RE, hw, db):
-    RE.subscribe(db.insert)
-    RE(count([hw.img]), LiveTable(['img']))
+    _compare_tables(fout, KNOWN_TABLE)
 
 
 KNOWN_TABLE = """+------------+--------------+----------------+----------------+
@@ -265,6 +269,30 @@ KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 |        70  |  04:17:25.9  |          0.00  |          4.85  |
 +------------+--------------+----------------+----------------+"""
 
+
+def test_evil_table_names(RE):
+    from ophyd import Signal
+    sigs = [
+        Signal(value=0, name="a:b"),
+        Signal(value=0, name="a,b"),
+        Signal(value=0, name="a'b"),
+        Signal(value=0, name="🐍"),
+    ]
+    table = LiveTable(
+        [s.name for s in sigs],
+        min_width=5, extra_pad=2, separator_lines=False
+    )
+    with _print_redirect() as fout:
+        print()  # get a blank line in camptured output
+        RE(bpp.subs_wrapper(bp.count(sigs, num=2), table))
+    reference = """
++------------+--------------+--------+--------+--------+--------+
+|   seq_num  |        time  |   a:b  |   a,b  |   a'b  |     🐍  |
++------------+--------------+--------+--------+--------+--------+
+|         1  |  12:47:09.7  |     0  |     0  |     0  |     0  |
+|         2  |  12:47:09.7  |     0  |     0  |     0  |     0  |
++------------+--------------+--------+--------+--------+--------+"""
+    _compare_tables(fout, reference)
 
 def test_live_fit(RE, hw):
     try:
