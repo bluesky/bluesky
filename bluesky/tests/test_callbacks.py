@@ -294,6 +294,7 @@ def test_evil_table_names(RE):
 +------------+--------------+--------+--------+--------+--------+"""
     _compare_tables(fout, reference)
 
+
 def test_live_fit(RE, hw):
     try:
         import lmfit
