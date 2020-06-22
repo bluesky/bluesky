@@ -1,13 +1,3 @@
-import logging
-from pathlib import Path
-
-log_filename = Path("flyer_test.log")
-if log_filename.exists():
-    log_filename.unlink()
-
-logging.getLogger("bluesky").setLevel(logging.DEBUG)
-logging.basicConfig(filename="flyer_test.log")
-
 import pytest
 
 from bluesky.tests import requires_ophyd
