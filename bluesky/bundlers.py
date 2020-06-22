@@ -577,16 +577,14 @@ class RunBundler:
         collect_obj_config = {}
         if hasattr(collect_obj, "read_configuration"):
             doc_logger.debug("reading configuration from %s", collect_obj)
-
-            for component_name, component_config in collect_obj.read_configuration().items():
-                collect_obj_config[component_name] = {
-                    "data": {},
-                    "timestamps": {},
-                    "data_keys": collect_obj.describe_configuration()[component_name]
-                }
-                for config_key, config in component_config.items():
-                    collect_obj_config[component_name]["data"][config_key] = config["value"]
-                    collect_obj_config[component_name]["timestamps"][config_key] = config["timestamp"]
+            collect_obj_config[collect_obj.name] = {
+                "data": {},
+                "timestamps": {},
+                "data_keys": collect_obj.describe_configuration()
+            }
+            for config_key, config in collect_obj.read_configuration().items():
+                 collect_obj_config[collect_obj.name]["data"][config_key] = config["value"]
+                 collect_obj_config[collect_obj.name]["timestamps"][config_key] = config["timestamp"]
         else:
             doc_logger.debug("%s has no read_configuration method", collect_obj)
 
