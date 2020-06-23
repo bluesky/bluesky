@@ -139,8 +139,8 @@ def test_flyer_descriptor(RE, hw):
 
         def collect(self):
             yield {
-                "data": {"data_key_1": "1", "data_key_2": 2,},
-                "timestamps": {"data_key_1": 0, "data_key_2": 0,},
+                "data": {"data_key_1": "1", "data_key_2": 2},
+                "timestamps": {"data_key_1": 0, "data_key_2": 0},
                 "time": 0,
             }
 
@@ -173,10 +173,10 @@ def test_flyer_descriptor(RE, hw):
             "config_key_4": 4,
         },
         "data_keys": {
-            "config_key_1": {"dtype": "string", "shape": [], "source": "PV:Config:1",},
-            "config_key_2": {"dtype": "number", "shape": [], "source": "PV:Config:2",},
-            "config_key_3": {"dtype": "string", "shape": [], "source": "PV:Config:3",},
-            "config_key_4": {"dtype": "number", "shape": [], "source": "PV:Config:4",},
+            "config_key_1": {"dtype": "string", "shape": [], "source": "PV:Config:1"},
+            "config_key_2": {"dtype": "number", "shape": [], "source": "PV:Config:2"},
+            "config_key_3": {"dtype": "string", "shape": [], "source": "PV:Config:3"},
+            "config_key_4": {"dtype": "number", "shape": [], "source": "PV:Config:4"},
         },
     }
 
@@ -222,10 +222,10 @@ def test_device_flyer_descriptor(RE, hw):
             "config_key_4": 4,
         },
         "data_keys": {
-            "config_key_1": {"dtype": "string", "shape": [], "source": "PV:Config:1",},
-            "config_key_2": {"dtype": "number", "shape": [], "source": "PV:Config:2",},
-            "config_key_3": {"dtype": "string", "shape": [], "source": "PV:Config:3",},
-            "config_key_4": {"dtype": "number", "shape": [], "source": "PV:Config:4",},
+            "config_key_1": {"dtype": "string", "shape": [], "source": "PV:Config:1"},
+            "config_key_2": {"dtype": "number", "shape": [], "source": "PV:Config:2"},
+            "config_key_3": {"dtype": "string", "shape": [], "source": "PV:Config:3"},
+            "config_key_4": {"dtype": "number", "shape": [], "source": "PV:Config:4"},
         },
     }
 
@@ -246,10 +246,10 @@ class FlyerDetector(Device):
 
     def describe_configuration(self):
         return {
-            "config_key_1": {"dtype": "string", "shape": [], "source": "PV:Config:1",},
-            "config_key_2": {"dtype": "number", "shape": [], "source": "PV:Config:2",},
-            "config_key_3": {"dtype": "string", "shape": [], "source": "PV:Config:3",},
-            "config_key_4": {"dtype": "number", "shape": [], "source": "PV:Config:4",},
+            "config_key_1": {"dtype": "string", "shape": [], "source": "PV:Config:1"},
+            "config_key_2": {"dtype": "number", "shape": [], "source": "PV:Config:2"},
+            "config_key_3": {"dtype": "string", "shape": [], "source": "PV:Config:3"},
+            "config_key_4": {"dtype": "number", "shape": [], "source": "PV:Config:4"},
         }
 
     def read_configuration(self):
@@ -307,8 +307,8 @@ class FlyerDevice(Device):
 
     def collect(self):
         yield {
-            "data": {"data_key_1": "", "data_key_2": 0,},
-            "timestamps": {"data_key_1": 0, "data_key_2": 0,},
+            "data": {"data_key_1": "", "data_key_2": 0},
+            "timestamps": {"data_key_1": 0, "data_key_2": 0},
             "time": 0,
         }
 
