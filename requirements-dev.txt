@@ -24,6 +24,7 @@ pytest-faulthandler
 pyyaml
 pyzmq
 requests
+scikit-image
 scipy
 sphinx
 sphinx_rtd_theme
