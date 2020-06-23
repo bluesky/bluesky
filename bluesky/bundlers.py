@@ -583,8 +583,8 @@ class RunBundler:
                 "data_keys": collect_obj.describe_configuration()
             }
             for config_key, config in collect_obj.read_configuration().items():
-                 collect_obj_config[collect_obj.name]["data"][config_key] = config["value"]
-                 collect_obj_config[collect_obj.name]["timestamps"][config_key] = config["timestamp"]
+                collect_obj_config[collect_obj.name]["data"][config_key] = config["value"]
+                collect_obj_config[collect_obj.name]["timestamps"][config_key] = config["timestamp"]
         else:
             doc_logger.debug("%s has no read_configuration method", collect_obj)
 

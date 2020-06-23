@@ -18,7 +18,7 @@ from bluesky.run_engine import (RunEngineStateMachine,
 from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
-from bluesky.plans import (fly, count, grid_scan)
+from bluesky.plans import (count, grid_scan)
 from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint)
 from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    reset_positions_decorator,

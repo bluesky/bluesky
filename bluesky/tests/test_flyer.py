@@ -1,18 +1,9 @@
 import pytest
 
-from bluesky.tests import requires_ophyd
-from bluesky.run_engine import (
-    RunEngineStateMachine,
-    TransitionError,
-    IllegalMessageSequence,
-    NoReplayAllowed,
-    FailedStatus,
-    RunEngineInterrupted,
-    RequestStop,
-    RequestAbort,
-)
 from bluesky import Msg
 from bluesky.plans import fly, count
+from bluesky.run_engine import IllegalMessageSequence
+from bluesky.tests import requires_ophyd
 from ophyd import Component as Cpt, Device
 from ophyd.sim import NullStatus, TrivialFlyer
 
