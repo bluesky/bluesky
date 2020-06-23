@@ -38,7 +38,7 @@ def test_collect_uncollected_and_log_any_errors(RE):
 
     flyer1 = DummyFlyerWithFlag()
     flyer1.name = "flyer1"
-    flyer2 = DummyFlyerWithFlag()
+    flyer2 = BrokenDummyFlyerWithFlag()
     flyer2.name = "flyer2"
 
     collected.clear()
