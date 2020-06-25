@@ -531,6 +531,7 @@ Plans that control the RunEngine:
 Combinations of the above that are often convenient:
 
 .. autosummary::
+   :toctree: generated
 
     trigger_and_read
     one_1d_step
@@ -541,6 +542,7 @@ Combinations of the above that are often convenient:
 Special utilities:
 
 .. autosummary::
+   :toctree: generated
 
    repeat
    repeater
@@ -788,12 +790,3 @@ These are useful utilities for defining custom plans and plan preprocessors.
     plan_mutator
     single_gen
     make_decorator
-
-.. currentmodule:: bluesky.plan_stubs
-
-.. autosummary::
-   :toctree: generated
-   :nosignatures:
-
-    broadcast_msg
-    repeat
