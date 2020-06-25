@@ -15,7 +15,7 @@
 
 import sys
 import os
-import shlex
+import sphinx
 import sphinx_rtd_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -317,7 +317,9 @@ intersphinx_mapping = {
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable', None),
-    'matplotlib': ('https://matplotlib.org', None)
+    'matplotlib': ('https://matplotlib.org', None),
+    'ophyd': ('https://blueskyproject.io/ophyd/', None),
+    'event-model': ('https://blueskyproject.io/event-model/', None),
   }
 
 sys.path.append(os.path.abspath("examples"))
