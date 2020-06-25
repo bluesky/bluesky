@@ -2,13 +2,13 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    = '-W'
+SPHINXOPTS    = -W --keep-going
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
 
 # For auto gh-pages
-GH_PAGES_SOURCES = doc/Makefile doc/source 
+GH_PAGES_SOURCES = doc/Makefile doc/source
 GH_PAGES_DIR := $(shell mktemp -d)
 GH_PAGES_BRANCH = cli_refactor
 
