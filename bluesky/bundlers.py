@@ -74,7 +74,7 @@ class RunBundler:
     async def close_run(self, msg):
         """Instruct the RunEngine to write the RunStop document
 
-        Expected message object is:
+        Expected message object is::
 
             Msg('close_run', None, exit_status=None, reason=None)
 
@@ -124,7 +124,7 @@ class RunBundler:
         """Trigger the run engine to start bundling future obj.read() calls for
          an Event document
 
-        Expected message object is:
+        Expected message object is::
 
             Msg('create', None, name='primary')
             Msg('create', name='primary')
@@ -163,7 +163,7 @@ class RunBundler:
         """
         Add a reading to the open event bundle.
 
-        Expected message object is:
+        Expected message object is::
 
             Msg('read', obj)
         """
@@ -225,7 +225,7 @@ class RunBundler:
         from a separate thread. This process is not related to the main
         bundling process (create/read/save).
 
-        Expected message object is:
+        Expected message object is::
 
             Msg('monitor', obj, **kwargs)
             Msg('monitor', obj, name='event-stream-name', **kwargs)
@@ -322,7 +322,7 @@ class RunBundler:
         """
         Stop monitoring; i.e., remove the callback emitting event documents.
 
-        Expected message object is:
+        Expected message object is::
 
             Msg('unmonitor', obj)
         """
@@ -339,7 +339,7 @@ class RunBundler:
     async def save(self, msg):
         """Save the event that is currently being bundled
 
-        Expected message object is:
+        Expected message object is::
 
             Msg('save')
         """
@@ -492,7 +492,7 @@ class RunBundler:
     async def drop(self, msg):
         """Drop the event that is currently being bundled
 
-        Expected message object is:
+        Expected message object is::
 
             Msg('drop')
         """
@@ -508,24 +508,21 @@ class RunBundler:
         self.log.debug("Dropped open event bundle")
 
     async def kickoff(self, msg):
-        """Start a flyscan object
-
-        Special kwargs for the 'Msg' object in this function:
-        group : str
-            The blocking group to this flyer to
+        """Start a flyscan object.
 
         Expected message object is:
 
-        If `flyer_object` has a `kickoff` function that takes no arguments:
+        If `flyer_object` has a `kickoff` function that takes no arguments::
 
             Msg('kickoff', flyer_object)
             Msg('kickoff', flyer_object, group=<name>)
 
-        If `flyer_object` has a `kickoff` function that takes
-        `(start, stop, steps)` as its function arguments:
+        If *flyer_object* has a ``kickoff`` function that takes
+        ``(start, stop, steps)`` as its function arguments::
 
             Msg('kickoff', flyer_object, start, stop, step)
             Msg('kickoff', flyer_object, start, stop, step, group=<name>)
+
         """
         self._uncollected.add(msg.obj)
 
@@ -539,7 +536,7 @@ class RunBundler:
         finish whenever they finish, irrespective of when this command is
         issued.
 
-        Expected message object is:
+        Expected message object is::
 
             Msg('complete', flyer, group=<GROUP>)
 
@@ -690,11 +687,11 @@ class RunBundler:
     async def configure(self, msg):
         """Configure an object
 
-        Expected message object is:
+        Expected message object is ::
 
             Msg('configure', object, *args, **kwargs)
 
-        which results in this call:
+        which results in this call ::
 
             object.configure(*args, **kwargs)
         """
