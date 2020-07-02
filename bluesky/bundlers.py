@@ -140,8 +140,7 @@ class RunBundler:
                 "A second 'create' message is not "
                 "allowed until the current event "
                 "bundle is closed with a 'save' or "
-                "drop"
-                "message."
+                "'drop' message."
             )
         self._read_cache.clear()
         self._asset_docs_cache.clear()
