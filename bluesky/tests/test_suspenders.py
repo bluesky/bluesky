@@ -1,5 +1,4 @@
 import pytest
-import asyncio
 from functools import partial
 from bluesky.preprocessors import suspend_wrapper
 from bluesky.suspenders import (SuspendBoolHigh,
@@ -15,6 +14,7 @@ import time as ttime
 from bluesky.run_engine import RunEngineInterrupted
 import threading
 import time
+from .utils import _fabricate_asycio_event
 
 
 @pytest.mark.parametrize(
@@ -24,13 +24,22 @@ import time
      (SuspendFloor, (.5,), 1, 0, 1, .2),
      (SuspendCeil, (.5,), 0, 1, 0, .2),
      (SuspendWhenOutsideBand, (.5, 1.5), 1, 0, 1, .2),
-     (SuspendInBand, (.5, 1.5), 1, 0, 1, .2),  # renamed to WhenOutsideBand
-     (SuspendOutBand, (.5, 1.5), 0, 1, 0, .2)])  # deprecated
+     ((SuspendInBand, True), (.5, 1.5), 1, 0, 1, .2),  # renamed to WhenOutsideBand
+     ((SuspendOutBand, True), (.5, 1.5), 0, 1, 0, .2)])  # deprecated
 def test_suspender(klass, sc_args, start_val, fail_val,
                    resume_val, wait_time, RE, hw):
     sig = hw.bool_sig
-    my_suspender = klass(sig,
-                         *sc_args, sleep=wait_time)
+    try:
+        klass, deprecated = klass
+    except TypeError:
+        deprecated = False
+    if deprecated:
+        with pytest.warns(UserWarning):
+            my_suspender = klass(sig,
+                                 *sc_args, sleep=wait_time)
+    else:
+        my_suspender = klass(sig,
+                             *sc_args, sleep=wait_time)
     my_suspender.install(RE)
 
     def putter(val):
@@ -179,7 +188,7 @@ def test_unresumable_suspend_fail(RE):
     m_coll = MsgCollector()
     RE.msg_hook = m_coll
 
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
     threading.Timer(.1, partial(RE.request_suspend, fut=ev.wait)).start()
     threading.Timer(1, ev.set).start()
     start = time.time()

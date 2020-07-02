@@ -1,11 +1,11 @@
 from bluesky.callbacks import collector, CallbackCounter
 import bluesky.plans as bp
 from bluesky import Msg
-import asyncio
 import time as ttime
 import numpy as np
 import numpy.testing
 import pytest
+from .utils import _fabricate_asycio_event
 
 
 def test_scan_num(RE, hw):
@@ -505,7 +505,7 @@ def test_count(RE, hw):
 
 
 def test_wait_for(RE):
-    ev = asyncio.Event(loop=RE.loop)
+    ev = _fabricate_asycio_event(RE.loop)
 
     def done():
         ev.set()

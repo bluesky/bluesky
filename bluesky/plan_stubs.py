@@ -993,14 +993,14 @@ def caching_repeater(n, plan):
     :func:`bluesky.plan_stubs.repeater`
     """
     warnings.warn("The caching_repeater will be removed in a future version "
-                  "of bluesky.")
-    it = range
+                  "of bluesky.", stacklevel=2)
     if n is None:
-        n = 0
-        it = itertools.count
+        gen = itertools.count(0)
+    else:
+        gen = range(n)
 
     lst_plan = list(plan)
-    for j in it(n):
+    for _ in gen:
         yield from (m for m in lst_plan)
 
 

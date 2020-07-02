@@ -540,12 +540,14 @@ def test_caching_repeater():
         yield from args
 
     plan_instance = plan(1, 2, 3)
-    actual = list(caching_repeater(3, plan_instance))
+    with pytest.warns(UserWarning):
+        actual = list(caching_repeater(3, plan_instance))
     assert actual == 3 * [1, 2, 3]
 
     plan_instance = plan(1, 2, 3)
     p = caching_repeater(None, plan_instance)
-    assert next(p) == 1
+    with pytest.warns(UserWarning):
+        assert next(p) == 1
     assert next(p) == 2
     assert next(p) == 3
     assert next(p) == 1
