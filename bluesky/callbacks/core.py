@@ -357,10 +357,11 @@ class LiveTable(CallbackBase):
                         '|'
                         )
         self._data_formats = OrderedDict(
-            (k, self._FMTLOOKUP[f.dtype].format(k=k,
-                                                width=f.width-2*self._pad_len,
-                                                prec=f.prec, dtype=f.dtype,
-                                                pad=self._extra_pad))
+            (k, self._FMTLOOKUP[f.dtype].format(
+                k=f'h{str(hash(k))}',
+                width=f.width-2*self._pad_len,
+                prec=f.prec, dtype=f.dtype,
+                pad=self._extra_pad))
             for k, f in self._format_info.items())
 
         self._count = 0
@@ -386,7 +387,7 @@ class LiveTable(CallbackBase):
             fmt_time = str(datetime.fromtimestamp(doc['time']).time())
             data[self.ev_time_key] = fmt_time
             data['seq_num'] = doc['seq_num']
-            cols = [f.format(**{k: data[k]})
+            cols = [f.format(**{f'h{str(hash(k))}': data[k]})
                     # Show data[k] if k exists in this Event and is 'filled'.
                     # (The latter is only applicable if the data is
                     # externally-stored -- hence the fallback to `True`.)
