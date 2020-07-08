@@ -2,6 +2,17 @@
  Release History
 =================
 
+v1.6.4 (2020-07-08)
+===================
+
+Fixed
+-----
+
+* Allow ``:`` to be used in keynames and still format LiveTable.
+* Address use of ``loop`` argument deprecated in Python 3.8.
+* Ensure that ``bluesky.utils`` is importable from a background thread. (Do
+  not create an instance of `~bluesky.utils.DefaultDuringTask` at import time.)
+
 v1.6.3 (2020-06-25)
 ===================
 
