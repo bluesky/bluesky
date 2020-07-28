@@ -24,6 +24,7 @@ def initialize_qt_teleporter():
     ------
     RuntimeError
         If called from any thread but the main thread
+
     """
     if threading.current_thread() is not threading.main_thread():
         raise RuntimeError(
@@ -364,6 +365,7 @@ class LiveScatter(QtAwareCallback):
         if self.clim is None:
             clim = np.nanmin(self._Idata), np.nanmax(self._Idata)
             self.sc.set_clim(*clim)
+        self.ax.figure.canvas.draw_idle()
 
 
 @make_class_safe(logger=logger)
@@ -533,6 +535,7 @@ class LiveGrid(QtAwareCallback):
             self.im.set_clim(np.nanmin(self._Idata), np.nanmax(self._Idata))
 
         self.im.set_array(self._Idata)
+        self.ax.figure.canvas.draw_idle()
 
 
 @make_class_safe(logger=logger)
@@ -655,6 +658,7 @@ def plot_peak_stats(peak_stats, ax=None):
     -------
     arts : dict
         dictionary of matplotlib Artist objects, for further styling
+
     """
     import matplotlib.pyplot as plt
     arts = {}
