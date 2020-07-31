@@ -285,6 +285,12 @@ class CallbackRegistry:
         self._func_cid_map.setdefault(sig, WeakKeyDictionary())
         # Note proxy not needed in python 3.
         # TODO rewrite this when support for python2.x gets dropped.
+        # Following discussion with TC: weakref.WeakMethod can not be used to
+        #   replace the custom 'BoundMethodProxy', because it does not accept
+        #   the 'destroy callback' as a parameter. The 'destroy callback' is
+        #   necessary to automatically unsubscribe CB registry from the callback
+        #   when the class object is destroyed and this is the main purpose of
+        #   BoundMethodProxy.
         proxy = _BoundMethodProxy(func)
         if proxy in self._func_cid_map[sig]:
             return self._func_cid_map[sig][proxy]
@@ -301,10 +307,14 @@ class CallbackRegistry:
         # need the list because `del self._func_cid_map[sig]` mutates the dict
         for sig, proxies in list(self._func_cid_map.items()):
             try:
+                # Here we need to delete the last reference to proxy (in 'self.callbacks[sig]')
+                #   The respective entries in 'self._func_cid_map' are deleted automatically,
+                #   since 'self._func_cid_map[sig]' entries are WeakKeyDictionary objects.
                 del self.callbacks[sig][proxies[proxy]]
             except KeyError:
                 pass
 
+            # Remove dictionary items for signals with no assigned callbacks
             if len(self.callbacks[sig]) == 0:
                 del self.callbacks[sig]
                 del self._func_cid_map[sig]
@@ -319,10 +329,12 @@ class CallbackRegistry:
         """
         for eventname, callbackd in self.callbacks.items():
             try:
+                # This may or may not remove entries in 'self._func_cid_map'.
                 del callbackd[cid]
             except KeyError:
                 continue
             else:
+                # Look for cid in 'self._func_cid_map' as well. It may still be there.
                 for sig, functions in self._func_cid_map.items():
                     for function, value in list(functions.items()):
                         if value == cid:
@@ -375,13 +387,21 @@ class _BoundMethodProxy:
         self._hash = hash(cb)
         self._destroy_callbacks = []
         try:
+            # This branch is successful if 'cb' bound method and class method,
+            #   but destroy_callback mechanism works only for bound methods,
+            #   since cb.__self__ points to class instance only for
+            #   bound methods, not for class methods. Therefore destroy_callback
+            #   will not be called for class methods.
             try:
                 self.inst = ref(cb.__self__, self._destroy)
             except TypeError:
                 self.inst = None
             self.func = cb.__func__
             self.klass = cb.__self__.__class__
+
         except AttributeError:
+            # 'cb' is a function, callable object or static method.
+            # No weak reference is created, strong reference is stored instead.
             self.inst = None
             self.func = cb
             self.klass = None

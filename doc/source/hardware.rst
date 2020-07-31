@@ -129,8 +129,8 @@ The interface of a readable device:
 
         * source (a descriptive string --- e.g., an EPICS Process Variable)
         * dtype: one of the JSON data types: {'number', 'string', 'array'}
-        * shape: ``None`` or a list of dimensions --- e.g., ``[5, 5]`` for a
-          5x5 array
+        * shape: list of integers (dimension sizes) --- e.g., ``[5, 5]`` for a
+          5x5 array. Use empty list ``[]`` to indicate a scalar.
 
         Optional additional fields (precision, units, etc.) are allowed.
         The optional field ``external`` should be used to provide information
