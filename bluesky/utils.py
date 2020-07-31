@@ -1565,12 +1565,12 @@ def is_movable(obj):
 class Movable(metaclass=abc.ABCMeta):
     """
     Abstract base class for objects that satisfy the bluesky 'movable' interface.
-    
+
     Examples
     --------
-    
+
     .. code-block:: python
-    
+
         m = hw.motor
         # We need to detect if 'm' is a motor
         if isinstance(m, Movable):
