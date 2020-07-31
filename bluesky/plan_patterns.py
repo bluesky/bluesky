@@ -11,7 +11,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .utils import snake_cyclers, Movable
+from .utils import snake_cyclers, is_movable
 
 
 def spiral(x_motor, y_motor, x_start, y_start, x_range, y_range, dr, nth, *,
@@ -428,7 +428,7 @@ def classify_outer_product_args_pattern(args):
             raise ValueError(f"Unknown pattern '{pattern}'")
         for n, element in enumerate(args):
             # Check if the element is the motor
-            flag = isinstance(element, Movable)
+            flag = is_movable(element)
             # If the element is expected to be the motor, then flip the flag
             if n in pos_movable:
                 flag = not flag
