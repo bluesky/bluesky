@@ -2,6 +2,20 @@
  Release History
 =================
 
+v1.6.5 (2020-08-06)
+===================
+
+Fixed
+-----
+
+* LiveGrid and LiveScatter failed to update
+
+Enhancements
+------------
+
+* Expand the class of objects considered "moveable" to include those with expected
+  attributes defined as instance attributes
+
 v1.6.4 (2020-07-08)
 ===================
 
