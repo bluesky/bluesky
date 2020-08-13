@@ -2430,7 +2430,7 @@ def _ensure_event_loop_running(loop):
     This is idempotent: if the loop is already running nothing will be done.
     """
     if not loop.is_running():
-        th = threading.Thread(target=loop.run_forever, daemon=True)
+        th = threading.Thread(target=loop.run_forever, daemon=True, name="bluesky-run-engine")
         th.start()
         _ensure_event_loop_running.loop_to_thread[loop] = th
     else:
