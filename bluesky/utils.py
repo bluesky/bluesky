@@ -752,7 +752,8 @@ class PersistentDict(zict.Func):
             default=msgpack_numpy.encode,
             use_bin_type=True)
 
-    def _load(self, file):
+    @staticmethod
+    def _load(file):
         return msgpack.unpackb(
             file,
             object_hook=msgpack_numpy.decode,
