@@ -730,14 +730,44 @@ def all_safe_rewind(devices):
 
 
 class PersistentDict(zict.Func):
+    """
+    A MutableMapping which syncs it contents to disk.
+
+    The contents are stored as msgpack-serialized files, with one file per item
+    in the mapping.
+
+    Note that when an item is *mutated* it is not immediately synced:
+
+    >>> d['sample'] = {"color": "red"}  # immediately synced
+    >>> d['sample']['shape'] = 'bar'  # not immediately synced
+
+    but that the full contents are synced to disk when the PersistentDict
+    instance is garbage collected.
+    """
     def __init__(self, directory):
         self._directory = directory
         self._file = zict.File(directory)
+        self._cache = {}
         super().__init__(self._dump, self._load, self._file)
+        self._cache.update(super().items())
+
+        # The __del__ method *should* take care of flushing at exit, but
+        # experience with historydict has taught us to use a "belt and
+        # suspenders" approach and use atexit as well.
+        import weakref
+        import atexit
+        atexit.register(weakref.WeakMethod(self.flush))
 
     @property
     def directory(self):
         return self._directory
+
+    def __setitem__(self, key, value):
+        self._cache[key] = value
+        super().__setitem__(key, value)
+
+    def __getitem__(self, key):
+        return self._cache[key]
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {dict(self)!r}>"
@@ -758,6 +788,13 @@ class PersistentDict(zict.Func):
             file,
             object_hook=msgpack_numpy.decode,
             raw=False)
+
+    def flush(self):
+        for k, v in self.items():
+            super().__setitem__(k, v)
+
+    def __del__(self):
+        self.flush()
 
 
 SEARCH_PATH = []

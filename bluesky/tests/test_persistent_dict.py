@@ -1,4 +1,5 @@
 import collections.abc
+import gc
 
 import numpy
 from numpy.testing import assert_array_equal
@@ -25,6 +26,23 @@ def test_persistent_dict(tmp_path):
     # Smoke test the accessor and the __repr__.
     assert d.directory == tmp_path
     d.__repr__()
+
+
+def test_persistent_dict_mutable_value(tmp_path):
+    d = PersistentDict(tmp_path)
+    d['a'] = []
+    d['a'].append(1)
+    expected = {'a': [1]}
+    # Check the in-memory version is updated
+    recursive_assert_equal(d, expected)
+    # Check that the __repr__ reflects this.
+    assert "{'a': [1]}" in repr(d)
+    d.flush()
+    # Check that contents are synced to disk at exit.
+    del d
+    gc.collect()
+    actual = PersistentDict(tmp_path)
+    recursive_assert_equal(actual, expected)
 
 
 def test_integration(tmp_path, RE, hw):
