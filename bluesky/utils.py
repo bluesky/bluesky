@@ -749,7 +749,7 @@ class PersistentDict(zict.Func):
         self._file = zict.File(directory)
         self._cache = {}
         super().__init__(self._dump, self._load, self._file)
-        self._cache.update(super().items())
+        self.reload()
 
         # Similar to flush() or _do_update(), but without reference to self
         # to avoid circular reference preventing collection.
@@ -759,7 +759,8 @@ class PersistentDict(zict.Func):
             zfile.update((k, dump(v)) for k, v in cache.items())
 
         import weakref
-        self._finalizer = weakref.finalize(self, finalize, self._file, self._cache, self._dump)
+        self._finalizer = weakref.finalize(
+            self, finalize, self._file, self._cache, PersistentDict._dump)
 
     @property
     def directory(self):
@@ -793,8 +794,14 @@ class PersistentDict(zict.Func):
             raw=False)
 
     def flush(self):
+        """Force a write of the current state to disk"""
         for k, v in self.items():
             super().__setitem__(k, v)
+
+    def reload(self):
+        """Force a reload from disk, overwriting current cache"""
+        self._cache.update(super().items())
+
 
 
 SEARCH_PATH = []
