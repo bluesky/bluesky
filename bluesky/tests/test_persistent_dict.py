@@ -19,8 +19,8 @@ def test_persistent_dict(tmp_path):
     recursive_assert_equal(actual, expected)
 
     # Update a value and check again.
-    d['a'] = 2
-    expected = dict(d)
+    actual['a'] = 2
+    expected = dict(actual)
     recursive_assert_equal(actual, expected)
 
     # Smoke test the accessor and the __repr__.
