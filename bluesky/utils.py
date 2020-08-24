@@ -751,12 +751,15 @@ class PersistentDict(zict.Func):
         super().__init__(self._dump, self._load, self._file)
         self._cache.update(super().items())
 
-        # The __del__ method *should* take care of flushing at exit, but
-        # experience with historydict has taught us to use a "belt and
-        # suspenders" approach and use atexit as well.
+        # Similar to flush() or _do_update(), but without reference to self
+        # to avoid circular reference preventing collection.
+        # NOTE: This still doesn't guarantee call on delete or gc.collect()!
+        #       Explicitly call flush() if immediate write to disk required.
+        def finalize(zfile, cache, dump):
+            zfile.update((k, dump(v)) for k, v in cache.items())
+
         import weakref
-        import atexit
-        atexit.register(weakref.WeakMethod(self.flush))
+        self._finalizer = weakref.finalize(self, finalize, self._file, self._cache, self._dump)
 
     @property
     def directory(self):
@@ -792,9 +795,6 @@ class PersistentDict(zict.Func):
     def flush(self):
         for k, v in self.items():
             super().__setitem__(k, v)
-
-    def __del__(self):
-        self.flush()
 
 
 SEARCH_PATH = []
