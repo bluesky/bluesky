@@ -800,8 +800,7 @@ class PersistentDict(zict.Func):
 
     def reload(self):
         """Force a reload from disk, overwriting current cache"""
-        self._cache.update(super().items())
-
+        self._cache = dict(super().items())
 
 
 SEARCH_PATH = []
