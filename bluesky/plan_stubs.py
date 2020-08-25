@@ -351,6 +351,7 @@ def rd(obj, *, default_value=0):
         )
         raise ValueError(msg)
     elif len(hints) == 0:
+        hint = None
         if hasattr(obj, "read_attrs"):
             if len(obj.read_attrs) != 1:
                 msg = (
@@ -362,9 +363,6 @@ def rd(obj, *, default_value=0):
                 )
 
                 raise ValueError(msg)
-
-            else:
-                hint = None
     # len(hints) == 1
     else:
         (hint,) = hints

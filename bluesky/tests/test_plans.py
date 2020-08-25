@@ -353,8 +353,10 @@ def test_rd_device(hw, RE, kind):
         nonlocal called
         direct_read = yield from bps.read(obj)
         rd_read = yield from bps.rd(obj)
+        sig_read = yield from bps.rd(obj.val)
 
         assert rd_read == direct_read["det"]["value"]
+        assert sig_read == rd_read
         called = True
 
     RE(tester(hw.det))
