@@ -773,6 +773,10 @@ class PersistentDict(zict.Func):
     def __getitem__(self, key):
         return self._cache[key]
 
+    def __delitem__(self, key):
+        del self._cache[key]
+        super().__delitem__(key)
+
     def __repr__(self):
         return f"<{self.__class__.__name__} {dict(self)!r}>"
 

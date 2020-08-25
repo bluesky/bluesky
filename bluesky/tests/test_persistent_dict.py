@@ -1,5 +1,6 @@
 import collections.abc
 import gc
+import pytest
 
 import numpy
 from numpy.testing import assert_array_equal
@@ -23,6 +24,12 @@ def test_persistent_dict(tmp_path):
     expected = dict(d)
     actual.reload()  # Force load changes from disk
     recursive_assert_equal(actual, expected)
+
+    # Test element deletion
+    del d['b']
+    with pytest.raises(KeyError):
+        d['b']
+    assert 'b' not in d
 
     # Smoke test the accessor and the __repr__.
     assert d.directory == tmp_path
