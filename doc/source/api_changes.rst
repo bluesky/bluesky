@@ -2,6 +2,18 @@
  Release History
 =================
 
+v1.6.6 (2020-08-26)
+===================
+
+Fixed
+-----
+
+* :class:`bluesky.utils.PersistentDict` has new methods
+  :meth:`bluesky.utils.PersistentDict.reload` and
+  :meth:`bluesky.utils.PersistentDict.flush` to syncing from and to disk. It
+  flushes at garbage collection or system exit, which ensures that any values
+  that have been mutated are updated on disk.
+
 v1.6.5 (2020-08-06)
 ===================
 
