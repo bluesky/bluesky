@@ -224,9 +224,14 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
 
 .. class:: SettableDevice:
 
-    .. method:: stop()
+    .. method:: stop(success=True)
 
         Safely stop a device that may or may not be in motion.
+	The argument ``success`` is a boolean.
+	When ``success`` is true, bluesky is stopping the device as planned
+	and the device should stop "normally".
+	When ``success`` is false, something has gone wrong and the device
+	may wish to take defensive action to make itself safe.
 	Optional: devices that cannot be stopped should not implement this
 	method.
 
