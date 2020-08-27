@@ -227,6 +227,8 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
     .. method:: stop()
 
         Safely stop a device that may or may not be in motion.
+	Optional: devices that cannot be stopped should not implement this
+	method.
 
     .. method:: set(*args, **kwargs)
 
