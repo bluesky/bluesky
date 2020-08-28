@@ -58,7 +58,8 @@ def _get_teleporter():
 
 
 class QtAwareCallback(CallbackBase):
-    def __init__(self, *args, use_teleporter=None, **kwargs):
+    def __init__(self, *args, **kwargs):
+        use_teleporter = kwargs.get('use_teleporter', None)
         if use_teleporter is None:
             import matplotlib
             use_teleporter = 'qt' in matplotlib.get_backend().lower()
@@ -66,7 +67,7 @@ class QtAwareCallback(CallbackBase):
             self.__teleporter = _get_teleporter()
         else:
             self.__teleporter = None
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
     def __call__(self, name, doc, *, escape=False):
         if not escape and self.__teleporter is not None:
@@ -117,7 +118,7 @@ class LivePlot(QtAwareCallback):
     """
     def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
                  ax=None, fig=None, epoch='run', **kwargs):
-        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
+        super().__init__(**kwargs)
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
 
@@ -273,7 +274,7 @@ class LiveScatter(QtAwareCallback):
     """
     def __init__(self, x, y, I, *, xlim=None, ylim=None,  # noqa: E741
                  clim=None, cmap='viridis', ax=None, **kwargs):
-        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
+        super().__init__(**kwargs)
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
 
