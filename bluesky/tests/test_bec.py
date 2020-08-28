@@ -8,6 +8,7 @@ import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
 from bluesky.preprocessors import SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
+from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
 from bluesky.utils import new_uid
 from event_model import RunRouter
 
@@ -31,6 +32,14 @@ def test_simple(RE, hw):
     RE.subscribe(bec)
     RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
 
+
+def test_use_teleporter(RE, hw):
+    det, motor = hw.ab_det, hw.motor
+    initialize_qt_teleporter()
+    bec = BestEffortCallback(use_teleporter=True)
+    RE.subscribe(bec)
+    RE(scan([det], motor, 1, 5, 5))
+    assert len(bec._live_plots) == 1
 
 def test_disable(RE, hw):
     det, motor = hw.ab_det, hw.motor
