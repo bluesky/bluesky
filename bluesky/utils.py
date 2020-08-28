@@ -1605,7 +1605,6 @@ def is_movable(obj):
         'read_configuration',
         'describe_configuration',
         'set',
-        'stop',
     )
     return all(hasattr(obj, attr) for attr in EXPECTED_ATTRS)
 
