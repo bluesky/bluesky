@@ -1688,10 +1688,6 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
         any 'settable' object (motor, temp controller, etc.)
     y_motor : object
         any 'settable' object (motor, temp controller, etc.)
-    x_start : float
-        x center
-    y_start : float
-        y center
     x_range : float
         x width of spiral
     y_range : float
