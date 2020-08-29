@@ -227,13 +227,13 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
     .. method:: stop(success=True)
 
         Safely stop a device that may or may not be in motion.
-	The argument ``success`` is a boolean.
-	When ``success`` is true, bluesky is stopping the device as planned
-	and the device should stop "normally".
-	When ``success`` is false, something has gone wrong and the device
-	may wish to take defensive action to make itself safe.
-	Optional: devices that cannot be stopped should not implement this
-	method.
+        The argument ``success`` is a boolean.
+        When ``success`` is true, bluesky is stopping the device as planned
+        and the device should stop "normally".
+        When ``success`` is false, something has gone wrong and the device
+        may wish to take defensive action to make itself safe.
+        Optional: devices that cannot be stopped should not implement this
+        method.
 
     .. method:: set(*args, **kwargs)
 
@@ -245,9 +245,9 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
         A heuristic that describes the current position of a device as a
         single scalar, as opposed to the potentially multi-valued description
         provided by ``read()``.
-	Optional: bluesky itself does not use the position attribute, but other
-	parts of the ecosystem might.
-	Developers are encouraged to implement this attribute where possible.
+        Optional: bluesky itself does not use the position attribute, but other
+        parts of the ecosystem might.
+        Developers are encouraged to implement this attribute where possible.
 
 
 "Flyer" Interface
