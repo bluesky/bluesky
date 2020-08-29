@@ -878,7 +878,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     ----------
     detectors : list
     cycler : Cycler
-        list of dictionaries mapping motors to positions
+        cycler.Cycler object mapping movable interfaces to positions
     per_step : callable, optional
         hook for customizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
@@ -890,6 +890,12 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     --------
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.grid_scan`
+
+    Examples
+    --------
+    >>> from cycler import cycler
+    >>> cy = cycler(motor1, [1, 2, 3]) * cycler(motor2, [4, 5, 6])
+    >>> scan_nd([sensor], cy)
     """
     _md = {'detectors': [det.name for det in detectors],
            'motors': [motor.name for motor in cycler.keys],
