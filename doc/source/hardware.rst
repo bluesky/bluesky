@@ -242,9 +242,13 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
 
     .. attribute:: position
 
-        a heuristic that describes the current position of a device as a
+        A heuristic that describes the current position of a device as a
         single scalar, as opposed to the potentially multi-valued description
-        provided by ``read()``
+        provided by ``read()``.
+	Optional: bluesky itself does not use the position attribute, but other
+	parts of the ecosystem might.
+	Developers are encouraged to implement this attribute where possible.
+
 
 "Flyer" Interface
 +++++++++++++++++
