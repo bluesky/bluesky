@@ -650,6 +650,8 @@ a generator instance. The corresponding functions named
     baseline_decorator
     baseline_wrapper
     contingency_wrapper
+    configure_count_time_wrapper
+    configure_count_time_decorator
     finalize_decorator
     finalize_wrapper
     fly_during_decorator
