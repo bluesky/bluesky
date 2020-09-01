@@ -11,6 +11,6 @@ See [documentation](http://bluesky.github.io/bluesky).
 
 ## Conda Recipes
 
-Install the most recent build: `conda install bluesky -c nsls2force`
+Install the most recent build: `conda install bluesky -c nsls2forge`
 
 Find the tagged recipe [here](https://github.com/nsls-ii-forge/bluesky-feedstock)
