@@ -120,17 +120,17 @@ helpful error messages, enumerated further below.
 Event loop re-factor
 --------------------
 
-Previously, the :class:`~bluesky.RunEngine` had been repeatedly starting and
-stopping the asyncio event loop in :meth:`~bluesky.RunEngine.__call__`,
-:meth:`~bluesky.RunEngine.request_pause`, :meth:`~bluesky.RunEngine.stop`, in
-:meth:`~bluesky.RunEngine.abort`, :meth:`~bluesky.RunEngine.halt`, and
-:meth:`~bluesky.RunEngine.resume`.  This worked, but is bad practice.  It
+Previously, the :class:`~bluesky.run_engine.RunEngine` had been repeatedly starting and
+stopping the asyncio event loop in :meth:`~bluesky.run_engine.RunEngine.__call__`,
+:meth:`~bluesky.run_engine.RunEngine.request_pause`, :meth:`~bluesky.run_engine.RunEngine.stop`, in
+:meth:`~bluesky.run_engine.RunEngine.abort`, :meth:`~bluesky.run_engine.RunEngine.halt`, and
+:meth:`~bluesky.run_engine.RunEngine.resume`.  This worked, but is bad practice.  It
 complicates attempts to integrate with the event loop with other tools.
 Further, because as of tornado 5, tornado reports its self as an asyncio event
 loop so attempts to start another asyncio event loop inside of a task fails
 which means bluesky will not run in a jupyter notebook.  To fix this we now
 continuously run the event loop on a background thread and the
-:class:`~bluesky.RunEngine` object manages the interaction with creating tasks
+:class:`~bluesky.run_engine.RunEngine` object manages the interaction with creating tasks
 on that event loop.  To first order, users should not notice this change,
 however details of how manage both blocking the user prompt and how we
 suspend processing messages from a plan are radically different.
@@ -159,23 +159,23 @@ Instead we use *during_task* to block the main thread by running the
 Qt event loop directly.
 
 
-``during_task`` kwarg to :meth:`RunEngine.__init__`
-+++++++++++++++++++++++++++++++++++++++++++++++++++
+``during_task`` kwarg to ``RunEngine.__init__``
++++++++++++++++++++++++++++++++++++++++++++++++
 
-We need to block the main thread in :meth:`~bluesky.RunEngine.__call__` (and
-:meth:`~bluesky.RunEngine.resume`) until the user supplied plan is complete.
+We need to block the main thread in :meth:`~bluesky.run_engine.RunEngine.__call__` (and
+:meth:`~bluesky.run_engine.RunEngine.resume`) until the user supplied plan is complete.
 Previously, we would do this by calling ``self.loop.run_forever()`` to
 start the asyncio event loop.  We would then stop the event loop an
-the bottom of :meth:`~bluesky.RunEngine._run` and in
-:meth:`~bluesky.RunEngine.request_pause` to un-block the main thread and return
+the bottom of ``RunEngine._run`` and in
+:meth:`~bluesky.run_engine.RunEngine.request_pause` to un-block the main thread and return
 control to the user terminal.  Now we must find an alternative way to achieve
 this effect.
 
-There is a a :class:`threading.Event` on the :class:`~bluesky.RunEngine` that
-will be set when the task for :meth:`~bluesky.RunEngine._run` in completed,
+There is a a :class:`threading.Event` on the :class:`~bluesky.run_engine.RunEngine` that
+will be set when the task for ``RunEngine._run`` in completed,
 however we can not simple wait on that event as that would again cause the Qt
 windows to freeze.  We also do not want to bake a Matplotlib / Qt dependency
-directly into the :class:`~bluesky.RunEngine` so we added a hook, set at init
+directly into the :class:`~bluesky.run_engine.RunEngine` so we added a hook, set at init
 time, for an object expected to implement the method ``block(event)``.
 While the RunEngine executes a plan, it is passed the :class:`threading.Event`
 and is responsible for blocking until the Event is set.  This function can do
@@ -210,8 +210,8 @@ The persistent dict used by ``RE.md`` must be thread-safe
 By default, ``RE.md`` is an ordinary dictionary, but any dict-like object may
 be used. It is often convenient for the contents of that dictionary to persist
 between sessions. To achieve this, we formerly recommended using
-:class:`~historydict.HistoryDict`. Unfortunately,
-:class:`~historydict.HistoryDict` is not threadsafe and is not compatible with
+``~historydict.HistoryDict``. Unfortunately,
+``~historydict.HistoryDict`` is not threadsafe and is not compatible with
 bluesky's new concurrency model. We now recommend using
 :class:`~bluesky.utils.PersistentDict`. See :ref:`md_persistence` for
 instructions on how to migrate existing metadata.
@@ -960,7 +960,7 @@ Deprecations
   been deprecated and will be removed in a future release. They were never
   documented or widely used.
 * The method :meth:`bluesky.Dispatcher.subscribe` (which is encapsulated into
-  :class:`bluesky.RunEngine` and inherited by
+  :class:`bluesky.run_engine.RunEngine` and inherited by
   :class:`bluesky.callbacks.zmq.RemoteDispatcher`) has a new signature. The
   former signature was ``subscribe(name, func)``. The new signature is
   ``subscribe(func, name='all')``. Because the meaning of the arguments is

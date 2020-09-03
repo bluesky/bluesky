@@ -35,6 +35,15 @@ except ImportError:
 
 
 class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
+    """Namedtuple sub-class to encapsulate a message from the plan to the RE.
+
+    This class provides 3 key features:
+
+    1. dot access to the contents
+    2. default values and a variadic signature for args / kwargs
+    3. a nice repr
+    """
+
     __slots__ = ()
 
     def __new__(cls, command, obj=None, *args, run=None, **kwargs):
@@ -46,14 +55,18 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
 
 
 class RunEngineControlException(Exception):
-    pass
+    """Exception for signaling within the RunEngine."""
 
 
 class RequestAbort(RunEngineControlException):
+    """Request that the current run be aborted."""
+
     exit_status = 'abort'
 
 
 class RequestStop(RunEngineControlException):
+    """Request that the current run be stopped and marked successful."""
+
     exit_status = 'success'
 
 
@@ -74,7 +87,7 @@ class FailedPause(Exception):
 
 
 class FailedStatus(Exception):
-    'Exception to be raised if a SatusBase object reports done but failed'
+    """Exception to be raised if a SatusBase object reports done but failed"""
 
 
 class InvalidCommand(KeyError):
@@ -1408,20 +1421,45 @@ _qapp = None
 
 
 class DuringTask:
+    """This class waits on the event (which fully blocks the thread)."""
 
     def __init__(self):
         pass
 
     def block(self, blocking_event):
+        """
+        Wait plan to finish.
+
+        Parameters
+        ----------
+        blocking_event : threading.Event
+
+        """
         blocking_event.wait()
 
 
 class DefaultDuringTask(DuringTask):
+    """This class run the Qt main loop while waiting for the plan to finish.
+
+    The default setting for the RunEngine's during_task parameter.
+
+    This makes it possible for plots that use Matplotlib's Qt backend to update
+    live during data acquisition.
+
+    It solves the problem that Qt must be run from the main thread.
+    If Matplotlib and a known Qt binding are already imported, run
+    Matplotlib qApp until the task completes. If not, there is no need to
+    handle qApp: just wait on the task.
+
+    """
 
     def __init__(self):
         """
-        Initialize backend. Currently only the Qt backend is supported. The function
-        is initializing the 'teleporter' if Qt backend is used.
+        Initialize backend.
+
+        Currently only the Qt backend is supported. The function is
+        initializing the 'teleporter' if Qt backend is used.
+
         """
         if 'matplotlib' in sys.modules:
             import matplotlib
@@ -1431,17 +1469,7 @@ class DefaultDuringTask(DuringTask):
                 initialize_qt_teleporter()
 
     def block(self, blocking_event):
-        """
-        The default setting for the RunEngine's during_task parameter.
-
-        This makes it possible for plots that use matplotlib's Qt backend to update
-        live during data acquisition.
-
-        It solves the problem that Qt must be run from the main thread.
-        If matplotlib and a known Qt binding are already imported, run the
-        matplotlib qApp until the task completes. If not, there is no need to
-        handle qApp: just wait on the task.
-        """
+        # docstring inherited
         global _qapp
         if 'matplotlib' not in sys.modules:
             # We are not using matplotlib + Qt. Just wait on the Event.

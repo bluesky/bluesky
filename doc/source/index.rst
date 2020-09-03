@@ -52,6 +52,7 @@ Index
    multi_run_plans
    debugging
    run_engine_api
+   utils
    magics
    from-pyepics-to-bluesky
    comparison-with-spec
@@ -88,4 +89,3 @@ Index
 
    NSLS-II Repositories <https://github.com/NSLS-II/>
    Bug Reports <https://github.com/NSLS-II/Bug-Reports/issues>
-

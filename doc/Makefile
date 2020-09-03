@@ -2,13 +2,13 @@
 #
 
 # You can set these variables from the command line.
-SPHINXOPTS    = '-W'
+SPHINXOPTS    = -W --keep-going
 SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
 
 # For auto gh-pages
-GH_PAGES_SOURCES = doc/Makefile doc/source 
+GH_PAGES_SOURCES = doc/Makefile doc/source
 GH_PAGES_DIR := $(shell mktemp -d)
 GH_PAGES_BRANCH = cli_refactor
 
@@ -196,6 +196,10 @@ pseudoxml:
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in $(BUILDDIR)/pseudoxml."
+
+show:
+	@python -c "import webbrowser; webbrowser.open_new_tab('file://$(shell pwd)/build/html/index.html')"
+
 
 gh-pages:
 	cd .. && git checkout gh-pages && git rm -rf . && touch .nojekyll && mv doc/build/html/* . && rm -rf doc && git add -A && git commit -a --amend -m "Makefile is force-commiting new build." && git push NSLS-II gh-pages -f && cd .. && git checkout --

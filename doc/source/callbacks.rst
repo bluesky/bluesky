@@ -656,6 +656,7 @@ Use these methods to toggle on or off parts of the functionality.
 .. autosummary::
     :toctree: generated
 
+    BestEffortCallback
     BestEffortCallback.enable_heading
     BestEffortCallback.disable_heading
     BestEffortCallback.enable_table
