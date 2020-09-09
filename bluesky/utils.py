@@ -1071,7 +1071,7 @@ def apply_to_dict_recursively(d, f):
 class ProgressBar:
     def __init__(self, status_objs, delay_draw=0.2):
         """
-        Represent status objects with a text-based progress bars in a terminal.
+        Represent status objects with text-based progress bars in a terminal.
 
         Parameters
         ----------
