@@ -18,7 +18,7 @@ from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
 from bluesky.plans import (count, grid_scan)
-from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint)
+from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint, run_coroutine)
 from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    reset_positions_decorator,
                                    run_wrapper, rewindable_wrapper,
@@ -1573,3 +1573,14 @@ def test_thread_name(RE):
 
     d = MockDevice()
     RE([Msg("trigger", d)])
+
+
+def test_run_coroutin(RE):
+    state = {'run': False}
+
+    async def test(target):
+        target['run'] = True
+
+    RE(run_coroutine(test, state))
+
+    assert state['run']

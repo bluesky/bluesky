@@ -418,7 +418,9 @@ class RunEngine:
             'wait_for': self._wait_for,
             'input': self._input,
             'install_suspender': self._install_suspender,
-            'remove_suspender': self._remove_suspender, }
+            'remove_suspender': self._remove_suspender,
+            'run_coroutine': self._run_coro,
+        }
 
         # public dispatcher for callbacks
         # The Dispatcher's public methods are exposed through the
@@ -2262,6 +2264,16 @@ class RunEngine:
         async_input = AsyncInput(self.loop)
         async_input = functools.partial(async_input, end='', flush=True)
         return (await async_input(prompt))
+
+    async def _run_coro(self, msg):
+        """
+        Run a user-supplied co-routine in the RE's event loop
+
+            Msg('run_coroutine', coro, a, b=3)
+
+        """
+        _, coro, args, kwargs, _ = msg
+        return await coro(*args, **kwargs)
 
     def emit_sync(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
