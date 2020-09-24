@@ -377,34 +377,35 @@ class RunBundler:
         self.bundling = False
         self._bundle_name = None
 
-        d_objs, doc = self._descriptors.get(desc_key, (None, None))
+        d_objs, descriptor_doc = self._descriptors.get(desc_key, (None, None))
         if d_objs is not None and d_objs != objs_read:
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
                 "got {!s}".format(d_objs, objs_read)
             )
-        if doc is None:
-            # We do not have an Event Descriptor for this set.
+        if descriptor_doc is None:
+            # We do not have an Event Descriptor for this set
+            # so one must be created.
             data_keys = {}
             config = {}
             object_keys = {}
             hints = {}
             for obj in objs_read:
                 dks = self._describe_cache[obj]
-                name = obj.name
+                obj_name = obj.name
                 # dks is an OrderedDict. Record that order as a list.
                 object_keys[obj.name] = list(dks)
                 for field, dk in dks.items():
-                    dk["object_name"] = name
+                    dk["object_name"] = obj_name
                 data_keys.update(dks)
-                config[name] = {}
-                config[name]["data"] = self._config_values_cache[obj]
-                config[name]["timestamps"] = self._config_ts_cache[obj]
-                config[name]["data_keys"] = self._config_desc_cache[obj]
+                config[obj_name] = {}
+                config[obj_name]["data"] = self._config_values_cache[obj]
+                config[obj_name]["timestamps"] = self._config_ts_cache[obj]
+                config[obj_name]["data_keys"] = self._config_desc_cache[obj]
                 if hasattr(obj, "hints"):
-                    hints[name] = obj.hints
+                    hints[obj_name] = obj.hints
             descriptor_uid = new_uid()
-            doc = dict(
+            descriptor_doc = dict(
                 run_start=self._run_start_uid,
                 time=ttime.time(),
                 data_keys=data_keys,
@@ -414,25 +415,46 @@ class RunBundler:
                 hints=hints,
                 object_keys=object_keys,
             )
-            await self.emit(DocumentNames.descriptor, doc)
-            doc_logger.debug("[descriptor] document is emitted with name %r containing "
-                             "data keys %r (run_uid=%r)", name, data_keys.keys(),
-                             self._run_start_uid,
-                             extra={'doc_name': 'descriptor',
-                                    'run_uid': self._run_start_uid,
-                                    'data_keys': data_keys.keys()})
-            self._descriptors[desc_key] = (objs_read, doc)
+            await self.emit(DocumentNames.descriptor, descriptor_doc)
+            doc_logger.debug(
+                "[descriptor] document emitted with name %r containing "
+                "data keys %r (run_uid=%r)",
+                obj_name,
+                data_keys.keys(),
+                self._run_start_uid,
+                extra={
+                    'doc_name': 'descriptor',
+                    'run_uid': self._run_start_uid,
+                    'data_keys': data_keys.keys()}
+            )
+            self._descriptors[desc_key] = (objs_read, descriptor_doc)
 
-        descriptor_uid = doc["uid"]
+        descriptor_uid = descriptor_doc["uid"]
 
         # Resource and Datum documents
-        for name, doc in self._asset_docs_cache:
-            # Add a 'run_start' field to the resource document on its way out.
-            if name == "resource":
-                doc["run_start"] = self._run_start_uid
-            await self.emit(DocumentNames(name), doc)
+        for resource_or_datum_name, resource_or_datum_doc in self._asset_docs_cache:
+            # Add a 'run_start' field to resource documents on their way out
+            # since this field could not have been set correctly before this point.
+            if resource_or_datum_name == "resource":
+                resource_or_datum_doc["run_start"] = self._run_start_uid
 
-        # Event documents
+            doc_logger.debug(
+                "[%s] document emitted %r",
+                resource_or_datum_name,
+                resource_or_datum_doc,
+                extra={
+                    "doc_name": resource_or_datum_name,
+                    "run_uid": self._run_start_uid,
+                    "doc": resource_or_datum_doc
+                }
+            )
+
+            await self.emit(
+                DocumentNames(resource_or_datum_name),
+                resource_or_datum_doc
+            )
+
+        # Event document
         seq_num = next(self._sequence_counters[seq_num_key])
         event_uid = new_uid()
         # Merge list of readings into single dict.
@@ -446,7 +468,7 @@ class RunBundler:
             for k, v in self._descriptors[desc_key][1]["data_keys"].items()
             if "external" in v
         }
-        doc = dict(
+        event_doc = dict(
             descriptor=descriptor_uid,
             time=ttime.time(),
             data=data,
@@ -455,12 +477,16 @@ class RunBundler:
             uid=event_uid,
             filled=filled,
         )
-        await self.emit(DocumentNames.event, doc)
-        doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)", data.keys(),
-                         self._run_start_uid,
-                         extra={'doc_name': 'event',
-                                'run_uid': self._run_start_uid,
-                                'data_keys': data.keys()})
+        await self.emit(DocumentNames.event, event_doc)
+        doc_logger.debug(
+            "[event] document emitted with data keys %r (run_uid=%r)",
+            data.keys(),
+            self._run_start_uid,
+            extra={
+                'doc_name': 'event',
+                'run_uid': self._run_start_uid,
+                'data_keys': data.keys()}
+        )
 
     def clear_monitors(self):
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
