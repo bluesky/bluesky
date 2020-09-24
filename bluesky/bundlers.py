@@ -338,6 +338,12 @@ class RunBundler:
     async def save(self, msg):
         """Save the event that is currently being bundled
 
+        Create and emit an Event document containing the data read from devices
+        in self._objs_read. Emit any Resource and Datum documents cached by
+        those devices before emitting the Event document. If this is the first
+        Event of its stream then create and emit the Event Descriptor document
+        before emitting Resource, Datum, and Event documents.
+
         Expected message object is::
 
             Msg('save')
@@ -358,7 +364,7 @@ class RunBundler:
         # read in this Event grouping.
         objs_read = frozenset(self._objs_read)
 
-        # Event Descriptor documents
+        # Event Descriptor key
         desc_key = self._bundle_name
 
         # This is a separate check because it can be reset on resume.
@@ -433,7 +439,7 @@ class RunBundler:
         readings = {k: v for d in self._read_cache for k, v in d.items()}
         data, timestamps = _rearrange_into_parallel_dicts(readings)
         # Mark all externally-stored data as not filled so that consumers
-        # know that the corresponding data are identifies, not dereferenced
+        # know that the corresponding data are identifiers, not dereferenced
         # data.
         filled = {
             k: False
