@@ -1,6 +1,7 @@
 cycler
 event-model>=1.14.0
 historydict
+matplotlib
 msgpack
 msgpack-numpy
 numpy
