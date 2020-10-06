@@ -416,6 +416,7 @@ class RunEngine:
             'open_run': self._open_run,
             'close_run': self._close_run,
             'wait_for': self._wait_for,
+            'wait_for_status': self._wait_for_status,
             'input': self._input,
             'install_suspender': self._install_suspender,
             'remove_suspender': self._remove_suspender, }
@@ -2002,6 +2003,56 @@ class RunEngine:
                     # inferred this from the status_obj, but there are edge
                     # cases.
                     self.waiting_hook(None)
+
+    async def _wait_for_status(self, msg):
+        """
+        Block progress until every status object is done.
+
+        Expected message object is:
+
+            Msg('wait_for_status', None, *statuses)
+
+        where ``statuses`` is an iterable of StatusBase objects
+        """
+        assert msg.obj is None
+        assert not msg.kwargs
+        pardon_failures = self._pardon_failures
+
+        status_objs = msg.args
+        futs = []
+
+        for ret in status_objs:
+            p_event = asyncio.Event(loop=self._loop_for_kwargs)
+
+            # do closure via defaults,
+            def done_callback(status=None, *, p_event=p_event):
+                self.log.debug("The object %r reports set is done "
+                               "with status %r", msg.obj, ret.success)
+                task = self._loop.call_soon_threadsafe(
+                    self._status_object_completed, ret, p_event, pardon_failures)
+                self._status_tasks.append(task)
+
+            try:
+                ret.add_callback(done_callback)
+            except AttributeError:
+                # for ophyd < v0.8.0
+                ret.finished_cb = done_callback
+            futs.append(p_event.wait)
+        try:
+            if self.waiting_hook is not None:
+                # Notify the waiting_hook function that the RunEngine is
+                # waiting for these status_objs to complete. Users can use
+                # the information these encapsulate to create a progress
+                # bar.
+                self.waiting_hook(status_objs)
+                await self._wait_for(Msg('wait_for', None, futs))
+        finally:
+            if self.waiting_hook is not None:
+                # Notify the waiting_hook function that we have moved on by
+                # sending it `None`. If all goes well, it could have
+                # inferred this from the status_obj, but there are edge
+                # cases.
+                self.waiting_hook(None)
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """
