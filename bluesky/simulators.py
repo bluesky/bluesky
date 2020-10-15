@@ -85,12 +85,12 @@ def check_limits(plan):
     plan : iterable
         Must yield `Msg` objects
     """
-    ignore = [] 
+    ignore = []
     for msg in plan:
         if msg.command == 'set' and msg.obj not in ignore:
             if hasattr(msg.obj, "limits"):
                 msg.obj.check_value(msg.args[0])
             else:
                 warn("Limits of {} are unknown and can't be checked."
-                     .format(msg.obj.name)) 
-                ignore.append(msg.obj) 
+                     .format(msg.obj.name))
+                ignore.append(msg.obj)
