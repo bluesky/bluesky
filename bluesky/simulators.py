@@ -76,10 +76,6 @@ def summarize_plan(plan):
 print_summary = summarize_plan  # back-compat
 
 
-class LimitsExceeded(Exception):
-    ...
-
-
 def check_limits(plan):
     """
     Check that a plan will not move devices outside of their limits.
