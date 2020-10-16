@@ -38,9 +38,10 @@ def test_check_limits(hw):
     # Use an assert to help us out if this changes in the future.
     assert not hasattr(motor, 'limits')
 
-    # check_limits should warn if it can't find limits
-    with pytest.warns(UserWarning):
-        check_limits(scan([det], motor, -1, 1, 3))
+    # # check_limits should warn if it can't find check_value
+    # TODO: Is there _any_ object to test?
+    # with pytest.warns(UserWarning):
+    #     check_limits(scan([det], motor, -1, 1, 3))
 
     # monkey-patch some limits
     motor.limits = (-2, 2)
