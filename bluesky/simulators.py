@@ -58,8 +58,9 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     return {'path': path, 'events': read_points}
 
 
-def summarize_plan(plan):
-    """Print summary of plan
+def summarize_plan(plan, *, suppress_run_internals=True):
+    """
+    Print summary of plan.
 
     Prints a minimal version of the plan, showing only moves and
     where events are created.
@@ -68,8 +69,14 @@ def summarize_plan(plan):
     ----------
     plan : iterable
         Must yield `Msg` objects
+
+    suppress_run_internals : bool
+        If messages inside of a run should be suppressed.
+
     """
-    for msg in print_summary_wrapper(plan):
+    for msg in print_summary_wrapper(
+            plan, suppress_run_internals=suppress_run_internals
+    ):
         ...
 
 

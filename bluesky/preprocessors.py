@@ -269,8 +269,9 @@ def pchain(*args):
     return tuple(rets)
 
 
-def print_summary_wrapper(plan):
-    """Print summary of plan as it goes by
+def print_summary_wrapper(plan, *, suppress_run_internals=False):
+    """
+    Print summary of plan as it goes by.
 
     Prints a minimal version of the plan, showing only moves and
     where events are created.  Yields the `Msg` unchanged.
@@ -280,26 +281,41 @@ def print_summary_wrapper(plan):
     plan : iterable
         Must yield `Msg` objects
 
+    suppress_run_internals : bool
+        If messages inside of a run should be suppressed.
+
     Yields
     ------
     msg : `Msg`
-    """
 
+    """
+    skip = False
     read_cache = []
     for msg in plan:
         cmd = msg.command
         if cmd == 'open_run':
-            print('{:=^80}'.format(' Open Run '))
+            if not suppress_run_internals:
+                print('{:=^80}'.format(' Open Run '))
+            plan_name = msg.kwargs.get('plan_name', '')
+            plan_args = msg.kwargs.get('plan_args', {})
+            if plan_name:
+                print(f'  {plan_name}(' +
+                      ', '.join(f'{k}={v}' for k, v in plan_args.items()) +
+                      ')')
+
+            skip = suppress_run_internals
         elif cmd == 'close_run':
-            print('{:=^80}'.format(' Close Run '))
-        elif cmd == 'set':
+            if not suppress_run_internals:
+                print('{:=^80}'.format(' Close Run '))
+            skip = False
+        elif cmd == 'set' and not skip:
             print('{motor.name} -> {args[0]}'.format(motor=msg.obj,
                                                      args=msg.args))
-        elif cmd == 'create':
+        elif cmd == 'create' and not skip:
             read_cache = []
-        elif cmd == 'read':
+        elif cmd == 'read' and not skip:
             read_cache.append(msg.obj.name)
-        elif cmd == 'save':
+        elif cmd == 'save' and not skip:
             print('  Read {}'.format(read_cache))
         yield msg
 
