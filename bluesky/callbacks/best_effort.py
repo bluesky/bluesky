@@ -237,24 +237,28 @@ class BestEffortCallback(QtAwareCallback):
                 fig = self._fig_factory(fig_name)
             else:
                 fig = plt.figure(fig_name)
+
             if not fig.axes:
-                # This is apparently a fresh figure. Make axes.
-                # The complexity here is due to making a shared x axis. This can be
-                # simplified when Figure supports the `subplots` method in a future
-                # release of matplotlib.
-                fig.set_size_inches(6.4, min(950, len(columns) * 400) / fig.dpi)
-                for i in range(len(columns)):
-                    if i == 0:
-                        ax = fig.add_subplot(len(columns), 1, 1 + i)
-                        if ndims == 1:
-                            share_kwargs = {'sharex': ax}
-                        elif ndims == 2:
-                            share_kwargs = {'sharex': ax, 'sharey': ax}
-                        else:
-                            raise NotImplementedError("we now support 3D?!")
-                    else:
-                        ax = fig.add_subplot(len(columns), 1, 1 + i,
-                                             **share_kwargs)
+                if len(columns) < 5:
+                    layout = (len(columns), 1)
+                else:
+                    nrows = ncols = int(np.ceil(np.sqrt(len(columns))))
+                    while (nrows - 1) * ncols > len(columns):
+                        nrows -= 1
+                    layout = (nrows, ncols)
+                if ndims == 1:
+                    share_kwargs = {'sharex': True}
+                elif ndims == 2:
+                    share_kwargs = {'sharex': True, 'sharey': True}
+                else:
+                    raise NotImplementedError("we now support 3D?!")
+
+                fig_size = np.array(layout[::-1]) * 5
+                fig.set_size_inches(*fig_size)
+                fig.subplots(*map(int, layout), **share_kwargs)
+                for ax in fig.axes[len(columns):]:
+                    ax.set_visible(False)
+
             axes = fig.axes
 
             # ## LIVE PLOT AND PEAK ANALYSIS ## #
