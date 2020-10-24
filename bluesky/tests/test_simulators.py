@@ -1,7 +1,7 @@
 from bluesky.plans import scan
 from bluesky.simulators import (print_summary, print_summary_wrapper,
                                 summarize_plan,
-                                check_limits, LimitsExceeded,
+                                check_limits,
                                 plot_raster_path)
 import pytest
 from bluesky.plans import grid_scan
@@ -38,23 +38,24 @@ def test_check_limits(hw):
     # Use an assert to help us out if this changes in the future.
     assert not hasattr(motor, 'limits')
 
-    # check_limits should warn if it can't find limits
-    with pytest.warns(UserWarning):
-        check_limits(scan([det], motor, -1, 1, 3))
+    # # check_limits should warn if it can't find check_value
+    # TODO: Is there _any_ object to test?
+    # with pytest.warns(UserWarning):
+    #     check_limits(scan([det], motor, -1, 1, 3))
 
     # monkey-patch some limits
     motor.limits = (-2, 2)
     # check_limits should do nothing here
     check_limits(scan([det], motor, -1, 1, 3))
 
-    # check_limits should error if limits are exceeded
-    with pytest.raises(LimitsExceeded):
-        check_limits(scan([det], motor, -3, 3, 3))
+    # check_limits should error if limits are exceeded only if object raises
+    # this object does not raise
+    check_limits(scan([det], motor, -3, 3, 3))
 
-    # check_limits should warn if limits are equal
+    # check_limits should raise if limits are equal only if object raises
+    # this object does not raise
     motor.limits = (2, 2)
-    with pytest.warns(UserWarning):
-        check_limits(scan([det], motor, -1, 1, 3))
+    check_limits(scan([det], motor, -1, 1, 3))
 
 
 def test_plot_raster_path(hw):

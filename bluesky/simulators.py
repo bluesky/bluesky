@@ -76,10 +76,6 @@ def summarize_plan(plan):
 print_summary = summarize_plan  # back-compat
 
 
-class LimitsExceeded(Exception):
-    ...
-
-
 def check_limits(plan):
     """
     Check that a plan will not move devices outside of their limits.
@@ -88,28 +84,13 @@ def check_limits(plan):
     ----------
     plan : iterable
         Must yield `Msg` objects
-
-    Raises
-    ------
-    LimitsExceeded
     """
     ignore = []
     for msg in plan:
-        if msg.command == 'set':
-            if msg.obj in ignore:
-                continue  # we have already warned about this device
-            try:
-                low, high = msg.obj.limits
-            except AttributeError:
-                warn("Limits of {} are unknown and can't be checked.".format(msg.obj.name))
+        if msg.command == 'set' and msg.obj not in ignore:
+            if hasattr(msg.obj, "check_value"):
+                msg.obj.check_value(msg.args[0])
+            else:
+                warn(f"{msg.obj.name} has no check_value() method"
+                     f" to check if {msg.args[0]} is within its limits.")
                 ignore.append(msg.obj)
-                continue
-            if low == high:
-                warn("Limits are not set on {}".format(msg.obj.name))
-                ignore.append(msg.obj)
-                continue
-            pos, = msg.args
-            if not (low < pos < high):
-                raise LimitsExceeded("This plan would put {} at {} "
-                                     "which is outside of its limits, {}."
-                                     "".format(msg.obj.name, pos, (low, high)))
