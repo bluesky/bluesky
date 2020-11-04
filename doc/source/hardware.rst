@@ -224,6 +224,11 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
 
 .. class:: SettableDevice:
 
+    .. method:: set(*args, **kwargs)
+
+        Return a ``Status`` that is marked done when the device is done
+        moving.
+
     .. method:: stop(success=True)
 
         Safely stop a device that may or may not be in motion.
@@ -234,11 +239,6 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
         may wish to take defensive action to make itself safe.
         Optional: devices that cannot be stopped should not implement this
         method.
-
-    .. method:: set(*args, **kwargs)
-
-        Return a ``Status`` that is marked done when the device is done
-        moving.
 
     .. attribute:: position
 
