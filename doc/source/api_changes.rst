@@ -8,7 +8,7 @@ v1.6.7 (2020-11-04)
 Fixed
 -----
 
-* Tweak layout of plots produced by the Best-EFfort Callback when showing
+* Tweak layout of plots produced by the Best-Effort Callback when showing
   many LiveGrids.
 * The :func:`bluesky.simulators.check_limits` simulator now calls
   ``obj.check_value()`` instead of looking at ``obj.limits``.
@@ -17,7 +17,7 @@ Fixed
 * Various docstrings were fixed to match the actual function signatures.
 * The utility `:func:`bluesky.utils.is_movable` for checking with an object
   satifies the expected interfaced for a "movable" object now correctly treats
-  the ``stop`` method as optional.
+  the ``stop`` method and ``position`` attribute as optional.
 * Documentation about the expected interface for "movable" objects was
   incomplete and has been revised to match reality.
 
