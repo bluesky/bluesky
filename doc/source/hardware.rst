@@ -269,7 +269,7 @@ Movable device objects must pass :func:`bluesky.utils.is_movable(obj)`.
 
 *For context on what we mean by "flyer", refer to the section on :doc:`async`.*
 
-The interace of a "flyable" device is separate from the interface of a readable
+The interface of a "flyable" device is separate from the interface of a readable
 or settable device, though there is some overlap.
 
 .. class:: FlyableDevice:
