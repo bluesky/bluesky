@@ -220,7 +220,7 @@ Movable (or "Settable")  Device
 
 The interface of a settable device extends the interface of a readable device
 with the following additional methods and attributes.
-Movable device objects must pass ``bluesky.utils.is_movable(obj)``.
+Movable device objects must pass :func:`bluesky.utils.is_movable(obj)`.
 
 .. class:: MovableDevice:
 
