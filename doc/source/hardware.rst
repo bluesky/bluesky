@@ -215,14 +215,14 @@ The interface of a readable device:
         resumes after a pause.
 
 
-Settable (Movable) Device
-+++++++++++++++++++++++++
+Movable (or "Settable")  Device
++++++++++++++++++++++++++++++++
 
 The interface of a settable device extends the interface of a readable device
 with the following additional methods and attributes.
-Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
+Movable device objects must pass ``bluesky.utils.is_movable(obj)``.
 
-.. class:: SettableDevice:
+.. class:: MovableDevice:
 
     .. method:: set(*args, **kwargs)
 
