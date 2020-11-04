@@ -237,14 +237,27 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
         and the device should stop "normally".
         When ``success`` is false, something has gone wrong and the device
         may wish to take defensive action to make itself safe.
+
         Optional: devices that cannot be stopped should not implement this
         method.
+
+    .. method:: check_value(*args, **kwargs)
+
+       This should accept the same arguments as ``set``. It should raise an
+       Exception if the argument represent an illegal setting --- e.g. a
+       position that would move a motor outside its limits or a temperature
+       controller outside of its settable range.
+
+       Optional: If this method is not present, simulators that check limits
+       such as :func:`bluesky.simulators.check_limits` may issue a warning but
+       should assume that all values are legal.
 
     .. attribute:: position
 
         A heuristic that describes the current position of a device as a
         single scalar, as opposed to the potentially multi-valued description
         provided by ``read()``.
+
         Optional: bluesky itself does not use the position attribute, but other
         parts of the ecosystem might.
         Developers are encouraged to implement this attribute where possible.
