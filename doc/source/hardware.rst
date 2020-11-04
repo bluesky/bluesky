@@ -227,7 +227,8 @@ Movable device objects must pass :func:`bluesky.utils.is_movable(obj)`.
     .. method:: set(*args, **kwargs)
 
         Return a ``Status`` that is marked done when the device is done
-        moving.
+        moving. This is the only *required* method that the Movable interace
+        adds to the  Readable one.
 
     .. method:: stop(success=True)
 
