@@ -3,7 +3,7 @@
 =================
 
 v1.6.7 (2020-11-04)
--------------------
+===================
 
 Fixed
 -----
@@ -15,7 +15,7 @@ Fixed
 * When a document is emitted from a RunEngine, a log message is always issued.
   Previously, Resource and Datum documents were missed.
 * Various docstrings were fixed to match the actual function signatures.
-* The utility `:func:`bluesky.utils.is_movable` for checking with an object
+* The utility :func:`bluesky.utils.is_movable` for checking with an object
   satifies the expected interfaced for a "movable" object now correctly treats
   the ``stop`` method and ``position`` attribute as optional.
 * Documentation about the expected interface for "movable" objects was
