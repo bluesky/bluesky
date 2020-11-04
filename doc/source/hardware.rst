@@ -215,14 +215,21 @@ The interface of a readable device:
         resumes after a pause.
 
 
-Settable (Movable) Device
-+++++++++++++++++++++++++
+Movable (or "Settable")  Device
++++++++++++++++++++++++++++++++
 
-The interface of a settable device extends the interface of a readable device
-with the following additional methods and attributes.
-Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
+The interface of a movable device extends the interface of a readable device
+with the following additional methods and attributes. The utility function
+:func:`bluesky.utils.is_movable` can be used to check if an object meets the
+expected interface of a Movable.
 
-.. class:: SettableDevice:
+.. class:: MovableDevice:
+
+    .. method:: set(*args, **kwargs)
+
+        Return a ``Status`` that is marked done when the device is done
+        moving. This is the only *required* method that the Movable interace
+        adds to the  Readable one.
 
     .. method:: stop(success=True)
 
@@ -232,19 +239,27 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
         and the device should stop "normally".
         When ``success`` is false, something has gone wrong and the device
         may wish to take defensive action to make itself safe.
+
         Optional: devices that cannot be stopped should not implement this
         method.
 
-    .. method:: set(*args, **kwargs)
+    .. method:: check_value(*args, **kwargs)
 
-        Return a ``Status`` that is marked done when the device is done
-        moving.
+       This should accept the same arguments as ``set``. It should raise an
+       Exception if the argument represent an illegal setting --- e.g. a
+       position that would move a motor outside its limits or a temperature
+       controller outside of its settable range.
+
+       Optional: If this method is not present, simulators that check limits
+       such as :func:`bluesky.simulators.check_limits` may issue a warning but
+       should assume that all values are legal.
 
     .. attribute:: position
 
         A heuristic that describes the current position of a device as a
         single scalar, as opposed to the potentially multi-valued description
         provided by ``read()``.
+
         Optional: bluesky itself does not use the position attribute, but other
         parts of the ecosystem might.
         Developers are encouraged to implement this attribute where possible.
@@ -255,7 +270,7 @@ Settable device objects must pass ``bluesky.utils.is_movable(obj)``.
 
 *For context on what we mean by "flyer", refer to the section on :doc:`async`.*
 
-The interace of a "flyable" device is separate from the interface of a readable
+The interface of a "flyable" device is separate from the interface of a readable
 or settable device, though there is some overlap.
 
 .. class:: FlyableDevice:
