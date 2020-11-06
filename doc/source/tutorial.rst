@@ -46,7 +46,7 @@ Before You Begin
 
   .. code-block:: bash
 
-     python3 -m pip install --upgrade bluesky ophyd databroker matplotlib pyqt5 ipython
+     python3 -m pip install --upgrade bluesky ophyd databroker matplotlib pyqt5 ipython pyepics
 
   Alternatively, if you are a conda user and you prefer conda packages, you can
   use:
