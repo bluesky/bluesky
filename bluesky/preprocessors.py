@@ -9,7 +9,7 @@ from .utils import (normalize_subs_input, root_ancestor,
                     short_uid as _short_uid, make_decorator,
                     RunEngineControlException, merge_axis)
 from functools import wraps
-from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read)
+from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read, rd)
 
 
 def plan_mutator(plan, msg_proc):
@@ -448,7 +448,7 @@ def configure_count_time_wrapper(plan, time):
                 # TODO Do this with a 'read' Msg once reads can be
                 # marked as belonging to a different event stream (or no
                 # event stream.
-                original_times[obj] = obj.count_time.get()
+                original_times[obj] = rd(obj.count_time)
                 # TODO do this with configure
                 return pchain(mv(obj.count_time, time),
                               single_gen(msg)), None
