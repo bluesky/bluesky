@@ -548,6 +548,7 @@ Special utilities:
    repeater
    caching_repeater
    broadcast_msg
+   run_coroutine
 
 .. _preprocessors:
 

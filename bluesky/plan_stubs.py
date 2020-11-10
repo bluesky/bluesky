@@ -866,6 +866,32 @@ def wait_for(futures, **kwargs):
     return (yield Msg('wait_for', None, futures, **kwargs))
 
 
+def run_coroutine(coro, *args, **kwargs):
+    """
+    Run a user-supplied co-routine on the RE event loop.
+
+    Parameters
+    ----------
+    coro : async Callable
+        The co-routine to run.  We need to take the actual callable rather than a
+        instantiated co-routine because we may need to re-run it on rewind
+
+    args, kwargs
+        passed through to callable
+
+    Yields
+    ------
+    msg : Msg
+         `Msg('run_coroutine', coro, *args, **kwargs)`
+
+    Returns
+    -------
+    Any
+        What ever the coroutine returns
+    """
+    return (yield Msg('run_coroutine', coro, *args, **kwargs))
+
+
 def trigger_and_read(devices, name='primary'):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
