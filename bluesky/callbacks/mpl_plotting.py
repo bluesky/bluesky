@@ -26,6 +26,9 @@ def initialize_qt_teleporter():
         If called from any thread but the main thread
 
     """
+    if _get_teleporter.cache_info().currsize:
+        # Already initialized.
+        return
     if threading.current_thread() is not threading.main_thread():
         raise RuntimeError(
             "initialize_qt_teleporter() may only be called from the main "
