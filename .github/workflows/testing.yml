@@ -57,5 +57,4 @@ jobs:
         set -vxeuo pipefail
         python -c "from bluesky.utils import get_history; get_history()"
         coverage run -m pytest -v
-        coverage combine
         coverage report
