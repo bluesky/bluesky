@@ -58,9 +58,8 @@ class NumpySeqHandler:
 def db(request):
     """Return a data broker
     """
-    from databroker.tests.utils import build_sqlite_backed_broker
-    db = build_sqlite_backed_broker(request)
-    db.reg.register_handler('NPY_SEQ', NumpySeqHandler)
+    from databroker import temp
+    db = temp()
     return db
 
 
