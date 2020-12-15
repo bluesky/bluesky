@@ -1,0 +1,57 @@
+name: Unit Tests
+
+on:
+  push:
+  pull_request:
+  schedule:
+      - cron: '00 4 * * *'  # daily at 4AM
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+        ophyd-version: ["master", "latest"]
+      fail-fast: false
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install
+      shell: bash -l {0}
+      run: source continuous_integration/scripts/install.sh
+
+    - name: Install test requirements
+      shell: bash -l {0}
+      run: |
+        python -m pip install -r requirements-dev.txt
+        python -m pip list
+
+    - name: Install ophyd mater for some builds.
+      if: ${{ ophyd-version == "master" }}
+      shell: bash -l {0}
+      run: |
+        python -m pip install git+https://github.com/bluesky/ophyd.git@master
+        python -m pip list
+
+    - name: Ensure that callbacks import without matplotlib
+      shell: bash -l {0}
+      run: |
+        # This is a one-off test that needs to run in its own process.
+        python -c 'import sys, bluesky.callbacks; assert "matplotlib" not in sys.modules'
+
+    - name: Test with pytest
+      shell: bash -l {0}
+      run: |
+        # make sure the sqlite file exists to avoid race conditions
+        python -c "from bluesky.utils import get_history; get_history()"
+        coverage run -m pytest -v
+        coverage combine
+        coverage report
