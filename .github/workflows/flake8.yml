@@ -16,11 +16,11 @@ jobs:
       - name: Install flake8
         shell: bash -l {0}
         run: |
+          set -vxeuo pipefail
           python -m pip install --upgrade pip
           python -m pip install flake8
           python -m pip list
 
       - name: Run flake8
         shell: bash -l {0}
-        run: |
-          flake8
+        run: flake8

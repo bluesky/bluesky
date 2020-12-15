@@ -31,6 +31,7 @@ jobs:
     - name: Install test requirements
       shell: bash -l {0}
       run: |
+        set -vxeuo pipefail
         python -m pip install -r requirements-dev.txt
         python -m pip list
 
@@ -38,6 +39,7 @@ jobs:
       if: ${{ matrix.ophyd-version == 'master' }}
       shell: bash -l {0}
       run: |
+        set -vxeuo pipefail
         python -m pip install git+https://github.com/bluesky/ophyd.git@master
         python -m pip list
 
@@ -45,12 +47,14 @@ jobs:
       shell: bash -l {0}
       run: |
         # This is a one-off test that needs to run in its own process.
+        set -vxeuo pipefail
         python -c 'import sys, bluesky.callbacks; assert "matplotlib" not in sys.modules'
 
     - name: Test with pytest
       shell: bash -l {0}
       run: |
         # make sure the sqlite file exists to avoid race conditions
+        set -vxeuo pipefail
         python -c "from bluesky.utils import get_history; get_history()"
         coverage run -m pytest -v
         coverage combine
