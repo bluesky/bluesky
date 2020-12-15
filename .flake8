@@ -5,6 +5,6 @@ exclude =
     build,
     dist,
     versioneer.py,
-    doc/source/conf.py
-    doc/source/examples
+    docs/source/conf.py
+    docs/source/examples
 max-line-length = 115
