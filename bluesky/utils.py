@@ -1156,7 +1156,28 @@ def apply_to_dict_recursively(d, f):
     return d
 
 
-class ProgressBar:
+class ProgressBar(abc.ABC):
+    def update(
+            self,
+            pos: Any,
+            *,
+            name: str = None,
+            current: Any = None,
+            initial: Any = None,
+            target: Any = None,
+            unit: str = "units",
+            precision: Any = None,
+            fraction: Any = None,
+            time_elapsed: float = None,
+            time_remaining: float = None,
+    ):
+        ...
+
+    def clear(self):
+        ...
+
+
+class AsciiProgressBar(ProgressBar):
     def __init__(self, status_objs, delay_draw=0.2):
         """
         Represent status objects with a progress bars.
@@ -1265,7 +1286,7 @@ class ProgressBar:
                 self.fp.write(_unicode(_term_move_up() * len(self.meters)))
 
 
-class NotebookProgressBar:
+class NotebookProgressBar(ProgressBar):
     containers: List[HBox]
     status_objs: List[Any]
     fp: TextIO
@@ -1368,6 +1389,7 @@ class NotebookProgressBar:
         """
         Draws the progress bar or a message if there is
         not enough information
+        :param pos: The index of the progress bar in self.containers
         :param label: The label to go on the left-hand side of the progress bar
         :param meta: Any metadata to go on the right-hand side of the progress bar
         :param color: The color of the progress bar as a valid HTML/CSS string
@@ -1442,24 +1464,20 @@ def hide_leftover_progress_bars() -> None:
     )
 
 
-# TODO: Use a protocol or an ABC
-AbstractProgressBar = Union[ProgressBar, NotebookProgressBar]
+def default_progress_bar(status_objs_or_none) -> ProgressBar:
+    return AsciiProgressBar(status_objs_or_none, delay_draw=0.2)
 
 
-def default_progress_bar(status_objs_or_none) -> AbstractProgressBar:
-    return ProgressBar(status_objs_or_none, delay_draw=0.2)
-
-
-def default_notebook_progress_bar(status_objs_or_none) -> AbstractProgressBar:
+def default_notebook_progress_bar(status_objs_or_none) -> ProgressBar:
     return NotebookProgressBar(status_objs_or_none, delay_draw=0.2)
 
 
 class ProgressBarManager:
-    pbar_factory: Callable[[Any], AbstractProgressBar]
-    pbar: Optional[AbstractProgressBar]
+    pbar_factory: Callable[[Any], ProgressBar]
+    pbar: Optional[ProgressBar]
 
     def __init__(self,
-                 pbar_factory: Callable[[Any], AbstractProgressBar] = default_progress_bar):
+                 pbar_factory: Callable[[Any], ProgressBar] = default_progress_bar):
         """
         Manages creation and tearing down of progress bars.
         :param pbar_factory: A function that creates a progress bar given an optional list of status objects
