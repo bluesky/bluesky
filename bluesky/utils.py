@@ -1265,71 +1265,16 @@ class ProgressBar:
                 self.fp.write(_unicode(_term_move_up() * len(self.meters)))
 
 
-@dataclass
-class TqdmPBarWrapper:
-    """
-    Wrapper around a TQDM notebook progress bar widget that can update
-    it with relevant data.
-    """
-
-    container: HBox
-
-    def draw(
-            self,
-            label: str = "",
-            meta: str = "",
-            color: str = "#97d4e8",
-            total: float = 1.0,
-            value: Optional[float] = None,
-    ) -> None:
-        """
-        Draws the progress bar or a message if there is
-        not enough information
-        :param label: The label to go on the left-hand side of the progress bar
-        :param meta: Any metadata to go on the right-hand side of the progress bar
-        :param color: The color of the progress bar as a valid HTML/CSS string
-        :param total: The maximum value of the progress bar, defaults to 1
-        :param value: The current value of the progress bar, optional
-        :return:
-        """
-
-        ltext, pbar, rtext = self.container.children
-        ltext.value = label
-        pbar.layout.display = "flex"
-        rtext.value = meta
-
-        if value is not None:
-            pbar.value = value
-            pbar.max = total or 1
-            pbar.style.bar_color = color
-        else:
-            pbar.layout.display = "none"
-
-    def display(self) -> None:
-        """
-        Displays the progress bar widget in a Jupyter notebook
-        :return: None
-        """
-
-        display(self.container)
-
-    def clear(self) -> None:
-        """
-        Removes the progress bar widget permanently
-        :return: None
-        """
-
-        self.container.close()
-
-
 class NotebookProgressBar:
-    containers: List[TqdmPBarWrapper]
+    containers: List[HBox]
     status_objs: List[Any]
     fp: TextIO
     creation_time: float
     lock: threading.RLock
 
-    def __init__(self, status_objs: List[Any]):
+    def __init__(self,
+                 status_objs: List[Any],
+                 delay_draw: float = 0.2):
         """
         Represents status objects with Jupyter Notebook progress bars.
 
@@ -1342,6 +1287,7 @@ class NotebookProgressBar:
         self.status_objs = []
         self.fp = sys.stdout
         self.creation_time = time.time()
+        self.delay_draw = delay_draw
         self.lock = threading.RLock()
 
         # Create a closure over self.update for each status object that
@@ -1350,10 +1296,8 @@ class NotebookProgressBar:
             with self.lock:
                 if hasattr(st, "watch") and not st.done:
                     pos = len(self.containers)
-                    container = TqdmPBarWrapper(
-                        tqdm_nb.status_printer(self.fp, 1, None, None)
-                    )
-                    container.display()
+                    container: HBox = tqdm_nb.status_printer(self.fp, 1, None, None)
+                    display(container)
                     self.containers.append(container)
                     self.status_objs.append(st)
                     st.watch(partial(self.update, pos))
@@ -1372,8 +1316,6 @@ class NotebookProgressBar:
             time_elapsed: float = None,
             time_remaining: float = None,
     ):
-        container = self.containers[pos]
-
         if all(x is not None for x in (current, initial, target)):
             # In this case there is enough information to draw a progress bar with
             # current and maximum values
@@ -1390,30 +1332,68 @@ class NotebookProgressBar:
                 ncols=79,
                 bar_format="{r_bar}",
             )
-            with self.lock:
-                container.draw(
-                    name or "",
-                    meta,
-                    color=html_color_from_name(name or ""),
-                    total=total,
-                    value=n,
-                )
+            self.draw(
+                pos,
+                name or "",
+                meta,
+                color=html_color_from_name(name or ""),
+                total=total,
+                value=n,
+            )
         elif self.status_objs[pos].done:
             # In this case the operation is complete, we just
             # display a finished progress bar
             # and a completion message.
-            with self.lock:
-                container.draw(
-                    name or "",
-                    "[Complete.]",
-                    color=html_color_from_name(name or ""),
-                    value=1,
-                )
+            self.draw(
+                pos,
+                name or "",
+                "[Complete.]",
+                color=html_color_from_name(name or ""),
+                value=1,
+            )
         else:
             # In this case there is not enough information to draw a progress bar so
             # we just display a message.
-            with self.lock:
-                container.draw(name or "", "[In progress. No progress bar available.]")
+            self.draw(pos, name or "", "[In progress. No progress bar available.]")
+
+    def draw(
+            self,
+            pos: int,
+            label: str = "",
+            meta: str = "",
+            color: str = "#97d4e8",
+            total: float = 1.0,
+            value: Optional[float] = None,
+    ) -> None:
+        """
+        Draws the progress bar or a message if there is
+        not enough information
+        :param label: The label to go on the left-hand side of the progress bar
+        :param meta: Any metadata to go on the right-hand side of the progress bar
+        :param color: The color of the progress bar as a valid HTML/CSS string
+        :param total: The maximum value of the progress bar, defaults to 1
+        :param value: The current value of the progress bar, optional
+        :return:
+        """
+
+        # Do not draw if this was only created recently, otherwise it
+        # will just flash up and disappear
+        if (time.time() - self.creation_time) < self.delay_draw:
+            return
+
+        container = self.containers[pos]
+        with self.lock:
+            ltext, pbar, rtext = container.children
+            ltext.value = label
+            pbar.layout.display = "flex"
+            rtext.value = meta
+
+            if value is not None:
+                pbar.value = value
+                pbar.max = total or 1
+                pbar.style.bar_color = color
+            else:
+                pbar.layout.display = "none"
 
     def clear(self) -> None:
         """
@@ -1423,7 +1403,7 @@ class NotebookProgressBar:
 
         with self.lock:
             for container in self.containers:
-                container.clear()
+                container.close()
         hide_leftover_progress_bars()
 
 
@@ -1466,20 +1446,47 @@ def hide_leftover_progress_bars() -> None:
 AbstractProgressBar = Union[ProgressBar, NotebookProgressBar]
 
 
+def default_progress_bar(status_objs_or_none) -> AbstractProgressBar:
+    return ProgressBar(status_objs_or_none, delay_draw=0.2)
+
+
+def default_notebook_progress_bar(status_objs_or_none) -> AbstractProgressBar:
+    return NotebookProgressBar(status_objs_or_none, delay_draw=0.2)
+
+
 class ProgressBarManager:
     pbar_factory: Callable[[Any], AbstractProgressBar]
     pbar: Optional[AbstractProgressBar]
 
     def __init__(self,
-                 pbar_factory: Callable[[Any], AbstractProgressBar] = ProgressBar):
+                 pbar_factory: Callable[[Any], AbstractProgressBar] = default_progress_bar):
+        """
+        Manages creation and tearing down of progress bars.
+        :param pbar_factory: A function that creates a progress bar given an optional list of status objects
+        :return:
+        """
+
         self.pbar_factory = pbar_factory
         self.pbar = None
 
     @classmethod
-    def notebook(cls) -> 'ProgressBarManager':
-        return ProgressBarManager(NotebookProgressBar)
+    def for_notebook(cls, delay_draw: float = 0.2) -> 'ProgressBarManager':
+        """
+        Helper method for generating managers when using notebooks.
+        :return: A manager that creates progress bars for Jupuyter notebooks
+        """
+
+        return ProgressBarManager(default_notebook_progress_bar)
 
     def __call__(self, status_objs_or_none):
+        """
+        Updates the manager with a new set of status, creates a new progress bar and
+        cleans up the old one if needed.
+        :param status_objs_or_none: Optional list of status objects to be passed to
+                                    the factory.
+        :return: None
+        """
+
         if status_objs_or_none is not None:
             # Start a new ProgressBar.
             if self.pbar is not None:
