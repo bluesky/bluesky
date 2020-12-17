@@ -6,9 +6,8 @@ import sys
 import signal
 import operator
 import uuid
-from dataclasses import dataclass
 from functools import reduce
-from typing import List, Any, TextIO, Optional, Callable, Union
+from typing import List, Any, TextIO, Optional, Callable
 from weakref import ref, WeakKeyDictionary
 import types
 import inspect
