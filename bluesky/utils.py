@@ -1499,7 +1499,7 @@ class ProgressBarManager:
         Parameters
         ----------
         pbar_factory : Callable[[Any], ProgressBar], optional
-            A function that creates a progress bar given an optional list of status objects, 
+            A function that creates a progress bar given an optional list of status objects,
             by default default_progress_bar
         """
 
@@ -1517,8 +1517,7 @@ class ProgressBarManager:
             A manager that creates progress bars for Jupuyter notebooks
         """
 
-        return ProgressBarManager(lambda status_objs_or_none: NotebookProgressBar(status_objs_or_none, 
-                                                                                  delay_draw=delay_draw))
+        return cls(partial(NotebookProgressBar, delay_draw=delay_draw))
 
     def __call__(self, status_objs_or_none):
         """
