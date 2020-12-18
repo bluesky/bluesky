@@ -1155,7 +1155,7 @@ def apply_to_dict_recursively(d, f):
     return d
 
 
-class ProgressBar(abc.ABC):
+class ProgressBarBase(abc.ABC):
     def update(
             self,
             pos: Any,
@@ -1176,7 +1176,7 @@ class ProgressBar(abc.ABC):
         ...
 
 
-class AsciiProgressBar(ProgressBar):
+class TerminalProgressBar(ProgressBarBase):
     def __init__(self, status_objs, delay_draw=0.2):
         """
         Represent status objects with a progress bars.
@@ -1285,7 +1285,15 @@ class AsciiProgressBar(ProgressBar):
                 self.fp.write(_unicode(_term_move_up() * len(self.meters)))
 
 
-class NotebookProgressBar(ProgressBar):
+class ProgressBar(TerminalProgressBar):
+    """
+    Alias for backwards compatibility
+    """
+
+    ...
+
+
+class NotebookProgressBar(ProgressBarBase):
     containers: List[HBox]
     status_objs: List[Any]
     fp: TextIO
@@ -1475,16 +1483,16 @@ def hide_leftover_progress_bars() -> None:
     )
 
 
-def default_progress_bar(status_objs_or_none) -> ProgressBar:
-    return AsciiProgressBar(status_objs_or_none, delay_draw=0.2)
+def default_progress_bar(status_objs_or_none) -> ProgressBarBase:
+    return TerminalProgressBar(status_objs_or_none, delay_draw=0.2)
 
 
 class ProgressBarManager:
-    pbar_factory: Callable[[Any], ProgressBar]
-    pbar: Optional[ProgressBar]
+    pbar_factory: Callable[[Any], ProgressBarBase]
+    pbar: Optional[ProgressBarBase]
 
     def __init__(self,
-                 pbar_factory: Callable[[Any], ProgressBar] = default_progress_bar):
+                 pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
         """
         Manages creation and tearing down of progress bars.
 
