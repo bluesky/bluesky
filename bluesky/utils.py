@@ -1388,13 +1388,21 @@ class NotebookProgressBar(ProgressBar):
         """
         Draws the progress bar or a message if there is
         not enough information
-        :param pos: The index of the progress bar in self.containers
-        :param label: The label to go on the left-hand side of the progress bar
-        :param meta: Any metadata to go on the right-hand side of the progress bar
-        :param color: The color of the progress bar as a valid HTML/CSS string
-        :param total: The maximum value of the progress bar, defaults to 1
-        :param value: The current value of the progress bar, optional
-        :return:
+
+        Parameters
+        ----------
+        pos : int
+            The index of the progress bar in self.containers
+        label : str, optional
+            The label to go on the left-hand side of the progress bar, by default ""
+        meta : str, optional
+            Any metadata to go on the right-hand side of the progress bar, by default ""
+        color : str, optional
+            The color of the progress bar as a valid HTML/CSS string, by default "#97d4e8"
+        total : float, optional
+            The maximum value of the progress bar, defaults to 1, by default 1.0
+        value : Optional[float], optional
+            The current value of the progress bar, optional, by default None
         """
 
         # Do not draw if this was only created recently, otherwise it
@@ -1419,7 +1427,6 @@ class NotebookProgressBar(ProgressBar):
     def clear(self) -> None:
         """
         Clears all progress bars
-        :return: None
         """
 
         with self.lock:
@@ -1433,8 +1440,16 @@ def html_color_from_name(name: str) -> str:
     Transforms a string into a unique, bright HTML color
     (hue varies, saturation and value are fixed).
     Transformation is pure.
-    :param name: The string to convert
-    :return: A string describing a color, valid in HTML/CSS.
+
+    Parameters
+    ----------
+    name : str
+        The string to convert
+
+    Returns
+    -------
+    str
+        A string describing a color, valid in HTML/CSS.
     """
 
     hue = int(hashlib.sha1(name.encode("utf-8")).hexdigest(), 16) % 360
@@ -1446,29 +1461,22 @@ def hide_leftover_progress_bars() -> None:
     Sets the style in Jupyterlab to remove leftover whitespace
     from deleted progress bars. Workaround for:
     https://github.com/jupyterlab/jupyterlab/issues/7354
-    :return: None
     """
 
     display(
-        HTML(
-            """
-        <style>
-            .p-Widget.jp-OutputPrompt.jp-OutputArea-prompt:empty {
-                  padding: 0;
-                  border: 0;
-            }
-        </style>
-    """
-        )
+        HTML("""
+            <style>
+                .p-Widget.jp-OutputPrompt.jp-OutputArea-prompt:empty {
+                    padding: 0;
+                    border: 0;
+                }
+            </style>
+        """)
     )
 
 
 def default_progress_bar(status_objs_or_none) -> ProgressBar:
     return AsciiProgressBar(status_objs_or_none, delay_draw=0.2)
-
-
-def default_notebook_progress_bar(status_objs_or_none) -> ProgressBar:
-    return NotebookProgressBar(status_objs_or_none, delay_draw=0.2)
 
 
 class ProgressBarManager:
@@ -1479,8 +1487,12 @@ class ProgressBarManager:
                  pbar_factory: Callable[[Any], ProgressBar] = default_progress_bar):
         """
         Manages creation and tearing down of progress bars.
-        :param pbar_factory: A function that creates a progress bar given an optional list of status objects
-        :return:
+
+        Parameters
+        ----------
+        pbar_factory : Callable[[Any], ProgressBar], optional
+            A function that creates a progress bar given an optional list of status objects, 
+            by default default_progress_bar
         """
 
         self.pbar_factory = pbar_factory
@@ -1490,18 +1502,25 @@ class ProgressBarManager:
     def for_notebook(cls, delay_draw: float = 0.2) -> 'ProgressBarManager':
         """
         Helper method for generating managers when using notebooks.
-        :return: A manager that creates progress bars for Jupuyter notebooks
+
+        Returns
+        -------
+        ProgressBarManager
+            A manager that creates progress bars for Jupuyter notebooks
         """
 
-        return ProgressBarManager(default_notebook_progress_bar)
+        return ProgressBarManager(lambda status_objs_or_none: NotebookProgressBar(status_objs_or_none, 
+                                                                                  delay_draw=delay_draw))
 
     def __call__(self, status_objs_or_none):
         """
         Updates the manager with a new set of status, creates a new progress bar and
         cleans up the old one if needed.
-        :param status_objs_or_none: Optional list of status objects to be passed to
-                                    the factory.
-        :return: None
+
+        Parameters
+        ----------
+        status_objs_or_none : Set[Status], optional
+            Optional list of status objects to be passed to the factory.
         """
 
         if status_objs_or_none is not None:
