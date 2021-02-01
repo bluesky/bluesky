@@ -73,7 +73,7 @@ def test_popitem(tmp_path):
     d = PersistentDict(tmp_path)
     d['a'] = 1
     d['b'] = 2
-    d.poptem()
+    d.popitem()
     expected = {'a': 1}
     # Check the in-memory version is updated
     recursive_assert_equal(d, expected)

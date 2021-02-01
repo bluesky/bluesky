@@ -1,3 +1,4 @@
+import collections.abc
 from collections import namedtuple
 import asyncio
 import os
@@ -742,7 +743,7 @@ def all_safe_rewind(devices):
     return True
 
 
-class PersistentDict(zict.Func):
+class PersistentDict(collections.abc.MutableMapping):
     """
     A MutableMapping which syncs it contents to disk.
 
@@ -760,8 +761,8 @@ class PersistentDict(zict.Func):
     def __init__(self, directory):
         self._directory = directory
         self._file = zict.File(directory)
+        self._func = zict.Func(self._dump, self._load, self._file)
         self._cache = {}
-        super().__init__(self._dump, self._load, self._file)
         self.reload()
 
         # Similar to flush() or _do_update(), but without reference to self
@@ -781,17 +782,27 @@ class PersistentDict(zict.Func):
 
     def __setitem__(self, key, value):
         self._cache[key] = value
-        super().__setitem__(key, value)
+        self._func[key] = value
 
     def __getitem__(self, key):
         return self._cache[key]
 
     def __delitem__(self, key):
         del self._cache[key]
-        super().__delitem__(key)
+        del self._func[key]
+
+    def __len__(self):
+        return len(self._cache)
 
     def __repr__(self):
         return f"<{self.__class__.__name__} {dict(self)!r}>"
+
+    def __iter__(self):
+        yield from self._cache
+
+    def popitem(self):
+        key, _value = self._cache.popitem()
+        del self._func[key]
 
     @staticmethod
     def _dump(obj):
@@ -813,11 +824,11 @@ class PersistentDict(zict.Func):
     def flush(self):
         """Force a write of the current state to disk"""
         for k, v in self.items():
-            super().__setitem__(k, v)
+            self._func[k] = v
 
     def reload(self):
         """Force a reload from disk, overwriting current cache"""
-        self._cache = dict(super().items())
+        self._cache = dict(self._func.items())
 
 
 SEARCH_PATH = []
