@@ -801,8 +801,9 @@ class PersistentDict(collections.abc.MutableMapping):
         yield from self._cache
 
     def popitem(self):
-        key, _value = self._cache.popitem()
+        key, value = self._cache.popitem()
         del self._func[key]
+        return key, value
 
     @staticmethod
     def _dump(obj):
