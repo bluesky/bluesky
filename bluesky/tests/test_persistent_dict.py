@@ -45,7 +45,86 @@ def test_persistent_dict_mutable_value(tmp_path):
     recursive_assert_equal(d, expected)
     # Check that the __repr__ reflects this.
     assert "{'a': [1]}" in repr(d)
-    d.flush()
+    # Check that contents are synced to disk at exit.
+    del d
+    gc.collect()
+    actual = PersistentDict(tmp_path)
+    recursive_assert_equal(actual, expected)
+
+
+def test_pop(tmp_path):
+    d = PersistentDict(tmp_path)
+    d['a'] = 1
+    d['b'] = 2
+    d.pop('b')
+    expected = {'a': 1}
+    # Check the in-memory version is updated
+    recursive_assert_equal(d, expected)
+    # Check that the __repr__ reflects this.
+    assert "{'a': 1}" in repr(d)
+    # Check that contents are synced to disk at exit.
+    del d
+    gc.collect()
+    actual = PersistentDict(tmp_path)
+    recursive_assert_equal(actual, expected)
+
+
+def test_popitem(tmp_path):
+    d = PersistentDict(tmp_path)
+    d['a'] = 1
+    d['b'] = 2
+    d.popitem()
+    expected = {'a': 1}
+    # Check the in-memory version is updated
+    recursive_assert_equal(d, expected)
+    # Check that the __repr__ reflects this.
+    assert "{'a': 1}" in repr(d)
+    # Check that contents are synced to disk at exit.
+    del d
+    gc.collect()
+    actual = PersistentDict(tmp_path)
+    recursive_assert_equal(actual, expected)
+
+
+def test_update(tmp_path):
+    d = PersistentDict(tmp_path)
+    d.update(a=1)
+    expected = {'a': 1}
+    # Check the in-memory version is updated
+    recursive_assert_equal(d, expected)
+    # Check that the __repr__ reflects this.
+    assert "{'a': 1}" in repr(d)
+    # Check that contents are synced to disk at exit.
+    del d
+    gc.collect()
+    actual = PersistentDict(tmp_path)
+    recursive_assert_equal(actual, expected)
+
+
+def test_setdefault(tmp_path):
+    d = PersistentDict(tmp_path)
+    d.setdefault('a', 1)
+    expected = {'a': 1}
+    # Check the in-memory version is updated
+    recursive_assert_equal(d, expected)
+    # Check that the __repr__ reflects this.
+    assert "{'a': 1}" in repr(d)
+    # Check that contents are synced to disk at exit.
+    del d
+    gc.collect()
+    actual = PersistentDict(tmp_path)
+    recursive_assert_equal(actual, expected)
+
+
+def test_clear(tmp_path):
+    d = PersistentDict(tmp_path)
+    d['a'] = 1
+    d.clear()
+    expected = {}
+    # Check the in-memory version is updated
+    recursive_assert_equal(d, expected)
+    # Check that the __repr__ reflects this.
+    assert "{}" in repr(d)
     # Check that contents are synced to disk at exit.
     del d
     gc.collect()
