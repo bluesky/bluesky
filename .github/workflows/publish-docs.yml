@@ -1,0 +1,60 @@
+name: Publish Documentation
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    if: github.repository_owner == 'bluesky'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+      fail-fast: false
+
+    steps:
+
+    - name: Set env.REPOSITORY_NAME  # just the repo, as opposed to org/repo
+      shell: bash -l {0}
+      run: |
+        export REPOSITORY_NAME=${GITHUB_REPOSITORY#*/}
+        echo "REPOSITORY_NAME=${REPOSITORY_NAME}" >> $GITHUB_ENV
+
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 1000  # should be enough to reach the most recent tag
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install
+      shell: bash -l {0}
+      run: source continuous_integration/scripts/install.sh
+
+    - name: Install documentation-building requirements
+      shell: bash -l {0}
+      run: |
+        set -vxeuo pipefail
+        python -m pip install -r requirements-dev.txt
+        python -m pip list
+
+    - name: Build Docs
+      shell: bash -l {0}
+      run: make -C docs/ html
+
+    - name: Deploy documentation to blueskyproject.io.
+      # We pin to the SHA, not the tag, for security reasons.
+      # https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/security-hardening-for-github-actions#using-third-party-actions
+      uses: peaceiris/actions-gh-pages@bbdfb200618d235585ad98e965f4aafc39b4c501  # v3.7.3
+      with:
+        deploy_key: ${{ secrets.ACTIONS_DOCUMENTATION_DEPLOY_KEY }}
+        publish_branch: master
+        publish_dir: ./docs/build/html
+        external_repository: bluesky/bluesky.github.io
+        destination_dir: ${{ env.REPOSITORY_NAME }}  # just the repo name, without the "bluesky/"
+        keep_files: true  # Keep old files.
+        force_orphan: false  # Keep git history.

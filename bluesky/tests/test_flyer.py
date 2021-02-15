@@ -15,7 +15,7 @@ def test_flyer_with_collect_asset_documents(RE):
     from bluesky.preprocessors import fly_during_wrapper
 
     assert hasattr(new_trivial_flyer, "collect_asset_docs")
-    assert not hasattr(trivial_flyer, "collec_asset_docs")
+    assert not hasattr(trivial_flyer, "collect_asset_docs")
     RE(fly_during_wrapper(count([det], num=5), [new_trivial_flyer, trivial_flyer]))
 
 

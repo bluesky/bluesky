@@ -1,0 +1,36 @@
+name: Documentation
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+      fail-fast: false
+
+    steps:
+
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install
+      shell: bash -l {0}
+      run: source continuous_integration/scripts/install.sh
+
+    - name: Install documentation-building requirements
+      shell: bash -l {0}
+      run: |
+        set -vxeuo pipefail
+        python -m pip install -r requirements-dev.txt
+        python -m pip list
+
+    - name: Build Docs
+      shell: bash -l {0}
+      run: make -C docs/ html
