@@ -87,7 +87,6 @@ def test_mv_progress(RE, hw):
     motor2 = hw.motor2
 
     RE.waiting_hook = ProgressBarManager()
-    assert RE.waiting_hook.delay_draw == 0.2
 
     # moving time > delay_draw
     motor1.delay = 0.5
