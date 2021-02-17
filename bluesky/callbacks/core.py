@@ -375,9 +375,9 @@ class LiveTable(CallbackBase):
 
     def event(self, doc):
         try:
-            # shallow copy so we can mutate
             if ensure_uid(doc['descriptor']) not in self._descriptors:
                 return
+            # shallow copy so we can mutate
             data = dict(doc['data'])
             self._count += 1
             if not self._count % self._header_interval:
