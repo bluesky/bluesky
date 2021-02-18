@@ -5,7 +5,6 @@ import threading
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 from bluesky.log import set_handler
 
-
 logger = logging.getLogger('bluesky')
 
 
@@ -51,10 +50,13 @@ def main():
     args = parser.parse_args()
     in_port = args.in_port[0]
     out_port = args.out_port[0]
+
     if args.verbose:
-        logger.setLevel('INFO')
-        if args.verbose > 2:
-            logger.setLevel('DEBUG')
+        from bluesky.log import config_bluesky_logging
+        if args.verbose <= 2:  # called with -v or -vv
+            config_bluesky_logging(level='INFO')
+        else:  # called with -vvv
+            config_bluesky_logging(level='DEBUG')
         # Set daemon to kill all threads upon IPython exit
         threading.Thread(target=start_dispatcher,
                          args=('localhost', out_port, args.logfile),
