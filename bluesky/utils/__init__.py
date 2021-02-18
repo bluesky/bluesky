@@ -7,6 +7,7 @@ import signal
 import operator
 import uuid
 from functools import reduce
+from typing import Any, Optional, Callable
 from weakref import ref, WeakKeyDictionary
 import types
 import inspect
@@ -1161,7 +1162,28 @@ def apply_to_dict_recursively(d, f):
     return d
 
 
-class ProgressBar:
+class ProgressBarBase(abc.ABC):
+    def update(
+            self,
+            pos: Any,
+            *,
+            name: str = None,
+            current: Any = None,
+            initial: Any = None,
+            target: Any = None,
+            unit: str = "units",
+            precision: Any = None,
+            fraction: Any = None,
+            time_elapsed: float = None,
+            time_remaining: float = None,
+    ):
+        ...
+
+    def clear(self):
+        ...
+
+
+class TerminalProgressBar(ProgressBarBase):
     def __init__(self, status_objs, delay_draw=0.2):
         """
         Represent status objects with a progress bars.
@@ -1270,19 +1292,54 @@ class ProgressBar:
                 self.fp.write(_unicode(_term_move_up() * len(self.meters)))
 
 
+class ProgressBar(TerminalProgressBar):
+    """
+    Alias for backwards compatibility
+    """
+
+    ...
+
+
+def default_progress_bar(status_objs_or_none) -> ProgressBarBase:
+    return TerminalProgressBar(status_objs_or_none, delay_draw=0.2)
+
+
 class ProgressBarManager:
-    def __init__(self, delay_draw=0.2):
-        self.delay_draw = delay_draw
+    pbar_factory: Callable[[Any], ProgressBarBase]
+    pbar: Optional[ProgressBarBase]
+
+    def __init__(self,
+                 pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
+        """
+        Manages creation and tearing down of progress bars.
+
+        Parameters
+        ----------
+        pbar_factory : Callable[[Any], ProgressBar], optional
+            A function that creates a progress bar given an optional list of status objects,
+            by default default_progress_bar
+        """
+
+        self.pbar_factory = pbar_factory
         self.pbar = None
 
     def __call__(self, status_objs_or_none):
+        """
+        Updates the manager with a new set of status, creates a new progress bar and
+        cleans up the old one if needed.
+
+        Parameters
+        ----------
+        status_objs_or_none : Set[Status], optional
+            Optional list of status objects to be passed to the factory.
+        """
+
         if status_objs_or_none is not None:
             # Start a new ProgressBar.
             if self.pbar is not None:
                 warnings.warn("Previous ProgressBar never competed.")
                 self.pbar.clear()
-            self.pbar = ProgressBar(status_objs_or_none,
-                                    delay_draw=self.delay_draw)
+            self.pbar = self.pbar_factory(status_objs_or_none)
         else:
             # Clean up an old one.
             if self.pbar is None:
@@ -1477,7 +1534,7 @@ class DefaultDuringTask(DuringTask):
             import matplotlib
             backend = matplotlib.get_backend().lower()
             if 'qt' in backend:
-                from .callbacks.mpl_plotting import initialize_qt_teleporter
+                from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
                 initialize_qt_teleporter()
 
     def block(self, blocking_event):
