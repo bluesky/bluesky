@@ -3,12 +3,11 @@ import logging
 import threading
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
-from bluesky.log import set_handler
 
 logger = logging.getLogger('bluesky')
 
 
-def start_dispatcher(host, port, logfile):
+def start_dispatcher(host, port, logfile=None):
     """The dispatcher function
     Parameters
     ----------
@@ -17,8 +16,9 @@ def start_dispatcher(host, port, logfile):
         logfile will be "temp.log". logfile could be empty.
     """
     dispatcher = RemoteDispatcher((host, port))
-    if logfile:
-        set_handler(file=logfile)
+    if logfile is not None:
+        raise ValueError("Parameter 'logfile' is deprecated and will be removed in future releases. "
+                         "Currently it does not have effect. Call the function with 'logfile=None' ")
 
     def log_writer(name, doc):
         """logger's wrapper function
@@ -61,7 +61,7 @@ def main():
             config_bluesky_logging(level=level)
         # Set daemon to kill all threads upon IPython exit
         threading.Thread(target=start_dispatcher,
-                         args=('localhost', out_port, None),
+                         args=('localhost', out_port),
                          daemon=True).start()
 
     print("Connecting...")
