@@ -56,6 +56,7 @@ Index
    magics
    from-pyepics-to-bluesky
    comparison-with-spec
+   hardware-interfaces
    appendix
 
 .. toctree::
