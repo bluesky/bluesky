@@ -227,7 +227,7 @@ def mv(*args, group=None, **kwargs):
     """
     Move one or more devices to a setpoint. Wait for all to complete.
 
-    If more than one device is specifed, the movements are done in parallel.
+    If more than one device is specified, the movements are done in parallel.
 
     Parameters
     ----------
@@ -266,7 +266,7 @@ def mvr(*args, group=None, **kwargs):
     """
     Move one or more devices to a relative setpoint. Wait for all to complete.
 
-    If more than one device is specifed, the movements are done in parallel.
+    If more than one device is specified, the movements are done in parallel.
 
     Parameters
     ----------
@@ -347,7 +347,7 @@ def rd(obj, *, default_value=0):
             f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
             f"has {len(hints)} items hinted ({hints}).  We do not know how to "
             "pick out a single value.  Please adjust the hinting by setting the "
-            "kind of the components of this device or by rd ing one of it's components"
+            "kind of the components of this device or by reading one of its components"
         )
         raise ValueError(msg)
     elif len(hints) == 0:
@@ -358,7 +358,7 @@ def rd(obj, *, default_value=0):
                     f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
                     f"and has {len(obj.read_attrs)} read attrs.  We do not know how to "
                     "pick out a single value.  Please adjust the hinting/read_attrs by "
-                    "setting the kind of the components of this device or by rd ing one "
+                    "setting the kind of the components of this device or by reading one "
                     "of its components"
                 )
 
@@ -384,7 +384,7 @@ def rd(obj, *, default_value=0):
             f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
             f"and has {len(ret)} read values.  We do not know how to pick out a "
             "single value.  Please adjust the hinting/read_attrs by setting the "
-            "kind of the components of this device or by rd ing one of its components"
+            "kind of the components of this device or by reading one of its components"
         )
 
         raise ValueError(msg) from er
@@ -457,7 +457,7 @@ def wait(group=None):
     Parameters
     ----------
     group : string (or any hashable object), optional
-        idenified given to `abs_set`, `rel_set`, `trigger`; None by default
+        Identifier given to `abs_set`, `rel_set`, `trigger`; None by default
 
     Yields
     ------
@@ -588,11 +588,11 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
 
 def complete(obj, *, group=None, wait=False, **kwargs):
     """
-    Tell a flyer, 'stop collecting, whenver you are ready'.
+    Tell a flyer, 'stop collecting, whenever you are ready'.
 
     The flyer returns a status object. Some flyers respond to this
     command by stopping collection and returning a finished status
-    object immedately. Other flyers finish their given course and
+    object immediately. Other flyers finish their given course and
     finish whenever they finish, irrespective of when this command is
     issued.
 
@@ -639,7 +639,7 @@ def collect(obj, *, stream=False, return_payload=True):
     return_payload: boolean, optional
         If True (default), return the collected Events. If False, return None.
         Using ``stream=True`` and ``return_payload=False`` together avoids
-        accumulating the documents in memory: they are emmitted as they are
+        accumulating the documents in memory: they are emitted as they are
         collected, and they are not accumulated.
 
     Yields
@@ -914,7 +914,7 @@ def trigger_and_read(devices, name='primary'):
 
 def broadcast_msg(command, objs, *args, **kwargs):
     """
-    Generate many copies of a mesasge, applying it to a list of devices.
+    Generate many copies of a message, applying it to a list of devices.
 
     Parameters
     ----------
