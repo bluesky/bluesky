@@ -9,12 +9,12 @@ This allows different experimentalists to use different hardware control systems
 
 The following packages provide support for real hardware communication from Bluesky:
 
-=============  ========================================================================
+=============  ================================================================================
+Ophyd_         EPICS_ integration for Bluesky. Reference implementation for hardware interface.
 Instrbuilder_  Lightweight package with a focus on SCPI_.
-Ophyd_         Primary hardware interface package for Bluesky with a focus on EPICS_.
-Ophyd-Tango_   Tango_ integration for Bluesky.
+Ophyd-Tango_   Tango_ integration for Bluesky. Incomplete and experimental early work.
 yaqc-bluesky_  yaq_ integration for Bluesky.
-=============  ========================================================================
+=============  ================================================================================
 
 Importantly, you may mix hardware interfaces from multiple different packages within the same RunEngine.
 Please note that the above packages are developed and maintained separately from Bluesky itself.
