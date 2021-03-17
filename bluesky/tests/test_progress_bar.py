@@ -90,12 +90,12 @@ def test_mv_progress(RE, hw):
 
     # moving time > delay_draw
     motor1.delay = 0.5
-    motor1.delay = 0.5
+    motor2.delay = 0.5
     RE(mv(motor1, 0, motor2, 0))
 
     # moving time < delay_draw
     motor1.delay = 0.01
-    motor1.delay = 0.01
+    motor2.delay = 0.01
     RE(mv(motor1, 0, motor2, 0))
 
 
