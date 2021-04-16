@@ -8,12 +8,13 @@ from typing import Dict, Any, TypeVar, Optional, Callable, Generator
 
 Configuration = Dict[str, Dict[str, Any]]
 
+
 @runtime_checkable
 class Status(Protocol):
     done: bool
     success: bool
 
-    def add_callback(self, Callable[["Status"], None]) -> None:
+    def add_callback(self, callback: Callable[["Status"], None]) -> None:
         ...
 
 
