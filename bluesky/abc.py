@@ -5,47 +5,29 @@ except ImportError:
 
 from typing import Dict, Any, TypeVar, Optional, Callable, Generator
 
-A, B = TypeVar("A"), TypeVar("B")
 
+Configuration = Dict[str, Dict[str, Any]]
 
-class OrderedDictType(Dict[A, B]):
-    ...
-
-
-Configuration = OrderedDictType[str, Dict[str, Any]]
-
-
-class StatusWatchCallable(Protocol):
-    def __call__(
-        self,
-        name: Optional[str] = None,
-        current: Optional[Any] = None,
-        initial: Optional[Any] = None,
-        target: Optional[Any] = None,
-        unit: Optional[str] = None,
-        precision: Optional[int] = None,
-        fraction: Optional[float] = None,
-        time_elapsed: Optional[float] = None,
-        time_remaining: Optional[float] = None,
-    ):
-        ...
-
-
+@runtime_checkable
 class Status(Protocol):
     done: bool
-    status: bool
-    # I think finished_cb should be replaced with add_callback(Callable)
-    finished_cb: Callable
+    success: bool
 
-    def watch(self, StatusWatchCallable) -> None:
+    def add_callback(self, Callable[["Status"], None]) -> None:
         ...
 
 
 @runtime_checkable
 class Readable(Protocol):
     name: str
-    parent: Optional["Readable"]
-    hints: Dict
+
+    @property
+    def parent(self) -> Optional["Readable"]:
+        ...
+
+    @property
+    def hints(self) -> Dict:
+        ...
 
     def trigger(self) -> Status:
         ...
