@@ -3,8 +3,7 @@ try:
 except ImportError:
     from typing_extensions import Protocol, runtime_checkable
 
-from typing import Dict, List, Any, TypeVar, Tuple, Optional, Callable, Generator
-from collections.abc import MutableSequence, Iterable
+from typing import Dict, Any, TypeVar, Optional, Callable, Generator
 
 A, B = TypeVar("A"), TypeVar("B")
 
