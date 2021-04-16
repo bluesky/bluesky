@@ -3,7 +3,7 @@ try:
 except ImportError:
     from typing_extensions import Protocol, runtime_checkable
 
-from typing import Dict, Any, TypeVar, Optional, Callable, Generator
+from typing import Dict, Any, Optional, Callable, Generator
 
 
 Configuration = Dict[str, Dict[str, Any]]
