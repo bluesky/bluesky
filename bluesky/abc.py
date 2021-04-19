@@ -3,7 +3,7 @@ try:
 except ImportError:
     from typing_extensions import Protocol, runtime_checkable
 
-from typing import Dict, Any, Optional, Callable, Generator
+from typing import Dict, Any, Optional, Callable, Generator, List, Union
 
 
 Configuration = Dict[str, Dict[str, Any]]
@@ -23,7 +23,7 @@ class Readable(Protocol):
     name: str
 
     @property
-    def parent(self) -> Optional["Readable"]:
+    def parent(self) -> Optional[Any]:
         ...
 
     @property
@@ -45,7 +45,11 @@ class Readable(Protocol):
     def describe_configuration(self) -> Configuration:
         ...
 
-    # def configure(self, *args, **kwargs) -> Tuple[Configuration, Configuration]: ...
+
+@runtime_checkable
+class Configurable(Protocol):
+    def configure(self, *args, **kwargs) -> Tuple[Configuration, Configuration]:
+        ...
 
 
 @runtime_checkable
@@ -57,7 +61,10 @@ class Movable(Readable, Protocol):
 @runtime_checkable
 class Flyable(Protocol):
     name: str
-    parent: Optional[Any]
+
+    @property
+    def parent(self) -> Optional[Any]:
+        ...
 
     def kickoff(self) -> Status:
         ...
@@ -78,5 +85,35 @@ class Flyable(Protocol):
     def describe_configuration(self) -> Configuration:
         ...
 
-    # Not defined by ophyd flyer...
-    # def configure(self, *args, **kwjargs) -> Tuple[Configuration, Configuration]: ...
+
+@runtime_checkable
+class Stageable(Protocol):
+    def stage(self) -> List[Union[Readable, Flyable]]:
+        ...
+
+    def unstage(self) -> List[Union[Readable, Flyable]]:
+        ...
+
+
+@runtime_checkable
+class Pausable(Protocol):
+    def pause(self) -> None:
+        ...
+
+    def resume(self) -> None:
+        ...
+
+
+@runtime_checkable
+class Subscribable(Protocol):
+    def subscribe(self, function: Callable) -> None:
+        ...
+
+    def clear_sub(self, function: Callable) -> None:
+        ...
+
+
+@runtime_checkable
+class Checkable(Protocol):
+    def check_value(self, value: Any) -> None:
+        ...
