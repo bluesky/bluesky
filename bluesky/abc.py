@@ -3,7 +3,7 @@ try:
 except ImportError:
     from typing_extensions import Protocol, runtime_checkable
 
-from typing import Dict, Any, Optional, Callable, Generator, List, Union, Tuple
+from typing import Dict, Any, Optional, Callable, Generator, List, Union, Tuple, NoReturn
 
 
 Configuration = Dict[str, Dict[str, Any]]
@@ -14,7 +14,7 @@ class Status(Protocol):
     done: bool
     success: bool
 
-    def add_callback(self, callback: Callable[["Status"], None]) -> None:
+    def add_callback(self, callback: Callable[["Status"], NoReturn]) -> NoReturn:
         ...
 
 
@@ -48,13 +48,13 @@ class Readable(Protocol):
 
 @runtime_checkable
 class Configurable(Protocol):
-    def configure(self, *args, **kwargs) -> Tuple[Configuration, Configuration]:
+    def configure(self, conf: Configuration, /) -> Tuple[Configuration, Configuration]:
         ...
 
 
 @runtime_checkable
 class Movable(Readable, Protocol):
-    def set(self, *args, **kwargs) -> Status:
+    def set(self, value) -> Status:
         ...
 
 
@@ -88,32 +88,32 @@ class Flyable(Protocol):
 
 @runtime_checkable
 class Stageable(Protocol):
-    def stage(self) -> List[Union[Readable, Flyable]]:
+    def stage(self) -> List[Any]:
         ...
 
-    def unstage(self) -> List[Union[Readable, Flyable]]:
+    def unstage(self) -> List[Any]:
         ...
 
 
 @runtime_checkable
 class Pausable(Protocol):
-    def pause(self) -> None:
+    def pause(self) -> Union[NoReturn, None]:
         ...
 
-    def resume(self) -> None:
+    def resume(self) -> Union[NoReturn, None]:
         ...
 
 
 @runtime_checkable
 class Subscribable(Protocol):
-    def subscribe(self, function: Callable) -> None:
+    def subscribe(self, function: Callable) -> Union[NoReturn, None]:
         ...
 
-    def clear_sub(self, function: Callable) -> None:
+    def clear_sub(self, function: Callable) -> Union[NoReturn, None]:
         ...
 
 
 @runtime_checkable
 class Checkable(Protocol):
-    def check_value(self, value: Any) -> None:
+    def check_value(self, value: Any) -> Union[NoReturn, None]:
         ...

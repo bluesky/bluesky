@@ -35,6 +35,7 @@ setuptools.setup(
     license="BSD (3-clause)",
     url="https://github.com/bluesky/bluesky",
     packages=setuptools.find_packages(),
+    package_data={"bluesky": ["py.typed"]},
     python_requires='>={}'.format('.'.join(str(n) for n in min_version)),
     install_requires=requirements,
     classifiers=[

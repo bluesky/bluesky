@@ -7,3 +7,4 @@ include README.md
 include requirements.txt
 include setup.py
 include versioneer.py
+include bluesky/py.typed

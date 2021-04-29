@@ -11,6 +11,7 @@ jinja2
 lmfit
 matplotlib != 3.0.1  # bug in scatter method
 mongoquery
+mypy
 networkx
 nose
 numpydoc
