@@ -48,7 +48,7 @@ class Readable(Protocol):
 
 @runtime_checkable
 class Configurable(Protocol):
-    def configure(self, conf: Configuration, /) -> Tuple[Configuration, Configuration]:
+    def configure(self, conf: Configuration) -> Tuple[Configuration, Configuration]:
         ...
 
 
