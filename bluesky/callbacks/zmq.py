@@ -6,6 +6,12 @@ import warnings
 from ..run_engine import Dispatcher, DocumentNames
 
 
+class Bluesky0MQDecodeError(Exception):
+    """Custom exception class for things that go wrong reading message from wire."""
+
+    ...
+
+
 class Publisher:
     """
     A callback that publishes documents to a 0MQ proxy.
@@ -217,7 +223,7 @@ class RemoteDispatcher(Dispatcher):
     """
     def __init__(self, address, *, prefix=b'',
                  loop=None, zmq=None, zmq_asyncio=None,
-                 deserializer=pickle.loads):
+                 deserializer=pickle.loads, strict=False):
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
         if b' ' in prefix:
@@ -243,27 +249,64 @@ class RemoteDispatcher(Dispatcher):
         self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
         self._task = None
         self.closed = False
-
+        self._strict = strict
         super().__init__()
 
     async def _poll(self):
         our_prefix = self._prefix  # local var to save an attribute lookup
         while True:
             message = await self._socket.recv()
-            prefix, name, doc = message.split(b' ', 2)
-            name = name.decode()
+            try:
+                prefix, name, doc = message.split(b' ', 2)
+            except ValueError as e:
+                if self._strict:
+                    raise Bluesky0MQDecodeError from e
+                else:
+                    print(f"The message {message} could not be split into "
+                          "three parts by b' '.  Dropping message on floor "
+                          "an continuing"
+                          f"\n\n{e}")
+                    continue
+
+            try:
+                name = name.decode()
+            except UnicodeDecodeError as e:
+                if self._strict:
+                    raise Bluesky0MQDecodeError from e
+                else:
+                    print(f"the name {name} can not be decoded as utf-8. "
+                          "Dropping message on the floor and continuing. "
+                          f"\n\n{e}")
+                    continue
             if (not our_prefix) or prefix == our_prefix:
-                doc = self._deserializer(doc)
+                try:
+                    doc = self._deserializer(doc)
+                except Exception as e:
+                    if self._strict:
+                        raise Bluesky0MQDecodeError from e
+                    else:
+                        if len(doc) > 1024:
+                            msg_doc = doc[:1024] + b'--SNIPPED--'
+                        else:
+                            msg_doc = doc
+                        print(f"Failed to deserialize the {name} document "
+                              f"{msg_doc} using {self._deserializer}. "
+                              "Dropping on floor and continuing"
+                              f"\n\n{e}")
+                        continue
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
         if self.closed:
             raise RuntimeError("This RemoteDispatcher has already been "
                                "started and interrupted. Create a fresh "
-                               "instance with {}".format(repr(self)))
+                               f"instance with {self!r}")
         try:
             self._task = self.loop.create_task(self._poll())
-            self.loop.run_forever()
+            self.loop.run_until_complete(self._task)
+            task_exception = self._task.exception()
+            if task_exception is not None:
+                raise task_exception
         except BaseException:
             self.stop()
             raise
@@ -271,6 +314,4 @@ class RemoteDispatcher(Dispatcher):
     def stop(self):
         if self._task is not None:
             self._task.cancel()
-            self.loop.stop()
-        self._task = None
         self.closed = True
