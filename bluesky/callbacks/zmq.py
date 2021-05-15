@@ -1,3 +1,17 @@
+"""
+The key classes needed to use 0MQ for multiprocess document communication.
+
+`Publisher` : subscribe this to the RE to emit the documents.  Expects a server to
+have a SUBSCRIBE port open to PUB to.
+
+`RemoteDispatcher` : subscribe callbacks to this class in a remote process.  Expects
+a server to have a PUB port open to SUBSCRIBE to.
+
+`Proxy` : server that binds ports for Pubslisher to push to and the Dispatcher
+to listen to.  Typically this is started with the cli tool ``bluesky-zmq-proxy``
+
+"""
+
 import asyncio
 import copy
 import pickle
