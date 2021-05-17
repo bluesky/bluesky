@@ -278,7 +278,7 @@ class RemoteDispatcher(Dispatcher):
                 else:
                     print(f"The message {message} could not be split into "
                           "three parts by b' '.  Dropping message on floor "
-                          "an continuing"
+                          "and continuing"
                           f"\n\n{e}")
                     continue
 
@@ -288,7 +288,7 @@ class RemoteDispatcher(Dispatcher):
                 if self._strict:
                     raise Bluesky0MQDecodeError from e
                 else:
-                    print(f"the name {name} can not be decoded as utf-8. "
+                    print(f"The name {name} can not be decoded as utf-8. "
                           "Dropping message on the floor and continuing. "
                           f"\n\n{e}")
                     continue
