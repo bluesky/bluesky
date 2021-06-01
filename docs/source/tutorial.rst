@@ -1260,9 +1260,10 @@ Implementation
 developed in tandem with bluesky, implements this interface for devices that
 speak `EPICS <http://www.aps.anl.gov/epics/>`_. But bluesky is not tied to
 ophyd or EPICS specifically: any Python object may be used, so long as it
-provides the specified methods and attributes that bluesky expects. For
-example, an experimental implementation of the bluesky interface for LabView
-has been written. And the simulated hardware that we have been using in this
+provides the specified methods and attributes that bluesky expects.
+For example, an experimental implementation of the bluesky interface for LabView has been written.
+See :ref:`Hardware Interface Packages <hardware_interface_packages>` for more examples.
+And the simulated hardware that we have been using in this
 tutorial is all based on pure-Python constructs unconnected from hardware or
 any specific hardware control protocol.
 

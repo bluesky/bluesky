@@ -1,6 +1,8 @@
 How Bluesky Interfaces with Hardware
 ====================================
 
+.. _hardware_interface:
+
 Overview
 --------
 
