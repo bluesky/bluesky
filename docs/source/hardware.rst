@@ -117,9 +117,6 @@ ignored if not present or required by only a subset of RunEngine messages.
 In the latter case, the RunEngine may error if it tries to use a device which does not define
 the required method.
 
-.. autoclass:: bluesky.abc.Configurable
-    :members:
-
 .. autoclass:: bluesky.abc.Stageable
     :members:
 

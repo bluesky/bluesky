@@ -118,21 +118,6 @@ class Readable(Protocol):
 
 
 @runtime_checkable
-class Configurable(Protocol):
-    def configure(self, conf: Configuration) -> Tuple[Configuration, Configuration]:
-        """Change the device's configuration in an arbitrary way.
-
-        When the RunEngine calls this method, it also emits a fresh Event Descriptor
-        because it assumes that the configuration in the previous Event Descriptor
-        might no longer be valid.
-
-        Returns a tuple of the *old* result of ``read_configuration()`` and the
-        *new* result of ``read_configuration()``.
-        """
-        ...
-
-
-@runtime_checkable
 class Movable(Readable, Protocol):
     def set(self, value) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""

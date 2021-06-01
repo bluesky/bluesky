@@ -18,10 +18,6 @@ def test_readable():
     assert not isinstance(sim.flyer1, bs_abc.Readable)
 
 
-def test_configurable():
-    assert isinstance(sim.det_with_conf, bs_abc.Configurable)
-
-
 def test_movable():
     assert isinstance(sim.motor1, bs_abc.Movable)
     assert not isinstance(sim.det1, bs_abc.Movable)
