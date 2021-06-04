@@ -603,19 +603,6 @@ class RunBundler:
                 await self.emit(DocumentNames(name), doc)
 
         collect_obj_config = {}
-        if hasattr(collect_obj, "read_configuration"):
-            doc_logger.debug("reading configuration from %s", collect_obj)
-            collect_obj_config[collect_obj.name] = {
-                "data": {},
-                "timestamps": {},
-                "data_keys": collect_obj.describe_configuration()
-            }
-            for config_key, config in collect_obj.read_configuration().items():
-                collect_obj_config[collect_obj.name]["data"][config_key] = config["value"]
-                collect_obj_config[collect_obj.name]["timestamps"][config_key] = config["timestamp"]
-        else:
-            doc_logger.debug("%s has no read_configuration method", collect_obj)
-
         bulk_data = {}
         local_descriptors = {}  # hashed on objs_read, not (name, objs_read)
         # collect_obj.describe_collect() returns a dictionary like this:
@@ -625,6 +612,22 @@ class RunBundler:
             if stream_name not in self._descriptors:
                 # We do not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
+                # if we have not yet read the configuration, do so
+                if collect_obj.name not in collect_obj_config:
+                    # but read_configuration is optional
+                    if hasattr(collect_obj, "read_configuration"):
+                        doc_logger.debug("reading configuration from %s", collect_obj)
+                        _config = collect_obj_config[collect_obj.name] = {
+                            "data": {},
+                            "timestamps": {},
+                            "data_keys": collect_obj.describe_configuration()
+                        }
+                        for config_key, config in collect_obj.read_configuration().items():
+                            _config["data"][config_key] = config["value"]
+                            _config["timestamps"][config_key] = config["timestamp"]
+                    else:
+                        doc_logger.debug("%s has no read_configuration method", collect_obj)
+
                 hints = {}
                 if hasattr(collect_obj, "hints"):
                     hints.update({collect_obj.name: collect_obj.hints})
