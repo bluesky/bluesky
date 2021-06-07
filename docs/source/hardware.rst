@@ -26,7 +26,7 @@ Status object
 The interface of a "status" object, which the ``RunEngine`` uses to
 asynchronously monitor the compeletion of having triggered or set a device.
 
-.. autoclass:: bluesky.abc.Status
+.. autoclass:: bluesky.protocols.Status
    :members:
    :undoc-members:
 
@@ -66,7 +66,7 @@ Readable Device
 
 The interface of a readable device:
 
-.. autoclass:: bluesky.abc.Readable
+.. autoclass:: bluesky.protocols.Readable
     :members:
     :undoc-members:
 
@@ -77,7 +77,7 @@ The interface of a movable device extends the interface of a readable device
 with the following additional methods and attributes.
 
 
-.. autoclass:: bluesky.abc.Movable
+.. autoclass:: bluesky.protocols.Movable
     :members:
     :show-inheritance:
 
@@ -101,7 +101,7 @@ The interface of a "flyable" device is separate from the interface of a readable
 or settable device, though there is some overlap.
 
 
-.. autoclass:: bluesky.abc.Flyable
+.. autoclass:: bluesky.protocols.Flyable
     :members:
     :undoc-members:
 
@@ -117,19 +117,22 @@ ignored if not present or required by only a subset of RunEngine messages.
 In the latter case, the RunEngine may error if it tries to use a device which does not define
 the required method.
 
-.. autoclass:: bluesky.abc.Stageable
+.. autoclass:: bluesky.protocols.Stageable
     :members:
 
-.. autoclass:: bluesky.abc.Subscribable
+.. autoclass:: bluesky.protocols.Subscribable
     :members:
 
-.. autoclass:: bluesky.abc.Pausable
+.. autoclass:: bluesky.protocols.Pausable
     :members:
 
-.. autoclass:: bluesky.abc.Stoppable
+.. autoclass:: bluesky.protocols.Stoppable
     :members:
 
-.. autoclass:: bluesky.abc.Checkable
+.. autoclass:: bluesky.protocols.Checkable
+    :members:
+
+.. autoclass:: bluesky.protocols.Hinted
     :members:
 
 

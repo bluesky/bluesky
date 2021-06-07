@@ -34,15 +34,6 @@ class Readable(Protocol):
         """``None``, or a reference to a parent device."""
         ...
 
-    @property
-    def hints(self) -> Dict:
-        """A dictionary of suggestions for best-effort visualization and processing.
-
-        This does not affect what data is read or saved; it is only
-        a suggestion to enable automated tools to provide helpful information
-        with minimal guidance from the user. See :ref:`hints`.
-        """
-        ...
 
     def trigger(self) -> Status:
         """Return a ``Status`` that is marked done when the device is done triggering.
@@ -245,5 +236,17 @@ class Checkable(Protocol):
 
         This method is used by simulators that check limits. If not implemented
         those simulators should assume all values are valid, but may warn.
+        """
+        ...
+
+@runtime_checkable
+class Hinted(Protocol):
+    @property
+    def hints(self) -> Dict:
+        """A dictionary of suggestions for best-effort visualization and processing.
+
+        This does not affect what data is read or saved; it is only
+        a suggestion to enable automated tools to provide helpful information
+        with minimal guidance from the user. See :ref:`hints`.
         """
         ...
