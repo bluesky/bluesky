@@ -34,7 +34,6 @@ class Readable(Protocol):
         """``None``, or a reference to a parent device."""
         ...
 
-
     def trigger(self) -> Status:
         """Return a ``Status`` that is marked done when the device is done triggering.
 
@@ -238,6 +237,7 @@ class Checkable(Protocol):
         those simulators should assume all values are valid, but may warn.
         """
         ...
+
 
 @runtime_checkable
 class Hinted(Protocol):
