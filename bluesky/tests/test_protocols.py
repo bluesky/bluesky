@@ -3,49 +3,49 @@ import tempfile
 import mypy.api
 import pytest
 
-from bluesky import abc as bs_abc
+from bluesky import protocols as bs_protocols
 from ophyd import sim
 
 
 def test_status():
-    assert isinstance(sim.NullStatus(), bs_abc.Status)
-    assert isinstance(sim.StatusBase(), bs_abc.Status)
+    assert isinstance(sim.NullStatus(), bs_protocols.Status)
+    assert isinstance(sim.StatusBase(), bs_protocols.Status)
 
 
 def test_readable():
-    assert isinstance(sim.motor1, bs_abc.Readable)
-    assert isinstance(sim.det1, bs_abc.Readable)
-    assert not isinstance(sim.flyer1, bs_abc.Readable)
+    assert isinstance(sim.motor1, bs_protocols.Readable)
+    assert isinstance(sim.det1, bs_protocols.Readable)
+    assert not isinstance(sim.flyer1, bs_protocols.Readable)
 
 
 def test_movable():
-    assert isinstance(sim.motor1, bs_abc.Movable)
-    assert not isinstance(sim.det1, bs_abc.Movable)
-    assert not isinstance(sim.flyer1, bs_abc.Movable)
+    assert isinstance(sim.motor1, bs_protocols.Movable)
+    assert not isinstance(sim.det1, bs_protocols.Movable)
+    assert not isinstance(sim.flyer1, bs_protocols.Movable)
 
 
 def test_flyable():
-    assert isinstance(sim.flyer1, bs_abc.Flyable)
-    assert not isinstance(sim.det1, bs_abc.Flyable)
-    assert not isinstance(sim.motor1, bs_abc.Flyable)
+    assert isinstance(sim.flyer1, bs_protocols.Flyable)
+    assert not isinstance(sim.det1, bs_protocols.Flyable)
+    assert not isinstance(sim.motor1, bs_protocols.Flyable)
 
 
 def test_stageable():
-    assert isinstance(sim.det1, bs_abc.Stageable)
+    assert isinstance(sim.det1, bs_protocols.Stageable)
 
 
 def test_pausable():
-    assert isinstance(sim.det1, bs_abc.Pausable)
+    assert isinstance(sim.det1, bs_protocols.Pausable)
 
 
 def test_subscribable():
-    assert isinstance(sim.det1, bs_abc.Subscribable)
-    assert isinstance(sim.motor1, bs_abc.Subscribable)
-    assert not isinstance(sim.flyer1, bs_abc.Subscribable)
+    assert isinstance(sim.det1, bs_protocols.Subscribable)
+    assert isinstance(sim.motor1, bs_protocols.Subscribable)
+    assert not isinstance(sim.flyer1, bs_protocols.Subscribable)
 
 
 def test_checkable():
-    assert isinstance(sim.motor1, bs_abc.Checkable)
+    assert isinstance(sim.motor1, bs_protocols.Checkable)
 
 
 # I think the commented out tests pass because __getattr__ is implemented, but not sure
@@ -71,10 +71,10 @@ def test_checkable():
 )
 def test_mypy(type_, hardware, pass_):
     template = f"""
-from bluesky import abc as bs_abc
+from bluesky import protocols as bs_protocols
 from ophyd import sim
 
-var: bs_abc.{type_} = sim.{hardware}
+var: bs_protocols.{type_} = sim.{hardware}
 """
 
     with tempfile.NamedTemporaryFile("wt") as f:
