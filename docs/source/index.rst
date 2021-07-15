@@ -72,17 +72,17 @@ Index
    :hidden:
    :caption: Data Collection
 
-   bluesky <https://nsls-ii.github.io/bluesky>
-   ophyd <https://nsls-ii.github.io/ophyd>
+   bluesky <https://blueskyproject.io/bluesky>
+   ophyd <https://blueskyproject.io/ophyd>
 
 .. toctree::
    :hidden:
    :caption: Data Access and Management
 
-   databroker <https://nsls-ii.github.io/databroker>
+   databroker <https://blueskyproject.io/databroker>
    amostra <https://nsls-ii.github.io/amostra>
    datamuxer <https://nsls-ii.github.io/datamuxer>
-   suitcase <https://nsls-ii.github.io/suitcase>
+   suitcase <https://blueskyproject.io/suitcase>
 
 .. toctree::
    :hidden:
