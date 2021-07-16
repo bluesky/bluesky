@@ -33,7 +33,7 @@ setuptools.setup(
     author='danielballan',
     author_email=None,
     description="Experiment specification & orchestration.",
-    long_description=read("README.md"),
+    long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     license="BSD (3-clause)",
     url="https://github.com/bluesky/bluesky",
