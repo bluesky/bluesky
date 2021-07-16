@@ -53,7 +53,7 @@ changes.
 Standard acronyms to start the commit message with are:
 
 * API: an (incompatible) API change
-* BLD: change related to building numpy
+* BLD: change related to building the project
 * BUG: bug fix
 * CI : continuous integration
 * DEP: deprecate something, or remove a deprecated object
