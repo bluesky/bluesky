@@ -78,7 +78,7 @@ We may suggest some changes or improvements or alternatives.
 Hints to make the integration of your changes easy (and happen faster):
 * Keep your pull requests small
 * Don't forget your unit tests
-* All algorithms need documentation, don't forget the .rst file
+* All features need documentation, don't forget the .rst file
 * Don't take changes requests to change your code personally
 
 Releasing
