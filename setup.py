@@ -22,9 +22,11 @@ pip install --upgrade pip
 """.format(*(sys.version_info[:2] + min_version))
     sys.exit(error)
 
-
 with open('requirements.txt') as f:
     requirements = f.read().split()
+
+with open('README.md', encoding='utf-8') as readme_file:
+    readme = readme_file.read()
 
 setuptools.setup(
     name='bluesky',
@@ -32,6 +34,9 @@ setuptools.setup(
     cmdclass=versioneer.get_cmdclass(),
     author='danielballan',
     author_email=None,
+    description="Experiment specification & orchestration.",
+    long_description=readme,
+    long_description_content_type="text/markdown",
     license="BSD (3-clause)",
     url="https://github.com/bluesky/bluesky",
     packages=setuptools.find_packages(),
