@@ -299,9 +299,9 @@ class RunEngine:
         self._state_lock = threading.RLock()
         self._loop = loop
         if sys.version_info < (3, 8):
-            self._loop_for_kwargs = self._loop
+            self._loop_for_kwargs = {'loop': self._loop}
         else:
-            self._loop_for_kwargs = None
+            self._loop_for_kwargs = {}
         # When set, RunEngine.__call__ should stop blocking.
         self._blocking_event = threading.Event()
 
@@ -311,7 +311,7 @@ class RunEngine:
         setup_event = threading.Event()
 
         def setup_run_permit():
-            self._run_permit = asyncio.Event(loop=self._loop_for_kwargs)
+            self._run_permit = asyncio.Event(**self._loop_for_kwargs)
             self._run_permit.set()
             setup_event.set()
 
@@ -588,7 +588,7 @@ class RunEngine:
         self._task = None
         self._task_fut = None
         self._status_tasks.clear()
-        self._pardon_failures = asyncio.Event(loop=self._loop_for_kwargs)
+        self._pardon_failures = asyncio.Event(**self._loop_for_kwargs)
         self._plan = None
         self._interrupted = False
 
@@ -1322,7 +1322,7 @@ class RunEngine:
                     # This sleep has to be inside of this try block so
                     # that any of the 'async' exceptions get thrown in the
                     # correct place
-                    await asyncio.sleep(0, loop=self._loop_for_kwargs)
+                    await asyncio.sleep(0, **self._loop_for_kwargs)
                     # always pop off a result, we are either sending it back in
                     # or throwing an exception in, in either case the left hand
                     # side of the yield in the plan will be moved past
@@ -1482,12 +1482,12 @@ class RunEngine:
         except (StopIteration, RequestStop):
             self._exit_status = 'success'
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, loop=self._loop_for_kwargs)
+            await asyncio.sleep(0, **self._loop_for_kwargs)
         except (FailedPause, RequestAbort, asyncio.CancelledError,
                 PlanHalt):
             self._exit_status = 'abort'
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, loop=self._loop_for_kwargs)
+            await asyncio.sleep(0, **self._loop_for_kwargs)
             self.log.exception("Run aborted")
         except GeneratorExit as err:
             self._exit_status = 'fail'  # Exception raises during 'running'
@@ -1566,7 +1566,7 @@ class RunEngine:
         """
         futs, = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        await asyncio.wait(futs, loop=self._loop_for_kwargs, **msg.kwargs)
+        await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
 
     async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
@@ -1604,8 +1604,8 @@ class RunEngine:
         self.md_validator(dict(md))
 
         current_run = self._run_bundlers[run_key] = RunBundler(
-            md, self.record_interruptions, self.emit, self.emit_sync, self.log,
-            loop=self._loop_for_kwargs)
+            md, self.record_interruptions, self.emit, self.emit_sync, self.log
+        )
 
         new_uid = await current_run.open_run(msg)
         self._run_start_uids.append(new_uid)
@@ -1795,7 +1795,7 @@ class RunEngine:
         group = kwargs.pop("group", None)
 
         ret = obj.kickoff(*msg.args, **kwargs)
-        p_event = asyncio.Event(loop=self._loop_for_kwargs)
+        p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
 
         await current_run.kickoff(msg)
@@ -1849,7 +1849,7 @@ class RunEngine:
         group = kwargs.pop("group", None)
         ret = msg.obj.complete(*msg.args, **kwargs)
 
-        p_event = asyncio.Event(loop=self._loop_for_kwargs)
+        p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
 
         def done_callback(status=None):
@@ -1919,7 +1919,7 @@ class RunEngine:
         group = kwargs.pop('group', None)
         self._movable_objs_touched.add(msg.obj)
         ret = msg.obj.set(*msg.args, **kwargs)
-        p_event = asyncio.Event(loop=self._loop_for_kwargs)
+        p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
 
         def done_callback(status=None):
@@ -1950,7 +1950,7 @@ class RunEngine:
         kwargs = dict(msg.kwargs)
         group = kwargs.pop('group', None)
         ret = msg.obj.trigger(*msg.args, **kwargs)
-        p_event = asyncio.Event(loop=self._loop_for_kwargs)
+        p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
 
         def done_callback(status=None):
@@ -2031,7 +2031,7 @@ class RunEngine:
 
         where `sleep_time` is in seconds
         """
-        await asyncio.sleep(*msg.args, loop=self._loop_for_kwargs)
+        await asyncio.sleep(*msg.args, **self._loop_for_kwargs)
 
     async def _pause(self, msg):
         """Request the run engine to pause
@@ -2082,7 +2082,7 @@ class RunEngine:
             # We are at a checkpoint; we are done deferring the pause.
             # Give the _check_for_signals coroutine time to look for
             # additional SIGINTs that would trigger an abort.
-            await asyncio.sleep(0.5, loop=self._loop_for_kwargs)
+            await asyncio.sleep(0.5, **self._loop_for_kwargs)
             await self._request_pause_coro(defer=False)
 
     def _reset_checkpoint_state(self):

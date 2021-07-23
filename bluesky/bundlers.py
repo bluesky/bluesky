@@ -13,7 +13,7 @@ from .utils import (
 
 
 class RunBundler:
-    def __init__(self, md, record_interruptions, emit, emit_sync, log, *, loop):
+    def __init__(self, md, record_interruptions, emit, emit_sync, log):
         # state stolen from the RE
         self.bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
@@ -40,8 +40,6 @@ class RunBundler:
         self.emit = emit
         self.emit_sync = emit_sync
         self.log = log
-
-        self.loop = loop
 
     async def open_run(self, msg):
         self.run_is_open = True
