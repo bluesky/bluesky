@@ -67,6 +67,7 @@ Index
    msg
    run_engine
    api_changes
+   contributing
 
 .. toctree::
    :hidden:
