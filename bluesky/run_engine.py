@@ -216,8 +216,8 @@ class RunEngine:
              wait on the event and poll to push updates to the browser)
 
     call_return_type: str, optional, {'uids', 'plan_return'}
-        Defaults to 'uids'. A flag that controls the return value of __call__. 
-        If 'uids', calling the RunEngine will return a list of uids. If 'plan_return', 
+        Defaults to 'uids'. A flag that controls the return value of __call__.
+        If 'uids', calling the RunEngine will return a list of uids. If 'plan_return',
         the RunEngine will pass through the return value of the plan that was run.
 
 
@@ -361,7 +361,7 @@ class RunEngine:
         self.record_interruptions = False
         self.pause_msg = PAUSE_MSG
         self.NO_PLAN_RETURN = object()
-        
+
         if during_task is None:
             during_task = DefaultDuringTask()
         self._during_task = during_task
@@ -865,7 +865,6 @@ class RunEngine:
         else:
             return tuple(self._run_start_uids)
 
-
     def _rewind(self):
         '''Clean up in preparation for resuming from a pause or suspension.
 
@@ -1167,7 +1166,6 @@ class RunEngine:
             return self.NO_PLAN_RETURN
         else:
             return tuple(self._run_start_uids)
-
 
     def stop(self):
         """
