@@ -2,7 +2,7 @@ from collections import defaultdict
 from bluesky.examples import stepscan
 from bluesky.callbacks.broker import post_run, verify_files_saved
 from functools import partial
-
+import pytest
 
 def test_scan_and_get_data(RE, hw, db):
     if RE._call_return_type != "uids":
