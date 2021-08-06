@@ -11,6 +11,8 @@ import pytest
 
 @requires_ophyd
 def test_ramp(RE):
+    if RE._call_return_type != 'uids':
+        pytest.skip()
     from ophyd.positioner import SoftPositioner
     from ophyd import StatusBase
     from ophyd.sim import SynGauss

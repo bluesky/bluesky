@@ -163,6 +163,8 @@ def _make_overlapping_tests_2stream(func):
 @requires_ophyd
 @_make_overlapping_tests_2stream
 def test_keyoverlap_2stream(RE, det1, det2):
+    if RE._call_return_type != 'uids':
+        pytest.skip()
 
     @run_decorator()
     def test_plan(det1, det2):
@@ -197,6 +199,9 @@ def _make_overlapping_tests_stream(func):
 @requires_ophyd
 @_make_overlapping_tests_stream
 def test_overlapped_but_identical(RE, det1, det_list):
+    if RE._call_return_type != 'uids':
+        pytest.skip()
+
     @run_decorator()
     def test_plan(det1, det_list):
         yield from trigger_and_read([det1])

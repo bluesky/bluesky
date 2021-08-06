@@ -70,9 +70,9 @@ def test_ops_dimension_hints(RE, hw):
     motor1 = hw.motor1
     c = DocCollector()
     RE.subscribe(c.insert)
-    rs, = RE(bp.grid_scan([det],
-                          motor, -1, 1, 7,
-                          motor1, 0, 2, 3))
+    RE(bp.grid_scan([det],
+                    motor, -1, 1, 7,
+                    motor1, 0, 2, 3))
 
     st = c.start[0]
 
@@ -83,6 +83,9 @@ def test_ops_dimension_hints(RE, hw):
 
 
 def test_mesh_pseudo(hw, RE):
+    if RE._call_return_type != 'uids':
+        pytest.skip()
+        
     p3x3 = hw.pseudo3x3
     sig = hw.sig
     d = DocCollector()
@@ -91,6 +94,7 @@ def test_mesh_pseudo(hw, RE):
     rs, = RE(bp.grid_scan([sig],
                           p3x3.pseudo1, 0, 3, 5,
                           p3x3.pseudo2, 7, 10, 7))
+
     df = pd.DataFrame([_['data']
                        for _ in d.event[d.descriptor[rs][0]['uid']]])
 
@@ -105,6 +109,9 @@ def test_mesh_pseudo(hw, RE):
 
 
 def test_rmesh_pseudo(hw, RE):
+    if RE._call_return_type != 'uids':
+        pytest.skip()
+        
     p3x3 = hw.pseudo3x3
     p3x3.set(1, -2, 100)
     init_pos = p3x3.position
@@ -112,10 +119,10 @@ def test_rmesh_pseudo(hw, RE):
     d = DocCollector()
 
     RE.subscribe(d.insert)
-    rs, = RE(bp.rel_grid_scan(
-        [sig],
-        p3x3.pseudo1, 0, 3, 5,
-        p3x3.pseudo2, 7, 10, 7))
+    rs, = RE(bp.rel_grid_scan([sig],
+                              p3x3.pseudo1, 0, 3, 5,
+                              p3x3.pseudo2, 7, 10, 7))
+
     df = pd.DataFrame([_['data']
                        for _ in d.event[d.descriptor[rs][0]['uid']]])
 

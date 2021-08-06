@@ -1456,6 +1456,7 @@ def test_exceptions_exit_status(RE):
 def test_plan_return(RE):
     if RE._call_return_type != "plan_return":
         pytest.skip()
+
     def test_plan():
         yield Msg('null')
         return 'success'
@@ -1463,9 +1464,11 @@ def test_plan_return(RE):
     rs = RE(test_plan())
     assert rs == "success"
 
+
 def test_plan_return_resume(RE):
     if RE._call_return_type != "plan_return":
         pytest.skip()
+
     def test_plan():
         yield Msg('null')
         yield Msg('pause')
@@ -1475,7 +1478,8 @@ def test_plan_return_resume(RE):
         RE(test_plan())
     rs = RE.resume()
     assert rs == "success"
-    
+
+
 def test_drop(RE, hw):
     det = hw.det
 
