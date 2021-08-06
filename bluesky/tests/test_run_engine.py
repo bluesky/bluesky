@@ -1412,15 +1412,23 @@ def test_force_stop_exit_status(bail_func, status, RE):
     def bad_plan():
         print('going in')
         yield Msg('pause')
+
     with pytest.raises(RunEngineInterrupted):
         RE(bad_plan())
 
-    rs, = getattr(RE, bail_func)()
+    rs = getattr(RE, bail_func)()
 
-    assert len(d.start) == 1
-    assert d.start[0]['uid'] == rs
-    assert len(d.stop) == 1
-    assert d.stop[rs]['exit_status'] == status
+    if RE._call_return_type == 'plan_return':
+        if bail_func == "resume":
+            assert rs != RE.NO_PLAN_RETURN
+        else:
+            assert rs == RE.NO_PLAN_RETURN
+    else:
+        rs = rs[0]
+        assert len(d.start) == 1
+        assert d.start[0]['uid'] == rs
+        assert len(d.stop) == 1
+        assert d.stop[rs]['exit_status'] == status
 
 
 def test_exceptions_exit_status(RE):
@@ -1445,6 +1453,29 @@ def test_exceptions_exit_status(RE):
     assert d.stop[rs]['reason'] == str(sf.value)
 
 
+def test_plan_return(RE):
+    if RE._call_return_type != "plan_return":
+        pytest.skip()
+    def test_plan():
+        yield Msg('null')
+        return 'success'
+
+    rs = RE(test_plan())
+    assert rs == "success"
+
+def test_plan_return_resume(RE):
+    if RE._call_return_type != "plan_return":
+        pytest.skip()
+    def test_plan():
+        yield Msg('null')
+        yield Msg('pause')
+        return 'success'
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(test_plan())
+    rs = RE.resume()
+    assert rs == "success"
+    
 def test_drop(RE, hw):
     det = hw.det
 
