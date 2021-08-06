@@ -5,6 +5,9 @@ from functools import partial
 
 
 def test_scan_and_get_data(RE, hw, db):
+    if RE._call_return_type != "uids":
+        pytest.skip()
+
     RE.subscribe(db.insert)
     uid, = RE(stepscan(hw.det, hw.motor), group='foo', beamline_id='testing',
               config={})

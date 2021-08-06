@@ -85,7 +85,7 @@ def test_ops_dimension_hints(RE, hw):
 def test_mesh_pseudo(hw, RE):
     if RE._call_return_type != 'uids':
         pytest.skip()
-        
+
     p3x3 = hw.pseudo3x3
     sig = hw.sig
     d = DocCollector()
@@ -111,7 +111,7 @@ def test_mesh_pseudo(hw, RE):
 def test_rmesh_pseudo(hw, RE):
     if RE._call_return_type != 'uids':
         pytest.skip()
-        
+
     p3x3 = hw.pseudo3x3
     p3x3.set(1, -2, 100)
     init_pos = p3x3.position
@@ -140,6 +140,9 @@ def test_rmesh_pseudo(hw, RE):
 
 
 def test_relative_pseudo(hw, RE, db):
+    if RE._call_return_type != 'uids':
+        pytest.skip()
+
     RE.subscribe(db.insert)
     p = hw.pseudo3x3
     p.set(1, 1, 1)

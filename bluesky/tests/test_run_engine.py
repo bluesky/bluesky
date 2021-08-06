@@ -1373,6 +1373,9 @@ def test_double_call(RE):
 
 
 def test_num_events(RE, hw, db):
+    if RE._call_return_type != "uids":
+        pytest.skip()
+
     RE.subscribe(db.insert)
 
     uid1, = RE(count([]))
