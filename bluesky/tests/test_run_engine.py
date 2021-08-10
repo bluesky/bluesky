@@ -1423,9 +1423,9 @@ def test_force_stop_exit_status(bail_func, status, RE):
 
     if RE._call_return_type == 'plan_return':
         if bail_func == "resume":
-            assert rs != RE.NO_PLAN_RETURN
+            assert rs is not RE.NO_PLAN_RETURN
         else:
-            assert rs == RE.NO_PLAN_RETURN
+            assert rs is RE.NO_PLAN_RETURN
     else:
         rs = rs[0]
         assert len(d.start) == 1
