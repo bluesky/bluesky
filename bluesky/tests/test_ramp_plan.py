@@ -11,8 +11,6 @@ import pytest
 
 @requires_ophyd
 def test_ramp(RE):
-    if RE._call_return_type != 'uids':
-        pytest.skip()
     from ophyd.positioner import SoftPositioner
     from ophyd import StatusBase
     from ophyd.sim import SynGauss
@@ -36,10 +34,14 @@ def test_ramp(RE):
     g = ramp_plan(kickoff(), tt, inner_plan, period=0.08)
     db = DocCollector()
     RE.subscribe(db.insert)
-    rs_uid, = RE(g)
-    assert db.start[0]['uid'] == rs_uid
-    assert len(db.descriptor[rs_uid]) == 2
-    descs = {d['name']: d for d in db.descriptor[rs_uid]}
+    rs = RE(g)
+    if RE._call_return_type != 'uids':
+        uid = rs.run_start_uids[0]
+    else:
+        uid = rs[0]
+    assert db.start[0]['uid'] == uid
+    assert len(db.descriptor[uid]) == 2
+    descs = {d['name']: d for d in db.descriptor[uid]}
 
     assert set(descs) == set(['primary', 'mot_monitor'])
 

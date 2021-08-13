@@ -11,6 +11,8 @@ import inspect
 from contextlib import ExitStack
 import threading
 import weakref
+from dataclasses import dataclass
+import typing
 from .bundlers import RunBundler
 
 import concurrent
@@ -40,6 +42,13 @@ from .utils import (CallbackRegistry, SigintHandler,
 
 class _RunEnginePanic(Exception):
     ...
+
+
+@dataclass
+class RunEngineResult():
+    run_start_uids: typing.Tuple[str]
+    plan_result: typing.Any
+    exit_status: str
 
 
 class RunEngineStateMachine(StateMachine):
@@ -217,8 +226,9 @@ class RunEngine:
 
     call_return_type: str, optional, {'uids', 'plan_return'}
         Defaults to 'uids'. A flag that controls the return value of __call__.
-        If 'uids', calling the RunEngine will return a list of uids. If 'plan_return',
-        the RunEngine will pass through the return value of the plan that was run.
+        If 'uids', calling the RunEngine will return a list of uids. If
+        'plan_return', the RunEngine will return a RunEngineResult object that
+        contains information about the plan that was run.
 
 
     Attributes
@@ -822,7 +832,10 @@ class RunEngine:
             raise RunEngineInterrupted(self.pause_msg) from None
 
         if self._call_return_type == 'plan_return':
-            return plan_return
+            run_engine_return = RunEngineResult(tuple(self._run_start_uids),
+                                                plan_return,
+                                                self._exit_status)
+            return run_engine_return
         else:
             return tuple(self._run_start_uids)
 
@@ -860,8 +873,12 @@ class RunEngine:
         plan_return = self._resume_task()
         if self._interrupted:
             raise RunEngineInterrupted(self.pause_msg) from None
+
         if self._call_return_type == 'plan_return':
-            return plan_return
+            run_engine_return = RunEngineResult(tuple(self._run_start_uids),
+                                                plan_return,
+                                                self._exit_status)
+            return run_engine_return
         else:
             return tuple(self._run_start_uids)
 
@@ -1163,7 +1180,11 @@ class RunEngine:
         for task in self._status_tasks:
             task.cancel()
         if self._call_return_type == 'plan_return':
-            return self.NO_PLAN_RETURN
+            plan_return = self.NO_PLAN_RETURN
+            run_engine_return = RunEngineResult(tuple(self._run_start_uids),
+                                                plan_return,
+                                                self._exit_status)
+            return run_engine_return
         else:
             return tuple(self._run_start_uids)
 
@@ -1194,7 +1215,11 @@ class RunEngine:
             self._task.cancel()
 
         if self._call_return_type == 'plan_return':
-            return self.NO_PLAN_RETURN
+            plan_return = self.NO_PLAN_RETURN
+            run_engine_return = RunEngineResult(tuple(self._run_start_uids),
+                                                plan_return,
+                                                self._exit_status)
+            return run_engine_return
         else:
             return tuple(self._run_start_uids)
 
@@ -1250,7 +1275,11 @@ class RunEngine:
             self._task.cancel()
 
         if self._call_return_type == 'plan_return':
-            return self.NO_PLAN_RETURN
+            plan_return = self.NO_PLAN_RETURN
+            run_engine_return = RunEngineResult(tuple(self._run_start_uids),
+                                                plan_return,
+                                                self._exit_status)
+            return run_engine_return
         else:
             return tuple(self._run_start_uids)
 

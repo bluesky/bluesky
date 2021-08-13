@@ -2,17 +2,17 @@ from collections import defaultdict
 from bluesky.examples import stepscan
 from bluesky.callbacks.broker import post_run, verify_files_saved
 from functools import partial
-import pytest
 
 
 def test_scan_and_get_data(RE, hw, db):
-    if RE._call_return_type != "uids":
-        pytest.skip()
 
     RE.subscribe(db.insert)
-    uid, = RE(stepscan(hw.det, hw.motor), group='foo', beamline_id='testing',
-              config={})
-
+    rs = RE(stepscan(hw.det, hw.motor), group='foo', beamline_id='testing',
+            config={})
+    if RE._call_return_type != "uids":
+        uid = rs.run_start_uids[0]
+    else:
+        uid = rs[0]
     hdr = db[uid]
     list(hdr.events())
 
