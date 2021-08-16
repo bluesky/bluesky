@@ -11,8 +11,6 @@ Configuration = Dict[str, Dict[str, Any]]
 
 @runtime_checkable
 class Status(Protocol):
-    done: bool
-    success: bool
 
     def add_callback(self, callback: Callable[["Status"], NoReturn]) -> NoReturn:
         """Add a callback function to be called upon completion.
@@ -22,6 +20,14 @@ class Status(Protocol):
         If the Status object is done when the function is added, it should be
         called immediately.
         """
+        ...
+
+    @property
+    def done(self) -> bool:
+        ...
+
+    @property
+    def success(self) -> bool:
         ...
 
 
