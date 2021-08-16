@@ -28,11 +28,7 @@ class Status(Protocol):
 @runtime_checkable
 class Readable(Protocol):
     name: str
-
-    @property
-    def parent(self) -> Optional[Any]:
-        """``None``, or a reference to a parent device."""
-        ...
+    parent: Optional[Any]
 
     def trigger(self) -> Status:
         """Return a ``Status`` that is marked done when the device is done triggering.
@@ -117,11 +113,7 @@ class Movable(Readable, Protocol):
 @runtime_checkable
 class Flyable(Protocol):
     name: str
-
-    @property
-    def parent(self) -> Optional[Any]:
-        """``None``, or a reference to a parent device."""
-        ...
+    parent: Optional[Any]
 
     def kickoff(self) -> Status:
         """Begin acculumating data.
