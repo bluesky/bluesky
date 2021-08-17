@@ -1427,6 +1427,7 @@ def test_force_stop_exit_status(bail_func, status, RE):
         else:
             assert rs.plan_result is RE.NO_PLAN_RETURN
         uid = rs.run_start_uids[0]
+        assert rs.exit_status == status
     else:
         uid = rs[0]
     assert len(d.start) == 1
@@ -1463,10 +1464,12 @@ def test_plan_return(RE):
 
     def test_plan():
         yield Msg('null')
-        return 'success'
+        return 'plan_result'
 
     rs = RE(test_plan())
-    assert rs.plan_result == "success"
+    assert rs.plan_result == "plan_result"
+    assert rs.exit_status == "success"
+    assert rs.interrupted is False
 
 
 def test_plan_return_resume(RE):
@@ -1476,12 +1479,13 @@ def test_plan_return_resume(RE):
     def test_plan():
         yield Msg('null')
         yield Msg('pause')
-        return 'success'
+        return 'plan_result'
 
     with pytest.raises(RunEngineInterrupted):
         RE(test_plan())
     rs = RE.resume()
-    assert rs.plan_result == "success"
+    assert rs.plan_result == "plan_result"
+    assert rs.exit_status == "success"
 
 
 def test_drop(RE, hw):
