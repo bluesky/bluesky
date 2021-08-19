@@ -46,12 +46,12 @@ class _RunEnginePanic(Exception):
 
 @dataclass
 class RunEngineResult():
-    run_start_uids: typing.Tuple[str]
+    run_start_uids: typing.Tuple[str, ...]
     plan_result: typing.Any
     exit_status: str
     interrupted: bool
     reason: str
-    exception: typing.Any  # could be exception or None
+    exception: typing.Optional[Exception]
 
 
 class RunEngineStateMachine(StateMachine):
