@@ -11,9 +11,6 @@ Configuration = Dict[str, Dict[str, Any]]
 
 @runtime_checkable
 class Status(Protocol):
-    done: bool
-    success: bool
-
     def add_callback(self, callback: Callable[["Status"], NoReturn]) -> NoReturn:
         """Add a callback function to be called upon completion.
 
@@ -24,11 +21,17 @@ class Status(Protocol):
         """
         ...
 
+    @property
+    def done(self) -> bool:
+        ...
+
+    @property
+    def success(self) -> bool:
+        ...
+
 
 @runtime_checkable
 class Readable(Protocol):
-    name: str
-
     @property
     def parent(self) -> Optional[Any]:
         """``None``, or a reference to a parent device."""
@@ -106,6 +109,10 @@ class Readable(Protocol):
         """Same API as ``describe``, but corresponding to the keys in ``read_configuration``."""
         ...
 
+    @property
+    def name(self) -> str:
+        ...
+
 
 @runtime_checkable
 class Movable(Readable, Protocol):
@@ -116,7 +123,9 @@ class Movable(Readable, Protocol):
 
 @runtime_checkable
 class Flyable(Protocol):
-    name: str
+    @property
+    def name(self) -> str:
+        ...
 
     @property
     def parent(self) -> Optional[Any]:
