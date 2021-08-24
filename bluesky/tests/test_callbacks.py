@@ -147,6 +147,8 @@ def test_table_warns():
                              'data_keys': {'field': {'dtype': 'array'}}})
 
 
+@pytest.mark.xfail(raises=TimeoutError,
+                   reason="count([hw.img]) has been timing out stochastically")
 def test_table_external(RE, hw, db):
     RE.subscribe(db.insert)
     RE(count([hw.img]), LiveTable(['img']))
@@ -447,6 +449,8 @@ def test_live_scatter(RE, hw):
 
 @pytest.mark.xfail(raises=InterfaceError,
                    reason='something funny going on with 3.5, 3.6 and sqlite')
+@pytest.mark.xfail(raises=TimeoutError,
+                   reason='count([hw.img]) has been timing out stochastically')
 def test_broker_base(RE, hw, db):
     class BrokerChecker(BrokerCallbackBase):
         def __init__(self, field, *, db=None):
