@@ -22,7 +22,6 @@ from event_model import compose_run, DocumentNames
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
-from sqlite3 import InterfaceError
 from io import StringIO
 from unittest.mock import MagicMock
 from itertools import permutations
