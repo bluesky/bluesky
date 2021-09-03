@@ -22,7 +22,6 @@ from event_model import compose_run, DocumentNames
 import pytest
 import numpy as np
 import matplotlib.pyplot as plt
-from sqlite3 import InterfaceError
 from io import StringIO
 from unittest.mock import MagicMock
 from itertools import permutations
@@ -445,8 +444,8 @@ def test_live_scatter(RE, hw):
                     xlim=(-3, 3), ylim=(-5, 5)))
 
 
-@pytest.mark.xfail(raises=InterfaceError,
-                   reason='something funny going on with 3.5, 3.6 and sqlite')
+@pytest.mark.xfail(raises=NotImplementedError,
+                   reason='This tests an API databroker has removed, and needs updating.')
 def test_broker_base(RE, hw, db):
     class BrokerChecker(BrokerCallbackBase):
         def __init__(self, field, *, db=None):
