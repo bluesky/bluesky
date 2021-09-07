@@ -6,11 +6,11 @@ import os
 import pytest
 
 
-@pytest.fixture(scope='function', params=['uids', 'plan_return'])
+@pytest.fixture(scope='function', params=['False', 'True'])
 def RE(request):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
-    RE = RunEngine({}, call_return_type=request.param, loop=loop)
+    RE = RunEngine({}, call_returns_result=request.param, loop=loop)
 
     def clean_event_loop():
         if RE.state not in ('idle', 'panicked'):

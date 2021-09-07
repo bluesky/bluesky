@@ -170,7 +170,7 @@ def test_keyoverlap_2stream(RE, det1, det2):
 
     d = DocCollector()
     rs = RE(test_plan(det1, det2), d.insert)
-    if RE._call_return_type != 'uids':
+    if RE._call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
@@ -209,7 +209,7 @@ def test_overlapped_but_identical(RE, det1, det_list):
 
     d = DocCollector()
     rs = RE(test_plan(det1, det_list), d.insert)
-    if RE._call_return_type != 'uids':
+    if RE._call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]

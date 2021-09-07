@@ -35,7 +35,7 @@ def test_ramp(RE):
     db = DocCollector()
     RE.subscribe(db.insert)
     rs = RE(g)
-    if RE._call_return_type != 'uids':
+    if RE._call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
