@@ -287,8 +287,7 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
                          'per_step': repr(per_step)},
            'plan_name': 'list_grid_scan',
            'plan_pattern': 'outer_list_product',
-           'plan_pattern_args': dict(args=md_args).update(
-               {'snake_axes': snake_axes}),
+           'plan_pattern_args': dict(args=md_args, snake_axes=snake_axes),
            'plan_pattern_module': plan_patterns.__name__,
            'motors': tuple(motor_names),
            'hints': {},
