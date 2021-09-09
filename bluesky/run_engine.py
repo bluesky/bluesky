@@ -248,7 +248,7 @@ class RunEngine:
         A flag that controls the return value of __call__
         If ``True``, the ``RunEngine`` will return a :class:``RunEngineResult``
         object that contains information about the plan that was run.
-        If ``False``, the ``RunEngine`` will return a list of uids.
+        If ``False``, the ``RunEngine`` will return a tuple of uids.
         Defaults to ``False`` to preserve the old ``RunEngine`` behavior,
         but the default is expected to change to ``True`` in the future.
 
@@ -773,7 +773,7 @@ class RunEngine:
 
         Returns
         -------
-        uids : list
+        uids : tuple
             list of uids (i.e. RunStart Document uids) of run(s)
             if :attr:`RunEngine._call_returns_result` is ``False``
         result : :class:`RunEngineResult`
@@ -1186,7 +1186,7 @@ class RunEngine:
 
         Returns
         -------
-        uids : list
+        uids : tuple
             list of uids (i.e. RunStart Document uids) of run(s)
             if :attr:`RunEngine._call_returns_result` is ``False``
         result : :class:`RunEngineResult`
@@ -1231,7 +1231,7 @@ class RunEngine:
 
         Returns
         -------
-        uids : list
+        uids : tuple
             list of uids (i.e. RunStart Document uids) of run(s)
             if :attr:`RunEngine._call_returns_result` is ``False``
         result : :class:`RunEngineResult`
@@ -1272,7 +1272,7 @@ class RunEngine:
 
         Returns
         -------
-        uids : list
+        uids : tuple
             list of uids (i.e. RunStart Document uids) of run(s)
             if :attr:`RunEngine._call_returns_result` is ``False``
         result : :class:`RunEngineResult`
