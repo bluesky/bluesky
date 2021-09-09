@@ -1,14 +1,15 @@
+import pytest
 import numpy as np
 from bluesky.plans import scan
 from ophyd.sim import motor, det, SynGauss
 from bluesky.callbacks.fitting import PeakStats
 from scipy.special import erf
-from lmfit import Model
 
 
 def get_ps(x, y, shift=0.5):
     """ peak status calculation from CHX algorithm.
     """
+    lmfit = pytest.importorskip('lmfit')
     ps = {}
     x = np.array(x)
     y = np.array(y)
@@ -44,7 +45,7 @@ def get_ps(x, y, shift=0.5):
         def err_func(x, x0, k=2, A=1,  base=0):  # erf fit from Yugang
             return base - A * erf(k * (x - x0))
 
-        mod = Model(err_func)
+        mod = lmfit.Model(err_func)
         # estimate starting values:
         x0 = np.mean(x)
         # k=0.1*(np.max(x)-np.min(x))

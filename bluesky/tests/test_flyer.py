@@ -7,6 +7,8 @@ from bluesky import Msg
 from bluesky.plans import fly, count
 from bluesky.run_engine import IllegalMessageSequence
 from bluesky.tests import requires_ophyd
+from bluesky.tests.utils import DocCollector
+
 from ophyd import Component as Cpt, Device
 from ophyd.sim import NullStatus, TrivialFlyer
 
@@ -259,12 +261,12 @@ def test_device_redundent_config_reading(RE):
             Msg("close_run"),
         ]
     )
-    assert flyer.call_counts['collect'] == 4
-    assert flyer.call_counts['describe_collect'] == 4
-    assert flyer.call_counts['read_configuration'] == 1
-    assert flyer.call_counts['describe_configuration'] == 1
-    assert flyer.call_counts['kickoff'] == 1
-    assert flyer.call_counts['complete'] == 1
+    assert flyer.call_counts["collect"] == 4
+    assert flyer.call_counts["describe_collect"] == 4
+    assert flyer.call_counts["read_configuration"] == 1
+    assert flyer.call_counts["describe_configuration"] == 1
+    assert flyer.call_counts["kickoff"] == 1
+    assert flyer.call_counts["complete"] == 1
 
 
 class FlyerDetector(Device):
@@ -289,7 +291,6 @@ class FlyerDetector(Device):
 
 
 def call_counter(func):
-
     @functools.wraps(func)
     def inner(self, *args, **kwargs):
         self.call_counts[func.__name__] += 1
@@ -370,3 +371,50 @@ class FlyerDevice(Device):
     @call_counter
     def describe_configuration(self):
         return super().describe_configuration()
+
+
+def test_describe_config_optional(RE):
+    class Simple:
+        """A trivial flyer that omits the configuration methods"""
+
+        name = "simple_flyer"
+        parent = None
+
+        def kickoff(self):
+            return NullStatus()
+
+        def describe_collect(self):
+            return {"stream_name": {}}
+
+        def complete(self):
+            return NullStatus()
+
+        def collect(self):
+            for i in range(100):
+                yield {"data": {}, "timestamps": {}, "time": i, "seq_num": i}
+
+        def stop(self, *, success=False):
+            pass
+
+    d = DocCollector()
+
+    flyer = Simple()
+
+    RE(
+        [
+            Msg("open_run"),
+            Msg("kickoff", flyer, group="foo"),
+            Msg("wait", group="foo"),
+            Msg("complete", flyer, group="bar"),
+            Msg("wait", group="bar"),
+            Msg("collect", flyer),
+            Msg("close_run"),
+        ],
+        d.insert,
+    )
+
+    ((desc,),) = d.descriptor.values()
+    assert desc["name"] == "stream_name"
+
+    assert "simple_flyer" in desc["object_keys"]
+    assert "simple_flyer" in desc["configuration"]
