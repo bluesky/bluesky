@@ -43,6 +43,9 @@ class DocCollector:
         elif name == "descriptor":
             self.descriptor[doc["run_start"]].append(doc)
             self.event[doc["uid"]] = []
+        elif name == 'bulk_events':
+            for k, v in doc.items():
+                self.event[k].extend(v)
         else:
             self.event[doc["descriptor"]].append(doc)
 

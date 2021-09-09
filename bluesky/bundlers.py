@@ -612,14 +612,15 @@ class RunBundler:
                 descriptor_uid = new_uid()
                 # if we have not yet read the configuration, do so
                 if collect_obj.name not in collect_obj_config:
+                    _config = collect_obj_config[collect_obj.name] = {
+                        "data": {},
+                        "timestamps": {},
+                        "data_keys": {}
+                    }
                     # but read_configuration is optional
                     if hasattr(collect_obj, "read_configuration"):
                         doc_logger.debug("reading configuration from %s", collect_obj)
-                        _config = collect_obj_config[collect_obj.name] = {
-                            "data": {},
-                            "timestamps": {},
-                            "data_keys": collect_obj.describe_configuration()
-                        }
+                        _config['data_keys'].update(collect_obj.describe_configuration())
                         for config_key, config in collect_obj.read_configuration().items():
                             _config["data"][config_key] = config["value"]
                             _config["timestamps"][config_key] = config["timestamp"]
