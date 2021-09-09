@@ -244,12 +244,13 @@ class RunEngine:
            - Matplotlib is imported and using a nbagg or ipympl backend (
              wait on the event and poll to push updates to the browser)
 
-    call_returns_result : bool, default True
-        A flag that controls the return value of __call__.
-        If ``True``, the ``RunEngine`` will return a :class:``RunEngineResult`` object that
-        contains information about the plan that was run. If ``False``, the
-        ``RunEngine`` will return a list of uids.
-
+    call_returns_result : bool, default False
+        A flag that controls the return value of __call__
+        If ``True``, the ``RunEngine`` will return a :class:``RunEngineResult``
+        object that contains information about the plan that was run.
+        If ``False``, the ``RunEngine`` will return a list of uids.
+        Defaults to ``False`` to preserve the old ``RunEngine`` behavior,
+        but the default is expected to change to ``True`` in the future.
 
     Attributes
     ----------

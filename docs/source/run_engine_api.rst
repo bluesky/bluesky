@@ -94,9 +94,13 @@ a summary as to what they do.
 The ``RunEngineResult``
 -----------------------
 
-The RunEngine can return a :class:`RunEngineResult` as the result of a
-:meth:`RunEngine.__call__`. This class contains useful information about
-the plan that was run, including the ultimate plan return value, uids,
+A :class:`RunEngineResult` will be returned
+if the RunEngine was created with ``call_returns_result=True``. The default
+is currently ``False``, so this behavior is opt-in for now, but will change
+to opt-out in the future.
+
+The :class:`RunEngineResult` class encapsulates useful information about
+the plan that was run, including the ultimate plan return value, run uids,
 exit status, and exceptions.
 
 .. autosummary::
