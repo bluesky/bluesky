@@ -1373,24 +1373,41 @@ def test_double_call(RE):
 
 
 def test_num_events(RE, hw, db):
+
     RE.subscribe(db.insert)
 
-    uid1, = RE(count([]))
+    rs1 = RE(count([]))
+    if RE._call_returns_result:
+        uid1 = rs1.run_start_uids[0]
+    else:
+        uid1 = rs1[0]
     h = db[uid1]
     assert h.stop['num_events'] == {}
 
-    uid2, = RE(count([hw.det], 5))
+    rs2 = RE(count([hw.det], 5))
+    if RE._call_returns_result:
+        uid2 = rs2.run_start_uids[0]
+    else:
+        uid2 = rs2[0]
     h = db[uid2]
     assert h.stop['num_events'] == {'primary': 5}
 
     sd = SupplementalData(baseline=[hw.det])
     RE.preprocessors.append(sd)
 
-    uid3, = RE(count([]))
+    rs3 = RE(count([]))
+    if RE._call_returns_result:
+        uid3 = rs3.run_start_uids[0]
+    else:
+        uid3 = rs3[0]
     h = db[uid3]
     assert h.stop['num_events'] == {'baseline': 2}
 
-    uid4, = RE(count([hw.det], 5))
+    rs4 = RE(count([hw.det], 5))
+    if RE._call_returns_result:
+        uid4 = rs4.run_start_uids[0]
+    else:
+        uid4 = rs4[0]
     h = db[uid4]
     assert h.stop['num_events'] == {'primary': 5, 'baseline': 2}
 
@@ -1412,15 +1429,25 @@ def test_force_stop_exit_status(bail_func, status, RE):
     def bad_plan():
         print('going in')
         yield Msg('pause')
+
     with pytest.raises(RunEngineInterrupted):
         RE(bad_plan())
 
-    rs, = getattr(RE, bail_func)()
+    rs = getattr(RE, bail_func)()
 
+    if RE._call_returns_result:
+        if bail_func == "resume":
+            assert rs.plan_result is not RE.NO_PLAN_RETURN
+        else:
+            assert rs.plan_result is RE.NO_PLAN_RETURN
+        uid = rs.run_start_uids[0]
+        assert rs.exit_status == status
+    else:
+        uid = rs[0]
     assert len(d.start) == 1
-    assert d.start[0]['uid'] == rs
+    assert d.start[0]['uid'] == uid
     assert len(d.stop) == 1
-    assert d.stop[rs]['exit_status'] == status
+    assert d.stop[uid]['exit_status'] == status
 
 
 def test_exceptions_exit_status(RE):
@@ -1443,6 +1470,36 @@ def test_exceptions_exit_status(RE):
     assert len(d.stop) == 1
     assert d.stop[rs]['exit_status'] == 'fail'
     assert d.stop[rs]['reason'] == str(sf.value)
+
+
+def test_plan_return(RE):
+    if not RE._call_returns_result:
+        pytest.skip()
+
+    def test_plan():
+        yield Msg('null')
+        return 'plan_result'
+
+    rs = RE(test_plan())
+    assert rs.plan_result == "plan_result"
+    assert rs.exit_status == "success"
+    assert rs.interrupted is False
+
+
+def test_plan_return_resume(RE):
+    if not RE._call_returns_result:
+        pytest.skip()
+
+    def test_plan():
+        yield Msg('null')
+        yield Msg('pause')
+        return 'plan_result'
+
+    with pytest.raises(RunEngineInterrupted):
+        RE(test_plan())
+    rs = RE.resume()
+    assert rs.plan_result == "plan_result"
+    assert rs.exit_status == "success"
 
 
 def test_drop(RE, hw):

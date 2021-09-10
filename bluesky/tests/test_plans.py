@@ -70,9 +70,9 @@ def test_ops_dimension_hints(RE, hw):
     motor1 = hw.motor1
     c = DocCollector()
     RE.subscribe(c.insert)
-    rs, = RE(bp.grid_scan([det],
-                          motor, -1, 1, 7,
-                          motor1, 0, 2, 3))
+    RE(bp.grid_scan([det],
+                    motor, -1, 1, 7,
+                    motor1, 0, 2, 3))
 
     st = c.start[0]
 
@@ -83,16 +83,23 @@ def test_ops_dimension_hints(RE, hw):
 
 
 def test_mesh_pseudo(hw, RE):
+
     p3x3 = hw.pseudo3x3
     sig = hw.sig
     d = DocCollector()
 
     RE.subscribe(d.insert)
-    rs, = RE(bp.grid_scan([sig],
-                          p3x3.pseudo1, 0, 3, 5,
-                          p3x3.pseudo2, 7, 10, 7))
+    rs = RE(bp.grid_scan([sig],
+                         p3x3.pseudo1, 0, 3, 5,
+                         p3x3.pseudo2, 7, 10, 7))
+
+    if RE._call_returns_result:
+        uid = rs.run_start_uids[0]
+    else:
+        uid = rs[0]
+
     df = pd.DataFrame([_['data']
-                       for _ in d.event[d.descriptor[rs][0]['uid']]])
+                       for _ in d.event[d.descriptor[uid][0]['uid']]])
 
     for k in p3x3.describe():
         assert k in df
@@ -112,12 +119,17 @@ def test_rmesh_pseudo(hw, RE):
     d = DocCollector()
 
     RE.subscribe(d.insert)
-    rs, = RE(bp.rel_grid_scan(
-        [sig],
-        p3x3.pseudo1, 0, 3, 5,
-        p3x3.pseudo2, 7, 10, 7))
+    rs = RE(bp.rel_grid_scan([sig],
+                             p3x3.pseudo1, 0, 3, 5,
+                             p3x3.pseudo2, 7, 10, 7))
+
+    if RE._call_returns_result:
+        uid = rs.run_start_uids[0]
+    else:
+        uid = rs[0]
+
     df = pd.DataFrame([_['data']
-                       for _ in d.event[d.descriptor[rs][0]['uid']]])
+                       for _ in d.event[d.descriptor[uid][0]['uid']]])
 
     for k in p3x3.describe():
         assert k in df
@@ -133,25 +145,37 @@ def test_rmesh_pseudo(hw, RE):
 
 
 def test_relative_pseudo(hw, RE, db):
+
     RE.subscribe(db.insert)
     p = hw.pseudo3x3
     p.set(1, 1, 1)
     base_pos = p.position
 
     # this triggers the merging code path
-    rs, = RE(bp.relative_inner_product_scan([p],
-                                            5,
-                                            p.pseudo1, -1, 1,
-                                            p.pseudo2, -2, -1))
-    tb1 = db[rs].table().drop('time', 1)
+    rs = RE(bp.relative_inner_product_scan([p],
+                                           5,
+                                           p.pseudo1, -1, 1,
+                                           p.pseudo2, -2, -1))
+
+    if RE._call_returns_result:
+        uid = rs.run_start_uids[0]
+    else:
+        uid = rs[0]
+
+    tb1 = db[uid].table().drop('time', 1)
     assert p.position == base_pos
 
     # this triggers this does not
-    rs, = RE(bp.relative_inner_product_scan([p],
-                                            5,
-                                            p.real1, 1, -1,
-                                            p.real2, 2, 1))
-    tb2 = db[rs].table().drop('time', 1)
+    rs = RE(bp.relative_inner_product_scan([p],
+                                           5,
+                                           p.real1, 1, -1,
+                                           p.real2, 2, 1))
+    if RE._call_returns_result:
+        uid = rs.run_start_uids[0]
+    else:
+        uid = rs[0]
+
+    tb2 = db[uid].table().drop('time', 1)
     assert p.position == base_pos
 
     # same columns

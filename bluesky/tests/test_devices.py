@@ -163,16 +163,20 @@ def _make_overlapping_tests_2stream(func):
 @requires_ophyd
 @_make_overlapping_tests_2stream
 def test_keyoverlap_2stream(RE, det1, det2):
-
     @run_decorator()
     def test_plan(det1, det2):
         yield from trigger_and_read([det1])
         yield from trigger_and_read([det2], name='other')
 
     d = DocCollector()
-    rs, = RE(test_plan(det1, det2), d.insert)
+    rs = RE(test_plan(det1, det2), d.insert)
+    if RE._call_returns_result:
+        uid = rs.run_start_uids[0]
+    else:
+        uid = rs[0]
+
     assert len(d.start) == 1
-    assert len(d.descriptor[rs]) == 2
+    assert len(d.descriptor[uid]) == 2
 
 
 def _make_overlapping_tests_stream(func):
@@ -204,9 +208,14 @@ def test_overlapped_but_identical(RE, det1, det_list):
             yield from trigger_and_read(det_list)
 
     d = DocCollector()
-    rs, = RE(test_plan(det1, det_list), d.insert)
+    rs = RE(test_plan(det1, det_list), d.insert)
+    if RE._call_returns_result:
+        uid = rs.run_start_uids[0]
+    else:
+        uid = rs[0]
+
     assert len(d.start) == 1
-    assert len(d.descriptor[rs]) == 1
+    assert len(d.descriptor[uid]) == 1
 
 
 @requires_ophyd
