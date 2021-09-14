@@ -18,7 +18,8 @@ Enhancements
 
 * Do not pass the ``loop`` kwarg to ``RunEngine`` and ``RunBundler`` if we do
   not have to.
-* ``RunEngine``'s ``__call__`` returns plan value.
+* ``RunEngine``'s ``__call__`` now may return plan value, as toggled by new ``call_returns_result`` flag.
+  Default behavior has not changed, but may change in a future release.
 
 Added
 -----
