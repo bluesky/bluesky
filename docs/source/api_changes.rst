@@ -2,11 +2,45 @@
  Release History
 =================
 
+v1.8.0 (2021-09-15)
+===================
+
+Fixed
+-----
+
+* Updated the tests to use databroker.temp instead of sqlite databroker.
+* ``xfail`` test that uses removed API.
+* Fix ``list_grid_scan`` metadata for ``plan_pattern_args``.
+* Fix descriptors for flyers that do not implement ``read_configuration``.
+
+Enhancements
+------------
+
+* Do not pass the ``loop`` kwarg to ``RunEngine`` and ``RunBundler`` if we do
+  not have to.
+* ``RunEngine``'s ``__call__`` now may return plan value, as toggled by new ``call_returns_result`` flag.
+  Default behavior has not changed, but may change in a future release.
+
+Added
+-----
+
+* Enabled support of Python 3.9 and added it to the test matrix.
+
+Documentation
+-------------
+
+* Update TOC links to blueskyproject.io.
+* Added release instructions.
+* Filled out ``README.md`` and added the ``description`` and
+  ``long_description`` fields to ``setup.py``.
+
+
 v1.7.0 (2021-07-14)
 ===================
 
 Fixed
 -----
+
 * Fixed missing log output for CLI ZMQ proxy.
 * Depreciated argument `logfile` of
   :func:`bluesky.commandline.zmq_proxy.start_dispatcher`.
@@ -14,6 +48,7 @@ Fixed
 
 Enhancements
 ------------
+
 * Reorganized utils into subpackage, no API changes.
 * Added :class:`bluesky.utils.jupyter.NotebookProgressBar`.
 * :class:`bluesky.utils.PersistentDict` now inherits from
