@@ -53,6 +53,44 @@ def test_state_is_readonly(RE):
         RE.state = 'running'
 
 
+@pytest.mark.parametrize("deferred_pause_delay, is_pause_set", [
+    (None, False),  # Do not pause
+    (0.1, False),  # Pause before the checkpoint
+    (1.4, True),  # Pause after the checkpoint
+])
+def test_deferred_pause_requested(RE, deferred_pause_delay, is_pause_set):
+    """
+    Test for ``deferred_pause_requested``.
+    """
+    assert RE.deferred_pause_requested is False
+
+    plan = [Msg("sleep", None, 1), Msg("checkpoint"), Msg("sleep", None, 1)]
+
+    pause_req_immediate = None
+
+    def _pause():
+        # This function is requesting the deferred pause and reads the property
+        nonlocal pause_req_immediate
+        RE.request_pause(defer=True)
+        ttime.sleep(0.1)
+        pause_req_immediate = RE.deferred_pause_requested
+
+    t = None
+    if deferred_pause_delay is not None:
+        t = threading.Timer(deferred_pause_delay, _pause)
+        t.start()
+
+    try:
+        RE(plan)
+    except Exception:
+        pass
+
+    if deferred_pause_delay is not None:
+        assert pause_req_immediate is True
+
+    assert RE.deferred_pause_requested is is_pause_set
+
+
 def test_verbose(RE, hw):
     RE.verbose = True
     assert RE.verbose

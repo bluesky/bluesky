@@ -331,9 +331,9 @@ class RunEngine:
         """
         The property returns ``True`` if deferred pause was requested, but
         not processed. The deferred pause is processed at the next checkpoint.
-        If the pause is requested after the last checkpoint, the plan runs
+        If the pause is requested past the last checkpoint, the plan runs
         to completion and this property returns ``True`` until the next
-        plan is started.
+        plan is started. Starting the next plan clears deferred pause request.
 
         Returns
         -------
