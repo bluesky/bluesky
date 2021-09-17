@@ -326,6 +326,22 @@ class RunEngine:
     def state(self):
         return self._state
 
+    @property
+    def deferred_pause_requested(self):
+        """
+        The property returns ``True`` if deferred pause was requested, but
+        not processed. The deferred pause is processed at the next checkpoint.
+        If the pause is requested after the last checkpoint, the plan runs
+        to completion and this property returns ``True`` until the next
+        plan is started.
+
+        Returns
+        -------
+        boolean
+            Indicates if deferred pause was requested, but not processed.
+        """
+        return self._deferred_pause_requested
+
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
                  scan_id_source=default_scan_id_source,
