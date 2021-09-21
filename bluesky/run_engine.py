@@ -125,7 +125,7 @@ class RunEngineStateMachine(StateMachine):
             'panicked': []
         }
         named_checkers = [
-            ('can_pause', 'paused'),
+            ('can_pause', 'pausing'),
         ]
 
 
