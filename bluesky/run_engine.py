@@ -736,6 +736,11 @@ class RunEngine:
 
     async def _request_pause_coro(self, defer=False):
         # We are pausing. Cancel any deferred pause previously requested.
+        if not self.state.can_pause:
+            raise TransitionError(
+                f"Run Engine is in '{self.state}' state and can not be paused."
+            )
+
         if defer:
             self._deferred_pause_requested = True
             print("Deferred pause acknowledged. Continuing to checkpoint.")

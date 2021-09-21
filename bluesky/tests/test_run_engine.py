@@ -1166,6 +1166,7 @@ def test_prompt_stop(RE, cancel_func):
                                          lambda RE: RE.abort(),
                                          lambda RE: RE.halt(),
                                          lambda RE: RE.request_pause(),
+                                         lambda RE: RE.request_pause(defer=True),
                                          lambda RE: RE.resume()])
 def test_bad_from_idle_transitions(RE, change_func):
     with pytest.raises(TransitionError):
