@@ -125,7 +125,7 @@ class RunEngineStateMachine(StateMachine):
             'panicked': []
         }
         named_checkers = [
-            ('can_pause', 'paused'),
+            ('can_pause', 'pausing'),
         ]
 
 
@@ -325,6 +325,22 @@ class RunEngine:
     @property
     def state(self):
         return self._state
+
+    @property
+    def deferred_pause_requested(self):
+        """
+        The property returns ``True`` if deferred pause was requested, but
+        not processed. The deferred pause is processed at the next checkpoint.
+        If the pause is requested past the last checkpoint, the plan runs
+        to completion and this property returns ``True`` until the next
+        plan is started. Starting the next plan clears deferred pause request.
+
+        Returns
+        -------
+        boolean
+            Indicates if deferred pause was requested, but not processed.
+        """
+        return self._deferred_pause_requested
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
@@ -720,6 +736,11 @@ class RunEngine:
 
     async def _request_pause_coro(self, defer=False):
         # We are pausing. Cancel any deferred pause previously requested.
+        if not self.state.can_pause:
+            raise TransitionError(
+                f"Run Engine is in '{self.state}' state and can not be paused."
+            )
+
         if defer:
             self._deferred_pause_requested = True
             print("Deferred pause acknowledged. Continuing to checkpoint.")
