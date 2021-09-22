@@ -9,6 +9,7 @@ from .utils import (normalize_subs_input, root_ancestor,
                     short_uid as _short_uid, make_decorator,
                     RunEngineControlException, merge_axis)
 from functools import wraps
+import warnings
 from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read)
 
 
@@ -1333,3 +1334,28 @@ def set_run_key_wrapper(plan, run):
 
 
 set_run_key_decorator = make_decorator(set_run_key_wrapper)
+
+
+class Plan:
+    def __init__(self, gen_instance):
+        self.gen_instance = gen_instance
+        self.pulled = False
+
+    def __iter__(self):
+        self.pulled = True
+        return (yield from self.gen_instance)
+
+    def __del__(self):
+        if not self.pulled:
+            warnings.warn(f"The generator {self!r} was not used. \
+            Did you forget `yield from`?")
+
+    def __repr__(self):
+        return repr(self.gen_instance)
+
+
+def plan(gen_func):
+    @wraps(gen_func)
+    def inner_plan(*args, **kwargs):
+        return Plan(gen_func(*args, **kwargs))
+    return inner_plan
