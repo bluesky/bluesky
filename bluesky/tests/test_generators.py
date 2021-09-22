@@ -464,7 +464,7 @@ def test_stub_wrapper():
     assert stub_plan[0].command == 'read'
 
 
-def test_plan_decorator_warns():
+def test_plan_decorator_warnings():
     @plan
     def test_plan():
         yield Msg('open_run')
@@ -472,8 +472,17 @@ def test_plan_decorator_warns():
         yield Msg('read')
         yield Msg('unstage')
         yield Msg('close_run')
-        raise Exception
+
+    def error_plan():
+        yield Msg("null")
+        test_plan()
+
+    def correct_plan():
+        yield Msg("null")
+        yield from test_plan()
 
     with pytest.warns(Warning):
-        test_plan()
-    EchoRE(test_plan())
+        EchoRE(error_plan())
+
+    # does not warn 
+    EchoRE(correct_plan())

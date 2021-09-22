@@ -1347,11 +1347,10 @@ class Plan:
 
     def __del__(self):
         if not self.pulled:
-            warnings.warn(f"The generator {self!r} was not used. \
-            Did you forget `yield from`?")
+            warnings.warn(f"{self!r} was not used. Did you forget `yield from`?")
 
     def __repr__(self):
-        return repr(self.gen_instance)
+        return f"<bluesky plan: {self.gen_instance.__name__}>"
 
 
 def plan(gen_func):
