@@ -8,7 +8,8 @@ from bluesky import Msg
 from bluesky.preprocessors import (msg_mutator, stub_wrapper,
                                    plan_mutator, pchain, single_gen as
                                    single_message_gen,
-                                   finalize_wrapper, plan)
+                                   finalize_wrapper, PlanFunction,
+                                   isplanfunction)
 
 from bluesky.utils import ensure_generator
 
@@ -465,7 +466,7 @@ def test_stub_wrapper():
 
 
 def test_plan_decorator_warnings():
-    @plan
+    @PlanFunction
     def test_plan():
         yield Msg('open_run')
         yield Msg('stage')
@@ -484,5 +485,18 @@ def test_plan_decorator_warnings():
     with pytest.warns(Warning):
         EchoRE(error_plan())
 
-    # does not warn 
+    # does not warn
     EchoRE(correct_plan())
+
+
+def test_is_a_plan_function():
+
+    @PlanFunction
+    def test_plan():
+        yield Msg("null")
+
+    def not_a_real_plan():
+        yield Msg("null")
+
+    assert isplanfunction(test_plan)
+    assert not isplanfunction(not_a_real_plan)

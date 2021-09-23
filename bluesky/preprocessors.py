@@ -8,7 +8,7 @@ from .utils import (normalize_subs_input, root_ancestor,
                     Msg, ensure_generator, single_gen,
                     short_uid as _short_uid, make_decorator,
                     RunEngineControlException, merge_axis)
-from functools import wraps
+from functools import wraps, update_wrapper
 import warnings
 from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read)
 
@@ -1353,8 +1353,17 @@ class Plan:
         return f"<bluesky plan: {self.gen_instance.__name__}>"
 
 
-def plan(gen_func):
-    @wraps(gen_func)
-    def inner_plan(*args, **kwargs):
-        return Plan(gen_func(*args, **kwargs))
-    return inner_plan
+class PlanFunction:
+    def __init__(self, gen_func):
+        self.gen_func = gen_func
+        update_wrapper(self, gen_func)
+
+    def __call__(self, *args, **kwargs):
+        return Plan(self.gen_func(*args, **kwargs))
+
+    def __repr__(self):
+        return f"<uninitialized bluesky plan: {self.gen_func.__name__}>"
+
+
+def isplanfunction(obj):
+    return isinstance(obj, PlanFunction)
