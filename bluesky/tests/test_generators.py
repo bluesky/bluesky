@@ -2,14 +2,14 @@ import uuid
 import pytest
 from collections import deque
 from itertools import zip_longest
-
+import warnings
 from bluesky import Msg
 
 from bluesky.preprocessors import (msg_mutator, stub_wrapper,
                                    plan_mutator, pchain, single_gen as
                                    single_message_gen,
-                                   finalize_wrapper, PlanFunction,
-                                   isplanfunction)
+                                   finalize_wrapper, plan_decorator,
+                                   isplanfunction, isplan)
 
 from bluesky.utils import ensure_generator
 
@@ -466,7 +466,7 @@ def test_stub_wrapper():
 
 
 def test_plan_decorator_warnings():
-    @PlanFunction
+    @plan_decorator
     def test_plan():
         yield Msg('open_run')
         yield Msg('stage')
@@ -491,7 +491,7 @@ def test_plan_decorator_warnings():
 
 def test_is_a_plan_function():
 
-    @PlanFunction
+    @plan_decorator
     def test_plan():
         yield Msg("null")
 
@@ -500,3 +500,10 @@ def test_is_a_plan_function():
 
     assert isplanfunction(test_plan)
     assert not isplanfunction(not_a_real_plan)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        assert isplan(test_plan())
+    assert not isplan(test_plan)
+    assert not isplan(not_a_real_plan)
+    assert not isplan(not_a_real_plan())

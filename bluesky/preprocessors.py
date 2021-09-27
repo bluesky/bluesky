@@ -1336,7 +1336,7 @@ def set_run_key_wrapper(plan, run):
 set_run_key_decorator = make_decorator(set_run_key_wrapper)
 
 
-class Plan:
+class plan_wrapper:
     def __init__(self, gen_instance):
         self.gen_instance = gen_instance
         self.pulled = False
@@ -1353,17 +1353,21 @@ class Plan:
         return f"<bluesky plan: {self.gen_instance.__name__}>"
 
 
-class PlanFunction:
+class plan_decorator:
     def __init__(self, gen_func):
         self.gen_func = gen_func
         update_wrapper(self, gen_func)
 
     def __call__(self, *args, **kwargs):
-        return Plan(self.gen_func(*args, **kwargs))
+        return plan_wrapper(self.gen_func(*args, **kwargs))
 
     def __repr__(self):
         return f"<uninitialized bluesky plan: {self.gen_func.__name__}>"
 
 
 def isplanfunction(obj):
-    return isinstance(obj, PlanFunction)
+    return isinstance(obj, plan_decorator)
+
+
+def isplan(obj):
+    return isinstance(obj, plan_wrapper)
