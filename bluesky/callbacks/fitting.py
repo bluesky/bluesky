@@ -250,6 +250,7 @@ class PeakStats(CollectThenCompute):
                 y.append(_y)
         x = np.array(x)
         y = np.array(y)
+
         if not len(x):
             # nothing to do
             return
@@ -276,8 +277,8 @@ class PeakStats(CollectThenCompute):
         crossings = np.where(np.diff((y > mid).astype(np.int)))[0]
         _cen_list = []
         for cr in crossings.ravel():
-            _x = x[cr:cr+2]
-            _y = y[cr:cr+2] - mid
+            _x = x[cr:cr + 2]
+            _y = y[cr:cr + 2] - mid
 
             dx = np.diff(_x)[0]
             dy = np.diff(_y)[0]
@@ -290,5 +291,33 @@ class PeakStats(CollectThenCompute):
             if len(_cen_list) >= 2:
                 self.fwhm = np.abs(self.crossings[-1] - self.crossings[0],
                                    dtype=float)
+
+        # Calculate the derivative of the data
+        x_der = x[1:]
+        y_der = np.diff(y)
+        self.x_der_data = x_der
+        self.y_der_data = y_der
+        self.max_der = x[np.argmax(y_der)], self.y_data[np.argmax(y_der)],
+        self.min_der = x[np.argmin(y_der)], self.y_data[np.argmin(y_der)],
+        self.com_der, = np.interp(center_of_mass(y), np.arange(len(x_der)), x_der)
+        mid_der = (np.max(y_der) + np.min(y_der)) / 2
+        crossings_der = np.where(np.diff((y_der > mid_der).astype(np.int)))[0]
+        _cen_list_der = []
+        for cr in crossings_der.ravel():
+            _x_der = x_der[cr:cr + 2]
+            _y_der = y_der[cr:cr + 2] - mid_der
+
+            dx = np.diff(_x_der)[0]
+            dy = np.diff(_y_der)[0]
+            m = dy / dx
+            _cen_list_der.append((-_y_der[0] / m) + _x_der[0])
+
+        if _cen_list_der:
+            self.cen_der = np.mean(_cen_list_der)
+            self.crossings_der = np.array(_cen_list_der)
+            if len(_cen_list_der) >= 2:
+                self.fwhm_der = np.abs(self.crossings_der[-1] - self.crossings_der[0],
+                                       dtype=float)
+
         # reset y data
         y = self.y_data
