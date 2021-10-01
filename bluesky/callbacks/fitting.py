@@ -229,7 +229,7 @@ class PeakStats(CollectThenCompute):
         else:
             raise KeyError
 
-    def compute(self):
+    def compute(self, der=False):
         "This method is called at run-stop time by the superclass."
         # clear all results
         self.com = None
@@ -295,34 +295,35 @@ class PeakStats(CollectThenCompute):
                 self.fwhm = np.abs(self.crossings[-1] - self.crossings[0],
                                    dtype=float)
 
-        # Calculate the derivative of the data
-        x_der = x[1:]
-        y_der = np.diff(y)
-        self.der.x = x_der
-        self.der.y = y_der
-        max_der = np.argmax(y_der)
-        min_der = np.argmin(y_der)
-        self.der.max = x[max_der], self.y_data[max_der],
-        self.der.min = x[min_der], self.y_data[min_der],
-        self.der.com, = np.interp(center_of_mass(y), np.arange(len(x_der)), x_der)
-        mid_der = (np.max(y_der) + np.min(y_der)) / 2
-        crossings_der = np.where(np.diff((y_der > mid_der).astype(np.int)))[0]
-        _cen_list_der = []
-        for cr in crossings_der.ravel():
-            _x_der = x_der[cr:cr + 2]
-            _y_der = y_der[cr:cr + 2] - mid_der
+        if der:
+            # Calculate the derivative of the data
+            x_der = x[1:]
+            y_der = np.diff(y)
+            self.der.x = x_der
+            self.der.y = y_der
+            max_der = np.argmax(y_der)
+            min_der = np.argmin(y_der)
+            self.der.max = x[max_der], self.y_data[max_der],
+            self.der.min = x[min_der], self.y_data[min_der],
+            self.der.com, = np.interp(center_of_mass(y_der), np.arange(len(x_der)), x_der)
+            mid_der = (np.max(y_der) + np.min(y_der)) / 2
+            crossings_der = np.where(np.diff((y_der > mid_der).astype(np.int)))[0]
+            _cen_list_der = []
+            for cr in crossings_der.ravel():
+                _x_der = x_der[cr:cr + 2]
+                _y_der = y_der[cr:cr + 2] - mid_der
 
-            dx = np.diff(_x_der)[0]
-            dy = np.diff(_y_der)[0]
-            m = dy / dx
-            _cen_list_der.append((-_y_der[0] / m) + _x_der[0])
+                dx = np.diff(_x_der)[0]
+                dy = np.diff(_y_der)[0]
+                m = dy / dx
+                _cen_list_der.append((-_y_der[0] / m) + _x_der[0])
 
-        if _cen_list_der:
-            self.der.cen = np.mean(_cen_list_der)
-            self.der.crossings = np.array(_cen_list_der)
-            if len(_cen_list_der) >= 2:
-                self.der.fwhm = np.abs(self.crossings_der[-1] - self.crossings_der[0],
-                                       dtype=float)
+            if _cen_list_der:
+                self.der.cen = np.mean(_cen_list_der)
+                self.der.crossings = np.array(_cen_list_der)
+                if len(_cen_list_der) >= 2:
+                    self.der.fwhm = np.abs(self.crossings_der[-1] - self.crossings_der[0],
+                                           dtype=float)
 
         # reset y data
         y = self.y_data
