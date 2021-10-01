@@ -1,6 +1,6 @@
 import warnings
 import numpy as np
-
+import collections
 from .core import CallbackBase, CollectThenCompute
 
 
@@ -218,6 +218,9 @@ class PeakStats(CollectThenCompute):
         self.fwhm = None
         self.lin_bkg = None
         self._edge_count = edge_count
+        self.der = collections.namedtuple('derivative', ['x', 'y', 'min', 'max', 'com', 'cen', 'fwhm',
+                                                         'crossings'])
+
         super().__init__()
 
     def __getitem__(self, key):
@@ -295,11 +298,13 @@ class PeakStats(CollectThenCompute):
         # Calculate the derivative of the data
         x_der = x[1:]
         y_der = np.diff(y)
-        self.x_der_data = x_der
-        self.y_der_data = y_der
-        self.max_der = x[np.argmax(y_der)], self.y_data[np.argmax(y_der)],
-        self.min_der = x[np.argmin(y_der)], self.y_data[np.argmin(y_der)],
-        self.com_der, = np.interp(center_of_mass(y), np.arange(len(x_der)), x_der)
+        self.der.x = x_der
+        self.der.y = y_der
+        max_der = np.argmax(y_der)
+        min_der = np.argmin(y_der)
+        self.der.max = x[max_der], self.y_data[max_der],
+        self.der.min = x[min_der], self.y_data[min_der],
+        self.der.com, = np.interp(center_of_mass(y), np.arange(len(x_der)), x_der)
         mid_der = (np.max(y_der) + np.min(y_der)) / 2
         crossings_der = np.where(np.diff((y_der > mid_der).astype(np.int)))[0]
         _cen_list_der = []
@@ -313,10 +318,10 @@ class PeakStats(CollectThenCompute):
             _cen_list_der.append((-_y_der[0] / m) + _x_der[0])
 
         if _cen_list_der:
-            self.cen_der = np.mean(_cen_list_der)
-            self.crossings_der = np.array(_cen_list_der)
+            self.der.cen = np.mean(_cen_list_der)
+            self.der.crossings = np.array(_cen_list_der)
             if len(_cen_list_der) >= 2:
-                self.fwhm_der = np.abs(self.crossings_der[-1] - self.crossings_der[0],
+                self.der.fwhm = np.abs(self.crossings_der[-1] - self.crossings_der[0],
                                        dtype=float)
 
         # reset y data
