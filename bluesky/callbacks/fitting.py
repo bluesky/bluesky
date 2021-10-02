@@ -207,7 +207,7 @@ class PeakStats(CollectThenCompute):
            be the fwhm.
     """
 
-    def __init__(self, x, y, edge_count=None):
+    def __init__(self, x, y, edge_count=None, compute_derivative=False):
         self.x = x
         self.y = y
         self.com = None
@@ -220,6 +220,7 @@ class PeakStats(CollectThenCompute):
         self._edge_count = edge_count
         self.der = collections.namedtuple('derivative', ['x', 'y', 'min', 'max', 'com', 'cen', 'fwhm',
                                                          'crossings'])
+        self.compute_derivative = compute_derivative
 
         super().__init__()
 
@@ -229,7 +230,7 @@ class PeakStats(CollectThenCompute):
         else:
             raise KeyError
 
-    def compute(self, der=False):
+    def compute(self):
         "This method is called at run-stop time by the superclass."
         # clear all results
         self.com = None
@@ -295,7 +296,7 @@ class PeakStats(CollectThenCompute):
                 self.fwhm = np.abs(self.crossings[-1] - self.crossings[0],
                                    dtype=float)
 
-        if der:
+        if self.compute_derivative:
             # Calculate the derivative of the data
             x_der = x[1:]
             y_der = np.diff(y)
