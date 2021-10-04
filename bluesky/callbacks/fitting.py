@@ -298,6 +298,7 @@ class PeakStats(CollectThenCompute):
 
         if self.compute_derivative:
             # Calculate the derivative of the data
+            self.der.fwhm=None
             x_der = x[1:]
             y_der = np.diff(y)
             self.der.x = x_der
@@ -323,7 +324,7 @@ class PeakStats(CollectThenCompute):
                 self.der.cen = np.mean(_cen_list_der)
                 self.der.crossings = np.array(_cen_list_der)
                 if len(_cen_list_der) >= 2:
-                    self.der.fwhm = np.abs(self.crossings_der[-1] - self.crossings_der[0],
+                    self.der.fwhm = np.abs(self.der.crossings[-1] - self.der.crossings[0],
                                            dtype=float)
 
         # reset y data
