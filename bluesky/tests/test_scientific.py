@@ -112,7 +112,7 @@ def test_peak_statistics_with_derivatives(RE):
     assert type(ps.der.y) is np.ndarray
     assert type(ps.der.min) is tuple
     assert type(ps.der.max) is tuple
-    assert type(ps.der.com) is np.ndarray
+    assert type(ps.der.com) is np.float64
     assert type(ps.der.cen) is np.float64
     assert type(ps.der.crossings) is np.ndarray
     if len(ps.der.crossings) >= 2:
