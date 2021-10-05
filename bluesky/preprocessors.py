@@ -1339,6 +1339,7 @@ set_run_key_decorator = make_decorator(set_run_key_wrapper)
 class plan_wrapper:
     def __init__(self, gen_instance):
         self.gen_instance = gen_instance
+        self._plan = True
         self.pulled = False
 
     def __iter__(self):
@@ -1356,6 +1357,7 @@ class plan_wrapper:
 class plan_decorator:
     def __init__(self, gen_func):
         self.gen_func = gen_func
+        self._plan_function = True
         update_wrapper(self, gen_func)
 
     def __call__(self, *args, **kwargs):
@@ -1366,8 +1368,8 @@ class plan_decorator:
 
 
 def isplanfunction(obj):
-    return isinstance(obj, plan_decorator)
+    return getattr(obj, "_plan_function", False)
 
 
 def isplan(obj):
-    return isinstance(obj, plan_wrapper)
+    return getattr(obj, "_plan", False)

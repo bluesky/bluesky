@@ -492,18 +492,18 @@ def test_plan_decorator_warnings():
 def test_is_a_plan_function():
 
     @plan_decorator
-    def test_plan():
+    def decorated_plan():
         yield Msg("null")
 
-    def not_a_real_plan():
+    def undecorated_plan():
         yield Msg("null")
 
-    assert isplanfunction(test_plan)
-    assert not isplanfunction(not_a_real_plan)
+    assert isplanfunction(decorated_plan)
+    assert not isplanfunction(undecorated_plan)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        assert isplan(test_plan())
-    assert not isplan(test_plan)
-    assert not isplan(not_a_real_plan)
-    assert not isplan(not_a_real_plan())
+        assert isplan(decorated_plan())
+    assert not isplan(decorated_plan)
+    assert not isplan(undecorated_plan)
+    assert not isplan(undecorated_plan())
