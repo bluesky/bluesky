@@ -222,7 +222,7 @@ class PeakStats(CollectThenCompute):
             "cen": None,
             "crossings": None,
             "fwhm": None,
-            "lin_bnk": None,
+            "lin_bkg": None,
         }
         for field, value in self._stats_fields.items():
             setattr(self, field, value)
