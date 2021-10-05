@@ -1621,7 +1621,7 @@ class RunEngine:
             self._exit_status = 'success'
             plan_return = e.value
             # TODO Is the sleep here necessary?
-            await asyncio.sleep(0, loop=self._loop_for_kwargs)
+            await asyncio.sleep(0, **self._loop_for_kwargs)
         except RequestStop:
             self._exit_status = 'success'
             # TODO Is the sleep here necessary?
