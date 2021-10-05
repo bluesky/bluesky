@@ -274,9 +274,8 @@ class PeakStats(CollectThenCompute):
                 fields["fwhm"] = np.abs(fields["crossings"][-1] - fields["crossings"][0],
                                         dtype=float)
 
-        Stats = namedtuple("Stats", field_names=fields.keys(),
-                           defaults=fields.values())
-        stats = Stats()
+        Stats = namedtuple("Stats", field_names=fields.keys())
+        stats = Stats(**fields)
         return stats
 
     def compute(self):
