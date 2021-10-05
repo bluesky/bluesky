@@ -2,14 +2,12 @@ import uuid
 import pytest
 from collections import deque
 from itertools import zip_longest
-import warnings
 from bluesky import Msg
 
 from bluesky.preprocessors import (msg_mutator, stub_wrapper,
                                    plan_mutator, pchain, single_gen as
                                    single_message_gen,
-                                   finalize_wrapper, plan_decorator,
-                                   isplanfunction, isplan)
+                                   finalize_wrapper)
 
 from bluesky.utils import ensure_generator
 
@@ -463,47 +461,3 @@ def test_stub_wrapper():
     stub_plan = list(stub_wrapper(plan()))
     assert len(stub_plan) == 1
     assert stub_plan[0].command == 'read'
-
-
-def test_plan_decorator_warnings():
-    @plan_decorator
-    def test_plan():
-        yield Msg('open_run')
-        yield Msg('stage')
-        yield Msg('read')
-        yield Msg('unstage')
-        yield Msg('close_run')
-
-    def error_plan():
-        yield Msg("null")
-        test_plan()
-
-    def correct_plan():
-        yield Msg("null")
-        yield from test_plan()
-
-    with pytest.warns(Warning):
-        EchoRE(error_plan())
-
-    # does not warn
-    EchoRE(correct_plan())
-
-
-def test_is_a_plan_function():
-
-    @plan_decorator
-    def decorated_plan():
-        yield Msg("null")
-
-    def undecorated_plan():
-        yield Msg("null")
-
-    assert isplanfunction(decorated_plan)
-    assert not isplanfunction(undecorated_plan)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        assert isplan(decorated_plan())
-    assert not isplan(decorated_plan)
-    assert not isplan(undecorated_plan)
-    assert not isplan(undecorated_plan())
