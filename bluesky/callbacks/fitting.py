@@ -1,6 +1,7 @@
+import copy
 import warnings
 import numpy as np
-import collections
+from collections import namedtuple
 from .core import CallbackBase, CollectThenCompute
 
 
@@ -183,7 +184,8 @@ class PeakStats(CollectThenCompute):
         field name for the x variable (e.g., a motor)
     y : string
         field name for the y variable (e.g., a detector)
-
+    compute_derivative : bool, optional
+        compute stats for derivative of the readings. False by default.
     edge_count : int or None, optional
         If not None, number of points at beginning and end to use
         for quick and dirty background subtraction.
@@ -210,36 +212,78 @@ class PeakStats(CollectThenCompute):
     def __init__(self, x, y, edge_count=None, compute_derivative=False):
         self.x = x
         self.y = y
-        self.com = None
-        self.cen = None
-        self.max = None
-        self.min = None
-        self.crossings = None
-        self.fwhm = None
-        self.lin_bkg = None
         self._edge_count = edge_count
-        self.der = collections.namedtuple('derivative', ['x', 'y', 'min', 'max', 'com', 'cen', 'fwhm',
-                                                         'crossings'])
         self.compute_derivative = compute_derivative
+
+        self._stats_fields = {
+            "min": None,
+            "max": None,
+            "com": None,
+            "cen": None,
+            "crossings": None,
+            "fwhm": None,
+            "lin_bnk": None,
+        }
+        for field, value in self._stats_fields.items():
+            setattr(self, field, value)
+
+        if self.compute_derivative:
+            self.der = None
 
         super().__init__()
 
     def __getitem__(self, key):
-        if key in ['com', 'cen', 'max', 'min']:
+        if key in self._stats_fields.keys():
             return getattr(self, key)
         else:
             raise KeyError
 
+    @staticmethod
+    def _calc_stats(x, y, fields, edge_count=None):
+        if edge_count is not None:
+            left_x = np.mean(x[:edge_count])
+            left_y = np.mean(y[:edge_count])
+
+            right_x = np.mean(x[-edge_count:])
+            right_y = np.mean(y[-edge_count:])
+
+            m = (right_y - left_y) / (right_x - left_x)
+            b = left_y - m * left_x
+            y = y - (m * x + b)
+            fields["lin_bkg"] = {"m": m, "b": b}
+
+        fields["min"] = (x[np.argmin(y)], y[np.argmin(y)])
+        fields["max"] = (x[np.argmax(y)], y[np.argmax(y)])
+        fields["com"] = (np.interp(center_of_mass(y), np.arange(len(x)), x))
+        mid = (np.max(y) + np.min(y)) / 2
+        crossings = np.where(np.diff((y > mid).astype(np.int)))[0]
+        _cen_list = []
+        for cr in crossings.ravel():
+            _x = x[cr:cr + 2]
+            _y = y[cr:cr + 2] - mid
+
+            dx = np.diff(_x)[0]
+            dy = np.diff(_y)[0]
+            m = dy / dx
+            _cen_list.append((-_y[0] / m) + _x[0])
+
+        if _cen_list:
+            fields["cen"] = np.mean(_cen_list)
+            fields["crossings"] = np.array(_cen_list)
+            if len(_cen_list) >= 2:
+                fields["fwhm"] = np.abs(fields["crossings"][-1] - fields["crossings"][0],
+                                        dtype=float)
+
+        Stats = namedtuple("Stats", field_names=fields.keys(),
+                           defaults=fields.values())
+        stats = Stats()
+        return stats
+
     def compute(self):
         "This method is called at run-stop time by the superclass."
         # clear all results
-        self.com = None
-        self.cen = None
-        self.max = None
-        self.min = None
-        self.crossings = None
-        self.fwhm = None
-        self.lin_bkg = None
+        for field, value in self._stats_fields.items():
+            setattr(self, field, value)
 
         x = []
         y = []
@@ -260,72 +304,26 @@ class PeakStats(CollectThenCompute):
             return
         self.x_data = x
         self.y_data = y
-        if self._edge_count is not None:
-            left_x = np.mean(x[:self._edge_count])
-            left_y = np.mean(y[:self._edge_count])
 
-            right_x = np.mean(x[-self._edge_count:])
-            right_y = np.mean(y[-self._edge_count:])
+        stats_fields = copy.deepcopy(self._stats_fields)
+        stats = self._calc_stats(x, y, stats_fields,
+                                      edge_count=self._edge_count)
 
-            m = (right_y - left_y) / (right_x - left_x)
-            b = left_y - m * left_x
-            # don't do this in place to not mess with self.y_data
-            y = y - (m * x + b)
-            self.lin_bkg = {'m': m, 'b': b}
-
-        # Compute x value at min and max of y
-        self.max = x[np.argmax(y)], self.y_data[np.argmax(y)],
-        self.min = x[np.argmin(y)], self.y_data[np.argmin(y)],
-        self.com, = np.interp(center_of_mass(y), np.arange(len(x)), x)
-        mid = (np.max(y) + np.min(y)) / 2
-        crossings = np.where(np.diff((y > mid).astype(np.int)))[0]
-        _cen_list = []
-        for cr in crossings.ravel():
-            _x = x[cr:cr + 2]
-            _y = y[cr:cr + 2] - mid
-
-            dx = np.diff(_x)[0]
-            dy = np.diff(_y)[0]
-            m = dy / dx
-            _cen_list.append((-_y[0] / m) + _x[0])
-
-        if _cen_list:
-            self.cen = np.mean(_cen_list)
-            self.crossings = np.array(_cen_list)
-            if len(_cen_list) >= 2:
-                self.fwhm = np.abs(self.crossings[-1] - self.crossings[0],
-                                   dtype=float)
+        for field in self._stats_fields:
+            setattr(self, field, getattr(stats, field))
 
         if self.compute_derivative:
-            # Calculate the derivative of the data
-            self.der.fwhm=None
+            # Calculate the derivative stats of the data
             x_der = x[1:]
             y_der = np.diff(y)
-            self.der.x = x_der
-            self.der.y = y_der
-            max_der = np.argmax(y_der)
-            min_der = np.argmin(y_der)
-            self.der.max = x[max_der], self.y_data[max_der],
-            self.der.min = x[min_der], self.y_data[min_der],
-            self.der.com, = np.interp(center_of_mass(y_der), np.arange(len(x_der)), x_der)
-            mid_der = (np.max(y_der) + np.min(y_der)) / 2
-            crossings_der = np.where(np.diff((y_der > mid_der).astype(np.int)))[0]
-            _cen_list_der = []
-            for cr in crossings_der.ravel():
-                _x_der = x_der[cr:cr + 2]
-                _y_der = y_der[cr:cr + 2] - mid_der
 
-                dx = np.diff(_x_der)[0]
-                dy = np.diff(_y_der)[0]
-                m = dy / dx
-                _cen_list_der.append((-_y_der[0] / m) + _x_der[0])
-
-            if _cen_list_der:
-                self.der.cen = np.mean(_cen_list_der)
-                self.der.crossings = np.array(_cen_list_der)
-                if len(_cen_list_der) >= 2:
-                    self.der.fwhm = np.abs(self.der.crossings[-1] - self.der.crossings[0],
-                                           dtype=float)
+            stats_fields = copy.deepcopy(self._stats_fields)
+            stats_fields.update({"x": x_der, "y": y_der})
+            self.der = self._calc_stats(
+                x_der, y_der,
+                stats_fields,
+                edge_count=self._edge_count
+            )
 
         # reset y data
         y = self.y_data
