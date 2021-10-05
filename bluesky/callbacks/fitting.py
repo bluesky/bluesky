@@ -307,7 +307,7 @@ class PeakStats(CollectThenCompute):
 
         stats_fields = copy.deepcopy(self._stats_fields)
         stats = self._calc_stats(x, y, stats_fields,
-                                      edge_count=self._edge_count)
+                                 edge_count=self._edge_count)
 
         for field in self._stats_fields:
             setattr(self, field, getattr(stats, field))
