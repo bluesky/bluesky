@@ -68,6 +68,10 @@ def test_peak_statistics(RE):
     RE.subscribe(ps)
     RE(scan([det], motor, -5, 5, 100))
 
+    fields = ["x", "y", "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg"]
+    for field in fields:
+        assert hasattr(ps, field), f"{field} is not an attribute of ps"
+
     np.allclose(ps.cen, 0, atol=1e-6)
     np.allclose(ps.com, 0, atol=1e-6)
     fwhm_gauss = 2 * np.sqrt(2 * np.log(2))  # theoretical value with std=1
@@ -104,7 +108,7 @@ def test_peak_statistics_with_derivatives(RE):
     RE(scan([det], motor, -5, 5, num_points))
 
     assert hasattr(ps, "der")
-    der_fields = ["x", "y", "min", "max", "com", "cen", "fwhm", "crossings"]
+    der_fields = ["x", "y", "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg"]
     for field in der_fields:
         assert hasattr(ps.der, field), f"{field} is not an attribute of ps.der"
 

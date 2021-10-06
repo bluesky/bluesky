@@ -233,7 +233,7 @@ class PeakStats(CollectThenCompute):
         super().__init__()
 
     def __getitem__(self, key):
-        if key in self._stats_fields.keys():
+        if key in ["x", "y"] + list(self._stats_fields.keys()):
             return getattr(self, key)
         else:
             raise KeyError
