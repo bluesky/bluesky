@@ -243,8 +243,8 @@ def test_plot_prune_fifo(RE, hw):
     assert len(lp.ax.lines) == num_pruned
 
 
-def test_bec_peak_stats_compute_derivative(RE, hw):
-    bec = BestEffortCallback(compute_derivative=True)
+def test_bec_peak_stats_derivative_and_stats(RE, hw):
+    bec = BestEffortCallback(calc_derivative_and_stats=True)
     RE.subscribe(bec)
 
     c = DocCollector()
@@ -254,8 +254,8 @@ def test_bec_peak_stats_compute_derivative(RE, hw):
 
     desc_uid = c.descriptor[res.run_start_uids[0]][0]["uid"]
     ps = bec._peak_stats[desc_uid]["det_a"]
-    assert hasattr(ps, "der")
+    assert hasattr(ps, "derivative_stats")
 
     der_fields = ["x", "y", "min", "max", "com", "cen", "fwhm", "crossings"]
     for field in der_fields:
-        assert hasattr(ps.der, field), f"{field} is not an attribute of ps.der"
+        assert hasattr(ps.derivative_stats, field), f"{field} is not an attribute of ps.der"

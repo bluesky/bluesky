@@ -184,8 +184,8 @@ class PeakStats(CollectThenCompute):
         field name for the x variable (e.g., a motor)
     y : string
         field name for the y variable (e.g., a detector)
-    compute_derivative : bool, optional
-        compute stats for derivative of the readings. False by default.
+    calc_derivative_and_stats : bool, optional
+        calculate derivative of the readings and its stats. False by default.
     edge_count : int or None, optional
         If not None, number of points at beginning and end to use
         for quick and dirty background subtraction.
@@ -209,11 +209,13 @@ class PeakStats(CollectThenCompute):
            be the fwhm.
     """
 
-    def __init__(self, x, y, edge_count=None, compute_derivative=False):
+    def __init__(self, x, y, edge_count=None, calc_derivative_and_stats=False):
         self.x = x
         self.y = y
         self._edge_count = edge_count
-        self.compute_derivative = compute_derivative
+        self._calc_derivative_and_stats = calc_derivative_and_stats
+        self.stats = None
+        self.derivative_stats = None
 
         self._stats_fields = {
             "min": None,
@@ -226,9 +228,6 @@ class PeakStats(CollectThenCompute):
         }
         for field, value in self._stats_fields.items():
             setattr(self, field, value)
-
-        if self.compute_derivative:
-            self.der = None
 
         super().__init__()
 
@@ -305,20 +304,20 @@ class PeakStats(CollectThenCompute):
         self.y_data = y
 
         stats_fields = copy.deepcopy(self._stats_fields)
-        stats = self._calc_stats(x, y, stats_fields,
-                                 edge_count=self._edge_count)
+        self.stats = self._calc_stats(x, y, stats_fields,
+                                      edge_count=self._edge_count)
 
         for field in self._stats_fields:
-            setattr(self, field, getattr(stats, field))
+            setattr(self, field, getattr(self.stats, field))
 
-        if self.compute_derivative:
+        if self._calc_derivative_and_stats:
             # Calculate the derivative stats of the data
             x_der = x[1:]
             y_der = np.diff(y)
 
             stats_fields = copy.deepcopy(self._stats_fields)
             stats_fields.update({"x": x_der, "y": y_der})
-            self.der = self._calc_stats(
+            self.derivative_stats = self._calc_stats(
                 x_der, y_der,
                 stats_fields,
                 edge_count=self._edge_count

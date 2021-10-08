@@ -103,26 +103,26 @@ def test_peak_statistics_with_derivatives(RE):
     x = "motor"
     y = "det"
     num_points = 100
-    ps = PeakStats(x, y, compute_derivative=True)
+    ps = PeakStats(x, y, calc_derivative_and_stats=True)
     RE.subscribe(ps)
     RE(scan([det], motor, -5, 5, num_points))
 
-    assert hasattr(ps, "der")
+    assert hasattr(ps, "derivative_stats")
     der_fields = ["x", "y", "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg"]
     for field in der_fields:
-        assert hasattr(ps.der, field), f"{field} is not an attribute of ps.der"
+        assert hasattr(ps.derivative_stats, field), f"{field} is not an attribute of ps.der"
 
-    assert type(ps.der.x) is np.ndarray
-    assert type(ps.der.y) is np.ndarray
-    assert type(ps.der.min) is tuple
-    assert type(ps.der.max) is tuple
-    assert type(ps.der.com) is np.float64
-    assert type(ps.der.cen) is np.float64
-    assert type(ps.der.crossings) is np.ndarray
-    if len(ps.der.crossings) >= 2:
-        assert type(ps.der.fwhm) is float
+    assert type(ps.derivative_stats.x) is np.ndarray
+    assert type(ps.derivative_stats.y) is np.ndarray
+    assert type(ps.derivative_stats.min) is tuple
+    assert type(ps.derivative_stats.max) is tuple
+    assert type(ps.derivative_stats.com) is np.float64
+    assert type(ps.derivative_stats.cen) is np.float64
+    assert type(ps.derivative_stats.crossings) is np.ndarray
+    if len(ps.derivative_stats.crossings) >= 2:
+        assert type(ps.derivative_stats.fwhm) is float
     else:
-        assert ps.der.fwhm is None
-    assert len(ps.der.x) == num_points - 1
-    assert len(ps.der.y) == num_points - 1
-    assert np.allclose(np.diff(ps.y_data), ps.der.y, atol=1e-10)
+        assert ps.derivative_stats.fwhm is None
+    assert len(ps.derivative_stats.x) == num_points - 1
+    assert len(ps.derivative_stats.y) == num_points - 1
+    assert np.allclose(np.diff(ps.y_data), ps.derivative_stats.y, atol=1e-10)
