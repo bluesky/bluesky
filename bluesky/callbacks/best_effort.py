@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 
 @make_class_safe(logger=logger)
 class BestEffortCallback(QtAwareCallback):
-    def __init__(self, *, fig_factory=None, table_enabled=True, **kwargs):
+    def __init__(self, *, fig_factory=None, table_enabled=True,
+                 calc_derivative_and_stats=False, **kwargs):
         super().__init__(**kwargs)
         # internal state
         self._start_doc = None
@@ -44,6 +45,7 @@ class BestEffortCallback(QtAwareCallback):
         self._live_grids = {}
         self._live_scatters = {}
         self._peak_stats = {}  # same structure as live_plots
+        self._calc_derivative_and_stats = calc_derivative_and_stats
         self._cleanup_motor_heuristic = False
         self._stream_names_seen = set()
 
@@ -278,7 +280,10 @@ class BestEffortCallback(QtAwareCallback):
                                                   peak_results=self.peaks)
                     live_plot('start', self._start_doc)
                     live_plot('descriptor', doc)
-                    peak_stats = PeakStats(x=x_key, y=y_key)
+                    peak_stats = PeakStats(
+                        x=x_key, y=y_key,
+                        calc_derivative_and_stats=self._calc_derivative_and_stats
+                    )
                     peak_stats('start', self._start_doc)
                     peak_stats('descriptor', doc)
 
@@ -516,7 +521,7 @@ class PeakResults:
 
     def __repr__(self):
         # This is a proper eval-able repr, but with some manually-tweaked
-        # whitespace to make it easier to prase.
+        # whitespace to make it easier to parse.
         lines = []
         lines.append('{')
         for attr in self.ATTRS:

@@ -10,6 +10,7 @@ from bluesky.preprocessors import SupplementalData
 from bluesky.callbacks.best_effort import BestEffortCallback
 from bluesky.utils import new_uid
 from event_model import RunRouter
+from bluesky.tests.utils import DocCollector
 
 
 def test_hints(RE, hw):
@@ -240,3 +241,21 @@ def test_plot_prune_fifo(RE, hw):
     # prune again, this time reduces number of lines
     bec.plot_prune_fifo(num_pruned, hw.motor, hw.ab_det.a)
     assert len(lp.ax.lines) == num_pruned
+
+
+def test_bec_peak_stats_derivative_and_stats(RE, hw):
+    bec = BestEffortCallback(calc_derivative_and_stats=True)
+    RE.subscribe(bec)
+
+    c = DocCollector()
+    RE.subscribe(c.insert)
+
+    res = RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
+
+    desc_uid = c.descriptor[res.run_start_uids[0]][0]["uid"]
+    ps = bec._peak_stats[desc_uid]["det_a"]
+    assert hasattr(ps, "derivative_stats")
+
+    der_fields = ["x", "y", "min", "max", "com", "cen", "fwhm", "crossings"]
+    for field in der_fields:
+        assert hasattr(ps.derivative_stats, field), f"{field} is not an attribute of ps.der"

@@ -33,7 +33,7 @@ def get_ps(x, y, shift=0.5):
             positive = not positive
     if len(list_of_roots) >= 2:
         FWHM = abs(list_of_roots[-1] - list_of_roots[0])
-        CEN = list_of_roots[0]+0.5*(list_of_roots[1]-list_of_roots[0])
+        CEN = list_of_roots[0] + 0.5 * (list_of_roots[1] - list_of_roots[0])
 
         ps['fwhm'] = FWHM
         ps['cen'] = CEN
@@ -68,10 +68,14 @@ def test_peak_statistics(RE):
     RE.subscribe(ps)
     RE(scan([det], motor, -5, 5, 100))
 
+    fields = ["x", "y", "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg"]
+    for field in fields:
+        assert hasattr(ps, field), f"{field} is not an attribute of ps"
+
     np.allclose(ps.cen, 0, atol=1e-6)
     np.allclose(ps.com, 0, atol=1e-6)
-    fwhm_gauss = 2*np.sqrt(2*np.log(2))  # theoretical value with std=1
-    np.allclose(ps.fwhm, fwhm_gauss, atol=1e-2)
+    fwhm_gauss = 2 * np.sqrt(2 * np.log(2))  # theoretical value with std=1
+    assert np.allclose(ps.fwhm, fwhm_gauss, atol=1e-2)
 
 
 def test_peak_statistics_compare_chx(RE):
@@ -91,3 +95,34 @@ def test_peak_statistics_compare_chx(RE):
     assert np.allclose(ps.cen, ps_chx['cen'], atol=1e-6)
     assert np.allclose(ps.com, ps_chx['com'], atol=1e-6)
     assert np.allclose(ps.fwhm, ps_chx['fwhm'], atol=1e-6)
+
+
+def test_peak_statistics_with_derivatives(RE):
+    """peak statistics calculation on simple gaussian function with derivatives
+    """
+    x = "motor"
+    y = "det"
+    num_points = 100
+    ps = PeakStats(x, y, calc_derivative_and_stats=True)
+    RE.subscribe(ps)
+    RE(scan([det], motor, -5, 5, num_points))
+
+    assert hasattr(ps, "derivative_stats")
+    der_fields = ["x", "y", "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg"]
+    for field in der_fields:
+        assert hasattr(ps.derivative_stats, field), f"{field} is not an attribute of ps.der"
+
+    assert type(ps.derivative_stats.x) is np.ndarray
+    assert type(ps.derivative_stats.y) is np.ndarray
+    assert type(ps.derivative_stats.min) is tuple
+    assert type(ps.derivative_stats.max) is tuple
+    assert type(ps.derivative_stats.com) is np.float64
+    assert type(ps.derivative_stats.cen) is np.float64
+    assert type(ps.derivative_stats.crossings) is np.ndarray
+    if len(ps.derivative_stats.crossings) >= 2:
+        assert type(ps.derivative_stats.fwhm) is float
+    else:
+        assert ps.derivative_stats.fwhm is None
+    assert len(ps.derivative_stats.x) == num_points - 1
+    assert len(ps.derivative_stats.y) == num_points - 1
+    assert np.allclose(np.diff(ps.y_data), ps.derivative_stats.y, atol=1e-10)
