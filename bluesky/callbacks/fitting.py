@@ -240,6 +240,8 @@ class PeakStats(CollectThenCompute):
 
     @staticmethod
     def _calc_stats(x, y, fields, edge_count=None):
+        x_orig = np.copy(x)
+        y_orig = np.copy(y)
         if edge_count is not None:
             left_x = np.mean(x[:edge_count])
             left_y = np.mean(y[:edge_count])
@@ -252,8 +254,11 @@ class PeakStats(CollectThenCompute):
             y = y - (m * x + b)
             fields["lin_bkg"] = {"m": m, "b": b}
 
-        fields["min"] = (x[np.argmin(y)], y[np.argmin(y)])
-        fields["max"] = (x[np.argmax(y)], y[np.argmax(y)])
+        argmin_y = np.argmin(y)
+        argmax_y = np.argmax(y)
+
+        fields["min"] = (x[argmin_y], y_orig[argmin_y])
+        fields["max"] = (x[argmax_y], y_orig[argmax_y])
         fields["com"], = np.interp(center_of_mass(y), np.arange(len(x)), x)
         mid = (np.max(y) + np.min(y)) / 2
         crossings = np.where(np.diff((y > mid).astype(np.int)))[0]
