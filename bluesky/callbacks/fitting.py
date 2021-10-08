@@ -240,7 +240,6 @@ class PeakStats(CollectThenCompute):
 
     @staticmethod
     def _calc_stats(x, y, fields, edge_count=None):
-        x_orig = np.copy(x)
         y_orig = np.copy(y)
         if edge_count is not None:
             left_x = np.mean(x[:edge_count])
