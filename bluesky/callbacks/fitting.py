@@ -209,7 +209,8 @@ class PeakStats(CollectThenCompute):
            be the fwhm.
     """
 
-    def __init__(self, x, y, edge_count=None, calc_derivative_and_stats=False):
+    def __init__(self, x, y, *, edge_count=None,
+                 calc_derivative_and_stats=False):
         self.x = x
         self.y = y
         self._edge_count = edge_count
