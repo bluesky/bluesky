@@ -6,7 +6,7 @@ import os
 import pytest
 
 
-@pytest.fixture(scope='function', params=['False', 'True'])
+@pytest.fixture(scope='function', params=[False, True])
 def RE(request):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
