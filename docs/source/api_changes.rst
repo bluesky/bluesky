@@ -2,6 +2,33 @@
  Release History
 =================
 
+
+v1.8.1 (2021-10-11)
+===================
+
+Fixed
+-----
+
+* More fixes for Python 3.10 to propagate the ``loop`` kwarg correctly.
+
+Enhancements
+------------
+
+* Added optional calculation of the derivative and its statistics (``min``,
+  ``max``, ``fwhm``, etc.) to ``PeakStats`` and ``BestEffortCallback``.
+
+Added
+-----
+
+* Read-only property ``RunEngine.deferred_pause_requested`` which may be useful
+  for `bluesky-queueserver <https://github.com/bluesky/bluesky-queueserver>`_.
+
+Documentation
+-------------
+
+* Unpin ``sphinx_rtd_theme``.
+
+
 v1.8.0 (2021-09-15)
 ===================
 
