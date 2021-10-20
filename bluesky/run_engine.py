@@ -620,7 +620,7 @@ class RunEngine:
     @property
     def call_returns_result(self):
         return self._call_returns_result
-    
+
     def _clear_run_cache(self):
         "Clean up for a new run."
         self._groups.clear()
