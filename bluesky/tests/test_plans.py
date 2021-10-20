@@ -93,7 +93,7 @@ def test_mesh_pseudo(hw, RE):
                          p3x3.pseudo1, 0, 3, 5,
                          p3x3.pseudo2, 7, 10, 7))
 
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
@@ -123,7 +123,7 @@ def test_rmesh_pseudo(hw, RE):
                              p3x3.pseudo1, 0, 3, 5,
                              p3x3.pseudo2, 7, 10, 7))
 
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
@@ -157,7 +157,7 @@ def test_relative_pseudo(hw, RE, db):
                                            p.pseudo1, -1, 1,
                                            p.pseudo2, -2, -1))
 
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
@@ -170,7 +170,7 @@ def test_relative_pseudo(hw, RE, db):
                                            5,
                                            p.real1, 1, -1,
                                            p.real2, 2, 1))
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]

@@ -252,7 +252,7 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
 
     res = RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
 
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid = res.run_start_uids[0]
     else:
         uid = res[0]
