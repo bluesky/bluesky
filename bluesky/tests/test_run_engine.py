@@ -1416,7 +1416,7 @@ def test_num_events(RE, hw, db):
     RE.subscribe(db.insert)
 
     rs1 = RE(count([]))
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid1 = rs1.run_start_uids[0]
     else:
         uid1 = rs1[0]
@@ -1424,7 +1424,7 @@ def test_num_events(RE, hw, db):
     assert h.stop['num_events'] == {}
 
     rs2 = RE(count([hw.det], 5))
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid2 = rs2.run_start_uids[0]
     else:
         uid2 = rs2[0]
@@ -1435,7 +1435,7 @@ def test_num_events(RE, hw, db):
     RE.preprocessors.append(sd)
 
     rs3 = RE(count([]))
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid3 = rs3.run_start_uids[0]
     else:
         uid3 = rs3[0]
@@ -1443,7 +1443,7 @@ def test_num_events(RE, hw, db):
     assert h.stop['num_events'] == {'baseline': 2}
 
     rs4 = RE(count([hw.det], 5))
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid4 = rs4.run_start_uids[0]
     else:
         uid4 = rs4[0]
@@ -1474,7 +1474,7 @@ def test_force_stop_exit_status(bail_func, status, RE):
 
     rs = getattr(RE, bail_func)()
 
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         if bail_func == "resume":
             assert rs.plan_result is not RE.NO_PLAN_RETURN
         else:
@@ -1512,7 +1512,7 @@ def test_exceptions_exit_status(RE):
 
 
 def test_plan_return(RE):
-    if not RE._call_returns_result:
+    if not RE.call_returns_result:
         pytest.skip()
 
     def test_plan():
@@ -1526,7 +1526,7 @@ def test_plan_return(RE):
 
 
 def test_plan_return_resume(RE):
-    if not RE._call_returns_result:
+    if not RE.call_returns_result:
         pytest.skip()
 
     def test_plan():

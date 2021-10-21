@@ -295,6 +295,11 @@ class RunEngine:
     ignore_callback_exceptions
         Boolean, False by default.
 
+    call_returns_result
+        Boolean, False by default. If False, RunEngine will return uuid list
+        after running a plan. If True, RunEngine will return a RunEngineResult
+        object that contains the plan result, error status, and uuid list.
+
     loop : asyncio event loop
         e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
 
@@ -616,6 +621,10 @@ class RunEngine:
     @verbose.setter
     def verbose(self, value):
         self.log.disabled = not value
+
+    @property
+    def call_returns_result(self):
+        return self._call_returns_result
 
     def _clear_run_cache(self):
         "Clean up for a new run."

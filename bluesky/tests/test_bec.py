@@ -252,7 +252,12 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
 
     res = RE(scan([hw.ab_det], hw.motor, 1, 5, 5))
 
-    desc_uid = c.descriptor[res.run_start_uids[0]][0]["uid"]
+    if RE.call_returns_result:
+        uid = res.run_start_uids[0]
+    else:
+        uid = res[0]
+
+    desc_uid = c.descriptor[uid][0]["uid"]
     ps = bec._peak_stats[desc_uid]["det_a"]
     assert hasattr(ps, "derivative_stats")
 

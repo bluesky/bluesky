@@ -9,7 +9,7 @@ def test_scan_and_get_data(RE, hw, db):
     RE.subscribe(db.insert)
     rs = RE(stepscan(hw.det, hw.motor), group='foo', beamline_id='testing',
             config={})
-    if RE._call_returns_result:
+    if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
