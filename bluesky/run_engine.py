@@ -295,6 +295,11 @@ class RunEngine:
     ignore_callback_exceptions
         Boolean, False by default.
 
+    call_returns_result
+        Boolean, False by default. If False, RunEngine will return uuid list
+        after running a plan. If True, RunEngine will return a RunEngineResult
+        object that contains the plan result, error status, and uuid list.
+
     loop : asyncio event loop
         e.g., ``asyncio.get_event_loop()`` or ``asyncio.new_event_loop()``
 
