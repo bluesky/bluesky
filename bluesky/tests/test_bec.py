@@ -270,7 +270,7 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
 
     assert isinstance(ps.__repr__(), str)
 
-    from numpy import array  # needed by `eval` below
+    from numpy import array  # needed by `eval` below  # noqa F401
     out = eval(str(ps))
     assert isinstance(out, dict)
     for key in ("stats", "derivative_stats"):
