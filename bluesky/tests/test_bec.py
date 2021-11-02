@@ -270,15 +270,22 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
 
     assert isinstance(ps.__repr__(), str)
 
-    from numpy import array  # needed by `eval` below  # noqa F401
+    # These imports are needed by the `eval` below:
+    from numpy import array  # noqa F401
+    from collections import OrderedDict  # noqa F401
+
     out = eval(str(ps))
     assert isinstance(out, dict)
     for key in ("stats", "derivative_stats"):
         assert key in out
 
     for field in fields:
-        assert np.allclose(getattr(ps.stats, field),
-                           out["stats"][field])
+        stats_value = getattr(ps.stats, field)
+        out_value = out["stats"][field]
+        if stats_value is not None:
+            assert np.allclose(stats_value, out_value)
+        else:
+            stats_value == out_value
 
     for field in der_fields:
         stats_value = getattr(ps.derivative_stats, field)
