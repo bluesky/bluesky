@@ -274,7 +274,7 @@ class PeakStats(CollectThenCompute):
         fields["max"] = (x[argmax_y], y_orig[argmax_y])
         fields["com"], = np.interp(center_of_mass(y), np.arange(len(x)), x)
         mid = (np.max(y) + np.min(y)) / 2
-        crossings = np.where(np.diff((y > mid).astype(np.int)))[0]
+        crossings = np.where(np.diff((y > mid).astype(int)))[0]
         _cen_list = []
         for cr in crossings.ravel():
             _x = x[cr:cr + 2]
