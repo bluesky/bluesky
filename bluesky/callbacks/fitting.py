@@ -1,4 +1,5 @@
 import copy
+import pprint
 import warnings
 import numpy as np
 from collections import namedtuple
@@ -237,6 +238,19 @@ class PeakStats(CollectThenCompute):
             return getattr(self, key)
         else:
             raise KeyError
+
+    def __dict__(self):
+        return_dict = {}
+        if self.stats is not None:
+            return_dict["stats"] = self.stats._asdict()
+
+        if self.derivative_stats is not None:
+            return_dict["derivative_stats"] = self.derivative_stats._asdict()
+
+        return return_dict
+
+    def __repr__(self):
+        return pprint.pformat(self.__dict__())
 
     @staticmethod
     def _calc_stats(x, y, fields, edge_count=None):
