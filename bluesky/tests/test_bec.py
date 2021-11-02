@@ -3,6 +3,7 @@ import pytest
 import jsonschema
 import time as ttime
 from datetime import datetime
+import numpy as np
 from bluesky.plans import scan, grid_scan
 import bluesky.preprocessors as bpp
 import bluesky.plan_stubs as bps
@@ -259,8 +260,31 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
 
     desc_uid = c.descriptor[uid][0]["uid"]
     ps = bec._peak_stats[desc_uid]["det_a"]
+
     assert hasattr(ps, "derivative_stats")
 
-    der_fields = ["x", "y", "min", "max", "com", "cen", "fwhm", "crossings"]
+    fields = ["min", "max", "com", "cen", "fwhm", "crossings"]
+    der_fields = ["x", "y"] + fields
     for field in der_fields:
         assert hasattr(ps.derivative_stats, field), f"{field} is not an attribute of ps.der"
+
+    assert isinstance(ps.__repr__(), str)
+
+    from numpy import array  # needed by `eval` below
+    out = eval(str(ps))
+    assert isinstance(out, dict)
+    for key in ("stats", "derivative_stats"):
+        assert key in out
+
+    for field in fields:
+        assert np.allclose(getattr(ps.stats, field),
+                           out["stats"][field])
+
+    for field in der_fields:
+        stats_value = getattr(ps.derivative_stats, field)
+        out_value = out["derivative_stats"][field]
+        if stats_value is not None:
+            assert np.allclose(stats_value,
+                               out_value)
+        else:
+            stats_value == out_value
