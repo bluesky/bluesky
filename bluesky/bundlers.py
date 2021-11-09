@@ -759,7 +759,11 @@ class RunBundler:
                 self.log.exception("Failed to collect %r.", obj)
 
     async def configure(self, msg):
-        """Configure an object
+        """
+        Configure an object.
+
+        This should clear all of the places we have cached both the
+        configuration and the descriptors.
 
         Expected message object is ::
 
@@ -768,6 +772,7 @@ class RunBundler:
         which results in this call ::
 
             object.configure(*args, **kwargs)
+
         """
         obj = msg.obj
         # Invalidate any event descriptors that include this object.
@@ -777,4 +782,12 @@ class RunBundler:
             obj_set, _ = self._descriptors[name]
             if obj in obj_set:
                 del self._descriptors[name]
-        await self._cache_read_config(obj)
+
+        # nuke the caches, let read re-fill them.  Saves us work
+        # for multiple
+        if obj in self._describe_cache:
+            # assume the caches are coherent!
+            del self._describe_cache[obj]
+            del self._config_desc_cache[obj]
+            del self._config_values_cache[obj]
+            del self._config_ts_cache[obj]
