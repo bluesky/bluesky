@@ -1023,7 +1023,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
         .. code-block:: python
 
             motor1, start1, stop1,
-            motor2, start2, start2,
+            motor2, start2, stop2,
             ...,
             motorN, startN, stopN
 
