@@ -210,6 +210,9 @@ class PeakStats(CollectThenCompute):
            be the fwhm.
     """
 
+    __slots__ = ("x", "y", "stats", "derivative_stats",
+                 "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg")
+
     def __init__(self, x, y, *, edge_count=None,
                  calc_derivative_and_stats=False):
         self.x = x
@@ -234,7 +237,7 @@ class PeakStats(CollectThenCompute):
         super().__init__()
 
     def __getitem__(self, key):
-        if key in ["x", "y"] + list(self._stats_fields.keys()):
+        if key in ["x", "y", "stats", "derivative_stats"] + list(self._stats_fields.keys()):
             return getattr(self, key)
         else:
             raise KeyError
