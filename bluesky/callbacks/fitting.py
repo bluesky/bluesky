@@ -210,7 +210,7 @@ class PeakStats(CollectThenCompute):
            be the fwhm.
     """
 
-    __slots__ = ("x", "y", "stats", "derivative_stats",
+    __slots__ = ("x", "y", "x_data", "y_data", "stats", "derivative_stats",
                  "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg")
 
     def __init__(self, x, y, *, edge_count=None,
