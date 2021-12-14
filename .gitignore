@@ -133,3 +133,5 @@ doc/source/generated/*.rst
 
 .vscode/settings.json
 .vscode/tags
+
+.hypothesis/

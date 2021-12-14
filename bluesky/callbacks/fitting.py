@@ -1,4 +1,5 @@
 import copy
+import pprint
 import warnings
 import numpy as np
 from collections import namedtuple
@@ -209,6 +210,9 @@ class PeakStats(CollectThenCompute):
            be the fwhm.
     """
 
+    __slots__ = ("x", "y", "x_data", "y_data", "stats", "derivative_stats",
+                 "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg")
+
     def __init__(self, x, y, *, edge_count=None,
                  calc_derivative_and_stats=False):
         self.x = x
@@ -233,10 +237,23 @@ class PeakStats(CollectThenCompute):
         super().__init__()
 
     def __getitem__(self, key):
-        if key in ["x", "y"] + list(self._stats_fields.keys()):
+        if key in ["x", "y", "stats", "derivative_stats"] + list(self._stats_fields.keys()):
             return getattr(self, key)
         else:
             raise KeyError
+
+    def __dict__(self):
+        return_dict = {}
+        if self.stats is not None:
+            return_dict["stats"] = self.stats._asdict()
+
+        if self.derivative_stats is not None:
+            return_dict["derivative_stats"] = self.derivative_stats._asdict()
+
+        return return_dict
+
+    def __repr__(self):
+        return pprint.pformat(self.__dict__())
 
     @staticmethod
     def _calc_stats(x, y, fields, edge_count=None):
@@ -260,7 +277,7 @@ class PeakStats(CollectThenCompute):
         fields["max"] = (x[argmax_y], y_orig[argmax_y])
         fields["com"], = np.interp(center_of_mass(y), np.arange(len(x)), x)
         mid = (np.max(y) + np.min(y)) / 2
-        crossings = np.where(np.diff((y > mid).astype(np.int)))[0]
+        crossings = np.where(np.diff((y > mid).astype(int)))[0]
         _cen_list = []
         for cr in crossings.ravel():
             _x = x[cr:cr + 2]
