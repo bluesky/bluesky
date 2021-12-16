@@ -928,6 +928,7 @@ def install_qt_kicker(loop=None, update_rate=0.03):
                   "has no effect. Please remove your use of it. It may be "
                   "removed in a future release of bluesky.")
 
+
 def install_remote_qt_kicker(loop=None, update_rate=0.03):
     """Install a periodic callback to integrate Qt and asyncio event loops.
 
@@ -978,6 +979,7 @@ def install_remote_qt_kicker(loop=None, update_rate=0.03):
         loop.call_later(update_rate, _qt_kicker)
 
     _QT_KICKER_INSTALLED[loop] = loop.call_soon(_qt_kicker)
+
 
 def install_nb_kicker(loop=None, update_rate=0.03):
     """
