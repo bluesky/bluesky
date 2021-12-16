@@ -63,6 +63,11 @@ conforms to the following definition
             parameters, depending on what the status object knows about its own
             progress.
 
+            The ``fraction`` argument accepts a single float representing fraction
+            remaining.
+            A fraction of zero indicates completion.
+            A fraction of one indicates progress has not started.
+
 Readable Device
 +++++++++++++++
 
