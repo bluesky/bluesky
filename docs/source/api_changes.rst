@@ -3,6 +3,30 @@
 =================
 
 
+v1.8.2 (2021-12-20)
+===================
+
+Fixed
+-----
+
+* Changed from using ``SafeConfigParser`` to ``ConfigParser`` in
+  ``versioneer.py`` (fix to support Python 3.11).
+
+Enhancements
+------------
+
+* Added public ``call_returns_result`` property.
+* Implemented human-readable printable representation for ``PeakStats``.
+
+Documentation
+-------------
+
+* Updated ``RunEngine`` docstring with ``call_returns_result`` property.
+* Fixed a small mistake in ``bp.scan`` docstring.
+* Added documentation about intended behavior of fraction in the ``watch``
+  method of the status object.
+
+
 v1.8.1 (2021-10-11)
 ===================
 
@@ -45,8 +69,9 @@ Enhancements
 
 * Do not pass the ``loop`` kwarg to ``RunEngine`` and ``RunBundler`` if we do
   not have to.
-* ``RunEngine``'s ``__call__`` now may return plan value, as toggled by new ``call_returns_result`` flag.
-  Default behavior has not changed, but may change in a future release.
+* ``RunEngine``'s ``__call__`` now may return plan value, as toggled by new
+  ``call_returns_result`` flag.  Default behavior has not changed, but may
+  change in a future release.
 
 Added
 -----
