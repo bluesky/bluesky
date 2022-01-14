@@ -314,7 +314,7 @@ def run_wrapper(plan, *, md=None):
     md : dict, optional
         metadata to be passed into the 'open_run' message
     """
-    rs_uid = yield from open_run(md)
+    yield from open_run(md)
 
     def except_plan(e):
         if isinstance(e, RunEngineControlException):
@@ -322,10 +322,9 @@ def run_wrapper(plan, *, md=None):
         else:
             yield from close_run(exit_status='fail', reason=str(e))
 
-    yield from contingency_wrapper(plan,
-                                   except_plan=except_plan,
-                                   else_plan=close_run)
-    return rs_uid
+    return (yield from contingency_wrapper(plan,
+                                           except_plan=except_plan,
+                                           else_plan=close_run))
 
 
 def subs_wrapper(plan, subs):
