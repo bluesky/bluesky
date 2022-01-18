@@ -13,6 +13,7 @@ The following packages provide support for real hardware communication from Blue
 Ophyd_         EPICS_ integration for Bluesky. Reference implementation for hardware interface.
 Instrbuilder_  Lightweight package with a focus on SCPI_.
 Ophyd-Tango_   Tango_ integration for Bluesky. Incomplete and experimental early work.
+pycertifspec_  Communication with SPEC_ instruments.
 yaqc-bluesky_  yaq_ integration for Bluesky.
 =============  ================================================================================
 
@@ -29,6 +30,8 @@ Let us know if you add Bluesky support so we can add you to the above list.
 .. _Ophyd: https://blueskyproject.io/ophyd/
 .. _EPICS: https://epics-controls.org/
 .. _Ophyd-Tango: https://github.com/bluesky/ophyd-tango
+.. _pycertifspec: https://github.com/SEBv15/pycertifspec
+.. _SPEC: https://www.certif.com/content/spec/
 .. _Tango: https://www.tango-controls.org/
 .. _yaqc-bluesky: https://github.com/bluesky/yaqc-bluesky
 .. _yaq: https://yaq.fyi/
