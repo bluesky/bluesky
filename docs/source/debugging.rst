@@ -24,7 +24,7 @@ This is the recommended standard setup.
 
 .. code-block:: python
 
-   from bluesky import config_bluesky_logging
+   from bluesky.log import config_bluesky_logging
    config_bluesky_logging()
 
 It will display ``'bluesky'`` log records of ``WARNING`` level or higher in the
@@ -43,7 +43,7 @@ processes it, giving a clear indication of when plan execution is stuck.
 
 .. code-block:: python
 
-   from bluesky import config_bluesky_logging
+   from bluesky.log import config_bluesky_logging
    config_bluesky_logging(level='DEBUG')
 
 Log to a file
@@ -54,7 +54,7 @@ out).
 
 .. code-block:: python
 
-    from bluesky import config_bluesky_logging
+    from bluesky.log import config_bluesky_logging
     config_bluesky_logging(file='/tmp/bluesky.log', level='DEBUG')
 
 .. important::
