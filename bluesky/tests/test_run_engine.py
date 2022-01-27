@@ -1,3 +1,4 @@
+import asyncio
 from event_model import DocumentNames
 import threading
 import types
@@ -270,6 +271,9 @@ def test_redundant_monitors_are_illegal(RE):
             return {}
 
         def describe(self):
+            return {}
+
+        def read(self):
             return {}
 
         def subscribe(self, *args, **kwargs):
@@ -1388,16 +1392,17 @@ def test_hints(RE):
             self.parent = None
             self.hints = {'vis': 'placeholder'}
 
-        def read(self):
+        async def read(self):
+            await asyncio.sleep(0.1)
             return {}
 
-        def describe(self):
+        async def describe(self):
             return {}
 
-        def read_configuration(self):
+        async def read_configuration(self):
             return {}
 
-        def describe_configuration(self):
+        async def describe_configuration(self):
             return {}
 
     det = Detector('det')
@@ -1669,6 +1674,9 @@ def test_broken_read_exception(RE):
         def read(self):
             ...
 
+        def trigger(self):
+            ...
+
     obj = Dummy('broken read')
     with pytest.raises(RuntimeError):
         RE([Msg('read', obj)])
@@ -1692,6 +1700,12 @@ def test_thread_name(RE):
         def trigger(self):
             assert threading.current_thread().name == "bluesky-run-engine"
             return Status()
+
+        def describe(self):
+            return {}
+
+        def read(self):
+            return {}
 
     d = MockDevice()
     RE([Msg("trigger", d)])

@@ -1,5 +1,8 @@
 from warnings import warn
+from bluesky.utils import maybe_await
 from bluesky.preprocessors import print_summary_wrapper
+from bluesky.run_engine import call_in_bluesky_event_loop, in_bluesky_event_loop
+from .protocols import Checkable
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -77,6 +80,13 @@ print_summary = summarize_plan  # back-compat
 
 
 def check_limits(plan):
+    """Run check_limits_async in the RE"""
+    if in_bluesky_event_loop():
+        raise RuntimeError("Can't call check_limits() from within RE, use await check_limits_async() instead")
+    call_in_bluesky_event_loop(check_limits_async(plan))
+
+
+async def check_limits_async(plan):
     """
     Check that a plan will not move devices outside of their limits.
 
@@ -87,10 +97,11 @@ def check_limits(plan):
     """
     ignore = []
     for msg in plan:
-        if msg.command == 'set' and msg.obj not in ignore:
-            if hasattr(msg.obj, "check_value"):
-                msg.obj.check_value(msg.args[0])
+        obj = msg.obj
+        if msg.command == 'set' and obj not in ignore:
+            if isinstance(obj, Checkable):
+                await maybe_await(obj.check_value(msg.args[0]))
             else:
-                warn(f"{msg.obj.name} has no check_value() method"
+                warn(f"{obj.name} has no check_value() method"
                      f" to check if {msg.args[0]} is within its limits.")
-                ignore.append(msg.obj)
+                ignore.append(obj)

@@ -7,7 +7,7 @@ import signal
 import operator
 import uuid
 from functools import reduce
-from typing import Any, Optional, Callable
+from typing import Any, Dict, Iterator, List, Optional, Callable
 from weakref import ref, WeakKeyDictionary
 import types
 import inspect
@@ -28,6 +28,11 @@ import warnings
 import msgpack
 import msgpack_numpy
 import zict
+
+from bluesky.protocols import (
+    T, Asset, HasParent, HasHints, Hints, Movable, Readable,
+    SyncOrAsync, WritesExternalAssets, check_supports
+)
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -1389,7 +1394,7 @@ def merge_axis(objs):
         Mapping of interdependent axis passed in.
     '''
     def get_parent(o):
-        return getattr(o, 'parent')
+        return check_supports(o, HasParent).parent
 
     independent_objs = set()
     maybe_coupled = set()
@@ -1719,7 +1724,7 @@ def _rearrange_into_parallel_dicts(readings):
 
 
 def is_movable(obj):
-    """Check if object satisfies bluesky 'movable' interface.
+    """Check if object satisfies bluesky 'Movable' and `Readable` interfaces.
 
     Parameters
     ----------
@@ -1731,48 +1736,44 @@ def is_movable(obj):
     boolean
         True if movable, False otherwise.
     """
-    EXPECTED_ATTRS = (
-        'name',
-        'parent',
-        'read',
-        'describe',
-        'read_configuration',
-        'describe_configuration',
-        'set',
-    )
-    return all(hasattr(obj, attr) for attr in EXPECTED_ATTRS)
+    return isinstance(obj, Movable) and isinstance(obj, Readable)
 
 
-class Movable(metaclass=abc.ABCMeta):
-    """
-    Abstract base class for objects that satisfy the bluesky 'movable' interface.
+def get_hinted_fields(obj) -> List[str]:
+    if isinstance(obj, HasHints):
+        return obj.hints.get("fields", [])
+    else:
+        return []
 
-    Examples
-    --------
 
-    .. code-block:: python
+already_warned = {}
 
-        m = hw.motor
-        # We need to detect if 'm' is a motor
-        if isinstance(m, Movable):
-            print(f"The object {m.name} is a motor")
-    """
-    @classmethod
-    def __subclasshook__(cls, C):
-        # If the following condition is True, the object C is recognized
-        # to have Movable interface (e.g. a motor)
-        msg = """The Movable abstract base class is deprecated and will be removed in a future
-                 version of bluesky. Please use bluesky.utils.is_movable(obj) to test if an object
-                 satisfies the movable interface."""
-        warnings.warn(msg, DeprecationWarning)
-        EXPECTED_ATTRS = (
-            'name',
-            'parent',
-            'read',
-            'describe',
-            'read_configuration',
-            'describe_configuration',
-            'set',
-            'stop',
-        )
-        return all(hasattr(C, attr) for attr in EXPECTED_ATTRS)
+
+def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
+    if args or kwargs and not already_warned.get(msg.command):
+        already_warned[msg.command] = True
+        error_msg = f"""\
+About to call {meth.__name__}() with args {args} and kwargs {kwargs}.
+In the future the passing of Msg.args and Msg.kwargs down to hardware from
+Msg("{msg.command}") may be deprecated. If you have a use case for these,
+we would like to know about it, so please open an issue at
+https://github.com/bluesky/bluesky/issues"""
+        warnings.warn(error_msg, PendingDeprecationWarning)
+
+
+def maybe_update_hints(hints: Dict[str, Hints], obj):
+    if isinstance(obj, HasHints):
+        hints[obj.name] = obj.hints
+
+
+def maybe_collect_asset_docs(msg, obj, *args, **kwargs) -> Iterator[Asset]:
+    if isinstance(obj, WritesExternalAssets):
+        warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
+        yield from obj.collect_asset_docs(*args, **kwargs)
+
+
+async def maybe_await(ret: SyncOrAsync[T]) -> T:
+    if inspect.isawaitable(ret):
+        return await ret
+    else:
+        return ret

@@ -31,7 +31,7 @@ def test_old_module_name(hw):
         plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
 
 
-def test_check_limits(hw):
+def test_check_limits(RE, hw):
     det = hw.det
     motor = hw.motor
     # The motor object does not currently implement limits.
@@ -56,6 +56,12 @@ def test_check_limits(hw):
     # this object does not raise
     motor.limits = (2, 2)
     check_limits(scan([det], motor, -1, 1, 3))
+
+
+def test_check_limits_needs_RE():
+    with pytest.raises(RuntimeError) as ctx:
+        check_limits([])
+    assert str(ctx.value) == "Bluesky event loop not running"
 
 
 def test_plot_raster_path(hw):

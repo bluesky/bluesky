@@ -4,7 +4,10 @@ import numpy as np
 from functools import reduce
 import operator
 
-from bluesky.utils import ensure_generator, Msg, merge_cycler, is_movable, CallbackRegistry
+from bluesky.utils import (
+    ensure_generator, Msg, merge_cycler, is_movable, CallbackRegistry,
+    warn_if_msg_args_or_kwargs
+)
 from cycler import cycler
 
 
@@ -436,3 +439,30 @@ def test_CallbackRegistry_2():
     # Process the signal that is not allowed
     with pytest.raises(ValueError, match=f"Allowed signals are {allowed_sigs}"):
         cb.process("some_signal")
+
+
+def test_msg_args_kwargs_emits_warning_first_time(recwarn):
+    class MyDevice:
+        def kickoff(self, *args, **kwargs):
+            pass
+
+    device = MyDevice()
+    msg = Msg("kickoff")
+
+    assert len(recwarn) == 0
+    warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {"arg": "value"})
+    assert len(recwarn) == 1
+    w = recwarn.pop(PendingDeprecationWarning)
+    assert str(w.message) == """\
+About to call kickoff() with args () and kwargs {'arg': 'value'}.
+In the future the passing of Msg.args and Msg.kwargs down to hardware from
+Msg("kickoff") may be deprecated. If you have a use case for these,
+we would like to know about it, so please open an issue at
+https://github.com/bluesky/bluesky/issues"""
+    assert len(recwarn) == 0
+    # Second time doesn't warn
+    warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {"arg": "value"})
+    assert len(recwarn) == 0
+    # Called without kwargs doesn't warn
+    warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {})
+    assert len(recwarn) == 0
