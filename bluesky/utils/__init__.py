@@ -592,11 +592,14 @@ def snake_cyclers(cyclers, snake_booleans):
     """
     Combine cyclers with a 'snaking' back-and-forth order.
 
+    If none of the cyclers are "snaked" this is the same as taking the product
+    (*****) of all the cyclers.
+
     Parameters
     ----------
-    cyclers : cycler.Cycler
-        or any iterable that yields dictionaries of lists
-    snake_booleans : list
+    cyclers : List[cycler.Cycler]
+        A list of cycles to be "snaked".
+    snake_booleans : List[bool]
         a list of the same length as cyclers indicating whether each cycler
         should 'snake' (True) or not (False). Note that the first boolean
         does not make a difference because the first (slowest) dimension
@@ -605,6 +608,7 @@ def snake_cyclers(cyclers, snake_booleans):
     Returns
     -------
     result : cycler
+
     """
     if len(cyclers) != len(snake_booleans):
         raise ValueError("number of cyclers does not match number of booleans")
