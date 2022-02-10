@@ -1,30 +1,45 @@
 try:
-    from typing import Literal, Protocol, TypedDict, runtime_checkable
-except ImportError:
     from typing_extensions import Literal, Protocol, TypedDict, runtime_checkable
+except ImportError:
+    from typing import Literal, Protocol, TypedDict, runtime_checkable
 
 from typing import Any, Awaitable, Callable, Dict, Generator, List, Optional, TypeVar, Union
 
+from enum import IntEnum
 
-class EventData(TypedDict):
+class Severity(IntEnum):
+    #: Value is known, valid, nothing is wrong
+    VALID = 0
+    #: Value is known, valid, but is in the range generating a warning
+    WARNING = 1
+    #: Value is known, valid, but is in the range generating an alarm condition
+    ALARM = 2
+    #: Value is known, but not valid, e.g. a RW before its first put
+    INVALID = 3
+    #: The value is unknown, for instance because the channel is disconnected
+    UNDEFINED = 4
+
+
+class ReadingMandatory(TypedDict):
     value: Any
     timestamp: float
-    # TODO: what about status/severity?
 
 
-class EventDescriptorMandatory(TypedDict):
+class Reading(ReadingMandatory, total=False):
+    severity: Severity
+    message: str
+
+
+class DescriptorMandatory(TypedDict):
     source: str
     dtype: Literal["string", "number", "array", "boolean", "integer"]
     shape: List[int]
 
 
-class EventDescriptor(EventDescriptorMandatory, total=False):
+class Descriptor(DescriptorMandatory, total=False):
     external: str
     precision: int
     units: str
-    lower_ctrl_limit: float
-    upper_ctrl_limit: float
-    # TODO: add other limits here?
 
 
 T = TypeVar("T")
@@ -66,7 +81,7 @@ class Named(Protocol):
 
 @runtime_checkable
 class Configurable(Protocol):
-    def read_configuration(self) -> SyncOrAsync[Dict[str, EventData]]:
+    def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:
         """Same API as ``read`` but for slow-changing fields related to configuration.
 
         (e.g., exposure time)
@@ -78,7 +93,7 @@ class Configurable(Protocol):
         """
         ...
 
-    def describe_configuration(self) -> SyncOrAsync[Dict[str, EventDescriptor]]:
+    def describe_configuration(self) -> SyncOrAsync[Dict[str, Descriptor]]:
         """Same API as ``describe``, but corresponding to the keys in
         ``read_configuration``."""
         ...
@@ -86,7 +101,7 @@ class Configurable(Protocol):
 
 @runtime_checkable
 class Readable(Named, Protocol):
-    def trigger(self) -> Status:
+    def trigger(self) -> Optional[Status]:
         """Return a ``Status`` that is marked done when the device is done triggering.
 
         If the device does not need to be triggered, simply return a ``Status``
@@ -94,7 +109,7 @@ class Readable(Named, Protocol):
         """
         ...
 
-    def read(self) -> SyncOrAsync[Dict[str, EventData]]:
+    def read(self) -> SyncOrAsync[Dict[str, Reading]]:
         """Return an OrderedDict mapping field name(s) to values and timestamps.
 
         The field names must be strings. The values can be any JSON-encodable
@@ -112,7 +127,7 @@ class Readable(Named, Protocol):
         """
         ...
 
-    def describe(self) -> SyncOrAsync[Dict[str, EventDescriptor]]:
+    def describe(self) -> SyncOrAsync[Dict[str, Descriptor]]:
         """Return an OrderedDict with exactly the same keys as the ``read``
         method, here mapped to metadata about each field.
 
@@ -172,7 +187,7 @@ class Flyable(Named, Protocol):
         ...
 
     # TODO: is this actually right? Do we need collect_asset_docs too?
-    def describe_collect(self) -> Dict[str, Dict[str, EventDescriptor]]:
+    def describe_collect(self) -> Dict[str, Dict[str, Descriptor]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
         Since a flyer can potentially return more than one event stream, this is a dict
@@ -206,20 +221,18 @@ class Stageable(Protocol):
 
 @runtime_checkable
 class Pausable(Protocol):
-    # TODO: Should these be Status instead?
-    def pause(self) -> SyncOrAsync[None]:
+    def pause(self) -> Optional[Status]:
         """Perform device-specific work when the RunEngine pauses."""
         ...
 
-    def resume(self) -> SyncOrAsync[None]:
+    def resume(self) -> Optional[Status]:
         """Perform device-specific work when the RunEngine resumes after a pause."""
         ...
 
 
 @runtime_checkable
 class Stoppable(Protocol):
-    # TODO: Should this be Status instead?
-    def stop(self, sucess=True) -> SyncOrAsync[None]:
+    def stop(self, sucess=True) -> Optional[Status]:
         """Safely stop a device that may or may not be in motion.
 
         The argument ``success`` is a boolean.
@@ -231,74 +244,27 @@ class Stoppable(Protocol):
         ...
 
 
+Callback = Callable[[Dict[str, Reading]], SyncOrAsync[None]]
+
 @runtime_checkable
 class Subscribable(Protocol):
-    def subscribe(self, function: Callable) -> None:
+    def subscribe(self, function: Callback) -> None:
         """Subscribe to updates in value of a device.
 
         When the device has a new value ready, it should call ``function``
-        asynchronously in a separate thread.
+        with something that looks like the output of ``read()``.
 
         Needed for :doc:`monitored <async>`.
         """
         ...
 
-    def clear_sub(self, function: Callable) -> None:
+    def clear_sub(self, function: Callback) -> None:
         """Remove a subscription."""
         ...
 
-
-class Subscription(Protocol):
-    def __enter__(self) -> "Subscription":
-        """Returns self"""
-        return self
-
-    def __exit__(self, type, value, traceback):
-        """Calls self.close()"""
-        self.close()
-
-    def close(self):
-        """Closes connection"""
-        ...
-
-
-@runtime_checkable
-class Monitorable(Protocol):
-    """Async compatible version of Subscribable with tweaked interface"""
-    # TODO: monitor() returns a Subscription, do we like the naming?
-    def monitor(
-        self, callback: Callable[[Dict[str, EventData]], Union[None, Awaitable]]
-    ) -> Subscription:
-        """Monitor for updates in value of a device.
-
-        Callback should be called in the asyncio event loop thread with
-        EventData dict like that of read() on each update
-
-        Expected usage:
-
-            with signal.monitor(queue.put):
-                event_datas = await queue.get()
-                do_something_with(event_datas)
-                # subscriptions marked for closing here
-
-        Or:
-
-            sub = signal.monitor(callback)
-            # Sometime later
-            sub.close()
-
-        Needed for :doc:`monitored <async>`.
-        """
-        ...
-
-
 @runtime_checkable
 class Checkable(Protocol):
-    # TODO: should this be allowed to do I/O to do this check? If so,
-    # then this should only be used after stage() as that might change
-    # some params. If not, then it will need some cached limits to check
-    # against which still probably come from stage.
-    def check_value(self, value: Any) -> None:
+    def check_value(self, value: Any) -> SyncOrAsync[None]:
         """Test for a valid setpoint without actually moving.
 
         This should accept the same arguments as ``set``. It should raise an
@@ -308,6 +274,8 @@ class Checkable(Protocol):
 
         This method is used by simulators that check limits. If not implemented
         those simulators should assume all values are valid, but may warn.
+
+        This method may be used during a scan, so should not write to any Signals
         """
         ...
 
