@@ -5,41 +5,42 @@ except ImportError:
 
 from typing import Any, Awaitable, Callable, Dict, Generator, List, Optional, TypeVar, Union
 
-from enum import IntEnum
+# Not enum, as these will be integers at runtime
+#: Value is known, valid, nothing is wrong
+VALID = 0
+#: Value is known, valid, but is in the range generating a warning
+WARNING = 1
+#: Value is known, valid, but is in the range generating an alarm condition
+ALARM = 2
+#: Value is known, but not valid, e.g. a RW before its first put
+INVALID = 3
+#: The value is unknown, for instance because the channel is disconnected
+UNDEFINED = 4
+# TODO: is this too fine grained?
+Severity = Literal[0, 1, 2, 3, 4]
 
-class Severity(IntEnum):
-    #: Value is known, valid, nothing is wrong
-    VALID = 0
-    #: Value is known, valid, but is in the range generating a warning
-    WARNING = 1
-    #: Value is known, valid, but is in the range generating an alarm condition
-    ALARM = 2
-    #: Value is known, but not valid, e.g. a RW before its first put
-    INVALID = 3
-    #: The value is unknown, for instance because the channel is disconnected
-    UNDEFINED = 4
-
-
-class ReadingMandatory(TypedDict):
-    value: Any
-    timestamp: float
-
-
-class Reading(ReadingMandatory, total=False):
+class ReadingOptional(TypedDict, total=False):
     severity: Severity
     message: str
 
 
-class DescriptorMandatory(TypedDict):
-    source: str
-    dtype: Literal["string", "number", "array", "boolean", "integer"]
-    shape: List[int]
+class Reading(TypedDict, ReadingOptional):
+    value: Any
+    timestamp: float
 
 
-class Descriptor(DescriptorMandatory, total=False):
+Dtype = Literal["string", "number", "array", "boolean", "integer"]
+
+class DescriptorOptional(TypedDict, total=False):
     external: str
     precision: int
     units: str
+
+
+class Descriptor(TypedDict, DescriptorOptional):
+    source: str
+    dtype: Dtype
+    shape: List[int]
 
 
 T = TypeVar("T")
