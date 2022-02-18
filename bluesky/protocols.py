@@ -3,7 +3,7 @@ try:
 except ImportError:
     from typing import Literal, Protocol, TypedDict, runtime_checkable
 
-from typing import Any, Awaitable, Callable, Dict, Generator, List, Optional, TypeVar, Union
+from typing import Any, Awaitable, Callable, Dict, Generator, List, Optional, Sequence, Tuple, TypeVar, Union
 
 # Not enum, as these will be integers at runtime
 #: Value is known, valid, nothing is wrong
@@ -19,29 +19,67 @@ UNDEFINED = 4
 # TODO: is this too fine grained?
 Severity = Literal[0, 1, 2, 3, 4]
 
+# TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
     severity: Severity
     message: str
 
 
-class Reading(TypedDict, ReadingOptional):
+class Reading(ReadingOptional):
     value: Any
     timestamp: float
 
 
 Dtype = Literal["string", "number", "array", "boolean", "integer"]
 
+
+# https://github.com/bluesky/event-model/blob/master/event_model/schemas/event_descriptor.json
 class DescriptorOptional(TypedDict, total=False):
     external: str
+    dims: Sequence[str]
     precision: int
     units: str
 
 
-class Descriptor(TypedDict, DescriptorOptional):
+class Descriptor(DescriptorOptional):
     source: str
     dtype: Dtype
-    shape: List[int]
+    shape: Sequence[int]
 
+
+
+# https://github.com/bluesky/event-model/blob/master/event_model/schemas/event.json
+# But exclude descriptor, seq_num, uid added by RE
+class PartialEventOptional(TypedDict, total=False):
+    filled: Dict[str, bool]
+
+
+class PartialEvent(PartialEventOptional):
+    data: Dict[str, Any]
+    timestamps: Dict[str, float]
+    time: float
+
+# https://github.com/bluesky/event-model/blob/master/event_model/schemas/resource.json
+# But exclude run_start added by RE
+class PartialResourceOptional(TypedDict, total=False):
+    path_semantics: Literal["posix", "windows"]
+
+
+class PartialResource(TypedDict):
+    spec: str
+    resource_path: str
+    resource_kwargs: Dict[str, Any]
+    root: str
+    uid: str
+
+
+# https://github.com/bluesky/event-model/blob/master/event_model/schemas/datum.json
+class Datum(TypedDict):
+    resource: str
+    datum_id: str
+    datum_kwargs: Dict[str, Any]
+
+Asset = Union[Tuple[Literal["resource"], PartialResource], Tuple[Literal["datum"], Datum]]
 
 T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
@@ -78,6 +116,12 @@ class Named(Protocol):
     def parent(self) -> Optional[Any]:
         """``None``, or a reference to a parent device."""
         ...
+
+
+@runtime_checkable
+class DataWriting(Protocol):
+    def collect_asset_docs(self) -> Generator[Asset, None, None]:
+        """Create the datum and resource documents describing data in external source."""
 
 
 @runtime_checkable
@@ -179,7 +223,7 @@ class Flyable(Named, Protocol):
         """Return a ``Status`` and mark it done when acquisition has completed."""
         ...
 
-    def collect(self) -> Generator[Dict[str, Any], None, None]:
+    def collect(self) -> Generator[PartialEvent, None, None]:
         """Yield dictionaries that are partial Event documents.
 
         They should contain the keys 'time', 'data', and 'timestamps'.
@@ -187,7 +231,6 @@ class Flyable(Named, Protocol):
         """
         ...
 
-    # TODO: is this actually right? Do we need collect_asset_docs too?
     def describe_collect(self) -> Dict[str, Dict[str, Descriptor]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
