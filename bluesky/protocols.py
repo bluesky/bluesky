@@ -5,7 +5,9 @@ except ImportError:
 
 from typing import Any, Awaitable, Callable, Dict, Generator, List, Optional, Sequence, Tuple, TypeVar, Union
 
-# Not enum, as these will be integers at runtime
+# These are some alarm severities as used by CA for example
+#: The alarm state is unknown, for instance because the channel is disconnected
+UNDEFINED = -1
 #: Value is known, valid, nothing is wrong
 VALID = 0
 #: Value is known, valid, but is in the range generating a warning
@@ -14,14 +16,10 @@ WARNING = 1
 ALARM = 2
 #: Value is known, but not valid, e.g. a RW before its first put
 INVALID = 3
-#: The value is unknown, for instance because the channel is disconnected
-UNDEFINED = 4
-# TODO: is this too fine grained?
-Severity = Literal[0, 1, 2, 3, 4]
 
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
-    severity: Severity
+    alarm_severity: int
     message: str
 
 
@@ -37,12 +35,15 @@ Dtype = Literal["string", "number", "array", "boolean", "integer"]
 class DescriptorOptional(TypedDict, total=False):
     external: str
     dims: Sequence[str]
+    # Like <u2
+    dtype_str: str
     precision: int
     units: str
 
 
 class Descriptor(DescriptorOptional):
     source: str
+    # Deprecated for dtype_str
     dtype: Dtype
     shape: Sequence[int]
 
@@ -62,7 +63,7 @@ class PartialEvent(PartialEventOptional):
 # https://github.com/bluesky/event-model/blob/master/event_model/schemas/resource.json
 # But exclude run_start added by RE
 class PartialResourceOptional(TypedDict, total=False):
-    path_semantics: Literal["posix", "windows"]
+    path_semantics: Literal["posix", "windows"]  # default to posix
 
 
 class PartialResource(TypedDict):
@@ -288,7 +289,7 @@ class Stoppable(Protocol):
         ...
 
 
-Callback = Callable[[Dict[str, Reading]], SyncOrAsync[None]]
+Callback = Callable[[Dict[str, Reading]], None]
 
 @runtime_checkable
 class Subscribable(Protocol):
