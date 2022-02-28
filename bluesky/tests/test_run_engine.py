@@ -356,7 +356,7 @@ def test_need_both_stage_and_unstage_for_stagable(RE):
         Msg("stage", unstage_only),
         Msg("unstage", stage_only),
         Msg("unstage", unstage_only)]
-        )
+       )
 
 
 def test_pause_resume_devices(RE):
