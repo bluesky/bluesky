@@ -339,6 +339,26 @@ def test_stage_and_unstage_are_optional_methods(RE):
     RE([Msg('stage', dummy), Msg('unstage', dummy)])
 
 
+def test_need_both_stage_and_unstage_for_stagable(RE):
+    class StageOnly(object):
+
+        def stage(self):
+            raise Exception
+
+    class UnstageOnly(object):
+
+        def unstage(self):
+            raise Exception
+
+    stage_only = StageOnly()
+    unstage_only = UnstageOnly()
+    RE([Msg("stage", stage_only),
+        Msg("stage", unstage_only),
+        Msg("unstage", stage_only),
+        Msg("unstage", unstage_only)]
+        )
+
+
 def test_pause_resume_devices(RE):
     paused = {}
     resumed = {}
