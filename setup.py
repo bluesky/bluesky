@@ -28,6 +28,16 @@ with open('requirements.txt') as f:
 with open('README.md', encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
+extras_require = {
+    "ipython": ["ipython"],
+    "qserver": ["pyzmq"],
+    "common": ["ophyd", "databroker"],
+    "tools": ["doct", "lmfit"],
+    "plotting": ["matplotlib"]
+}
+
+extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
+
 setuptools.setup(
     name='bluesky',
     version=versioneer.get_version(),
@@ -43,6 +53,7 @@ setuptools.setup(
     package_data={"bluesky": ["py.typed"]},
     python_requires='>={}'.format('.'.join(str(n) for n in min_version)),
     install_requires=requirements,
+    extras_require=extras_require,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3.6",
