@@ -487,9 +487,9 @@ class BestEffortCallback(QtAwareCallback):
                 tr
                 for tr in lp.ax.lines
                 if len(tr._x) != 2
-                   or len(tr._y) != 2
-                   or (len(tr._x) == 2
-                       and tr._x[0] != tr._x[1])
+                or len(tr._y) != 2
+                or (len(tr._x) == 2
+                    and tr._x[0] != tr._x[1])
             ]
             if len(lines) > num_lines:
                 keepers = lines[-num_lines:]
