@@ -30,10 +30,13 @@ with open('README.md', encoding='utf-8') as readme_file:
 
 extras_require = {
     "ipython": ["ipython"],
-    "qserver": ["pyzmq"],
+    "zmq": ["pyzmq"],
     "common": ["ophyd", "databroker"],
-    "tools": ["doct", "lmfit"],
-    "plotting": ["matplotlib"]
+    "tools": ["doct", "lmfit", "tifffile", "historydict"],
+    "streamz": ["streamz"],
+    "plotting": ["matplotlib"],
+    "cmd": ["colorama"],
+    "olog": ["jinja2"],
 }
 
 extras_require['all'] = sorted(set(sum(extras_require.values(), [])))
