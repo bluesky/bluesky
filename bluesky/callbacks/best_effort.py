@@ -150,43 +150,8 @@ class BestEffortCallback(QtAwareCallback):
             print("Persistent Unique Scan ID: '{0}'".format(
                 self._start_doc['uid']))
 
-    def descriptor(self, doc):
-        self._descriptors[doc['uid']] = doc
-        stream_name = doc.get('name', 'primary')  # fall back for old docs
-
-        if stream_name not in self._stream_names_seen:
-            self._stream_names_seen.add(stream_name)
-            if self._table_enabled:
-                print("New stream: {!r}".format(stream_name))
-
-        columns = hinted_fields(doc)
-
-        # ## This deals with old documents. ## #
-
-        if stream_name == 'primary' and self._cleanup_motor_heuristic:
-            # We stashed object names in self.dim_fields, which we now need to
-            # look up the actual fields for.
-            self._cleanup_motor_heuristic = False
-            fixed_dim_fields = []
-            for obj_name in self.dim_fields:
-                # Special case: 'time' can be a dim_field, but it's not an
-                # object name. Just add it directly to the list of fields.
-                if obj_name == 'time':
-                    fixed_dim_fields.append('time')
-                    continue
-                try:
-                    fields = doc.get('hints', {}).get(obj_name, {})['fields']
-                except KeyError:
-                    fields = doc['object_keys'][obj_name]
-                fixed_dim_fields.extend(fields)
-            self.dim_fields = fixed_dim_fields
-
-        # Ensure that no independent variables ('dimensions') are
-        # duplicated here.
-        columns = [c for c in columns if c not in self.all_dim_fields]
-
-        # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
-
+    def _set_up_plots(self, doc, stream_name, columns):
+        """Using the descriptor doc"""
         plot_data = True
 
         if not self._plots_enabled:
@@ -233,6 +198,8 @@ class BestEffortCallback(QtAwareCallback):
             ndims = len(dim_fields)
             if not 0 < ndims < 3:
                 # we need 1 or 2 dims to do anything, do not make empty figures
+                warn("Plots are only made for 1 or 2 dimensions. "
+                     "Adjust the metadata hints field for BestEffortCallback to produce plots.")
                 return
 
             if self._fig_factory:
@@ -315,9 +282,9 @@ class BestEffortCallback(QtAwareCallback):
                                            extents[0][1] + y_step / 2]
                         for I_key, ax in zip(columns, axes):
                             # MAGIC NUMBERS based on what tacaswell thinks looks OK
-                            data_aspect_ratio = np.abs(data_range[1]/data_range[0])
+                            data_aspect_ratio = np.abs(data_range[1] / data_range[0])
                             MAR = 2
-                            if (1/MAR < data_aspect_ratio < MAR):
+                            if (1 / MAR < data_aspect_ratio < MAR):
                                 aspect = 'equal'
                                 ax.set_aspect(aspect, adjustable='box')
                             else:
@@ -359,8 +326,44 @@ class BestEffortCallback(QtAwareCallback):
             except ValueError:
                 pass
 
-        # ## TABLE ## #
+    def descriptor(self, doc):
+        self._descriptors[doc['uid']] = doc
+        stream_name = doc.get('name', 'primary')  # fall back for old docs
 
+        if stream_name not in self._stream_names_seen:
+            self._stream_names_seen.add(stream_name)
+            if self._table_enabled:
+                print("New stream: {!r}".format(stream_name))
+
+        columns = hinted_fields(doc)
+
+        # ## This deals with old documents. ## #
+        if stream_name == 'primary' and self._cleanup_motor_heuristic:
+            # We stashed object names in self.dim_fields, which we now need to
+            # look up the actual fields for.
+            self._cleanup_motor_heuristic = False
+            fixed_dim_fields = []
+            for obj_name in self.dim_fields:
+                # Special case: 'time' can be a dim_field, but it's not an
+                # object name. Just add it directly to the list of fields.
+                if obj_name == 'time':
+                    fixed_dim_fields.append('time')
+                    continue
+                try:
+                    fields = doc.get('hints', {}).get(obj_name, {})['fields']
+                except KeyError:
+                    fields = doc['object_keys'][obj_name]
+                fixed_dim_fields.extend(fields)
+            self.dim_fields = fixed_dim_fields
+
+        # Ensure that no independent variables ('dimensions') are
+        # duplicated here.
+        columns = [c for c in columns if c not in self.all_dim_fields]
+
+        # ## DECIDE WHICH KIND OF PLOT CAN BE USED ## #
+        self._set_up_plots(doc, stream_name, columns)
+
+        # ## TABLE ## #
         if stream_name == self.dim_stream:
             if self._table_enabled:
                 # plot everything, independent or dependent variables
@@ -484,9 +487,9 @@ class BestEffortCallback(QtAwareCallback):
                 tr
                 for tr in lp.ax.lines
                 if len(tr._x) != 2
-                or len(tr._y) != 2
-                or (len(tr._x) == 2
-                    and tr._x[0] != tr._x[1])
+                   or len(tr._y) != 2
+                   or (len(tr._x) == 2
+                       and tr._x[0] != tr._x[1])
             ]
             if len(lines) > num_lines:
                 keepers = lines[-num_lines:]
