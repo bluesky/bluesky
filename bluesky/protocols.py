@@ -41,7 +41,6 @@ class Descriptor(DescriptorOptional):
     shape: Sequence[int]
 
 
-
 # https://github.com/bluesky/event-model/blob/master/event_model/schemas/event.json
 # But exclude descriptor, seq_num, uid added by RE
 class PartialEventOptional(TypedDict, total=False):
@@ -52,6 +51,7 @@ class PartialEvent(PartialEventOptional):
     data: Dict[str, Any]
     timestamps: Dict[str, float]
     time: float
+
 
 # https://github.com/bluesky/event-model/blob/master/event_model/schemas/resource.json
 # But exclude run_start added by RE
@@ -72,6 +72,7 @@ class Datum(TypedDict):
     resource: str
     datum_id: str
     datum_kwargs: Dict[str, Any]
+
 
 Asset = Union[Tuple[Literal["resource"], PartialResource], Tuple[Literal["datum"], Datum]]
 
@@ -232,6 +233,7 @@ class Flyable(Named, Protocol):
         """
         ...
 
+
 @runtime_checkable
 class Stageable(Protocol):
     @property
@@ -290,6 +292,7 @@ class Stoppable(Protocol):
 
 Callback = Callable[[Dict[str, Reading]], None]
 
+
 @runtime_checkable
 class Subscribable(Named, Protocol):
     def subscribe(self, function: Callback) -> None:
@@ -305,6 +308,7 @@ class Subscribable(Named, Protocol):
     def clear_sub(self, function: Callback) -> None:
         """Remove a subscription."""
         ...
+
 
 @runtime_checkable
 class Checkable(Protocol):
@@ -341,6 +345,7 @@ class Hinted(Named, Protocol):
         with minimal guidance from the user. See :ref:`hints`.
         """
         ...
+
 
 def check_supports(obj, protocol: Type[T]) -> T:
     assert isinstance(obj, protocol), \

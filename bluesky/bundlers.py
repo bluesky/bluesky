@@ -19,20 +19,24 @@ from .utils import (
 
 ObjDict = Dict[Any, Dict[str, T]]
 
+
 async def maybe_await(ret: SyncOrAsync[T]) -> T:
     if inspect.isawaitable(ret):
         return await ret
     else:
         return ret
 
+
 def maybe_update_hints(hints: Dict[str, Hints], obj):
     if isinstance(obj, Hinted):
         hints[obj.name] = obj.hints
+
 
 def maybe_collect_asset_docs(obj, *args, **kwargs) -> Iterator[Asset]:
     # TODO: deprecation warning about *args and **kwargs?
     if isinstance(obj, DataWriting):
         yield from obj.collect_asset_docs(*args, **kwargs)
+
 
 class RunBundler:
     def __init__(self, md, record_interruptions, emit, emit_sync, log):
