@@ -14,6 +14,7 @@ import weakref
 from dataclasses import dataclass
 import typing
 from .bundlers import RunBundler
+from . import protocols as bs_protocols
 
 import concurrent
 
@@ -2316,7 +2317,7 @@ class RunEngine:
         """
         _, obj, args, kwargs, _ = msg
         # If an object has no 'stage' method, assume there is nothing to do.
-        if not hasattr(obj, 'stage'):
+        if not isinstance(obj, bs_protocols.Stageable):
             return []
         result = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
@@ -2332,7 +2333,7 @@ class RunEngine:
         """
         _, obj, args, kwargs, _ = msg
         # If an object has no 'unstage' method, assume there is nothing to do.
-        if not hasattr(obj, 'unstage'):
+        if not isinstance(obj, bs_protocols.Stageable):
             return []
         result = obj.unstage()
         # use `discard()` to ignore objects that are not in the staged set.
