@@ -1681,6 +1681,7 @@ def _rearrange_into_parallel_dicts(readings):
     return data, timestamps
 
 
+# TODO: this doesn't match the Movable protocol, should it?
 def is_movable(obj):
     """Check if object satisfies bluesky 'movable' interface.
 

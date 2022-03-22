@@ -1,5 +1,6 @@
 from warnings import warn
 from bluesky.preprocessors import print_summary_wrapper
+from .protocols import Checkable
 
 
 def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
@@ -87,10 +88,11 @@ def check_limits(plan):
     """
     ignore = []
     for msg in plan:
-        if msg.command == 'set' and msg.obj not in ignore:
-            if hasattr(msg.obj, "check_value"):
-                msg.obj.check_value(msg.args[0])
+        obj = msg.obj
+        if msg.command == 'set' and obj not in ignore:
+            if isinstance(obj, Checkable):
+                obj.check_value(msg.args[0])
             else:
-                warn(f"{msg.obj.name} has no check_value() method"
+                warn(f"{obj.name} has no check_value() method"
                      f" to check if {msg.args[0]} is within its limits.")
-                ignore.append(msg.obj)
+                ignore.append(obj)

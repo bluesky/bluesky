@@ -3,22 +3,15 @@ try:
 except ImportError:
     from typing import Literal, Protocol, TypedDict, runtime_checkable
 
-from typing import Any, Awaitable, Callable, Dict, Generator, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Awaitable, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Type, TypeVar, Union
 
-# These are some alarm severities as used by CA for example
-#: The alarm state is unknown, for instance because the channel is disconnected
-UNDEFINED = -1
-#: Value is known, valid, nothing is wrong
-VALID = 0
-#: Value is known, valid, but is in the range generating a warning
-WARNING = 1
-#: Value is known, valid, but is in the range generating an alarm condition
-ALARM = 2
-#: Value is known, but not valid, e.g. a RW before its first put
-INVALID = 3
 
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
+    #: -ve: alarm unknown, e.g. device disconnected
+    #: 0: ok, no alarm
+    #: +ve: there is an alarm
+    #: The exact numbers are transport specific
     alarm_severity: int
     message: str
 
@@ -111,22 +104,21 @@ class Status(Protocol):
 class Named(Protocol):
     @property
     def name(self) -> str:
-        ...
+        """Used to populate object_keys in the Event Descriptor
 
-    @property
-    def parent(self) -> Optional[Any]:
-        """``None``, or a reference to a parent device."""
+        https://blueskyproject.io/event-model/event-descriptors.html#object-keys"""
         ...
 
 
 @runtime_checkable
 class DataWriting(Protocol):
-    def collect_asset_docs(self) -> Generator[Asset, None, None]:
+    def collect_asset_docs(self) -> Iterator[Asset]:
         """Create the datum and resource documents describing data in external source."""
 
 
 @runtime_checkable
 class Configurable(Protocol):
+    # TODO: add configure() and validate()
     def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:
         """Same API as ``read`` but for slow-changing fields related to configuration.
 
@@ -146,15 +138,15 @@ class Configurable(Protocol):
 
 
 @runtime_checkable
-class Readable(Named, Protocol):
-    def trigger(self) -> Optional[Status]:
+class Triggerable(Protocol):
+    def trigger(self) -> Status:
         """Return a ``Status`` that is marked done when the device is done triggering.
-
-        If the device does not need to be triggered, simply return a ``Status``
-        that is marked done immediately.
         """
         ...
 
+
+@runtime_checkable
+class Readable(Named, Protocol):
     def read(self) -> SyncOrAsync[Dict[str, Reading]]:
         """Return an OrderedDict mapping field name(s) to values and timestamps.
 
@@ -224,7 +216,7 @@ class Flyable(Named, Protocol):
         """Return a ``Status`` and mark it done when acquisition has completed."""
         ...
 
-    def collect(self) -> Generator[PartialEvent, None, None]:
+    def collect(self) -> Iterator[PartialEvent]:
         """Yield dictionaries that are partial Event documents.
 
         They should contain the keys 'time', 'data', and 'timestamps'.
@@ -232,7 +224,7 @@ class Flyable(Named, Protocol):
         """
         ...
 
-    def describe_collect(self) -> Dict[str, Dict[str, Descriptor]]:
+    def describe_collect(self) -> SyncOrAsync[Dict[str, Dict[str, Descriptor]]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
         Since a flyer can potentially return more than one event stream, this is a dict
@@ -240,9 +232,16 @@ class Flyable(Named, Protocol):
         """
         ...
 
-
 @runtime_checkable
 class Stageable(Protocol):
+    @property
+    def parent(self) -> Optional[Any]:
+        """``None``, or a reference to a parent device.
+
+        Used by the RE to stop duplicate stages.
+        """
+        ...
+
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     def stage(self) -> List[Any]:
@@ -266,18 +265,18 @@ class Stageable(Protocol):
 
 @runtime_checkable
 class Pausable(Protocol):
-    def pause(self) -> Optional[Status]:
+    def pause(self) -> SyncOrAsync[None]:
         """Perform device-specific work when the RunEngine pauses."""
         ...
 
-    def resume(self) -> Optional[Status]:
+    def resume(self) -> SyncOrAsync[None]:
         """Perform device-specific work when the RunEngine resumes after a pause."""
         ...
 
 
 @runtime_checkable
 class Stoppable(Protocol):
-    def stop(self, sucess=True) -> Optional[Status]:
+    def stop(self, success=True) -> SyncOrAsync[None]:
         """Safely stop a device that may or may not be in motion.
 
         The argument ``success`` is a boolean.
@@ -292,7 +291,7 @@ class Stoppable(Protocol):
 Callback = Callable[[Dict[str, Reading]], None]
 
 @runtime_checkable
-class Subscribable(Protocol):
+class Subscribable(Named, Protocol):
     def subscribe(self, function: Callback) -> None:
         """Subscribe to updates in value of a device.
 
@@ -309,7 +308,7 @@ class Subscribable(Protocol):
 
 @runtime_checkable
 class Checkable(Protocol):
-    def check_value(self, value: Any) -> SyncOrAsync[None]:
+    def check_value(self, value: Any) -> None:
         """Test for a valid setpoint without actually moving.
 
         This should accept the same arguments as ``set``. It should raise an
@@ -325,10 +324,16 @@ class Checkable(Protocol):
         ...
 
 
+class Hints(TypedDict, total=False):
+    fields: List[str]
+    dimensions: List[Tuple[List[str], Literal["primary"]]]
+    gridding: Literal["rectilinear", "rectilinear_nonsequential"]
+
+
 @runtime_checkable
-class Hinted(Protocol):
+class Hinted(Named, Protocol):
     @property
-    def hints(self) -> Dict:
+    def hints(self) -> Hints:
         """A dictionary of suggestions for best-effort visualization and processing.
 
         This does not affect what data is read or saved; it is only
@@ -336,3 +341,8 @@ class Hinted(Protocol):
         with minimal guidance from the user. See :ref:`hints`.
         """
         ...
+
+def check_supports(obj, protocol: Type[T]) -> T:
+    assert isinstance(obj, protocol), \
+        "%s does not implement all %s methods" % (obj, protocol.__name__)
+    return obj
