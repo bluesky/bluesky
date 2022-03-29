@@ -6,8 +6,8 @@ from typing import Any, Deque, Dict, Iterator, Tuple
 from event_model import DocumentNames
 from .log import doc_logger
 from .protocols import (
-    T, Asset, Callback, Configurable, DataWriting, Descriptor, Flyable, Hinted,
-    Hints, Named, Readable, Reading, Subscribable, SyncOrAsync, check_supports
+    T, Asset, Callback, Configurable, WritesExternalAssets, Descriptor, Flyable, HasHints,
+    Hints, HasName, Readable, Reading, Subscribable, SyncOrAsync, check_supports
 )
 from .utils import (
     new_uid,
@@ -28,13 +28,13 @@ async def maybe_await(ret: SyncOrAsync[T]) -> T:
 
 
 def maybe_update_hints(hints: Dict[str, Hints], obj):
-    if isinstance(obj, Hinted):
+    if isinstance(obj, HasHints):
         hints[obj.name] = obj.hints
 
 
 def maybe_collect_asset_docs(obj, *args, **kwargs) -> Iterator[Asset]:
     # TODO: deprecation warning about *args and **kwargs?
-    if isinstance(obj, DataWriting):
+    if isinstance(obj, WritesExternalAssets):
         yield from obj.collect_asset_docs(*args, **kwargs)
 
 
@@ -44,7 +44,7 @@ class RunBundler:
         self.bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
         self._run_start_uid = None  # The (future) runstart uid
-        self._objs_read: Deque[Named] = deque()  # objects read in one Event
+        self._objs_read: Deque[HasName] = deque()  # objects read in one Event
         self._read_cache: Deque[Dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
         self._describe_cache: ObjDict[Descriptor] = dict()  # cache of all obj.describe() output
@@ -455,7 +455,7 @@ class RunBundler:
                 dks = self._describe_cache[obj]
                 obj_name = obj.name
                 # dks is an OrderedDict. Record that order as a list.
-                object_keys[obj.name] = list(dks)
+                object_keys[obj_name] = list(dks)
                 for field, dk in dks.items():
                     dk["object_name"] = obj_name
                 data_keys.update(dks)
@@ -736,6 +736,7 @@ class RunBundler:
 
             event_uid = new_uid()
 
+            # TODO: what is this reordering code here for and what does it do?
             reading = ev["data"]
             for key in ev["data"]:
                 reading[key] = reading[key]

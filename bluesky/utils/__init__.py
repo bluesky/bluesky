@@ -7,7 +7,7 @@ import signal
 import operator
 import uuid
 from functools import reduce
-from typing import Any, Optional, Callable
+from typing import Any, List, Optional, Callable
 from weakref import ref, WeakKeyDictionary
 import types
 import inspect
@@ -28,6 +28,8 @@ import warnings
 import msgpack
 import msgpack_numpy
 import zict
+
+from bluesky.protocols import HasParent, HasHints, check_supports
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -1389,7 +1391,7 @@ def merge_axis(objs):
         Mapping of interdependent axis passed in.
     '''
     def get_parent(o):
-        return getattr(o, 'parent')
+        return check_supports(o, HasParent).parent
 
     independent_objs = set()
     maybe_coupled = set()
@@ -1707,6 +1709,7 @@ def is_movable(obj):
     return all(hasattr(obj, attr) for attr in EXPECTED_ATTRS)
 
 
+# TODO: shall we delete this now?
 class Movable(metaclass=abc.ABCMeta):
     """
     Abstract base class for objects that satisfy the bluesky 'movable' interface.
@@ -1740,3 +1743,10 @@ class Movable(metaclass=abc.ABCMeta):
             'stop',
         )
         return all(hasattr(C, attr) for attr in EXPECTED_ATTRS)
+
+
+def get_hinted_fields(obj) -> List[str]:
+    if isinstance(obj, HasHints):
+        return obj.hints.get("fields", [])
+    else:
+        return []

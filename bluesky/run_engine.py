@@ -933,8 +933,9 @@ class RunEngine:
         self._response_stack.append(None)
         # Notify Devices of the resume in case they want to clean up.
         for obj in self._objs_seen:
-            if hasattr(obj, 'resume'):
-                obj.resume()
+            if isinstance(obj, Pausable):
+                fut = asyncio.run_coroutine_threadsafe(maybe_await(obj.resume()), self._loop)
+                fut.result()
         plan_return = self._resume_task()
         if self._interrupted:
             raise RunEngineInterrupted(self.pause_msg) from None
@@ -1431,9 +1432,9 @@ class RunEngine:
                     # Notify Devices of the pause in case they want to
                     # clean up.
                     for obj in self._objs_seen:
-                        if hasattr(obj, 'pause'):
+                        if isinstance(obj, Pausable):
                             try:
-                                obj.pause()
+                                await maybe_await(obj.pause())
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
                     self._state = 'paused'

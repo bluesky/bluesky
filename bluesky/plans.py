@@ -16,7 +16,7 @@ except ImportError:
 from . import plan_patterns
 
 from . import utils
-from .utils import Msg
+from .utils import Msg, get_hinted_fields
 
 from . import preprocessors as bpp
 from . import plan_stubs as bps
@@ -158,7 +158,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
 
     x_fields = []
     for motor in motors:
-        x_fields.extend(getattr(motor, 'hints', {}).get('fields', []))
+        x_fields.extend(get_hinted_fields(motor))
 
     default_dimensions = [(x_fields, 'primary')]
 
@@ -1087,7 +1087,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
     # call x_fields because these are meant to be the x (independent) axis
     x_fields = []
     for motor in motors:
-        x_fields.extend(getattr(motor, 'hints', {}).get('fields', []))
+        x_fields.extend(get_hinted_fields(motor))
 
     default_dimensions = [(x_fields, 'primary')]
 

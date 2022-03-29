@@ -102,7 +102,7 @@ class Status(Protocol):
 
 
 @runtime_checkable
-class Named(Protocol):
+class HasName(Protocol):
     @property
     def name(self) -> str:
         """Used to populate object_keys in the Event Descriptor
@@ -112,14 +112,24 @@ class Named(Protocol):
 
 
 @runtime_checkable
-class DataWriting(Protocol):
+class HasParent(Protocol):
+    @property
+    def parent(self) -> Optional[Any]:
+        """``None``, or a reference to a parent device.
+
+        Used by the RE to stop duplicate stages.
+        """
+        ...
+
+
+@runtime_checkable
+class WritesExternalAssets(Protocol):
     def collect_asset_docs(self) -> Iterator[Asset]:
         """Create the datum and resource documents describing data in external source."""
 
 
 @runtime_checkable
 class Configurable(Protocol):
-    # TODO: add configure() and validate()
     def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:
         """Same API as ``read`` but for slow-changing fields related to configuration.
 
@@ -147,7 +157,7 @@ class Triggerable(Protocol):
 
 
 @runtime_checkable
-class Readable(Named, Protocol):
+class Readable(HasName, Protocol):
     def read(self) -> SyncOrAsync[Dict[str, Reading]]:
         """Return an OrderedDict mapping field name(s) to values and timestamps.
 
@@ -199,13 +209,13 @@ class Readable(Named, Protocol):
 
 @runtime_checkable
 class Movable(Protocol):
-    def set(self, value) -> Status:
+    def set(self, value: Any) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
 
 
 @runtime_checkable
-class Flyable(Named, Protocol):
+class Flyable(HasName, Protocol):
     def kickoff(self) -> Status:
         """Begin acculumating data.
 
@@ -217,6 +227,7 @@ class Flyable(Named, Protocol):
         """Return a ``Status`` and mark it done when acquisition has completed."""
         ...
 
+    # TODO: Add partial event pages
     def collect(self) -> Iterator[PartialEvent]:
         """Yield dictionaries that are partial Event documents.
 
@@ -236,14 +247,6 @@ class Flyable(Named, Protocol):
 
 @runtime_checkable
 class Stageable(Protocol):
-    @property
-    def parent(self) -> Optional[Any]:
-        """``None``, or a reference to a parent device.
-
-        Used by the RE to stop duplicate stages.
-        """
-        ...
-
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     def stage(self) -> List[Any]:
@@ -294,7 +297,7 @@ Callback = Callable[[Dict[str, Reading]], None]
 
 
 @runtime_checkable
-class Subscribable(Named, Protocol):
+class Subscribable(HasName, Protocol):
     def subscribe(self, function: Callback) -> None:
         """Subscribe to updates in value of a device.
 
@@ -335,7 +338,7 @@ class Hints(TypedDict, total=False):
 
 
 @runtime_checkable
-class Hinted(Named, Protocol):
+class HasHints(HasName, Protocol):
     @property
     def hints(self) -> Hints:
         """A dictionary of suggestions for best-effort visualization and processing.
