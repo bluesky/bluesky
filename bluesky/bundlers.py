@@ -2,11 +2,11 @@ from collections import deque
 import inspect
 from itertools import count, tee
 import time as ttime
-from typing import Any, Deque, Dict, Iterator, Tuple
+from typing import Any, Deque, Dict, FrozenSet, Iterator, List, Tuple
 from event_model import DocumentNames
 from .log import doc_logger
 from .protocols import (
-    T, Asset, Callback, Configurable, WritesExternalAssets, Descriptor, Flyable, HasHints,
+    T, Asset, Callback, Configurable, PartialEvent, WritesExternalAssets, Descriptor, Flyable, HasHints,
     Hints, HasName, Readable, Reading, Subscribable, SyncOrAsync, check_supports
 )
 from .utils import (
@@ -49,9 +49,11 @@ class RunBundler:
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
         self._describe_cache: ObjDict[Descriptor] = dict()  # cache of all obj.describe() output
         self._config_desc_cache: ObjDict[Descriptor] = dict()  # " obj.describe_configuration()
-        self._config_values_cache = dict()  # " obj.read_configuration() values
-        self._config_ts_cache = dict()  # " obj.read_configuration() timestamps
+        self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values
+        self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps
         self._descriptors = dict()  # cache of {name: (objs_frozen_set, doc)}
+        # cache of {obj: {objs_frozen_set: (name, uid)}}
+        self._local_descriptors: Dict[Any, Dict[FrozenSet[str], Tuple[str, str]]] = dict()
         self._sequence_counters = dict()  # a seq_num counter per stream
         self._teed_sequence_counters = dict()  # for if we redo data-points
         self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # cache of {obj: (cb, kwargs)}
@@ -635,40 +637,15 @@ class RunBundler:
         """
         ...
 
-    async def collect(self, msg):
-        """
-        Collect data cached by a flyer and emit documents.
-
-        Expect message object is
-
-            Msg('collect', collect_obj)
-            Msg('collect', flyer_object, stream=True, return_payload=False)
-        """
-        collect_obj = check_supports(msg.obj, Flyable)
-
-        if not self.run_is_open:
-            # sanity check -- 'kickoff' should catch this and make this
-            # code path impossible
-            raise IllegalMessageSequence(
-                "A 'collect' message was sent but no run is open."
-            )
-        self._uncollected.discard(collect_obj)
-
-        # Resource and Datum documents
-        for name, doc in maybe_collect_asset_docs(collect_obj):
-            # Add a 'run_start' field to the resource document on its way out.
-            if name == "resource":
-                doc["run_start"] = self._run_start_uid
-            await self.emit(DocumentNames(name), doc)
-
-        collect_obj_config = {}
-        bulk_data = {}
-        local_descriptors = {}  # hashed on objs_read, not (name, objs_read)
+    async def _cache_describe_collect(self, collect_obj: Flyable):
+        "Read the object's describe_collect and cache it."
+        describe_collect = await maybe_await(collect_obj.describe_collect())
+        collect_obj_config: Dict[str, Dict[str, Any]] = {}
+        local_descriptors: Dict[FrozenSet[str], Tuple[str, str]] = {}
         # collect_obj.describe_collect() returns a dictionary like this:
         #     {name_for_desc1: data_keys_for_desc1,
         #      name_for_desc2: data_keys_for_desc2, ...}
-        desc = await maybe_await(collect_obj.describe_collect())
-        for stream_name, stream_data_keys in desc.items():
+        for stream_name, stream_data_keys in describe_collect.items():
             if stream_name not in self._descriptors:
                 # We do not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
@@ -714,8 +691,39 @@ class RunBundler:
 
             descriptor_uid = doc["uid"]
             local_descriptors[frozenset(stream_data_keys)] = (stream_name, descriptor_uid)
+        self._local_descriptors[collect_obj] = local_descriptors
 
-            bulk_data[descriptor_uid] = []
+    async def collect(self, msg):
+        """
+        Collect data cached by a flyer and emit documents.
+
+        Expect message object is
+
+            Msg('collect', collect_obj)
+            Msg('collect', flyer_object, stream=True, return_payload=False)
+        """
+        collect_obj = check_supports(msg.obj, Flyable)
+
+        if not self.run_is_open:
+            # sanity check -- 'kickoff' should catch this and make this
+            # code path impossible
+            raise IllegalMessageSequence(
+                "A 'collect' message was sent but no run is open."
+            )
+        self._uncollected.discard(collect_obj)
+
+        # Resource and Datum documents
+        for name, doc in maybe_collect_asset_docs(collect_obj):
+            # Add a 'run_start' field to the resource document on its way out.
+            if name == "resource":
+                doc["run_start"] = self._run_start_uid
+            await self.emit(DocumentNames(name), doc)
+
+        # Populate descriptors and local descriptors from describe_collect
+        # if not already called
+        if collect_obj not in self._local_descriptors:
+            await self._cache_describe_collect(collect_obj)
+        local_descriptors = self._local_descriptors[collect_obj]
 
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'bulk_events' subscription once.
@@ -725,6 +733,7 @@ class RunBundler:
         # accumulate, and return None.
         return_payload = msg.kwargs.get('return_payload', True)
         payload = []
+        bulk_data: Dict[str, List[PartialEvent]] = {}
 
         for ev in collect_obj.collect():
             if return_payload:
@@ -733,14 +742,7 @@ class RunBundler:
             objs_read = frozenset(ev["data"])
             stream_name, descriptor_uid = local_descriptors[objs_read]
             seq_num = next(self._sequence_counters[stream_name])
-
             event_uid = new_uid()
-
-            # TODO: what is this reordering code here for and what does it do?
-            reading = ev["data"]
-            for key in ev["data"]:
-                reading[key] = reading[key]
-            ev["data"] = reading
             ev["descriptor"] = descriptor_uid
             ev["seq_num"] = seq_num
             ev["uid"] = event_uid
@@ -754,7 +756,7 @@ class RunBundler:
                                         'data_keys': ev['data'].keys()})
                 await self.emit(DocumentNames.event, ev)
             else:
-                bulk_data[descriptor_uid].append(ev)
+                bulk_data.setdefault(descriptor_uid, []).append(ev)
 
         if not stream:
             await self.emit(DocumentNames.bulk_events, bulk_data)
