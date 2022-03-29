@@ -139,7 +139,7 @@ the required method.
 .. autoclass:: bluesky.protocols.Checkable
     :members:
 
-.. autoclass:: bluesky.protocols.Hinted
+.. autoclass:: bluesky.protocols.HasHints
     :members:
 
 

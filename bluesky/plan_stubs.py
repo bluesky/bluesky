@@ -52,7 +52,7 @@ def save():
     Close a bundle of readings and emit a completed Event document.
 
     Yields
-    -------
+    ------
     msg : Msg
         Msg('save')
 
