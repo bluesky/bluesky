@@ -1561,7 +1561,6 @@ class DefaultDuringTask(DuringTask):
                         name if QT_API == 'PyQt6' else name.rpartition(".")[0]
                     )(sys.modules[QtCore.__package__])
 
-
                 app = QtWidgets.QApplication.instance()
                 if app is None:
                     _qapp = app = QtWidgets.QApplication([b'bluesky'])
