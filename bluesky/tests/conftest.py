@@ -58,9 +58,12 @@ class NumpySeqHandler:
 def db(request):
     """Return a data broker
     """
-    from databroker import temp
-    db = temp()
-    return db
+    try:
+        from databroker import temp
+        db = temp()
+        return db
+    except ImportError:
+        pytest.xfail("Databroker v2 still missing temp")
 
 
 @pytest.fixture(autouse=True)
