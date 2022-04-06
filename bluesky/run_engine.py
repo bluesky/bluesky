@@ -445,7 +445,6 @@ class RunEngine:
         self._reason = ''  # reason for abort
         self._task = None  # asyncio.Task associated with call to self._run
         self._task_fut = None  # future proxy to the task above
-        self._status_tasks = deque()  # from self._status_object_completed
         self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the plan instance from __call__
         self._command_registry = {
@@ -654,7 +653,6 @@ class RunEngine:
         self._reason = ''
         self._task = None
         self._task_fut = None
-        self._status_tasks.clear()
         self._pardon_failures = asyncio.Event(**self._loop_for_kwargs)
         self._plan = None
         self._interrupted = False
@@ -1257,8 +1255,7 @@ class RunEngine:
                 self._exception = RequestAbort()
         else:
             self._task.cancel()
-        for task in self._status_tasks:
-            task.cancel()
+
         if self._call_returns_result:
             plan_return = self.NO_PLAN_RETURN
             run_engine_result = self._create_result(plan_return)
@@ -1416,8 +1413,7 @@ class RunEngine:
                     if not self.resumable:
                         self._run_permit.set()
                         stashed_exception = FailedPause()
-                        for task in self._status_tasks:
-                            task.cancel()
+
                         self._state = 'aborting'
                         continue
                 # currently only using 'suspending' to get us into the
@@ -1976,10 +1972,9 @@ class RunEngine:
                 obj,
                 ret.success,
             )
-            task = self._loop.call_soon_threadsafe(
+            self._loop.call_soon_threadsafe(
                 self._status_object_completed, ret, p_event, pardon_failures
             )
-            self._status_tasks.append(task)
 
         try:
             ret.add_callback(done_callback)
@@ -2030,10 +2025,9 @@ class RunEngine:
                 obj,
                 ret.success,
             )
-            task = self._loop.call_soon_threadsafe(
+            self._loop.call_soon_threadsafe(
                 self._status_object_completed, ret, p_event, pardon_failures
             )
-            self._status_tasks.append(task)
 
         try:
             ret.add_callback(done_callback)
@@ -2098,9 +2092,8 @@ class RunEngine:
         def done_callback(status=None):
             self.log.debug("The object %r reports set is done "
                            "with status %r", obj, ret.success)
-            task = self._loop.call_soon_threadsafe(
+            self._loop.call_soon_threadsafe(
                 self._status_object_completed, ret, p_event, pardon_failures)
-            self._status_tasks.append(task)
 
         try:
             ret.add_callback(done_callback)
@@ -2131,9 +2124,8 @@ class RunEngine:
         def done_callback(status=None):
             self.log.debug("The object %r reports trigger is "
                            "done with status %r.", obj, ret.success)
-            task = self._loop.call_soon_threadsafe(
+            self._loop.call_soon_threadsafe(
                 self._status_object_completed, ret, p_event, pardon_failures)
-            self._status_tasks.append(task)
 
         try:
             ret.add_callback(done_callback)
@@ -2180,7 +2172,7 @@ class RunEngine:
 
     def _status_object_completed(self, ret, p_event, pardon_failures):
         """
-        Created as a task on the loop when a status object is finished
+        Task to run when a status object is finished.
 
         Parameters
         ----------
@@ -2198,7 +2190,8 @@ class RunEngine:
         p_event.set()
 
     async def _sleep(self, msg):
-        """Sleep the event loop
+        """
+        Sleep the event loop.
 
         Expected message object is:
 
