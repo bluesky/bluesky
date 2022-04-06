@@ -67,6 +67,7 @@ def db(request):
     except ValueError:
         pytest.skip("Intake is failing for unknown reasons.")
 
+
 @pytest.fixture(autouse=True)
 def cleanup_any_figures(request):
     import matplotlib.pyplot as plt
