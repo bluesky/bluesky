@@ -3,6 +3,22 @@
 =================
 
 
+v1.8.3 (2022-04-08)
+===================
+
+Enhancements
+------------
+
+* Don't call ``stage`` unless ``Stageable``.
+* Add dependency extras.
+* Many-motor ``BestEffortCallback``.
+
+Documentation
+-------------
+
+* Document pycertifspec as hardware interface.
+
+
 v1.8.2 (2021-12-20)
 ===================
 
