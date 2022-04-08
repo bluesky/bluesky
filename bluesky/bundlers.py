@@ -270,7 +270,10 @@ class RunBundler:
                                 'data_keys': data_keys.keys()})
         seq_num_counter = count(1)
 
-        def emit_event(*args, **kwargs):
+        def emit_event(*args, timestamp, **kwargs):
+            if ttime.time() - timestamp > .1:
+                print("STALE CALLBACK")
+                return
             # Ignore the inputs. Use this call as a signal to call read on the
             # object, a crude way to be sure we get all the info we need.
             data, timestamps = _rearrange_into_parallel_dicts(obj.read())
