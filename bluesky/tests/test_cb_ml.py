@@ -44,10 +44,10 @@ def test_bad_agent():
 
     with pytest.warns(UserWarning):
         # Wrong names for function calls
-        cb = AgentCallback(BadAgent(), independent_key="", dependent_key="")
+        AgentCallback(BadAgent(), independent_key="", dependent_key="")
     with pytest.warns(UserWarning):
         # Not callable attributes
-        cb = AgentCallback(WorseAgent(), independent_key="", dependent_key="")
+        AgentCallback(WorseAgent(), independent_key="", dependent_key="")
 
 
 def test_simple(RE, hw):
