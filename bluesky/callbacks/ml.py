@@ -9,6 +9,40 @@ logger = logging.getLogger(__name__)
 
 @make_class_safe(logger=logger)
 class AgentCallback(CallbackBase):
+    """
+    Callback for telling AI/ML agents about data, and generating reports.
+    This callback does not support fully adaptive planning;
+    however, can be used for streaming analysis, reports, or alerts.
+
+    Parameters
+    ----------
+    agents :
+        Each agent is required to have the methods ``tell`` and ``ask``
+    independent_key : str
+        Key for the independent variable (x) to send the agent. This will appear in doc["data"][independent_key].
+    dependent_key : str
+        Key for the dependent variable (y) to send the agent. This will appear in doc["data"][dependent_key].
+    report_on_event : bool
+        Call ``agent.report()`` on each event in the data stream. Default to True.
+    report_on_stop : bool
+        Call ``agent.report()`` at the stop document in the data stream. Default to True.
+    stream_name : str
+        Stream name contained in the descriptor document. Default to "primary".
+
+    Examples
+    --------
+    >>> class Agent:
+    >>>     self.positions = []
+    >>>     self.intensities = []
+    >>>     def tell(self, position, intensity):
+    >>>         self.positions.append(position)
+    >>>         self.intensities.append(intensity)
+    >>>     def report(self):
+    >>>         if self.intensities[-1] < 0: print(f"WARNING, negative intensity at {self.positions[-1]}.")
+    >>> agent = Agent()
+    >>> RE.subscribe(AgentCallback(agent, independent_key="position", dependent_key="intensity"))
+    """
+
     def __init__(
         self,
         *agents,
@@ -18,35 +52,6 @@ class AgentCallback(CallbackBase):
         report_on_stop: bool = True,
         stream_name: str = "primary",
     ):
-        """
-        Callback for telling AI/ML agents about data, and generating reports.
-        This callback does not support fully adaptive planning;
-        however, can be used for streaming analysis, reports, or alerts.
-
-
-        Parameters
-        ----------
-        agents :
-        independent_key : str
-        dependent_key : str
-        report_on_event : bool
-        report_on_stop : bool
-        stream_name : str
-
-        Examples
-        --------
-        >>> class Agent:
-        >>>     self.positions = []
-        >>>     self.intensities = []
-        >>>     def tell(self, position, intensity):
-        >>>         self.positions.append(position)
-        >>>         self.intensities.append(intensity)
-        >>>     def report(self):
-        >>>         if self.intensities[-1] < 0: print(f"WARNING, negative intensity at {self.positions[-1]}.")
-        >>> agent = Agent()
-        >>> RE.subscribe(AgentCallback(agent, independent_key="position", dependent_key="intensity"))
-        """
-
         super().__init__()
         self.agents = list()
         for agent in agents:

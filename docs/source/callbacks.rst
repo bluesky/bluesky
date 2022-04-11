@@ -1264,3 +1264,40 @@ LiveDispatcher API
 ++++++++++++++++++
 .. autoclass:: bluesky.callbacks.stream.LiveDispatcher
    :members:
+
+
+Callbacks for Machine Learning
+------------------------------
+It is often desirable to embed a machine learning model (agent) into the plan.
+Callbacks can be used for passive uses of machine learning, i.e. agents that do not actively change the plans.
+For active agents, see the ongoing developments at `bluesky-adaptive <https://blueskyproject.io/bluesky-adaptive/>`_.
+
+We make use of the ``tell``-``report``-``ask`` paradigm both here and in ``bluesky-adaptive``.
+
+- ``agent.tell(x, y)``: Tell the agent about some new data with the independent variable (x) and dependent variable (y).
+- ``agent.report()``: Generate a report using the agent internals. This can be something as simple as printing a
+  recent classification probability, or something more complex as a live plot that updates at each measurement with a
+  full dataset clustering.
+- ``agent.ask()``: Ask the agent what to measure next. **This is not used within callbacks.**
+
+
+The following will send the primary data stream two agents, which will treat the motor as an independent variable
+and the detector as a dependent variable. The agents will generate a report by default both on event and on stop;
+this frequency can be controlled through keyword arguments.
+
+.. code-block:: python
+
+    from bluesky.callbacks.ml import AgentCallback
+    cb = AgentCallback(clustering_agent, classification_agent,
+                       independent_key="motor", dependent_key="det")
+    RE.subscribe(cb)
+
+
+Where the functionality of the agent is embedded is entirely dependent on the use case. Given the examples above, a
+classification agent that relies on a loaded ML model would likely include a predict call every time it is given new
+data, retaining a cache of the independent variable, dependent variable, and classification probabilities.
+Whereas a clustering agent, would likely only want to train the model on the full cache when ``report`` is called.
+
+
+.. autoclass:: bluesky.callbacks.ml.AgentCallback
+
