@@ -7,7 +7,7 @@ import signal
 import operator
 import uuid
 from functools import reduce
-from typing import Any, List, Optional, Callable
+from typing import Any, Dict, Iterator, List, Optional, Callable
 from weakref import ref, WeakKeyDictionary
 import types
 import inspect
@@ -29,7 +29,10 @@ import msgpack
 import msgpack_numpy
 import zict
 
-from bluesky.protocols import HasParent, HasHints, check_supports
+from bluesky.protocols import (
+    T, Asset, HasParent, HasHints, Hints, SyncOrAsync, WritesExternalAssets,
+    check_supports
+)
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -1750,3 +1753,21 @@ def get_hinted_fields(obj) -> List[str]:
         return obj.hints.get("fields", [])
     else:
         return []
+
+
+def maybe_update_hints(hints: Dict[str, Hints], obj):
+    if isinstance(obj, HasHints):
+        hints[obj.name] = obj.hints
+
+
+def maybe_collect_asset_docs(obj, *args, **kwargs) -> Iterator[Asset]:
+    # TODO: deprecation warning about *args and **kwargs?
+    if isinstance(obj, WritesExternalAssets):
+        yield from obj.collect_asset_docs(*args, **kwargs)
+
+
+async def maybe_await(ret: SyncOrAsync[T]) -> T:
+    if inspect.isawaitable(ret):
+        return await ret
+    else:
+        return ret

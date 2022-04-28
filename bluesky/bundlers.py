@@ -2,12 +2,12 @@ from collections import deque
 import inspect
 from itertools import count, tee
 import time as ttime
-from typing import Any, Deque, Dict, FrozenSet, Iterator, List, Tuple
+from typing import Any, Deque, Dict, FrozenSet, List, Tuple
 from event_model import DocumentNames
 from .log import doc_logger
 from .protocols import (
-    T, Asset, Callback, Configurable, PartialEvent, WritesExternalAssets, Descriptor, Flyable, HasHints,
-    Hints, HasName, Readable, Reading, Subscribable, SyncOrAsync, check_supports
+    T, Callback, Configurable, PartialEvent, Descriptor, Flyable,
+    HasName, Readable, Reading, Subscribable, check_supports
 )
 from .utils import (
     new_uid,
@@ -15,27 +15,12 @@ from .utils import (
     _rearrange_into_parallel_dicts,
     short_uid,
     Msg,
+    maybe_await,
+    maybe_collect_asset_docs,
+    maybe_update_hints,
 )
 
 ObjDict = Dict[Any, Dict[str, T]]
-
-
-async def maybe_await(ret: SyncOrAsync[T]) -> T:
-    if inspect.isawaitable(ret):
-        return await ret
-    else:
-        return ret
-
-
-def maybe_update_hints(hints: Dict[str, Hints], obj):
-    if isinstance(obj, HasHints):
-        hints[obj.name] = obj.hints
-
-
-def maybe_collect_asset_docs(obj, *args, **kwargs) -> Iterator[Asset]:
-    # TODO: deprecation warning about *args and **kwargs?
-    if isinstance(obj, WritesExternalAssets):
-        yield from obj.collect_asset_docs(*args, **kwargs)
 
 
 class RunBundler:

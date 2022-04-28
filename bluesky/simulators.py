@@ -1,5 +1,7 @@
 from warnings import warn
+from bluesky.utils import maybe_await
 from bluesky.preprocessors import print_summary_wrapper
+from bluesky.run_engine import call_in_bluesky_event_loop, in_bluesky_event_loop
 from .protocols import Checkable
 
 
@@ -78,6 +80,13 @@ print_summary = summarize_plan  # back-compat
 
 
 def check_limits(plan):
+    """Run check_limits_async in the RE"""
+    if in_bluesky_event_loop():
+        raise RuntimeError("Can't call check_limits() from within RE, use await check_limits_async() instead")
+    call_in_bluesky_event_loop(check_limits_async(plan))
+
+
+async def check_limits_async(plan):
     """
     Check that a plan will not move devices outside of their limits.
 
@@ -91,7 +100,7 @@ def check_limits(plan):
         obj = msg.obj
         if msg.command == 'set' and obj not in ignore:
             if isinstance(obj, Checkable):
-                obj.check_value(msg.args[0])
+                await maybe_await(obj.check_value(msg.args[0]))
             else:
                 warn(f"{obj.name} has no check_value() method"
                      f" to check if {msg.args[0]} is within its limits.")

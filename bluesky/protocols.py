@@ -25,6 +25,7 @@ Dtype = Literal["string", "number", "array", "boolean", "integer"]
 
 
 # https://github.com/bluesky/event-model/blob/master/event_model/schemas/event_descriptor.json
+# Just the data_key definition
 class DescriptorOptional(TypedDict, total=False):
     external: str
     dims: Sequence[str]
@@ -315,7 +316,7 @@ class Subscribable(HasName, Protocol):
 
 @runtime_checkable
 class Checkable(Protocol):
-    def check_value(self, value: Any) -> None:
+    def check_value(self, value: Any) -> SyncOrAsync[None]:
         """Test for a valid setpoint without actually moving.
 
         This should accept the same arguments as ``set``. It should raise an

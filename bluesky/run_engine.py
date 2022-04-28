@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 import sys
 from warnings import warn
-from inspect import Parameter, Signature
+from inspect import Parameter, Signature, iscoroutine
 from itertools import count
 from collections import deque, defaultdict, ChainMap
 from enum import Enum
@@ -354,7 +354,8 @@ class RunEngine:
                  scan_id_source=default_scan_id_source,
                  during_task=None, call_returns_result=False):
         if loop is None:
-            loop = get_bluesky_event_loop()
+            loop = asyncio.new_event_loop()
+        set_bluesky_event_loop(loop)
         self._th = _ensure_event_loop_running(loop)
         self._state_lock = threading.RLock()
         self._loop = loop
@@ -2609,12 +2610,39 @@ _bluesky_event_loop = None
 
 
 def get_bluesky_event_loop():
-    global _bluesky_event_loop
-    if _bluesky_event_loop is None:
-        _bluesky_event_loop = asyncio.new_event_loop()
     return _bluesky_event_loop
 
 
 def set_bluesky_event_loop(loop):
     global _bluesky_event_loop
     _bluesky_event_loop = loop
+
+
+def in_bluesky_event_loop() -> bool:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # Ok, no running loop
+        return False
+    else:
+        # Check if running loop is bluesky event loop
+        return loop is _bluesky_event_loop
+
+
+T = typing.TypeVar("T")
+
+
+def call_in_bluesky_event_loop(coro: typing.Awaitable[T]) -> T:
+    if _bluesky_event_loop is None or not _bluesky_event_loop.is_running():
+        # Quell "coroutine never awaited" warnings
+        if iscoroutine(coro):
+            coro.close()
+        raise RuntimeError("Bluesky event loop not running")
+    fut = asyncio.run_coroutine_threadsafe(
+        coro,
+        loop=_bluesky_event_loop,
+    )
+    event = threading.Event()
+    fut.add_done_callback(lambda _: event.set())
+    event.wait()
+    return fut.result()
