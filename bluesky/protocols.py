@@ -352,6 +352,16 @@ class HasHints(HasName, Protocol):
 
 
 def check_supports(obj, protocol: Type[T]) -> T:
+    """Check that an object supports a protocol
+
+    This exists so that multiple protocol checks can be run in a mypy
+    compatible way, e.g.::
+
+        triggerable = check_supports(obj, Triggerable)
+        triggerable.trigger()
+        readable = check_supports(obj, Readable)
+        readable.read()
+    """
     assert isinstance(obj, protocol), \
         "%s does not implement all %s methods" % (obj, protocol.__name__)
     return obj
