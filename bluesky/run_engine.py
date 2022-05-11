@@ -464,7 +464,7 @@ class RunEngine:
             'clear_checkpoint': self._clear_checkpoint,
             'rewindable': self._rewindable,
             'pause': self._pause,
-            'resume': self._resume,
+            '_resume_from_suspender': self._resume,
             'collect': self._collect,
             'kickoff': self._kickoff,
             'complete': self._complete,
@@ -1182,7 +1182,7 @@ class RunEngine:
                 self._response_stack.append(None)
 
             # tell the devices they are ready to go again
-            self._plan_stack.append(single_gen(Msg('resume', None, )))
+            self._plan_stack.append(single_gen(Msg('_resume_from_suspender', None, )))
             self._response_stack.append(None)
 
             # add the wait on the future to the stack

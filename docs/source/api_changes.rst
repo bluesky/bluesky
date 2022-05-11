@@ -2,6 +2,11 @@
  Release History
 =================
 
+v1.9.0 (2022-XX-YY)
+===================
+
+* the `"resume"` message which can only be used internally has been renamed to
+  `"_resume_from_suspender"`.
 
 v1.8.3 (2022-04-08)
 ===================
