@@ -1458,19 +1458,24 @@ class RunEngine:
                     # the new response to be added
                     new_response = None
 
-                    # This 'await' must be here to ensure that
-                    # this coroutine breaks out of its current behavior
-                    # before trying to get the next message from the
-                    # top of the generator stack in case there has
-                    # been a pause requested.  Without this the next
-                    # message after the pause may be processed first
-                    # on resume (instead of the first message in
-                    # self._msg_cache).
+                    # This 'await' must be here to ensure that this coroutine
+                    # breaks out of its current behavior before trying to get
+                    # the next message from the top of the generator stack in
+                    # case there has been a pause requested.  Without this the
+                    # next message after the pause may be processed first on
+                    # resume (instead of the first message in self._msg_cache).
+                    # This await also gives the co-routine for requesting
+                    # suspends a chance to run.
 
-                    # This sleep has to be inside of this try block so
-                    # that any of the 'async' exceptions get thrown in the
-                    # correct place
-                    await asyncio.sleep(0, **self._loop_for_kwargs)
+                    # This sleep has to be inside of this try block so that any
+                    # of the 'async' exceptions get thrown in the correct
+                    # place.
+
+                    # If we are handling an exception, then burn through the
+                    # current plan stack before rather than allowing a pause or
+                    # suspension to try and finish firing.
+                    if stashed_exception is None:
+                        await asyncio.sleep(0, **self._loop_for_kwargs)
                     # always pop off a result, we are either sending it back in
                     # or throwing an exception in, in either case the left hand
                     # side of the yield in the plan will be moved past
@@ -1482,12 +1487,10 @@ class RunEngine:
                             stashed_exception = self._exception
                             self._exception = None
                     # The case where we have a stashed exception
-                    if (stashed_exception is not None or
-                            isinstance(resp, Exception)):
+                    if (stashed_exception is not None or isinstance(resp, Exception)):
                         # throw the exception at the current plan
                         try:
-                            msg = self._plan_stack[-1].throw(
-                                stashed_exception or resp)
+                            msg = self._plan_stack[-1].throw(stashed_exception or resp)
                         except Exception as e:
                             # The current plan did not handle it,
                             # maybe the next plan (if any) would like
@@ -1496,6 +1499,8 @@ class RunEngine:
                             # we have killed the current plan, do not give
                             # it a new response
                             resp = sentinel
+                            # If there is at least one plan left in the stack,
+                            # stash the new exception go back to top
                             if len(self._plan_stack):
                                 stashed_exception = e
                                 continue
