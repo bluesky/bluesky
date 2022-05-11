@@ -326,7 +326,7 @@ class RunEngine:
     _UNCACHEABLE_COMMANDS = ['pause', 'subscribe', 'unsubscribe', 'stage',
                              'unstage', 'monitor', 'unmonitor', 'open_run',
                              'close_run', 'install_suspender',
-                             'remove_suspender']
+                             'remove_suspender', '_start_suspender']
 
     @property
     def state(self):
@@ -465,6 +465,7 @@ class RunEngine:
             'rewindable': self._rewindable,
             'pause': self._pause,
             '_resume_from_suspender': self._resume,
+            '_start_suspender': self._start_suspender,
             'collect': self._collect,
             'kickoff': self._kickoff,
             'complete': self._complete,
@@ -1147,60 +1148,13 @@ class RunEngine:
                 self._state = 'aborting'
                 if not was_paused:
                     self._task.cancel()
-
             if justification is not None:
                 print(f"Justification for this suspension:\n{justification}")
-            for current_run in self._run_bundlers.values():
-                current_run.record_interruption(
-                    justification if justification is not None else "suspended"
-                )
-            # During suspend, all motors should be stopped. Call stop() on
-            # every object we ever set().
-            self._stop_movable_objects(success=True)
-            # Notify Devices of the pause in case they want to clean up.
-            for obj in self._objs_seen:
-                if hasattr(obj, 'pause'):
-                    try:
-                        obj.pause()
-                    except NoReplayAllowed:
-                        self._reset_checkpoint_state_meth()
 
-            # rewind to the last checkpoint
-            new_plan = self._rewind()
-            # queue up the cached messages
-            self._plan_stack.append(new_plan)
+            # add starting the suspender logic to the stack
+            self._plan_stack.append(single_gen(Msg('_start_suspender', None, pre_plan, post_plan, justification, fut)))
             self._response_stack.append(None)
 
-            self._plan_stack.append(single_gen(
-                Msg('rewindable', None, self.rewindable)))
-            self._response_stack.append(None)
-
-            # if there is a post plan add it between the wait
-            # and the cached messages
-            if post_plan is not None:
-                if callable(post_plan):
-                    post_plan = post_plan()
-                self._plan_stack.append(ensure_generator(post_plan))
-                self._response_stack.append(None)
-
-            # tell the devices they are ready to go again
-            self._plan_stack.append(single_gen(Msg('_resume_from_suspender', None, )))
-            self._response_stack.append(None)
-
-            # add the wait on the future to the stack
-            self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
-            self._response_stack.append(None)
-
-            # if there is a pre plan add on top of the wait
-            if pre_plan is not None:
-                if callable(pre_plan):
-                    pre_plan = pre_plan()
-                self._plan_stack.append(ensure_generator(pre_plan))
-                self._response_stack.append(None)
-
-            self._plan_stack.append(single_gen(
-                Msg('rewindable', None, False)))
-            self._response_stack.append(None)
             # The event loop is still running. The pre_plan will be processed,
             # and then the RunEngine will be hung up on processing the
             # 'wait_for' message until `fut` is set.
@@ -1212,6 +1166,63 @@ class RunEngine:
         self.loop.call_soon_threadsafe(
             self.loop.create_task,
             _request_suspend(pre_plan, post_plan, justification))
+
+    async def _start_suspender(self, msg):
+        """
+        An internal message to do the initial work of starting a suspender
+        """
+        pre_plan, post_plan, justification, fut = msg.args
+        for current_run in self._run_bundlers.values():
+            current_run.record_interruption(
+                justification if justification is not None else "suspended"
+            )
+        # During suspend, all motors should be stopped. Call stop() on
+        # every object we ever set().
+        self._stop_movable_objects(success=True)
+        # Notify Devices of the pause in case they want to clean up.
+        for obj in self._objs_seen:
+            if hasattr(obj, 'pause'):
+                try:
+                    obj.pause()
+                except NoReplayAllowed:
+                    self._reset_checkpoint_state_meth()
+        # rewind to the last checkpoint
+        new_plan = self._rewind()
+        # queue up the cached messages
+        self._plan_stack.append(new_plan)
+        self._response_stack.append(None)
+
+        self._plan_stack.append(single_gen(
+            Msg('rewindable', None, self.rewindable)))
+        self._response_stack.append(None)
+
+        # if there is a post plan add it between the wait
+        # and the cached messages
+        if post_plan is not None:
+            if callable(post_plan):
+                post_plan = post_plan()
+            self._plan_stack.append(ensure_generator(post_plan))
+            self._response_stack.append(None)
+
+        # tell the devices they are ready to go again
+        self._plan_stack.append(single_gen(Msg('_resume_from_suspender', None, )))
+        self._response_stack.append(None)
+
+        # add the wait on the future to the stack
+        self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
+        self._response_stack.append(None)
+
+        # if there is a pre plan add on top of the wait
+        if pre_plan is not None:
+            if callable(pre_plan):
+                pre_plan = pre_plan()
+            self._plan_stack.append(ensure_generator(pre_plan))
+            self._response_stack.append(None)
+
+        # none of this should run again.
+        self._plan_stack.append(single_gen(
+            Msg('rewindable', None, False)))
+        self._response_stack.append(None)
 
     def abort(self, reason=''):
         """
