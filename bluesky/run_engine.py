@@ -1149,9 +1149,11 @@ class RunEngine:
                     self._task.cancel()
 
             if justification is not None:
-                print("Justification for this suspension:\n%s" % justification)
+                print(f"Justification for this suspension:\n{justification}")
             for current_run in self._run_bundlers.values():
-                current_run.record_interruption('resume')
+                current_run.record_interruption(
+                    justification if justification is not None else "suspended"
+                )
             # During suspend, all motors should be stopped. Call stop() on
             # every object we ever set().
             self._stop_movable_objects(success=True)
