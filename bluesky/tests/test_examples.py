@@ -283,11 +283,13 @@ def test_suspend(RE, hw):
     ]
     assert RE.state == 'idle'
 
-    def local_suspend():
-        RE.request_suspend(ev.wait)
-
     def resume_cb():
         RE.loop.call_soon_threadsafe(ev.set)
+
+    def local_suspend():
+        RE.request_suspend(ev.wait)
+        # wait a second and then resume
+        threading.Timer(1, resume_cb).start()
 
     out = []
 
@@ -295,8 +297,6 @@ def test_suspend(RE, hw):
         out.append(ev)
     # trigger the suspend right after the check point
     threading.Timer(.1, local_suspend).start()
-    # wait a second and then resume
-    threading.Timer(1, resume_cb).start()
     # grab the start time
     start = ttime.time()
     # run, this will not return until it is done
