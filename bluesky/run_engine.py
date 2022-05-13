@@ -1152,7 +1152,9 @@ class RunEngine:
                 print(f"Justification for this suspension:\n{justification}")
 
             # add starting the suspender logic to the stack
-            self._plan_stack.append(single_gen(Msg('_start_suspender', None, pre_plan, post_plan, justification, fut)))
+            self._plan_stack.append(
+                single_gen(Msg('_start_suspender', None, pre_plan, post_plan, justification, fut))
+            )
             self._response_stack.append(None)
 
             # The event loop is still running. The pre_plan will be processed,
