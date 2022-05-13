@@ -1556,6 +1556,29 @@ class DefaultDuringTask(DuringTask):
 
                 @functools.lru_cache(None)
                 def _enum(name):
+                    """
+                    Between PyQt5 and PyQt6 how the various enums were accessed changed from
+                    all of the various names being in the module namespace to being nested under
+                    the Enum name.  Thus in PyQt5 we access the QSocketNotifier Type enum values as ::
+
+                        QtCore.QSocketNotifier.Read
+
+                    but in PyQt6 we use::
+
+                         QtCore.QSocketNotifier.Type.Read
+
+                    rather than have this checking inline where we use it, this function lets us do::
+
+                        _enum('QtCore.QSocketNotifier.Type').Read
+
+                    and well get the right namespace to get the Enum member from.
+
+                    We use the extra layer of indirection of `operator.attrgetter` so that
+                    multi-level names work and we can rely on the Qt compat layer to get the
+                    correct PyQt5 vs PyQt6
+
+                    This is copied from Matplotlib.
+                    """
                     # foo.bar.Enum.Entry (PyQt6) <=> foo.bar.Entry (non-PyQt6).
                     return operator.attrgetter(
                         name if QT_API == 'PyQt6' else name.rpartition(".")[0]
