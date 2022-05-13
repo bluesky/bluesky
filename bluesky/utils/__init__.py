@@ -30,8 +30,8 @@ import msgpack_numpy
 import zict
 
 from bluesky.protocols import (
-    T, Asset, HasParent, HasHints, Hints, SyncOrAsync, WritesExternalAssets,
-    check_supports
+    T, Asset, HasParent, HasHints, Hints, Movable, Readable, 
+    SyncOrAsync, WritesExternalAssets, check_supports
 )
 
 try:
@@ -1686,9 +1686,8 @@ def _rearrange_into_parallel_dicts(readings):
     return data, timestamps
 
 
-# TODO: this doesn't match the Movable protocol, should it?
 def is_movable(obj):
-    """Check if object satisfies bluesky 'movable' interface.
+    """Check if object satisfies bluesky 'Movable' and `Readable` interfaces.
 
     Parameters
     ----------
@@ -1700,52 +1699,7 @@ def is_movable(obj):
     boolean
         True if movable, False otherwise.
     """
-    EXPECTED_ATTRS = (
-        'name',
-        'parent',
-        'read',
-        'describe',
-        'read_configuration',
-        'describe_configuration',
-        'set',
-    )
-    return all(hasattr(obj, attr) for attr in EXPECTED_ATTRS)
-
-
-# TODO: shall we delete this now?
-class Movable(metaclass=abc.ABCMeta):
-    """
-    Abstract base class for objects that satisfy the bluesky 'movable' interface.
-
-    Examples
-    --------
-
-    .. code-block:: python
-
-        m = hw.motor
-        # We need to detect if 'm' is a motor
-        if isinstance(m, Movable):
-            print(f"The object {m.name} is a motor")
-    """
-    @classmethod
-    def __subclasshook__(cls, C):
-        # If the following condition is True, the object C is recognized
-        # to have Movable interface (e.g. a motor)
-        msg = """The Movable abstract base class is deprecated and will be removed in a future
-                 version of bluesky. Please use bluesky.utils.is_movable(obj) to test if an object
-                 satisfies the movable interface."""
-        warnings.warn(msg, DeprecationWarning)
-        EXPECTED_ATTRS = (
-            'name',
-            'parent',
-            'read',
-            'describe',
-            'read_configuration',
-            'describe_configuration',
-            'set',
-            'stop',
-        )
-        return all(hasattr(C, attr) for attr in EXPECTED_ATTRS)
+    return isinstance(obj, Movable) and isinstance(obj, Readable)
 
 
 def get_hinted_fields(obj) -> List[str]:

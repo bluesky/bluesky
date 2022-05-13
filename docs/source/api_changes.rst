@@ -2,6 +2,11 @@
  Release History
 =================
 
+v1.9.0 (2022-XX-YY)
+===================
+
+* ``Movable`` (which has long been deprecated for :func:`bluesky.utils.is_movable`)
+  has been deleted
 
 v1.8.2 (2021-12-20)
 ===================
