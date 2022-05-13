@@ -1189,41 +1189,33 @@ class RunEngine:
                 except NoReplayAllowed:
                     self._reset_checkpoint_state_meth()
         # rewind to the last checkpoint
-        new_plan = self._rewind()
-        # queue up the cached messages
-        self._plan_stack.append(new_plan)
-        self._response_stack.append(None)
+        rewind_plan = self._rewind()
+        was_rewindable = self.rewindable
 
-        self._plan_stack.append(single_gen(
-            Msg('rewindable', None, self.rewindable)))
-        self._response_stack.append(None)
+        if callable(pre_plan):
+            pre_plan = pre_plan()
+        if callable(post_plan):
+            post_plan = post_plan()
 
-        # if there is a post plan add it between the wait
-        # and the cached messages
-        if post_plan is not None:
-            if callable(post_plan):
-                post_plan = post_plan()
-            self._plan_stack.append(ensure_generator(post_plan))
-            self._response_stack.append(None)
+        def suspender_helper_inner_plan():
+            # none of this should run again.
+            yield Msg('rewindable', None, False)
+            # if there is a pre plan add on top of the wait
+            if pre_plan is not None:
+                yield from ensure_generator(pre_plan)
+            # wait for the future from the suspender to be released
+            yield Msg('wait_for', None, [fut, ])
+            # do the work we need to do to resume
+            yield Msg('_resume_from_suspender', None, )
+            # if there is a post plan, run it
+            if post_plan is not None:
+                yield from ensure_generator(post_plan)
+            # put rewindable back the way it was
+            yield Msg('rewindable', None, was_rewindable)
+            yield from rewind_plan
 
-        # tell the devices they are ready to go again
-        self._plan_stack.append(single_gen(Msg('_resume_from_suspender', None, )))
-        self._response_stack.append(None)
-
-        # add the wait on the future to the stack
-        self._plan_stack.append(single_gen(Msg('wait_for', None, [fut, ])))
-        self._response_stack.append(None)
-
-        # if there is a pre plan add on top of the wait
-        if pre_plan is not None:
-            if callable(pre_plan):
-                pre_plan = pre_plan()
-            self._plan_stack.append(ensure_generator(pre_plan))
-            self._response_stack.append(None)
-
-        # none of this should run again.
-        self._plan_stack.append(single_gen(
-            Msg('rewindable', None, False)))
+        # add the above helper to the plan stack
+        self._plan_stack.append(suspender_helper_inner_plan())
         self._response_stack.append(None)
 
     def abort(self, reason=''):
