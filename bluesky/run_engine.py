@@ -355,7 +355,7 @@ class RunEngine:
                  during_task=None, call_returns_result=False):
         if loop is None:
             loop = asyncio.new_event_loop()
-        set_bluesky_event_loop(loop)
+            set_bluesky_event_loop(loop)
         self._th = _ensure_event_loop_running(loop)
         self._state_lock = threading.RLock()
         self._loop = loop
