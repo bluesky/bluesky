@@ -30,7 +30,7 @@ import msgpack_numpy
 import zict
 
 from bluesky.protocols import (
-    T, Asset, HasParent, HasHints, Hints, Movable, Readable, 
+    T, Asset, HasParent, HasHints, Hints, Movable, Readable,
     SyncOrAsync, WritesExternalAssets, check_supports
 )
 
@@ -1730,7 +1730,7 @@ def maybe_update_hints(hints: Dict[str, Hints], obj):
 
 
 def maybe_collect_asset_docs(msg, obj, *args, **kwargs) -> Iterator[Asset]:
-    if isinstance(obj, WritesExternalAssets):        
+    if isinstance(obj, WritesExternalAssets):
         warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
         yield from obj.collect_asset_docs(*args, **kwargs)
 

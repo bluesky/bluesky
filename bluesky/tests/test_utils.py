@@ -4,7 +4,10 @@ import numpy as np
 from functools import reduce
 import operator
 
-from bluesky.utils import ensure_generator, Msg, merge_cycler, is_movable, CallbackRegistry, warn_if_msg_args_or_kwargs
+from bluesky.utils import (
+    ensure_generator, Msg, merge_cycler, is_movable, CallbackRegistry,
+    warn_if_msg_args_or_kwargs
+)
 from cycler import cycler
 
 
@@ -442,7 +445,7 @@ def test_msg_args_kwargs_emits_warning_first_time(recwarn):
     class MyDevice:
         def kickoff(self, *args, **kwargs):
             pass
-    
+
     device = MyDevice()
     msg = Msg("kickoff")
 

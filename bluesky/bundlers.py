@@ -307,23 +307,21 @@ class RunBundler:
                                 'data_keys': data_keys.keys()})
         seq_num_counter = count(1)
 
-        def emit_event(*args, **kwargs):
-            def is_reading_dict(d) -> bool:
-                # Check we are Dict[str, Reading] in a lightweight way
-                return isinstance(d, dict) and all(isinstance(x, dict) for x in d.values())
-
-            if args and is_reading_dict(args[0]):
-                # We were passed something we can use
-                reading_dict = args[0]
+        def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
+            if readings is not None:
+                # We were passed something we can use, but check no args or kwargs
+                assert not args and not kwargs, \
+                    "If subscribe callback called with readings, " \
+                    "args and kwargs are not supported."
             else:
                 # Ignore the inputs. Use this call as a signal to call read on the
                 # object, a crude way to be sure we get all the info we need.
                 readable_obj = check_supports(obj, Readable)
-                reading_dict = readable_obj.read()
-                assert not inspect.isawaitable(reading_dict), \
+                readings = readable_obj.read()
+                assert not inspect.isawaitable(readings), \
                     f"{readable_obj} has async read() method and the callback " \
                     "passed to subscribe() was not called with Dict[str, Reading]"
-            data, timestamps = _rearrange_into_parallel_dicts(reading_dict)
+            data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = dict(
                 descriptor=descriptor_uid,
                 time=ttime.time(),
@@ -336,6 +334,7 @@ class RunBundler:
 
         self._monitor_params[obj] = emit_event, kwargs
         await self.emit(DocumentNames.descriptor, desc_doc)
+        # TODO: deprecate **kwargs when Ophyd.v2 is available
         obj.subscribe(emit_event, **kwargs)
 
     def record_interruption(self, content):

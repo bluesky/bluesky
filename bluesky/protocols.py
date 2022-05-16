@@ -210,6 +210,7 @@ class Readable(HasName, Protocol):
 
 @runtime_checkable
 class Movable(Protocol):
+    # TODO: add args and kwargs?
     def set(self, value: Any) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
@@ -228,7 +229,6 @@ class Flyable(HasName, Protocol):
         """Return a ``Status`` and mark it done when acquisition has completed."""
         ...
 
-    # TODO: Add partial event pages
     def collect(self) -> Iterator[PartialEvent]:
         """Yield dictionaries that are partial Event documents.
 
