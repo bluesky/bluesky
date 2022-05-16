@@ -1709,14 +1709,29 @@ def get_hinted_fields(obj) -> List[str]:
         return []
 
 
+already_warned = {}
+
+
+def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
+    if args or kwargs and not already_warned.get(msg.command):
+        already_warned[msg.command] = True
+        error_msg = f"""\
+About to call {meth.__name__}() with args {args} and kwargs {kwargs}.
+In the future the passing of Msg.args and Msg.kwargs down to hardware from
+Msg("{msg.command}") may be deprecated. If you have a use case for these,
+we would like to know about it, so please open an issue at
+https://github.com/bluesky/bluesky/issues"""
+        warnings.warn(error_msg, PendingDeprecationWarning)
+
+
 def maybe_update_hints(hints: Dict[str, Hints], obj):
     if isinstance(obj, HasHints):
         hints[obj.name] = obj.hints
 
 
-def maybe_collect_asset_docs(obj, *args, **kwargs) -> Iterator[Asset]:
-    # TODO: deprecation warning about *args and **kwargs?
-    if isinstance(obj, WritesExternalAssets):
+def maybe_collect_asset_docs(msg, obj, *args, **kwargs) -> Iterator[Asset]:
+    if isinstance(obj, WritesExternalAssets):        
+        warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
         yield from obj.collect_asset_docs(*args, **kwargs)
 
 

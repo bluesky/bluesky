@@ -39,7 +39,7 @@ from .utils import (CallbackRegistry, SigintHandler,
                     RunEngineInterrupted, IllegalMessageSequence,
                     FailedPause, FailedStatus, InvalidCommand,
                     PlanHalt, Msg, ensure_generator, single_gen,
-                    DefaultDuringTask)
+                    DefaultDuringTask, warn_if_msg_args_or_kwargs)
 
 
 class _RunEnginePanic(Exception):
@@ -1824,7 +1824,7 @@ class RunEngine:
         """
         obj = check_supports(msg.obj, Readable)
         # actually _read_ the object
-        # TODO: deprecation warning for args and kwargs?
+        warn_if_msg_args_or_kwargs(msg, obj.read, msg.args, msg.kwargs)
         ret = await maybe_await(obj.read(*msg.args, **msg.kwargs))
 
         if ret is None:
@@ -1952,7 +1952,7 @@ class RunEngine:
         obj = check_supports(obj, Flyable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
-
+        warn_if_msg_args_or_kwargs(msg, obj.kickoff, msg.args, kwargs)
         ret = obj.kickoff(*msg.args, **kwargs)
         p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
@@ -2007,7 +2007,7 @@ class RunEngine:
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         obj = check_supports(msg.obj, Flyable)
-        # TODO: Deprecate args and kwargs?
+        warn_if_msg_args_or_kwargs(msg, obj.complete, msg.args, kwargs)
         ret = obj.complete(*msg.args, **kwargs)
 
         p_event = asyncio.Event(**self._loop_for_kwargs)
@@ -2113,6 +2113,7 @@ class RunEngine:
         obj = check_supports(msg.obj, Triggerable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop('group', None)
+        warn_if_msg_args_or_kwargs(msg, obj.trigger, msg.args, kwargs)
         ret = obj.trigger(*msg.args, **kwargs)
         p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures

@@ -214,7 +214,7 @@ class RunBundler:
             # and cache them as well. Likewise, these will be emitted if and
             # when _save is called.
             self._asset_docs_cache.extend(
-                maybe_collect_asset_docs(obj, *msg.args, **msg.kwargs)
+                maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)
             )
 
         return reading
@@ -698,7 +698,7 @@ class RunBundler:
         self._uncollected.discard(collect_obj)
 
         # Resource and Datum documents
-        for name, doc in maybe_collect_asset_docs(collect_obj):
+        for name, doc in maybe_collect_asset_docs(msg, collect_obj):
             # Add a 'run_start' field to the resource document on its way out.
             if name == "resource":
                 doc["run_start"] = self._run_start_uid
