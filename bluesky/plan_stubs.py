@@ -827,14 +827,17 @@ def close_run(exit_status=None, reason=None):
     """
     Mark the end of the current 'run'. Emit a RunStop document.
 
-    Yields
-    ------
-    msg : Msg
-        Msg('close_run')
+    Parameters
+    ----------
     exit_status : {None, 'success', 'abort', 'fail'}
         The exit status to report in the Stop document
     reason : str, optional
         Long-form description of why the run ended
+
+    Yields
+    ------
+    msg : Msg
+        Msg('close_run')
 
     See Also
     --------
