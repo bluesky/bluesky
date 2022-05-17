@@ -281,7 +281,7 @@ class LiveTable(CallbackBase):
     def __init__(self, fields, *, stream_name='primary',
                  print_header_interval=50,
                  min_width=12, default_prec=3, extra_pad=1, separator_lines=True,
-                 logbook=None, out=print):
+                 logbook=None, out=print, default_string_length=25):
         super().__init__()
         self._header_interval = print_header_interval
         # expand objects
@@ -294,6 +294,7 @@ class LiveTable(CallbackBase):
         self._extra_pad = ' ' * extra_pad
         self._min_width = min_width
         self._default_prec = default_prec
+        self._default_string_length = default_string_length
         self._separator_lines = separator_lines
         self._format_info = OrderedDict([
             ('seq_num', self._fm_sty(10 + self._pad_len, '', 'd')),
@@ -306,11 +307,12 @@ class LiveTable(CallbackBase):
 
     def descriptor(self, doc):
 
-        def patch_up_precision(p):
+        def patch_up_precision(entry, default):
+            p = entry.get('precision', default_prec)
             try:
                 return int(p)
             except (TypeError, ValueError):
-                return self._default_prec
+                return default
 
         if doc['name'] != self._stream:
             return
@@ -333,9 +335,11 @@ class LiveTable(CallbackBase):
                               "does not know how to display the dtype {}"
                               "".format(k, dk_entry['dtype']))
                 continue
-
-            prec = patch_up_precision(dk_entry.get('precision',
-                                                   self._default_prec))
+            if dk_entry['dtype'] == 'string':
+                default_prec = self._default_string_length
+            else:
+                default_prec = self._default_prec
+            prec = patch_up_precision(dk_entry, default_prec)
             fmt = self._fm_sty(width=width,
                                prec=prec,
                                dtype=self._FMT_MAP[dk_entry['dtype']])
