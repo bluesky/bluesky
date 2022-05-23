@@ -1551,7 +1551,39 @@ class DefaultDuringTask(DuringTask):
             # if with a Qt backend, do the scary thing
             if 'qt' in backend:
 
-                from matplotlib.backends.qt_compat import QtCore, QtWidgets
+                from matplotlib.backends.qt_compat import QtCore, QtWidgets, QT_API
+                import functools
+
+                @functools.lru_cache(None)
+                def _enum(name):
+                    """
+                    Between PyQt5 and PyQt6 how the various enums were accessed changed from
+                    all of the various names being in the module namespace to being nested under
+                    the Enum name.  Thus in PyQt5 we access the QSocketNotifier Type enum values as ::
+
+                        QtCore.QSocketNotifier.Read
+
+                    but in PyQt6 we use::
+
+                         QtCore.QSocketNotifier.Type.Read
+
+                    rather than have this checking inline where we use it, this function lets us do::
+
+                        _enum('QtCore.QSocketNotifier.Type').Read
+
+                    and well get the right namespace to get the Enum member from.
+
+                    We use the extra layer of indirection of `operator.attrgetter` so that
+                    multi-level names work and we can rely on the Qt compat layer to get the
+                    correct PyQt5 vs PyQt6
+
+                    This is copied from Matplotlib.
+                    """
+                    # foo.bar.Enum.Entry (PyQt6) <=> foo.bar.Entry (non-PyQt6).
+                    return operator.attrgetter(
+                        name if QT_API == 'PyQt6' else name.rpartition(".")[0]
+                    )(sys.modules[QtCore.__package__])
+
                 app = QtWidgets.QApplication.instance()
                 if app is None:
                     _qapp = app = QtWidgets.QApplication([b'bluesky'])
@@ -1584,8 +1616,10 @@ class DefaultDuringTask(DuringTask):
                     for fd in (rfd, wfd):
                         flags = fcntl.fcntl(fd, fcntl.F_GETFL)
                         fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-                    wakeupsn = QtCore.QSocketNotifier(rfd,
-                                                      QtCore.QSocketNotifier.Read)
+                    wakeupsn = QtCore.QSocketNotifier(
+                        rfd,
+                        _enum('QtCore.QSocketNotifier.Type').Read
+                    )
                     origwakeupfd = signal.set_wakeup_fd(wfd)
 
                     def cleanup():
@@ -1648,7 +1682,10 @@ class DefaultDuringTask(DuringTask):
 
                 try:
                     sys.excepthook = my_exception_hook
-                    event_loop.exec_()
+                    (event_loop.exec()
+                     if hasattr(event_loop, "exec")
+                     else event_loop.exec_()
+                     )
                     # make sure any pending signals are processed
                     event_loop.processEvents()
                     if vals[1] is not None:
