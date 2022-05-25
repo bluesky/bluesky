@@ -84,39 +84,89 @@ def test_pretripped(RE, hw):
     RE(scan)
 
     assert len(msg_lst) == 2
-    assert ['wait_for', 'checkpoint'] == [m[0] for m in msg_lst]
+    assert ["wait_for", "checkpoint"] == [m[0] for m in msg_lst]
 
 
-@pytest.mark.parametrize('pre_plan,post_plan,expected_list',
-                         [([Msg('null')], None,
-                           ['checkpoint', 'sleep', 'rewindable', 'null',
-                            'wait_for', 'resume', 'rewindable', 'sleep']),
-                          (None, [Msg('null')],
-                           ['checkpoint', 'sleep', 'rewindable',
-                            'wait_for', 'resume', 'null', 'rewindable',
-                            'sleep']),
-                          ([Msg('null')], [Msg('null')],
-                           ['checkpoint', 'sleep', 'rewindable', 'null',
-                            'wait_for', 'resume', 'null', 'rewindable',
-                            'sleep']),
-                          (lambda: [Msg('null')], lambda: [Msg('null')],
-                           ['checkpoint', 'sleep', 'rewindable', 'null',
-                            'wait_for', 'resume', 'null', 'rewindable',
-                            'sleep'])])
+@pytest.mark.parametrize(
+    "pre_plan,post_plan,expected_list",
+    [
+        (
+            [Msg("null")],
+            None,
+            [
+                "checkpoint",
+                "sleep",
+                "_start_suspender",
+                "rewindable",
+                "null",
+                "wait_for",
+                "_resume_from_suspender",
+                "rewindable",
+                "sleep",
+            ],
+        ),
+        (
+            None,
+            [Msg("null")],
+            [
+                "checkpoint",
+                "sleep",
+                "_start_suspender",
+                "rewindable",
+                "wait_for",
+                "_resume_from_suspender",
+                "null",
+                "rewindable",
+                "sleep",
+            ],
+        ),
+        (
+            [Msg("null")],
+            [Msg("null")],
+            [
+                "checkpoint",
+                "sleep",
+                "_start_suspender",
+                "rewindable",
+                "null",
+                "wait_for",
+                "_resume_from_suspender",
+                "null",
+                "rewindable",
+                "sleep",
+            ],
+        ),
+        (
+            lambda: [Msg("null")],
+            lambda: [Msg("null")],
+            [
+                "checkpoint",
+                "sleep",
+                "_start_suspender",
+                "rewindable",
+                "null",
+                "wait_for",
+                "_resume_from_suspender",
+                "null",
+                "rewindable",
+                "sleep",
+            ],
+        ),
+    ],
+)
 def test_pre_suspend_plan(RE, pre_plan, post_plan, expected_list, hw):
     sig = hw.bool_sig
-    scan = [Msg('checkpoint'), Msg('sleep', None, .2)]
+    scan = [Msg("checkpoint"), Msg("sleep", None, 0.2)]
     msg_lst = []
     sig.put(0)
 
     def accum(msg):
         msg_lst.append(msg)
 
-    susp = SuspendBoolHigh(sig, pre_plan=pre_plan,
-                           post_plan=post_plan)
+    susp = SuspendBoolHigh(sig, pre_plan=pre_plan, post_plan=post_plan)
 
     RE.install_suspender(susp)
-    threading.Timer(.1, sig.put, (1,)).start()
+    threading.Timer(0.1, sig.put, (1,)).start()
     threading.Timer(1, sig.put, (0,)).start()
     RE.msg_hook = accum
     RE(scan)
