@@ -17,6 +17,9 @@ methods with certain established names. We have taken pains to make this
 interface as slim as possible, while still being general enough to address
 every kind of hardware we have encountered.
 
+.. seealso::
+    :ref:`hardware_interface_packages`
+
 Specification
 -------------
 
@@ -68,21 +71,106 @@ conforms to the following definition
             A fraction of zero indicates completion.
             A fraction of one indicates progress has not started.
 
+
+Named Device
+++++++++++++
+
+Some of the interfaces below require a ``name`` attribute, they implement this
+interface:
+
+.. autoclass:: bluesky.protocols.HasName
+    :members:
+    :show-inheritance:
+
+Some of also require a ``parent`` attribute, they implement this interface:
+
+.. autoclass:: bluesky.protocols.HasParent
+    :members:
+    :show-inheritance:
+
+
 Readable Device
 +++++++++++++++
 
-The interface of a readable device:
+To produce data in a step scan, a device must be Readable:
 
 .. autoclass:: bluesky.protocols.Readable
     :members:
-    :undoc-members:
+    :show-inheritance:
 
-Movable (or "Settable")  Device
-+++++++++++++++++++++++++++++++
+A dict of stream name to Descriptors is returned from :meth:`describe`, where a
+`Descriptor` is a dictionary with the following keys:
+
+.. autoclass:: bluesky.protocols.Descriptor
+    :members:
+
+The following keys can optionally be present in a `Desciptor`:
+
+.. autoclass:: bluesky.protocols.DescriptorOptional
+    :members:
+
+A dict of stream name to Reading is returned from :meth:`read`, where a
+`Reading` is a dictionary with the following keys:
+
+.. autoclass:: bluesky.protocols.Reading
+    :members:
+
+The following keys can optionally be present in a `Reading`:
+
+.. autoclass:: bluesky.protocols.ReadingOptional
+    :members:
+
+If the device has configuration that only needs to be read once at the start of
+scan, the following interface can be implemented:
+
+.. autoclass:: bluesky.protocols.Configurable
+    :members:
+    :show-inheritance:
+
+If a device needs to do something before it can be read, the following interface
+can be implemented:
+
+.. autoclass:: bluesky.protocols.Triggerable
+    :members:
+    :show-inheritance:
+
+
+External Asset Writing Interface
+++++++++++++++++++++++++++++++++
+
+Devices that write their data in external files, rather than returning directly
+from ``read()`` should implement the following interface:
+
+.. autoclass:: bluesky.protocols.WritesExternalAssets
+    :members:
+    :show-inheritance:
+
+The yielded values are a tuple of the document type and the document as a dictionary.
+
+A Resource will be yielded to show that data will be written to an external resource
+like a file on disk:
+
+.. autoclass:: bluesky.protocols.PartialResource
+    :members:
+
+which can optionally include:
+
+.. autoclass:: bluesky.protocols.PartialResourceOptional
+    :members:
+
+While a Datum will be yielded to specify a single frame of data in a Resource:
+
+.. autoclass:: bluesky.protocols.Datum
+    :members:
+
+.. seealso:: https://blueskyproject.io/event-model/external.html
+
+
+Movable (or "Settable") Device
+++++++++++++++++++++++++++++++
 
 The interface of a movable device extends the interface of a readable device
 with the following additional methods and attributes.
-
 
 .. autoclass:: bluesky.protocols.Movable
     :members:
@@ -102,15 +190,28 @@ with the following additional methods and attributes.
 "Flyer" Interface
 +++++++++++++++++
 
-*For context on what we mean by "flyer", refer to the section on :doc:`async`.*
+*For context on what we mean by "flyer", refer to the section on* :doc:`async`.
 
 The interface of a "flyable" device is separate from the interface of a readable
 or settable device, though there is some overlap.
 
-
 .. autoclass:: bluesky.protocols.Flyable
     :members:
-    :undoc-members:
+    :show-inheritance:
+
+The yielded values from ``collect()`` are partial Event dictionaries:
+
+.. autoclass:: bluesky.protocols.PartialEvent
+    :members:
+
+If any of the data keys are in external assets rather than including the data,
+a ``filled`` key should be present:
+
+.. autoclass:: bluesky.protocols.PartialEventOptional
+    :members:
+
+Flyable devices can also implement :class:`Configurable` if they have
+configuration that only needs to be read once at the start of scan
 
 
 Optional Interfaces
@@ -126,42 +227,47 @@ the required method.
 
 .. autoclass:: bluesky.protocols.Stageable
     :members:
+    :show-inheritance:
 
 .. autoclass:: bluesky.protocols.Subscribable
     :members:
+    :show-inheritance:
 
 .. autoclass:: bluesky.protocols.Pausable
     :members:
+    :show-inheritance:
 
 .. autoclass:: bluesky.protocols.Stoppable
     :members:
+    :show-inheritance:
 
 .. autoclass:: bluesky.protocols.Checkable
     :members:
+    :show-inheritance:
 
-.. autoclass:: bluesky.protocols.Hinted
+.. autoclass:: bluesky.protocols.HasHints
+    :members:
+    :show-inheritance:
+
+.. autoclass:: bluesky.protocols.Hints
     :members:
 
 
-Implementations
----------------
+Checking if an object supports an interface
+-------------------------------------------
 
-Real Hardware
-+++++++++++++
+You can check at runtime if an object supports an interface with ``isinstance``:
 
-The `ophyd
-<https://nsls-ii.github.io/ophyd>`_ package implements this interface for
-a wide variety of hardware, communicating using
-`EPICS <http://www.aps.anl.gov/epics/>`_ via the Python bindings
-`pyepics <http://cars9.uchicago.edu/software/python/pyepics3/>`_.Other control
-systems (Tango, LabView, etc.) could be integrated with bluesky in the future
-by implementing this same interface.
+.. code-block:: python
 
-Simulated Hardware
-++++++++++++++++++
+    from bluesky.protocols import Readable
 
-A toy "test" implementation the interface is included in the
-:mod:`ophyd.sim` module. These implementations act as simulated hardware,
-and we use them extensively in examples, demos, and the test suite. They can
-also be useful for exercising analysis workflows before running a real
-experiment. API documentation is below.
+    assert isinstance(obj, Readable)
+    obj.read()
+
+This will check that the correct methods exist on the object, and are callable,
+but will not check any types.
+
+There is also a helper function for this:
+
+.. autofunction:: bluesky.protocols.check_supports

@@ -208,6 +208,7 @@ def test_monitor_during_wrapper(hw):
 def test_descriptor_layout_from_monitor(RE, hw):
     collector = []
     det = hw.rand
+    det.start_simulation()
 
     def collect(name, doc):
         if name == 'descriptor':

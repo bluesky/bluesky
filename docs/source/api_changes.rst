@@ -7,6 +7,8 @@ v1.9.0 (2022-XX-YY)
 
 * the `"resume"` message which can only be used internally has been renamed to
   `"_resume_from_suspender"`.
+* ``Movable`` (which has long been deprecated for ``bluesky.utils.is_movable``)
+  has been deleted
 
 v1.8.3 (2022-04-08)
 ===================
@@ -22,7 +24,6 @@ Documentation
 -------------
 
 * Document pycertifspec as hardware interface.
-
 
 v1.8.2 (2021-12-20)
 ===================

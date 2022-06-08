@@ -1,15 +1,26 @@
 from collections import deque
+import inspect
 from itertools import count, tee
 import time as ttime
+from typing import Any, Deque, Dict, FrozenSet, List, Tuple
 from event_model import DocumentNames
 from .log import doc_logger
+from .protocols import (
+    T, Callback, Configurable, PartialEvent, Descriptor, Flyable,
+    HasName, Readable, Reading, Subscribable, check_supports
+)
 from .utils import (
     new_uid,
     IllegalMessageSequence,
     _rearrange_into_parallel_dicts,
     short_uid,
     Msg,
+    maybe_await,
+    maybe_collect_asset_docs,
+    maybe_update_hints,
 )
+
+ObjDict = Dict[Any, Dict[str, T]]
 
 
 class RunBundler:
@@ -18,17 +29,19 @@ class RunBundler:
         self.bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
         self._run_start_uid = None  # The (future) runstart uid
-        self._objs_read = deque()  # objects read in one Event
-        self._read_cache = deque()  # cache of obj.read() in one Event
+        self._objs_read: Deque[HasName] = deque()  # objects read in one Event
+        self._read_cache: Deque[Dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
-        self._describe_cache = dict()  # cache of all obj.describe() output
-        self._config_desc_cache = dict()  # " obj.describe_configuration()
-        self._config_values_cache = dict()  # " obj.read_configuration() values
-        self._config_ts_cache = dict()  # " obj.read_configuration() timestamps
+        self._describe_cache: ObjDict[Descriptor] = dict()  # cache of all obj.describe() output
+        self._config_desc_cache: ObjDict[Descriptor] = dict()  # " obj.describe_configuration()
+        self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values
+        self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps
         self._descriptors = dict()  # cache of {name: (objs_frozen_set, doc)}
+        # cache of {obj: {objs_frozen_set: (name, uid)}}
+        self._local_descriptors: Dict[Any, Dict[FrozenSet[str], Tuple[str, str]]] = dict()
         self._sequence_counters = dict()  # a seq_num counter per stream
         self._teed_sequence_counters = dict()  # for if we redo data-points
-        self._monitor_params = dict()  # cache of {obj: (cb, kwargs)}
+        self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # cache of {obj: (cb, kwargs)}
         self.run_is_open = False
         self._uncollected = set()  # objects after kickoff(), before collect()
         # we expect the RE to take care of the composition
@@ -167,12 +180,16 @@ class RunBundler:
         if self.bundling:
             obj = msg.obj
             # if the object is not in the _describe_cache, cache it
+            # Note: there is a race condition between the code here
+            # and in monitor() and collect(), so if you do them concurrently
+            # on the same device you make obj.describe() calls multiple times.
+            # As this is harmless and not an expected use case, we don't guard
+            # against it. Reading multiple devices concurrently works fine.
             if obj not in self._describe_cache:
-                # Validate that there is no data key name collision.
-                data_keys = obj.describe()
-                self._describe_cache[obj] = data_keys
-                self._config_desc_cache[obj] = obj.describe_configuration()
-                self._cache_config(obj)
+                await self._cache_describe(obj)
+            if obj not in self._config_desc_cache:
+                await self._cache_describe_config(obj)
+                await self._cache_read_config(obj)
 
             # check that current read collides with nothing else in
             # current event
@@ -196,18 +213,34 @@ class RunBundler:
             # Ask the object for any resource or datum documents is has cached
             # and cache them as well. Likewise, these will be emitted if and
             # when _save is called.
-            if hasattr(obj, "collect_asset_docs"):
-                self._asset_docs_cache.extend(
-                    obj.collect_asset_docs(*msg.args, **msg.kwargs)
-                )
+            self._asset_docs_cache.extend(
+                maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)
+            )
 
         return reading
 
-    def _cache_config(self, obj):
+    async def _cache_describe(self, obj):
+        "Read the object's describe and cache it."
+        obj = check_supports(obj, Readable)
+        self._describe_cache[obj] = await maybe_await(obj.describe())
+
+    async def _cache_describe_config(self, obj):
+        "Read the object's describe_configuration and cache it."
+        if isinstance(obj, Configurable):
+            conf_keys = await maybe_await(obj.describe_configuration())
+        else:
+            conf_keys = {}
+        self._config_desc_cache[obj] = conf_keys
+
+    async def _cache_read_config(self, obj):
         "Read the object's configuration and cache it."
+        if isinstance(obj, Configurable):
+            conf = await maybe_await(obj.read_configuration())
+        else:
+            conf = {}
         config_values = {}
         config_ts = {}
-        for key, val in obj.read_configuration().items():
+        for key, val in conf.items():
             config_values[key] = val["value"]
             config_ts[key] = val["timestamp"]
         self._config_values_cache[obj] = config_values
@@ -229,7 +262,7 @@ class RunBundler:
 
         where kwargs are passed through to ``obj.subscribe()``
         """
-        obj = msg.obj
+        obj = check_supports(msg.obj, Subscribable)
         if msg.args:
             raise ValueError(
                 "The 'monitor' Msg does not accept positional " "arguments."
@@ -242,16 +275,20 @@ class RunBundler:
                 "which is already monitored".format(obj)
             )
         descriptor_uid = new_uid()
-        data_keys = obj.describe()
-        config = {obj.name: {"data": {}, "timestamps": {}}}
-        config[obj.name]["data_keys"] = obj.describe_configuration()
-        for key, val in obj.read_configuration().items():
-            config[obj.name]["data"][key] = val["value"]
-            config[obj.name]["timestamps"][key] = val["timestamp"]
+        if obj not in self._describe_cache:
+            await self._cache_describe(obj)
+        if obj not in self._config_desc_cache:
+            await self._cache_describe_config(obj)
+            await self._cache_read_config(obj)
+        data_keys = self._describe_cache[obj]
+        config = {obj.name: {
+            "data": self._config_values_cache[obj],
+            "timestamps": self._config_ts_cache[obj],
+            "data_keys": self._config_desc_cache[obj]
+        }}
         object_keys = {obj.name: list(data_keys)}
         hints = {}
-        if hasattr(obj, "hints"):
-            hints.update({obj.name: obj.hints})
+        maybe_update_hints(hints, obj)
         desc_doc = dict(
             run_start=self._run_start_uid,
             time=ttime.time(),
@@ -270,10 +307,21 @@ class RunBundler:
                                 'data_keys': data_keys.keys()})
         seq_num_counter = count(1)
 
-        def emit_event(*args, **kwargs):
-            # Ignore the inputs. Use this call as a signal to call read on the
-            # object, a crude way to be sure we get all the info we need.
-            data, timestamps = _rearrange_into_parallel_dicts(obj.read())
+        def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
+            if readings is not None:
+                # We were passed something we can use, but check no args or kwargs
+                assert not args and not kwargs, \
+                    "If subscribe callback called with readings, " \
+                    "args and kwargs are not supported."
+            else:
+                # Ignore the inputs. Use this call as a signal to call read on the
+                # object, a crude way to be sure we get all the info we need.
+                readable_obj = check_supports(obj, Readable)
+                readings = readable_obj.read()
+                assert not inspect.isawaitable(readings), \
+                    f"{readable_obj} has async read() method and the callback " \
+                    "passed to subscribe() was not called with Dict[str, Reading]"
+            data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = dict(
                 descriptor=descriptor_uid,
                 time=ttime.time(),
@@ -286,6 +334,7 @@ class RunBundler:
 
         self._monitor_params[obj] = emit_event, kwargs
         await self.emit(DocumentNames.descriptor, desc_doc)
+        # TODO: deprecate **kwargs when Ophyd.v2 is available
         obj.subscribe(emit_event, **kwargs)
 
     def record_interruption(self, content):
@@ -323,7 +372,7 @@ class RunBundler:
 
             Msg('unmonitor', obj)
         """
-        obj = msg.obj
+        obj = check_supports(msg.obj, Subscribable)
         if obj not in self._monitor_params:
             raise IllegalMessageSequence(
                 f"Cannot 'unmonitor' {obj}; it is not " "being monitored."
@@ -392,7 +441,7 @@ class RunBundler:
                 dks = self._describe_cache[obj]
                 obj_name = obj.name
                 # dks is an OrderedDict. Record that order as a list.
-                object_keys[obj.name] = list(dks)
+                object_keys[obj_name] = list(dks)
                 for field, dk in dks.items():
                     dk["object_name"] = obj_name
                 data_keys.update(dks)
@@ -400,8 +449,7 @@ class RunBundler:
                 config[obj_name]["data"] = self._config_values_cache[obj]
                 config[obj_name]["timestamps"] = self._config_ts_cache[obj]
                 config[obj_name]["data_keys"] = self._config_desc_cache[obj]
-                if hasattr(obj, "hints"):
-                    hints[obj_name] = obj.hints
+                maybe_update_hints(hints, obj)
             descriptor_uid = new_uid()
             descriptor_doc = dict(
                 run_start=self._run_start_uid,
@@ -573,63 +621,30 @@ class RunBundler:
         """
         ...
 
-    async def collect(self, msg):
-        """
-        Collect data cached by a flyer and emit documents.
-
-        Expect message object is
-
-            Msg('collect', collect_obj)
-            Msg('collect', flyer_object, stream=True, return_payload=False)
-        """
-        collect_obj = msg.obj
-
-        if not self.run_is_open:
-            # sanity check -- 'kickoff' should catch this and make this
-            # code path impossible
-            raise IllegalMessageSequence(
-                "A 'collect' message was sent but no run is open."
-            )
-        self._uncollected.discard(collect_obj)
-
-        if hasattr(collect_obj, "collect_asset_docs"):
-            # Resource and Datum documents
-            for name, doc in collect_obj.collect_asset_docs():
-                # Add a 'run_start' field to the resource document on its way out.
-                if name == "resource":
-                    doc["run_start"] = self._run_start_uid
-                await self.emit(DocumentNames(name), doc)
-
-        collect_obj_config = {}
-        bulk_data = {}
-        local_descriptors = {}  # hashed on objs_read, not (name, objs_read)
+    async def _cache_describe_collect(self, collect_obj: Flyable):
+        "Read the object's describe_collect and cache it."
+        describe_collect = await maybe_await(collect_obj.describe_collect())
+        collect_obj_config: Dict[str, Dict[str, Any]] = {}
+        local_descriptors: Dict[FrozenSet[str], Tuple[str, str]] = {}
         # collect_obj.describe_collect() returns a dictionary like this:
         #     {name_for_desc1: data_keys_for_desc1,
         #      name_for_desc2: data_keys_for_desc2, ...}
-        for stream_name, stream_data_keys in collect_obj.describe_collect().items():
+        for stream_name, stream_data_keys in describe_collect.items():
             if stream_name not in self._descriptors:
                 # We do not have an Event Descriptor for this set.
                 descriptor_uid = new_uid()
                 # if we have not yet read the configuration, do so
                 if collect_obj.name not in collect_obj_config:
-                    _config = collect_obj_config[collect_obj.name] = {
-                        "data": {},
-                        "timestamps": {},
-                        "data_keys": {}
+                    if collect_obj not in self._config_desc_cache:
+                        await self._cache_describe_config(collect_obj)
+                        await self._cache_read_config(collect_obj)
+                    collect_obj_config[collect_obj.name] = {
+                        "data": self._config_values_cache[collect_obj],
+                        "timestamps": self._config_ts_cache[collect_obj],
+                        "data_keys": self._config_desc_cache[collect_obj]
                     }
-                    # but read_configuration is optional
-                    if hasattr(collect_obj, "read_configuration"):
-                        doc_logger.debug("reading configuration from %s", collect_obj)
-                        _config['data_keys'].update(collect_obj.describe_configuration())
-                        for config_key, config in collect_obj.read_configuration().items():
-                            _config["data"][config_key] = config["value"]
-                            _config["timestamps"][config_key] = config["timestamp"]
-                    else:
-                        doc_logger.debug("%s has no read_configuration method", collect_obj)
-
                 hints = {}
-                if hasattr(collect_obj, "hints"):
-                    hints.update({collect_obj.name: collect_obj.hints})
+                maybe_update_hints(hints, collect_obj)
                 doc = dict(
                     run_start=self._run_start_uid,
                     time=ttime.time(),
@@ -660,8 +675,39 @@ class RunBundler:
 
             descriptor_uid = doc["uid"]
             local_descriptors[frozenset(stream_data_keys)] = (stream_name, descriptor_uid)
+        self._local_descriptors[collect_obj] = local_descriptors
 
-            bulk_data[descriptor_uid] = []
+    async def collect(self, msg):
+        """
+        Collect data cached by a flyer and emit documents.
+
+        Expect message object is
+
+            Msg('collect', collect_obj)
+            Msg('collect', flyer_object, stream=True, return_payload=False)
+        """
+        collect_obj = check_supports(msg.obj, Flyable)
+
+        if not self.run_is_open:
+            # sanity check -- 'kickoff' should catch this and make this
+            # code path impossible
+            raise IllegalMessageSequence(
+                "A 'collect' message was sent but no run is open."
+            )
+        self._uncollected.discard(collect_obj)
+
+        # Resource and Datum documents
+        for name, doc in maybe_collect_asset_docs(msg, collect_obj):
+            # Add a 'run_start' field to the resource document on its way out.
+            if name == "resource":
+                doc["run_start"] = self._run_start_uid
+            await self.emit(DocumentNames(name), doc)
+
+        # Populate descriptors and local descriptors from describe_collect
+        # if not already called
+        if collect_obj not in self._local_descriptors:
+            await self._cache_describe_collect(collect_obj)
+        local_descriptors = self._local_descriptors[collect_obj]
 
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'bulk_events' subscription once.
@@ -671,6 +717,7 @@ class RunBundler:
         # accumulate, and return None.
         return_payload = msg.kwargs.get('return_payload', True)
         payload = []
+        bulk_data: Dict[str, List[PartialEvent]] = {}
 
         for ev in collect_obj.collect():
             if return_payload:
@@ -679,13 +726,7 @@ class RunBundler:
             objs_read = frozenset(ev["data"])
             stream_name, descriptor_uid = local_descriptors[objs_read]
             seq_num = next(self._sequence_counters[stream_name])
-
             event_uid = new_uid()
-
-            reading = ev["data"]
-            for key in ev["data"]:
-                reading[key] = reading[key]
-            ev["data"] = reading
             ev["descriptor"] = descriptor_uid
             ev["seq_num"] = seq_num
             ev["uid"] = event_uid
@@ -699,7 +740,7 @@ class RunBundler:
                                         'data_keys': ev['data'].keys()})
                 await self.emit(DocumentNames.event, ev)
             else:
-                bulk_data[descriptor_uid].append(ev)
+                bulk_data.setdefault(descriptor_uid, []).append(ev)
 
         if not stream:
             await self.emit(DocumentNames.bulk_events, bulk_data)
@@ -736,4 +777,4 @@ class RunBundler:
             obj_set, _ = self._descriptors[name]
             if obj in obj_set:
                 del self._descriptors[name]
-        self._cache_config(obj)
+        await self._cache_read_config(obj)
