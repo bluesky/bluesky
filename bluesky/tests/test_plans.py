@@ -657,3 +657,19 @@ def test_grid_scans_failing(RE, hw, plan):
                     hw.motor1, 4, 5, 6,
                     hw.motor2, 7, 8, 9)
             RE(plan([hw.det], *args, snake_axes=snake_axes))
+
+
+def test_describe_failure(RE):
+    ophyd = pytest.importorskip("ophyd")
+
+    class Aardvark(Exception):
+        ...
+
+    class BadSignal(ophyd.Signal):
+        def describe(self):
+            raise Aardvark("Look, and aardvark!")
+
+    bad_signal = BadSignal(value=5, name="Arty")
+
+    with pytest.raises(Aardvark, match="Look, and aardvark!"):
+        RE(bp.count([bad_signal]))

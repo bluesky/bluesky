@@ -887,6 +887,7 @@ def trigger_and_read(devices, name='primary'):
     msg : Msg
         messages to 'trigger', 'wait' and 'read'
     """
+    from .preprocessors import contingency_wrapper
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
         yield from null()
@@ -904,13 +905,29 @@ def trigger_and_read(devices, name='primary'):
         if not no_wait:
             yield from wait(group=grp)
         yield from create(name)
-        ret = {}  # collect and return readings to give plan access to them
-        for obj in devices:
-            reading = (yield from read(obj))
-            if reading is not None:
-                ret.update(reading)
-        yield from save()
+
+        def read_plan():
+            ret = {}  # collect and return readings to give plan access to them
+            for obj in devices:
+                reading = (yield from read(obj))
+                if reading is not None:
+                    ret.update(reading)
+            return ret
+
+        def happy_path():
+            yield from save()
+
+        def sad_path(exp):
+            yield from drop()
+            raise exp
+
+        ret = yield from contingency_wrapper(
+            read_plan(),
+            except_plan=sad_path,
+            else_plan=happy_path
+            )
         return ret
+
     from .preprocessors import rewindable_wrapper
     return (yield from rewindable_wrapper(inner_trigger_and_read(),
                                           rewindable))
