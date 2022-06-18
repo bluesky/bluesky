@@ -535,7 +535,8 @@ def contingency_wrapper(plan, *,
                         except_plan=None,
                         else_plan=None,
                         final_plan=None,
-                        pause_for_debug=False):
+                        pause_for_debug=False,
+                        auto_raise=True):
     '''try...except...else...finally helper
 
     See :func:`finalize_wrapper` for a simplified but less powerful
@@ -561,6 +562,7 @@ def contingency_wrapper(plan, *,
     pause_for_debug : bool, optional
         If the plan should pause before running the clean final_plan in
         the case of an Exception.  This is intended as a debugging tool only.
+    auto_raise : bool, optional
 
     Yields
     ------
@@ -584,8 +586,13 @@ def contingency_wrapper(plan, *,
         if except_plan:
             # it might be better to throw this in, but this is simpler
             # to implement for now
-            yield from except_plan(e)
-        raise
+            ret = yield from except_plan(e)
+            if auto_raise:
+                raise
+            else:
+                return ret
+        else:
+            raise
     else:
         if else_plan:
             yield from else_plan()
