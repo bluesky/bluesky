@@ -663,13 +663,14 @@ def test_describe_failure(RE):
     ophyd = pytest.importorskip("ophyd")
 
     class Aardvark(Exception):
+    # Unique exception to test behavior of describe.
         ...
 
     class BadSignal(ophyd.Signal):
         def describe(self):
-            raise Aardvark("Look, and aardvark!")
+            raise Aardvark("Look, an aardvark!")
 
     bad_signal = BadSignal(value=5, name="Arty")
 
-    with pytest.raises(Aardvark, match="Look, and aardvark!"):
+    with pytest.raises(Aardvark, match="Look, an aardvark!"):
         RE(bp.count([bad_signal]))
