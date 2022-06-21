@@ -4,6 +4,7 @@ import inspect
 from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
@@ -663,14 +664,53 @@ def test_describe_failure(RE):
     ophyd = pytest.importorskip("ophyd")
 
     class Aardvark(Exception):
-    # Unique exception to test behavior of describe.
+        # Unique exception to test behavior of describe.
         ...
 
-    class BadSignal(ophyd.Signal):
+    class BadSignalDescribe(ophyd.Signal):
         def describe(self):
             raise Aardvark("Look, an aardvark!")
 
-    bad_signal = BadSignal(value=5, name="Arty")
+    class BadSignalRead(ophyd.Signal):
+        def read(self):
+            raise Aardvark("Look, the other aardvark!")
 
+    bad_signal1 = BadSignalDescribe(value=5, name="Arty")
+    bad_signal2 = BadSignalRead(value=5, name="Arty")
+    good_signal = ophyd.Signal(value=42, name='baseline')
+
+    class StreamTester:
+        def __init__(self):
+            self.event_count = 0
+            self.stream_names = set()
+
+        def __call__(self, name, doc):
+            if name == 'event':
+                self.event_count += 1
+            if name == 'descriptor':
+                self.stream_names.add(doc['name'])
+
+        def verify(self):
+            assert self.event_count == 2
+            assert self.stream_names == set(['baseline'])
+    st = StreamTester()
     with pytest.raises(Aardvark, match="Look, an aardvark!"):
-        RE(bp.count([bad_signal]))
+        RE(
+            bpp.baseline_wrapper(
+                bp.count([bad_signal1]),
+                [good_signal]
+            ),
+            st
+        )
+    st.verify()
+
+    st = StreamTester()
+    with pytest.raises(Aardvark, match="Look, the other aardvark!"):
+        RE(
+            bpp.baseline_wrapper(
+                bp.count([bad_signal2]),
+                [good_signal]
+            ),
+            st
+        )
+    st.verify()
