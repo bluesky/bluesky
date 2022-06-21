@@ -914,17 +914,17 @@ def trigger_and_read(devices, name='primary'):
                     ret.update(reading)
             return ret
 
-        def happy_path():
+        def standard_path():
             yield from save()
 
-        def sad_path(exp):
+        def exception_path(exp):
             yield from drop()
             raise exp
 
         ret = yield from contingency_wrapper(
             read_plan(),
-            except_plan=sad_path,
-            else_plan=happy_path
+            except_plan=exception_path,
+            else_plan=standard_path
             )
         return ret
 
