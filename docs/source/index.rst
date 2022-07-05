@@ -67,6 +67,7 @@ Index
    msg
    run_engine
    api_changes
+   deployment-experience
    contributing
 
 .. toctree::

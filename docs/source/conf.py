@@ -40,6 +40,7 @@ extensions = [
     'IPython.sphinxext.ipython_console_highlighting',
     'matplotlib.sphinxext.plot_directive',
     'sphinx.ext.intersphinx',
+    "myst_parser",
     'numpydoc',
 ]
 

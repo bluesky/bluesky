@@ -12,6 +12,7 @@ lmfit
 matplotlib != 3.0.1  # bug in scatter method
 mongoquery
 mypy
+myst-parser
 networkx
 nose
 numpydoc
