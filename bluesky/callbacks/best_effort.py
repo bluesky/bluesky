@@ -245,7 +245,7 @@ class BestEffortCallback(QtAwareCallback):
                     layout = (len(columns), 1)
                 else:
                     nrows = ncols = int(np.ceil(np.sqrt(len(columns))))
-                    while (nrows - 1) * ncols > len(columns):
+                    while (nrows - 1) * ncols >= len(columns):
                         nrows -= 1
                     layout = (nrows, ncols)
                 if ndims == 1:
