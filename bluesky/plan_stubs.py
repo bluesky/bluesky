@@ -1,7 +1,6 @@
 import itertools
 import uuid
 from cycler import cycler
-from . import utils
 import operator
 from functools import reduce
 from collections.abc import Iterable
@@ -14,8 +13,10 @@ try:
 except ImportError:
     from toolz import partition
 
-
+from .protocols import Triggerable
 from .utils import (
+    get_hinted_fields,
+    merge_cycler,
     separate_devices,
     all_safe_rewind,
     Msg,
@@ -51,7 +52,7 @@ def save():
     Close a bundle of readings and emit a completed Event document.
 
     Yields
-    -------
+    ------
     msg : Msg
         Msg('save')
 
@@ -251,7 +252,7 @@ def mv(*args, group=None, **kwargs):
     status_objects = []
 
     cyl = reduce(operator.add, [cycler(obj, [val]) for obj, val in partition(2, args)])
-    (step,) = utils.merge_cycler(cyl)
+    (step,) = merge_cycler(cyl)
     for obj, val in step.items():
         ret = yield Msg('set', obj, val, group=group, **kwargs)
         status_objects.append(ret)
@@ -341,7 +342,7 @@ def rd(obj, *, default_value=0):
         The "single" value of the device
 
     """
-    hints = getattr(obj, 'hints', {}).get("fields", [])
+    hints = get_hinted_fields(obj)
     if len(hints) > 1:
         msg = (
             f"Your object {obj} ({obj.name}.{getattr(obj, 'dotted_name', '')}) "
@@ -827,14 +828,17 @@ def close_run(exit_status=None, reason=None):
     """
     Mark the end of the current 'run'. Emit a RunStop document.
 
-    Yields
-    ------
-    msg : Msg
-        Msg('close_run')
+    Parameters
+    ----------
     exit_status : {None, 'success', 'abort', 'fail'}
         The exit status to report in the Stop document
     reason : str, optional
         Long-form description of why the run ended
+
+    Yields
+    ------
+    msg : Msg
+        Msg('close_run')
 
     See Also
     --------
@@ -893,7 +897,7 @@ def trigger_and_read(devices, name='primary'):
         grp = _short_uid('trigger')
         no_wait = True
         for obj in devices:
-            if hasattr(obj, 'trigger'):
+            if isinstance(obj, Triggerable):
                 no_wait = False
                 yield from trigger(obj, group=grp)
         # Skip 'wait' if none of the devices implemented a trigger method.

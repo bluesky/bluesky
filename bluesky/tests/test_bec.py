@@ -295,3 +295,19 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
                                out_value)
         else:
             stats_value == out_value
+
+
+def test_many_motors(RE, hw):
+    """Ensure appropriate behavior for too many motors to plot. No figures with warning, and a table."""
+    dets = [hw.ab_det]
+    motors = [hw.motor, hw.motor1, hw.motor2, hw.motor3]
+    bec = BestEffortCallback()
+    RE.subscribe(bec)
+    movement = [(motor, 1, 5, 5) for motor in motors]
+    with pytest.warns(None) as record:
+        RE(grid_scan(dets, *[item for sublist in movement for item in sublist]))
+    assert len(record) > 0
+    assert not bec._live_plots
+    assert not bec._live_grids
+    assert not bec._live_scatters
+    assert bec._table is not None

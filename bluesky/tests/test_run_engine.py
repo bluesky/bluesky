@@ -1,3 +1,4 @@
+import asyncio
 from event_model import DocumentNames
 import threading
 import types
@@ -272,6 +273,9 @@ def test_redundant_monitors_are_illegal(RE):
         def describe(self):
             return {}
 
+        def read(self):
+            return {}
+
         def subscribe(self, *args, **kwargs):
             pass
 
@@ -337,6 +341,26 @@ def test_stage_and_unstage_are_optional_methods(RE):
     dummy = Dummy()
 
     RE([Msg('stage', dummy), Msg('unstage', dummy)])
+
+
+def test_need_both_stage_and_unstage_for_stagable(RE):
+    class StageOnly(object):
+
+        def stage(self):
+            raise Exception
+
+    class UnstageOnly(object):
+
+        def unstage(self):
+            raise Exception
+
+    stage_only = StageOnly()
+    unstage_only = UnstageOnly()
+    RE([Msg("stage", stage_only),
+        Msg("stage", unstage_only),
+        Msg("unstage", stage_only),
+        Msg("unstage", unstage_only)]
+       )
 
 
 def test_pause_resume_devices(RE):
@@ -473,14 +497,20 @@ def _make_unrewindable_suspender_marker():
                  motor,
                  UnReplayableSynGauss('det', motor, 'motor', center=0, Imax=1),
                  ['set', 'trigger', 'sleep',
-                  'rewindable', 'wait_for', 'resume', 'rewindable',
+                  "_start_suspender",
+                  'rewindable',
+                  'wait_for', "_resume_from_suspender",
+                  'rewindable',
                   'set', 'trigger']))
 
     inps.append((test_plan,
                  motor,
                  SynGauss('det', motor, 'motor', center=0, Imax=1),
                  ['set', 'trigger', 'sleep',
-                  'rewindable', 'wait_for', 'resume', 'rewindable',
+                  "_start_suspender",
+                  'rewindable',
+                  'wait_for', "_resume_from_suspender",
+                  'rewindable',
                   'set',
                   'trigger', 'sleep', 'set', 'trigger']))
 
@@ -1362,16 +1392,17 @@ def test_hints(RE):
             self.parent = None
             self.hints = {'vis': 'placeholder'}
 
-        def read(self):
+        async def read(self):
+            await asyncio.sleep(0.1)
             return {}
 
-        def describe(self):
+        async def describe(self):
             return {}
 
-        def read_configuration(self):
+        async def read_configuration(self):
             return {}
 
-        def describe_configuration(self):
+        async def describe_configuration(self):
             return {}
 
     det = Detector('det')
@@ -1643,6 +1674,9 @@ def test_broken_read_exception(RE):
         def read(self):
             ...
 
+        def trigger(self):
+            ...
+
     obj = Dummy('broken read')
     with pytest.raises(RuntimeError):
         RE([Msg('read', obj)])
@@ -1666,6 +1700,12 @@ def test_thread_name(RE):
         def trigger(self):
             assert threading.current_thread().name == "bluesky-run-engine"
             return Status()
+
+        def describe(self):
+            return {}
+
+        def read(self):
+            return {}
 
     d = MockDevice()
     RE([Msg("trigger", d)])

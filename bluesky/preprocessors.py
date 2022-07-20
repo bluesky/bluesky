@@ -3,7 +3,7 @@ from __future__ import generator_stop
 from collections import OrderedDict, deque, ChainMap
 from collections.abc import Iterable
 import uuid
-from .utils import (normalize_subs_input, root_ancestor,
+from .utils import (get_hinted_fields, normalize_subs_input, root_ancestor,
                     separate_devices,
                     Msg, ensure_generator, single_gen,
                     short_uid as _short_uid, make_decorator,
@@ -996,7 +996,7 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
                   "relative to current position ***".format(m=obj))
             cur_pos = 0
         else:
-            fields = getattr(obj, 'hints', {}).get('fields', [])
+            fields = get_hinted_fields(obj)
             if len(fields) == 1:
                 k, = fields
                 cur_pos = reading[k]['value']

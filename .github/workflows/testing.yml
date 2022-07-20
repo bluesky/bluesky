@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: ["3.8", "3.9", "3.10"]
         ophyd-version: ["master", "latest"]
       fail-fast: false
     steps:
@@ -41,6 +41,14 @@ jobs:
       run: |
         set -vxeuo pipefail
         python -m pip install git+https://github.com/bluesky/ophyd.git@master
+        python -m pip list
+
+    - name: Install pyqt6 on some versions
+      if: ${{ matrix.python-version == '3.10' }}
+      shell: bash -l {0}
+      run: |
+        set -vxeuo pipefail
+        python -m pip install pyqt6
         python -m pip list
 
     - name: Ensure that callbacks import without matplotlib

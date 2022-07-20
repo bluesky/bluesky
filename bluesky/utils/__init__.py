@@ -7,7 +7,7 @@ import signal
 import operator
 import uuid
 from functools import reduce
-from typing import Any, Optional, Callable
+from typing import Any, Dict, Iterator, List, Optional, Callable
 from weakref import ref, WeakKeyDictionary
 import types
 import inspect
@@ -28,6 +28,11 @@ import warnings
 import msgpack
 import msgpack_numpy
 import zict
+
+from bluesky.protocols import (
+    T, Asset, HasParent, HasHints, Hints, Movable, Readable,
+    SyncOrAsync, WritesExternalAssets, check_supports
+)
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -1389,7 +1394,7 @@ def merge_axis(objs):
         Mapping of interdependent axis passed in.
     '''
     def get_parent(o):
-        return getattr(o, 'parent')
+        return check_supports(o, HasParent).parent
 
     independent_objs = set()
     maybe_coupled = set()
@@ -1551,7 +1556,39 @@ class DefaultDuringTask(DuringTask):
             # if with a Qt backend, do the scary thing
             if 'qt' in backend:
 
-                from matplotlib.backends.qt_compat import QtCore, QtWidgets
+                from matplotlib.backends.qt_compat import QtCore, QtWidgets, QT_API
+                import functools
+
+                @functools.lru_cache(None)
+                def _enum(name):
+                    """
+                    Between PyQt5 and PyQt6 how the various enums were accessed changed from
+                    all of the various names being in the module namespace to being nested under
+                    the Enum name.  Thus in PyQt5 we access the QSocketNotifier Type enum values as ::
+
+                        QtCore.QSocketNotifier.Read
+
+                    but in PyQt6 we use::
+
+                         QtCore.QSocketNotifier.Type.Read
+
+                    rather than have this checking inline where we use it, this function lets us do::
+
+                        _enum('QtCore.QSocketNotifier.Type').Read
+
+                    and well get the right namespace to get the Enum member from.
+
+                    We use the extra layer of indirection of `operator.attrgetter` so that
+                    multi-level names work and we can rely on the Qt compat layer to get the
+                    correct PyQt5 vs PyQt6
+
+                    This is copied from Matplotlib.
+                    """
+                    # foo.bar.Enum.Entry (PyQt6) <=> foo.bar.Entry (non-PyQt6).
+                    return operator.attrgetter(
+                        name if QT_API == 'PyQt6' else name.rpartition(".")[0]
+                    )(sys.modules[QtCore.__package__])
+
                 app = QtWidgets.QApplication.instance()
                 if app is None:
                     _qapp = app = QtWidgets.QApplication([b'bluesky'])
@@ -1584,8 +1621,10 @@ class DefaultDuringTask(DuringTask):
                     for fd in (rfd, wfd):
                         flags = fcntl.fcntl(fd, fcntl.F_GETFL)
                         fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-                    wakeupsn = QtCore.QSocketNotifier(rfd,
-                                                      QtCore.QSocketNotifier.Read)
+                    wakeupsn = QtCore.QSocketNotifier(
+                        rfd,
+                        _enum('QtCore.QSocketNotifier.Type').Read
+                    )
                     origwakeupfd = signal.set_wakeup_fd(wfd)
 
                     def cleanup():
@@ -1648,7 +1687,10 @@ class DefaultDuringTask(DuringTask):
 
                 try:
                     sys.excepthook = my_exception_hook
-                    event_loop.exec_()
+                    (event_loop.exec()
+                     if hasattr(event_loop, "exec")
+                     else event_loop.exec_()
+                     )
                     # make sure any pending signals are processed
                     event_loop.processEvents()
                     if vals[1] is not None:
@@ -1682,7 +1724,7 @@ def _rearrange_into_parallel_dicts(readings):
 
 
 def is_movable(obj):
-    """Check if object satisfies bluesky 'movable' interface.
+    """Check if object satisfies bluesky 'Movable' and `Readable` interfaces.
 
     Parameters
     ----------
@@ -1694,48 +1736,44 @@ def is_movable(obj):
     boolean
         True if movable, False otherwise.
     """
-    EXPECTED_ATTRS = (
-        'name',
-        'parent',
-        'read',
-        'describe',
-        'read_configuration',
-        'describe_configuration',
-        'set',
-    )
-    return all(hasattr(obj, attr) for attr in EXPECTED_ATTRS)
+    return isinstance(obj, Movable) and isinstance(obj, Readable)
 
 
-class Movable(metaclass=abc.ABCMeta):
-    """
-    Abstract base class for objects that satisfy the bluesky 'movable' interface.
+def get_hinted_fields(obj) -> List[str]:
+    if isinstance(obj, HasHints):
+        return obj.hints.get("fields", [])
+    else:
+        return []
 
-    Examples
-    --------
 
-    .. code-block:: python
+already_warned = {}
 
-        m = hw.motor
-        # We need to detect if 'm' is a motor
-        if isinstance(m, Movable):
-            print(f"The object {m.name} is a motor")
-    """
-    @classmethod
-    def __subclasshook__(cls, C):
-        # If the following condition is True, the object C is recognized
-        # to have Movable interface (e.g. a motor)
-        msg = """The Movable abstract base class is deprecated and will be removed in a future
-                 version of bluesky. Please use bluesky.utils.is_movable(obj) to test if an object
-                 satisfies the movable interface."""
-        warnings.warn(msg, DeprecationWarning)
-        EXPECTED_ATTRS = (
-            'name',
-            'parent',
-            'read',
-            'describe',
-            'read_configuration',
-            'describe_configuration',
-            'set',
-            'stop',
-        )
-        return all(hasattr(C, attr) for attr in EXPECTED_ATTRS)
+
+def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
+    if args or kwargs and not already_warned.get(msg.command):
+        already_warned[msg.command] = True
+        error_msg = f"""\
+About to call {meth.__name__}() with args {args} and kwargs {kwargs}.
+In the future the passing of Msg.args and Msg.kwargs down to hardware from
+Msg("{msg.command}") may be deprecated. If you have a use case for these,
+we would like to know about it, so please open an issue at
+https://github.com/bluesky/bluesky/issues"""
+        warnings.warn(error_msg, PendingDeprecationWarning)
+
+
+def maybe_update_hints(hints: Dict[str, Hints], obj):
+    if isinstance(obj, HasHints):
+        hints[obj.name] = obj.hints
+
+
+def maybe_collect_asset_docs(msg, obj, *args, **kwargs) -> Iterator[Asset]:
+    if isinstance(obj, WritesExternalAssets):
+        warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
+        yield from obj.collect_asset_docs(*args, **kwargs)
+
+
+async def maybe_await(ret: SyncOrAsync[T]) -> T:
+    if inspect.isawaitable(ret):
+        return await ret
+    else:
+        return ret

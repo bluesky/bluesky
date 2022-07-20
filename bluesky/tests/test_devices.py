@@ -1,4 +1,7 @@
 import itertools
+from time import time
+from typing import Dict, List
+from bluesky.protocols import Callback, Descriptor, Reading
 
 from bluesky.utils import ancestry, share_ancestor, separate_devices
 from bluesky.plan_stubs import trigger_and_read
@@ -7,6 +10,7 @@ from bluesky import Msg, RunEngineInterrupted
 import pytest
 from bluesky.tests import requires_ophyd, ophyd
 from .utils import DocCollector
+from unittest.mock import ANY
 
 if ophyd:
     from ophyd import Component as Cpt, Device, Signal
@@ -22,6 +26,28 @@ if ophyd:
     class DCM(Device):
         th = Cpt(Signal, value=0)
         x = Cpt(Signal, value=0)
+
+
+class SigNew:
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self._callbacks: List[Callback] = []
+
+    def read(self) -> Dict[str, Reading]:
+        return {}
+
+    def describe(self) -> Dict[str, Descriptor]:
+        return {}
+
+    def subscribe(self, function: Callback) -> None:
+        self._callbacks.append(function)
+
+    def clear_sub(self, function: Callback) -> None:
+        self._callbacks.remove(function)
+
+    def _run_subs(self, *args, **kwargs):
+        for cb in self._callbacks:
+            cb({self.name: dict(value=0, timestamp=time())})
 
 
 @requires_ophyd
@@ -56,22 +82,34 @@ def test_separate_devices():
     assert separate_devices([b1, a]) == [b1, a]
 
 
+@pytest.mark.parametrize('ophyd', ["v1", "v2"])
 @requires_ophyd
-def test_monitor(RE):
+def test_monitor(RE, ophyd):
     docs = []
 
     def collect(name, doc):
         docs.append(doc)
 
-    a = A('', name='a')
+    if ophyd == "v1":
+        sig = A('', name='a').s1
+    else:
+        sig = SigNew(name='a_s1')
 
     def plan():
         yield Msg('open_run')
-        yield Msg('monitor', a.s1)
-        a.s1._run_subs(sub_type='value')
+        yield Msg('monitor', sig)
+        sig._run_subs(sub_type='value')
         yield Msg('close_run')
     RE(plan(), collect)
     assert len(docs) == 4
+    assert docs[2] == {
+        'data': {'a_s1': 0},
+        'descriptor': ANY,
+        'seq_num': 1,
+        'time': pytest.approx(time(), rel=0.1),
+        'timestamps': {'a_s1': pytest.approx(time(), rel=0.1)},
+        'uid': ANY
+    }
 
 
 @requires_ophyd
