@@ -176,15 +176,19 @@ with the following additional methods and attributes.
     :members:
     :show-inheritance:
 
-    .. attribute:: position
+Certain plans like :func:`~bluesky.plan_stubs.mvr` would like to know where a
+Device was last requested to move to, and other plans like
+:func:`~bluesky.plan_stubs.rd` would like to know where a Device is currently
+located. Devices may implement ``get_location()`` to provide this information.
 
-        A heuristic that describes the current position of a device as a
-        single scalar, as opposed to the potentially multi-valued description
-        provided by ``read()``.
+.. autoclass:: bluesky.protocols.Locatable
+    :members:
+    :show-inheritance:
 
-        Optional: bluesky itself does not use the position attribute, but other
-        parts of the ecosystem might.
-        Developers are encouraged to implement this attribute where possible.
+``Location`` objects are dictionaries with the following entries:
+
+.. autoclass:: bluesky.protocols.Location
+    :members:
 
 
 "Flyer" Interface
