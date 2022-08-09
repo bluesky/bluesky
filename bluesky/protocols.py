@@ -274,7 +274,7 @@ class Location(TypedDict, Generic[T]):
 
 @runtime_checkable
 class Locatable(Movable, Protocol):
-    def get_location(self) -> SyncOrAsync[Location]:
+    def locate(self) -> SyncOrAsync[Location]:
         """Return the current location of a Device.
 
         While a ``Readable`` reports many values, a ``Movable`` will have the

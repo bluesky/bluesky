@@ -179,7 +179,7 @@ with the following additional methods and attributes.
 Certain plans like :func:`~bluesky.plan_stubs.mvr` would like to know where a
 Device was last requested to move to, and other plans like
 :func:`~bluesky.plan_stubs.rd` would like to know where a Device is currently
-located. Devices may implement ``get_location()`` to provide this information.
+located. Devices may implement ``locate()`` to provide this information.
 
 .. autoclass:: bluesky.protocols.Locatable
     :members:
