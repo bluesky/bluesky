@@ -451,13 +451,13 @@ def test_duplicate_keys(RE, hw):
     # two detectors, same data keys
 
     def gen():
-        yield(Msg('open_run'))
-        yield(Msg('create', name='primary'))
-        yield(Msg('trigger', hw.det))
-        yield(Msg('trigger', hw.identical_det))
-        yield(Msg('read', hw.det))
-        yield(Msg('read', hw.identical_det))
-        yield(Msg('save'))
+        yield (Msg('open_run'))
+        yield (Msg('create', name='primary'))
+        yield (Msg('trigger', hw.det))
+        yield (Msg('trigger', hw.identical_det))
+        yield (Msg('read', hw.det))
+        yield (Msg('read', hw.identical_det))
+        yield (Msg('save'))
 
     with pytest.raises(ValueError):
         RE(gen())
@@ -466,41 +466,41 @@ def test_duplicate_keys(RE, hw):
 def test_illegal_sequences(RE, hw):
     def gen1():
         # two 'create' msgs in a row
-        yield(Msg('open_run'))
-        yield(Msg('create', name='primary'))
-        yield(Msg('create', name='primary'))
-        yield(Msg('close_run'))
+        yield (Msg('open_run'))
+        yield (Msg('create', name='primary'))
+        yield (Msg('create', name='primary'))
+        yield (Msg('close_run'))
 
     with pytest.raises(IllegalMessageSequence):
         RE(gen1())
 
     def gen2():
         # two 'save' msgs in a row
-        yield(Msg('open_run'))
-        yield(Msg('create', name='primary'))
-        yield(Msg('save'))
-        yield(Msg('save'))
-        yield(Msg('close_run'))
+        yield (Msg('open_run'))
+        yield (Msg('create', name='primary'))
+        yield (Msg('save'))
+        yield (Msg('save'))
+        yield (Msg('close_run'))
 
     with pytest.raises(IllegalMessageSequence):
         RE(gen2())
 
     def gen3():
         # 'configure' after 'create', before 'save'
-        yield(Msg('open_run'))
-        yield(Msg('create', name='primary'))
-        yield(Msg('configure', hw.motor, {}))
+        yield (Msg('open_run'))
+        yield (Msg('create', name='primary'))
+        yield (Msg('configure', hw.motor, {}))
 
     with pytest.raises(IllegalMessageSequence):
         RE(gen3())
 
     def gen4():
         # two 'drop' msgs in a row
-        yield(Msg('open_run'))
-        yield(Msg('create', name='primary'))
-        yield(Msg('drop'))
-        yield(Msg('drop'))
-        yield(Msg('close_run'))
+        yield (Msg('open_run'))
+        yield (Msg('create', name='primary'))
+        yield (Msg('drop'))
+        yield (Msg('drop'))
+        yield (Msg('close_run'))
 
     with pytest.raises(IllegalMessageSequence):
         RE(gen4())
@@ -514,15 +514,15 @@ def test_new_ev_desc(RE, hw):
 
     def gen1():
         # configure between two events -> two descs
-        yield(Msg('open_run'))
-        yield(Msg('create', name='primary'))
-        yield(Msg('read', hw.motor))
-        yield(Msg('save'))
-        yield(Msg('configure', hw.motor, {}))
-        yield(Msg('create', name='primary'))
-        yield(Msg('read', hw.motor))
-        yield(Msg('save'))
-        yield(Msg('close_run'))
+        yield (Msg('open_run'))
+        yield (Msg('create', name='primary'))
+        yield (Msg('read', hw.motor))
+        yield (Msg('save'))
+        yield (Msg('configure', hw.motor, {}))
+        yield (Msg('create', name='primary'))
+        yield (Msg('read', hw.motor))
+        yield (Msg('save'))
+        yield (Msg('close_run'))
 
     descs.clear()
     RE(gen1(), {'descriptor': collect_descs})
@@ -531,16 +531,16 @@ def test_new_ev_desc(RE, hw):
     def gen2():
         # configure between two events and explicitly before any events
         # -> two descs
-        yield(Msg('open_run'))
-        yield(Msg('configure', hw.motor, {}))
-        yield(Msg('create', name='primary'))
-        yield(Msg('read', hw.motor))
-        yield(Msg('save'))
-        yield(Msg('configure', hw.motor, {}))
-        yield(Msg('create', name='primary'))
-        yield(Msg('read', hw.motor))
-        yield(Msg('save'))
-        yield(Msg('close_run'))
+        yield (Msg('open_run'))
+        yield (Msg('configure', hw.motor, {}))
+        yield (Msg('create', name='primary'))
+        yield (Msg('read', hw.motor))
+        yield (Msg('save'))
+        yield (Msg('configure', hw.motor, {}))
+        yield (Msg('create', name='primary'))
+        yield (Msg('read', hw.motor))
+        yield (Msg('save'))
+        yield (Msg('close_run'))
 
     descs.clear()
     RE(gen2(), {'descriptor': collect_descs})
@@ -548,15 +548,15 @@ def test_new_ev_desc(RE, hw):
 
     def gen3():
         # configure once before any events -> one desc
-        yield(Msg('open_run'))
-        yield(Msg('configure', hw.motor, {}))
-        yield(Msg('create', name='primary'))
-        yield(Msg('read', hw.motor))
-        yield(Msg('save'))
-        yield(Msg('create', name='primary'))
-        yield(Msg('read', hw.motor))
-        yield(Msg('save'))
-        yield(Msg('close_run'))
+        yield (Msg('open_run'))
+        yield (Msg('configure', hw.motor, {}))
+        yield (Msg('create', name='primary'))
+        yield (Msg('read', hw.motor))
+        yield (Msg('save'))
+        yield (Msg('create', name='primary'))
+        yield (Msg('read', hw.motor))
+        yield (Msg('save'))
+        yield (Msg('close_run'))
 
     descs.clear()
     RE(gen3(), {'descriptor': collect_descs})
