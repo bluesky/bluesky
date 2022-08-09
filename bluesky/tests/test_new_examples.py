@@ -1,4 +1,6 @@
+import asyncio
 from collections import defaultdict
+from typing import Dict
 import pytest
 from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import (
@@ -30,6 +32,7 @@ from bluesky.plan_stubs import (
     open_run,
     close_run,
     wait_for,
+    rd,
     mv,
     mvr,
     trigger_and_read,
@@ -58,6 +61,7 @@ from bluesky.preprocessors import (
 from bluesky.plans import count, scan, rel_scan, inner_product_scan
 
 import bluesky.plans as bp
+from bluesky.protocols import Descriptor, Locatable, Location, Readable, Reading, Status
 
 from bluesky.utils import all_safe_rewind
 
@@ -164,6 +168,56 @@ def test_mvr(RE, hw):
         msg.command == 'set'
     assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])
     assert actual[2] == Msg('wait', None)
+
+
+def test_rd_locatable(RE):
+    class Jittery(Readable, Locatable):
+        def describe(self) -> Dict[str, Descriptor]:
+            return dict(x=dict(source="dummy", dtype="number", shape=[]))
+
+        def read(self) -> Dict[str, Reading]:
+            return dict(x=dict(value=1.2, timestamp=0.0))
+
+        def locate(self) -> Location:
+            return dict(setpoint=1.0, readback=1.1)
+
+    jittery = Jittery()
+    rds = []
+
+    def store_rd():
+        value = yield from rd(jittery)
+        rds.append(value)
+
+    RE(store_rd())
+    assert rds == [1.1]
+
+
+def test_mvr_with_location(RE, hw):
+    class AlmostThereMotor:
+        # This is the readback
+        position = 10.1
+        parent = None
+        name = "Almost"
+
+        def set(self, value) -> Status:
+            self.position = value + 0.1
+            # We don't actually need a motor, but use one just to give us a Status
+            return hw.motor.set(value)
+
+        async def locate(self) -> Location:
+            await asyncio.sleep(0.1)
+            return dict(setpoint=self.position-0.1, readback=self.position)
+
+    m = AlmostThereMotor()
+    assert isinstance(m, Locatable)
+    actual = []
+    RE.msg_hook = lambda msg: actual.append(msg)
+    RE(mvr(m, 1))
+    RE(mvr(m, 2))
+    assert [x.command for x in actual] == ["locate", "set", "wait"] * 2
+    assert [x.obj for x in actual] == [m, m, None, m, m, None]
+    assert actual[1].args == (11,)
+    assert actual[4].args == (13,)
 
 
 def test_mvr_with_timeout(hw):

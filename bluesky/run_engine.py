@@ -14,7 +14,7 @@ import weakref
 from dataclasses import dataclass
 import typing
 from .bundlers import RunBundler, maybe_await
-from .protocols import (Flyable, Movable, Pausable, Readable, Stageable,
+from .protocols import (Flyable, Locatable, Movable, Pausable, Readable, Stageable,
                         Stoppable, Triggerable, check_supports)
 
 import concurrent
@@ -452,6 +452,7 @@ class RunEngine:
             'save': self._save,
             'drop': self._drop,
             'read': self._read,
+            'locate': self._locate,
             'monitor': self._monitor,
             'unmonitor': self._unmonitor,
             'null': self._null,
@@ -1847,6 +1848,19 @@ class RunEngine:
         else:
             await current_run.read(msg, ret)
 
+        return ret
+
+    async def _locate(self, msg):
+        """
+        Locate a Movable and return its location.
+
+        Expected message object is:
+
+            Msg('locate', obj)
+        """
+        obj = check_supports(msg.obj, Locatable)
+        # actually _locate_ the object
+        ret = await maybe_await(obj.locate())
         return ret
 
     async def _monitor(self, msg):
