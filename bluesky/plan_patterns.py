@@ -438,7 +438,7 @@ def classify_outer_product_args_pattern(args):
         return True
 
     # div_4 - the correct number of elements for pattern 1, div_5 - for pattern 2
-    div_4, div_5 = not(len(args) % 4), (len(args) > 4) and not((len(args) - 4) % 5)
+    div_4, div_5 = not (len(args) % 4), (len(args) > 4) and not ((len(args) - 4) % 5)
 
     # Check the number of elements in 'args'
     if not div_4 and not div_5:
