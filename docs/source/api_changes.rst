@@ -9,6 +9,13 @@ v1.9.0 (2022-XX-YY)
   `"_resume_from_suspender"`.
 * ``Movable`` (which has long been deprecated for ``bluesky.utils.is_movable``)
   has been deleted
+* `~bluesky.plan_stubs.trigger_and_read` now drops the event if ``read`` or
+  ``describe`` raise an exception which results in the raised ``Exception``
+  making it to the user in the case when the "baseline" preprocessor is used.
+* Fix off-by-one bug in `~bluesky.callbacks.best_effort.BesteffortCallback`
+  multi-axis layout.
+* Add async capability to protocols and use throughout code base.
+* Add type hints.
 
 v1.8.3 (2022-04-08)
 ===================
