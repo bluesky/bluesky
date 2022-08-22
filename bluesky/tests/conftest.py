@@ -1,6 +1,6 @@
 import asyncio
 from distutils.version import LooseVersion
-from bluesky.run_engine import RunEngine, TransitionError, set_bluesky_event_loop
+from bluesky.run_engine import RunEngine, TransitionError
 import numpy as np
 import os
 import pytest
@@ -11,7 +11,6 @@ def RE(request):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
     RE = RunEngine({}, call_returns_result=request.param, loop=loop)
-    set_bluesky_event_loop(loop)
 
     def clean_event_loop():
         if RE.state not in ('idle', 'panicked'):
