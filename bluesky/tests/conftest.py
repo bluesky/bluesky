@@ -1,6 +1,6 @@
 import asyncio
 from distutils.version import LooseVersion
-from bluesky.run_engine import RunEngine, TransitionError, set_bluesky_event_loop
+from bluesky.run_engine import RunEngine, TransitionError
 import numpy as np
 import os
 import pytest
