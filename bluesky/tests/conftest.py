@@ -11,7 +11,6 @@ def RE(request):
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
     RE = RunEngine({}, call_returns_result=request.param, loop=loop)
-    set_bluesky_event_loop(loop)
 
     def clean_event_loop():
         if RE.state not in ('idle', 'panicked'):
