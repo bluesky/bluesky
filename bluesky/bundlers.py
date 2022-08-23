@@ -177,6 +177,19 @@ class RunBundler:
         self._descriptors[desc_key] = (objs_read, descriptor_doc)
         return descriptor_doc
 
+    async def declare_stream(self, msg):
+        command, no_obj, objs, kwargs, _ = msg
+        stream_name = kwargs['name]']
+        assert no_obj is None
+        for obj in objs:
+            if obj not in self._describe_cache:
+                await self._cache_describe(obj)
+            if obj not in self._config_desc_cache:
+                await self._cache_describe_config(obj)
+                await self._cache_read_config(obj)
+
+        await self._prepare_stream(stream_name, objs)
+
     async def create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
          an Event document
