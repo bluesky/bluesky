@@ -131,6 +131,52 @@ class RunBundler:
         self.run_is_open = False
         return doc["run_start"]
 
+    async def _prepare_stream(self, desc_key, objs_read):
+        # We do not have an Event Descriptor for this set
+        # so one must be created.
+        data_keys = {}
+        config = {}
+        object_keys = {}
+        hints = {}
+        for obj in objs_read:
+            dks = self._describe_cache[obj]
+            obj_name = obj.name
+            # dks is an OrderedDict. Record that order as a list.
+            object_keys[obj_name] = list(dks)
+            for field, dk in dks.items():
+                dk["object_name"] = obj_name
+            data_keys.update(dks)
+            config[obj_name] = {}
+            config[obj_name]["data"] = self._config_values_cache[obj]
+            config[obj_name]["timestamps"] = self._config_ts_cache[obj]
+            config[obj_name]["data_keys"] = self._config_desc_cache[obj]
+            maybe_update_hints(hints, obj)
+        descriptor_uid = new_uid()
+        descriptor_doc = dict(
+            run_start=self._run_start_uid,
+            time=ttime.time(),
+            data_keys=data_keys,
+            uid=descriptor_uid,
+            configuration=config,
+            name=desc_key,
+            hints=hints,
+            object_keys=object_keys,
+        )
+        await self.emit(DocumentNames.descriptor, descriptor_doc)
+        doc_logger.debug(
+            "[descriptor] document emitted with name %r containing "
+            "data keys %r (run_uid=%r)",
+            obj_name,
+            data_keys.keys(),
+            self._run_start_uid,
+            extra={
+                'doc_name': 'descriptor',
+                'run_uid': self._run_start_uid,
+                'data_keys': data_keys.keys()}
+        )
+        self._descriptors[desc_key] = (objs_read, descriptor_doc)
+        return descriptor_doc
+
     async def create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
          an Event document
@@ -425,56 +471,15 @@ class RunBundler:
         self._bundle_name = None
 
         d_objs, descriptor_doc = self._descriptors.get(desc_key, (None, None))
-        if d_objs is not None and d_objs != objs_read:
+        # we do not have the descriptor cached, make it
+        if descriptor_doc is None:
+            descriptor_doc = await self._prepare_stream(desc_key, objs_read)
+        # do have the descriptor cached
+        elif d_objs != objs_read:
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
                 "got {!s}".format(d_objs, objs_read)
             )
-        if descriptor_doc is None:
-            # We do not have an Event Descriptor for this set
-            # so one must be created.
-            data_keys = {}
-            config = {}
-            object_keys = {}
-            hints = {}
-            for obj in objs_read:
-                dks = self._describe_cache[obj]
-                obj_name = obj.name
-                # dks is an OrderedDict. Record that order as a list.
-                object_keys[obj_name] = list(dks)
-                for field, dk in dks.items():
-                    dk["object_name"] = obj_name
-                data_keys.update(dks)
-                config[obj_name] = {}
-                config[obj_name]["data"] = self._config_values_cache[obj]
-                config[obj_name]["timestamps"] = self._config_ts_cache[obj]
-                config[obj_name]["data_keys"] = self._config_desc_cache[obj]
-                maybe_update_hints(hints, obj)
-            descriptor_uid = new_uid()
-            descriptor_doc = dict(
-                run_start=self._run_start_uid,
-                time=ttime.time(),
-                data_keys=data_keys,
-                uid=descriptor_uid,
-                configuration=config,
-                name=desc_key,
-                hints=hints,
-                object_keys=object_keys,
-            )
-            await self.emit(DocumentNames.descriptor, descriptor_doc)
-            doc_logger.debug(
-                "[descriptor] document emitted with name %r containing "
-                "data keys %r (run_uid=%r)",
-                obj_name,
-                data_keys.keys(),
-                self._run_start_uid,
-                extra={
-                    'doc_name': 'descriptor',
-                    'run_uid': self._run_start_uid,
-                    'data_keys': data_keys.keys()}
-            )
-            self._descriptors[desc_key] = (objs_read, descriptor_doc)
-
         descriptor_uid = descriptor_doc["uid"]
 
         # Resource and Datum documents
