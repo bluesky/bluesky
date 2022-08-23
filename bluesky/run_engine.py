@@ -330,6 +330,8 @@ class RunEngine:
                              'close_run', 'install_suspender',
                              'remove_suspender', '_start_suspender']
 
+    RunBundler = RunBundler
+
     @property
     def state(self):
         return self._state
@@ -1768,7 +1770,7 @@ class RunEngine:
         # against users mutating the md with their validator.
         self.md_validator(dict(md))
 
-        current_run = self._run_bundlers[run_key] = RunBundler(
+        current_run = self._run_bundlers[run_key] = type(self).RunBundler(
             md, self.record_interruptions, self.emit, self.emit_sync, self.log
         )
 
