@@ -11,7 +11,7 @@ from .utils import (get_hinted_fields, normalize_subs_input, root_ancestor,
                     short_uid as _short_uid, make_decorator,
                     RunEngineControlException, merge_axis)
 from functools import wraps
-from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read)
+from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read, declare_stream)
 
 
 def plan_mutator(plan, msg_proc):
@@ -1155,9 +1155,13 @@ def baseline_wrapper(plan, devices, name='baseline'):
     msg : Msg
         messages from plan, with 'set' messages inserted
     """
+    def head():
+        yield from declare_stream(*devices, name=name)
+        trigger_and_read(devices, name=name)
+
     def insert_baseline(msg):
         if msg.command == 'open_run':
-            return None, trigger_and_read(devices, name=name)
+            return None, head()
 
         elif msg.command == 'close_run':
             def post_baseline():

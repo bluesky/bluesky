@@ -71,6 +71,8 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
     def inner_count():
+        # TODO thread stream name through per_shot?
+        yield from bps.declare_stream(*detectors, name='primary')
         return (yield from bps.repeat(partial(per_shot, detectors),
                                       num=num, delay=delay))
 
@@ -994,6 +996,8 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     @bpp.stage_decorator(list(detectors) + motors)
     @bpp.run_decorator(md=_md)
     def inner_scan_nd():
+        # TODO thread expected stream name through
+        yield from bps.declare_stream(*motors, *detectors, name='primary')
         for step in list(cycler):
             yield from per_step(detectors, step, pos_cache)
 

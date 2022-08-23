@@ -25,6 +25,28 @@ from .utils import (
 )
 
 
+def declare_stream(*objs, name):
+    """
+    Bundle future readings into a new Event document.
+
+    Parameters
+    ----------
+    name : string, optional
+        name given to event stream, used to convenient identification
+        default is 'primary'
+
+    Yields
+    ------
+    msg : Msg
+        Msg('create', name=name)
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.save`
+    """
+    return (yield Msg('declare_stream', None, *objs, name=name))
+
+
 def create(name='primary'):
     """
     Bundle future readings into a new Event document.
