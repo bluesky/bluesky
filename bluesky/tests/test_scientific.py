@@ -3,12 +3,14 @@ import numpy as np
 from bluesky.plans import scan
 from ophyd.sim import motor, det, SynGauss
 from bluesky.callbacks.fitting import PeakStats
-from scipy.special import erf
 
 
 def get_ps(x, y, shift=0.5):
     """ peak status calculation from CHX algorithm.
     """
+    pytest.importorskip('scipy')
+    from scipy.special import erf
+
     lmfit = pytest.importorskip('lmfit')
     ps = {}
     x = np.array(x)
