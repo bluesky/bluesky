@@ -179,8 +179,9 @@ class RunBundler:
 
     async def declare_stream(self, msg):
         command, no_obj, objs, kwargs, _ = msg
-        stream_name = kwargs['name]']
+        stream_name = kwargs['name']
         assert no_obj is None
+        objs = frozenset(objs)
         for obj in objs:
             if obj not in self._describe_cache:
                 await self._cache_describe(obj)
