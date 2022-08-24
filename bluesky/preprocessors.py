@@ -1157,7 +1157,7 @@ def baseline_wrapper(plan, devices, name='baseline'):
     """
     def head():
         yield from declare_stream(*devices, name=name)
-        trigger_and_read(devices, name=name)
+        yield from trigger_and_read(devices, name=name)
 
     def insert_baseline(msg):
         if msg.command == 'open_run':
