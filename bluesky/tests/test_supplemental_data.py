@@ -59,18 +59,18 @@ def test_baseline(hw):
     original = list(count([hw.det]))
     processed = list(D(count([hw.det])))
     # should add 2X (trigger, wait, create, read, save)
-    assert len(processed) == 10 + len(original)
+    assert len(processed) == 11 + len(original)
 
     # two baseline detectors
     D.baseline.append(hw.det3)
     processed = list(D(count([hw.det])))
     # should add 2X (trigger, triger, wait, create, read, read, save)
-    assert len(processed) == 14 + len(original)
+    assert len(processed) == 15 + len(original)
 
     # two baseline detectors applied to a plan with two consecutive runs
     original = list(list(count([hw.det])) + list(count([hw.det])))
     processed = list(D(pchain(count([hw.det]), count([hw.det]))))
-    assert len(processed) == 28 + len(original)
+    assert len(processed) == 30 + len(original)
 
 
 def test_mixture(hw):
@@ -80,7 +80,7 @@ def test_mixture(hw):
 
     original = list(count([hw.det]))
     processed = list(D(count([hw.det])))
-    assert len(processed) == 2 + 5 + 10 + len(original)
+    assert len(processed) == 3 + 5 + 10 + len(original)
 
 
 def test_order(hw):
@@ -96,6 +96,7 @@ def test_order(hw):
     actual = [msg.command for msg in D(null_run())]
     expected = ['open_run',
                 # baseline
+                'declare_stream',
                 'trigger',
                 'wait',
                 'create',

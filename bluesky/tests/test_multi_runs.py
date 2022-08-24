@@ -14,7 +14,7 @@ def test_multirun_smoke(RE, hw):
         run_names = ["run_one", "run_two", "run_three"]
         for rid in run_names:
             yield from srkw(bps.open_run(md={rid: rid}), run=rid)
-
+            yield from srkw(bps.declare_stream(*to_read, name='primary'), run=rid)
         for j in range(5):
             for i, rid in enumerate(run_names):
                 yield from bps.mov(motor, j + 0.1 * i)
@@ -49,17 +49,20 @@ def test_multirun_smoke_nested(RE, hw):
     @bsp.set_run_key_decorator("run_one")
     @bsp.run_decorator(md={})
     def plan_inner():
+        yield from bps.declare_stream(*to_read, name='primary')
         yield from some_plan()
 
     @bsp.set_run_key_decorator("run_two")
     @bsp.run_decorator(md={})
     def plan_middle():
+        yield from bps.declare_stream(*to_read, name='primary')
         yield from some_plan()
         yield from plan_inner()
 
     @bsp.set_run_key_decorator(run="run_three")  # Try kwarg
     @bsp.run_decorator(md={})
     def plan_outer():
+        yield from bps.declare_stream(*to_read, name='primary')
         yield from some_plan()
         yield from plan_middle()
 
