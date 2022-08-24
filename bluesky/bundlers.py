@@ -776,4 +776,7 @@ class RunBundler:
             obj_set, _ = self._descriptors[name]
             if obj in obj_set:
                 del self._descriptors[name]
+                await self._prepare_stream(name, obj_set)
+                continue
+
         await self._cache_read_config(obj)
