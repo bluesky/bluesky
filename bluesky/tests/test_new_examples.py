@@ -326,7 +326,9 @@ def test_descriptor_layout_from_monitor(RE, hw):
 
     descriptor, = collector
     assert descriptor['object_keys'] == {det.name: list(det.describe().keys())}
-    assert descriptor['data_keys'] == det.describe()
+    assert descriptor['data_keys'] == {
+        k: {**v, 'object_name': det.name} for k, v in det.describe().items()
+    }
     conf = descriptor['configuration'][det.name]
     assert conf['data_keys'] == det.describe_configuration()
     vals = {key: val['value'] for key, val in det.read_configuration().items()}
