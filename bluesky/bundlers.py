@@ -341,37 +341,11 @@ class RunBundler:
                 "A 'monitor' message was sent for {}"
                 "which is already monitored".format(obj)
             )
-        descriptor_uid = new_uid()
-        if obj not in self._describe_cache:
-            await self._cache_describe(obj)
-        if obj not in self._config_desc_cache:
-            await self._cache_describe_config(obj)
-            await self._cache_read_config(obj)
-        data_keys = self._describe_cache[obj]
-        config = {obj.name: {
-            "data": self._config_values_cache[obj],
-            "timestamps": self._config_ts_cache[obj],
-            "data_keys": self._config_desc_cache[obj]
-        }}
-        object_keys = {obj.name: list(data_keys)}
-        hints = {}
-        maybe_update_hints(hints, obj)
-        desc_doc = dict(
-            run_start=self._run_start_uid,
-            time=ttime.time(),
-            data_keys=data_keys,
-            uid=descriptor_uid,
-            configuration=config,
-            hints=hints,
-            name=name,
-            object_keys=object_keys,
-        )
-        doc_logger.debug("[descriptor] document is emitted with name %r containing "
-                         "data keys %r (run_uid=%r)", name, data_keys.keys(),
-                         self._run_start_uid,
-                         extra={'doc_name': 'descriptor',
-                                'run_uid': self._run_start_uid,
-                                'data_keys': data_keys.keys()})
+        await self._cache_describe(obj)
+        await self._cache_describe_config(obj)
+        await self._cache_read_config(obj)
+        desc_doc = await self._prepare_stream(name, (obj,))
+
         seq_num_counter = count(1)
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
@@ -390,7 +364,7 @@ class RunBundler:
                     "passed to subscribe() was not called with Dict[str, Reading]"
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = dict(
-                descriptor=descriptor_uid,
+                descriptor=desc_doc['uid'],
                 time=ttime.time(),
                 data=data,
                 timestamps=timestamps,
@@ -400,7 +374,6 @@ class RunBundler:
             self.emit_sync(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
-        await self.emit(DocumentNames.descriptor, desc_doc)
         # TODO: deprecate **kwargs when Ophyd.v2 is available
         obj.subscribe(emit_event, **kwargs)
 
