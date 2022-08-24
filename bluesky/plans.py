@@ -520,6 +520,8 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
+        # TODO thread expected stream name through
+        yield from bps.declare_stream(motor, *detectors, name='primary')
         for step in steps:
             yield from per_step(detectors, motor, step)
 
@@ -834,6 +836,7 @@ def tune_centroid(
         sum_I = 0       # for peak centroid calculation, I(x)
         sum_xI = 0
 
+        yield from bps.declare_stream(motor, *detectors, name='primary')
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg('checkpoint')
             yield from bps.mv(motor, next_pos)
