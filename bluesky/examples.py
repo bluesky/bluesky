@@ -137,6 +137,7 @@ def conditional_pause(det, motor, defer, include_checkpoint):
 def simple_scan_saving(det, motor):
     "Set, trigger, read"
     yield Msg('open_run')
+    yield Msg('declare_stream', None, motor, det, name='primary')
     yield Msg('create', name='primary')
     yield Msg('set', motor, 5)
     yield Msg('read', motor)
@@ -148,6 +149,7 @@ def simple_scan_saving(det, motor):
 
 def stepscan(det, motor):
     yield Msg('open_run')
+    yield Msg('declare_stream', None, motor, det, name='primary')
     for i in range(-5, 5):
         yield Msg('create', name='primary')
         yield Msg('set', motor, i)
@@ -160,6 +162,7 @@ def stepscan(det, motor):
 
 def cautious_stepscan(det, motor):
     yield Msg('open_run')
+    yield Msg('declare_stream', None, motor, det, name='primary')
     for i in range(-5, 5):
         yield Msg('checkpoint')
         yield Msg('create', name='primary')
@@ -210,6 +213,7 @@ def multi_sample_temperature_ramp(detector, sample_names, sample_positions,
             detector.center = peak_pos
             detector.sigma = .5 + .25 * idx
             detector.noise_factor = .05 + idx * 0.1
+            yield Msg('declare_stream', None, scan_motor, detector, temp_controller, name='primary')
             for scan_pos in np.arange(start, stop, step):
                 yield Msg('set', scan_motor, scan_pos)
                 # be super paranoid about the temperature. Grab it before and
