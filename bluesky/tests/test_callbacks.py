@@ -31,6 +31,7 @@ import time
 # copied from examples.py to avoid import
 def stepscan(det, motor):
     yield Msg('open_run')
+    yield Msg('declare_stream', None, det, motor, name='primary')
     for i in range(-5, 5):
         yield Msg('create', name='primary')
         yield Msg('set', motor, i)

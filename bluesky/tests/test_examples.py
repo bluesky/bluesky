@@ -19,7 +19,7 @@ with pytest.warns(UserWarning):
                                   )
 
 
-def test_msgs(RE, hw):
+def test_msgs(hw):
     m = Msg('set', hw.motor, {'motor': 5})
     assert m.command == 'set'
     assert m.obj is hw.motor
@@ -275,6 +275,7 @@ def test_suspend(RE, hw):
         Msg('sleep', None, .2),
         Msg('set', hw.motor, 5),
         Msg('trigger', hw.det),
+        Msg('declare_stream', None, hw.motor, hw.det, name='primary'),
         Msg('create', name='primary'),
         Msg('read', hw.motor),
         Msg('read', hw.det),
@@ -416,6 +417,7 @@ def test_seqnum_nonrepeated(RE, hw):
 
     def gen():
         yield Msg('open_run')
+        yield Msg('declare_stream', None, hw.motor, name='primary')
         yield Msg('create', name='primary')
         yield Msg('set', hw.motor, 1)
         yield Msg('read', hw.motor)
@@ -452,6 +454,7 @@ def test_duplicate_keys(RE, hw):
 
     def gen():
         yield (Msg('open_run'))
+        yield Msg('declare_stream', None, hw.det, hw.identical_det, name='primary')
         yield (Msg('create', name='primary'))
         yield (Msg('trigger', hw.det))
         yield (Msg('trigger', hw.identical_det))
@@ -467,6 +470,7 @@ def test_illegal_sequences(RE, hw):
     def gen1():
         # two 'create' msgs in a row
         yield (Msg('open_run'))
+        yield Msg('declare_stream', None, name='primary')
         yield (Msg('create', name='primary'))
         yield (Msg('create', name='primary'))
         yield (Msg('close_run'))
@@ -477,6 +481,7 @@ def test_illegal_sequences(RE, hw):
     def gen2():
         # two 'save' msgs in a row
         yield (Msg('open_run'))
+        yield Msg('declare_stream', None, name='primary')
         yield (Msg('create', name='primary'))
         yield (Msg('save'))
         yield (Msg('save'))
@@ -488,6 +493,7 @@ def test_illegal_sequences(RE, hw):
     def gen3():
         # 'configure' after 'create', before 'save'
         yield (Msg('open_run'))
+        yield Msg('declare_stream', None, name='primary')
         yield (Msg('create', name='primary'))
         yield (Msg('configure', hw.motor, {}))
 
@@ -497,6 +503,7 @@ def test_illegal_sequences(RE, hw):
     def gen4():
         # two 'drop' msgs in a row
         yield (Msg('open_run'))
+        yield Msg('declare_stream', None, name='primary')
         yield (Msg('create', name='primary'))
         yield (Msg('drop'))
         yield (Msg('drop'))
@@ -515,6 +522,7 @@ def test_new_ev_desc(RE, hw):
     def gen1():
         # configure between two events -> two descs
         yield (Msg('open_run'))
+        yield Msg('declare_stream', None, hw.motor, name='primary')
         yield (Msg('create', name='primary'))
         yield (Msg('read', hw.motor))
         yield (Msg('save'))
@@ -533,6 +541,7 @@ def test_new_ev_desc(RE, hw):
         # -> two descs
         yield (Msg('open_run'))
         yield (Msg('configure', hw.motor, {}))
+        yield Msg('declare_stream', None, hw.motor, name='primary')
         yield (Msg('create', name='primary'))
         yield (Msg('read', hw.motor))
         yield (Msg('save'))
@@ -550,6 +559,7 @@ def test_new_ev_desc(RE, hw):
         # configure once before any events -> one desc
         yield (Msg('open_run'))
         yield (Msg('configure', hw.motor, {}))
+        yield Msg('declare_stream', None, hw.motor, name='primary')
         yield (Msg('create', name='primary'))
         yield (Msg('read', hw.motor))
         yield (Msg('save'))
