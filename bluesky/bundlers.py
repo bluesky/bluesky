@@ -234,7 +234,7 @@ class RunBundler:
             if self._bundle_name not in self._descriptors:
                 raise IllegalMessageSequence(
                     "In strict mode you must pre-declare streams."
-            )
+                )
 
     async def read(self, msg, reading):
         """
