@@ -639,6 +639,8 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             direction_sign = 1
         else:
             direction_sign = -1
+        devices = tuple(utils.separate_devices(detectors + [motor]))
+        yield from bps.declare_stream(*devices, name='primary')
         while next_pos * direction_sign < stop * direction_sign:
             yield Msg('checkpoint')
             yield from bps.mv(motor, next_pos)
@@ -646,7 +648,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             for det in detectors:
                 yield Msg('trigger', det, group='B')
             yield Msg('wait', None, 'B')
-            for det in utils.separate_devices(detectors + [motor]):
+            for det in devices:
                 cur_det = yield Msg('read', det)
                 if target_field in cur_det:
                     cur_I = cur_det[target_field]['value']
