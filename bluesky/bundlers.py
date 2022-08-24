@@ -24,7 +24,9 @@ ObjDict = Dict[Any, Dict[str, T]]
 
 
 class RunBundler:
-    def __init__(self, md, record_interruptions, emit, emit_sync, log):
+    def __init__(self, md, record_interruptions, emit, emit_sync, log, *, strict_pre_declare=True):
+        # if create can YOLO implicitly create a stream
+        self._strict_pre_declare = strict_pre_declare
         # state stolen from the RE
         self.bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
@@ -228,6 +230,11 @@ class RunBundler:
                     "Msg('create') now requires a stream name, given as "
                     "Msg('create', name) or Msg('create', name=name)"
                 ) from None
+        if self._strict_pre_declare:
+            if self._bundle_name not in self._descriptors:
+                raise IllegalMessageSequence(
+                    "In strict mode you must pre-declare streams."
+            )
 
     async def read(self, msg, reading):
         """
