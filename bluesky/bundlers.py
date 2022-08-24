@@ -191,7 +191,7 @@ class RunBundler:
                 await self._cache_describe_config(obj)
                 await self._cache_read_config(obj)
 
-        await self._prepare_stream(stream_name, objs)
+        return (await self._prepare_stream(stream_name, objs))
 
     async def create(self, msg):
         """Trigger the run engine to start bundling future obj.read() calls for
