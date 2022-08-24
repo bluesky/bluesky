@@ -168,7 +168,7 @@ class RunBundler:
         doc_logger.debug(
             "[descriptor] document emitted with name %r containing "
             "data keys %r (run_uid=%r)",
-            obj_name,
+            desc_key,
             data_keys.keys(),
             self._run_start_uid,
             extra={
