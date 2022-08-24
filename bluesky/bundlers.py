@@ -9,6 +9,7 @@ from .protocols import (
     T, Callback, Configurable, PartialEvent, Descriptor, Flyable,
     HasName, Readable, Reading, Subscribable, check_supports
 )
+from . import utils
 from .utils import (
     new_uid,
     IllegalMessageSequence,
@@ -183,7 +184,7 @@ class RunBundler:
         command, no_obj, objs, kwargs, _ = msg
         stream_name = kwargs['name']
         assert no_obj is None
-        objs = frozenset(objs)
+        objs = frozenset(utils.separate_devices(objs))
         for obj in objs:
             if obj not in self._describe_cache:
                 await self._cache_describe(obj)
