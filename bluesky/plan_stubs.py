@@ -44,7 +44,7 @@ def declare_stream(*objs, name):
     --------
     :func:`bluesky.plan_stubs.save`
     """
-    return (yield Msg('declare_stream', None, *objs, name=name))
+    return (yield Msg('declare_stream', None, *separate_devices(objs), name=name))
 
 
 def create(name='primary'):
