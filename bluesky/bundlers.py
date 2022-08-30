@@ -179,17 +179,20 @@ class RunBundler:
         self._descriptors[desc_key] = (objs_read, descriptor_doc)
         return descriptor_doc
 
+    async def _ensure_cached(self, obj):
+        if obj not in self._describe_cache:
+            await self._cache_describe(obj)
+        if obj not in self._config_desc_cache:
+            await self._cache_describe_config(obj)
+            await self._cache_read_config(obj)
+
     async def declare_stream(self, msg):
         command, no_obj, objs, kwargs, _ = msg
         stream_name = kwargs['name']
         assert no_obj is None
         objs = frozenset(objs)
         for obj in objs:
-            if obj not in self._describe_cache:
-                await self._cache_describe(obj)
-            if obj not in self._config_desc_cache:
-                await self._cache_describe_config(obj)
-                await self._cache_read_config(obj)
+            await self._ensure_cached(obj)
 
         return (await self._prepare_stream(stream_name, objs))
 
@@ -252,11 +255,7 @@ class RunBundler:
             # on the same device you make obj.describe() calls multiple times.
             # As this is harmless and not an expected use case, we don't guard
             # against it. Reading multiple devices concurrently works fine.
-            if obj not in self._describe_cache:
-                await self._cache_describe(obj)
-            if obj not in self._config_desc_cache:
-                await self._cache_describe_config(obj)
-                await self._cache_read_config(obj)
+            await self._ensure_cached(obj)
 
             # check that current read collides with nothing else in
             # current event
@@ -341,9 +340,9 @@ class RunBundler:
                 "A 'monitor' message was sent for {}"
                 "which is already monitored".format(obj)
             )
-        await self._cache_describe(obj)
-        await self._cache_describe_config(obj)
-        await self._cache_read_config(obj)
+
+        await self._ensure_cached(obj)
+
         desc_doc = await self._prepare_stream(name, (obj,))
 
         seq_num_counter = count(1)
