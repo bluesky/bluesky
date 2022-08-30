@@ -187,6 +187,7 @@ class RunBundler:
             await self._cache_read_config(obj)
 
     async def declare_stream(self, msg):
+        """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
         stream_name = kwargs['name']
         assert no_obj is None
@@ -197,8 +198,8 @@ class RunBundler:
         return (await self._prepare_stream(stream_name, objs))
 
     async def create(self, msg):
-        """Trigger the run engine to start bundling future obj.read() calls for
-         an Event document
+        """
+        Start bundling future obj.read() calls for an Event document.
 
         Expected message object is::
 
