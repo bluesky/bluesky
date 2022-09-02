@@ -613,6 +613,8 @@ def snake_cyclers(cyclers, snake_booleans):
     """
     if len(cyclers) != len(snake_booleans):
         raise ValueError("number of cyclers does not match number of booleans")
+    if not any(snake_booleans[1:]):
+        return reduce(operator.mul, cyclers)
     lengths = []
     new_cyclers = []
     for c in cyclers:
