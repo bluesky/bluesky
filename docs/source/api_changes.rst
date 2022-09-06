@@ -2,7 +2,23 @@
  Release History
 =================
 
-v1.9.0 (2022-XX-YY)
+v1.9.1 (2022-09-06)
+===================
+
+Fixed
+-----
+
+* Properly register user-supplied event loops
+* Removed status_tasks dequeue from RunEngine, fixing long-standing memory leak
+* No-longer pre-compute all axes when not snaking, lowering memory footprint for large scans
+
+Removed
+-------
+
+* Removed support for Python < 3.8
+
+
+v1.9.0 (2022-08-11)
 ===================
 
 * the `"resume"` message which can only be used internally has been renamed to
