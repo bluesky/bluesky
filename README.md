@@ -2,8 +2,8 @@
 
 [![Build Status](https://img.shields.io/github/workflow/status/bluesky/bluesky/Unit%20Tests)](https://github.com/bluesky/bluesky/actions?query=workflow%3A%22Unit+Tests%22+branch%3Amaster)
 [![PyPI](https://img.shields.io/pypi/v/bluesky)](https://pypi.org/project/bluesky/)
-[![conda-forge](https://img.shields.io/conda/vn/conda-forge/bluesky)](https://anaconda.org/conda-forge/bluesky)
-[![conda-forge](https://img.shields.io/conda/vn/conda-forge/bluesky-base)](https://anaconda.org/conda-forge/bluesky-base)
+[![conda-forge](https://img.shields.io/conda/vn/conda-forge/bluesky?label=conda-forge%3Abluesky)](https://anaconda.org/conda-forge/bluesky)
+[![conda-forge](https://img.shields.io/conda/vn/conda-forge/bluesky-base?label=conda-forge%3Abluesky-base)](https://anaconda.org/conda-forge/bluesky-base)
 
 The Bluesky Python Package is an experiment specification and orchestration engine. 
 - Specify the logic of an experiment in a high-level, hardware-abstracted way.
