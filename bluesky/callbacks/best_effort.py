@@ -224,9 +224,15 @@ class BestEffortCallback(QtAwareCallback):
 
                 fig_size = np.array(layout[::-1]) * 5
                 fig.set_size_inches(*fig_size)
-                fig.subplots(*map(int, layout), **share_kwargs)
+                axes_grid = fig.subplots(*map(int, layout), **share_kwargs)
                 for ax in fig.axes[len(columns):]:
                     ax.set_visible(False)
+
+                if len(axes_grid.shape) == 2:
+                    # Axes go left to right, top to bottom, and will make some labels invisible
+                    for i in range(int(layout[1])):
+                        if axes_grid[-1, i].get_visible() is False:
+                            axes_grid[-2, i].tick_params(axis="x", labelbottom=True)
 
             axes = fig.axes
 
