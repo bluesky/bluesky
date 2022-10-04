@@ -228,7 +228,7 @@ class BestEffortCallback(QtAwareCallback):
                 for ax in fig.axes[len(columns):]:
                     ax.set_visible(False)
 
-                if len(axes_grid.shape) == 2:
+                if len(fig.axes) > 1 and len(axes_grid.shape) == 2:
                     # Axes go left to right, top to bottom, and will make some labels invisible
                     for i in range(int(layout[1])):
                         if axes_grid[-1, i].get_visible() is False:
