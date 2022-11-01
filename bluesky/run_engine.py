@@ -1850,18 +1850,26 @@ class RunEngine:
 
         return ret
 
-    async def _locate(self, msg):
+    async def _locate(self, msg: Msg):
         """
-        Locate a Movable and return its location.
+        Locate some Movables and return their locations.
 
         Expected message object is:
 
-            Msg('locate', obj)
+            Msg('locate', obj1, ..., objn)
+
+        If a single obj is passed, obj.locate() is returned. If multiple objs
+        are passed, obj.locate() is called in parallel for all objs and a list
+        of the results returned.
+
         """
-        obj = check_supports(msg.obj, Locatable)
-        # actually _locate_ the object
-        ret = await maybe_await(obj.locate())
-        return ret
+        objs = [check_supports(obj, Locatable) for obj in (msg.obj,) + msg.args]
+        # actually _locate_ the objects
+        coros = [maybe_await(obj.locate()) for obj in objs]
+        if len(coros) == 1:
+            return await coros[0]
+        else:
+            return list(await asyncio.gather(*coros))
 
     async def _monitor(self, msg):
         """

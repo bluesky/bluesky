@@ -170,6 +170,40 @@ def test_mvr(RE, hw):
     assert actual[2] == Msg('wait', None)
 
 
+def test_locatable_message_multiple_objects(RE):
+    class AsyncLocatable(Locatable):
+        value = 1.0
+
+        async def locate(self) -> Location:
+            # Grab the original value
+            value = AsyncLocatable.value
+            # Let any other coros get a look in
+            await asyncio.sleep(0)
+            # Increment the next value and return the original value
+            AsyncLocatable.value += 1
+            return dict(setpoint=value, readback=value)
+
+    rds = []
+    one = AsyncLocatable()
+    two = AsyncLocatable()
+
+    def multi_rd():
+        rds.append((yield Msg("locate", one)))
+        rds.append((yield Msg("locate", two)))
+        rds.append((yield Msg("locate", one, two)))
+        rds.append((yield Msg("locate", one)))
+
+    RE(multi_rd())
+    assert rds == [
+        dict(setpoint=1.0, readback=1.0),
+        dict(setpoint=2.0, readback=2.0),
+        # Check they happened at the same time, so have the same value
+        [dict(setpoint=3.0, readback=3.0), dict(setpoint=3.0, readback=3.0)],
+        # And now it will skip one as they both incremented above
+        dict(setpoint=5.0, readback=5.0),
+    ]
+
+
 def test_rd_locatable(RE):
     class Jittery(Readable, Locatable):
         def describe(self) -> Dict[str, Descriptor]:
