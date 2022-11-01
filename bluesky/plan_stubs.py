@@ -309,6 +309,9 @@ def rd(obj, *, default_value=0):
     This is a helper plan to get the scalar value out of a Device
     (such as an EpicsMotor or a single EpicsSignal).
 
+    For devices that implement the Locatable protocol, the location is canonical
+    and is returned without parsing the read keys.
+
     For devices that have more than one read key the following rules are used:
 
     - if exactly 1 field is hinted that value is used
