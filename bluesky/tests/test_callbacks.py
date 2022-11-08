@@ -624,6 +624,12 @@ def EvilBaseClass(request):
         def datum_page(self, doc):
             raise MyError
 
+        def stream_resource(self, doc):
+            raise MyError
+
+        def stream_datum(self, doc):
+            raise MyError
+
     return EvilCallback
 
 
