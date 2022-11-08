@@ -178,13 +178,28 @@ with the following additional methods and attributes.
 
     .. attribute:: position
 
-        A heuristic that describes the current position of a device as a
-        single scalar, as opposed to the potentially multi-valued description
+        A optional heuristic that describes the current position of a device as
+        a single scalar, as opposed to the potentially multi-valued description
         provided by ``read()``.
 
-        Optional: bluesky itself does not use the position attribute, but other
-        parts of the ecosystem might.
-        Developers are encouraged to implement this attribute where possible.
+        .. note::
+
+            The position attribute has been deprecated in favour of the
+            Locatable protocol below
+
+Certain plans like :func:`~bluesky.plan_stubs.mvr` would like to know where a
+Device was last requested to move to, and other plans like
+:func:`~bluesky.plan_stubs.rd` would like to know where a Device is currently
+located. Devices may implement ``locate()`` to provide this information.
+
+.. autoclass:: bluesky.protocols.Locatable
+    :members:
+    :show-inheritance:
+
+``Location`` objects are dictionaries with the following entries:
+
+.. autoclass:: bluesky.protocols.Location
+    :members:
 
 
 "Flyer" Interface

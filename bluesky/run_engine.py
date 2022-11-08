@@ -14,7 +14,7 @@ import weakref
 from dataclasses import dataclass
 import typing
 from .bundlers import RunBundler, maybe_await
-from .protocols import (Flyable, Movable, Pausable, Readable, Stageable,
+from .protocols import (Flyable, Locatable, Movable, Pausable, Readable, Stageable,
                         Stoppable, Triggerable, check_supports)
 
 import concurrent
@@ -452,6 +452,7 @@ class RunEngine:
             'save': self._save,
             'drop': self._drop,
             'read': self._read,
+            'locate': self._locate,
             'monitor': self._monitor,
             'unmonitor': self._unmonitor,
             'null': self._null,
@@ -1848,6 +1849,27 @@ class RunEngine:
             await current_run.read(msg, ret)
 
         return ret
+
+    async def _locate(self, msg: Msg):
+        """
+        Locate some Movables and return their locations.
+
+        Expected message object is:
+
+            Msg('locate', obj1, ..., objn, squeeze=True)
+
+        If a single obj is passed, obj.locate() is returned. If multiple objs
+        are passed, obj.locate() is called in parallel for all objs and a list
+        of the results returned. If squeeze is supplied and is False then it
+        will always return a list of results even with a single object.
+        """
+        objs = [check_supports(obj, Locatable) for obj in (msg.obj,) + msg.args]
+        # actually _locate_ the objects
+        coros = [maybe_await(obj.locate()) for obj in objs]
+        if len(coros) == 1 and msg.kwargs.get("squeeze", True):
+            return await coros[0]
+        else:
+            return list(await asyncio.gather(*coros))
 
     async def _monitor(self, msg):
         """

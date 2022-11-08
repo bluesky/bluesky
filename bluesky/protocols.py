@@ -3,7 +3,10 @@ try:
 except ImportError:
     from typing import Literal, Protocol, TypedDict, runtime_checkable
 
-from typing import Any, Awaitable, Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import (
+    Any, Awaitable, Callable, Dict, Generic, Iterator, List, Optional,
+    Sequence, Tuple, Type, TypeVar, Union
+)
 
 
 # TODO: these are not placed in Events by RE yet
@@ -259,6 +262,26 @@ class Movable(Protocol):
     def set(self, value) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
+
+
+class Location(TypedDict, Generic[T]):
+    """A dictionary containing the location of a Device"""
+    #: Where the Device was requested to move to
+    setpoint: T
+    #: Where the Device actually is at the moment
+    readback: T
+
+
+@runtime_checkable
+class Locatable(Movable, Protocol):
+    def locate(self) -> SyncOrAsync[Location]:
+        """Return the current location of a Device.
+
+        While a ``Readable`` reports many values, a ``Movable`` will have the
+        concept of location. This is where the Device currently is, and where it
+        was last requested to move to. This protocol formalizes how to get the
+        location from a ``Movable``.
+        """
 
 
 @runtime_checkable

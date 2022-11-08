@@ -3,6 +3,8 @@ from __future__ import generator_stop
 from collections import OrderedDict, deque, ChainMap
 from collections.abc import Iterable
 import uuid
+
+from bluesky.protocols import Locatable
 from .utils import (get_hinted_fields, normalize_subs_input, root_ancestor,
                     separate_devices,
                     Msg, ensure_generator, single_gen,
@@ -974,6 +976,14 @@ def _normalize_devices(devices):
     return devices, coupled_parents
 
 
+def __get_result_of_message(msg_type: str, obj):
+    result = yield Msg(msg_type, obj)
+    if result is None:
+        # this plan may be being list-ified
+        print(f"*** all positions for {obj.name} are relative to current position ***")
+    return result
+
+
 def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
     """Internal plan for relative set and reset wrappers
 
@@ -983,37 +993,40 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
        Do not use this plan directly for any reason.
 
     """
-    # obj should have a `position` attribution
-    try:
-        cur_pos = obj.position
-    except AttributeError:
-        # ... but as a fallback we can read obj and grab the value of the
-        # first key
-        reading = yield Msg('read', obj)
+    # First check if it is a locatable, and use its location if it is
+    if isinstance(obj, Locatable):
+        location = yield from __get_result_of_message("locate", obj)
+        if location is None:
+            setpoint = 0
+        else:
+            setpoint = location["setpoint"]
+    # Otherwise it might have a `position` attribution
+    elif hasattr(obj, "position"):
+        setpoint = obj.position
+    # Otherwise fallback to read obj and grab the value of the first key
+    else:
+        reading = yield from __get_result_of_message("read", obj)
         if reading is None:
-            # this plan may be being list-ified
-            print("*** all positions for {m.name} are "
-                  "relative to current position ***".format(m=obj))
-            cur_pos = 0
+            setpoint = 0
         else:
             fields = get_hinted_fields(obj)
             if len(fields) == 1:
                 k, = fields
-                cur_pos = reading[k]['value']
+                setpoint = reading[k]['value']
             elif len(fields) == 0:
                 k = list(reading.keys())[0]
-                cur_pos = reading[k]['value']
+                setpoint = reading[k]['value']
             else:
                 raise Exception("do not yet know how to deal with "
                                 "non pseudopositioner multi-axis.  Please "
                                 "contact DAMA to justify why you need "
                                 "this.")
 
-    initial_positions[obj] = cur_pos
+    initial_positions[obj] = setpoint
 
     # if we move a pseudo positioner also stash it's children
     if obj in coupled_parents:
-        for c, p in zip(obj.pseudo_positioners, cur_pos):
+        for c, p in zip(obj.pseudo_positioners, setpoint):
             initial_positions[c] = p
 
     # if we move a pseudo single, also stash it's parent and siblings
