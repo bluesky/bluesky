@@ -188,14 +188,14 @@ def test_locatable_message_multiple_objects(RE):
     two = AsyncLocatable()
 
     def multi_rd():
-        rds.append((yield Msg("locate", one)))
+        rds.append((yield Msg("locate", one, squeeze=False)))
         rds.append((yield Msg("locate", two)))
         rds.append((yield Msg("locate", one, two)))
         rds.append((yield Msg("locate", one)))
 
     RE(multi_rd())
     assert rds == [
-        dict(setpoint=1.0, readback=1.0),
+        [dict(setpoint=1.0, readback=1.0)],
         dict(setpoint=2.0, readback=2.0),
         # Check they happened at the same time, so have the same value
         [dict(setpoint=3.0, readback=3.0), dict(setpoint=3.0, readback=3.0)],
