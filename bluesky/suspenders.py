@@ -377,12 +377,14 @@ class SuspendFloor(_Threshold):
         if not self.tripped:
             return ''
 
-        just = ('Signal {} = {!r} is below {}'
-                ''.format(self._sig.name, self._sig.get(),
-                          self._suspend_thresh)
-                )
-        return ': '.join(s for s in (just, self._tripped_message)
-                         if s)
+        just = (
+            f'Signal {self._sig.name} = {self._sig.get()!r} ' +
+            f'fell below {self._suspend_thresh} ' +
+            f'and has not yet crossed above {self._resume_thresh}.'
+        )
+        return ': '.join(
+            s for s in (just, self._tripped_message) if s
+        )
 
 
 class SuspendCeil(_Threshold):
@@ -431,12 +433,14 @@ class SuspendCeil(_Threshold):
         if not self.tripped:
             return ''
 
-        just = ('Signal {} = {!r} is above {}'
-                ''.format(self._sig.name, self._sig.get(),
-                          self._suspend_thresh)
-                )
-        return ': '.join(s for s in (just, self._tripped_message)
-                         if s)
+        just = (
+            f'Signal {self._sig.name} = {self._sig.get()!r} ' +
+            f'went above {self._suspend_thresh} ' +
+            f'and has not yet crossed below {self._resume_thresh}.'
+        )
+        return ': '.join(
+            s for s in (just, self._tripped_message) if s
+        )
 
 
 class _SuspendBandBase(SuspenderBase):
