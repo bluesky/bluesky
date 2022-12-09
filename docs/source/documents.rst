@@ -37,7 +37,7 @@ of the :ref:`built-in pre-assembled plans <preassembled_plans>`, like
 
 The documents in each run are:
 
-- A **Run Start document**, containg all of the metadata known at the start of
+- A **Run Start document**, containing all of the metadata known at the start of
   the run. Highlights:
 
     - time --- the start time
