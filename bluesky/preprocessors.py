@@ -10,7 +10,8 @@ from .utils import (get_hinted_fields, normalize_subs_input, root_ancestor,
                     Msg, ensure_generator, single_gen,
                     short_uid as _short_uid, make_decorator,
                     RunEngineControlException, merge_axis)
-from functools import wraps
+from functools import wraps, update_wrapper
+import warnings
 from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read)
 
 
@@ -1346,3 +1347,42 @@ def set_run_key_wrapper(plan, run):
 
 
 set_run_key_decorator = make_decorator(set_run_key_wrapper)
+
+
+class plan_wrapper:
+    def __init__(self, gen_instance):
+        self.gen_instance = gen_instance
+        self._plan = True
+        self.pulled = False
+
+    def __iter__(self):
+        self.pulled = True
+        return (yield from self.gen_instance)
+
+    def __del__(self):
+        if not self.pulled:
+            warnings.warn(f"{self!r} was not used. Did you forget `yield from`?")
+
+    def __repr__(self):
+        return f"<bluesky plan: {self.gen_instance.__name__}>"
+
+
+class plan_decorator:
+    def __init__(self, gen_func):
+        self.gen_func = gen_func
+        self._plan_function = True
+        update_wrapper(self, gen_func)
+
+    def __call__(self, *args, **kwargs):
+        return plan_wrapper(self.gen_func(*args, **kwargs))
+
+    def __repr__(self):
+        return f"<uninitialized bluesky plan: {self.gen_func.__name__}>"
+
+
+def isplanfunction(obj):
+    return getattr(obj, "_plan_function", False)
+
+
+def isplan(obj):
+    return getattr(obj, "_plan", False)

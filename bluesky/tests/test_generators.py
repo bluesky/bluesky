@@ -2,7 +2,6 @@ import uuid
 import pytest
 from collections import deque
 from itertools import zip_longest
-
 from bluesky import Msg
 
 from bluesky.preprocessors import (msg_mutator, stub_wrapper,
