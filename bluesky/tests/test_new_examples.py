@@ -170,9 +170,14 @@ def test_mvr(RE, hw):
     assert actual[2] == Msg('wait', None)
 
 
-def test_locatable_message_multiple_objects(RE):
+def test_locatable_message_multiple_objects(RE, hw):
     class AsyncLocatable(Locatable):
         value = 1.0
+
+        def set(self, value) -> Status:
+            self.position = value + 0.1
+            # We don't actually need a motor, but use one just to give us a Status
+            return hw.motor.set(value)
 
         async def locate(self) -> Location:
             # Grab the original value
@@ -204,7 +209,7 @@ def test_locatable_message_multiple_objects(RE):
     ]
 
 
-def test_rd_locatable(RE):
+def test_rd_locatable(RE, hw):
     class Jittery(Readable, Locatable):
         def describe(self) -> Dict[str, Descriptor]:
             return dict(x=dict(source="dummy", dtype="number", shape=[]))
@@ -214,6 +219,13 @@ def test_rd_locatable(RE):
 
         def locate(self) -> Location:
             return dict(setpoint=1.0, readback=1.1)
+
+        def set(self, value) -> Status:
+            self.position = value + 0.1
+            # We don't actually need a motor, but use one just to give us a Status
+            return hw.motor.set(value)
+
+        name = ""
 
     jittery = Jittery()
     rds = []
