@@ -43,6 +43,7 @@ from bluesky.plan_stubs import (
     repeater,
     caching_repeater,
     repeat,
+    one_shot,
     one_1d_step,
     one_nd_step)
 from bluesky.preprocessors import (
@@ -66,7 +67,7 @@ from bluesky.plans import count, scan, rel_scan, inner_product_scan
 import bluesky.plans as bp
 from bluesky.protocols import Descriptor, Locatable, Location, Readable, Reading, Status
 
-from bluesky.utils import all_safe_rewind
+from bluesky.utils import all_safe_rewind, IllegalMessageSequence
 
 import threading
 
@@ -913,4 +914,15 @@ def test_custom_stream_name(RE, hw):
         return (yield from one_1d_step(detectors, motor,
                                        step, take_reading=new_trigger_and_read))
 
+    def new_per_shot(detectors):
+        return (yield from one_shot(detectors, take_reading=new_trigger_and_read))
+
     RE(scan([hw.det], hw.motor, -1, 1, 3, per_step=new_per_step))
+    RE(count([hw.det], 3, per_shot=new_per_shot))
+
+    RE._require_stream_declaration = True
+    with pytest.raises(IllegalMessageSequence):
+        RE(scan([hw.det], hw.motor, -1, 1, 3, per_step=new_per_step))
+
+    with pytest.raises(IllegalMessageSequence):
+        RE(count([hw.det], 3, per_shot=new_per_shot))
