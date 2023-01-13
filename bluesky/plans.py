@@ -65,6 +65,8 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     _md.update(md or {})
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
+    # per_shot might define a different stream, so do not predeclare primary
+    predeclare = (per_shot is None)
     if per_shot is None:
         per_shot = bps.one_shot
 
@@ -72,7 +74,8 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     @bpp.run_decorator(md=_md)
     def inner_count():
         # TODO thread stream name through per_shot?
-        yield from bps.declare_stream(*detectors, name='primary')
+        if predeclare:
+            yield from bps.declare_stream(*detectors, name='primary')
         return (yield from bps.repeat(partial(per_shot, detectors),
                                       num=num, delay=delay))
 
@@ -512,6 +515,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     else:
         _md['hints'].setdefault('dimensions', dimensions)
 
+    predeclare = (per_step is None)
     if per_step is None:
         per_step = bps.one_1d_step
 
@@ -521,7 +525,8 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
         # TODO thread expected stream name through
-        yield from bps.declare_stream(motor, *detectors, name='primary')
+        if predeclare:
+            yield from bps.declare_stream(motor, *detectors, name='primary')
         for step in steps:
             yield from per_step(detectors, motor, step)
 
@@ -928,6 +933,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         # change it, else set it to the one generated above
         _md['hints'].setdefault('dimensions', dimensions)
 
+    predeclare = (per_step is None)
     if per_step is None:
         per_step = bps.one_nd_step
     else:
@@ -1002,7 +1008,8 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     @bpp.run_decorator(md=_md)
     def inner_scan_nd():
         # TODO thread expected stream name through
-        yield from bps.declare_stream(*motors, *detectors, name='primary')
+        if predeclare:
+            yield from bps.declare_stream(*motors, *detectors, name='primary')
         for step in list(cycler):
             yield from per_step(detectors, step, pos_cache)
 
