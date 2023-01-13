@@ -24,7 +24,7 @@ ObjDict = Dict[Any, Dict[str, T]]
 
 
 class RunBundler:
-    def __init__(self, md, record_interruptions, emit, emit_sync, log, *, strict_pre_declare=True):
+    def __init__(self, md, record_interruptions, emit, emit_sync, log, *, strict_pre_declare=False):
         # if create can YOLO implicitly create a stream
         self._strict_pre_declare = strict_pre_declare
         # state stolen from the RE
