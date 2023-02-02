@@ -2645,8 +2645,7 @@ def set_bluesky_event_loop(loop):
 
 def in_bluesky_event_loop() -> bool:
     try:
-        # TODO: change to asyncio.get_running_loop() when we drop py3.6
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
     except RuntimeError:
         # Ok, no running loop
         return False
