@@ -8,6 +8,8 @@ from typing import (
     Sequence, Tuple, Type, TypeVar, Union
 )
 
+from abc import abstractmethod
+
 
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
@@ -121,6 +123,7 @@ SyncOrAsync = Union[T, Awaitable[T]]
 
 @runtime_checkable
 class Status(Protocol):
+    @abstractmethod
     def add_callback(self, callback: Callable[["Status"], None]) -> None:
         """Add a callback function to be called upon completion.
 
@@ -132,11 +135,13 @@ class Status(Protocol):
         ...
 
     @property
+    @abstractmethod
     def done(self) -> bool:
         """If done return True, otherwise return False."""
         ...
 
     @property
+    @abstractmethod
     def success(self) -> bool:
         """If done return whether the operation was successful."""
         ...
@@ -145,6 +150,7 @@ class Status(Protocol):
 @runtime_checkable
 class HasName(Protocol):
     @property
+    @abstractmethod
     def name(self) -> str:
         """Used to populate object_keys in the Event Descriptor
 
@@ -155,6 +161,7 @@ class HasName(Protocol):
 @runtime_checkable
 class HasParent(Protocol):
     @property
+    @abstractmethod
     def parent(self) -> Optional[Any]:
         """``None``, or a reference to a parent device.
 
@@ -165,6 +172,7 @@ class HasParent(Protocol):
 
 @runtime_checkable
 class WritesExternalAssets(Protocol):
+    @abstractmethod
     def collect_asset_docs(self) -> Iterator[Asset]:
         """Create the resource and datum documents describing data in external source.
 
@@ -191,6 +199,7 @@ class WritesExternalAssets(Protocol):
 
 @runtime_checkable
 class Configurable(Protocol):
+    @abstractmethod
     def read_configuration(self) -> SyncOrAsync[Dict[str, Reading]]:
         """Same API as ``read`` but for slow-changing fields related to configuration.
         e.g., exposure time. These will typically be read only once per run.
@@ -199,6 +208,7 @@ class Configurable(Protocol):
         """
         ...
 
+    @abstractmethod
     def describe_configuration(self) -> SyncOrAsync[Dict[str, Descriptor]]:
         """Same API as ``describe``, but corresponding to the keys in
         ``read_configuration``.
@@ -210,6 +220,7 @@ class Configurable(Protocol):
 
 @runtime_checkable
 class Triggerable(Protocol):
+    @abstractmethod
     def trigger(self) -> Status:
         """Return a ``Status`` that is marked done when the device is done triggering.
         """
@@ -218,6 +229,7 @@ class Triggerable(Protocol):
 
 @runtime_checkable
 class Readable(HasName, Protocol):
+    @abstractmethod
     def read(self) -> SyncOrAsync[Dict[str, Reading]]:
         """Return an OrderedDict mapping string field name(s) to dictionaries
         of values and timestamps and optional per-point metadata.
@@ -235,6 +247,7 @@ class Readable(HasName, Protocol):
         """
         ...
 
+    @abstractmethod
     def describe(self) -> SyncOrAsync[Dict[str, Descriptor]]:
         """Return an OrderedDict with exactly the same keys as the ``read``
         method, here mapped to per-scan metadata about each field.
@@ -259,6 +272,7 @@ class Readable(HasName, Protocol):
 
 @runtime_checkable
 class Movable(Protocol):
+    @abstractmethod
     def set(self, value) -> Status:
         """Return a ``Status`` that is marked done when the device is done moving."""
         ...
@@ -274,6 +288,7 @@ class Location(TypedDict, Generic[T]):
 
 @runtime_checkable
 class Locatable(Movable, Protocol):
+    @abstractmethod
     def locate(self) -> SyncOrAsync[Location]:
         """Return the current location of a Device.
 
@@ -282,10 +297,12 @@ class Locatable(Movable, Protocol):
         was last requested to move to. This protocol formalizes how to get the
         location from a ``Movable``.
         """
+        ...
 
 
 @runtime_checkable
 class Flyable(HasName, Protocol):
+    @abstractmethod
     def kickoff(self) -> Status:
         """Begin acculumating data.
 
@@ -293,10 +310,12 @@ class Flyable(HasName, Protocol):
         """
         ...
 
+    @abstractmethod
     def complete(self) -> Status:
         """Return a ``Status`` and mark it done when acquisition has completed."""
         ...
 
+    @abstractmethod
     def collect(self) -> Iterator[PartialEvent]:
         """Yield dictionaries that are partial Event documents.
 
@@ -305,6 +324,7 @@ class Flyable(HasName, Protocol):
         """
         ...
 
+    @abstractmethod
     def describe_collect(self) -> SyncOrAsync[Dict[str, Dict[str, Descriptor]]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
@@ -320,6 +340,7 @@ class Flyable(HasName, Protocol):
 class Stageable(Protocol):
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
+    @abstractmethod
     def stage(self) -> List[Any]:
         """An optional hook for "setting up" the device for acquisition.
 
@@ -330,6 +351,7 @@ class Stageable(Protocol):
         """
         ...
 
+    @abstractmethod
     def unstage(self) -> List[Any]:
         """A hook for "cleaning up" the device after acquisition.
 
@@ -341,6 +363,7 @@ class Stageable(Protocol):
 
 @runtime_checkable
 class Pausable(Protocol):
+    @abstractmethod
     def pause(self) -> SyncOrAsync[None]:
         """Perform device-specific work when the RunEngine pauses.
 
@@ -348,6 +371,7 @@ class Pausable(Protocol):
         """
         ...
 
+    @abstractmethod
     def resume(self) -> SyncOrAsync[None]:
         """Perform device-specific work when the RunEngine resumes after a pause.
 
@@ -358,6 +382,7 @@ class Pausable(Protocol):
 
 @runtime_checkable
 class Stoppable(Protocol):
+    @abstractmethod
     def stop(self, success=True) -> SyncOrAsync[None]:
         """Safely stop a device that may or may not be in motion.
 
@@ -377,6 +402,7 @@ Callback = Callable[[Dict[str, Reading]], None]
 
 @runtime_checkable
 class Subscribable(HasName, Protocol):
+    @abstractmethod
     def subscribe(self, function: Callback) -> None:
         """Subscribe to updates in value of a device.
 
@@ -387,6 +413,7 @@ class Subscribable(HasName, Protocol):
         """
         ...
 
+    @abstractmethod
     def clear_sub(self, function: Callback) -> None:
         """Remove a subscription."""
         ...
@@ -394,6 +421,7 @@ class Subscribable(HasName, Protocol):
 
 @runtime_checkable
 class Checkable(Protocol):
+    @abstractmethod
     def check_value(self, value: Any) -> SyncOrAsync[None]:
         """Test for a valid setpoint without actually moving.
 
@@ -427,6 +455,7 @@ class Hints(TypedDict, total=False):
 @runtime_checkable
 class HasHints(HasName, Protocol):
     @property
+    @abstractmethod
     def hints(self) -> Hints:
         """A dictionary of suggestions for best-effort visualization and processing.
 
