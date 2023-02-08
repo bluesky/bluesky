@@ -1,6 +1,6 @@
 # Bluesky — An Experiment Specification & Orchestration Engine
 
-[![Build Status](https://img.shields.io/github/workflow/status/bluesky/bluesky/Unit%20Tests)](https://github.com/bluesky/bluesky/actions?query=workflow%3A%22Unit+Tests%22+branch%3Amaster)
+[![Build Status](https://img.shields.io/github/workflow/status/bluesky/bluesky/testing.yml?branch=master)](https://github.com/bluesky/bluesky/actions?query=workflow%3A%22Unit+Tests%22+branch%3Amaster)
 [![PyPI](https://img.shields.io/pypi/v/bluesky)](https://pypi.org/project/bluesky/)
 [![conda-forge](https://img.shields.io/conda/vn/conda-forge/bluesky?label=conda-forge%3Abluesky)](https://anaconda.org/conda-forge/bluesky)
 [![conda-forge](https://img.shields.io/conda/vn/conda-forge/bluesky-base?label=conda-forge%3Abluesky-base)](https://anaconda.org/conda-forge/bluesky-base)
