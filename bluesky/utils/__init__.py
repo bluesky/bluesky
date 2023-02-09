@@ -1049,7 +1049,10 @@ class AsyncInput:
     """
     def __init__(self, loop=None):
         self.loop = loop or asyncio.get_event_loop()
-        self.q = asyncio.Queue(loop=self.loop)
+        if sys.version_info < (3, 10):
+            self.q = asyncio.Queue(loop=self.loop)
+        else:
+            self.q = asyncio.Queue()
         self.loop.add_reader(sys.stdin, self.got_input)
 
     def got_input(self):
