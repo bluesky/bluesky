@@ -38,7 +38,7 @@ Dtype = Literal["string", "number", "array", "boolean", "integer"]
 # https://github.com/bluesky/event-model/blob/master/event_model/schemas/event_descriptor.json
 # Just the data_key definition
 class DescriptorOptional(TypedDict, total=False):
-    """A dictionary containing optional per-scan metadata of a sseries of Readings"""
+    """A dictionary containing optional per-scan metadata of a series of Readings"""
     #: Where the data is stored if it is stored external to the events
     external: str
     #: The names for dimensions of the data. Empty list if scalar data
