@@ -1,5 +1,6 @@
 import asyncio
 from collections import defaultdict
+import time as ttime
 from typing import Dict
 import pytest
 from bluesky import Msg, RunEngineInterrupted
@@ -24,7 +25,9 @@ from bluesky.plan_stubs import (
     collect,
     configure,
     stage,
+    stage_all,
     unstage,
+    unstage_all,
     subscribe,
     unsubscribe,
     install_suspender,
@@ -106,8 +109,10 @@ import threading
      (collect, ('foo',), {}, [Msg('collect', 'foo',
                                   stream=False, return_payload=True)]),
      (configure, ('det', 1), {'a': 2}, [Msg('configure', 'det', 1, a=2)]),
-     (stage, ('det',), {}, [Msg('stage', 'det')]),
-     (unstage, ('det',), {}, [Msg('unstage', 'det')]),
+     (stage, ('det',), {}, [Msg('stage', 'det', group=None)]),
+     (stage, ('det',), {"group": "A"}, [Msg('stage', 'det', group="A")]),
+     (unstage, ('det',), {}, [Msg('unstage', 'det', group=None)]),
+     (unstage, ('det',), {"group": "A"}, [Msg('unstage', 'det', group="A")]),
      (subscribe, ('all', 'func_placeholder'), {}, [Msg('subscribe', None,
                                                        'func_placeholder',
                                                        'all')]),
@@ -807,3 +812,91 @@ def test_per_step(RE, hw):
     with pytest.raises(TypeError) as excinfo:
         RE(scan([hw.det], hw.motor, -1, 1, 3, per_step=bad_sig))
     assert excinfo.match("per_step must be a callable with the signature")
+
+
+def test_stage_all_and_unstage_all(RE):
+
+    from ophyd import StatusBase
+
+    staged = {}
+    unstaged = {}
+
+    # Test support for old and new style devices
+    class OldStyleDummy:
+        def __init__(self, name: str) -> None:
+            self.name: str = name
+
+        def stage(self):
+            staged[self.name] = True
+            ttime.sleep(0.5)
+            return [self]
+
+        def unstage(self):
+            unstaged[self.name] = True
+            ttime.sleep(0.5)
+            return [self]
+
+    class NewStyleDummy:
+        def __init__(self, name: str) -> None:
+            self.name: str = name
+
+        def _callback(self, d: dict, st: Status):
+            d[self.name] = True
+            st.set_finished()
+
+        def stage(self) -> Status:
+            st = StatusBase()
+            threading.Timer(0.5, self._callback, args=[staged, st]).start()
+            return st
+
+        def unstage(self) -> Status:
+            st = StatusBase()
+            threading.Timer(0.5, self._callback, args=[unstaged, st]).start()
+            return st
+
+    olddummy1 = OldStyleDummy("o1")
+    olddummy2 = OldStyleDummy("o2")
+    newdummy1 = NewStyleDummy("n1")
+    newdummy2 = NewStyleDummy("n2")
+
+    def plan():
+        yield from stage_all(olddummy1, olddummy2, newdummy1, newdummy2)
+        assert list(staged.keys()) == ["o1", "o2", "n1", "n2"]
+
+        yield from unstage_all(olddummy1, olddummy2, newdummy1, newdummy2)
+        assert list(unstaged.keys()) == ["o1", "o2", "n1", "n2"]
+
+    start = ttime.monotonic()
+    RE(plan())
+    stop = ttime.monotonic()
+
+    assert 3 < stop - start < 4
+
+
+def test_old_style_wait(RE):
+
+    class OldStyleDummy:
+        def __init__(self, name: str) -> None:
+            self.name: str = name
+
+        def stage(self):
+            ttime.sleep(0.5)
+            return [self]
+
+        def unstage(self):
+            ttime.sleep(0.5)
+            return [self]
+
+    dummy = OldStyleDummy("o1")
+
+    def stage_plan():
+        yield from stage(dummy, wait=False)
+
+    def unstage_plan():
+        yield from unstage(dummy, wait=False)
+
+    with pytest.raises(RuntimeError):
+        RE(stage_plan())
+
+    with pytest.raises(RuntimeError):
+        RE(unstage_plan())

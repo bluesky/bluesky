@@ -15,7 +15,7 @@ from dataclasses import dataclass
 import typing
 from .bundlers import RunBundler, maybe_await
 from .protocols import (Flyable, Locatable, Movable, Pausable, Readable, Stageable,
-                        Stoppable, Triggerable, check_supports)
+                        Status, Stoppable, Triggerable, check_supports)
 
 import concurrent
 
@@ -135,6 +135,7 @@ class LoggingPropertyMachine(PropertyMachine):
     """expects object to have a `log` attribute
     and a `state_hook` attribute that is ``None`` or a callable with signature
     ``f(value, old_value)``"""
+
     def __init__(self, machine_type):
         super().__init__(machine_type)
 
@@ -1133,7 +1134,6 @@ class RunEngine:
             explanation of why the suspension has been requested
 
         """
-
         print("Suspending....To get prompt hit Ctrl-C twice to pause.")
         ts = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print("Suspension occurred at {}.".format(ts))
@@ -2140,22 +2140,8 @@ class RunEngine:
         group = kwargs.pop('group', None)
         warn_if_msg_args_or_kwargs(msg, obj.trigger, msg.args, kwargs)
         ret = obj.trigger(*msg.args, **kwargs)
-        p_event = asyncio.Event(**self._loop_for_kwargs)
-        pardon_failures = self._pardon_failures
 
-        def done_callback(status=None):
-            self.log.debug("The object %r reports trigger is "
-                           "done with status %r.", obj, ret.success)
-            self._loop.call_soon_threadsafe(
-                self._status_object_completed, ret, p_event, pardon_failures)
-
-        try:
-            ret.add_callback(done_callback)
-        except AttributeError:
-            # for ophyd < v0.8.0
-            ret.finished_cb = done_callback
-        self._groups[group].add(p_event.wait)
-        self._status_objs[group].add(ret)
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="trigger")
 
         return ret
 
@@ -2344,6 +2330,25 @@ class RunEngine:
             await current_run.configure(msg)
         return old, new
 
+    def _add_status_to_group(self, obj: typing.Any, status_object: Status,
+                             group: str, action: str) -> None:
+        p_event = asyncio.Event(**self._loop_for_kwargs)
+        pardon_failures = self._pardon_failures
+
+        def done_callback(status=None):
+            self.log.debug("The object %r reports %r is "
+                           "done with status %r.", obj, action, status_object.success)
+            self._loop.call_soon_threadsafe(
+                self._status_object_completed, status_object, p_event, pardon_failures)
+
+        try:
+            status_object.add_callback(done_callback)
+        except AttributeError:
+            # for ophyd < v0.8.0
+            status_object.finished_cb = done_callback
+        self._groups[group].add(p_event.wait)
+        self._status_objs[group].add(status_object)
+
     async def _stage(self, msg):
         """Instruct the RunEngine to stage the object
 
@@ -2355,10 +2360,17 @@ class RunEngine:
         # If an object has no 'stage' method, assume there is nothing to do.
         if not isinstance(obj, Stageable):
             return []
-        result = obj.stage()
+        group = kwargs.pop('group', None)
+        ret = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
         await self._reset_checkpoint_state_coro()
-        return result
+
+        if not isinstance(ret, Status):
+            return ret
+
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="stage")
+
+        return ret
 
     async def _unstage(self, msg):
         """Instruct the RunEngine to unstage the object
@@ -2371,11 +2383,18 @@ class RunEngine:
         # If an object has no 'unstage' method, assume there is nothing to do.
         if not isinstance(obj, Stageable):
             return []
-        result = obj.unstage()
+        group = kwargs.pop('group', None)
+        ret = obj.unstage()
         # use `discard()` to ignore objects that are not in the staged set.
         self._staged.discard(obj)
         await self._reset_checkpoint_state_coro()
-        return result
+
+        if not isinstance(ret, Status):
+            return ret
+
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="unstage")
+
+        return ret
 
     async def _stop(self, msg):
         """
