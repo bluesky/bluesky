@@ -8,6 +8,7 @@ import sys
 from collections import defaultdict
 import time as ttime
 import pytest
+from bluesky.protocols import Status
 from bluesky.tests import requires_ophyd
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
@@ -384,6 +385,64 @@ def test_pause_resume_devices(RE):
     RE.resume()
     assert 'dummy' in paused
     assert 'dummy' in resumed
+
+
+def test_stage_and_unstage_status_objects(RE):
+
+    from ophyd import StatusBase
+
+    staged = {}
+    unstaged = {}
+    started_stage = {}
+    started_unstage = {}
+
+    class Dummy:
+        def __init__(self, name: str) -> None:
+            self.name: str = name
+
+        def _callback(self, d: dict, st: Status):
+            d[self.name] = True
+            st.set_finished()
+
+        def stage(self) -> Status:
+            st = StatusBase()
+            started_stage[self.name] = True
+            threading.Timer(1, self._callback, args=[staged, st]).start()
+            return st
+
+        def unstage(self) -> Status:
+            st = StatusBase()
+            started_unstage[self.name] = True
+            threading.Timer(1, self._callback, args=[unstaged, st]).start()
+            return st
+
+    dummy1 = Dummy("d1")
+    dummy2 = Dummy("d2")
+
+    def my_plan():
+        yield Msg("stage", dummy1, group="stage_group")
+        yield Msg("stage", dummy2, group="stage_group")
+
+        assert "d1" in started_stage and "d2" in started_stage
+        assert not staged
+
+        yield Msg("wait", group="stage_group")
+        assert "d1" in staged and "d2" in staged
+
+        yield Msg("unstage", dummy1, group="unstage_group")
+        yield Msg("unstage", dummy2, group="unstage_group")
+
+        assert "d1" in started_unstage and "d2" in started_unstage
+        assert not unstaged
+
+        yield Msg("wait", group="unstage_group")
+        assert "d1" in unstaged and "d2" in unstaged
+
+    start = ttime.monotonic()
+    RE(my_plan())
+    stop = ttime.monotonic()
+
+    assert 2 < stop - start < 3
 
 
 def test_bad_call_args(RE):

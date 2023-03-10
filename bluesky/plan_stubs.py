@@ -13,7 +13,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Locatable, Triggerable
+from .protocols import Locatable, Triggerable, Status
 from .utils import (
     get_hinted_fields,
     merge_cycler,
@@ -689,44 +689,142 @@ def configure(obj, *args, **kwargs):
     return (yield Msg('configure', obj, *args, **kwargs))
 
 
-def stage(obj):
+def stage(obj, *, group=None, wait=None):
     """
     'Stage' a device (i.e., prepare it for use, 'arm' it).
 
     Parameters
     ----------
     obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
 
     Yields
     ------
     msg : Msg
-        Msg('stage', obj)
 
     See Also
     --------
     :func:`bluesky.plan_stubs.unstage`
+    :func:`bluesky.plan_stubs.stage_all`
     """
-    return (yield Msg('stage', obj))
+    ret = yield Msg('stage', obj, group=group)
+    old_style = not isinstance(ret, Status)
+    if old_style:
+        if (wait is None) or wait:
+            # Old-style devices will just block. We do not need to explicitly wait.
+            pass
+        else:  # wait is False-y
+            # No way to tell old-style devices not to wait
+            raise RuntimeError(f"{obj}: Is an old style device and cannot be told not to wait")
+    else:
+        if wait:
+            yield Msg('wait', None, group=group)
+    return ret
 
 
-def unstage(obj):
+def stage_all(*args, group=None):
+    """
+    'Stage' one or more devices (i.e., prepare them for use, 'arm' them).
+
+    Parameters
+    ----------
+    args :
+        device1, device2, device3, ...
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+
+    Yields
+    ------
+    msg : Msg
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.stage`
+    :func:`bluesky.plan_stubs.unstage_all`
+    """
+    group = group or str(uuid.uuid4())
+    status_objects = []
+
+    for obj in args:
+        ret = yield Msg('stage', obj, group=group)
+        if isinstance(ret, Status):
+            status_objects.append(ret)
+
+    if status_objects:
+        yield Msg('wait', None, group=group)
+
+
+def unstage(obj, *, group=None, wait=None):
     """
     'Unstage' a device (i.e., put it in standby, 'disarm' it).
 
     Parameters
     ----------
     obj : Device
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
 
     Yields
     ------
     msg : Msg
-        Msg('unstage', obj)
 
     See Also
     --------
     :func:`bluesky.plan_stubs.stage`
+    :func:`bluesky.plan_stubs.unstage_all`
     """
-    return (yield Msg('unstage', obj))
+    ret = yield Msg('unstage', obj, group=group)
+    old_style = not isinstance(ret, Status)
+    if old_style:
+        if (wait is None) or wait:
+            # Old-style devices will just block. We do not need to explicitly wait.
+            pass
+        else:
+            # No way to tell old-style devices not to wait
+            raise RuntimeError(f"{obj}: Is an old style device and cannot be told not to wait")
+    else:
+        if wait:
+            yield Msg('wait', None, group=group)
+    return ret
+
+
+def unstage_all(*args, group=None):
+    """
+    'Unstage' one or more devices (i.e., put them in standby, 'disarm' them).
+
+    Parameters
+    ----------
+    args :
+        device1, device2, device3, ...
+    group : string (or any hashable object), optional
+        identifier used by 'wait'; None by default
+
+    Yields
+    ------
+    msg : Msg
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.unstage`
+    :func:`bluesky.plan_stubs.stage_all`
+    """
+    group = group or str(uuid.uuid4())
+    status_objects = []
+
+    for obj in args:
+        ret = yield Msg('unstage', obj, group=group)
+        if isinstance(ret, Status):
+            status_objects.append(ret)
+
+    if status_objects:
+        yield Msg('wait', None, group=group)
 
 
 def subscribe(name, func):

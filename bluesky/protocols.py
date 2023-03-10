@@ -341,22 +341,20 @@ class Stageable(Protocol):
     # TODO: we were going to extend these to be able to return plans, what
     # signature should they have?
     @abstractmethod
-    def stage(self) -> List[Any]:
+    def stage(self) -> Union[Status, List[Any]]:
         """An optional hook for "setting up" the device for acquisition.
 
-        It should return a list of devices including itself and any other
-        devices that are staged as a result of staging this one.
-        (The ``parent`` attribute expresses this relationship: a device should
-        be staged/unstaged whenever its parent is staged/unstaged.)
+        It should return a ``Status`` that is marked done when the device is
+        done staging.
         """
         ...
 
     @abstractmethod
-    def unstage(self) -> List[Any]:
+    def unstage(self) -> Union[Status, List[Any]]:
         """A hook for "cleaning up" the device after acquisition.
 
-        It should return a list of devices including itself and any other
-        devices that are unstaged as a result of unstaging this one.
+        It should return a ``Status`` that is marked done when the device is finished
+        unstaging.
         """
         ...
 
