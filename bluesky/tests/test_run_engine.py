@@ -1367,6 +1367,16 @@ def test_failures_kill_run(RE):
         RE([Msg('set', dummy, 1, group='test'),
             Msg('wait', group='test')])
 
+@requires_ophyd
+def test_failed_status_propagates_error(RE):
+    """Tests that an error is properly propagated through the RE."""
+    #best thing to do, is write some silly plan that is obviously going to fail,
+    # and check that FailedStatus tells us why.
+
+    #For example, in tizyi's thing, he had an ophyd device with the wrong syntax
+    # i.e make an ophyd device with the wrong syntax in read() or something, and 
+    # check what the failedstatus looks like when you send a message.
+    ...
 
 def test_colliding_streams(RE, hw):
 
