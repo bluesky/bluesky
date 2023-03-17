@@ -88,14 +88,8 @@ def test_deferred_pause(RE):
     # (future checkpoints should not trigger another pause)
     assert RE.state == 'idle'
     with pytest.raises(RunEngineInterrupted):
-        RE(
-            [
-                Msg('pause', defer=True),
-                Msg('checkpoint'),
-                Msg('checkpoint'),
-                Msg('checkpoint'),
-            ]
-        )
+        RE([Msg('pause', defer=True), Msg('checkpoint'), Msg('checkpoint'),
+            Msg('checkpoint')])
     assert RE.state == 'paused'
     RE.resume()
     assert RE.state == 'idle'
@@ -105,7 +99,8 @@ def test_deferred_pause1(RE):
     # deferred pause should never be processed, being superceded by a hard
     # pause
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('pause', defer=True), Msg('pause', defer=False), Msg('checkpoint')])
+        RE([Msg('pause', defer=True), Msg('pause', defer=False),
+            Msg('checkpoint')])
     assert RE.state == 'paused'
     RE.resume()
     assert RE.state == 'idle'
@@ -113,14 +108,10 @@ def test_deferred_pause1(RE):
 
 def test_deferred_pause2(RE):
     with pytest.raises(RunEngineInterrupted):
-        RE(
-            [
-                Msg('pause', defer=True),
-                Msg('checkpoint'),
-                Msg('pause', defer=True),
-                Msg('checkpoint'),
-            ]
-        )
+        RE([Msg('pause', defer=True),
+            Msg('checkpoint'),
+            Msg('pause', defer=True),
+            Msg('checkpoint')])
     assert RE.state == 'paused'
     with pytest.raises(RunEngineInterrupted):
         RE.resume()
@@ -281,7 +272,7 @@ def test_suspend(RE, hw):
     test_list = [
         Msg('open_run'),
         Msg('checkpoint'),
-        Msg('sleep', None, 0.2),
+        Msg('sleep', None, .2),
         Msg('set', hw.motor, 5),
         Msg('trigger', hw.det),
         Msg('create', name='primary'),
@@ -304,7 +295,6 @@ def test_suspend(RE, hw):
 
     def ev_cb(name, ev):
         out.append(ev)
-
     # trigger the suspend right after the check point
     threading.Timer(.1, local_suspend).start()
     # grab the start time
@@ -323,7 +313,7 @@ def test_pause_resume(RE):
     ev = _fabricate_asycio_event(RE.loop)
 
     def done():
-        print('Done')
+        print("Done")
         RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
@@ -355,7 +345,7 @@ def test_pause_abort(RE):
     ev = _fabricate_asycio_event(RE.loop)
 
     def done():
-        print('Done')
+        print("Done")
         RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
@@ -386,7 +376,7 @@ def test_abort(RE):
     ev = _fabricate_asycio_event(RE.loop)
 
     def done():
-        print('Done')
+        print("Done")
         RE.loop.call_soon_threadsafe(ev.set)
 
     pid = os.getpid()
@@ -411,6 +401,7 @@ def test_abort(RE):
 
 
 def test_rogue_sigint(RE):
+
     def bad_scan():
         yield Msg('open_run')
         yield Msg('checkpoint')
@@ -422,6 +413,7 @@ def test_rogue_sigint(RE):
 
 
 def test_seqnum_nonrepeated(RE, hw):
+
     def gen():
         yield Msg('open_run')
         yield Msg('create', name='primary')
@@ -450,7 +442,7 @@ def test_seqnum_nonrepeated(RE, hw):
     with pytest.raises(RunEngineInterrupted):
         RE(gen(), {'event': f})
 
-    print('RESUMING!!!!')
+    print("RESUMING!!!!")
     RE.resume()
     assert seq_nums == [1, 2, 2, 3]
 
@@ -572,7 +564,10 @@ def test_new_ev_desc(RE, hw):
 
 
 def test_clear_checkpoint(RE):
-    bad_plan = [Msg('checkpoint'), Msg('clear_checkpoint'), Msg('pause'), 'lies']
+    bad_plan = [Msg('checkpoint'),
+                Msg('clear_checkpoint'),
+                Msg('pause'),
+                'lies']
     good_plan = [Msg('pause')]
     fine_plan = [Msg('clear_checkpoint')]
 
@@ -683,5 +678,5 @@ def test_async_trigger_delay(RE, hw):
     hw.motor.delay = .5
     hw.det.exposure_time = .5
 
-    _time_test(bps.trigger, 0.5, hw.det, wait=True)
-    _time_test(bps.abs_set, 0.5, hw.motor, 1, wait=True)
+    _time_test(bps.trigger, .5, hw.det, wait=True)
+    _time_test(bps.abs_set, .5, hw.motor, 1, wait=True)

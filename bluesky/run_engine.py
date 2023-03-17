@@ -30,7 +30,6 @@ try:
 except ImportError:
     # handle py < 3,7
     from asyncio.tasks import Task
-
     current_task = Task.current_task
     del Task
 
@@ -89,7 +88,6 @@ class RunEngineStateMachine(StateMachine):
 
     class States(Enum):
         """state.name = state.value"""
-
         IDLE = 'idle'
 
         RUNNING = 'running'
@@ -393,14 +391,12 @@ class RunEngine:
 
         try:
             import ophyd
-
             self.md['versions']['ophyd'] = ophyd.__version__
         except ImportError:
             self.log.debug("Failed to import ophyd.")
 
         from ._version import get_versions
-
-        self.md["versions"]["bluesky"] = get_versions()["version"]
+        self.md['versions']['bluesky'] = get_versions()['version']
         del get_versions
 
         if preprocessors is None:
@@ -2401,9 +2397,7 @@ class RunEngine:
         if not isinstance(ret, Status):
             return ret
 
-        self._add_status_to_group(
-            obj=obj, status_object=ret, group=group, action="unstage"
-        )
+        self._add_status_to_group(obj=obj, status_object=ret, group=group, action="unstage")
 
         return ret
 
@@ -2641,8 +2635,7 @@ def _default_md_validator(md):
             "dictionary, like so: "
             "GOOD: sample='dirt' "
             "GOOD: sample={'color': 'red', 'number': 5} "
-            "BAD: sample=[1, 2] "
-        )
+            "BAD: sample=[1, 2] ")
 
 
 def _ensure_event_loop_running(loop):
