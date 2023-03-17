@@ -1,4 +1,5 @@
 import asyncio
+from typing import Dict
 from event_model import DocumentNames
 import threading
 import types
@@ -8,7 +9,7 @@ import sys
 from collections import defaultdict
 import time as ttime
 import pytest
-from bluesky.protocols import Status
+from bluesky.protocols import Reading, Status
 from bluesky.tests import requires_ophyd
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
@@ -1368,15 +1369,49 @@ def test_failures_kill_run(RE):
             Msg('wait', group='test')])
 
 @requires_ophyd
-def test_failed_status_propagates_error(RE):
-    """Tests that an error is properly propagated through the RE."""
-    #best thing to do, is write some silly plan that is obviously going to fail,
-    # and check that FailedStatus tells us why.
+def test_failures_propagated_through_FailedStatus_ophyd_v2(RE):
+    from ophyd import StatusBase
+    from ophyd.v2.core import AsyncStatus, Device, StandardReadable
 
-    #For example, in tizyi's thing, he had an ophyd device with the wrong syntax
-    # i.e make an ophyd device with the wrong syntax in read() or something, and 
-    # check what the failedstatus looks like when you send a message.
-    ...
+    class DummyV2(StandardReadable, Device):
+        def __init__(self, prefix: str, name: str = ""):
+            super().__init__(prefix=prefix, name=name)
+
+        async def _move(self, new_position: float):
+            self._non_existent_attr
+
+        def set(self, new_position: float) -> AsyncStatus:
+            coro = asyncio.wait_for(self._move(new_position), timeout=10)
+            return AsyncStatus(coro, [])
+
+    dummy2 = DummyV2("SOME-PV")
+    try:
+        RE([Msg('set', dummy2, 1, group='test'), Msg('wait', group='test')])
+    except FailedStatus as exc:
+        assert type(exc.args[0]) == AttributeError
+
+
+@requires_ophyd
+def test_failure_propagated_through_run_engine(RE):
+    # just to make sure that 'pardon_failures' does not block *real* failures
+    from ophyd import StatusBase
+    from ophyd.v2.core import AsyncStatus, Device, StandardReadable
+
+    class DummyV1:
+        name = 'dummy'
+
+        def set(self, val):
+            st = StatusBase()
+            assert 1 == 0
+            return st
+
+    dummy1 = DummyV1()
+
+    try:
+        RE([Msg('set', dummy1, 1, group='test'), Msg('wait', group='test')])
+    except Exception as exc:
+        assert type(exc) == AssertionError
+
 
 def test_colliding_streams(RE, hw):
 
