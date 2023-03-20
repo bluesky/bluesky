@@ -1,5 +1,4 @@
 import asyncio
-from typing import Dict
 from event_model import DocumentNames
 import threading
 import types
@@ -9,7 +8,7 @@ import sys
 from collections import defaultdict
 import time as ttime
 import pytest
-from bluesky.protocols import Reading, Status
+from bluesky.protocols import Status
 from bluesky.tests import requires_ophyd
 from bluesky.run_engine import (RunEngineStateMachine,
                                 TransitionError, IllegalMessageSequence,
@@ -1350,9 +1349,10 @@ def test_pardon_failures(RE):
 
 
 @requires_ophyd
-def test_failures_kill_run(RE):
+def test_exceptions_kill_run_and_failed_status_holds_detail(RE):
     # just to make sure that 'pardon_failures' does not block *real* failures
     from ophyd import StatusBase
+    from ophyd.utils.errors import UnknownStatusFailure
 
     class Dummy:
         name = 'dummy'
@@ -1364,53 +1364,31 @@ def test_failures_kill_run(RE):
 
     dummy = Dummy()
 
-    with pytest.raises(FailedStatus):
+    with pytest.raises(FailedStatus) as exc:
         RE([Msg('set', dummy, 1, group='test'),
             Msg('wait', group='test')])
-
-@requires_ophyd
-def test_failures_propagated_through_FailedStatus_ophyd_v2(RE):
-    from ophyd import StatusBase
-    from ophyd.v2.core import AsyncStatus, Device, StandardReadable
-
-    class DummyV2(StandardReadable, Device):
-        def __init__(self, prefix: str, name: str = ""):
-            super().__init__(prefix=prefix, name=name)
-
-        async def _move(self, new_position: float):
-            self._non_existent_attr
-
-        def set(self, new_position: float) -> AsyncStatus:
-            coro = asyncio.wait_for(self._move(new_position), timeout=10)
-            return AsyncStatus(coro, [])
-
-    dummy2 = DummyV2("SOME-PV")
-    try:
-        RE([Msg('set', dummy2, 1, group='test'), Msg('wait', group='test')])
-    except FailedStatus as exc:
-        assert type(exc.args[0]) == AttributeError
+        assert type(exc.args[0]) == UnknownStatusFailure
 
 
 @requires_ophyd
-def test_failure_propagated_through_run_engine(RE):
+def test_status_propagates_exception_through_run_engine(RE):
     # just to make sure that 'pardon_failures' does not block *real* failures
     from ophyd import StatusBase
-    from ophyd.v2.core import AsyncStatus, Device, StandardReadable
 
     class DummyV1:
         name = 'dummy'
 
         def set(self, val):
             st = StatusBase()
-            assert 1 == 0
+            st.set_exception(ArithmeticError)
             return st
 
     dummy1 = DummyV1()
 
-    try:
-        RE([Msg('set', dummy1, 1, group='test'), Msg('wait', group='test')])
-    except Exception as exc:
-        assert type(exc) == AssertionError
+    with pytest.raises(FailedStatus) as exc:
+        RE([Msg('set', dummy1, 1, group='test'),
+            Msg('wait', group='test')])
+        assert type(exc.args[0]) == ArithmeticError
 
 
 def test_colliding_streams(RE, hw):
