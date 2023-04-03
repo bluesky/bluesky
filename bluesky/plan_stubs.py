@@ -1,11 +1,12 @@
 import itertools
-import uuid
-from cycler import cycler
 import operator
-from functools import reduce
-from collections.abc import Iterable
 import time
+import uuid
 import warnings
+from collections.abc import Iterable
+from functools import reduce
+
+from cycler import cycler
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -13,16 +14,10 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Locatable, Triggerable, Status
-from .utils import (
-    get_hinted_fields,
-    merge_cycler,
-    separate_devices,
-    all_safe_rewind,
-    Msg,
-    ensure_generator,
-    short_uid as _short_uid,
-)
+from .protocols import Locatable, Status, Triggerable
+from .utils import (Msg, all_safe_rewind, ensure_generator, get_hinted_fields,
+                    merge_cycler, separate_devices)
+from .utils import short_uid as _short_uid
 
 
 def create(name='primary'):
@@ -998,6 +993,7 @@ def trigger_and_read(devices, name='primary'):
         messages to 'trigger', 'wait' and 'read'
     """
     from .preprocessors import contingency_wrapper
+
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
         yield from null()
@@ -1133,7 +1129,7 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def one_shot(detectors, take_reading=trigger_and_read):
+def one_shot(detectors, take_reading=None):
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
@@ -1153,11 +1149,12 @@ def one_shot(detectors, take_reading=trigger_and_read):
 
         Defaults to `trigger_and_read`
     """
+    take_reading = trigger_and_read if take_reading is None else take_reading
     yield Msg('checkpoint')
     yield from take_reading(list(detectors))
 
 
-def one_1d_step(detectors, motor, step, take_reading=trigger_and_read):
+def one_1d_step(detectors, motor, step, take_reading=None):
     """
     Inner loop of a 1D step scan
 
@@ -1181,6 +1178,8 @@ def one_1d_step(detectors, motor, step, take_reading=trigger_and_read):
 
         Defaults to `trigger_and_read`
     """
+    take_reading = trigger_and_read if take_reading is None else take_reading
+
     def move():
         grp = _short_uid('set')
         yield Msg('checkpoint')
@@ -1215,7 +1214,7 @@ def move_per_step(step, pos_cache):
     yield Msg('wait', None, group=grp)
 
 
-def one_nd_step(detectors, step, pos_cache, take_reading=trigger_and_read):
+def one_nd_step(detectors, step, pos_cache, take_reading=None):
     """
     Inner loop of an N-dimensional step scan
 
@@ -1239,6 +1238,7 @@ def one_nd_step(detectors, step, pos_cache, take_reading=trigger_and_read):
 
         Defaults to `trigger_and_read`
     """
+    take_reading = trigger_and_read if take_reading is None else take_reading
     motors = step.keys()
     yield from move_per_step(step, pos_cache)
     yield from take_reading(list(detectors) + list(motors))
