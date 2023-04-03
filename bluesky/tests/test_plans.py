@@ -163,7 +163,7 @@ def test_relative_pseudo(hw, RE, db):
     else:
         uid = rs[0]
 
-    tb1 = db[uid].table().drop('time', 1)
+    tb1 = db[uid].table().drop('time', axis=1)
     assert p.position == base_pos
 
     # this triggers this does not
@@ -176,7 +176,7 @@ def test_relative_pseudo(hw, RE, db):
     else:
         uid = rs[0]
 
-    tb2 = db[uid].table().drop('time', 1)
+    tb2 = db[uid].table().drop('time', axis=1)
     assert p.position == base_pos
 
     # same columns
