@@ -2194,11 +2194,7 @@ class RunEngine:
             # TODO: need a better channel to move this information back
             # to the run task.
             with self._state_lock:
-                # check if ret.exception is a method or a property.
-                if ismethod(ret.exception):
-                    status_exception = ret.exception(timeout=0)
-                else:
-                    status_exception = ret.exception
+                status_exception = ret.exception(timeout=0)
                 self._exception = FailedStatus(status_exception)
         p_event.set()
 

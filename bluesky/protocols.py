@@ -137,8 +137,8 @@ class Status(Protocol):
         """
         ...
 
-    @property
-    def exception(self) -> Optional[StatusException]:
+    @abstractmethod
+    def exception(self, timeout: Optional[float]=0.0) -> Optional[StatusException]:
         ...
 
     @property
