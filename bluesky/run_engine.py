@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 import sys
 from warnings import warn
-from inspect import Parameter, Signature, iscoroutine, ismethod
+from inspect import Parameter, Signature, iscoroutine
 from itertools import count
 from collections import deque, defaultdict, ChainMap
 from enum import Enum
