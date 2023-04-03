@@ -1133,7 +1133,7 @@ def caching_repeater(n, plan):
         yield from (m for m in lst_plan)
 
 
-def one_shot(detectors, take_reading=trigger_and_read):
+def one_shot(detectors, take_reading=None):
     """Inner loop of a count.
 
     This is the default function for ``per_shot`` in count plans.
@@ -1153,11 +1153,12 @@ def one_shot(detectors, take_reading=trigger_and_read):
 
         Defaults to `trigger_and_read`
     """
+    take_reading = trigger_and_read if take_reading is None else take_reading
     yield Msg('checkpoint')
     yield from take_reading(list(detectors))
 
 
-def one_1d_step(detectors, motor, step, take_reading=trigger_and_read):
+def one_1d_step(detectors, motor, step, take_reading=None):
     """
     Inner loop of a 1D step scan
 
@@ -1181,6 +1182,8 @@ def one_1d_step(detectors, motor, step, take_reading=trigger_and_read):
 
         Defaults to `trigger_and_read`
     """
+    take_reading = trigger_and_read if take_reading is None else take_reading
+
     def move():
         grp = _short_uid('set')
         yield Msg('checkpoint')
@@ -1215,7 +1218,7 @@ def move_per_step(step, pos_cache):
     yield Msg('wait', None, group=grp)
 
 
-def one_nd_step(detectors, step, pos_cache, take_reading=trigger_and_read):
+def one_nd_step(detectors, step, pos_cache, take_reading=None):
     """
     Inner loop of an N-dimensional step scan
 
@@ -1239,6 +1242,7 @@ def one_nd_step(detectors, step, pos_cache, take_reading=trigger_and_read):
 
         Defaults to `trigger_and_read`
     """
+    take_reading = trigger_and_read if take_reading is None else take_reading
     motors = step.keys()
     yield from move_per_step(step, pos_cache)
     yield from take_reading(list(detectors) + list(motors))
