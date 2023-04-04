@@ -39,7 +39,7 @@ class BestEffortCallback(QtAwareCallback):
         self._baseline_enabled = True
         self._plots_enabled = True
         # axes supplied from outside
-        self._fig_factory = fig_factory
+        self._fig_factory = fig_factory if fig_factory is not None else plt.figure
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
         self._live_grids = {}
@@ -202,10 +202,7 @@ class BestEffortCallback(QtAwareCallback):
                      "Adjust the metadata hints field for BestEffortCallback to produce plots.")
                 return
 
-            if self._fig_factory:
-                fig = self._fig_factory(fig_name)
-            else:
-                fig = plt.figure(fig_name)
+            fig = self._fig_factory(fig_name)
 
             if not fig.axes:
                 if len(columns) < 5:
