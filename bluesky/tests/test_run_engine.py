@@ -1,4 +1,5 @@
 import asyncio
+from traceback import FrameSummary, extract_tb
 from event_model import DocumentNames
 import threading
 import types
@@ -27,6 +28,7 @@ from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    subs_wrapper, baseline_wrapper,
                                    SupplementalData)
 from .utils import _fabricate_asycio_event
+from typing import List
 
 
 def test_states():
@@ -1380,7 +1382,11 @@ def test_status_propagates_exception_through_run_engine(RE):
 
         def set(self, val):
             st = StatusBase()
-            st.set_exception(ArithmeticError)
+            try:
+                1/0
+            except ZeroDivisionError as exc:
+                st.set_exception(exc)
+
             return st
 
     dummy1 = DummyV1()
@@ -1388,7 +1394,14 @@ def test_status_propagates_exception_through_run_engine(RE):
     with pytest.raises(FailedStatus) as exc:
         RE([Msg('set', dummy1, 1, group='test'),
             Msg('wait', group='test')])
-        assert type(exc.args[0]) == ArithmeticError
+
+        traceback: List[FrameSummary] = extract_tb(exc.__traceback__)
+        assert traceback[0].filename == __file__
+        assert traceback[0].line == "RE([Msg('set', dummy1, 1, group='test'),"
+        assert traceback[-1].name == "set"
+        assert traceback[-1].line == "1/0"
+
+        assert type(exc.args[0]) == ZeroDivisionError
 
 
 def test_colliding_streams(RE, hw):
