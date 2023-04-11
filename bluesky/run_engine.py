@@ -2194,7 +2194,11 @@ class RunEngine:
             # TODO: need a better channel to move this information back
             # to the run task.
             with self._state_lock:
-                self._exception = FailedStatus(ret)
+                try:
+                    exc = ret.exception(timeout=0)
+                    raise FailedStatus(ret).with_traceback(exc.__traceback__) from exc
+                except Exception as e:
+                    self._exception = e
         p_event.set()
 
     async def _sleep(self, msg):

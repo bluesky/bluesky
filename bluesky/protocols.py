@@ -3,6 +3,7 @@ try:
 except ImportError:
     from typing import Literal, Protocol, TypedDict, runtime_checkable
 
+from asyncio import CancelledError
 from typing import (
     Any, Awaitable, Callable, Dict, Generic, Iterator, List, Optional,
     Sequence, Tuple, Type, TypeVar, Union
@@ -120,6 +121,8 @@ Asset = Union[Tuple[Literal["resource"], PartialResource], Tuple[Literal["datum"
 T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
 
+StatusException = Union[Exception, CancelledError]
+
 
 @runtime_checkable
 class Status(Protocol):
@@ -132,6 +135,10 @@ class Status(Protocol):
         If the Status object is done when the function is added, it should be
         called immediately.
         """
+        ...
+
+    @abstractmethod
+    def exception(self, timeout: Optional[float] = 0.0) -> Optional[StatusException]:
         ...
 
     @property
