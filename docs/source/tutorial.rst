@@ -1438,10 +1438,12 @@ Capture Data
     import bluesky.plan_stubs as bps
     def one_run_one_event(detectors):
         yield from bps.open_run()
+        yield from bps.declare_stream(*detectors, name='primary')
         yield from bps.trigger_and_read(detectors)
         yield from bps.close_run()
     def one_run_multi_events(detectors, num):
         yield from bps.open_run()
+        yield from bps.declare_stream(*detectors, name='primary')
         for i in range(num):
             yield from bps.trigger_and_read(detectors)
         yield from bps.close_run()
@@ -1460,6 +1462,7 @@ into *Events* (i.e. rows in a table) and grouping those Events into *Runs*
     def one_run_one_event(detectors):
         # Declare the beginning of a new run.
         yield from bps.open_run()
+        yield from bps.declare_stream(*detectors, name='primary')
 
         # Trigger each detector and wait for triggering to complete.
         # Then read the detectors and bundle these readings into an Event
@@ -1488,6 +1491,7 @@ moved inside a for loop.
 
     def one_run_multi_events(detectors, num):
         yield from bps.open_run()
+        yield from bps.declare_stream(*detectors, name='primary')
 
         for i in range(num):
             yield from bps.trigger_and_read(detectors)
@@ -1511,6 +1515,8 @@ Finally, add another loop re-using ``one_run_multi_events`` inside that loop.
 .. code-block:: python
 
     def multi_runs_multi_events(detectors, num, num_runs):
+        yield from bps.declare_stream(*detectors, name='primary')
+
         for i in range(num_runs):
             yield from one_run_multi_events(detectors, num)
 
@@ -1550,6 +1556,7 @@ Revising our simplest example above, ``one_run_one_event``,
 
     def one_run_one_event(detectors):
         yield from bps.open_run()
+        yield from bps.declare_stream(*detectors, name='primary')
         yield from bps.trigger_and_read(detectors)
         yield from bps.close_run()
 
@@ -1564,6 +1571,7 @@ we incorporate staging like so:
             yield from bps.stage(det)
 
         yield from bps.open_run()
+        yield from bps.declare_stream(*detectors, name='primary')
         yield from bps.trigger_and_read(detectors)
         yield from bps.close_run()
 
@@ -1585,6 +1593,7 @@ equivalent:
         @bpp.stage_decorator(detectors)
         def inner():
             yield from bps.open_run()
+            yield from bps.declare_stream(*detectors, name='primary')
             yield from bps.trigger_and_read(detectors)
             yield from bps.close_run()
 
@@ -1608,6 +1617,7 @@ The result:
         @bpp.stage_decorator(detectors)
         @bpp.run_decorator()
         def inner():
+            yield from bps.declare_stream(*detectors, name='primary')
             yield from bps.trigger_and_read(detectors)
 
         return (yield from inner())
@@ -1646,6 +1656,7 @@ in the :ref:`the earlier section on metadata <tutorial_metadata>`.
         @bpp.stage_decorator(detectors)
         @bpp.run_decorator(md)
         def inner():
+            yield from bps.declare_stream(*detectors, name='primary')
             yield from bps.trigger_and_read(detectors)
 
         return (yield from inner())
@@ -1678,6 +1689,7 @@ purpose, implemented like so:
         @bpp.stage_decorator(detectors)
         @bpp.run_decorator(_md)
         def inner():
+            yield from bps.declare_stream(*detectors, name='primary')
             yield from bps.trigger_and_read(detectors)
 
         return (yield from inner())
@@ -1805,6 +1817,7 @@ can use it to make an on-the-fly decision about whether to continue or stop.
         @bpp.run_decorator()
         def inner():
             i = 0
+            yield from bps.declare_stream(det, name='primary')
             while True:
                 yield from bps.mv(motor, i)
                 readings = yield from bps.trigger_and_read([det])
@@ -1823,6 +1836,7 @@ can use it to make an on-the-fly decision about whether to continue or stop.
     def conditional_break(threshold):
         def inner():
             i = 0
+            yield from bps.declare_stream(det, name='primary')
             while True:
                 yield from bps.mv(motor, i)
                 readings = yield from bps.trigger_and_read([det])

@@ -85,7 +85,8 @@ def test_underhinted_plan(RE, hw):
 
     @bpp.run_decorator()
     def broken_plan(dets):
-        yield from bps.trigger_and_read(dets)
+        yield from bps.declare_stream(*dets, name='primary')
+        yield from bps.trigger_and_read(dets, name='primary')
 
     RE(broken_plan([hw.det]))
 
@@ -154,6 +155,8 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     @bpp.stage_decorator([hw.det1, hw.motor])
     @bpp.run_decorator(md={})
     def plan_outer():
+        yield from bps.declare_stream(hw.det1, name='primary')
+
         yield from sequence()
         # Call inner plan from within the plan
         yield from plan_inner()

@@ -4,7 +4,7 @@ from typing import Dict, List
 from bluesky.protocols import Callback, Descriptor, Reading
 
 from bluesky.utils import ancestry, share_ancestor, separate_devices
-from bluesky.plan_stubs import trigger_and_read
+from bluesky.plan_stubs import trigger_and_read, declare_stream
 from bluesky.preprocessors import run_decorator
 from bluesky import Msg, RunEngineInterrupted
 import pytest
@@ -172,6 +172,7 @@ def test_overlapping_raise(RE, det1, det2):
 
     @run_decorator()
     def test_plan(det1, det2):
+        yield from declare_stream(det1, name='primary')
         yield from trigger_and_read([det1])
         yield from trigger_and_read([det2])
 
@@ -203,7 +204,9 @@ def _make_overlapping_tests_2stream(func):
 def test_keyoverlap_2stream(RE, det1, det2):
     @run_decorator()
     def test_plan(det1, det2):
+        yield from declare_stream(det1, name='primary')
         yield from trigger_and_read([det1])
+        yield from declare_stream(det2, name='other')
         yield from trigger_and_read([det2], name='other')
 
     d = DocCollector()
@@ -241,6 +244,7 @@ def _make_overlapping_tests_stream(func):
 def test_overlapped_but_identical(RE, det1, det_list):
     @run_decorator()
     def test_plan(det1, det_list):
+        yield from declare_stream(det1, name='primary')
         yield from trigger_and_read([det1])
         for p in itertools.permutations(det_list):
             yield from trigger_and_read(det_list)
@@ -262,16 +266,31 @@ def test_read_clash(RE):
     dcm2 = DCM('', name='dcm')
 
     with pytest.raises(ValueError):
-        RE(([Msg('open_run')] +
-            list(trigger_and_read([dcm, dcm2.th])) +
-            [Msg('close_run')]))
+        RE(
+            [
+                Msg('open_run'),
+                Msg('declare_stream', None, dcm, dcm2.th, name='primary'),
+                *trigger_and_read([dcm, dcm2.th]),
+                Msg('close_run')
+            ]
+        )
 
     with pytest.raises(ValueError):
-        RE(([Msg('open_run')] +
-            list(trigger_and_read([dcm, dcm2])) +
-            [Msg('close_run')]))
+        RE(
+            [
+                Msg('open_run'),
+                Msg('declare_stream', None, dcm, dcm2, name='primary'),
+                *trigger_and_read([dcm, dcm2]),
+                Msg('close_run')
+            ]
+        )
 
     with pytest.raises(ValueError):
-        RE(([Msg('open_run')] +
-            list(trigger_and_read([dcm.th, dcm2.th])) +
-            [Msg('close_run')]))
+        RE(
+            [
+                Msg('open_run'),
+                Msg('declare_stream', None, dcm.th, dcm2.th, name='primary'),
+                *trigger_and_read([dcm.th, dcm2.th]),
+                Msg('close_run')
+            ]
+        )

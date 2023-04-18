@@ -24,7 +24,9 @@ ObjDict = Dict[Any, Dict[str, T]]
 
 
 class RunBundler:
-    def __init__(self, md, record_interruptions, emit, emit_sync, log):
+    def __init__(self, md, record_interruptions, emit, emit_sync, log, *, strict_pre_declare=False):
+        # if create can YOLO implicitly create a stream
+        self._strict_pre_declare = strict_pre_declare
         # state stolen from the RE
         self.bundling = False  # if we are in the middle of bundling readings
         self._bundle_name = None  # name given to event descriptor
@@ -131,9 +133,73 @@ class RunBundler:
         self.run_is_open = False
         return doc["run_start"]
 
+    async def _prepare_stream(self, desc_key, objs_read):
+        # We do not have an Event Descriptor for this set
+        # so one must be created.
+        data_keys = {}
+        config = {}
+        object_keys = {}
+        hints = {}
+        for obj in objs_read:
+            dks = self._describe_cache[obj]
+            obj_name = obj.name
+            # dks is an OrderedDict. Record that order as a list.
+            object_keys[obj_name] = list(dks)
+            for field, dk in dks.items():
+                dk["object_name"] = obj_name
+            data_keys.update(dks)
+            config[obj_name] = {}
+            config[obj_name]["data"] = self._config_values_cache[obj]
+            config[obj_name]["timestamps"] = self._config_ts_cache[obj]
+            config[obj_name]["data_keys"] = self._config_desc_cache[obj]
+            maybe_update_hints(hints, obj)
+        descriptor_uid = new_uid()
+        descriptor_doc = dict(
+            run_start=self._run_start_uid,
+            time=ttime.time(),
+            data_keys=data_keys,
+            uid=descriptor_uid,
+            configuration=config,
+            name=desc_key,
+            hints=hints,
+            object_keys=object_keys,
+        )
+        await self.emit(DocumentNames.descriptor, descriptor_doc)
+        doc_logger.debug(
+            "[descriptor] document emitted with name %r containing "
+            "data keys %r (run_uid=%r)",
+            desc_key,
+            data_keys.keys(),
+            self._run_start_uid,
+            extra={
+                'doc_name': 'descriptor',
+                'run_uid': self._run_start_uid,
+                'data_keys': data_keys.keys()}
+        )
+        self._descriptors[desc_key] = (objs_read, descriptor_doc)
+        return descriptor_doc
+
+    async def _ensure_cached(self, obj):
+        if obj not in self._describe_cache:
+            await self._cache_describe(obj)
+        if obj not in self._config_desc_cache:
+            await self._cache_describe_config(obj)
+            await self._cache_read_config(obj)
+
+    async def declare_stream(self, msg):
+        """Generate and emit an EventDescriptor."""
+        command, no_obj, objs, kwargs, _ = msg
+        stream_name = kwargs['name']
+        assert no_obj is None
+        objs = frozenset(objs)
+        for obj in objs:
+            await self._ensure_cached(obj)
+
+        return (await self._prepare_stream(stream_name, objs))
+
     async def create(self, msg):
-        """Trigger the run engine to start bundling future obj.read() calls for
-         an Event document
+        """
+        Start bundling future obj.read() calls for an Event document.
 
         Expected message object is::
 
@@ -168,6 +234,11 @@ class RunBundler:
                     "Msg('create') now requires a stream name, given as "
                     "Msg('create', name) or Msg('create', name=name)"
                 ) from None
+        if self._strict_pre_declare:
+            if self._bundle_name not in self._descriptors:
+                raise IllegalMessageSequence(
+                    "In strict mode you must pre-declare streams."
+                )
 
     async def read(self, msg, reading):
         """
@@ -185,11 +256,7 @@ class RunBundler:
             # on the same device you make obj.describe() calls multiple times.
             # As this is harmless and not an expected use case, we don't guard
             # against it. Reading multiple devices concurrently works fine.
-            if obj not in self._describe_cache:
-                await self._cache_describe(obj)
-            if obj not in self._config_desc_cache:
-                await self._cache_describe_config(obj)
-                await self._cache_read_config(obj)
+            await self._ensure_cached(obj)
 
             # check that current read collides with nothing else in
             # current event
@@ -274,37 +341,11 @@ class RunBundler:
                 "A 'monitor' message was sent for {}"
                 "which is already monitored".format(obj)
             )
-        descriptor_uid = new_uid()
-        if obj not in self._describe_cache:
-            await self._cache_describe(obj)
-        if obj not in self._config_desc_cache:
-            await self._cache_describe_config(obj)
-            await self._cache_read_config(obj)
-        data_keys = self._describe_cache[obj]
-        config = {obj.name: {
-            "data": self._config_values_cache[obj],
-            "timestamps": self._config_ts_cache[obj],
-            "data_keys": self._config_desc_cache[obj]
-        }}
-        object_keys = {obj.name: list(data_keys)}
-        hints = {}
-        maybe_update_hints(hints, obj)
-        desc_doc = dict(
-            run_start=self._run_start_uid,
-            time=ttime.time(),
-            data_keys=data_keys,
-            uid=descriptor_uid,
-            configuration=config,
-            hints=hints,
-            name=name,
-            object_keys=object_keys,
-        )
-        doc_logger.debug("[descriptor] document is emitted with name %r containing "
-                         "data keys %r (run_uid=%r)", name, data_keys.keys(),
-                         self._run_start_uid,
-                         extra={'doc_name': 'descriptor',
-                                'run_uid': self._run_start_uid,
-                                'data_keys': data_keys.keys()})
+
+        await self._ensure_cached(obj)
+
+        desc_doc = await self._prepare_stream(name, (obj,))
+
         seq_num_counter = count(1)
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
@@ -323,7 +364,7 @@ class RunBundler:
                     "passed to subscribe() was not called with Dict[str, Reading]"
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = dict(
-                descriptor=descriptor_uid,
+                descriptor=desc_doc['uid'],
                 time=ttime.time(),
                 data=data,
                 timestamps=timestamps,
@@ -333,7 +374,6 @@ class RunBundler:
             self.emit_sync(DocumentNames.event, doc)
 
         self._monitor_params[obj] = emit_event, kwargs
-        await self.emit(DocumentNames.descriptor, desc_doc)
         # TODO: deprecate **kwargs when Ophyd.v2 is available
         obj.subscribe(emit_event, **kwargs)
 
@@ -425,56 +465,15 @@ class RunBundler:
         self._bundle_name = None
 
         d_objs, descriptor_doc = self._descriptors.get(desc_key, (None, None))
-        if d_objs is not None and d_objs != objs_read:
+        # we do not have the descriptor cached, make it
+        if descriptor_doc is None:
+            descriptor_doc = await self._prepare_stream(desc_key, objs_read)
+        # do have the descriptor cached
+        elif d_objs != objs_read:
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
                 "got {!s}".format(d_objs, objs_read)
             )
-        if descriptor_doc is None:
-            # We do not have an Event Descriptor for this set
-            # so one must be created.
-            data_keys = {}
-            config = {}
-            object_keys = {}
-            hints = {}
-            for obj in objs_read:
-                dks = self._describe_cache[obj]
-                obj_name = obj.name
-                # dks is an OrderedDict. Record that order as a list.
-                object_keys[obj_name] = list(dks)
-                for field, dk in dks.items():
-                    dk["object_name"] = obj_name
-                data_keys.update(dks)
-                config[obj_name] = {}
-                config[obj_name]["data"] = self._config_values_cache[obj]
-                config[obj_name]["timestamps"] = self._config_ts_cache[obj]
-                config[obj_name]["data_keys"] = self._config_desc_cache[obj]
-                maybe_update_hints(hints, obj)
-            descriptor_uid = new_uid()
-            descriptor_doc = dict(
-                run_start=self._run_start_uid,
-                time=ttime.time(),
-                data_keys=data_keys,
-                uid=descriptor_uid,
-                configuration=config,
-                name=desc_key,
-                hints=hints,
-                object_keys=object_keys,
-            )
-            await self.emit(DocumentNames.descriptor, descriptor_doc)
-            doc_logger.debug(
-                "[descriptor] document emitted with name %r containing "
-                "data keys %r (run_uid=%r)",
-                obj_name,
-                data_keys.keys(),
-                self._run_start_uid,
-                extra={
-                    'doc_name': 'descriptor',
-                    'run_uid': self._run_start_uid,
-                    'data_keys': data_keys.keys()}
-            )
-            self._descriptors[desc_key] = (objs_read, descriptor_doc)
-
         descriptor_uid = descriptor_doc["uid"]
 
         # Resource and Datum documents
@@ -777,4 +776,7 @@ class RunBundler:
             obj_set, _ = self._descriptors[name]
             if obj in obj_set:
                 del self._descriptors[name]
+                await self._prepare_stream(name, obj_set)
+                continue
+
         await self._cache_read_config(obj)

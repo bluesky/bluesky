@@ -65,12 +65,16 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     _md.update(md or {})
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
+    # per_shot might define a different stream, so do not predeclare primary
+    predeclare = (per_shot is None)
     if per_shot is None:
         per_shot = bps.one_shot
 
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
     def inner_count():
+        if predeclare:
+            yield from bps.declare_stream(*detectors, name='primary')
         return (yield from bps.repeat(partial(per_shot, detectors),
                                       num=num, delay=delay))
 
@@ -510,6 +514,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     else:
         _md['hints'].setdefault('dimensions', dimensions)
 
+    predeclare = (per_step is None)
     if per_step is None:
         per_step = bps.one_1d_step
 
@@ -518,6 +523,8 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
+        if predeclare:
+            yield from bps.declare_stream(motor, *detectors, name='primary')
         for step in steps:
             yield from per_step(detectors, motor, step)
 
@@ -637,6 +644,8 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             direction_sign = 1
         else:
             direction_sign = -1
+        devices = tuple(utils.separate_devices(detectors + [motor]))
+        yield from bps.declare_stream(*devices, name='primary')
         while next_pos * direction_sign < stop * direction_sign:
             yield Msg('checkpoint')
             yield from bps.mv(motor, next_pos)
@@ -644,7 +653,7 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
             for det in detectors:
                 yield Msg('trigger', det, group='B')
             yield Msg('wait', None, 'B')
-            for det in utils.separate_devices(detectors + [motor]):
+            for det in devices:
                 cur_det = yield Msg('read', det)
                 if target_field in cur_det:
                     cur_I = cur_det[target_field]['value']
@@ -830,6 +839,7 @@ def tune_centroid(
         sum_I = 0       # for peak centroid calculation, I(x)
         sum_xI = 0
 
+        yield from bps.declare_stream(motor, *detectors, name='primary')
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg('checkpoint')
             yield from bps.mv(motor, next_pos)
@@ -921,6 +931,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         # change it, else set it to the one generated above
         _md['hints'].setdefault('dimensions', dimensions)
 
+    predeclare = (per_step is None)
     if per_step is None:
         per_step = bps.one_nd_step
     else:
@@ -994,6 +1005,8 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     @bpp.stage_decorator(list(detectors) + motors)
     @bpp.run_decorator(md=_md)
     def inner_scan_nd():
+        if predeclare:
+            yield from bps.declare_stream(*motors, *detectors, name='primary')
         for step in list(cycler):
             yield from per_step(detectors, step, pos_cache)
 

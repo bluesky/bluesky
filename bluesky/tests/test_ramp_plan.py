@@ -1,7 +1,7 @@
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector
 from bluesky.plans import ramp_plan
-from bluesky.plan_stubs import trigger_and_read
+from bluesky.plan_stubs import trigger_and_read, declare_stream
 from bluesky import Msg
 from bluesky.utils import RampFail
 import numpy as np
@@ -14,6 +14,8 @@ def test_ramp(RE):
     from ophyd.positioner import SoftPositioner
     from ophyd import StatusBase
     from ophyd.sim import SynGauss
+    import bluesky.utils as bsu
+    RE.msg_hook = bsu.ts_msg_hook
 
     tt = SoftPositioner(name='mot')
     tt.set(0)
@@ -26,9 +28,17 @@ def test_ramp(RE):
         for j, v in enumerate(np.linspace(-5, 5, 10)):
             RE.loop.call_later(.1 * j, lambda v=v: tt.set(v))
         RE.loop.call_later(1.2, st._finished)
+        print("YOLO")
         return st
 
+    first = True
+
     def inner_plan():
+        nonlocal first
+        if first:
+            yield from declare_stream(dd, name='primary')
+            first = False
+
         yield from trigger_and_read([dd])
 
     g = ramp_plan(kickoff(), tt, inner_plan, period=0.08)
@@ -73,7 +83,14 @@ def test_timeout(RE):
 
         return StatusBase()
 
+    first = True
+
     def inner_plan():
+        nonlocal first
+        if first:
+            yield from declare_stream(det, name='primary')
+            first = False
+
         yield from trigger_and_read([det])
 
     g = ramp_plan(kickoff(), mot, inner_plan, period=.01, timeout=.1)

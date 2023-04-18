@@ -21,7 +21,7 @@ from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
 from bluesky.plans import (count, grid_scan)
-from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint)
+from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint, declare_stream)
 from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    reset_positions_decorator,
                                    run_wrapper, rewindable_wrapper,
@@ -99,9 +99,15 @@ def test_verbose(RE, hw):
     RE.verbose = True
     assert RE.verbose
     # Emit all four kinds of document, exercising the logging.
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det),
-        Msg('save'),
-        Msg('close_run')])
+    RE(
+        [
+            Msg('open_run'),
+            Msg('declare_stream', None, hw.det, name='primary'),
+            Msg('create', name='primary'), Msg('read', hw.det),
+            Msg('save'),
+            Msg('close_run')
+        ]
+    )
 
 
 def test_reset(RE):
@@ -312,14 +318,27 @@ def test_empty_bundle(RE, hw):
 
     # In this case, an Event should be emitted.
     mutable.clear()
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('read', hw.det), Msg('save')],
+    RE([
+        Msg('open_run'),
+        Msg('declare_stream', None, hw.det, name='primary'),
+        Msg('create', name='primary'),
+        Msg('read', hw.det),
+        Msg('save')],
        {'event': cb})
     assert 'flag' in mutable
 
     # In this case, an Event should not be emitted because the bundle is
     # emtpy (i.e., there are no readings.)
     mutable.clear()
-    RE([Msg('open_run'), Msg('create', name='primary'), Msg('save')], {'event': cb})
+    RE(
+        [
+            Msg('open_run'),
+            Msg('declare_stream', None, name='primary'),
+            Msg('create', name='primary'),
+            Msg('save')
+        ],
+        {'event': cb}
+    )
     assert 'flag' not in mutable
 
 
@@ -1109,6 +1128,7 @@ def test_rewindable_state_retrival(RE, start_state):
 
 
 @pytest.mark.parametrize('start_state,msg_seq', ((True, ['open_run',
+                                                         'declare_stream',
                                                          'rewindable',
                                                          'rewindable',
                                                          'trigger',
@@ -1121,6 +1141,7 @@ def test_rewindable_state_retrival(RE, start_state):
                                                          'rewindable',
                                                          'close_run']),
                                                  (False, ['open_run',
+                                                          'declare_stream',
                                                           'rewindable',
                                                           'trigger',
                                                           'trigger',
@@ -1141,7 +1162,11 @@ def test_nonrewindable_detector(RE, hw, start_state, msg_seq):
     m_col = MsgCollector()
     RE.msg_hook = m_col
 
-    RE(run_wrapper(trigger_and_read([hw.motor, hw.det])))
+    def test():
+        yield from declare_stream(hw.motor, hw.det, name='primary')
+        return (yield from trigger_and_read([hw.motor, hw.det]))
+
+    RE(run_wrapper(test()))
 
     assert [m.command for m in m_col.msgs] == msg_seq
 
@@ -1267,6 +1292,7 @@ def test_bad_from_idle_transitions(RE, change_func):
 def test_empty_cache_pause(RE):
     RE.rewindable = False
     pln = [Msg('open_run'),
+           Msg('declare_stream', None, name='primary'),
            Msg('create', name='primary'),
            Msg('pause'),
            Msg('save'),
@@ -1678,6 +1704,7 @@ def test_drop(RE, hw):
     # Drop first, drop after saving, save after dropping
     def plan():
         yield Msg('open_run')
+        yield Msg('declare_stream', None, det, name='primary')
         yield from inner('drop')
         yield from inner('save')
         yield from inner('drop')
@@ -1710,10 +1737,12 @@ def test_failing_describe_callback(RE, hw):
     def plan():
         yield Msg('open_run')
         try:
+            yield Msg('declare_stream', None, det,  name='primary')
             yield Msg('create', name='primary')
             yield Msg('read', det)
             yield Msg('save')
         finally:
+            yield Msg('declare_stream', None, det2,  name='primary')
             yield Msg('create', name='primary')
             yield Msg('read', det2)
             yield Msg('save')

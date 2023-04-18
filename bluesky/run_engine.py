@@ -330,6 +330,8 @@ class RunEngine:
                              'close_run', 'install_suspender',
                              'remove_suspender', '_start_suspender']
 
+    RunBundler = RunBundler
+
     @property
     def state(self):
         return self._state
@@ -448,7 +450,9 @@ class RunEngine:
         self._task_fut = None  # future proxy to the task above
         self._pardon_failures = None  # will hold an asyncio.Event
         self._plan = None  # the plan instance from __call__
+        self._require_stream_declaration = False
         self._command_registry = {
+            'declare_stream': self._declare_stream,
             'create': self._create,
             'save': self._save,
             'drop': self._drop,
@@ -1768,8 +1772,9 @@ class RunEngine:
         # against users mutating the md with their validator.
         self.md_validator(dict(md))
 
-        current_run = self._run_bundlers[run_key] = RunBundler(
-            md, self.record_interruptions, self.emit, self.emit_sync, self.log
+        current_run = self._run_bundlers[run_key] = type(self).RunBundler(
+            md, self.record_interruptions, self.emit, self.emit_sync, self.log,
+            strict_pre_declare=self._require_stream_declaration
         )
 
         new_uid = await current_run.open_run(msg)
@@ -1821,6 +1826,30 @@ class RunEngine:
                                          "an open run. That is, 'create' must "
                                          "be preceded by 'open_run'.") from ke
         return (await current_run.create(msg))
+
+    async def _declare_stream(self, msg):
+        """Trigger the run engine to start bundling future obj.read() calls for
+         an Event document
+
+        Expected message object is:
+
+            Msg('create', None, name='primary')
+            Msg('create', name='primary')
+
+        Note that the `name` kwarg will be the 'name' field of the resulting
+        descriptor. So descriptor['name'] = msg.kwargs['name'].
+
+        Also note that changing the 'name' of the Event will create a new
+        Descriptor document.
+        """
+        run_key = msg.run
+        try:
+            current_run = self._run_bundlers[run_key]
+        except KeyError as ke:
+            raise IllegalMessageSequence("Cannot bundle readings without "
+                                         "an open run. That is, 'create' must "
+                                         "be preceded by 'open_run'.") from ke
+        return (await current_run.declare_stream(msg))
 
     async def _read(self, msg):
         """

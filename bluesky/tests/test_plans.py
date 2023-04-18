@@ -204,12 +204,12 @@ def test_reset_wrapper(hw, RE):
     RE(bp.relative_inner_product_scan([], 1,
                                       p.pseudo1, 0, 1,
                                       p.pseudo2, 0, 1))
-    expecte_objs = [p, None, None,
+    expecte_objs = [p, None, None, None,
                     p, None, p,
                     None, None, p,
                     None, None, p,
                     p, None]
-    assert len(m_col.msgs) == 14
+    assert len(m_col.msgs) == 15
     assert [m.obj for m in m_col.msgs] == expecte_objs
 
 

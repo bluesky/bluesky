@@ -15,16 +15,19 @@ RE = RunEngine({})
 db = Broker.named("temp")
 RE.subscribe(db.insert)
 
+
 def factory(name, doc):
     # Each run is subscribed to independent instance of BEC
     bec = BestEffortCallback()
     return [bec], []
+
 
 rr = RunRouter([factory])
 RE.subscribe(rr)
 
 # Call counter and the maximum number calls
 n_calls, n_calls_max = 0, 3
+
 
 def sim_plan_recursive(npts):
     global n_calls, n_calls_max
@@ -39,7 +42,7 @@ def sim_plan_recursive(npts):
         @bpp.set_run_key_decorator(run_key)
         @bpp.run_decorator(md={})
         def plan(npts):
-
+            yield from bps.declare_stream(hw.motor1, hw.det1, name='primary')
             for j in range(int(npts/2)):
                 yield from bps.mov(hw.motor1, j * 0.2)
                 yield from bps.trigger_and_read([hw.motor1, hw.det1])
