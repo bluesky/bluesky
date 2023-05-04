@@ -2508,7 +2508,8 @@ class RunEngine:
 
     def emit_sync(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
-        schema_validators[name].validate(doc)
+
+        # Process the doc, already validated against the schema in event-model
         self.dispatcher.process(name, doc)
 
     async def emit(self, name, doc):

@@ -2,8 +2,8 @@ from collections import deque
 import inspect
 from itertools import count, tee
 import time as ttime
-from typing import Any, Deque, Dict, FrozenSet, List, Tuple
-from event_model import DocumentNames
+from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Callable
+from event_model import DocumentNames, compose_run
 from .log import doc_logger
 from .protocols import (
     T, Callback, Configurable, PartialEvent, Descriptor, Flyable,
@@ -40,8 +40,9 @@ class RunBundler:
         self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps
         self._descriptors = dict()  # cache of {name: (objs_frozen_set, doc)}
         # cache of {obj: {objs_frozen_set: (name, uid)}}
-        self._local_descriptors: Dict[Any, Dict[FrozenSet[str], Tuple[str, str]]] = dict()
-        self._sequence_counters = dict()  # a seq_num counter per stream
+        self._local_descriptors: Dict[Any, Dict[FrozenSet[str], Tuple[str, str, Callable, Callable]]] = dict()
+        # a seq_num counter per stream
+        self._sequence_counters: Dict[Any, Dict[FrozenSet[str], Tuple[str, str, Callable, Callable]]] = dict()
         self._teed_sequence_counters = dict()  # for if we redo data-points
         self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # cache of {obj: (cb, kwargs)}
         self.run_is_open = False
@@ -60,9 +61,15 @@ class RunBundler:
         self.run_is_open = True
         self._run_start_uid = new_uid()
         self._interruptions_desc_uid = None  # uid for a special Event Desc.
-        self._interruptions_counter = count(1)  # seq_num, special Event stream
+        self._interruptions_counter = 0  # seq_num, special Event stream
 
-        doc = dict(uid=self._run_start_uid, time=ttime.time(), **self._md)
+        (
+            doc,
+            self._compose_descriptor,
+            self._compose_resource,
+            self._compose_stop,
+            self._compose_stream_resource
+        ) = compose_run(uid=self._run_start_uid, event_counters=self._sequence_counters, **self._md)
         await self.emit(DocumentNames.start, doc)
         doc_logger.debug("[start] document is emitted (run_uid=%r)", self._run_start_uid,
                          extra={'doc_name': 'start',
@@ -71,16 +78,15 @@ class RunBundler:
 
         # Emit an Event Descriptor for recording any interruptions as Events.
         if self.record_interruptions:
+            # To store the interruptions uid outside of event-model
             self._interruptions_desc_uid = new_uid()
             dk = {"dtype": "string", "shape": [], "source": "RunEngine"}
-            interruptions_desc = dict(
-                time=ttime.time(),
+            self._interruptions_desc, self._interruptions_compose_event, _ = self._compose_descriptor(
                 uid=self._interruptions_desc_uid,
                 name="interruptions",
                 data_keys={"interruption": dk},
-                run_start=self._run_start_uid,
             )
-            await self.emit(DocumentNames.descriptor, interruptions_desc)
+            await self.emit(DocumentNames.descriptor, self._interruptions_desc)
 
         return self._run_start_uid
 
@@ -105,25 +111,14 @@ class RunBundler:
         for obj, (cb, kwargs) in list(self._monitor_params.items()):
             obj.clear_sub(cb)
             del self._monitor_params[obj]
-        # Count the number of Events in each stream.
-        num_events = {}
-        for bundle_name, counter in self._sequence_counters.items():
-            if bundle_name is None:
-                # rare but possible via Msg('create', name='primary')
-                continue
-            num_events[bundle_name] = next(counter) - 1
         reason = msg.kwargs.get("reason", None)
         if reason is None:
             reason = ""
         exit_status = msg.kwargs.get("exit_status", "success") or "success"
 
-        doc = dict(
-            run_start=self._run_start_uid,
-            time=ttime.time(),
-            uid=new_uid(),
+        doc = self._compose_stop(
             exit_status=exit_status,
             reason=reason,
-            num_events=num_events,
         )
         await self.emit(DocumentNames.stop, doc)
         doc_logger.debug("[stop] document is emitted (run_uid=%r)", self._run_start_uid,
@@ -153,12 +148,8 @@ class RunBundler:
             config[obj_name]["timestamps"] = self._config_ts_cache[obj]
             config[obj_name]["data_keys"] = self._config_desc_cache[obj]
             maybe_update_hints(hints, obj)
-        descriptor_uid = new_uid()
-        descriptor_doc = dict(
-            run_start=self._run_start_uid,
-            time=ttime.time(),
+        descriptor_doc, compose_event, compose_event_page = self._compose_descriptor(
             data_keys=data_keys,
-            uid=descriptor_uid,
             configuration=config,
             name=desc_key,
             hints=hints,
@@ -176,8 +167,8 @@ class RunBundler:
                 'run_uid': self._run_start_uid,
                 'data_keys': data_keys.keys()}
         )
-        self._descriptors[desc_key] = (objs_read, descriptor_doc)
-        return descriptor_doc
+        self._descriptors[desc_key] = (objs_read, descriptor_doc, compose_event, compose_event_page)
+        return descriptor_doc, compose_event
 
     async def _ensure_cached(self, obj):
         if obj not in self._describe_cache:
@@ -344,9 +335,8 @@ class RunBundler:
 
         await self._ensure_cached(obj)
 
-        desc_doc = await self._prepare_stream(name, (obj,))
+        desc_doc, compose_event = await self._prepare_stream(name, (obj,))
 
-        seq_num_counter = count(1)
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
@@ -363,13 +353,9 @@ class RunBundler:
                     f"{readable_obj} has async read() method and the callback " \
                     "passed to subscribe() was not called with Dict[str, Reading]"
             data, timestamps = _rearrange_into_parallel_dicts(readings)
-            doc = dict(
-                descriptor=desc_doc['uid'],
-                time=ttime.time(),
+            doc = compose_event(
                 data=data,
                 timestamps=timestamps,
-                seq_num=next(seq_num_counter),
-                uid=new_uid(),
             )
             self.emit_sync(DocumentNames.event, doc)
 
@@ -386,14 +372,11 @@ class RunBundler:
         """
         if self._interruptions_desc_uid is not None:
             # We are inside a run and self.record_interruptions is True.
-            doc = dict(
-                descriptor=self._interruptions_desc_uid,
-                time=ttime.time(),
-                uid=new_uid(),
-                seq_num=next(self._interruptions_counter),
+            doc = self._interruptions_compose_event(
                 data={"interruption": content},
                 timestamps={"interruption": ttime.time()},
             )
+            self._interruptions_counter += 1
             self.emit_sync(DocumentNames.event, doc)
 
     def rewind(self):
@@ -457,24 +440,20 @@ class RunBundler:
         # This is a separate check because it can be reset on resume.
         seq_num_key = desc_key
         if seq_num_key not in self._sequence_counters:
-            counter = count(1)
-            counter_copy1, counter_copy2 = tee(counter)
-            self._sequence_counters[seq_num_key] = counter_copy1
-            self._teed_sequence_counters[seq_num_key] = counter_copy2
+            self._teed_sequence_counters[seq_num_key] = 1
         self.bundling = False
         self._bundle_name = None
 
         d_objs, descriptor_doc = self._descriptors.get(desc_key, (None, None))
         # we do not have the descriptor cached, make it
         if descriptor_doc is None:
-            descriptor_doc = await self._prepare_stream(desc_key, objs_read)
+            descriptor_doc, compose_event = await self._prepare_stream(desc_key, objs_read)
         # do have the descriptor cached
         elif d_objs != objs_read:
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
                 "got {!s}".format(d_objs, objs_read)
             )
-        descriptor_uid = descriptor_doc["uid"]
 
         # Resource and Datum documents
         for resource_or_datum_name, resource_or_datum_doc in self._asset_docs_cache:
@@ -499,9 +478,6 @@ class RunBundler:
                 resource_or_datum_doc
             )
 
-        # Event document
-        seq_num = next(self._sequence_counters[seq_num_key])
-        event_uid = new_uid()
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
         data, timestamps = _rearrange_into_parallel_dicts(readings)
@@ -513,13 +489,9 @@ class RunBundler:
             for k, v in self._descriptors[desc_key][1]["data_keys"].items()
             if "external" in v
         }
-        event_doc = dict(
-            descriptor=descriptor_uid,
-            time=ttime.time(),
+        event_doc = compose_event(
             data=data,
             timestamps=timestamps,
-            seq_num=seq_num,
-            uid=event_uid,
             filled=filled,
         )
         await self.emit(DocumentNames.event, event_doc)
@@ -546,10 +518,8 @@ class RunBundler:
 
         # Keep a safe separate copy of the sequence counters to use if we
         # rewind and retake some data points.
-        for key, counter in list(self._sequence_counters.items()):
-            counter_copy1, counter_copy2 = tee(counter)
-            self._sequence_counters[key] = counter_copy1
-            self._teed_sequence_counters[key] = counter_copy2
+        for key, counter in self._sequence_counters:
+            self._teed_sequence_counters[key] = counter
 
     async def reset_checkpoint_state_coro(self):
         self.reset_checkpoint_state()
@@ -631,7 +601,6 @@ class RunBundler:
         for stream_name, stream_data_keys in describe_collect.items():
             if stream_name not in self._descriptors:
                 # We do not have an Event Descriptor for this set.
-                descriptor_uid = new_uid()
                 # if we have not yet read the configuration, do so
                 if collect_obj.name not in collect_obj_config:
                     if collect_obj not in self._config_desc_cache:
@@ -644,11 +613,8 @@ class RunBundler:
                     }
                 hints = {}
                 maybe_update_hints(hints, collect_obj)
-                doc = dict(
-                    run_start=self._run_start_uid,
-                    time=ttime.time(),
+                doc, compose_event, compose_event_page = self._compose_descriptor(
                     data_keys=stream_data_keys,
-                    uid=descriptor_uid,
                     name=stream_name,
                     configuration=collect_obj_config,
                     hints=hints,
@@ -661,10 +627,10 @@ class RunBundler:
                                  extra={'doc_name': 'descriptor',
                                         'run_uid': self._run_start_uid,
                                         'data_keys': stream_data_keys.keys()})
-                self._descriptors[stream_name] = (stream_data_keys, doc)
-                self._sequence_counters[stream_name] = count(1)
+                self._descriptors[stream_name] = (stream_data_keys, doc, compose_event, compose_event_page)
+                self._sequence_counters[stream_name] = 1
             else:
-                objs_read, doc = self._descriptors[stream_name]
+                objs_read, doc, compose_event, compose_event_page = self._descriptors[stream_name]
                 if stream_data_keys != objs_read:
                     raise RuntimeError(
                         "Mismatched objects read, "
@@ -673,7 +639,9 @@ class RunBundler:
                     )
 
             descriptor_uid = doc["uid"]
-            local_descriptors[frozenset(stream_data_keys)] = (stream_name, descriptor_uid)
+            local_descriptors[frozenset(stream_data_keys)] = (
+                stream_name, descriptor_uid, compose_event, compose_event_page
+            )
         self._local_descriptors[collect_obj] = local_descriptors
 
     async def collect(self, msg):
@@ -723,8 +691,10 @@ class RunBundler:
                 payload.append(ev)
 
             objs_read = frozenset(ev["data"])
-            stream_name, descriptor_uid = local_descriptors[objs_read]
-            seq_num = next(self._sequence_counters[stream_name])
+            stream_name, descriptor_uid, compose_event, compose_event_page = local_descriptors[objs_read]
+            compose_event()
+            seq_num = self._sequence_counters[stream_name]
+
             event_uid = new_uid()
             ev["descriptor"] = descriptor_uid
             ev["seq_num"] = seq_num
