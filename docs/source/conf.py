@@ -319,7 +319,7 @@ intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable', None),
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'ophyd': ('https://blueskyproject.io/ophyd/', None),
-    'event-model': ('https://blueskyproject.io/event-model/', None),
+    'event-model': ('https://blueskyproject.io/event-model/main', None),
   }
 
 sys.path.append(os.path.abspath("examples"))
