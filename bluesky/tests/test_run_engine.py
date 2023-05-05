@@ -1722,7 +1722,8 @@ def test_drop(RE, hw):
     assert len(docs['event']) == 3
 
 
-def test_failing_describe_callback(RE, hw):
+def test_failing_describe_callback(RE, hw, monkeypatch):
+
     class TestException(Exception):
         pass
     det = hw.det
@@ -1742,8 +1743,8 @@ def test_failing_describe_callback(RE, hw):
             yield Msg('read', det)
             yield Msg('save')
         finally:
-            yield Msg('declare_stream', None, det2,  name='primary')
-            yield Msg('create', name='primary')
+            yield Msg('declare_stream', None, det2,  name='primary2')
+            yield Msg('create', name="primary2")
             yield Msg('read', det2)
             yield Msg('save')
         yield Msg('close_run')

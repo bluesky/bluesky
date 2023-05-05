@@ -1,6 +1,5 @@
 from collections import deque
 import inspect
-from itertools import count, tee
 import time as ttime
 from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Callable
 from event_model import DocumentNames, compose_run
@@ -43,7 +42,7 @@ class RunBundler:
         self._local_descriptors: Dict[Any, Dict[FrozenSet[str], Tuple[str, str, Callable, Callable]]] = dict()
         # a seq_num counter per stream
         self._sequence_counters: Dict[Any, Dict[FrozenSet[str], Tuple[str, str, Callable, Callable]]] = dict()
-        self._teed_sequence_counters = dict()  # for if we redo data-points
+        self._sequence_counters_copy = dict()  # for if we redo data-points
         self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # cache of {obj: (cb, kwargs)}
         self.run_is_open = False
         self._uncollected = set()  # objects after kickoff(), before collect()
@@ -62,6 +61,7 @@ class RunBundler:
         self._run_start_uid = new_uid()
         self._interruptions_desc_uid = None  # uid for a special Event Desc.
         self._interruptions_counter = 0  # seq_num, special Event stream
+        run = compose_run(uid=self._run_start_uid, event_counters=self._sequence_counters, metadata=self._md)
 
         (
             doc,
@@ -69,7 +69,7 @@ class RunBundler:
             self._compose_resource,
             self._compose_stop,
             self._compose_stream_resource
-        ) = compose_run(uid=self._run_start_uid, event_counters=self._sequence_counters, **self._md)
+        ) = run.__dict__.values()
         await self.emit(DocumentNames.start, doc)
         doc_logger.debug("[start] document is emitted (run_uid=%r)", self._run_start_uid,
                          extra={'doc_name': 'start',
@@ -284,7 +284,10 @@ class RunBundler:
 
     async def _cache_describe_config(self, obj):
         "Read the object's describe_configuration and cache it."
-        if isinstance(obj, Configurable):
+
+        # Pylance doesn't understand this is an acceptable isinstance with the
+        # @runtime_checkable, hence the type ignore.
+        if isinstance(obj, Configurable):  # type: ignore
             conf_keys = await maybe_await(obj.describe_configuration())
         else:
             conf_keys = {}
@@ -292,7 +295,7 @@ class RunBundler:
 
     async def _cache_read_config(self, obj):
         "Read the object's configuration and cache it."
-        if isinstance(obj, Configurable):
+        if isinstance(obj, Configurable):  # type: ignore
             conf = await maybe_await(obj.read_configuration())
         else:
             conf = {}
@@ -337,7 +340,6 @@ class RunBundler:
 
         desc_doc, compose_event = await self._prepare_stream(name, (obj,))
 
-
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
@@ -381,7 +383,7 @@ class RunBundler:
 
     def rewind(self):
         self._sequence_counters.clear()
-        self._sequence_counters.update(self._teed_sequence_counters)
+        self._sequence_counters.update(self._sequence_counters_copy)
         # This is needed to 'cancel' an open bundling (e.g. create) if
         # the pause happens after a 'checkpoint', after a 'create', but
         # before the paired 'save'.
@@ -440,11 +442,12 @@ class RunBundler:
         # This is a separate check because it can be reset on resume.
         seq_num_key = desc_key
         if seq_num_key not in self._sequence_counters:
-            self._teed_sequence_counters[seq_num_key] = 1
+            self._sequence_counters[seq_num_key] = 1
+            self._sequence_counters_copy[seq_num_key] = 1
         self.bundling = False
         self._bundle_name = None
 
-        d_objs, descriptor_doc = self._descriptors.get(desc_key, (None, None))
+        d_objs, descriptor_doc, compose_event, _ = self._descriptors.get(desc_key, (None, None, None, None))
         # we do not have the descriptor cached, make it
         if descriptor_doc is None:
             descriptor_doc, compose_event = await self._prepare_stream(desc_key, objs_read)
@@ -518,8 +521,9 @@ class RunBundler:
 
         # Keep a safe separate copy of the sequence counters to use if we
         # rewind and retake some data points.
-        for key, counter in self._sequence_counters:
-            self._teed_sequence_counters[key] = counter
+
+        for key, counter in list(self._sequence_counters.items()):
+            self._sequence_counters_copy[key] = counter
 
     async def reset_checkpoint_state_coro(self):
         self.reset_checkpoint_state()
@@ -533,7 +537,7 @@ class RunBundler:
             obj.subscribe(cb, **kwargs)
 
     async def clear_checkpoint(self, msg):
-        self._teed_sequence_counters.clear()
+        self._sequence_counters_copy.clear()
 
     async def drop(self, msg):
         """Drop the event that is currently being bundled
@@ -692,18 +696,13 @@ class RunBundler:
 
             objs_read = frozenset(ev["data"])
             stream_name, descriptor_uid, compose_event, compose_event_page = local_descriptors[objs_read]
-            compose_event()
-            seq_num = self._sequence_counters[stream_name]
 
-            event_uid = new_uid()
-            ev["descriptor"] = descriptor_uid
-            ev["seq_num"] = seq_num
-            ev["uid"] = event_uid
+            ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
 
             if stream:
                 doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)",
                                  ev['data'].keys(), self._run_start_uid,
-                                 event_uid,
+                                 ev["uid"],
                                  extra={'doc_name': 'event',
                                         'run_uid': self._run_start_uid,
                                         'data_keys': ev['data'].keys()})
@@ -743,7 +742,7 @@ class RunBundler:
         # New event descriptors, with this new configuration, will
         # be created for any future event documents.
         for name in list(self._descriptors):
-            obj_set, _ = self._descriptors[name]
+            obj_set = self._descriptors[name][0]
             if obj in obj_set:
                 del self._descriptors[name]
                 await self._prepare_stream(name, obj_set)

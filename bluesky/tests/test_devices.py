@@ -11,6 +11,8 @@ import pytest
 from bluesky.tests import requires_ophyd, ophyd
 from .utils import DocCollector
 from unittest.mock import ANY
+import event_model
+from functools import partial
 
 if ophyd:
     from ophyd import Component as Cpt, Device, Signal
@@ -84,7 +86,7 @@ def test_separate_devices():
 
 @pytest.mark.parametrize('ophyd', ["v1", "v2"])
 @requires_ophyd
-def test_monitor(RE, ophyd):
+def test_monitor(RE, ophyd, monkeypatch):
     docs = []
 
     def collect(name, doc):
@@ -94,6 +96,12 @@ def test_monitor(RE, ophyd):
         sig = A('', name='a').s1
     else:
         sig = SigNew(name='a_s1')
+        # Schema validation fails for ophyd v2
+        monkeypatch.setattr(
+            event_model,
+            "compose_event",
+            partial(event_model.compose_event, validate=False)
+        )
 
     def plan():
         yield Msg('open_run')
@@ -108,6 +116,7 @@ def test_monitor(RE, ophyd):
         'seq_num': 1,
         'time': pytest.approx(time(), rel=0.1),
         'timestamps': {'a_s1': pytest.approx(time(), rel=0.1)},
+        'filled': ANY,
         'uid': ANY
     }
 
