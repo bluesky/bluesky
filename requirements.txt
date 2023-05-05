@@ -1,5 +1,5 @@
 cycler
-event-model>=1.14.0
+event-model@git+https://github.com/bluesky/event-model.git@main
 historydict
 msgpack
 msgpack-numpy

@@ -19,7 +19,7 @@ from .protocols import (Flyable, Locatable, Movable, Pausable, Readable, Stageab
 
 import concurrent
 
-from event_model import DocumentNames, schema_validators
+from event_model import DocumentNames
 from .log import logger, msg_logger, state_logger, ComposableLogAdapter
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
