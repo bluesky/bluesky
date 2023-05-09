@@ -8,7 +8,7 @@ Unreleased
 * Changed `~bluesky.bundlers` to use event-model compose functions
   * In the run stop document, 'num_changes' will now contain descriptors even if
   they have no events associated with them.
-  * Documents are now tested against schema when they are composed.
+  * Events produced by monitors are now checked against their corresponding Descriptor document.
 
 
 
