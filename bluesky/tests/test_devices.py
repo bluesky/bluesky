@@ -11,8 +11,6 @@ import pytest
 from bluesky.tests import requires_ophyd, ophyd
 from .utils import DocCollector
 from unittest.mock import ANY
-import event_model
-from functools import partial
 
 if ophyd:
     from ophyd import Component as Cpt, Device, Signal
@@ -36,10 +34,10 @@ class SigNew:
         self._callbacks: List[Callback] = []
 
     def read(self) -> Dict[str, Reading]:
-        return {}
+        return {self.name: dict(value=0, timestamp=0)}
 
     def describe(self) -> Dict[str, Descriptor]:
-        return {}
+        return {self.name: dict(source="", dtype="number", shape=[])}
 
     def subscribe(self, function: Callback) -> None:
         self._callbacks.append(function)
@@ -86,7 +84,7 @@ def test_separate_devices():
 
 @pytest.mark.parametrize('ophyd', ["v1", "v2"])
 @requires_ophyd
-def test_monitor(RE, ophyd, monkeypatch):
+def test_monitor(RE, ophyd):
     docs = []
 
     def collect(name, doc):
@@ -96,12 +94,6 @@ def test_monitor(RE, ophyd, monkeypatch):
         sig = A('', name='a').s1
     else:
         sig = SigNew(name='a_s1')
-        # Schema validation fails for ophyd v2
-        monkeypatch.setattr(
-            event_model,
-            "compose_event",
-            partial(event_model.compose_event, validate=False)
-        )
 
     def plan():
         yield Msg('open_run')

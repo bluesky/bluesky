@@ -1573,7 +1573,7 @@ def test_num_events(RE, hw, db):
     else:
         uid1 = rs1[0]
     h = db[uid1]
-    assert h.stop['num_events'] == {}
+    assert h.stop['num_events'] == {'primary': 0}
 
     rs2 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1592,7 +1592,7 @@ def test_num_events(RE, hw, db):
     else:
         uid3 = rs3[0]
     h = db[uid3]
-    assert h.stop['num_events'] == {'baseline': 2}
+    assert h.stop['num_events'] == {'primary': 0, 'baseline': 2}
 
     rs4 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1722,7 +1722,7 @@ def test_drop(RE, hw):
     assert len(docs['event']) == 3
 
 
-def test_failing_describe_callback(RE, hw, monkeypatch):
+def test_failing_describe_callback(RE, hw):
 
     class TestException(Exception):
         pass
