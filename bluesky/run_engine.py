@@ -2225,7 +2225,7 @@ class RunEngine:
             with self._state_lock:
                 try:
                     exc = ret.exception(timeout=0)
-                    raise FailedStatus(ret).with_traceback(exc.__traceback__) from exc
+                    raise FailedStatus(ret) from exc
                 except Exception as e:
                     self._exception = e
         p_event.set()
