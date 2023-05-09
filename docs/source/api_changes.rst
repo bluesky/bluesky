@@ -9,8 +9,9 @@ Unreleased
   * In the run stop document, 'num_events' will now include streams even if
   they have no events associated with them.
   * Events produced by monitors are now checked against their corresponding Descriptor document.
-
-
+  * In the run stop document, 'num_changes' will now contain descriptors even if
+  they have no events associated with them.
+  * Documents are now tested against schema when they are composed.
 
 v1.11.0 (2023-06-06)
 ====================
@@ -58,7 +59,6 @@ Removed
 -------
 
 * Removed support for Python < 3.8
-
 
 v1.9.0 (2022-08-11)
 ===================
