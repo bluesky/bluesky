@@ -67,7 +67,9 @@ class RunBundler:
         run = compose_run(uid=self._run_start_uid, event_counters=self._sequence_counters, metadata=self._md)
         doc = run.start_doc
         self._compose_descriptor = run.compose_descriptor
+        self._compose_resource = run.compose_resource
         self._compose_stop = run.compose_stop
+        self._compose_stream_resource = run.compose_stream_resource
 
         await self.emit(DocumentNames.start, doc)
         doc_logger.debug("[start] document is emitted (run_uid=%r)", self._run_start_uid,
@@ -167,7 +169,7 @@ class RunBundler:
                 'data_keys': data_keys.keys()}
         )
         self._descriptor_objs[desc_key] = objs_read
-        return self._descriptors[desc_key].descriptor_doc, self._descriptors[desc_key].compose_event
+        return self._descriptors[desc_key].descriptor_doc, self._descriptors[desc_key].compose_event, objs_read
 
     async def _ensure_cached(self, obj):
         if obj not in self._describe_cache:
@@ -335,7 +337,7 @@ class RunBundler:
 
         await self._ensure_cached(obj)
 
-        _, compose_event = await self._prepare_stream(name, (obj,))
+        _, compose_event, _ = await self._prepare_stream(name, (obj,))
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
@@ -450,8 +452,8 @@ class RunBundler:
         d_objs = self._descriptor_objs.get(desc_key, None)
 
         # we do not have the descriptor cached, make it
-        if descriptor_doc is None:
-            descriptor_doc, compose_event = await self._prepare_stream(desc_key, objs_read)
+        if descriptor_doc is None or d_objs is None:
+            descriptor_doc, compose_event, d_objs = await self._prepare_stream(desc_key, objs_read)
             # do have the descriptor cached
         elif d_objs != objs_read:
             raise RuntimeError(
