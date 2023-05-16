@@ -2,6 +2,15 @@
  Release History
 =================
 
+v1.11.0 (2023-??-??)
+====================
+
+Changes
+-------
+
+* The stream name, which is already required, in  `Msg('create', ...)` is
+  now validated to be a string.
+
 v1.10.0 (2022-09-06)
 ====================
 

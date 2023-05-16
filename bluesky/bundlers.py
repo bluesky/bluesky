@@ -203,7 +203,7 @@ class RunBundler:
 
         Expected message object is::
 
-            Msg('create', None, name='primary')
+            Msg('create', None, 'primary')
             Msg('create', name='primary')
 
         Note that the `name` kwarg will be the 'name' field of the resulting
@@ -232,8 +232,13 @@ class RunBundler:
             except ValueError:
                 raise ValueError(
                     "Msg('create') now requires a stream name, given as "
-                    "Msg('create', name) or Msg('create', name=name)"
+                    "Msg('create', None, name) or Msg('create', name=name)"
                 ) from None
+        if not isinstance(self._bundle_name, str):
+            raise TypeError(
+                f"The stream name must be a string, not  {type(self._bundle_name)}. "
+                f"You passed {self._bundle_name!r}."
+            )
         if self._strict_pre_declare:
             if self._bundle_name not in self._descriptors:
                 raise IllegalMessageSequence(

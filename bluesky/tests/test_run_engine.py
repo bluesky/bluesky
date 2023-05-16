@@ -1833,3 +1833,15 @@ def test_thread_name(RE):
 
     d = MockDevice()
     RE([Msg("trigger", d)])
+
+
+def test_no_stream_name(RE):
+    bad_plan = [Msg('open_run'), Msg('create')]
+    with pytest.raises(ValueError, match='now requires a stream name'):
+        RE(bad_plan)
+
+
+def test_nonstring_streamname(RE):
+    bad_plan = [Msg('open_run'), Msg('create', name=1)]
+    with pytest.raises(TypeError, match='The stream name must be a string'):
+        RE(bad_plan)
