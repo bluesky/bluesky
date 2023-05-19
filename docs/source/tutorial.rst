@@ -510,7 +510,7 @@ the same simulated hardware as in the previous section:
 
 .. code-block:: python
 
-    from ophyd.sim import det4, motor1, motor2
+    from ophyd.sim import det4, motor1, motor2, motor3
     dets = [det4]   # just one in this case, but it could be more than one
 
 We'll use a new plan, named :func:`~bluesky.plans.grid_scan`.
