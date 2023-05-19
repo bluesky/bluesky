@@ -160,10 +160,6 @@ To start, let's use the all-purpose
     # Send all metadata/data captured to the BestEffortCallback.
     RE.subscribe(bec)
 
-    # Make plots update live while scans run.
-    from bluesky.utils import install_kicker
-    install_kicker()
-
 .. ipython:: python
     :suppress:
 
