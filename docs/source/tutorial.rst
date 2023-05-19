@@ -528,6 +528,9 @@ Let's start with a 3x5x5 grid.
                  motor2, -0.1, 0.1, 5,  # scan motor2 from -0.1 to 0.1 in 5 steps
                  motor3, 10, -10, 5))  # scan motor3 from 10 to -10 in 5 steps
 
+Note that this will not plot an output as it is more axes than can currently be
+displayed.
+
 The order of the motors controls how the grid is traversed. The "slowest" axis
 comes first. Numpy users will appreciate that this is consistent with numpy's
 convention for indexing multidimensional arrays.
