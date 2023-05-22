@@ -675,6 +675,13 @@ class RunBundler:
             # Add a 'run_start' field to the resource document on its way out.
             if name == "resource":
                 doc["run_start"] = self._run_start_uid
+            elif name == "datum":
+                ...
+            elif name == "stream_datum":
+                doc["data_keys"] = 0
+            elif name == "strean_resource":
+                ...
+
             await self.emit(DocumentNames(name), doc)
 
         # Populate descriptors and local descriptors from describe_collect
