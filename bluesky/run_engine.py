@@ -939,7 +939,7 @@ class RunEngine:
         self._response_stack.append(None)
         # Notify Devices of the resume in case they want to clean up.
         for obj in self._objs_seen:
-            if isinstance(obj, Pausable):
+            if isinstance(obj, Pausable):  # type: ignore
                 fut = asyncio.run_coroutine_threadsafe(maybe_await(obj.resume()), self._loop)
                 fut.result()
         plan_return = self._resume_task()
@@ -1379,7 +1379,7 @@ class RunEngine:
     async def _stop_movable_objects(self, *, success=True):
         "Call obj.stop() for all objects we have moved. Log any exceptions."
         for obj in self._movable_objs_touched:
-            if isinstance(obj, Stoppable):
+            if isinstance(obj, Stoppable):  # type: ignore
                 try:
                     await maybe_await(obj.stop(success=success))
                 except Exception:
@@ -1440,7 +1440,7 @@ class RunEngine:
                     # Notify Devices of the pause in case they want to
                     # clean up.
                     for obj in self._objs_seen:
-                        if isinstance(obj, Pausable):
+                        if isinstance(obj, Pausable):  # type: ignore
                             try:
                                 await maybe_await(obj.pause())
                             except NoReplayAllowed:
@@ -2272,7 +2272,7 @@ class RunEngine:
             await current_run.restore_monitors()
         # Notify Devices of the resume in case they want to clean up.
         for obj in self._objs_seen:
-            if isinstance(obj, Pausable):
+            if isinstance(obj, Pausable):  # type: ignore
                 await maybe_await(obj.resume())
 
     async def _checkpoint(self, msg):
@@ -2394,14 +2394,14 @@ class RunEngine:
         """
         _, obj, args, kwargs, _ = msg
         # If an object has no 'stage' method, assume there is nothing to do.
-        if not isinstance(obj, Stageable):
+        if not isinstance(obj, Stageable):  # type: ignore
             return []
         group = kwargs.pop('group', None)
         ret = obj.stage()
         self._staged.add(obj)  # add first in case of failure below
         await self._reset_checkpoint_state_coro()
 
-        if not isinstance(ret, Status):
+        if not isinstance(ret, Status):  # type: ignore
             return ret
 
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="stage")
@@ -2417,7 +2417,7 @@ class RunEngine:
         """
         _, obj, args, kwargs, _ = msg
         # If an object has no 'unstage' method, assume there is nothing to do.
-        if not isinstance(obj, Stageable):
+        if not isinstance(obj, Stageable):  # type: ignore
             return []
         group = kwargs.pop('group', None)
         ret = obj.unstage()
@@ -2425,7 +2425,7 @@ class RunEngine:
         self._staged.discard(obj)
         await self._reset_checkpoint_state_coro()
 
-        if not isinstance(ret, Status):
+        if not isinstance(ret, Status):  # type: ignore
             return ret
 
         self._add_status_to_group(obj=obj, status_object=ret, group=group, action="unstage")
