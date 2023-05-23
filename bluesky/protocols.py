@@ -1,15 +1,16 @@
 import sys
 
 if sys.version_info < (3, 8):
-    from typing_extensions import Literal, Protocol, TypedDict, runtime_checkable
+    from typing_extensions import Literal, Protocol, runtime_checkable
 else:
-    from typing import Literal, Protocol, TypedDict, runtime_checkable
+    from typing import Literal, Protocol, runtime_checkable
 
 from asyncio import CancelledError
 from typing import (
     Any, Awaitable, Callable, Dict, Generic, Iterator, List, Optional,
     Sequence, Tuple, Type, TypeVar, Union
 )
+from typing_extensions import TypedDict
 
 from abc import abstractmethod
 
