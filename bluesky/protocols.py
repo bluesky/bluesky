@@ -1,6 +1,7 @@
-try:
+import sys
+if sys.version_info < (3, 11):
     from typing_extensions import Literal, Protocol, TypedDict, runtime_checkable
-except ImportError:
+else:
     from typing import Literal, Protocol, TypedDict, runtime_checkable
 
 from asyncio import CancelledError
