@@ -1,7 +1,14 @@
 import asyncio
 from collections import defaultdict
 import time as ttime
-from typing import Dict
+from typing import Dict, Iterator
+from event_model.documents.event_descriptor import DataKey
+from event_model.documents.event_page import PartialEventPage
+from event_model.documents.resource import PartialResource
+from event_model.documents.datum import Datum
+from event_model.documents.stream_datum import StreamDatum
+from event_model.documents.stream_resource import StreamResource
+from bluesky.utils import new_uid
 import pytest
 from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import (
@@ -65,7 +72,10 @@ from bluesky.preprocessors import (
 from bluesky.plans import count, scan, rel_scan, inner_product_scan
 
 import bluesky.plans as bp
-from bluesky.protocols import Descriptor, Locatable, Location, Readable, Reading, Status
+from bluesky.protocols import (
+    Asset, Descriptor, Locatable, Location, Readable,
+    Reading, Status, Pageable, SyncOrAsync, WritesExternalAssets
+)
 
 from bluesky.utils import all_safe_rewind, IllegalMessageSequence
 
@@ -931,3 +941,139 @@ def test_custom_stream_name(RE, hw):
 
     with pytest.raises(IllegalMessageSequence):
         RE(count([hw.det], 3, per_shot=one_shot))
+
+
+class DeviceThatCanReadDescribe(Readable):
+    def read(self) -> SyncOrAsync[Dict[str, Reading]]:
+        return dict(x=dict(value=1.2, timestamp=0.0))
+
+    def describe(self) -> SyncOrAsync[Dict[str, DataKey]]:
+        return dict(x=dict(source="dummy", dtype="number", shape=[]))
+
+
+class DeviceThatEmitAssets_Resource(
+    WritesExternalAssets
+):
+    def collect_asset_docs(self) -> Iterator[Asset]:
+        resource = PartialResource(
+            resource_kwargs={"some_argument": 1337},
+            root="awesome",
+            spec=".dat",
+            resource_path="no/really,/awesome",
+            uid=new_uid()
+        )        
+
+        return ("resource", resource)
+
+
+class DeviceThatEmitAssets_Datum(
+    WritesExternalAssets
+):
+    def collect_asset_docs(self) -> Iterator[Asset]:
+        datum = Datum(
+            datum_id="some_resource_name/123123",
+            resource="uid_of_that_resource",
+            datum_kwargs={"some_argument": 1234}
+        )
+        return ("datum", datum)
+
+
+class DeviceThatEmitAssets_StreamResource(
+    WritesExternalAssets
+):
+    def collect_asset_docs(self) -> Iterator[Asset]:
+        stream_resource = StreamResource(
+            resource_kwargs={"argument": 1},
+            resource_path="An/awesome/path",
+            root="some_detail",
+            spec=".hdf5",
+            uid=new_uid()
+        )
+        return ("stream_resource", stream_resource)
+
+
+class DeviceThatEmitAssets_StreamDatum(
+    WritesExternalAssets
+):
+    def collect_asset_docs(self) -> Iterator[Asset]:
+        stream_datum = StreamDatum(
+            block_idx=32,
+            event_count=1233,
+            event_offset=1,
+            stream_resource=new_uid(),
+            uid=new_uid(),
+            data_keys=["a", "b", "c"],
+            seq_nums={"a": 12},
+            indices={"b", 1}
+        )
+        return ("stream_datum", stream_datum)
+
+
+class DeviceThatCanPage(
+    Pageable
+):
+    def describe_pages(self) -> SyncOrAsync[Dict[str, DataKey]]:
+        data_keys = {str(x): DataKey(dtype="string", shape=[], source="a_source") for x in range(100)}
+        return data_keys
+
+    def collect_pages(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
+
+        def timestamps(x):
+            return {str(y): range(x) for y in range(x)}
+
+        return iter([
+            PartialEventPage(time=range(x), timestamps=timestamps(x), data=timestamps(x)) for x in range(6)
+        ])
+
+
+def test_rd_desc_res(RE):
+    class Xa(Readable, WritesExternalAssets):
+        def read(self) -> SyncOrAsync[Dict[str, Reading]]:
+            return dict(x=dict(value=1.2, timestamp=0.0))
+
+        def describe(self) -> SyncOrAsync[Dict[str, DataKey]]:
+            return dict(x=dict(source="dummy", dtype="number", shape=[]))
+
+        def collect_asset_docs(self) -> Iterator[Asset]:
+            resource = PartialResource(
+                resource_kwargs={"some_argument": 1337},
+                root="awesome",
+                spec=".dat",
+                resource_path="no/really,/awesome",
+                uid=new_uid()
+            )
+            return [("resource", resource)]
+        name = ""
+
+    x = Xa()
+    rds = []
+
+    def store_rd():
+        value = yield from rd(x)
+        rds.append(value)
+
+    RE(store_rd())
+
+
+def test_rd_desc_sr(RE, hw):
+    ...
+
+
+def test_desc_coll(RE, hw):
+    """Returns a partial event"""
+    ...
+
+
+def test_desc_coll_res(RE, hw):
+    """Returns a partial event + resource"""
+    ...
+
+
+def test_desc_page_coll_page(RE, hw):
+    """Returns a partial event page"""
+    ...
+
+
+def test_desc_page_coll_page_sr(RE, hw):
+    """Returns a partial event page + stream resource"""
+    ...

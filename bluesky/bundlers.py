@@ -680,8 +680,8 @@ class RunBundler:
             elif name == "datum":
                 ...
             elif name == "stream_datum":
-                doc["data_keys"] = 0
-            elif name == "strean_resource":
+                ...
+            elif name == "stream_resource":
                 ...
 
             await self.emit(DocumentNames(name), doc)
