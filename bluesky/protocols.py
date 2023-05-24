@@ -10,7 +10,7 @@ from typing import (
 )
 
 from abc import abstractmethod
-from event_model.documents import Datum, Resource, StreamDatum, StreamResource
+from event_model.documents import Datum, StreamDatum, StreamResource
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.resource import PartialResource
 from event_model.documents.event import PartialEvent
@@ -108,7 +108,8 @@ class HasParent(Protocol):
 class WritesExternalAssets(Protocol):
     @abstractmethod
     def collect_asset_docs(self) -> Iterator[Asset]:
-        """Create the resource and datum documents describing data in external source.
+        """Create the resource, datum, stream_resource, and stream_datum
+        documents describing data in external source.
 
         Example yielded values:
 
@@ -129,6 +130,7 @@ class WritesExternalAssets(Protocol):
                 'resource': '9123df61-a09f-49ae-9d23-41d4d6c6d788'}
             })
         """
+        ...
 
 
 @runtime_checkable
@@ -180,20 +182,6 @@ class Readable(HasName, Protocol):
                          {'value': 16, 'timestamp': 1472493713.539238}))
         """
         ...
-    @abstractmethod
-    def describe(self) -> SyncOrAsync[Dict[str, DataKey]]:
-        """Return an OrderedDict mapping string field name(s)
-        to DataKeys describing event descriptor data.
-
-        This can be a standard function or an ``async`` function.
-
-        Example return value:
-
-        .. code-block:: python
-        OrderedDict(())
-
-        """
-        ...
 
     @abstractmethod
     def describe(self) -> SyncOrAsync[Dict[str, DataKey]]:
@@ -214,6 +202,40 @@ class Readable(HasName, Protocol):
                          {'source': 'XF23-ID:SOME_PV_NAME',
                           'dtype': 'number',
                           'shape': []}))
+        """
+        ...
+
+    
+@runtime_checkable
+class Pageable(HasName, Protocol):
+    @abstractmethod
+    def describe_pages(self) -> SyncOrAsync[Dict[str, DataKey]]:
+        ...
+
+    @abstractmethod
+    def collect_pages(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
+        ...
+
+
+@runtime_checkable
+class Collectable(HasName, Protocol):
+    @abstractmethod
+    def describe_collect(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
+        """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
+
+        Since a flyer can potentially return more than one event stream, this is a dict
+        of stream names (strings) mapped to a ``describe()``-type output for each.
+
+        This can be a standard function or an ``async`` function.
+        """
+        ...
+
+    @abstractmethod
+    def collect(self) -> SyncOrAsync[Iterator[PartialEvent]]:
+        """Yield dictionaries that are partial Event documents.
+
+        They should contain the keys 'time', 'data', and 'timestamps'.
+        A 'uid' is added by the RunEngine.
         """
         ...
 
@@ -261,26 +283,6 @@ class Flyable(HasName, Protocol):
     @abstractmethod
     def complete(self) -> Status:
         """Return a ``Status`` and mark it done when acquisition has completed."""
-        ...
-
-    @abstractmethod
-    def collect(self) -> Iterator[PartialEvent]:
-        """Yield dictionaries that are partial Event documents.
-
-        They should contain the keys 'time', 'data', and 'timestamps'.
-        A 'uid' is added by the RunEngine.
-        """
-        ...
-
-    @abstractmethod
-    def describe_collect(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
-        """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
-
-        Since a flyer can potentially return more than one event stream, this is a dict
-        of stream names (strings) mapped to a ``describe()``-type output for each.
-
-        This can be a standard function or an ``async`` function.
-        """
         ...
 
 
@@ -428,3 +430,5 @@ def check_supports(obj, protocol: Type[T]) -> T:
     return obj
 
 
+# Descriptor with previous name on imports for backwards compatibility.
+Descriptor = DataKey  # type: ignore
