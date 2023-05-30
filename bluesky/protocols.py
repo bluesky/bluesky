@@ -1,15 +1,25 @@
-try:
-    from typing_extensions import Literal, Protocol, TypedDict, runtime_checkable
-except ImportError:
-    from typing import Literal, Protocol, TypedDict, runtime_checkable
-
+from abc import abstractmethod
 from asyncio import CancelledError
 from typing import (
-    Any, Awaitable, Callable, Dict, Generic, Iterator, List, Optional,
-    Sequence, Tuple, Type, TypeVar, Union
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    runtime_checkable,
 )
 
-from abc import abstractmethod
+from typing_extensions import TypedDict
 
 
 # TODO: these are not placed in Events by RE yet

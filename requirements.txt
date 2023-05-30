@@ -7,6 +7,6 @@ numpy
 super_state_machine
 toolz
 tqdm>=4.44
-typing-extensions;python_version<'3.8'
+typing-extensions
 dataclasses;python_version<'3.7'
 zict<3.0.0
