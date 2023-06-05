@@ -12,14 +12,14 @@ Before You Begin
     software, and you can skip the rest of this section.  Go to
     `https://try.nsls2.bnl.gov <https://try.nsls2.bnl.gov>`_.
 
-* You will need Python 3.5 or newer. From a shell ("Terminal" on OSX,
+* You will need Python 3.8 or newer. From a shell ("Terminal" on OSX,
   "Command Prompt" on Windows), check your current Python version.
 
   .. code-block:: bash
 
     python3 --version
 
-  If that version is less than 3.5, you must update it.
+  If that version is less than 3.8, you must update it.
 
   We recommend install bluesky into a "virtual environment" so this
   installation will not interfere with any existing Python software:
@@ -35,7 +35,7 @@ Before You Begin
 
   .. code-block:: bash
 
-    conda create -n bluesky-tutorial "python>=3.5"
+    conda create -n bluesky-tutorial "python>=3.8"
     conda activate bluesky-tutorial
 
 * Install the latest versions of bluesky and ophyd. Also install the databroker
@@ -159,10 +159,6 @@ To start, let's use the all-purpose
 
     # Send all metadata/data captured to the BestEffortCallback.
     RE.subscribe(bec)
-
-    # Make plots update live while scans run.
-    from bluesky.utils import install_kicker
-    install_kicker()
 
 .. ipython:: python
     :suppress:
@@ -510,7 +506,7 @@ the same simulated hardware as in the previous section:
 
 .. code-block:: python
 
-    from ophyd.sim import det4, motor1, motor2
+    from ophyd.sim import det4, motor1, motor2, motor3
     dets = [det4]   # just one in this case, but it could be more than one
 
 We'll use a new plan, named :func:`~bluesky.plans.grid_scan`.
@@ -527,6 +523,9 @@ Let's start with a 3x5x5 grid.
                  motor1, -1.5, 1.5, 3,  # scan motor1 from -1.5 to 1.5 in 3 steps
                  motor2, -0.1, 0.1, 5,  # scan motor2 from -0.1 to 0.1 in 5 steps
                  motor3, 10, -10, 5))  # scan motor3 from 10 to -10 in 5 steps
+
+Note that this will not plot an output as it is more axes than can currently be
+displayed.
 
 The order of the motors controls how the grid is traversed. The "slowest" axis
 comes first. Numpy users will appreciate that this is consistent with numpy's

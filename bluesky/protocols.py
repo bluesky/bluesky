@@ -1,13 +1,5 @@
-try:
-    from typing_extensions import Literal, Protocol, TypedDict, runtime_checkable
-except ImportError:
-    from typing import Literal, Protocol, TypedDict, runtime_checkable
-
+from abc import abstractmethod
 from asyncio import CancelledError
-from typing import (
-    Any, Awaitable, Callable, Dict, Generic, Iterator, List, Optional,
-    Tuple, Type, TypeVar, Union
-)
 
 from abc import abstractmethod
 from event_model.documents import Datum, StreamDatum, StreamResource
@@ -15,6 +7,27 @@ from event_model.documents.event_descriptor import DataKey
 from event_model.documents.resource import PartialResource
 from event_model.documents.event import PartialEvent
 from event_model.documents.event_page import PartialEventPage
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Dict,
+    Generic,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    runtime_checkable,
+)
+
+from typing_extensions import TypedDict
+
 
 
 # TODO: these are not placed in Events by RE yet
