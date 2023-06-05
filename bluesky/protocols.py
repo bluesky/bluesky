@@ -205,7 +205,7 @@ class Readable(HasName, Protocol):
         """
         ...
 
-    
+
 @runtime_checkable
 class Pageable(HasName, Protocol):
     @abstractmethod
