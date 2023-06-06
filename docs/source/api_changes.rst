@@ -2,6 +2,38 @@
  Release History
 =================
 
+v1.11.0 (2023-06-06)
+====================
+
+Fixed
+-----
+
+* LiveGrids placing x-axis tick labels on all columns by @maffettone in https://github.com/bluesky/bluesky/pull/1548
+* Remove callable from plan signature for qserver by @maffettone in https://github.com/bluesky/bluesky/pull/1571
+* Propagate exception through failed status by @RAYemelyanova in https://github.com/bluesky/bluesky/pull/1570
+* Resume thresholds to suspender justification message by @tacaswell in https://github.com/bluesky/bluesky/pull/1554
+* Use Python version check rather than import error check to import Protocol by @callumforrester in https://github.com/bluesky/bluesky/pull/1585
+
+Added
+-----
+
+* Locatable protocol, message and plan stub by @coretl in https://github.com/bluesky/bluesky/pull/1536
+* Made protocol methods abstract by @evalott100 in https://github.com/bluesky/bluesky/pull/1562
+* Allow stage and unstage to return status objects by @tizayi in https://github.com/bluesky/bluesky/pull/1563
+* Add ability to pre-declare a stream by @tacaswell in https://github.com/bluesky/bluesky/pull/1542
+
+Changed
+-------
+
+* Made changes to put back the support for remote Qt applications that required the Qt event loop top be kicked when included or meshed with a RemoteDispatcher by @RussBerg in https://github.com/bluesky/bluesky/pull/1495
+* Move fig_factory default resolution in BestEffortCallback by @tacaswell in https://github.com/bluesky/bluesky/pull/1569
+
+Removed
+-------
+
+* Remove deprecated get_event_loop() by @tizayi in https://github.com/bluesky/bluesky/pull/1564
+* Remove loop param from AsyncInput in bluesky.utils by @hyperrealist in https://github.com/bluesky/bluesky/pull/1566
+
 v1.10.0 (2022-09-06)
 ====================
 
