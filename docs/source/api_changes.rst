@@ -19,6 +19,12 @@ v1.11.0 (2023-06-06)
 Fixed
 -----
 
+v1.11.0 (2023-06-06)
+====================
+
+Fixed
+-----
+
 * LiveGrids placing x-axis tick labels on all columns by @maffettone in https://github.com/bluesky/bluesky/pull/1548
 * Remove callable from plan signature for qserver by @maffettone in https://github.com/bluesky/bluesky/pull/1571
 * Propagate exception through failed status by @RAYemelyanova in https://github.com/bluesky/bluesky/pull/1570
