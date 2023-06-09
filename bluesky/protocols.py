@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from asyncio import CancelledError
 from typing import (
     Any,
     Awaitable,
@@ -131,8 +130,6 @@ Asset = Union[Tuple[Literal["resource"], PartialResource], Tuple[Literal["datum"
 T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
 
-StatusException = Union[Exception, CancelledError]
-
 
 @runtime_checkable
 class Status(Protocol):
@@ -148,7 +145,7 @@ class Status(Protocol):
         ...
 
     @abstractmethod
-    def exception(self, timeout: Optional[float] = 0.0) -> Optional[StatusException]:
+    def exception(self, timeout: Optional[float] = 0.0) -> Optional[BaseException]:
         ...
 
     @property
