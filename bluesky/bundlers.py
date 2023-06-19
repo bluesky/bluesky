@@ -1,12 +1,12 @@
 from collections import deque
 import inspect
 import time as ttime
-from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set
-from event_model import DocumentNames, compose_run, ComposeDescriptorBundle
+from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set, Optional
+from event_model import DocumentNames, compose_run, ComposeDescriptorBundle, pack_event_page
 from .log import doc_logger
 from .protocols import (
     T, Callback, Configurable, PartialEvent, Descriptor, Flyable,
-    HasName, Readable, Reading, Subscribable, check_supports
+    HasName, Readable, Reading, Subscribable, check_supports,  EventCollectable, EventPageCollectable
 )
 from .utils import (
     new_uid,
@@ -171,9 +171,12 @@ class RunBundler:
         self._descriptor_objs[desc_key] = objs_read
         return self._descriptors[desc_key].descriptor_doc, self._descriptors[desc_key].compose_event, objs_read
 
-    async def _ensure_cached(self, obj):
+    async def _ensure_cached(self, obj, collect=False):
         if obj not in self._describe_cache:
-            await self._cache_describe(obj)
+            if collect:
+                await self._cache_describe_collect(obj)
+            else:
+                await self._cache_describe(obj)
         if obj not in self._config_desc_cache:
             await self._cache_describe_config(obj)
             await self._cache_read_config(obj)
@@ -182,10 +185,11 @@ class RunBundler:
         """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
         stream_name = kwargs['name']
+        collect = kwargs.get('collect', False)
         assert no_obj is None
         objs = frozenset(objs)
         for obj in objs:
-            await self._ensure_cached(obj)
+            await self._ensure_cached(obj, collect=collect)
 
         return (await self._prepare_stream(stream_name, objs))
 
@@ -599,16 +603,45 @@ class RunBundler:
         """
         ...
 
-    async def _cache_describe_collect(self, collect_obj: Flyable):
+    async def _cache_describe_collect(self, collect_obj: Flyable, message_stream_name: Optional[str] = None):
         "Read the object's describe_collect and cache it."
+        
         describe_collect = await maybe_await(collect_obj.describe_collect())
+
+        # If the user has passed in a message_stream_name with the Msg then we verify the collect object
+        # is Dict[str, DataKey], and describe_collect will only run for that descriptor
+        describe_collect_items = describe_collect.items()
+        assert describe_collect_items, f"Invalid describe_collect return: {describe_collect_items}"
+        if message_stream_name:
+            # The describe_collect returned a {str: {str: DataKey}}, this is only acceptable if the only key
+            # in the parent dict is message_stream_name
+            if len(describe_collect_items) == 1:
+                assert message_stream_name in describe_collect
+            
+            # We ensure that describle_collect returned a {str, DataKey}, corresponding to the message_stream_name,
+            # or that the describe_collect includes the message_stream_name DataKey dict.
+            else:
+                # In future this should be changed to validate against a new event_model schema [str, DataKey]
+                # event_model.schemas.data_key so this code will change with the schema
+                should_be_DataKey = describe_collect.values()[0]
+
+                if "source" in should_be_DataKey:
+                    assert isinstance(should_be_DataKey["source"], str), \
+                        "Expected describe_collect output to be of type Dict[str, DataKey] for the descriptor of "\
+                        f"the passed in {message_stream_name}"
+                else:
+                    assert message_stream_name in describe_collect, "A name was supplied, "\
+                        "but this name was not present in the describe_collect keys"
+                    
+                # the loop below will only operate on the message_stream_name descriptor
+                describe_collect_items = [(message_stream_name, describe_collect)]
+
         collect_obj_config: Dict[str, Dict[str, Any]] = {}
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
         # collect_obj.describe_collect() returns a dictionary like this:
         #     {name_for_desc1: data_keys_for_desc1,
         #      name_for_desc2: data_keys_for_desc2, ...}
-
-        for stream_name, stream_data_keys in describe_collect.items():
+        for stream_name, stream_data_keys in describe_collect_items:
             if stream_name not in self._descriptors:
                 # We do not have an Event Descriptor for this set.
                 # if we have not yet read the configuration, do so
@@ -659,7 +692,7 @@ class RunBundler:
         Expect message object is
 
             Msg('collect', collect_obj)
-            Msg('collect', flyer_object, stream=True, return_payload=False)
+            Msg('collect', flyer_object, stream=True, return_payload=False, name='stream_name')
         """
         collect_obj = check_supports(msg.obj, Flyable)
 
@@ -687,49 +720,91 @@ class RunBundler:
 
             await self.emit(DocumentNames(name), doc)
 
+        message_stream_name = msg.kwargs.get("name", None)
+
         # Populate descriptors and local descriptors from describe_collect
         # if not already called
         if collect_obj not in self._local_descriptors:
-            await self._cache_describe_collect(collect_obj)
+            await self._cache_describe_collect(collect_obj, message_stream_name=message_stream_name)
         local_descriptors = self._local_descriptors[collect_obj]
 
         # If stream is True, run 'event' subscription per document.
-        # If stream is False, run 'bulk_events' subscription once.
+        # If stream is False, run 'event_page' subscription once.
         stream = msg.kwargs.get("stream", False)
         # If True, accumulate all the Events in memory and return them at the
         # end, providing the plan access to the Events. If False, do not
         # accumulate, and return None.
         return_payload = msg.kwargs.get('return_payload', True)
         payload = []
-        bulk_data: Dict[str, List[PartialEvent]] = {}
+        
+        if isinstance(collect_obj, EventCollectable):
+            event_list: List[PartialEvent] = []
 
-        for ev in collect_obj.collect():
-            if return_payload:
-                payload.append(ev)
+            for ev in collect_obj.collect():
+                if return_payload:
+                    payload.append(ev)
 
-            objs_read = frozenset(ev["data"])
-            descriptor_doc, compose_event, _ = local_descriptors[objs_read]
+                objs_read = frozenset(ev["data"])
+                _, compose_event, __ = local_descriptors[objs_read]
 
-            descriptor_uid = descriptor_doc["uid"]
-            ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
+                ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
 
+                if stream:
+                    doc_logger.debug(
+                        "[event] document is emitted with data keys %r (run_uid=%r)",
+                        ev['data'].keys(), self._run_start_uid,
+                        ev["uid"],
+                        extra={
+                            'doc_name': 'event',
+                            'run_uid': self._run_start_uid,
+                            'data_keys': ev['data'].keys()
+                        }
+                    )
+                    await self.emit(DocumentNames.event, ev)
+                else:
+                    event_list.append(ev)
+
+            if not stream:
+                await self.emit(DocumentNames.event_page, pack_event_page(*event_list))
+                doc_logger.debug(
+                    "[event_page] document is emitted for descriptors (run_uid=%r)",
+                    self._run_start_uid,
+                    extra={
+                        'doc_name': 'event_page',
+                        'run_uid': self._run_start_uid
+                    }
+                )
+
+        elif isinstance(collect_obj, EventPageCollectable):
             if stream:
-                doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)",
-                                 ev['data'].keys(), self._run_start_uid,
-                                 ev["uid"],
-                                 extra={'doc_name': 'event',
-                                        'run_uid': self._run_start_uid,
-                                        'data_keys': ev['data'].keys()})
-                await self.emit(DocumentNames.event, ev)
-            else:
-                bulk_data.setdefault(descriptor_uid, []).append(ev)
+                raise IllegalMessageSequence(
+                    "A 'collect' with `stream=True` was sent for an EventPageCollectable device, "
+                    "stream is not used for EventPages"
+                )
+            for ev_page in collect_obj.collect_pages():
+                if return_payload:
+                    payload.append(ev_page)
 
-        if not stream:
-            await self.emit(DocumentNames.bulk_events, bulk_data)
-            doc_logger.debug("[bulk events] document is emitted for descriptors (run_uid=%r)",
-                             self._run_start_uid,
-                             extra={'doc_name': 'bulk_events',
-                                    'run_uid': self._run_start_uid})
+                objs_read = frozenset(ev_page["data"])
+                *_, compose_event_page = local_descriptors[objs_read]
+                ev_page = compose_event_page(data=ev_page["data"], timestamps=ev_page["timestamps"])
+                doc_logger.debug(
+                    "[event_page] document is emitted with data keys %r (run_uid=%r)",
+                    ev_page['data'].keys(), self._run_start_uid,
+                    ev_page["uid"],
+                    extra={
+                        'doc_name': 'event_page',
+                        'run_uid': self._run_start_uid,
+                        'data_keys': ev_page['data'].keys()
+                    }
+                )
+                await self.emit(DocumentNames.event_page, ev_page)
+
+        else:
+            raise IllegalMessageSequence(
+                "A collect message was called for a device which was "
+                "neither EventPageCollectable, or EventCollectable"
+            )
         if return_payload:
             return payload
 

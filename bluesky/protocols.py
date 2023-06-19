@@ -10,7 +10,6 @@ from typing import (
     Literal,
     Optional,
     Protocol,
-    Sequence,
     Tuple,
     Type,
     TypedDict,
@@ -25,7 +24,6 @@ from event_model.documents.event_descriptor import DataKey
 from event_model.documents.resource import PartialResource
 from event_model.documents.event import PartialEvent
 from event_model.documents.event_page import PartialEventPage
-
 
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
@@ -215,32 +213,38 @@ class Readable(HasName, Protocol):
 
 
 @runtime_checkable
-class Pageable(HasName, Protocol):
-    @abstractmethod
-    def describe_pages(self) -> SyncOrAsync[Dict[str, DataKey]]:
-        ...
-
-    @abstractmethod
-    def collect_pages(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
-        ...
-
-
-@runtime_checkable
 class Collectable(HasName, Protocol):
     @abstractmethod
-    def describe_collect(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
+    def describe_collect(self) -> SyncOrAsync[Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]]]:
         """This is like ``describe()`` on readable devices, but with an extra layer of nesting.
 
-        Since a flyer can potentially return more than one event stream, this is a dict
-        of stream names (strings) mapped to a ``describe()``-type output for each.
+        Since a flyer can potentially return more than one event stream, this is either
+            * a dict of stream names (strings) mapped to a ``describe()``-type output for each.
+            * a ``describe()``-type output of the descriptor name passed in with the ``name``
+                argument of the message.
 
         This can be a standard function or an ``async`` function.
         """
         ...
 
+
+@runtime_checkable
+class EventCollectable(Collectable, Protocol):
     @abstractmethod
     def collect(self) -> SyncOrAsync[Iterator[PartialEvent]]:
         """Yield dictionaries that are partial Event documents.
+
+        They should contain the keys 'time', 'data', and 'timestamps'.
+        A 'uid' is added by the RunEngine.
+        """
+        ...
+
+
+@runtime_checkable
+class EventPageCollectable(Collectable, Protocol):
+    @abstractmethod
+    def collect_pages(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
+        """Yield dictionaries that are partial EventPage documents.
 
         They should contain the keys 'time', 'data', and 'timestamps'.
         A 'uid' is added by the RunEngine.

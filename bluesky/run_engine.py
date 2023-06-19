@@ -1838,9 +1838,13 @@ class RunEngine:
 
             Msg('create', None, name='primary')
             Msg('create', name='primary')
+            Msg('create', name='primary', collect=True)
 
         Note that the `name` kwarg will be the 'name' field of the resulting
         descriptor. So descriptor['name'] = msg.kwargs['name'].
+
+        If `collect` is set to True (default false) then `describe_collect` will be called
+        on declare_stream, rather than `describe`.
 
         Also note that changing the 'name' of the Event will create a new
         Descriptor document.
