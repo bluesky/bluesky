@@ -111,8 +111,6 @@ def test_monitor(RE, ophyd):
         'filled': ANY,
         'uid': ANY
     }
-    assert 1 == 2
-    assert docs == 0
 
 
 @requires_ophyd

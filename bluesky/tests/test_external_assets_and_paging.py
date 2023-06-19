@@ -10,9 +10,8 @@ from bluesky.utils import new_uid
 import pytest
 from bluesky.protocols import (
     Asset, Readable,
-    Reading, SyncOrAsync, WritesExternalAssets, Flyable, Collectable
+    Reading, SyncOrAsync, WritesExternalAssets, Flyable, EventCollectable, EventPageCollectable
 )
-
 
 def read_Readable(self) -> Dict[str, Reading]:
     return dict(x=dict(value=1.2, timestamp=0.0))
@@ -122,7 +121,7 @@ def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
 
 
 def test_flyscan_with_pages(RE):
-    class X(Flyable, Collectable):
+    class X(Flyable, EventPageCollectable):
         def kickoff(self, *_, **__):
             ...
 
@@ -130,12 +129,14 @@ def test_flyscan_with_pages(RE):
             ...
 
         collect_pages = collect_Pageable
+        describe_collect = describe_Pageable
         name = "x"
 
     x = X()
     collector = []
     RE([
             Msg("open_run", x),
+            Msg("collect", x),
             Msg("close_run", x),
         ],
         lambda *args: collector.append(args)
