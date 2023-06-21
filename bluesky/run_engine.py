@@ -2612,13 +2612,12 @@ class Dispatcher:
         --------
         :meth:`Dispatcher.subscribe`
         """
-        for private_token in self._token_mapping[token]:
+        for private_token in self._token_mapping.pop(token, []):
             self.cb_registry.disconnect(private_token)
 
     def unsubscribe_all(self):
-        """Unregister all callbacks from the dispatcher
-        """
-        for public_token in self._token_mapping.keys():
+        """Unregister all callbacks from the dispatcher."""
+        for public_token in list(self._token_mapping.keys()):
             self.unsubscribe(public_token)
 
     @property

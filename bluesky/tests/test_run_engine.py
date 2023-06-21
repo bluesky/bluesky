@@ -1833,3 +1833,14 @@ def test_thread_name(RE):
 
     d = MockDevice()
     RE([Msg("trigger", d)])
+
+
+def test_unsubscribe(RE):
+    def foo(name, doc):
+        ...
+
+    for j in range(15):
+        cid = RE.subscribe(foo)
+        RE.unsubscribe(cid)
+
+    assert len(RE.dispatcher._token_mapping) == 0
