@@ -67,28 +67,6 @@ def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
     return iter([("stream_datum", stream_datum)])
 
 
-def describe_Pageable(self) -> SyncOrAsync[Dict[str, DataKey]]:
-    data_keys = {
-        str(x): DataKey(dtype="string", shape=[], source="a_source")
-        for x in range(100)
-    }
-    return data_keys
-
-
-def collect_Pageable(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
-    def timestamps(x):
-        return {str(y): range(x) for y in range(x)}
-
-    return iter(
-        [
-            PartialEventPage(
-                timestamps=timestamps(x), data=timestamps(x)
-            )
-            for x in range(6)
-        ]
-    )
-
-
 @pytest.mark.parametrize(
     'asset_type,collect_asset_docs_fun',
     [
@@ -120,7 +98,52 @@ def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
     assert collector[2][0] == asset_type
 
 
-def test_flyscan_with_pages(RE):
+def describe_Pageable_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
+    data_keys = {
+        str(x): DataKey(shape=[1], source="a", dtype="string")
+        for x in range(7)
+    }
+
+    return data_keys
+
+
+def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
+    def timestamps(x):
+        return {str(x): [x] for x in range(7)}
+
+    partial_event_pages = [
+        PartialEventPage(
+            timestamps=timestamps(x), data=timestamps(x)
+        )
+        for x in range(7)
+    ]
+
+    return partial_event_pages
+
+
+def describe_Pageable_without_name(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
+    data_keys = {
+        str(y): {str(x): DataKey(shape=[1], source="a", dtype="string") for x in [7, 8]}
+        for y in range(16)
+    }
+    return data_keys
+
+
+def collect_Pageable_without_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
+    def timestamps(x):
+        return {str(y): [x] for y in [7, 8]}
+
+    partial_event_pages = [
+        PartialEventPage(
+            timestamps=timestamps(x), data=timestamps(x)
+        )
+        for x in range(16)
+    ]
+
+    return partial_event_pages
+
+
+def test_flyscan_with_pages_with_no_name(RE):
     class X(Flyable, EventPageCollectable):
         def kickoff(self, *_, **__):
             ...
@@ -128,8 +151,8 @@ def test_flyscan_with_pages(RE):
         def complete(self, *_, **__):
             ...
 
-        collect_pages = collect_Pageable
-        describe_collect = describe_Pageable
+        collect_pages = collect_Pageable_without_name
+        describe_collect = describe_Pageable_without_name
         name = "x"
 
     x = X()
@@ -141,7 +164,33 @@ def test_flyscan_with_pages(RE):
         ],
         lambda *args: collector.append(args)
        )
-    print(collector)
+    from pprint import pprint
+    pprint(collector)
+
+
+def test_flyscan_with_pages_passed_in_name(RE):
+    class X(Flyable, EventPageCollectable):
+        def kickoff(self, *_, **__):
+            ...
+
+        def complete(self, *_, **__):
+            ...
+
+        collect_pages = collect_Pageable_with_name
+        describe_collect = describe_Pageable_with_name
+        name = "x"
+
+    x = X()
+    collector = []
+    RE([
+            Msg("open_run", x),
+            Msg("collect", x, name="1"),
+            Msg("close_run", x),
+        ],
+        lambda *args: collector.append(args)
+       )
+    from pprint import pprint
+    pprint(collector)
 
 
 def test_desc_coll(RE, hw):
