@@ -732,7 +732,8 @@ class RunEngine:
         Command the Run Engine to pause.
 
         This function is called by 'pause' Messages. It can also be called
-        by other threads. It cannot be called on the main thread during a run,
+        by other threads. It cannot be called on the main thread during a run
+        (in a plan, use ``yield from bps.pause()``),
         but it is called by SIGINT (i.e., Ctrl+C).
 
         If there current run has no checkpoint (via the 'clear_checkpoint'
