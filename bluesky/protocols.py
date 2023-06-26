@@ -12,18 +12,12 @@ from typing import (
     Protocol,
     Tuple,
     Type,
-    TypedDict,
     TypeVar,
     Union,
     runtime_checkable
 )
+from typing_extensions import TypedDict
 
-from abc import abstractmethod
-from event_model.documents import Datum, StreamDatum, StreamResource
-from event_model.documents.event_descriptor import DataKey
-from event_model.documents.resource import PartialResource
-from event_model.documents.event import PartialEvent
-from event_model.documents.event_page import PartialEventPage
 
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
