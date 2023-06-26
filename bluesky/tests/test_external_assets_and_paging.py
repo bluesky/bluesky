@@ -2,16 +2,18 @@ from typing import Dict, Iterator
 from bluesky import Msg
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.event_page import PartialEventPage
+from event_model.documents.event import PartialEvent
 from event_model.documents.resource import PartialResource
 from event_model.documents.datum import Datum
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
-from bluesky.utils import new_uid
+from bluesky.utils import new_uid, IllegalMessageSequence
 import pytest
 from bluesky.protocols import (
     Asset, Readable,
-    Reading, SyncOrAsync, WritesExternalAssets, Flyable, EventCollectable, EventPageCollectable
+    Reading, SyncOrAsync, WritesExternalAssets, Flyable, EventCollectable, EventPageCollectable, Collectable
 )
+
 
 def read_Readable(self) -> Dict[str, Reading]:
     return dict(x=dict(value=1.2, timestamp=0.0))
@@ -98,22 +100,22 @@ def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
     assert collector[2][0] == asset_type
 
 
-def describe_Pageable_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
+def describe_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
     data_keys = {
         str(x): DataKey(shape=[1], source="a", dtype="string")
-        for x in range(7)
+        for x in ["x", "y", "z"]
     }
 
     return data_keys
 
 
 def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
-    def timestamps(x):
-        return {str(x): [x] for x in range(7)}
+    def timestamps():
+        return {str(x): [x] for x in ["x", "y", "z"]}
 
     partial_event_pages = [
         PartialEventPage(
-            timestamps=timestamps(x), data=timestamps(x)
+            timestamps=timestamps(), data=timestamps()
         )
         for x in range(7)
     ]
@@ -121,9 +123,9 @@ def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
     return partial_event_pages
 
 
-def describe_Pageable_without_name(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
+def describe_without_name(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
     data_keys = {
-        str(y): {str(x): DataKey(shape=[1], source="a", dtype="string") for x in [7, 8]}
+        str(y): {str(x): DataKey(shape=[1], source="a", dtype="string") for x in ["x", "y", "z"]}
         for y in range(16)
     }
     return data_keys
@@ -131,7 +133,7 @@ def describe_Pageable_without_name(self) -> SyncOrAsync[Dict[str, Dict[str, Data
 
 def collect_Pageable_without_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
     def timestamps(x):
-        return {str(y): [x] for y in [7, 8]}
+        return {str(y): [x] for y in ["x", "y", "z"]}
 
     partial_event_pages = [
         PartialEventPage(
@@ -143,6 +145,22 @@ def collect_Pageable_without_name(self) -> SyncOrAsync[Iterator[PartialEventPage
     return partial_event_pages
 
 
+def collect(self) -> SyncOrAsync[Iterator[PartialEvent]]:
+    def timestamps(x):
+        return {"x": x + 0.1, "y": x + 0.2, "z": x + 0.3}
+
+    def data(x):
+        return {"x": x, "y": x*2, "z": x*3}
+
+    partial_events = [
+        PartialEvent(
+            timestamps=timestamps(x), data=data(x), time=float(x)
+        )
+        for x in range(16)
+    ]
+    return partial_events
+
+
 def test_flyscan_with_pages_with_no_name(RE):
     class X(Flyable, EventPageCollectable):
         def kickoff(self, *_, **__):
@@ -152,7 +170,7 @@ def test_flyscan_with_pages_with_no_name(RE):
             ...
 
         collect_pages = collect_Pageable_without_name
-        describe_collect = describe_Pageable_without_name
+        describe_collect = describe_without_name
         name = "x"
 
     x = X()
@@ -164,8 +182,6 @@ def test_flyscan_with_pages_with_no_name(RE):
         ],
         lambda *args: collector.append(args)
        )
-    from pprint import pprint
-    pprint(collector)
 
 
 def test_flyscan_with_pages_passed_in_name(RE):
@@ -177,7 +193,7 @@ def test_flyscan_with_pages_passed_in_name(RE):
             ...
 
         collect_pages = collect_Pageable_with_name
-        describe_collect = describe_Pageable_with_name
+        describe_collect = describe_with_name
         name = "x"
 
     x = X()
@@ -189,25 +205,181 @@ def test_flyscan_with_pages_passed_in_name(RE):
         ],
         lambda *args: collector.append(args)
        )
+
+
+@pytest.mark.parametrize(
+    'asset_type,collect_asset_docs_fun',
+    [
+        ("resource", collect_asset_docs_Resource),
+        ("datum", collect_asset_docs_Datum),
+        ("stream_resource", collect_asset_docs_StreamResource),
+        ("stream_datum", collect_asset_docs_StreamDatum),
+    ]
+)
+def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
+    class X(Flyable, EventPageCollectable, WritesExternalAssets):
+        def kickoff(self, *_, **__):
+            ...
+
+        def complete(self, *_, **__):
+            ...
+
+        collect_pages = collect_Pageable_without_name
+        describe_collect = describe_without_name
+        collect_asset_docs = collect_asset_docs_fun
+        name = "x"
+
+    x = X()
+    collector = []
+    RE([
+            Msg("open_run", x),
+            Msg("collect", x),
+            Msg("close_run", x),
+        ],
+        lambda *args: collector.append(args)
+       )
+
+
+@pytest.mark.parametrize(
+    'asset_type,collect_asset_docs_fun',
+    [
+        ("resource", collect_asset_docs_Resource),
+        ("datum", collect_asset_docs_Datum),
+        ("stream_resource", collect_asset_docs_StreamResource),
+        ("stream_datum", collect_asset_docs_StreamDatum),
+    ]
+)
+def test_flyscan_with_pages_passed_in_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
+    class X(Flyable, EventPageCollectable, WritesExternalAssets):
+        def kickoff(self, *_, **__):
+            ...
+
+        def complete(self, *_, **__):
+            ...
+
+        collect_pages = collect_Pageable_with_name
+        describe_collect = describe_with_name
+        collect_asset_docs = collect_asset_docs_fun
+        name = "x"
+
+    x = X()
+    collector = []
+    RE([
+            Msg("open_run", x),
+            Msg("collect", x, name="1"),
+            Msg("close_run", x),
+        ],
+        lambda *args: collector.append(args)
+       )
+
+
+def test_flyscan_without_pageing_or_name(RE):
+    class X(Flyable, EventCollectable):
+        def kickoff(self, *_, **__):
+            ...
+
+        def complete(self, *_, **__):
+            ...
+
+        collect = collect
+        describe_collect = describe_without_name
+        name = "x"
+
+    x = X()
+    collector = []
+    RE([
+            Msg("open_run", x),
+            Msg("collect", x),
+            Msg("close_run", x),
+        ],
+        lambda *args: collector.append(args)
+       )
+
+
+def test_flyscan_without_paging_with_name(RE):
+    class X(Flyable, EventCollectable):
+        def kickoff(self, *_, **__):
+            ...
+
+        def complete(self, *_, **__):
+            ...
+
+        collect = collect
+        describe_collect = describe_with_name
+        name = "x"
+
+    x = X()
+    collector = []
+    RE([
+            Msg("open_run", x),
+            Msg("collect", x, name="1"),
+            Msg("close_run", x),
+        ],
+        lambda *args: collector.append(args)
+       )
+
+
+def test_describe_collect_with_stream(RE):
+    class X(EventCollectable):
+        collect = collect
+        describe_collect = describe_without_name
+        name = "x"
+
+    x = X()
+    collector = []
+    RE([
+            Msg("open_run", x),
+            Msg("collect", x, stream=True),
+            Msg("close_run", x),
+        ],
+        lambda *args: collector.append(args)
+       )
     from pprint import pprint
     pprint(collector)
 
 
-def test_desc_coll(RE, hw):
-    """Returns a partial event"""
-    ...
+def test_describe_collect_paging_with_stream(RE):
+    class X(EventPageCollectable):
+        collect_pages = collect_Pageable_without_name
+        describe_collect = describe_without_name
+        name = "x"
+
+    x = X()
+    collector = []
+    with pytest.raises(IllegalMessageSequence):
+        RE([
+                Msg("open_run", x),
+                Msg("collect", x, stream=True),
+                Msg("close_run", x),
+            ],
+            lambda *args: collector.append(args)
+           )
+    from pprint import pprint
+    pprint(collector)
 
 
-def test_desc_coll_res(RE, hw):
-    """Returns a partial event + resource"""
-    ...
+@pytest.mark.parametrize(
+    'asset_type,collect_asset_docs_fun',
+    [
+        ("resource", collect_asset_docs_Resource),
+        ("datum", collect_asset_docs_Datum),
+        ("stream_resource", collect_asset_docs_StreamResource),
+        ("stream_datum", collect_asset_docs_StreamDatum),
+    ]
+)
+def test_describe_with_external_assets_no_collect(RE, asset_type, collect_asset_docs_fun):
 
+    class X(Collectable, WritesExternalAssets):
+        describe_collect = describe_without_name
+        collect_asset_docs = collect_asset_docs_fun
+        name = "x"
 
-def test_desc_page_coll_page(RE, hw):
-    """Returns a partial event page"""
-    ...
-
-
-def test_desc_page_coll_page_sr(RE, hw):
-    """Returns a partial event page + stream resource"""
-    ...
+    x = X()
+    collector = []
+    RE([
+            Msg("open_run", x),
+            Msg("collect", x),
+            Msg("close_run", x),
+        ],
+        lambda *args: collector.append(args)
+       )

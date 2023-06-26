@@ -1,12 +1,12 @@
 from collections import deque
 import inspect
 import time as ttime
-from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set, Optional
-from event_model import DocumentNames, compose_run, ComposeDescriptorBundle, pack_event_page
+from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set, Optional, Iterator
+from event_model import DocumentNames, compose_run, ComposeDescriptorBundle, pack_event_page, DataKey
 from .log import doc_logger
 from .protocols import (
     T, Callback, Configurable, PartialEvent, Descriptor, Flyable,
-    HasName, Readable, Reading, Subscribable, check_supports,  EventCollectable, EventPageCollectable
+    HasName, Readable, Reading, Subscribable, check_supports,  EventCollectable, EventPageCollectable, Collectable
 )
 from .utils import (
     new_uid,
@@ -604,23 +604,31 @@ class RunBundler:
             self,
             describe_collect_dict: dict,
             message_stream_name: Optional[str] = None
-    ):
-        """Check if the dictionary returned by describe collect is a dict
-            {str: DataKey} or a {str: {str: DataKey}}."""
+    ) -> Iterator[Tuple[str, Dict[str, DataKey]]]:
+        """
+        Check if the dictionary returned by describe collect is a dict
+            `{str: DataKey}` or a `{str: {str: DataKey}}`.
+
+        If a `message_stream_name` is passed then return a singleton list of the form of
+            `{message_stream_name: describe_collect_dict}.items()`.
+        If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
+        """
 
         # If there's a message_stream_name, check the describe_collect returned acceptable output for it
         if message_stream_name:
-            # The describe_collect returned a {str: {str: DataKey}}, this is only acceptable if the only key
-            # in the parent dict is message_stream_name
+            # The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],
+            # this is only acceptable if the only key in the parent dict is message_stream_name
             if len(describe_collect_dict) == 1:
                 assert message_stream_name in describe_collect_dict
-                return list(describe_collect_dict.items())
+                return describe_collect_dict.items()
 
-            # We ensure that describle_collect returned a {str, DataKey}, corresponding to the message_stream_name,
-            # or that the describe_collect includes the message_stream_name DataKey dict.
-            elif len(describe_collect_dict):
-                # In future this should be changed to validate against a new event_model schema [str, DataKey]
-                # event_model.schemas.data_key so this code will change with the schema
+            # We ensure that describle_collect returned a Dict[str, DataKey], corresponding
+            # to the message_stream_name, or that the describe_collect includes the message_stream_name
+            # DataKey dict.
+            if len(describe_collect_dict):
+                # In future this should be changed to validate against a new event_model schema Dict[str, DataKey]
+                # event_model.schemas.data_key so this code will change with the schema, the below checks to see
+                # if the Required keys are the correct form.
                 should_be_DataKey = list(describe_collect_dict.values())[0]
 
                 if "source" in should_be_DataKey:
@@ -637,31 +645,29 @@ class RunBundler:
                     f"Invalid describe_collect return: {describe_collect_dict} when collect "
                     f"was called on {message_stream_name}"
                 )
-        # If there was no message_stream_name, raise an error if the dict isn't Dict[str, Dict[str, DataKey]]
+        # If there was no name kwarg to the collect Msg, raise an error if the dict isn't
+        # Dict[str, Dict[str, DataKey]]
         else:
-            # Get the first index of the dict without converting it all into a list
             should_be_a_dict_to_data_key = describe_collect_dict[next(iter(describe_collect_dict))]
             assert isinstance(should_be_a_dict_to_data_key, dict),\
                 "describe_collect() returned a Dict[str, SomeTypeNotADict], this would only be acceptable "\
                 "if a name argument was included in the collect Msg"
-            should_be_a_data_key = should_be_a_dict_to_data_key[next(iter(should_be_a_dict_to_data_key))]
-            assert "source" in should_be_a_data_key,\
-                "describe_collect() returned a Dict[str, Dict[str, SomeTypeNotADataKey]]"
+
+            if should_be_a_dict_to_data_key:
+                should_be_a_data_key = should_be_a_dict_to_data_key[next(iter(should_be_a_dict_to_data_key))]
+                assert "source" in should_be_a_data_key and isinstance(should_be_a_data_key["source"], str),\
+                    "describe_collect() returned a Dict[str, Dict[str, SomeTypeNotADataKey]]"
+
+            return describe_collect_dict.items()
 
     async def _cache_describe_collect(self, collect_obj: Flyable, message_stream_name: Optional[str] = None):
         "Read the object's describe_collect and cache it."
 
         describe_collect = await maybe_await(collect_obj.describe_collect())
 
-        # If the user has passed in a message_stream_name with the Msg then we verify the collect object
-        # is Dict[str, DataKey], and describe_collect will only run for that descriptor
-        if message_stream_name:
-            describe_collect_items = self._maybe_format_datakeys_with_stream_name(
+        describe_collect_items = self._maybe_format_datakeys_with_stream_name(
                 describe_collect, message_stream_name=message_stream_name
-            )
-        else:
-            self._maybe_format_datakeys_with_stream_name(describe_collect)
-            describe_collect_items = describe_collect.items()
+        )
 
         collect_obj_config: Dict[str, Dict[str, Any]] = {}
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
@@ -715,7 +721,7 @@ class RunBundler:
         self._local_descriptors[collect_obj] = local_descriptors
 
     async def _pack_external_assets(self, name, doc, message_stream_name=None):
-        # Add a 'run_start' field to the resource document on its way out.
+        """Packs some external asset document `doc` with relevant information from the run."""
         if name in ["resource", "stream_resource"]:
             doc["run_start"] = self._run_start_uid
         elif name == "stream_datum":
@@ -723,7 +729,10 @@ class RunBundler:
         elif name in ["datum"]:
             ...
         else:
-            ...
+            raise RuntimeError(
+                f"Tried to emit an external asset {name}, acceptable external assets are "
+                "`resource`, `stream_resource`, `datum`, or `stream_datum`"
+            )
 
     async def _collect_events(
         self, collect_obj, local_descriptors, return_payload: bool, stream: bool, message_stream_name: str
@@ -731,7 +740,6 @@ class RunBundler:
         event_list: List[PartialEvent] = []
         payload = []
 
-        compose_event = None
         if message_stream_name:
             compose_event = self._descriptors[message_stream_name].compose_event
 
@@ -739,9 +747,9 @@ class RunBundler:
             if return_payload:
                 payload.append(ev)
 
-            objs_read = frozenset(ev["data"])
-
-            compose_event = compose_event or local_descriptors[objs_read].compose_event
+            if not message_stream_name:
+                objs_read = frozenset(ev["data"])
+                compose_event = local_descriptors[objs_read].compose_event
 
             ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
 
@@ -772,10 +780,11 @@ class RunBundler:
             )
         return payload
 
-    async def _collect_event_pages(self, collect_obj, local_descriptors, return_payload, message_stream_name):
+    async def _collect_event_pages(
+            self, collect_obj, local_descriptors, return_payload: bool, message_stream_name: str
+            ):
         payload = []
 
-        compose_event_page = None
         if message_stream_name:
             compose_event_page = self._descriptors[message_stream_name].compose_event_page
 
@@ -783,8 +792,9 @@ class RunBundler:
             if return_payload:
                 payload.append(ev_page)
 
-            objs_read = frozenset(ev_page["data"])
-            compose_event_page = compose_event_page or local_descriptors[objs_read].compose_event_page
+            if not message_stream_name:
+                objs_read = frozenset(ev_page["data"])
+                compose_event_page = local_descriptors[objs_read].compose_event_page
 
             ev_page = compose_event_page(data=ev_page["data"], timestamps=ev_page["timestamps"])
             doc_logger.debug(
@@ -810,7 +820,8 @@ class RunBundler:
             Msg('collect', collect_obj)
             Msg('collect', flyer_object, stream=True, return_payload=False, name='stream_name')
         """
-        collect_obj = check_supports(msg.obj, Flyable)
+
+        collect_obj = check_supports(msg.obj, Collectable)
         assert not (isinstance(collect_obj, EventCollectable) and isinstance(collect_obj, EventPageCollectable)),\
             "collect() was called for a device which is both EventCollectable and EventPageCollectable. "\
             "If you want to have an EventCollectable device format only some events as event_pages "\
@@ -830,6 +841,7 @@ class RunBundler:
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'event_page' subscription once.
         stream = msg.kwargs.get("stream", False)
+
         # If True, accumulate all the Events in memory and return them at the
         # end, providing the plan access to the Events. If False, do not
         # accumulate, and return None.
@@ -860,12 +872,12 @@ class RunBundler:
                     "A 'collect' with `stream=True` was sent for an EventPageCollectable device, "
                     "stream is not used for EventPages"
                 )
-            payload = await self._collect_event_pages(collect_obj, local_descriptors, return_payload, message_stream_name)
-        else:
-            raise IllegalMessageSequence(
-                "A collect message was called for a device which was "
-                "neither EventPageCollectable, or EventCollectable"
+            payload = await self._collect_event_pages(
+                collect_obj, local_descriptors, return_payload, message_stream_name
             )
+        else:
+            return_payload = False
+
         if return_payload:
             return payload
 
