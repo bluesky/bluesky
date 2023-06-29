@@ -437,4 +437,4 @@ def check_supports(obj, protocol: Type[T]) -> T:
 
 
 # Descriptor with previous name on imports for backwards compatibility.
-Descriptor = DataKey  # type: ignore
+Descriptor = DataKey

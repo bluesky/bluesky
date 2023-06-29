@@ -99,7 +99,7 @@ async def check_limits_async(plan):
     for msg in plan:
         obj = msg.obj
         if msg.command == 'set' and obj not in ignore:
-            if isinstance(obj, Checkable):  # type: ignore
+            if isinstance(obj, Checkable):
                 await maybe_await(obj.check_value(msg.args[0]))
             else:
                 warn(f"{obj.name} has no check_value() method"
