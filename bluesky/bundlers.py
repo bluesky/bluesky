@@ -284,9 +284,7 @@ class RunBundler:
     async def _cache_describe_config(self, obj):
         "Read the object's describe_configuration and cache it."
 
-        # Pylance doesn't understand this is an acceptable isinstance with the
-        # @runtime_checkable, hence the type ignore.
-        if isinstance(obj, Configurable):  # type: ignore
+        if isinstance(obj, Configurable):
             conf_keys = await maybe_await(obj.describe_configuration())
         else:
             conf_keys = {}
@@ -294,7 +292,7 @@ class RunBundler:
 
     async def _cache_read_config(self, obj):
         "Read the object's configuration and cache it."
-        if isinstance(obj, Configurable):  # type: ignore
+        if isinstance(obj, Configurable):
             conf = await maybe_await(obj.read_configuration())
         else:
             conf = {}
