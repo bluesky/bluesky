@@ -1,5 +1,5 @@
 cycler
-event-model@git+https://github.com/evalott100/event-model@switch_from_partials_to_classes
+event-model>=1.14.0
 historydict
 msgpack
 msgpack-numpy
