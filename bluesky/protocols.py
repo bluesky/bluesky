@@ -1,4 +1,13 @@
 from abc import abstractmethod
+from asyncio import CancelledError
+
+from event_model.documents import Datum, StreamDatum, StreamResource
+# Including Dtype here because ophyd imports Dtype directly from protocols, not event-model.
+from event_model.documents.event_descriptor import DataKey, Dtype
+
+from event_model.documents.resource import PartialResource
+from event_model.documents.event import PartialEvent
+from event_model.documents.event_page import PartialEventPage
 from typing import (
     Any,
     Awaitable,
@@ -17,6 +26,9 @@ from typing import (
     runtime_checkable
 )
 from typing_extensions import TypedDict
+
+# Squashes warning
+Dtype = Dtype  # type: ignore
 
 
 # TODO: these are not placed in Events by RE yet
