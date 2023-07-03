@@ -660,7 +660,7 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     return ret
 
 
-def collect(obj, *, stream=False, return_payload=True):
+def collect(obj, *, stream=False, return_payload=True, name=None):
     """
     Collect data cached by a fly-scanning device and emit documents.
 
@@ -676,6 +676,9 @@ def collect(obj, *, stream=False, return_payload=True):
         Using ``stream=True`` and ``return_payload=False`` together avoids
         accumulating the documents in memory: they are emitted as they are
         collected, and they are not accumulated.
+    name: str, optional
+        If not None, will collect for the named string specifically, else collect will be performed
+        on all streams.
 
     Yields
     ------
@@ -688,7 +691,7 @@ def collect(obj, *, stream=False, return_payload=True):
     :func:`bluesky.plan_stubs.complete`
     :func:`bluesky.plan_stubs.wait`
     """
-    return (yield Msg('collect', obj, stream=stream, return_payload=return_payload))
+    return (yield Msg('collect', obj, stream=stream, return_payload=return_payload, name=name))
 
 
 def configure(obj, *args, **kwargs):

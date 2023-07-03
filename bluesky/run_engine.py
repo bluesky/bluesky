@@ -2103,7 +2103,7 @@ class RunEngine:
         Expected message object is:
 
             Msg('collect', flyer_object)
-            Msg('collect', flyer_object, stream=True, return_payload=False)
+            Msg('collect', flyer_object, stream=True, return_payload=False, name="a_name")
         """
         run_key = msg.run
         try:
