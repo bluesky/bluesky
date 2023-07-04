@@ -111,7 +111,7 @@ import threading
      (kickoff, ('foo',), {'custom': 5}, [Msg('kickoff', 'foo',
                                              group=None, custom=5)]),
      (collect, ('foo',), {}, [Msg('collect', 'foo',
-                                  stream=False, return_payload=True)]),
+                                  stream=False, return_payload=True, name=None)]),
      (configure, ('det', 1), {'a': 2}, [Msg('configure', 'det', 1, a=2)]),
      (stage, ('det',), {}, [Msg('stage', 'det', group=None)]),
      (stage, ('det',), {"group": "A"}, [Msg('stage', 'det', group="A")]),

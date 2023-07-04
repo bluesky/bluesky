@@ -1,7 +1,7 @@
 from collections import deque
 import inspect
 import time as ttime
-from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set, Optional, Iterator
+from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set, Optional, Union
 from event_model import DocumentNames, compose_run, ComposeDescriptorBundle, pack_event_page, DataKey
 from .log import doc_logger
 from .protocols import (
@@ -601,18 +601,57 @@ class RunBundler:
         ...
 
     def _maybe_format_datakeys_with_stream_name(
+        self,
+        describe_collect_dict: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]],
+        message_stream_name: Optional[str] = None
+    ) -> List[Tuple[str, Dict[str, DataKey]]]:
+        """
+        Check if the dictionary returned by describe collect is a dict
+            `{str: DataKey}` or a `{str: {str: DataKey}}`.
+        If a `message_stream_name` is passed then return a singleton list of the form of
+            `{message_stream_name: describe_collect_dict}.items()`.
+        If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
+        """
+        def has_str_source(d: dict):
+            return isinstance(d, dict) and isinstance(d.get("source", None), str)
+        if describe_collect_dict:
+            first_value = list(describe_collect_dict.values())[0]
+            if has_str_source(first_value):
+                # We have Dict[str, DataKey], so return just this
+                # If stream name not given then default to "primary"
+                return [(message_stream_name or "primary", describe_collect_dict)]
+            elif all(has_str_source(v) for v in first_value.values()):
+                # We have Dict[str, Dict[str, DataKey]] so return its items
+                if message_stream_name and list(describe_collect_dict) != [message_stream_name]:
+                    # The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],
+                    # this is only acceptable if the only key in the parent dict is message_stream_name
+                    raise RuntimeError(
+                        f"Expected a single stream {message_stream_name!r}, got {describe_collect_dict}"
+                    )
+                return list(describe_collect_dict.items())
+            else:
+                raise RuntimeError(
+                    f"Invalid describe_collect return: {describe_collect_dict} when collect "
+                    f"was called on {message_stream_name}"
+                )
+        else:
+            # Empty dict, could be either but we don't care
+            return []
+
+    """
+    def _maybe_format_datakeys_with_stream_name(
             self,
             describe_collect_dict: dict,
             message_stream_name: Optional[str] = None
     ) -> Iterator[Tuple[str, Dict[str, DataKey]]]:
-        """
+        \"""
         Check if the dictionary returned by describe collect is a dict
             `{str: DataKey}` or a `{str: {str: DataKey}}`.
 
         If a `message_stream_name` is passed then return a singleton list of the form of
             `{message_stream_name: describe_collect_dict}.items()`.
         If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
-        """
+        \"""
 
         # If there's a message_stream_name, check the describe_collect returned acceptable output for it
         if message_stream_name:
@@ -659,6 +698,7 @@ class RunBundler:
                     "describe_collect() returned a Dict[str, Dict[str, SomeTypeNotADataKey]]"
 
             return describe_collect_dict.items()
+    """
 
     async def _cache_describe_collect(self, collect_obj: Flyable, message_stream_name: Optional[str] = None):
         "Read the object's describe_collect and cache it."

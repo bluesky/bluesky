@@ -20,7 +20,10 @@ def read_Readable(self) -> Dict[str, Reading]:
 
 
 def describe_Readable(self) -> Dict[str, DataKey]:
-    return dict(x=dict(source="dummy", dtype="number", shape=[]))
+    return dict(
+        y=dict(source="dummy", dtype="number", shape=[], external="STREAM:"),
+        x=dict(source="dummy", dtype="number", shape=[])
+    )
 
 
 def collect_asset_docs_Resource(self) -> Iterator[Asset]:
@@ -62,7 +65,7 @@ def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
         event_offset=1,
         stream_resource=new_uid(),
         uid=new_uid(),
-        data_keys=["a", "b", "c"],
+        data_keys=["y"],
         seq_nums={"a": 12},
         indices={"b", 1},
     )
