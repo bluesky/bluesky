@@ -1573,7 +1573,7 @@ def test_num_events(RE, hw, db):
     else:
         uid1 = rs1[0]
     h = db[uid1]
-    assert h.stop['num_events'] == {}
+    assert h.stop['num_events'] == {'primary': 0}
 
     rs2 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1592,7 +1592,7 @@ def test_num_events(RE, hw, db):
     else:
         uid3 = rs3[0]
     h = db[uid3]
-    assert h.stop['num_events'] == {'baseline': 2}
+    assert h.stop['num_events'] == {'baseline': 2, 'primary': 0}
 
     rs4 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1833,3 +1833,12 @@ def test_thread_name(RE):
 
     d = MockDevice()
     RE([Msg("trigger", d)])
+
+
+def test_empty_streams(RE):
+    docs = []
+    RE.subscribe(lambda name, doc: docs.append((name, doc)))
+    RE(count([]))
+    *head, (name, doc) = docs
+    assert name == 'stop'
+    assert doc['num_events'] == {'primary': 0}
