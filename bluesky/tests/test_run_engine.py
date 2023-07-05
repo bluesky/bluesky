@@ -1548,12 +1548,12 @@ def test_filled(RE, hw, db):
     RE(count([hw.det]), collect)
 
     event, = collector
-    assert event['filled'] == {}
+    assert event['filled'] == {"det": False}
     collector.clear()
 
     RE(count([hw.img]), collect)
     event, = collector
-    assert event['filled'] == {'img': False}
+    assert event['filled'] == {"img": False}
 
 
 def test_double_call(RE):

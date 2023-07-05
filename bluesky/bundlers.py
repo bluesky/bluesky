@@ -496,7 +496,7 @@ class RunBundler:
         filled = {
             k: False
             for k, v in self._descriptors[desc_key].descriptor_doc["data_keys"].items()
-            if "external" in v
+            if "external" not in v or v["external"] != "STREAM:"
         }
         event_doc = compose_event(
             data=data,
@@ -637,68 +637,6 @@ class RunBundler:
         else:
             # Empty dict, could be either but we don't care
             return []
-
-    """
-    def _maybe_format_datakeys_with_stream_name(
-            self,
-            describe_collect_dict: dict,
-            message_stream_name: Optional[str] = None
-    ) -> Iterator[Tuple[str, Dict[str, DataKey]]]:
-        \"""
-        Check if the dictionary returned by describe collect is a dict
-            `{str: DataKey}` or a `{str: {str: DataKey}}`.
-
-        If a `message_stream_name` is passed then return a singleton list of the form of
-            `{message_stream_name: describe_collect_dict}.items()`.
-        If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
-        \"""
-
-        # If there's a message_stream_name, check the describe_collect returned acceptable output for it
-        if message_stream_name:
-            # The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],
-            # this is only acceptable if the only key in the parent dict is message_stream_name
-            if len(describe_collect_dict) == 1:
-                assert message_stream_name in describe_collect_dict
-                return describe_collect_dict.items()
-
-            # We ensure that describle_collect returned a Dict[str, DataKey], corresponding
-            # to the message_stream_name, or that the describe_collect includes the message_stream_name
-            # DataKey dict.
-            if len(describe_collect_dict):
-                # In future this should be changed to validate against a new event_model schema Dict[str, DataKey]
-                # event_model.schemas.data_key so this code will change with the schema, the below checks to see
-                # if the Required keys are the correct form.
-                should_be_DataKey = list(describe_collect_dict.values())[0]
-
-                if "source" in should_be_DataKey:
-                    assert isinstance(should_be_DataKey["source"], str), \
-                        "Expected describe_collect output to be of type Dict[str, DataKey] for the descriptor of "\
-                        f"the passed in {message_stream_name}"
-                    return [(message_stream_name, describe_collect_dict)]
-                else:
-                    assert message_stream_name in describe_collect_dict, "A name was supplied, "\
-                        "but this name was not present in the describe_collect keys"
-
-            else:
-                raise RuntimeError(
-                    f"Invalid describe_collect return: {describe_collect_dict} when collect "
-                    f"was called on {message_stream_name}"
-                )
-        # If there was no name kwarg to the collect Msg, raise an error if the dict isn't
-        # Dict[str, Dict[str, DataKey]]
-        else:
-            should_be_a_dict_to_data_key = describe_collect_dict[next(iter(describe_collect_dict))]
-            assert isinstance(should_be_a_dict_to_data_key, dict),\
-                "describe_collect() returned a Dict[str, SomeTypeNotADict], this would only be acceptable "\
-                "if a name argument was included in the collect Msg"
-
-            if should_be_a_dict_to_data_key:
-                should_be_a_data_key = should_be_a_dict_to_data_key[next(iter(should_be_a_dict_to_data_key))]
-                assert "source" in should_be_a_data_key and isinstance(should_be_a_data_key["source"], str),\
-                    "describe_collect() returned a Dict[str, Dict[str, SomeTypeNotADataKey]]"
-
-            return describe_collect_dict.items()
-    """
 
     async def _cache_describe_collect(self, collect_obj: Flyable, message_stream_name: Optional[str] = None):
         "Read the object's describe_collect and cache it."

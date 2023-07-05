@@ -59,10 +59,9 @@ def collect_asset_docs_StreamResource(self) -> Iterator[Asset]:
 
 
 def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
+
     stream_datum = StreamDatum(
         block_idx=32,
-        event_count=1233,
-        event_offset=1,
         stream_resource=new_uid(),
         uid=new_uid(),
         data_keys=["y"],
@@ -337,8 +336,6 @@ def test_describe_collect_with_stream(RE):
         ],
         lambda *args: collector.append(args)
        )
-    from pprint import pprint
-    pprint(collector)
 
 
 def test_describe_collect_paging_with_stream(RE):
@@ -357,8 +354,6 @@ def test_describe_collect_paging_with_stream(RE):
             ],
             lambda *args: collector.append(args)
            )
-    from pprint import pprint
-    pprint(collector)
 
 
 @pytest.mark.parametrize(
