@@ -109,7 +109,7 @@ class RunBundler:
         num_events = {}
         for bundle_name, counter in self._sequence_counters.items():
             if bundle_name is None:
-                # rare but possible via Msg('create', name='primary')
+                # rare but possible via Msg('create', name=None)
                 continue
             num_events[bundle_name] = next(counter) - 1
         reason = msg.kwargs.get("reason", None)
@@ -177,6 +177,11 @@ class RunBundler:
                 'data_keys': data_keys.keys()}
         )
         self._descriptors[desc_key] = (objs_read, descriptor_doc)
+
+        counter = count(1)
+        counter_copy1, counter_copy2 = tee(counter)
+        self._sequence_counters[desc_key] = counter_copy1
+        self._teed_sequence_counters[desc_key] = counter_copy2
         return descriptor_doc
 
     async def _ensure_cached(self, obj):
@@ -454,13 +459,6 @@ class RunBundler:
         # Event Descriptor key
         desc_key = self._bundle_name
 
-        # This is a separate check because it can be reset on resume.
-        seq_num_key = desc_key
-        if seq_num_key not in self._sequence_counters:
-            counter = count(1)
-            counter_copy1, counter_copy2 = tee(counter)
-            self._sequence_counters[seq_num_key] = counter_copy1
-            self._teed_sequence_counters[seq_num_key] = counter_copy2
         self.bundling = False
         self._bundle_name = None
 
@@ -500,7 +498,7 @@ class RunBundler:
             )
 
         # Event document
-        seq_num = next(self._sequence_counters[seq_num_key])
+        seq_num = next(self._sequence_counters[desc_key])
         event_uid = new_uid()
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
