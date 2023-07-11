@@ -1831,13 +1831,13 @@ class RunEngine:
         return (await current_run.create(msg))
 
     async def _declare_stream(self, msg):
-        """Trigger the run engine to start bundling future obj.read() calls for
+        """Trigger the run engine to start bundling future obj.describe() calls for
          an Event document
 
         Expected message object is:
 
-            Msg('create', None, name='primary')
-            Msg('create', name='primary')
+            Msg('declare_stream', None, name='primary')
+            Msg('declare_stream', name='primary')
             Msg('create', name='primary', collect=True)
 
         Note that the `name` kwarg will be the 'name' field of the resulting
@@ -1845,9 +1845,6 @@ class RunEngine:
 
         If `collect` is set to True (default false) then `describe_collect` will be called
         on declare_stream, rather than `describe`.
-
-        Also note that changing the 'name' of the Event will create a new
-        Descriptor document.
         """
         run_key = msg.run
         try:

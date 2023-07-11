@@ -8,6 +8,7 @@ from event_model.documents.datum import Datum
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
 from bluesky.utils import new_uid, IllegalMessageSequence
+from itertools import chain
 import pytest
 from bluesky.protocols import (
     Asset, Readable,
@@ -128,7 +129,7 @@ def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
 def describe_without_name(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
     data_keys = {
         str(y): {str(x): DataKey(shape=[1], source="a", dtype="string") for x in ["x", "y", "z"]}
-        for y in range(16)
+        for y in chain(["primary"], range(16))
     }
     return data_keys
 
@@ -141,7 +142,7 @@ def collect_Pageable_without_name(self) -> SyncOrAsync[Iterator[PartialEventPage
         PartialEventPage(
             timestamps=timestamps(x), data=timestamps(x)
         )
-        for x in range(16)
+        for x in chain(["primary"], range(16))
     ]
 
     return partial_event_pages
@@ -275,6 +276,30 @@ def test_flyscan_with_pages_passed_in_name_and_external_assets(RE, asset_type, c
        )
 
 
+def test_rd_desc_with_declare_stream(RE):
+    class X(Readable, EventPageCollectable):
+        # TODO Ask Tom about what we're thinking here, do
+        # we want a describe and describe_collect for readable?
+        read = read_Readable
+        collect_pages = collect_Pageable_with_name
+        describe = describe_Readable
+        describe_collect = describe_with_name
+        name = "name"
+
+    x = X()
+    collector = []
+    RE([
+            Msg("open_run", x),
+            Msg("create", name="x"),
+            Msg("declare_stream", None, x, collect=True),
+            Msg("read", x),
+            Msg("save", x),
+            Msg("close_run", x),
+        ],
+        lambda *args: collector.append(args)
+       )
+
+
 def test_flyscan_without_pageing_or_name(RE):
     class X(Flyable, EventCollectable):
         def kickoff(self, *_, **__):
@@ -349,6 +374,31 @@ def test_describe_collect_paging_with_stream(RE):
     with pytest.raises(IllegalMessageSequence):
         RE([
                 Msg("open_run", x),
+                Msg("collect", x, stream=True),
+                Msg("close_run", x),
+            ],
+            lambda *args: collector.append(args)
+           )
+
+
+def test_describe_collect_pre_declare_stream(RE):
+    class X(Flyable, EventPageCollectable):
+        collect_pages = collect_Pageable_without_name
+        describe_collect = describe_without_name
+
+        def kickoff(self, *_, **__):
+            ...
+
+        def complete(self, *_, **__):
+            ...
+        name = "x"
+
+    x = X()
+    collector = []
+    with pytest.raises(IllegalMessageSequence):
+        RE([
+                Msg("open_run", x),
+                Msg("declare_stream", None, x, collect=True),
                 Msg("collect", x, stream=True),
                 Msg("close_run", x),
             ],

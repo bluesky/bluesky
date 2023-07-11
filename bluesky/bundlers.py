@@ -5,7 +5,7 @@ from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set, Optional, Unio
 from event_model import DocumentNames, compose_run, ComposeDescriptorBundle, pack_event_page, DataKey
 from .log import doc_logger
 from .protocols import (
-    T, Callback, Configurable, PartialEvent, Descriptor, Flyable,
+    T, Callback, Configurable, PartialEvent, Flyable,
     HasName, Readable, Reading, Subscribable, check_supports,  EventCollectable, EventPageCollectable, Collectable
 )
 from .utils import (
@@ -33,8 +33,10 @@ class RunBundler:
         self._objs_read: Deque[HasName] = deque()  # objects read in one Event
         self._read_cache: Deque[Dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
-        self._describe_cache: ObjDict[Descriptor] = dict()  # cache of all obj.describe() output
-        self._config_desc_cache: ObjDict[Descriptor] = dict()  # " obj.describe_configuration()
+        self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output
+        self._describe_collect_cache: ObjDict[Dict[str, DataKey]] = dict()  # cache of all obj.describe() output
+
+        self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()
         self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values
         self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps
         # cache of {name: (doc, compose_event, compose_event_page)}
@@ -129,26 +131,29 @@ class RunBundler:
         self.run_is_open = False
         return doc["run_start"]
 
-    async def _prepare_stream(self, desc_key, objs_read):
+    async def _prepare_stream(
+        self,
+        desc_key: str,
+        objs_dks: Dict[Any, Dict[str, DataKey]],
+    ):
         # We do not have an Event Descriptor for this set
         # so one must be created.
         data_keys = {}
         config = {}
         object_keys = {}
         hints = {}
-        for obj in objs_read:
-            dks = self._describe_cache[obj]
-            obj_name = obj.name
-            # dks is an OrderedDict. Record that order as a list.
-            object_keys[obj_name] = list(dks)
-            for field, dk in dks.items():
-                dk["object_name"] = obj_name
-            data_keys.update(dks)
-            config[obj_name] = {}
-            config[obj_name]["data"] = self._config_values_cache[obj]
-            config[obj_name]["timestamps"] = self._config_ts_cache[obj]
-            config[obj_name]["data_keys"] = self._config_desc_cache[obj]
+
+        for obj, dks in objs_dks.items():
             maybe_update_hints(hints, obj)
+            # dks is an OrderedDict. Record that order as a list.
+            print(dks)
+            object_keys[desc_key] = list(dks)
+            data_keys.update(dks)
+            config[desc_key] = {}
+            config[desc_key]["data"] = self._config_values_cache[obj]
+            config[desc_key]["timestamps"] = self._config_ts_cache[obj]
+            config[desc_key]["data_keys"] = self._config_desc_cache[obj]
+
         self._descriptors[desc_key] = self._compose_descriptor(
             desc_key,
             data_keys,
@@ -168,15 +173,26 @@ class RunBundler:
                 'run_uid': self._run_start_uid,
                 'data_keys': data_keys.keys()}
         )
-        self._descriptor_objs[desc_key] = objs_read
-        return self._descriptors[desc_key].descriptor_doc, self._descriptors[desc_key].compose_event, objs_read
+        self._descriptor_objs[desc_key] = list(objs_dks)
+        if desc_key not in self._sequence_counters:
+            self._sequence_counters[desc_key] = 1
+            self._sequence_counters_copy[desc_key] = 1
+
+        from pprint import pprint
+        print("DESCRIPTORS[desc_key]")
+        pprint(self._descriptors[desc_key].descriptor_doc)
+
+        return (
+            self._descriptors[desc_key].descriptor_doc,
+            self._descriptors[desc_key].compose_event,
+            list(objs_dks)
+        )
 
     async def _ensure_cached(self, obj, collect=False):
-        if obj not in self._describe_cache:
-            if collect:
-                await self._cache_describe_collect(obj)
-            else:
-                await self._cache_describe(obj)
+        if (not collect and obj not in self._describe_cache):
+            await self._cache_describe(obj)
+        elif (collect and obj not in self._describe_collect_cache):
+            await self._cache_describe_collect(obj)
         if obj not in self._config_desc_cache:
             await self._cache_describe_config(obj)
             await self._cache_read_config(obj)
@@ -184,14 +200,31 @@ class RunBundler:
     async def declare_stream(self, msg):
         """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
-        stream_name = kwargs['name']
+        stream_name = kwargs.get('name', 'primary')
         collect = kwargs.get('collect', False)
         assert no_obj is None
         objs = frozenset(objs)
+        objs_dks = {}
         for obj in objs:
             await self._ensure_cached(obj, collect=collect)
+            if collect:
+                dks = self._describe_collect_cache[obj]
+                formatted_data_keys = self._maybe_format_datakeys_with_stream_name(
+                    dks, message_stream_name=stream_name
+                )
+                if stream_name:
+                    assert len(formatted_data_keys) == 1 \
+                        and formatted_data_keys[0][0] == stream_name, \
+                        (
+                            "Expecting describe_collect to return a Dict[str, DataKey] "
+                            f"for the passed in {stream_name}"
+                        )
+            else:
+                dks = self._describe_cache[obj]
 
-        return (await self._prepare_stream(stream_name, objs))
+            objs_dks[obj] = dks
+
+        return (await self._prepare_stream(stream_name, objs_dks))
 
     async def create(self, msg):
         """
@@ -294,6 +327,7 @@ class RunBundler:
             conf_keys = await maybe_await(obj.describe_configuration())
         else:
             conf_keys = {}
+
         self._config_desc_cache[obj] = conf_keys
 
     async def _cache_read_config(self, obj):
@@ -341,7 +375,7 @@ class RunBundler:
 
         await self._ensure_cached(obj)
 
-        _, compose_event, _ = await self._prepare_stream(name, (obj,))
+        _, compose_event, _ = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
@@ -443,10 +477,6 @@ class RunBundler:
         desc_key = self._bundle_name
 
         # This is a separate check because it can be reset on resume.
-        seq_num_key = desc_key
-        if seq_num_key not in self._sequence_counters:
-            self._sequence_counters[seq_num_key] = 1
-            self._sequence_counters_copy[seq_num_key] = 1
         self.bundling = False
         self._bundle_name = None
 
@@ -455,11 +485,17 @@ class RunBundler:
         )
         d_objs = self._descriptor_objs.get(desc_key, None)
 
+        objs_dks = {}
+
         # we do not have the descriptor cached, make it
         if descriptor_doc is None or d_objs is None:
-            descriptor_doc, compose_event, d_objs = await self._prepare_stream(desc_key, objs_read)
+            for obj in objs_read:
+                await self._ensure_cached(obj, collect=isinstance(obj, Collectable))
+                objs_dks[obj] = self._describe_cache[obj]
+
+            descriptor_doc, compose_event, d_objs = await self._prepare_stream(desc_key, objs_dks)
             # do have the descriptor cached
-        elif d_objs != objs_read:
+        elif d_objs != frozenset(objs_read):
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
                 "got \n\n\n{!s}".format(d_objs, objs_read)
@@ -498,6 +534,14 @@ class RunBundler:
             for k, v in self._descriptors[desc_key].descriptor_doc["data_keys"].items()
             if "external" not in v or v["external"] != "STREAM:"
         }
+        print(self._descriptors[desc_key].descriptor_doc["data_keys"])
+        from pprint import pprint
+        print("DATA")
+        pprint(data)
+        print("TIMESTAMPS")
+        pprint(timestamps)
+        print("FILLED")
+        pprint(filled)
         event_doc = compose_event(
             data=data,
             timestamps=timestamps,
@@ -603,7 +647,7 @@ class RunBundler:
     def _maybe_format_datakeys_with_stream_name(
         self,
         describe_collect_dict: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]],
-        message_stream_name: Optional[str] = None
+        message_stream_name: Optional[str] = None,
     ) -> List[Tuple[str, Dict[str, DataKey]]]:
         """
         Check if the dictionary returned by describe collect is a dict
@@ -625,6 +669,7 @@ class RunBundler:
                 if message_stream_name and list(describe_collect_dict) != [message_stream_name]:
                     # The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],
                     # this is only acceptable if the only key in the parent dict is message_stream_name
+
                     raise RuntimeError(
                         f"Expected a single stream {message_stream_name!r}, got {describe_collect_dict}"
                     )
@@ -638,16 +683,22 @@ class RunBundler:
             # Empty dict, could be either but we don't care
             return []
 
-    async def _cache_describe_collect(self, collect_obj: Flyable, message_stream_name: Optional[str] = None):
+    async def _cache_describe_collect(self, obj: Collectable):
+        "Read the object's describe and cache it."
+        obj = check_supports(obj, Collectable)
+        self._describe_collect_cache[obj] = await maybe_await(obj.describe_collect())
+
+    async def _describe_collect(self, collect_obj: Flyable, message_stream_name: Optional[str] = None):
         "Read the object's describe_collect and cache it."
 
-        describe_collect = await maybe_await(collect_obj.describe_collect())
+        await self._ensure_cached(collect_obj, collect=True)
+
+        describe_collect = self._describe_collect_cache[collect_obj]
 
         describe_collect_items = self._maybe_format_datakeys_with_stream_name(
                 describe_collect, message_stream_name=message_stream_name
         )
 
-        collect_obj_config: Dict[str, Dict[str, Any]] = {}
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
         # collect_obj.describe_collect() returns a dictionary like this:
@@ -657,34 +708,7 @@ class RunBundler:
             if stream_name not in self._descriptors:
                 # We do not have an Event Descriptor for this set.
                 # if we have not yet read the configuration, do so
-                if collect_obj.name not in collect_obj_config:
-                    if collect_obj not in self._config_desc_cache:
-                        await self._cache_describe_config(collect_obj)
-                        await self._cache_read_config(collect_obj)
-                    collect_obj_config[collect_obj.name] = {
-                        "data": self._config_values_cache[collect_obj],
-                        "timestamps": self._config_ts_cache[collect_obj],
-                        "data_keys": self._config_desc_cache[collect_obj]
-                    }
-                hints = {}
-                maybe_update_hints(hints, collect_obj)
-                descriptor_bundle = self._compose_descriptor(
-                    data_keys=stream_data_keys,
-                    name=stream_name,
-                    configuration=collect_obj_config,
-                    hints=hints,
-                    object_keys={collect_obj.name: list(stream_data_keys)},
-                )
-                await self.emit(DocumentNames.descriptor, descriptor_bundle.descriptor_doc)
-                doc_logger.debug("[descriptor] document is emitted with name %r "
-                                 "containing data keys %r (run_uid=%r)", stream_name,
-                                 stream_data_keys.keys(), self._run_start_uid,
-                                 extra={'doc_name': 'descriptor',
-                                        'run_uid': self._run_start_uid,
-                                        'data_keys': stream_data_keys.keys()})
-                self._descriptor_objs[stream_name] = stream_data_keys
-                self._descriptors[stream_name] = descriptor_bundle
-                self._sequence_counters[stream_name] = 1
+                await self._prepare_stream(stream_name, {collect_obj: stream_data_keys})
             else:
                 objs_read = self._descriptor_objs[stream_name]
                 if stream_data_keys != objs_read:
@@ -828,10 +852,10 @@ class RunBundler:
         # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
         if message_stream_name:
             if message_stream_name not in self._descriptors:
-                await self._cache_describe_collect(collect_obj, message_stream_name=message_stream_name)
+                await self._describe_collect(collect_obj, message_stream_name=message_stream_name)
         else:
             if collect_obj not in self._local_descriptors:
-                await self._cache_describe_collect(collect_obj)
+                await self._describe_collect(collect_obj)
 
         local_descriptors = self._local_descriptors[collect_obj]
 
