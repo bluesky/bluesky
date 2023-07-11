@@ -309,6 +309,7 @@ before at each call.
     %run -m multi_run_plans_recursive
 
 .. ipython:: python
+    :suppress:
 
     RE(sim_plan_recursive(4))
 
