@@ -9,7 +9,7 @@ ipython
 ipywidgets
 jinja2
 lmfit
-matplotlib != 3.0.1  # bug in scatter method
+matplotlib >=3.5.0
 mongoquery
 mypy
 networkx
