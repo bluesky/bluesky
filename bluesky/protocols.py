@@ -11,6 +11,7 @@ from event_model.documents.event_page import PartialEventPage
 from typing import (
     Any,
     Awaitable,
+    AsyncIterator,
     Callable,
     Dict,
     Generic,
@@ -61,6 +62,7 @@ Asset = Union[
 
 T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
+SyncOrAsyncIterator = Union[Iterator[T], AsyncIterator[T]]
 
 
 @runtime_checkable
@@ -119,7 +121,7 @@ class HasParent(Protocol):
 @runtime_checkable
 class WritesExternalAssets(Protocol):
     @abstractmethod
-    def collect_asset_docs(self) -> Iterator[Asset]:
+    def collect_asset_docs(self) -> SyncOrAsyncIterator[Iterator[Asset]]:
         """Create the resource, datum, stream_resource, and stream_datum
         documents describing data in external source.
 

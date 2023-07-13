@@ -146,13 +146,13 @@ class RunBundler:
         for obj, dks in objs_dks.items():
             maybe_update_hints(hints, obj)
             # dks is an OrderedDict. Record that order as a list.
-            print(dks)
-            object_keys[desc_key] = list(dks)
+            object_keys[obj.name] = list(dks)
             data_keys.update(dks)
-            config[desc_key] = {}
-            config[desc_key]["data"] = self._config_values_cache[obj]
-            config[desc_key]["timestamps"] = self._config_ts_cache[obj]
-            config[desc_key]["data_keys"] = self._config_desc_cache[obj]
+            config[obj.name] = {
+                "data": self._config_values_cache[obj],
+                "timestamps": self._config_ts_cache[obj],
+                "data_keys": self._config_desc_cache[obj]
+            }
 
         self._descriptors[desc_key] = self._compose_descriptor(
             desc_key,
@@ -173,14 +173,10 @@ class RunBundler:
                 'run_uid': self._run_start_uid,
                 'data_keys': data_keys.keys()}
         )
-        self._descriptor_objs[desc_key] = list(objs_dks)
+        self._descriptor_objs[desc_key] = objs_dks
         if desc_key not in self._sequence_counters:
             self._sequence_counters[desc_key] = 1
             self._sequence_counters_copy[desc_key] = 1
-
-        from pprint import pprint
-        print("DESCRIPTORS[desc_key]")
-        pprint(self._descriptors[desc_key].descriptor_doc)
 
         return (
             self._descriptors[desc_key].descriptor_doc,
@@ -200,7 +196,7 @@ class RunBundler:
     async def declare_stream(self, msg):
         """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
-        stream_name = kwargs.get('name', 'primary')
+        stream_name = kwargs['name']
         collect = kwargs.get('collect', False)
         assert no_obj is None
         objs = frozenset(objs)
@@ -212,13 +208,12 @@ class RunBundler:
                 formatted_data_keys = self._maybe_format_datakeys_with_stream_name(
                     dks, message_stream_name=stream_name
                 )
-                if stream_name:
-                    assert len(formatted_data_keys) == 1 \
-                        and formatted_data_keys[0][0] == stream_name, \
-                        (
-                            "Expecting describe_collect to return a Dict[str, DataKey] "
-                            f"for the passed in {stream_name}"
-                        )
+                assert len(formatted_data_keys) == 1 \
+                    and formatted_data_keys[0][0] == stream_name, \
+                    (
+                        "Expecting describe_collect to return a Dict[str, DataKey] "
+                        f"for the passed in {stream_name}"
+                    )
             else:
                 dks = self._describe_cache[obj]
 
@@ -310,7 +305,7 @@ class RunBundler:
             # and cache them as well. Likewise, these will be emitted if and
             # when _save is called.
             self._asset_docs_cache.extend(
-                maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)
+                [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
             )
 
         return reading
@@ -495,10 +490,10 @@ class RunBundler:
 
             descriptor_doc, compose_event, d_objs = await self._prepare_stream(desc_key, objs_dks)
             # do have the descriptor cached
-        elif d_objs != frozenset(objs_read):
+        elif frozenset(d_objs) != objs_read:
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
-                "got \n\n\n{!s}".format(d_objs, objs_read)
+                "got \n\n\n{!s}".format(frozenset(d_objs), objs_read)
             )
 
         # Resource and Datum documents
@@ -534,14 +529,6 @@ class RunBundler:
             for k, v in self._descriptors[desc_key].descriptor_doc["data_keys"].items()
             if "external" not in v or v["external"] != "STREAM:"
         }
-        print(self._descriptors[desc_key].descriptor_doc["data_keys"])
-        from pprint import pprint
-        print("DATA")
-        pprint(data)
-        print("TIMESTAMPS")
-        pprint(timestamps)
-        print("FILLED")
-        pprint(filled)
         event_doc = compose_event(
             data=data,
             timestamps=timestamps,
@@ -695,9 +682,9 @@ class RunBundler:
 
         describe_collect = self._describe_collect_cache[collect_obj]
 
-        describe_collect_items = self._maybe_format_datakeys_with_stream_name(
+        describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(
                 describe_collect, message_stream_name=message_stream_name
-        )
+        ))
 
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
@@ -711,7 +698,7 @@ class RunBundler:
                 await self._prepare_stream(stream_name, {collect_obj: stream_data_keys})
             else:
                 objs_read = self._descriptor_objs[stream_name]
-                if stream_data_keys != objs_read:
+                if stream_data_keys != objs_read[collect_obj]:
                     raise RuntimeError(
                         "Mismatched objects read, "
                         "expected {!s}, "
@@ -860,7 +847,7 @@ class RunBundler:
         local_descriptors = self._local_descriptors[collect_obj]
 
         # Pack a Resource or Datum document with relevant information and emit
-        for name, doc in maybe_collect_asset_docs(msg, collect_obj):
+        async for name, doc in maybe_collect_asset_docs(msg, collect_obj):
             self._pack_external_assets(name, doc, message_stream_name=message_stream_name)
             await self.emit(DocumentNames(name), doc)
 

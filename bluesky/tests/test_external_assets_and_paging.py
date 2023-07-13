@@ -291,7 +291,7 @@ def test_rd_desc_with_declare_stream(RE):
     RE([
             Msg("open_run", x),
             Msg("create", name="x"),
-            Msg("declare_stream", None, x, collect=True),
+            Msg("declare_stream", None, x, collect=True, name="primary"),
             Msg("read", x),
             Msg("save", x),
             Msg("close_run", x),
@@ -383,8 +383,8 @@ def test_describe_collect_paging_with_stream(RE):
 
 def test_describe_collect_pre_declare_stream(RE):
     class X(Flyable, EventPageCollectable):
-        collect_pages = collect_Pageable_without_name
-        describe_collect = describe_without_name
+        collect_pages = collect_Pageable_with_name
+        describe_collect = describe_with_name
 
         def kickoff(self, *_, **__):
             ...
@@ -398,7 +398,7 @@ def test_describe_collect_pre_declare_stream(RE):
     with pytest.raises(IllegalMessageSequence):
         RE([
                 Msg("open_run", x),
-                Msg("declare_stream", None, x, collect=True),
+                Msg("declare_stream", None, x, collect=True, name="primary"),
                 Msg("collect", x, stream=True),
                 Msg("close_run", x),
             ],
