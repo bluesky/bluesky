@@ -486,7 +486,9 @@ class RunEngine:
             'wait_for': self._wait_for,
             'input': self._input,
             'install_suspender': self._install_suspender,
-            'remove_suspender': self._remove_suspender, }
+            'remove_suspender': self._remove_suspender,
+            'wait_on': self._wait_on,
+        }
 
         # public dispatcher for callbacks
         # The Dispatcher's public methods are exposed through the
@@ -2119,6 +2121,23 @@ class RunEngine:
         """
         return type(self)
 
+    async def _wait_on(self, msg):
+        """
+        Create and add an arbitrary status object to a wait group
+
+        Expected message object is
+
+            Msg('set', None, StatusKlass, *args, group=None, **kwargs)
+
+        """
+        assert msg.obj is None
+        StatusKlass, *args = msg.args
+        kwargs = dict(msg.kwargs)
+        group = kwargs.pop('group', None)
+        ret = StatusKlass(*args, **kwargs)
+
+        return (await self._shared_status(ret, group, None))
+
     async def _set(self, msg):
         """
         Set a device and cache the returned status object.
@@ -2137,10 +2156,15 @@ class RunEngine:
         group = kwargs.pop('group', None)
         self._movable_objs_touched.add(obj)
         ret = obj.set(*msg.args, **kwargs)
+
+        return (await self._shared_status(ret, group, obj))
+
+    async def _shared_status(self, ret, group, obj):
         p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
 
         def done_callback(status=None):
+
             self.log.debug("The object %r reports set is done "
                            "with status %r", obj, ret.success)
             self._loop.call_soon_threadsafe(
