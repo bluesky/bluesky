@@ -1548,7 +1548,7 @@ def test_filled(RE, hw, db):
     RE(count([hw.det]), collect)
 
     event, = collector
-    assert event['filled'] == {"det": False}
+    assert event['filled'] == {}
     collector.clear()
 
     RE(count([hw.img]), collect)

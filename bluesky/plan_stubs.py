@@ -33,7 +33,7 @@ def declare_stream(*objs, **kwargs):
     ----------
     name : string
         name given to event stream, used to convenient identification
-    collect : bool
+    collect : bool, optional
         collect as well as describe when declaring the stream
         default is `False`
 

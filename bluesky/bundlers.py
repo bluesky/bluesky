@@ -196,7 +196,12 @@ class RunBundler:
     async def declare_stream(self, msg):
         """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
-        stream_name = kwargs['name']
+        try:
+            stream_name = kwargs['name']
+        except KeyError:
+            raise IllegalMessageSequence(
+                "A 'declare_stream' message was sent without a 'name' kwarg,"
+            )
         collect = kwargs.get('collect', False)
         assert no_obj is None
         objs = frozenset(objs)
@@ -211,8 +216,8 @@ class RunBundler:
                 assert len(formatted_data_keys) == 1 \
                     and formatted_data_keys[0][0] == stream_name, \
                     (
-                        "Expecting describe_collect to return a Dict[str, DataKey] "
-                        f"for the passed in {stream_name}"
+                        "`declare_stream` contained `collect=True` but  `describe_collect` to did "
+                        f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
                     )
             else:
                 dks = self._describe_cache[obj]
@@ -527,7 +532,7 @@ class RunBundler:
         filled = {
             k: False
             for k, v in self._descriptors[desc_key].descriptor_doc["data_keys"].items()
-            if "external" not in v or v["external"] != "STREAM:"
+            if "external" in v and v["external"] != "STREAM:"
         }
         event_doc = compose_event(
             data=data,
@@ -692,7 +697,7 @@ class RunBundler:
         #     {name_for_desc1: data_keys_for_desc1,
         #      name_for_desc2: data_keys_for_desc2, ...}
         for stream_name, stream_data_keys in describe_collect_items:
-            if stream_name not in self._descriptors:
+            if stream_name not in self._descriptor_objs or collect_obj not in self._descriptor_objs[stream_name]:
                 # We do not have an Event Descriptor for this set.
                 # if we have not yet read the configuration, do so
                 await self._prepare_stream(stream_name, {collect_obj: stream_data_keys})
