@@ -84,11 +84,13 @@ class RunBundler:
             # To store the interruptions uid outside of event-model
             self._interruptions_desc_uid = new_uid()
             dk = {"dtype": "string", "shape": [], "source": "RunEngine"}
-            self._interruptions_desc, self._interruptions_compose_event, *_ = self._compose_descriptor(
+            descriptor_bundle = self._compose_descriptor(
                 uid=self._interruptions_desc_uid,
                 name="interruptions",
                 data_keys={"interruption": dk},
             )
+            self._interruptions_desc = descriptor_bundle.descriptor_doc
+            self._interruptions_compose_event = descriptor_bundle.compose_event
             await self.emit(DocumentNames.descriptor, self._interruptions_desc)
 
         return self._run_start_uid
@@ -375,7 +377,8 @@ class RunBundler:
 
         await self._ensure_cached(obj)
 
-        _, compose_event, _ = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
+        stream_bundle = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
+        compose_event = stream_bundle[1]
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
@@ -498,7 +501,7 @@ class RunBundler:
         elif frozenset(d_objs) != objs_read:
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
-                "got \n\n\n{!s}".format(frozenset(d_objs), objs_read)
+                "got {!s}".format(frozenset(d_objs), objs_read)
             )
 
         # Resource and Datum documents
@@ -698,8 +701,7 @@ class RunBundler:
         #      name_for_desc2: data_keys_for_desc2, ...}
         for stream_name, stream_data_keys in describe_collect_items:
             if stream_name not in self._descriptor_objs or collect_obj not in self._descriptor_objs[stream_name]:
-                # We do not have an Event Descriptor for this set.
-                # if we have not yet read the configuration, do so
+                # We do not have an Event Descriptor for this collect_obj.
                 await self._prepare_stream(stream_name, {collect_obj: stream_data_keys})
             else:
                 objs_read = self._descriptor_objs[stream_name]
