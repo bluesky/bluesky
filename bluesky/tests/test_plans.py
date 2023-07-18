@@ -13,6 +13,11 @@ import re
 import collections
 from bluesky.tests.utils import MsgCollector
 from bluesky.plan_patterns import chunk_outer_product_args, outer_product
+from typing import List
+from ophyd.v2.core import Device, SignalRW, wait_for_connection, set_sim_value
+from bluesky.protocols import Savable
+from ophyd.v2.epics import epics_signal_rw
+from os import path
 
 
 def _validate_start(start, expected_values):
@@ -386,6 +391,51 @@ def test_rd_device(hw, RE, kind):
 
     RE(tester(hw.det))
     assert called
+    
+@pytest.mark.asyncio
+async def test_save(RE, tmp_path):
+    require_ophyd_1_4_0()
+    
+    class FakeDevice(Device, Savable):
+        def __init__(self):
+            self.setpoint = epics_signal_rw(float, "Setpoint_units")
+            self.distance = epics_signal_rw(float, "Readback_units")
+            self.velocity = epics_signal_rw(int, "5_units")
+            self.egu = epics_signal_rw(str, "egu")
+              
+            
+        async def set_vals(self):
+            await self.connect(sim=True)
+            set_sim_value(self.setpoint, 5.3)
+            set_sim_value(self.egu, "unit")
+            set_sim_value(self.distance, 1.2)
+            set_sim_value(self.velocity, 6)
+            
+        def sort_signal_by_phase(self, signals: List[SignalRW]) -> List[SignalRW]:
+            """Two phases. Every signal ending in 'units' is done in first phase.
+            Return rule TODO add test for this"""
+
+            phase_1 = []
+            phase_2 = []
+            for signal in signals:
+                if signal.source.endswith("units"):
+                    phase_1.append(signal)
+                else:
+                    phase_2.append(signal)
+
+            return [phase_1, phase_2]
+            
+    fake_device = FakeDevice()
+    await fake_device.set_vals()
+    
+    RE(bp.save(fake_device, path.join(tmp_path, "test_file")))
+    
+    assert path.exists(("test_file.yaml"))
+    
+                
+                
+                
+            
 
 
 # ********  Tests for `grid_scan` and `rel_grid_scan` plans  ***********

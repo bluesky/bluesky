@@ -5,6 +5,10 @@ from functools import partial
 import collections
 from collections import defaultdict
 import time
+from ophyd.v2.core import Device, SignalRW
+from typing import Type
+from bluesky.protocols import Savable
+import yaml
 
 import numpy as np
 try:
@@ -1414,7 +1418,7 @@ def tweak(detector, target_field, motor, step, *, md=None):
 
     Parameters
     ----------
-    detetector : Device
+    detector : Device
     target_field : string
         data field whose output is the focus of the adaptive tuning
     motor : Device
@@ -2031,3 +2035,110 @@ outer_product_scan = grid_scan  # back-compat
 relative_outer_product_scan = rel_grid_scan  # back-compat
 relative_spiral_fermat = rel_spiral_fermat  # back-compat
 relative_spiral = rel_spiral  # back-compat
+
+
+def save(device: Type[Savable], savename: str):
+    """
+    Save the setup of a device by getting a list of its signals and their readback values 
+    
+    Store the output to savename.yaml
+    
+    Parameters
+    ----------
+    device : Savable
+        Ophyd device which implements the get_phase_logic method.
+        
+    savename: String
+        name of yaml file
+
+    md : dict, optional
+        metadata
+        
+    Yields
+    ------
+    msg : Msg
+        'locate', *signals
+
+    See Also
+    --------
+    :func:`bluesky.plans.load`
+    """
+    
+    """pseduo:
+    get all signals of device in a list 'signals'
+    
+    something = yield from Msg('locate', *signals)
+    
+    make something be a dict of {signal_name: signal_readback}
+    
+    save into a yaml file, taking into account the phase ordering
+    
+    """
+    
+    
+    signalRWs = [getattr(device, attr) for attr in dir(device) if type(getattr(device, attr)) is SignalRW]
+    phases = device.sort_signal_by_phase(signalRWs) #TODO ADD CASE FOR NO SIGNALRWs
+    filename = f"{savename}.yaml"
+    with open(filename, "w") as file:
+        for phase in phases:
+            locations = yield Msg('locate', *phase)
+            signals_and_values = {}
+            for position,_ in enumerate(phase):
+                signals_and_values[phase[position].source] = locations[position]
+            phase_dict = {"phase": signals_and_values}
+            yaml.dump(phase_dict, file)
+            
+"""tests to add:
+
+Check error is handled if there are no signals in a phase, or no signals in signalRWs
+
+Check yaml file was created with the correct values
+
+Check there is a new phase line in between the phases
+
+"""
+        
+            
+
+def load(device: Device, savename: str):
+    """
+    Setup a device into a configuration defined by a yaml file
+    
+    Parameters
+    ----------
+    device : Device
+        list of 'readable' objects
+        
+    savename: String
+        name of yaml file
+
+    md : dict, optional
+        metadata
+        
+    Yields
+    ------
+    func:'bluesky.plan_stubs.abs_set
+
+    See Also
+    --------
+    :func:`bluesky.plans.save`
+    """
+    
+    
+    """pseduo:
+    load yaml file and get a dictionary of each phase
+    
+    do an abs_set to get each signal matching the readback in phase x
+    
+    wait for phase x to finish, then repeat for next phase until done
+    
+    """
+    pass
+
+
+"""tests:
+
+
+
+
+"""
