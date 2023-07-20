@@ -721,6 +721,11 @@ class RunBundler:
         if name in ["resource", "stream_resource"]:
             doc["run_start"] = self._run_start_uid
         elif name == "stream_datum":
+            if doc["descriptor"]:
+                raise RuntimeError(
+                    f"Bluesky recieved a stream_datum {doc['uid']} with a descriptor_uid already filled in, "
+                    f"with the value {doc['descriptor']} this should be an empty string"
+                )
             doc["descriptor"] = self._descriptors[message_stream_name]["uid"]
         elif name in ["datum"]:
             ...
