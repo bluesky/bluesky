@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from asyncio import CancelledError
 
 from event_model.documents import Datum, StreamDatum, StreamResource
 # Including Dtype here because ophyd imports Dtype directly from protocols, not event-model.
