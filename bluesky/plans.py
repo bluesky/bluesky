@@ -5,10 +5,11 @@ from functools import partial
 import collections
 from collections import defaultdict
 import time
-from ophyd.v2.core import Device, SignalRW
-from typing import Type
+from ophyd.v2.core import Device, SignalRW, get_device_children
+from typing import Dict, Type
 from bluesky.protocols import Savable
 import yaml
+from typing import List
 
 import numpy as np
 try:
@@ -2075,28 +2076,37 @@ def save(device: Type[Savable], savename: str):
     
     """
     
+    def find_component_signals(device: Device, prefix: str):
+        """Get all the signalRW's from the device and its children and store as dotted attribute names"""
+        
+        for attr_name, attr in get_device_children(device):
+            dot = ""
+            # Place a dot inbetween the uppwer and lower class. Don't do this for highest level class.
+            if prefix:
+                dot = "."
+            dot_path = f"{prefix}{dot}{attr_name}"
+            if type(attr) is SignalRW:
+                signalRWs[dot_path] = attr
+            find_component_signals(attr, prefix=dot_path)
     
-    signalRWs = [getattr(device, attr) for attr in dir(device) if type(getattr(device, attr)) is SignalRW]
-    phases = device.sort_signal_by_phase(signalRWs) #TODO ADD CASE FOR NO SIGNALRWs
-    filename = f"{savename}.yaml"
-    with open(filename, "w") as file:
-        for phase in phases:
-            locations = yield Msg('locate', *phase)
-            signals_and_values = {}
-            for position,_ in enumerate(phase):
-                signals_and_values[phase[position].source] = locations[position]
-            phase_dict = {"phase": signals_and_values}
-            yaml.dump(phase_dict, file)
-            
-"""tests to add:
+    signalRWs: Dict[str, SignalRW] = {}
+    find_component_signals(device, "")
+    
+    if len(signalRWs):    
+        phase_dicts = device.sort_signal_by_phase(signalRWs) 
+        phase_outpts = []
+        if len(phase_dicts):
+            filename = f"{savename}.yaml"
+            with open(filename, "w") as file:
+                for phase in phase_dicts:    
+                    signal_name_value={}
+                    for signal_name, signal in phase.items():
+                        signal_name_value[signal_name] = yield Msg('locate', signal)
+                    phase_outpts.append([signal_name_value])
+                
+                yaml.dump(phase_outpts, file)
+                
 
-Check error is handled if there are no signals in a phase, or no signals in signalRWs
-
-Check yaml file was created with the correct values
-
-Check there is a new phase line in between the phases
-
-"""
         
             
 

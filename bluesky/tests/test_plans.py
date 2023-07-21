@@ -14,11 +14,10 @@ import collections
 from bluesky.tests.utils import MsgCollector
 from bluesky.plan_patterns import chunk_outer_product_args, outer_product
 from typing import List
-from ophyd.v2.core import Device, SignalRW, wait_for_connection, set_sim_value
+from ophyd.v2.core import Device, SignalRW, set_sim_value
 from bluesky.protocols import Savable
 from ophyd.v2.epics import epics_signal_rw
 from os import path
-
 
 def _validate_start(start, expected_values):
     '''Basic metadata validtion'''
@@ -396,13 +395,24 @@ def test_rd_device(hw, RE, kind):
 async def test_save(RE, tmp_path):
     require_ophyd_1_4_0()
     
-    class FakeDevice(Device, Savable):
+    class FakeSubDevice(Device):
         def __init__(self):
-            self.setpoint = epics_signal_rw(float, "Setpoint_units")
-            self.distance = epics_signal_rw(float, "Readback_units")
-            self.velocity = epics_signal_rw(int, "5_units")
-            self.egu = epics_signal_rw(str, "egu")
-              
+            self.fake_signal: SignalRW = epics_signal_rw(float, "fake_signal")
+
+    class FakeSubDevice(Device):
+        def __init__(self):
+            self.fake_signal: SignalRW = epics_signal_rw(float, "fake_signal_2")
+    
+    class FakeDevice(Device, Savable):
+        
+        def __init__(self):
+            self.setpoint: SignalRW = epics_signal_rw(float, "Setpoint_units")
+            self.distance: SignalRW = epics_signal_rw(float, "Readback_units")
+            self.velocity: SignalRW = epics_signal_rw(int, "5_units")
+            self.egu: SignalRW = epics_signal_rw(str, "egu")
+            self.fake_sub_device: FakeSubDevice = FakeSubDevice()
+            self.fake_sub_device_2: FakeSubDevice = FakeSubDevice()
+            #self.pulse: PulseBlock = PulseBlock()
             
         async def set_vals(self):
             await self.connect(sim=True)
@@ -410,19 +420,20 @@ async def test_save(RE, tmp_path):
             set_sim_value(self.egu, "unit")
             set_sim_value(self.distance, 1.2)
             set_sim_value(self.velocity, 6)
+            set_sim_value(self.fake_sub_device.fake_signal, 4.3)
             
-        def sort_signal_by_phase(self, signals: List[SignalRW]) -> List[SignalRW]:
-            """Two phases. Every signal ending in 'units' is done in first phase.
-            Return rule TODO add test for this"""
-
-            phase_1 = []
-            phase_2 = []
-            for signal in signals:
-                if signal.source.endswith("units"):
-                    phase_1.append(signal)
+        def sort_signal_by_phase(self, signals: dict[str, SignalRW]) -> List[dict[str, SignalRW]]:
+            phase_1 = {}
+            phase_2 = {}
+            for key, value in signals.items():
+                if value.source.endswith("units"):
+                    phase_1[key] = value
                 else:
-                    phase_2.append(signal)
+                    phase_2[key] = value
 
+            for phase in [phase_1, phase_2]:
+                if not len(phase):
+                    raise ValueError("Each phase must have at least one signal")
             return [phase_1, phase_2]
             
     fake_device = FakeDevice()
@@ -430,13 +441,22 @@ async def test_save(RE, tmp_path):
     
     RE(bp.save(fake_device, path.join(tmp_path, "test_file")))
     
-    assert path.exists(("test_file.yaml"))
+    file_path = path.join(tmp_path, "test_file.yaml")
+    
+    assert path.exists(file_path)
     
                 
-                
-                
-            
+def test_save_passes_on_no_signals():
+    pass
 
+def test_save_passes_on_empty_phase():
+    pass
+
+def test_save_yaml_file_has_correct_values(): #including new line between phases
+    pass
+                
+def test_save_gets_all_signals(): #eg including ones from component devices
+    pass
 
 # ********  Tests for `grid_scan` and `rel_grid_scan` plans  ***********
 
