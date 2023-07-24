@@ -485,7 +485,7 @@ def sleep(time):
     return (yield Msg('sleep', None, time))
 
 
-def wait(group=None):
+def wait(group=None, *, timeout=None):
     """
     Wait for all statuses in a group to report being finished.
 
@@ -499,7 +499,7 @@ def wait(group=None):
     msg : Msg
         Msg('wait', None, group=group)
     """
-    return (yield Msg('wait', None, group=group))
+    return (yield Msg('wait', None, group=group, timeout=timeout))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
@@ -1057,7 +1057,7 @@ def trigger_and_read(devices, name='primary'):
             read_plan(),
             except_plan=exception_path,
             else_plan=standard_path
-            )
+        )
         return ret
 
     from .preprocessors import rewindable_wrapper

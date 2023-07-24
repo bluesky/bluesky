@@ -1733,9 +1733,12 @@ class RunEngine:
                'This must work multiple times'
 
         """
+
         futs, = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        futs = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        if futs[1]:
+            raise TimeoutError("Plan failed to complete in the specified time")
 
     async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
@@ -2198,7 +2201,7 @@ class RunEngine:
                     # the information these encapsulate to create a progress
                     # bar.
                     self.waiting_hook(status_objs)
-                await self._wait_for(Msg('wait_for', None, futs))
+                await self._wait_for(Msg('wait_for', None, futs, timeout=msg.kwargs.get("timeout", None)))
             finally:
                 if self.waiting_hook is not None:
                     # Notify the waiting_hook function that we have moved on by
