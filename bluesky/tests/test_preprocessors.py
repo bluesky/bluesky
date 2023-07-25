@@ -29,7 +29,7 @@ def test_given_a_plan_that_raises_contigency_will_call_except_plan_with_exceptio
     except_plan.assert_called_once()
 
 
-def test_given_a_plan_that_raises_contigency_with_no_auto_raise_will_call_except_plan_with_exception_and_run_engine_does_not_raise():
+def test_given_a_plan_that_raises_contigency_with_no_auto_raise_will_call_except_plan_and_RE_does_not_raise():
     expected_exception = Exception()
     expected_return_value = "test"
 
