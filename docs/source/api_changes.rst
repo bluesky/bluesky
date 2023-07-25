@@ -6,7 +6,7 @@ Unreleased
 ==========
 
 * Changed `~bluesky.bundlers` to use event-model compose functions
-  * In the run stop document, 'num_changes' will now contain descriptors even if
+  * In the run stop document, 'num_events' will now include streams even if
   they have no events associated with them.
   * Events produced by monitors are now checked against their corresponding Descriptor document.
 
