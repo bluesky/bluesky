@@ -1736,8 +1736,8 @@ class RunEngine:
 
         futs, = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        futs = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
-        if futs[1]:
+        _, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        if pending:
             raise TimeoutError("Plan failed to complete in the specified time")
 
     async def _open_run(self, msg):
