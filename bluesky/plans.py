@@ -5,7 +5,7 @@ from functools import partial
 import collections
 from collections import defaultdict
 import time
-from ophyd.v2.core import Device, SignalRW, get_device_children
+from ophyd.v2.core import Device, SignalRW
 from typing import Dict, Type
 from bluesky.protocols import Savable
 import yaml
@@ -1696,7 +1696,6 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
 
 def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
                *, dr_y=None, tilt=0.0, per_step=None, md=None):
-
     '''Relative spiral scan
 
     Parameters
@@ -2041,20 +2040,20 @@ relative_spiral = rel_spiral  # back-compat
 def save(device: Type[Savable], savename: str):
     """
     Save the setup of a device by getting a list of its signals and their readback values 
-    
+
     Store the output to savename.yaml
-    
+
     Parameters
     ----------
     device : Savable
         Ophyd device which implements the get_phase_logic method.
-        
+
     savename: String
         name of yaml file
 
     md : dict, optional
         metadata
-        
+
     Yields
     ------
     msg : Msg
@@ -2064,7 +2063,7 @@ def save(device: Type[Savable], savename: str):
     --------
     :func:`bluesky.plans.load`
     """
-    
+
     """pseduo:
     get all signals of device in a list 'signals'
     
@@ -2075,11 +2074,11 @@ def save(device: Type[Savable], savename: str):
     save into a yaml file, taking into account the phase ordering
     
     """
-    
-    def find_component_signals(device: Device, prefix: str):
+
+    def get_and_format_signalRWs(device: Device, prefix: str):
         """Get all the signalRW's from the device and its children and store as dotted attribute names"""
-        
-        for attr_name, attr in get_device_children(device):
+
+        for attr_name, attr in device.children:
             dot = ""
             # Place a dot inbetween the uppwer and lower class. Don't do this for highest level class.
             if prefix:
@@ -2087,44 +2086,41 @@ def save(device: Type[Savable], savename: str):
             dot_path = f"{prefix}{dot}{attr_name}"
             if type(attr) is SignalRW:
                 signalRWs[dot_path] = attr
-            find_component_signals(attr, prefix=dot_path)
-    
+            get_and_format_signalRWs(attr, prefix=dot_path)
+
     signalRWs: Dict[str, SignalRW] = {}
-    find_component_signals(device, "")
-    
-    if len(signalRWs):    
-        phase_dicts = device.sort_signal_by_phase(signalRWs) 
+    get_and_format_signalRWs(device, "")
+
+    if len(signalRWs):
+        phase_dicts = device.sort_signal_by_phase(signalRWs)
         phase_outpts = []
         if len(phase_dicts):
             filename = f"{savename}.yaml"
             with open(filename, "w") as file:
-                for phase in phase_dicts:    
-                    signal_name_value={}
+                for phase in phase_dicts:
+                    signal_name_value = {}
                     for signal_name, signal in phase.items():
                         signal_name_value[signal_name] = yield Msg('locate', signal)
                     phase_outpts.append([signal_name_value])
-                
-                yaml.dump(phase_outpts, file)
-                
 
-        
-            
+                yaml.dump(phase_outpts, file)
+
 
 def load(device: Device, savename: str):
     """
     Setup a device into a configuration defined by a yaml file
-    
+
     Parameters
     ----------
     device : Device
         list of 'readable' objects
-        
+
     savename: String
         name of yaml file
 
     md : dict, optional
         metadata
-        
+
     Yields
     ------
     func:'bluesky.plan_stubs.abs_set
@@ -2133,8 +2129,7 @@ def load(device: Device, savename: str):
     --------
     :func:`bluesky.plans.save`
     """
-    
-    
+
     """pseduo:
     load yaml file and get a dictionary of each phase
     
