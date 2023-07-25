@@ -18,6 +18,8 @@ from ophyd.v2.core import Device, SignalRW, set_sim_value
 from bluesky.protocols import Savable
 from ophyd.v2.epics import epics_signal_rw
 from os import path
+import asyncio
+
 
 def _validate_start(start, expected_values):
     '''Basic metadata validtion'''
@@ -298,7 +300,7 @@ def test_bad_per_step_signature(hw, per_step):
     with pytest.raises(
         TypeError,
         match=re.escape(
-           "per_step must be a callable with the signature \n "
+            "per_step must be a callable with the signature \n "
             "<Signature (detectors, step, pos_cache)> or "
             "<Signature (detectors, motor, step)>. \n"
             "per_step signature received: {}".format(sig)
@@ -390,72 +392,86 @@ def test_rd_device(hw, RE, kind):
 
     RE(tester(hw.det))
     assert called
-    
+
+
+class FakeDevice(Device, Savable):
+
+    def __init__(self):
+        self.setpoint: SignalRW = epics_signal_rw(float, "Setpoint_units")
+        self.distance: SignalRW = epics_signal_rw(float, "Readback_units")
+        self.velocity: SignalRW = epics_signal_rw(int, "5_units")
+        self.egu: SignalRW = epics_signal_rw(str, "egu")
+        self.fake_sub_device: FakeSubDevice = FakeSubDevice()
+        self.fake_sub_device_2: FakeSubDevice = FakeSubDevice()
+
+    def set_vals(self):
+        set_sim_value(self.setpoint, 5.3)
+        set_sim_value(self.egu, "unit")
+        set_sim_value(self.distance, 1.2)
+        set_sim_value(self.velocity, 6)
+        set_sim_value(self.fake_sub_device.fake_signal, 4.3)
+        set_sim_value(self.fake_sub_device_2.fake_signal, 7.3)
+
+    async def get_vals(self):
+        return await asyncio.gather(*[self.setpoint.get_value(), self.egu.get_value(),
+                                      self.distance.get_value(), self.velocity.get_value(),
+                                      self.fake_sub_device.fake_signal.get_value(), self.fake_sub_device_2.fake_signal.get_value()])
+
+    def sort_signal_by_phase(self, signals: dict[str, SignalRW]) -> List[dict[str, SignalRW]]:
+        phase_1 = {}
+        phase_2 = {}
+        for key, value in signals.items():
+            if value.source.endswith("units"):
+                phase_1[key] = value
+            else:
+                phase_2[key] = value
+
+        for phase in [phase_1, phase_2]:
+            if not len(phase):
+                raise ValueError("Each phase must have at least one signal")
+        return [phase_1, phase_2]
+
+
+class FakeSubDevice(Device):
+    def __init__(self):
+        self.fake_signal: SignalRW = epics_signal_rw(float, "fake_signal")
+
+
 @pytest.mark.asyncio
-async def test_save(RE, tmp_path):
+async def test_save_and_load(RE, tmp_path):
     require_ophyd_1_4_0()
-    
-    class FakeSubDevice(Device):
-        def __init__(self):
-            self.fake_signal: SignalRW = epics_signal_rw(float, "fake_signal")
 
-    class FakeSubDevice(Device):
-        def __init__(self):
-            self.fake_signal: SignalRW = epics_signal_rw(float, "fake_signal_2")
-    
-    class FakeDevice(Device, Savable):
-        
-        def __init__(self):
-            self.setpoint: SignalRW = epics_signal_rw(float, "Setpoint_units")
-            self.distance: SignalRW = epics_signal_rw(float, "Readback_units")
-            self.velocity: SignalRW = epics_signal_rw(int, "5_units")
-            self.egu: SignalRW = epics_signal_rw(str, "egu")
-            self.fake_sub_device: FakeSubDevice = FakeSubDevice()
-            self.fake_sub_device_2: FakeSubDevice = FakeSubDevice()
-            #self.pulse: PulseBlock = PulseBlock()
-            
-        async def set_vals(self):
-            await self.connect(sim=True)
-            set_sim_value(self.setpoint, 5.3)
-            set_sim_value(self.egu, "unit")
-            set_sim_value(self.distance, 1.2)
-            set_sim_value(self.velocity, 6)
-            set_sim_value(self.fake_sub_device.fake_signal, 4.3)
-            
-        def sort_signal_by_phase(self, signals: dict[str, SignalRW]) -> List[dict[str, SignalRW]]:
-            phase_1 = {}
-            phase_2 = {}
-            for key, value in signals.items():
-                if value.source.endswith("units"):
-                    phase_1[key] = value
-                else:
-                    phase_2[key] = value
+    device_to_save = FakeDevice()
+    await device_to_save.connect(sim=True)
+    device_to_save.set_vals()
 
-            for phase in [phase_1, phase_2]:
-                if not len(phase):
-                    raise ValueError("Each phase must have at least one signal")
-            return [phase_1, phase_2]
-            
-    fake_device = FakeDevice()
-    await fake_device.set_vals()
-    
-    RE(bp.save(fake_device, path.join(tmp_path, "test_file")))
-    
+    RE(bp.save(device_to_save, path.join(tmp_path, "test_file")))
+
     file_path = path.join(tmp_path, "test_file.yaml")
-    
+
     assert path.exists(file_path)
-    
-                
+
+    device_to_load = FakeDevice()
+    await device_to_load.connect(sim=True)
+    RE(bp.load(device_to_load, path.join(tmp_path, "test_file")))
+    vals = await device_to_load.get_vals()
+
+    assert vals == [5.3, "unit", 1.2, 6, 4.3, 7.3]
+
+
 def test_save_passes_on_no_signals():
     pass
+
 
 def test_save_passes_on_empty_phase():
     pass
 
-def test_save_yaml_file_has_correct_values(): #including new line between phases
+
+def test_save_yaml_file_has_correct_values():  # including new line between phases
     pass
-                
-def test_save_gets_all_signals(): #eg including ones from component devices
+
+
+def test_save_gets_all_signals():  # eg including ones from component devices
     pass
 
 # ********  Tests for `grid_scan` and `rel_grid_scan` plans  ***********
@@ -561,7 +577,7 @@ def _grid_scan_position_list(args, snake_axes):
     return positions, snaking
 
 
-@pytest.mark.parametrize("args, snake_axes", [
+@ pytest.mark.parametrize("args, snake_axes", [
     # Calls using new arguments
     (("motor", 1, 2, 3,
       "motor1", 4, 5, 6,
@@ -606,7 +622,7 @@ def _grid_scan_position_list(args, snake_axes):
       "motor2", 7, 8, 9, True),
      None),
 ])
-@pytest.mark.parametrize("plan, is_relative", [
+@ pytest.mark.parametrize("plan, is_relative", [
     (bp.grid_scan, False),
     (bp.rel_grid_scan, True)
 ])
@@ -639,8 +655,7 @@ def test_grid_scans(RE, hw, args, snake_axes, plan, is_relative):
     snaking = c.start[0]["snaking"]
 
     # Generate the list of positions based on
-    positions_expected, snaking_expected = \
-        _grid_scan_position_list(args=args, snake_axes=snake_axes)
+    positions_expected, snaking_expected = _grid_scan_position_list(args=args, snake_axes=snake_axes)
 
     assert snaking == snaking_expected, \
         "The contents of the 'snaking' field in the start document "\
@@ -661,7 +676,7 @@ def test_grid_scans(RE, hw, args, snake_axes, plan, is_relative):
             err_msg=f"Expected and actual positions for the motor '{name}' don't match")
 
 
-@pytest.mark.parametrize("plan", [
+@ pytest.mark.parametrize("plan", [
     bp.grid_scan,
     bp.rel_grid_scan
 ])

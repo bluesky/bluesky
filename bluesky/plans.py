@@ -6,7 +6,7 @@ import collections
 from collections import defaultdict
 import time
 from ophyd.v2.core import Device, SignalRW
-from typing import Dict, Type
+from typing import Any, Dict, Type
 from bluesky.protocols import Savable
 import yaml
 from typing import List
@@ -2039,7 +2039,7 @@ relative_spiral = rel_spiral  # back-compat
 
 def save(device: Type[Savable], savename: str):
     """
-    Save the setup of a device by getting a list of its signals and their readback values 
+    Save the setup of a device by getting a list of its signals and their readback values
 
     Store the output to savename.yaml
 
@@ -2074,7 +2074,7 @@ def save(device: Type[Savable], savename: str):
     save into a yaml file, taking into account the phase ordering
     
     """
-
+    # TODO: change savename to save_name and change comments
     def get_and_format_signalRWs(device: Device, prefix: str):
         """Get all the signalRW's from the device and its children and store as dotted attribute names"""
 
@@ -2093,7 +2093,7 @@ def save(device: Type[Savable], savename: str):
 
     if len(signalRWs):
         phase_dicts = device.sort_signal_by_phase(signalRWs)
-        phase_outpts = []
+        phase_outputs = []
         if len(phase_dicts):
             filename = f"{savename}.yaml"
             with open(filename, "w") as file:
@@ -2101,9 +2101,9 @@ def save(device: Type[Savable], savename: str):
                     signal_name_value = {}
                     for signal_name, signal in phase.items():
                         signal_name_value[signal_name] = yield Msg('locate', signal)
-                    phase_outpts.append([signal_name_value])
+                    phase_outputs.append([signal_name_value])
 
-                yaml.dump(phase_outpts, file)
+                yaml.dump(phase_outputs, file)
 
 
 def load(device: Device, savename: str):
@@ -2112,7 +2112,7 @@ def load(device: Device, savename: str):
 
     Parameters
     ----------
-    device : Device
+    device : Savable
         list of 'readable' objects
 
     savename: String
@@ -2129,6 +2129,38 @@ def load(device: Device, savename: str):
     --------
     :func:`bluesky.plans.save`
     """
+
+    filename = f"{savename}.yaml"
+    with open(filename, "r") as file:
+        data_by_phase: List[Dict[str, Any]] = yaml.safe_load(file)
+
+        """For each phase, find the location of the SignalRW's in that phase, load them to the correct value,
+        and wait for the load to complete"""
+        for phase_number, phase in enumerate(data_by_phase):
+            for key, value in phase[0].items():
+
+                # key is subdevices.signalname, need to convert this to attributes
+                # Split key string by "." , for each string get the attrobite pf the device,
+                # Except the last which is the signal
+
+                # Get [subdevice1, subdevice2, ... signalRW_name]
+                components = key.split(".")
+                signal_name: str = components[:-1]
+
+                lowest_device = device
+
+                # If there are subdevices
+                if len(components) > 1:
+                    signal_name: str = components[-1]
+                    for attribute in components[:-1]:
+                        lowest_device = getattr(lowest_device, attribute)
+                else:
+                    signal_name: str = components[0]
+                signalRW: SignalRW = getattr(lowest_device, signal_name)
+
+                yield from bps.abs_set(signalRW, value, group=f"load-phase{phase_number}")
+
+            yield from bps.wait(f"load-phase{phase_number}")
 
     """pseduo:
     load yaml file and get a dictionary of each phase
