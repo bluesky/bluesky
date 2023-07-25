@@ -563,6 +563,9 @@ def contingency_wrapper(plan, *,
         If the plan should pause before running the clean final_plan in
         the case of an Exception.  This is intended as a debugging tool only.
     auto_raise : bool, optional
+        If the exception should be always be re-raised, reagardless of what
+        except_plan does. Note this defaults to True for backwards compatibility,
+        which is not the usual behaviour of an except statement
 
     Yields
     ------
