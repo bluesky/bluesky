@@ -1738,13 +1738,13 @@ def test_failing_describe_callback(RE, hw):
     def plan():
         yield Msg('open_run')
         try:
-            yield Msg('declare_stream', None, det,  name='primary')
-            yield Msg('create', name='primary')
+            yield Msg('declare_stream', None, det,  name='det1')
+            yield Msg('create', name='det1')
             yield Msg('read', det)
             yield Msg('save')
         finally:
-            yield Msg('declare_stream', None, det2,  name='primary2')
-            yield Msg('create', name="primary2")
+            yield Msg('declare_stream', None, det2,  name='det2')
+            yield Msg('create', name="det2")
             yield Msg('read', det2)
             yield Msg('save')
         yield Msg('close_run')
