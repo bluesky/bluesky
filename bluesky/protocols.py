@@ -316,13 +316,15 @@ class Locatable(Movable, Protocol):
         """
         ...
 
+
 @runtime_checkable
 class Savable(Protocol):
     @abstractmethod
     def sort_signal_by_phase(self, signals) -> List:
-        """Get the logic of the ordering of the save/loading phases for a device
+        """Order a devices' signalRWs into phases for saving and loading
         """
         ...
+
 
 @runtime_checkable
 class Flyable(HasName, Protocol):

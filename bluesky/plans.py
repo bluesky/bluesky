@@ -2046,7 +2046,7 @@ def save(device: Type[Savable], savename: str):
     Parameters
     ----------
     device : Savable
-        Ophyd device which implements the get_phase_logic method.
+        Ophyd device which implements the sort_signal_by_phase method.
 
     savename: String
         name of yaml file
@@ -2074,10 +2074,9 @@ def save(device: Type[Savable], savename: str):
     save into a yaml file, taking into account the phase ordering
     
     """
-    # TODO: change savename to save_name and change comments
-    def get_and_format_signalRWs(device: Device, prefix: str):
-        """Get all the signalRW's from the device and its children and store as dotted attribute names"""
 
+    def find_all_signalRWs(device: Device, prefix: str):
+        """Get all the signalRW's from the device and store with their dotted attribute paths"""
         for attr_name, attr in device.children:
             dot = ""
             # Place a dot inbetween the uppwer and lower class. Don't do this for highest level class.
@@ -2086,23 +2085,35 @@ def save(device: Type[Savable], savename: str):
             dot_path = f"{prefix}{dot}{attr_name}"
             if type(attr) is SignalRW:
                 signalRWs[dot_path] = attr
-            get_and_format_signalRWs(attr, prefix=dot_path)
+            find_all_signalRWs(attr, prefix=dot_path)
 
     signalRWs: Dict[str, SignalRW] = {}
-    get_and_format_signalRWs(device, "")
+    find_all_signalRWs(device, "")
 
     if len(signalRWs):
-        phase_dicts = device.sort_signal_by_phase(signalRWs)
-        phase_outputs = []
+
+        # Same as signalRWs, but ordered by phase
+        phase_dicts: List[Dict[str, SignalRW]] = device.sort_signal_by_phase(signalRWs)
+
+        # Locate all signals in parallel
+        signals_to_locate: List[SignalRW] = []
         if len(phase_dicts):
+            for phase in phase_dicts:
+                signals_to_locate.extend(phase.values())
+            signal_values = yield Msg('locate', *signals_to_locate)
+
+            # For each phase, save a dictionary containing the phases dotted signalRW paths and their values
+            phase_outputs: List[Dict[str, Any]] = []
+            signal_value_index = 0
+            for phase in phase_dicts:
+                signal_name_values: Dict[str, Any] = {}
+                for signal_name in phase.keys():
+                    signal_name_values[signal_name] = signal_values[signal_value_index]
+                    signal_value_index += 1
+                phase_outputs.append(signal_name_values)
+
             filename = f"{savename}.yaml"
             with open(filename, "w") as file:
-                for phase in phase_dicts:
-                    signal_name_value = {}
-                    for signal_name, signal in phase.items():
-                        signal_name_value[signal_name] = yield Msg('locate', signal)
-                    phase_outputs.append([signal_name_value])
-
                 yaml.dump(phase_outputs, file)
 
 
@@ -2137,7 +2148,7 @@ def load(device: Device, savename: str):
         """For each phase, find the location of the SignalRW's in that phase, load them to the correct value,
         and wait for the load to complete"""
         for phase_number, phase in enumerate(data_by_phase):
-            for key, value in phase[0].items():
+            for key, value in phase.items():
 
                 # key is subdevices.signalname, need to convert this to attributes
                 # Split key string by "." , for each string get the attrobite pf the device,
