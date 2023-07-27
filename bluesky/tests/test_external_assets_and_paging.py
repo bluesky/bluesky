@@ -17,13 +17,13 @@ from bluesky.protocols import (
 
 
 def read_Readable(self) -> Dict[str, Reading]:
-    return dict(x=dict(value=1.2, timestamp=0.0))
+    return dict(det2=dict(value=1.2, timestamp=0.0))
 
 
 def describe_Readable(self) -> Dict[str, DataKey]:
     return dict(
-        y=dict(source="dummy", dtype="number", shape=[], external="STREAM:"),
-        x=dict(source="dummy", dtype="number", shape=[])
+        det1=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),
+        det2=dict(source="hw2", dtype="number", shape=[])
     )
 
 
@@ -36,7 +36,7 @@ def collect_asset_docs_Resource(self) -> Iterator[Asset]:
         uid=new_uid(),
     )
 
-    return iter([("resource", resource)])
+    yield "resource", resource
 
 
 def collect_asset_docs_Datum(self) -> Iterator[Asset]:
@@ -45,7 +45,7 @@ def collect_asset_docs_Datum(self) -> Iterator[Asset]:
         resource="uid_of_that_resource",
         datum_kwargs={"some_argument": 1234},
     )
-    return iter([("datum", datum)])
+    yield "datum", datum
 
 
 def collect_asset_docs_StreamResource(self) -> Iterator[Asset]:
@@ -56,7 +56,7 @@ def collect_asset_docs_StreamResource(self) -> Iterator[Asset]:
         spec=".hdf5",
         uid=new_uid(),
     )
-    return iter([("stream_resource", stream_resource)])
+    yield "stream_resource", stream_resource
 
 
 def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
@@ -65,11 +65,11 @@ def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
         block_idx=32,
         stream_resource=new_uid(),
         uid=new_uid(),
-        data_keys=["y"],
+        data_keys=["det2"],
         seq_nums={"a": 12},
         indices={"b", 1},
     )
-    return iter([("stream_datum", stream_datum)])
+    yield "stream_datum", stream_datum
 
 
 @pytest.mark.parametrize(
@@ -105,8 +105,8 @@ def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
 
 def describe_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
     data_keys = {
-        str(x): DataKey(shape=[1], source="a", dtype="string")
-        for x in ["x", "y", "z"]
+        str(det): DataKey(shape=[], source="stream1", dtype="string")
+        for det in ["det1", "det2", "det3"]
     }
 
     return data_keys
@@ -114,11 +114,14 @@ def describe_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
 
 def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
     def timestamps():
-        return {str(x): [x] for x in ["x", "y", "z"]}
+        return {"det1": [1.1, 1.2], "det2": [2.2, 2.3], "det3": [3.3, 3.4]}
+
+    def data():
+        return {"det1": [4321, 5432], "det2": [1234, 2345], "det3": [0, 1]}
 
     partial_event_pages = [
         PartialEventPage(
-            timestamps=timestamps(), data=timestamps()
+            timestamps=timestamps(), data=data()
         )
         for x in range(7)
     ]
@@ -128,21 +131,27 @@ def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
 
 def describe_without_name(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
     data_keys = {
-        str(y): {str(x): DataKey(shape=[1], source="a", dtype="string") for x in ["x", "y", "z"]}
-        for y in chain(["primary"], range(16))
+        str(name): {
+            str(det): DataKey(shape=[], source="stream1", dtype="string") for det in ["det1", "det2", "det3"]
+        }
+        for name in chain(["primary"], range(16))
     }
     return data_keys
 
 
 def collect_Pageable_without_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
-    def timestamps(x):
-        return {str(y): [x] for y in ["x", "y", "z"]}
+
+    def timestamps():
+        return {det: [1.0] for det in ["det1", "det2", "det3"]}
+
+    def data(name):
+        return {det: [name] for det in ["det1", "det2", "det3"]}
 
     partial_event_pages = [
         PartialEventPage(
-            timestamps=timestamps(x), data=timestamps(x)
+            timestamps=timestamps(), data=data(name)
         )
-        for x in chain(["primary"], range(16))
+        for name in chain(["primary"], range(16))
     ]
 
     return partial_event_pages
@@ -150,10 +159,10 @@ def collect_Pageable_without_name(self) -> SyncOrAsync[Iterator[PartialEventPage
 
 def collect(self) -> SyncOrAsync[Iterator[PartialEvent]]:
     def timestamps(x):
-        return {"x": x + 0.1, "y": x + 0.2, "z": x + 0.3}
+        return {"det1": x + 0.1, "det2": x + 0.2, "det3": x + 0.3}
 
     def data(x):
-        return {"x": x, "y": x*2, "z": x*3}
+        return {"det1": x, "det2": x*2, "det3": x*3}
 
     partial_events = [
         PartialEvent(

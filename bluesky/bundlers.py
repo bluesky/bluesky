@@ -149,6 +149,8 @@ class RunBundler:
             maybe_update_hints(hints, obj)
             # dks is an OrderedDict. Record that order as a list.
             object_keys[obj.name] = list(dks)
+            for key in dks.keys():
+                dks[key]["object_name"] = obj.name
             data_keys.update(dks)
             config[obj.name] = {
                 "data": self._config_values_cache[obj],

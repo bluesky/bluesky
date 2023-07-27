@@ -1,5 +1,5 @@
 cycler
-event-model
+event-model@git+https://github.com/evalott100/event-model@rethinking_external_assets_2
 historydict
 msgpack
 msgpack-numpy
