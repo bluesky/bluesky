@@ -34,10 +34,10 @@ class SigNew:
         self._callbacks: List[Callback] = []
 
     def read(self) -> Dict[str, Reading]:
-        return {}
+        return {self.name: dict(value=0, timestamp=0)}
 
     def describe(self) -> Dict[str, Descriptor]:
-        return {}
+        return {self.name: dict(source="", dtype="number", shape=[])}
 
     def subscribe(self, function: Callback) -> None:
         self._callbacks.append(function)
@@ -108,6 +108,7 @@ def test_monitor(RE, ophyd):
         'seq_num': 1,
         'time': pytest.approx(time(), rel=0.1),
         'timestamps': {'a_s1': pytest.approx(time(), rel=0.1)},
+        'filled': ANY,
         'uid': ANY
     }
 

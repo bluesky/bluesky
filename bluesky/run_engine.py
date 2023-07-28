@@ -19,7 +19,7 @@ from .protocols import (Flyable, Locatable, Movable, Pausable, Readable, Stageab
 
 import concurrent
 
-from event_model import DocumentNames, schema_validators
+from event_model import DocumentNames
 from .log import logger, msg_logger, state_logger, ComposableLogAdapter
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
@@ -2511,7 +2511,8 @@ class RunEngine:
 
     def emit_sync(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
-        schema_validators[name].validate(doc)
+
+        # Process the doc, already validated against the schema in event-model
         self.dispatcher.process(name, doc)
 
     async def emit(self, name, doc):
