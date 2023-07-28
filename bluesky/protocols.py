@@ -9,8 +9,8 @@ from event_model.documents.event import PartialEvent
 from event_model.documents.event_page import PartialEventPage
 from typing import (
     Any,
-    Awaitable,
     AsyncIterator,
+    Awaitable,
     Callable,
     Dict,
     Generic,
