@@ -2065,22 +2065,11 @@ def save(device: Type[Savable], savename: str):
     :func:`bluesky.plans.load`
     """
 
-    """pseduo:
-    get all signals of device in a list 'signals'
-    
-    something = yield from Msg('locate', *signals)
-    
-    make something be a dict of {signal_name: signal_readback}
-    
-    save into a yaml file, taking into account the phase ordering
-    
-    """
-
     def find_all_signalRWs(device: Device, prefix: str):
         """Get all the signalRW's from the device and store with their dotted attribute paths"""
         for attr_name, attr in device.children:
             dot = ""
-            # Place a dot inbetween the uppwer and lower class. Don't do this for highest level class.
+            # Place a dot inbetween the upper and lower class. Don't do this for highest level class.
             if prefix:
                 dot = "."
             dot_path = f"{prefix}{dot}{attr_name}"
@@ -2103,7 +2092,7 @@ def save(device: Type[Savable], savename: str):
                 signals_to_locate.extend(phase.values())
             signal_values = yield Msg('locate', *signals_to_locate)
 
-            # The table PVs are dictionaries of np arrays. Need to convert these to lists for easy saving
+            # The table PVs are dictionaries of np arrays. Need to convert these to lists for easy saving TODO: find out proper way to deal with panda 'TABLES'
             for index, value in enumerate(signal_values):
                 if isinstance(value, dict):
                     for inner_key, inner_value in value.items():
@@ -2113,7 +2102,7 @@ def save(device: Type[Savable], savename: str):
                 elif isinstance(signal_values[index], Enum):
                     signal_values[index] = value.value
 
-            # For each phase, save a dictionary containing the phases dotted signalRW paths and their values
+            # For each phase, save a dictionary containing the phases' dotted signalRW paths and their values
             phase_outputs: List[Dict[str, Any]] = []
             signal_value_index = 0
             for phase in phase_dicts:
@@ -2136,7 +2125,7 @@ def load(device: Device, savename: str):
     Parameters
     ----------
     device : Savable
-        list of 'readable' objects
+        Ophyd device which implements the sort_signal_by_phase method.
 
     savename: String
         name of yaml file
@@ -2148,30 +2137,12 @@ def load(device: Device, savename: str):
     ------
     func:'bluesky.plan_stubs.abs_set
 
+    func:'
+
     See Also
     --------
     :func:`bluesky.plans.save`
     """
-
-    # def construct_numpy_array(loader, node):
-    #     data = loader.construct_yaml_binary(node)
-    #     return np.frombuffer(data, dtype=np.int32)
-
-    # def construct_numpy_dtype(loader, node):
-    #     args = loader.construct_yaml_seq(node)
-    #     if len(args) == 0:
-    #         # If the YAML sequence is empty, it means dtype is void, return an empty dtype.
-    #         return np.dtype([])
-    #     else:
-    #         # If the YAML sequence has elements, construct the dtype using them.
-    #         return np.dtype(args[0])
-
-    # def numpy_representer(dumper, data):
-    #     return dumper.represent_scalar(u'tag:yaml.org,2002:binary', data.tobytes())
-
-    # yaml.add_constructor(u'tag:yaml.org,2002:binary', construct_numpy_array)
-    # yaml.add_constructor(u'tag:yaml.org,2002:seq', construct_numpy_dtype)
-    # yaml.add_representer(np.ndarray, numpy_representer)
 
     filename = f"{savename}.yaml"
     with open(filename, "r") as file:
@@ -2182,19 +2153,13 @@ def load(device: Device, savename: str):
         for phase_number, phase in enumerate(data_by_phase):
             for key, value in phase.items():
 
-                # key is subdevices.signalname, need to convert this to attributes
-                # Split key string by "." , for each string get the attrobite pf the device,
-                # Except the last which is the signal
-
-                # Get [subdevice1, subdevice2, ... signalRW_name]
+                # Key is subdevices_x.subdevices_x+1.etc.signalname. First get the attribute hierarchy
                 components = key.split(".")
-                signal_name: str = components[:-1]
-
                 lowest_device = device
 
                 # If there are subdevices
                 if len(components) > 1:
-                    signal_name: str = components[-1]
+                    signal_name: str = components[-1]  # Last string is the signal name
                     for attribute in components[:-1]:
                         lowest_device = getattr(lowest_device, attribute)
                 else:
@@ -2204,21 +2169,3 @@ def load(device: Device, savename: str):
                 yield from bps.abs_set(signalRW, value, group=f"load-phase{phase_number}")
 
             yield from bps.wait(f"load-phase{phase_number}")
-
-    """pseduo:
-    load yaml file and get a dictionary of each phase
-    
-    do an abs_set to get each signal matching the readback in phase x
-    
-    wait for phase x to finish, then repeat for next phase until done
-    
-    """
-    pass
-
-
-"""tests:
-
-
-
-
-"""
