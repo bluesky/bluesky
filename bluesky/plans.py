@@ -1,3 +1,4 @@
+from enum import Enum
 import sys
 import inspect
 from itertools import chain, zip_longest
@@ -2102,6 +2103,16 @@ def save(device: Type[Savable], savename: str):
                 signals_to_locate.extend(phase.values())
             signal_values = yield Msg('locate', *signals_to_locate)
 
+            # The table PVs are dictionaries of np arrays. Need to convert these to lists for easy saving
+            for index, value in enumerate(signal_values):
+                if isinstance(value, dict):
+                    for inner_key, inner_value in value.items():
+                        if isinstance(inner_value, np.ndarray):
+                            value[inner_key] = inner_value.tolist()
+                # Convert enums to their values
+                elif isinstance(signal_values[index], Enum):
+                    signal_values[index] = value.value
+
             # For each phase, save a dictionary containing the phases dotted signalRW paths and their values
             phase_outputs: List[Dict[str, Any]] = []
             signal_value_index = 0
@@ -2110,6 +2121,7 @@ def save(device: Type[Savable], savename: str):
                 for signal_name in phase.keys():
                     signal_name_values[signal_name] = signal_values[signal_value_index]
                     signal_value_index += 1
+
                 phase_outputs.append(signal_name_values)
 
             filename = f"{savename}.yaml"
@@ -2141,9 +2153,29 @@ def load(device: Device, savename: str):
     :func:`bluesky.plans.save`
     """
 
+    # def construct_numpy_array(loader, node):
+    #     data = loader.construct_yaml_binary(node)
+    #     return np.frombuffer(data, dtype=np.int32)
+
+    # def construct_numpy_dtype(loader, node):
+    #     args = loader.construct_yaml_seq(node)
+    #     if len(args) == 0:
+    #         # If the YAML sequence is empty, it means dtype is void, return an empty dtype.
+    #         return np.dtype([])
+    #     else:
+    #         # If the YAML sequence has elements, construct the dtype using them.
+    #         return np.dtype(args[0])
+
+    # def numpy_representer(dumper, data):
+    #     return dumper.represent_scalar(u'tag:yaml.org,2002:binary', data.tobytes())
+
+    # yaml.add_constructor(u'tag:yaml.org,2002:binary', construct_numpy_array)
+    # yaml.add_constructor(u'tag:yaml.org,2002:seq', construct_numpy_dtype)
+    # yaml.add_representer(np.ndarray, numpy_representer)
+
     filename = f"{savename}.yaml"
     with open(filename, "r") as file:
-        data_by_phase: List[Dict[str, Any]] = yaml.safe_load(file)
+        data_by_phase: List[Dict[str, Any]] = yaml.full_load(file)
 
         """For each phase, find the location of the SignalRW's in that phase, load them to the correct value,
         and wait for the load to complete"""

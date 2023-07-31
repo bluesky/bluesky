@@ -397,9 +397,9 @@ def test_rd_device(hw, RE, kind):
 class FakeDevice(Device, Savable):
 
     def __init__(self):
-        self.setpoint: SignalRW = epics_signal_rw(float, "Setpoint_units")
-        self.distance: SignalRW = epics_signal_rw(float, "Readback_units")
-        self.velocity: SignalRW = epics_signal_rw(int, "5_units")
+        self.setpoint: SignalRW = epics_signal_rw(float, "Setpoint_UNITS")
+        self.distance: SignalRW = epics_signal_rw(float, "Readback_UNITS")
+        self.velocity: SignalRW = epics_signal_rw(int, "5_UNITS")
         self.egu: SignalRW = epics_signal_rw(str, "egu")
         self.fake_sub_device: FakeSubDevice = FakeSubDevice()
         self.fake_sub_device_2: FakeSubDevice = FakeSubDevice()
@@ -421,7 +421,7 @@ class FakeDevice(Device, Savable):
         phase_1 = {}
         phase_2 = {}
         for key, value in signals.items():
-            if value.source.endswith("units"):
+            if value.source.endswith("UNITS"):
                 phase_1[key] = value
             else:
                 phase_2[key] = value
