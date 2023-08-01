@@ -1,10 +1,4 @@
-try:
-    from typing_extensions import Literal, Protocol, TypedDict, runtime_checkable
-except ImportError:
-    from typing import Literal, Protocol, TypedDict, runtime_checkable
-
 from abc import abstractmethod
-from asyncio import CancelledError
 from typing import (
     Any,
     Awaitable,
@@ -13,13 +7,18 @@ from typing import (
     Generic,
     Iterator,
     List,
+    Literal,
     Optional,
+    Protocol,
     Sequence,
     Tuple,
     Type,
     TypeVar,
     Union,
+    runtime_checkable,
 )
+
+from typing_extensions import TypedDict
 
 
 # TODO: these are not placed in Events by RE yet
@@ -142,8 +141,6 @@ Asset = Union[
 T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
 
-StatusException = Union[Exception, CancelledError]
-
 
 @runtime_checkable
 class Status(Protocol):
@@ -159,7 +156,7 @@ class Status(Protocol):
         ...
 
     @abstractmethod
-    def exception(self, timeout: Optional[float] = 0.0) -> Optional[StatusException]:
+    def exception(self, timeout: Optional[float] = 0.0) -> Optional[BaseException]:
         ...
 
     @property

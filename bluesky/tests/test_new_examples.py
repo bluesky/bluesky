@@ -98,8 +98,8 @@ import threading
      (trigger, ('det',), {}, [Msg('trigger', 'det', group=None)]),
      (trigger, ('det',), {'group': 'A'}, [Msg('trigger', 'det', group='A')]),
      (sleep, (2,), {}, [Msg('sleep', None, 2)]),
-     (wait, (), {}, [Msg('wait', None, group=None)]),
-     (wait, ('A',), {}, [Msg('wait', None, group='A')]),
+     (wait, (), {}, [Msg('wait', None, group=None, timeout=None)]),
+     (wait, ('A',), {}, [Msg('wait', None, group='A', timeout=None)]),
      (checkpoint, (), {}, [Msg('checkpoint')]),
      (clear_checkpoint, (), {}, [Msg('clear_checkpoint')]),
      (pause, (), {}, [Msg('pause', None, defer=False)]),
@@ -688,6 +688,7 @@ def test_trigger_and_read(hw):
                 Msg('create', name='primary'), Msg('read', det), Msg('save')]
     for msg in msgs:
         msg.kwargs.pop('group', None)
+        msg.kwargs.pop('timeout', None)
     assert msgs == expected
 
     msgs = list(trigger_and_read([det], 'custom'))
@@ -695,6 +696,7 @@ def test_trigger_and_read(hw):
                 Msg('read', det), Msg('save')]
     for msg in msgs:
         msg.kwargs.pop('group', None)
+        msg.kwargs.pop('timeout', None)
     assert msgs == expected
 
 

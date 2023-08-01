@@ -518,7 +518,7 @@ def test_plotting_hints(RE, hw, db):
 
 def test_broken_table():
     start_doc, descriptor_factory, *_ = compose_run()
-    desc, compose_event, _ = descriptor_factory(
+    desc, compose_event, *_ = descriptor_factory(
         name="primary",
         data_keys={
             "x": {"dtype": "integer", "source": "", "shape": []},

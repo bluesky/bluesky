@@ -5,6 +5,7 @@
 '''
 from cycler import cycler
 from datetime import datetime
+from functools import partial
 from io import StringIO
 import itertools
 import numpy as np
@@ -39,7 +40,9 @@ class BestEffortCallback(QtAwareCallback):
         self._baseline_enabled = True
         self._plots_enabled = True
         # axes supplied from outside
-        self._fig_factory = fig_factory if fig_factory is not None else plt.figure
+        self._fig_factory = (
+            fig_factory if fig_factory is not None else partial(plt.figure, layout='constrained')
+        )
         # maps descriptor uid to dict which maps data key to LivePlot instance
         self._live_plots = {}
         self._live_grids = {}
@@ -324,10 +327,6 @@ class BestEffortCallback(QtAwareCallback):
             else:
                 raise NotImplementedError("we do not support 3D+ in BEC yet "
                                           "(and it should have bailed above)")
-            try:
-                fig.tight_layout()
-            except ValueError:
-                pass
 
     def descriptor(self, doc):
         self._descriptors[doc['uid']] = doc

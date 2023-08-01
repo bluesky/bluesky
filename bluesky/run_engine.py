@@ -19,7 +19,7 @@ from .protocols import (Flyable, Locatable, Movable, Pausable, Readable, Stageab
 
 import concurrent
 
-from event_model import DocumentNames, schema_validators
+from event_model import DocumentNames
 from .log import logger, msg_logger, state_logger, ComposableLogAdapter
 from super_state_machine.machines import StateMachine
 from super_state_machine.extras import PropertyMachine
@@ -1733,9 +1733,12 @@ class RunEngine:
                'This must work multiple times'
 
         """
+
         futs, = msg.args
         futs = [asyncio.ensure_future(f()) for f in futs]
-        await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        _, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
+        if pending:
+            raise TimeoutError("Plan failed to complete in the specified time")
 
     async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
@@ -2198,7 +2201,7 @@ class RunEngine:
                     # the information these encapsulate to create a progress
                     # bar.
                     self.waiting_hook(status_objs)
-                await self._wait_for(Msg('wait_for', None, futs))
+                await self._wait_for(Msg('wait_for', None, futs, timeout=msg.kwargs.get("timeout", None)))
             finally:
                 if self.waiting_hook is not None:
                     # Notify the waiting_hook function that we have moved on by
@@ -2508,7 +2511,8 @@ class RunEngine:
 
     def emit_sync(self, name, doc):
         "Process blocking callbacks and schedule non-blocking callbacks."
-        schema_validators[name].validate(doc)
+
+        # Process the doc, already validated against the schema in event-model
         self.dispatcher.process(name, doc)
 
     async def emit(self, name, doc):
@@ -2612,13 +2616,12 @@ class Dispatcher:
         --------
         :meth:`Dispatcher.subscribe`
         """
-        for private_token in self._token_mapping[token]:
+        for private_token in self._token_mapping.pop(token, []):
             self.cb_registry.disconnect(private_token)
 
     def unsubscribe_all(self):
-        """Unregister all callbacks from the dispatcher
-        """
-        for public_token in self._token_mapping.keys():
+        """Unregister all callbacks from the dispatcher."""
+        for public_token in list(self._token_mapping.keys()):
             self.unsubscribe(public_token)
 
     @property

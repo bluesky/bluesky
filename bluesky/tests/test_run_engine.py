@@ -21,7 +21,7 @@ from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
 from bluesky.plans import (count, grid_scan)
-from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint, declare_stream)
+from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint, declare_stream, wait)
 from bluesky.preprocessors import (finalize_wrapper, run_decorator,
                                    reset_positions_decorator,
                                    run_wrapper, rewindable_wrapper,
@@ -1573,7 +1573,7 @@ def test_num_events(RE, hw, db):
     else:
         uid1 = rs1[0]
     h = db[uid1]
-    assert h.stop['num_events'] == {}
+    assert h.stop['num_events'] == {'primary': 0}
 
     rs2 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1592,7 +1592,7 @@ def test_num_events(RE, hw, db):
     else:
         uid3 = rs3[0]
     h = db[uid3]
-    assert h.stop['num_events'] == {'baseline': 2}
+    assert h.stop['num_events'] == {'primary': 0, 'baseline': 2}
 
     rs4 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1723,6 +1723,7 @@ def test_drop(RE, hw):
 
 
 def test_failing_describe_callback(RE, hw):
+
     class TestException(Exception):
         pass
     det = hw.det
@@ -1737,13 +1738,13 @@ def test_failing_describe_callback(RE, hw):
     def plan():
         yield Msg('open_run')
         try:
-            yield Msg('declare_stream', None, det,  name='primary')
-            yield Msg('create', name='primary')
+            yield Msg('declare_stream', None, det,  name='det1')
+            yield Msg('create', name='det1')
             yield Msg('read', det)
             yield Msg('save')
         finally:
-            yield Msg('declare_stream', None, det2,  name='primary')
-            yield Msg('create', name='primary')
+            yield Msg('declare_stream', None, det2,  name='det2')
+            yield Msg('create', name="det2")
             yield Msg('read', det2)
             yield Msg('save')
         yield Msg('close_run')
@@ -1833,3 +1834,39 @@ def test_thread_name(RE):
 
     d = MockDevice()
     RE([Msg("trigger", d)])
+
+
+def test_unsubscribe(RE):
+    def foo(name, doc):
+        ...
+
+    for j in range(15):
+        cid = RE.subscribe(foo)
+        RE.unsubscribe(cid)
+
+    assert len(RE.dispatcher._token_mapping) == 0
+
+
+@pytest.mark.parametrize("set_finished", [True, False])
+def test_wait_with_timeout(set_finished, RE):
+    from ophyd import StatusBase
+    from ophyd.device import Device
+
+    class MockDevice(Device):
+        def stage(self):
+            status = StatusBase()
+            if set_finished:
+                status.set_finished()
+            return status
+
+    mock_device = MockDevice(name='mock_device')
+
+    def plan():
+        yield Msg('stage', mock_device, group='test_group')
+        yield from wait(group="test_group", timeout=0.1)
+
+    if set_finished:
+        RE(plan())
+    else:
+        with pytest.raises(TimeoutError):
+            RE(plan())
