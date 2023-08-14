@@ -738,7 +738,12 @@ class RunBundler:
             )
 
     async def _collect_events(
-        self, collect_obj, local_descriptors, return_payload: bool, stream: bool, message_stream_name: str
+        self,
+        collect_obj: EventCollectable,
+        local_descriptors,
+        return_payload: bool,
+        stream: bool,
+        message_stream_name: str
     ):
         event_list: List[PartialEvent] = []
         payload = []
@@ -825,7 +830,7 @@ class RunBundler:
         """
 
         collect_obj = check_supports(msg.obj, Collectable)
-        assert not (isinstance(collect_obj, EventCollectable) and isinstance(collect_obj, EventPageCollectable)),\
+        assert not (isinstance(collect_obj, EventCollectable) and isinstance(collect_obj, EventPageCollectable)), \
             "collect() was called for a device which is both EventCollectable and EventPageCollectable. "\
             "If you want to have an EventCollectable device format only some events as event_pages "\
             "then use `stream=False`."

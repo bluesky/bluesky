@@ -62,7 +62,6 @@ def collect_asset_docs_StreamResource(self) -> Iterator[Asset]:
 def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
 
     stream_datum = StreamDatum(
-        block_idx=32,
         stream_resource=new_uid(),
         uid=new_uid(),
         data_keys=["det2"],
