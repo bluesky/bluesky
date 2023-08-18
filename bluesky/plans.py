@@ -5,8 +5,8 @@ import time
 from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
-from typing import (Any, Dict, List, Optional, Union, Tuple)
-from collections.abc import Callable, Generator, Iterable
+from typing import Any, Dict, List, Optional, Union, Tuple
+from typing import Callable, Generator, Iterable
 
 import numpy as np
 
@@ -26,12 +26,13 @@ from .protocols import Readable, Movable, Flyable
 type_detectors = Union[List[Readable], Tuple[Readable]]
 type_metadata = Optional[Dict[str, Any]]
 type_number = Union[float, int]
+type_msg_gen = Generator[Msg, None, None]
 
-type_per_step = Optional[Callable[[type_detectors, Movable, type_number], Generator[Msg]]]
+type_per_step = Optional[Callable[[type_detectors, Movable, type_number], type_msg_gen]]
 type_one_nd_step = Optional[
     Callable[
         [type_detectors, Dict[Any, Any], Dict[Any, Any], Callable[[type_detectors, Optional[str]],
-                                                                  Generator[Msg]]], Generator[Msg]]
+                                                                  type_msg_gen]], type_msg_gen]
 ]
 
 
@@ -40,7 +41,7 @@ def count(
     num: int = 1,
     delay: Optional[Union[Iterable[type_number], type_number]] = None,
     *,
-    per_shot: Optional[Callable[[type_detectors], Generator[Msg]]] = None,
+    per_shot: Optional[Callable[[type_detectors], type_msg_gen]] = None,
     md: type_metadata = None
 ):
     """
@@ -2086,7 +2087,7 @@ def rel_spiral_square(
 def ramp_plan(
     go_plan,  # Do not type annotate this.
     monitor_sig: Readable,
-    inner_plan_func: Callable[[], Generator[Msg]],
+    inner_plan_func: Callable[[], type_msg_gen],
     take_pre_data: bool = True,
     timeout: Optional[type_number] = None,
     period: Optional[type_number] = None,
