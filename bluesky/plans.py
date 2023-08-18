@@ -28,7 +28,12 @@ type_metadata = Optional[Dict[str, Any]]
 type_number = Union[float, int]
 
 type_per_step = Optional[Callable[[type_detectors, Movable, type_number], Generator[Msg]]]
-type_one_nd_step = Optional[Callable[[type_detectors, Dict[Any, Any], Dict[Any, Any], Callable[[type_detectors, Optional[str]], Generator[Msg]]], Generator[Msg]]]
+type_one_nd_step = Optional[
+    Callable[
+        [type_detectors, Dict[Any, Any], Dict[Any, Any], Callable[[type_detectors, Optional[str]],
+                                                                  Generator[Msg]]], Generator[Msg]]
+]
+
 
 def count(
     detectors: type_detectors,
