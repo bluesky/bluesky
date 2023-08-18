@@ -5,8 +5,8 @@ import time
 from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
-from typing import (Any, Callable, Dict, Generator, Iterable, List, Optional,
-                    Union)
+from typing import (Any, Dict, List, Optional, Union, Tuple)
+from collections.abc import Callable, Generator, Iterable
 
 import numpy as np
 
@@ -21,15 +21,22 @@ from . import plan_stubs as bps
 from . import preprocessors as bpp
 from . import utils
 from .utils import Msg, get_hinted_fields
+from .protocols import Readable, Movable, Flyable
 
+type_detectors = Union[List[Readable], Tuple[Readable]]
+type_metadata = Optional[Dict[str, Any]]
+type_number = Union[float, int]
+
+type_per_step = Optional[Callable[[type_detectors, Movable, type_number], Generator[Msg]]]
+type_one_nd_step = Optional[Callable[[type_detectors, Dict[Any, Any], Dict[Any, Any], Callable[[type_detectors, Optional[str]], Generator[Msg]]], Generator[Msg]]]
 
 def count(
-    detectors: List[Any],
+    detectors: type_detectors,
     num: int = 1,
-    delay: Union[Iterable[Union[float, int]], Union[float, int]] = None,
+    delay: Optional[Union[Iterable[type_number], type_number]] = None,
     *,
-    per_shot: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_shot: Optional[Callable[[type_detectors], Generator[Msg]]] = None,
+    md: type_metadata = None
 ):
     """
     Take one or more readings from detectors.
@@ -43,7 +50,7 @@ def count(
 
         If None, capture data until canceled
     delay : iterable or scalar, optional
-        Time delay in seconds between successive readings; default is 0.
+        Time delay in seconds between successive readings; default is None.
     per_shot : callable, optional
         hook for customizing action of inner loop (messages per step)
         Expected signature ::
@@ -90,10 +97,10 @@ def count(
 
 
 def list_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     *args,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_per_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over one or more variables in steps simultaneously (inner product).
@@ -195,10 +202,10 @@ def list_scan(
 
 
 def rel_list_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     *args,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_per_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over one variable in steps relative to current position.
@@ -247,10 +254,10 @@ def rel_list_scan(
 
 
 def list_grid_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     *args,
     snake_axes: bool = False,
-    per_step: Optional[Callable] = None,
+    per_step: type_one_nd_step = None,
     md: Optional[Dict[str, Any]] = None
 ):
     """
@@ -327,11 +334,11 @@ def list_grid_scan(
 
 
 def rel_list_grid_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     *args,
     snake_axes: bool = False,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over a mesh; each motor is on an independent trajectory. Each point is
@@ -389,14 +396,14 @@ def rel_list_grid_scan(
 
 
 def _scan_1d(
-    detectors: List[Any],
-    motor: Any,
-    start: float,
-    stop: float,
+    detectors: type_detectors,
+    motor: Movable,
+    start: type_number,
+    stop: type_number,
     num: int,
     *,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_per_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over one variable in equally spaced steps.
@@ -460,14 +467,14 @@ def _scan_1d(
 
 
 def _rel_scan_1d(
-    detectors: List[Any],
-    motor: Any,
-    start: float,
-    stop: float,
+    detectors: type_detectors,
+    motor: Movable,
+    start: type_number,
+    stop: type_number,
     num: int,
     *,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_per_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over one variable in equally spaced steps relative to current positon.
@@ -508,14 +515,14 @@ def _rel_scan_1d(
 
 
 def log_scan(
-    detectors: List[Any],
-    motor: Any,
-    start: float,
-    stop: float,
+    detectors: type_detectors,
+    motor: Movable,
+    start: type_number,
+    stop: type_number,
     num: int,
     *,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_per_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over one variable in log-spaced steps.
@@ -582,14 +589,14 @@ def log_scan(
 
 
 def rel_log_scan(
-    detectors: List[Any],
-    motor: Any,
-    start: float,
-    stop: float,
+    detectors: type_detectors,
+    motor: Movable,
+    start: type_number,
+    stop: type_number,
     num: int,
     *,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_per_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over one variable in log-spaced steps relative to current position.
@@ -630,18 +637,18 @@ def rel_log_scan(
 
 
 def adaptive_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     target_field: str,
-    motor: Any,
-    start: float,
-    stop: float,
-    min_step: float,
-    max_step: float,
-    target_delta: float,
+    motor: Movable,
+    start: type_number,
+    stop: type_number,
+    min_step: type_number,
+    max_step: type_number,
+    target_delta: type_number,
     backstep: bool,
-    threshold: float = 0.8,
+    threshold: type_number = 0.8,
     *,
-    md: Optional[Dict[str, Any]] = None
+    md: type_metadata = None
 ):
     """
     Scan over one variable with adaptively tuned step size.
@@ -755,18 +762,18 @@ def adaptive_scan(
 
 
 def rel_adaptive_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     target_field: str,
-    motor: Any,
-    start: float,
-    stop: float,
-    min_step: float,
-    max_step: float,
-    target_delta: float,
+    motor: Movable,
+    start: type_number,
+    stop: type_number,
+    min_step: type_number,
+    max_step: type_number,
+    target_delta: type_number,
     backstep: bool,
-    threshold: float = 0.8,
+    threshold: type_number = 0.8,
     *,
-    md: Optional[Dict[str, Any]] = None
+    md: type_metadata = None
 ):
     """
     Relative scan over one variable with adaptively tuned step size.
@@ -815,17 +822,17 @@ def rel_adaptive_scan(
 
 
 def tune_centroid(
-    detectors: List[Any],
+    detectors: type_detectors,
     signal: str,
-    motor: Any,
-    start: float,
-    stop: float,
-    min_step: float,
+    motor: Movable,
+    start: type_number,
+    stop: type_number,
+    min_step: type_number,
     num: int = 10,
-    step_factor: float = 3.0,
+    step_factor: type_number = 3.0,
     snake: bool = False,
     *,
-    md: Optional[Dict[str, Any]] = None
+    md: type_metadata = None
 ):
     r"""
     plan: tune a motor to the centroid of signal(motor)
@@ -966,11 +973,11 @@ def tune_centroid(
 
 
 def scan_nd(
-    detectors: List[Any],
+    detectors: type_detectors,
     cycler: Any,
     *,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over an arbitrary N-dimensional trajectory.
@@ -1106,11 +1113,11 @@ def scan_nd(
 
 
 def inner_product_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     num: int,
     *args,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
@@ -1120,11 +1127,11 @@ def inner_product_scan(
 
 
 def scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     *args,
     num: Optional[int] = None,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over one multi-motor trajectory.
@@ -1224,11 +1231,11 @@ def scan(
 
 
 def grid_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     *args,
-    snake_axes: Optional[Union[bool, Iterable[Any]]] = None,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    snake_axes: Optional[Union[bool, Iterable[Movable]]] = None,
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over a mesh; each motor is on an independent trajectory.
@@ -1406,11 +1413,11 @@ def grid_scan(
 
 
 def rel_grid_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     *args,
-    snake_axes: Optional[Union[bool, Iterable[Any]]] = None,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    snake_axes: Optional[Union[bool, Iterable[Movable]]] = None,
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over a mesh relative to current position.
@@ -1468,11 +1475,11 @@ def rel_grid_scan(
 
 
 def relative_inner_product_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     num: int,
     *args,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
@@ -1482,11 +1489,11 @@ def relative_inner_product_scan(
 
 
 def rel_scan(
-    detectors: List[Any],
+    detectors: type_detectors,
     *args,
     num: Optional[int] = None,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     """
     Scan over one multi-motor trajectory relative to current position.
@@ -1537,11 +1544,11 @@ def rel_scan(
 
 
 def tweak(
-    detector: Any,
+    detector: Readable,
     target_field: str,
-    motor: Any,
-    step: float,
-    md: Optional[Dict[str, Any]] = None
+    motor: Movable,
+    step: type_number,
+    md: type_metadata = None
 ):
     """
     Move and motor and read a detector with an interactive prompt.
@@ -1620,20 +1627,20 @@ def tweak(
 
 
 def spiral_fermat(
-    detectors: List[Any],
-    x_motor: Any,
-    y_motor: Any,
-    x_start: float,
-    y_start: float,
-    x_range: float,
-    y_range: float,
-    dr: float,
-    factor: float,
+    detectors: type_detectors,
+    x_motor: Movable,
+    y_motor: Movable,
+    x_start: type_number,
+    y_start: type_number,
+    x_range: type_number,
+    y_range: type_number,
+    dr: type_number,
+    factor: type_number,
     *,
-    dr_y: Optional[float] = None,
-    tilt: Optional[float] = 0.0,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    dr_y: Optional[type_number] = None,
+    tilt: Optional[type_number] = 0.0,
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     '''Absolute fermat spiral scan, centered around (x_start, y_start)
 
@@ -1710,18 +1717,18 @@ def spiral_fermat(
 
 
 def rel_spiral_fermat(
-    detectors: List[Any],
-    x_motor: Any,
-    y_motor: Any,
-    x_range: float,
-    y_range: float,
-    dr: float,
-    factor: float,
+    detectors: type_detectors,
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: type_number,
+    y_range: type_number,
+    dr: type_number,
+    factor: type_number,
     *,
-    dr_y: Optional[float] = None,
-    tilt: Optional[float] = 0.0,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    dr_y: Optional[type_number] = None,
+    tilt: Optional[type_number] = 0.0,
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     '''Relative fermat spiral scan
 
@@ -1775,20 +1782,20 @@ def rel_spiral_fermat(
 
 
 def spiral(
-    detectors: List[Any],
-    x_motor: Any,
-    y_motor: Any,
-    x_start: float,
-    y_start: float,
-    x_range: float,
-    y_range: float,
-    dr: float,
-    nth: float,
+    detectors: type_detectors,
+    x_motor: Movable,
+    y_motor: Movable,
+    x_start: type_number,
+    y_start: type_number,
+    x_range: type_number,
+    y_range: type_number,
+    dr: type_number,
+    nth: type_number,
     *,
-    dr_y: Optional[float] = None,
-    tilt: Optional[float] = 0.0,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    dr_y: Optional[type_number] = None,
+    tilt: Optional[type_number] = 0.0,
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     '''Spiral scan, centered around (x_start, y_start)
 
@@ -1865,18 +1872,18 @@ def spiral(
 
 
 def rel_spiral(
-    detectors: List[Any],
-    x_motor: Any,
-    y_motor: Any,
-    x_range: float,
-    y_range: float,
-    dr: float,
-    nth: float,
+    detectors: type_detectors,
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: type_number,
+    y_range: type_number,
+    dr: type_number,
+    nth: type_number,
     *,
-    dr_y: Optional[float] = None,
-    tilt: Optional[float] = 0.0,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    dr_y: Optional[type_number] = None,
+    tilt: Optional[type_number] = 0.0,
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
 
     '''Relative spiral scan
@@ -1930,18 +1937,18 @@ def rel_spiral(
 
 
 def spiral_square(
-    detectors: List[Any],
-    x_motor: Any,
-    y_motor: Any,
-    x_center: float,
-    y_center: float,
-    x_range: float,
-    y_range: float,
-    x_num: float,
-    y_num: float,
+    detectors: type_detectors,
+    x_motor: Movable,
+    y_motor: Movable,
+    x_center: type_number,
+    y_center: type_number,
+    x_range: type_number,
+    y_range: type_number,
+    x_num: type_number,
+    y_num: type_number,
     *,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     '''Absolute square spiral scan, centered around (x_center, y_center)
 
@@ -2013,16 +2020,16 @@ def spiral_square(
 
 
 def rel_spiral_square(
-    detectors: List[Any],
-    x_motor: Any,
-    y_motor: Any,
-    x_range: float,
-    y_range: float,
-    x_num: float,
-    y_num: float,
+    detectors: type_detectors,
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: type_number,
+    y_range: type_number,
+    x_num: type_number,
+    y_num: type_number,
     *,
-    per_step: Optional[Callable] = None,
-    md: Optional[Dict[str, Any]] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     '''Relative square spiral scan, centered around current (x, y) position.
 
@@ -2072,13 +2079,13 @@ def rel_spiral_square(
 
 
 def ramp_plan(
-    go_plan: Generator,
-    monitor_sig: Any,
-    inner_plan_func: Callable,
+    go_plan,  # Do not type annotate this.
+    monitor_sig: Readable,
+    inner_plan_func: Callable[[], Generator[Msg]],
     take_pre_data: bool = True,
-    timeout: Optional[float] = None,
-    period: Optional[float] = None,
-    md: Dict[str, Any] = None
+    timeout: Optional[type_number] = None,
+    period: Optional[type_number] = None,
+    md: type_metadata = None
 ):
     '''Take data while ramping one or more positioners.
 
@@ -2160,9 +2167,9 @@ def ramp_plan(
 
 
 def fly(
-    flyers: Iterable[Any],
+    flyers: Iterable[Flyable],
     *,
-    md: Dict[str, Any] = None
+    md: type_metadata = None
 ):
     """
     Perform a fly scan with one or more 'flyers'.
@@ -2196,15 +2203,15 @@ def fly(
 
 
 def x2x_scan(
-    detectors: List[Any],
-    motor1: Any,
-    motor2: Any,
-    start: float,
-    stop: float,
+    detectors: type_detectors,
+    motor1: Movable,
+    motor2: Movable,
+    start: type_number,
+    stop: type_number,
     num: int,
     *,
-    per_step: Optional[Callable] = None,
-    md: Optional[Callable] = None
+    per_step: type_one_nd_step = None,
+    md: type_metadata = None
 ):
     """
     Relatively scan over two motors in a 2:1 ratio
