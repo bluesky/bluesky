@@ -1,5 +1,5 @@
 cycler
-event-model>=1.14.0
+event-model@git+https://github.com/RAYemelyanova/event-model@740509b6581a3aa0d6b7634b924d7a6efa8e7efb
 historydict
 msgpack
 msgpack-numpy
