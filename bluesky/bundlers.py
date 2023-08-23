@@ -127,7 +127,24 @@ class RunBundler:
         self.run_is_open = False
         return doc["run_start"]
 
-    async def _prepare_stream(self, desc_key, objs_read):
+    async def _prepare_stream(self, desc_key, objs_read, md=None):
+        """Generate and emit a new descriptor document for a stream.
+
+        Parameters
+        ----------
+        desc_key : string
+            The name of the stream
+        objs_read : Iterable of objects
+            Readable objects which will be used in the stream, which will be
+            collected into the descriptor document.
+        md: optional dict of metadata
+            Dictionary of metadata to be passed to the descriptor document.
+
+        Returns
+        -------
+        descriptor_doc : dict
+            The descriptor document for the stream
+        """
         # We do not have an Event Descriptor for this set
         # so one must be created.
         data_keys = {}
@@ -153,6 +170,7 @@ class RunBundler:
             configuration=config,
             hints=hints,
             object_keys=object_keys,
+            kwargs=md
         )
         await self.emit(DocumentNames.descriptor, self._descriptors[desc_key].descriptor_doc)
         doc_logger.debug(
@@ -179,13 +197,13 @@ class RunBundler:
     async def declare_stream(self, msg):
         """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
-        stream_name = kwargs['name']
+        stream_name = kwargs.pop("name")
         assert no_obj is None
         objs = frozenset(objs)
         for obj in objs:
             await self._ensure_cached(obj)
 
-        return (await self._prepare_stream(stream_name, objs))
+        return (await self._prepare_stream(stream_name, objs, md=kwargs if kwargs else None))
 
     async def create(self, msg):
         """
@@ -416,6 +434,7 @@ class RunBundler:
         Expected message object is::
 
             Msg('save')
+            Msg('save', {"key": "value"})
         """
         if not self.bundling:
             raise IllegalMessageSequence(
@@ -451,7 +470,7 @@ class RunBundler:
 
         # we do not have the descriptor cached, make it
         if descriptor_doc is None:
-            descriptor_doc, compose_event = await self._prepare_stream(desc_key, objs_read)
+            descriptor_doc, compose_event = await self._prepare_stream(desc_key, objs_read, md=msg.kwargs or None)
             # do have the descriptor cached
         elif d_objs != objs_read:
             raise RuntimeError(

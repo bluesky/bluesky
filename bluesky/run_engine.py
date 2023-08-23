@@ -1844,6 +1844,8 @@ class RunEngine:
 
         Also note that changing the 'name' of the Event will create a new
         Descriptor document.
+
+        msg.kwargs will be injected into the resulting descriptor document.
         """
         run_key = msg.run
         try:

@@ -69,7 +69,7 @@ def create(name='primary'):
     return (yield Msg('create', name=name))
 
 
-def save():
+def save(**kwargs):
     """
     Close a bundle of readings and emit a completed Event document.
 
@@ -82,7 +82,7 @@ def save():
     --------
     :func:`bluesky.plan_stubs.create`
     """
-    return (yield Msg('save'))
+    return (yield Msg('save', **kwargs))
 
 
 def drop():
@@ -1002,7 +1002,7 @@ def wait_for(futures, **kwargs):
     return (yield Msg('wait_for', None, futures, **kwargs))
 
 
-def trigger_and_read(devices, name='primary'):
+def trigger_and_read(devices, name='primary', **md):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -1047,7 +1047,7 @@ def trigger_and_read(devices, name='primary'):
             return ret
 
         def standard_path():
-            yield from save()
+            yield from save(**md)
 
         def exception_path(exp):
             yield from drop()
