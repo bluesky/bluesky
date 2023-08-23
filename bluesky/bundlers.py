@@ -127,7 +127,7 @@ class RunBundler:
         self.run_is_open = False
         return doc["run_start"]
 
-    async def _prepare_stream(self, desc_key, objs_read, md=None):
+    async def _prepare_stream(self, desc_key, objs_read, **kwargs):
         """Generate and emit a new descriptor document for a stream.
 
         Parameters
@@ -137,8 +137,8 @@ class RunBundler:
         objs_read : Iterable of objects
             Readable objects which will be used in the stream, which will be
             collected into the descriptor document.
-        md: optional dict of metadata
-            Dictionary of metadata to be passed to the descriptor document.
+        kwargs: optional metadata
+            Metadata to be passed to the descriptor document.
 
         Returns
         -------
@@ -170,7 +170,7 @@ class RunBundler:
             configuration=config,
             hints=hints,
             object_keys=object_keys,
-            kwargs=md
+            **kwargs
         )
         await self.emit(DocumentNames.descriptor, self._descriptors[desc_key].descriptor_doc)
         doc_logger.debug(
@@ -203,7 +203,7 @@ class RunBundler:
         for obj in objs:
             await self._ensure_cached(obj)
 
-        return (await self._prepare_stream(stream_name, objs, md=kwargs if kwargs else None))
+        return (await self._prepare_stream(stream_name, objs, **kwargs))
 
     async def create(self, msg):
         """
@@ -353,7 +353,7 @@ class RunBundler:
 
         await self._ensure_cached(obj)
 
-        _, compose_event = await self._prepare_stream(name, (obj,))
+        _, compose_event = await self._prepare_stream(name, (obj,), **msg.kwargs)
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
@@ -470,7 +470,7 @@ class RunBundler:
 
         # we do not have the descriptor cached, make it
         if descriptor_doc is None:
-            descriptor_doc, compose_event = await self._prepare_stream(desc_key, objs_read, md=msg.kwargs or None)
+            descriptor_doc, compose_event = await self._prepare_stream(desc_key, objs_read, **msg.kwargs)
             # do have the descriptor cached
         elif d_objs != objs_read:
             raise RuntimeError(
@@ -764,7 +764,7 @@ class RunBundler:
             obj_set = self._descriptor_objs[name]
             if obj in obj_set:
                 del self._descriptors[name]
-                await self._prepare_stream(name, obj_set)
+                await self._prepare_stream(name, obj_set, **msg.kwargs)
                 continue
 
         await self._cache_read_config(obj)
