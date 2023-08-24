@@ -353,7 +353,7 @@ class RunBundler:
 
         await self._ensure_cached(obj)
 
-        _, compose_event = await self._prepare_stream(name, (obj,), **msg.kwargs)
+        _, compose_event = await self._prepare_stream(name, (obj,), **kwargs)
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
