@@ -1,3 +1,10 @@
+from collections import namedtuple
+from collections.abc import Iterable
+from functools import partial, reduce, wraps
+from functools import reduce
+from inspect import Parameter, Signature
+from typing import Any, Dict, Generator, Iterator, List, Optional, Callable, TypeVar, Union
+from weakref import ref, WeakKeyDictionary
 import abc
 import asyncio
 import collections.abc
@@ -12,12 +19,6 @@ import threading
 import time
 import traceback
 import types
-import uuid
-import warnings
-from collections import namedtuple
-from collections.abc import Iterable
-from functools import partial, reduce, wraps
-from inspect import Parameter, Signature
 from typing import (
     Any,
     AsyncIterable,
@@ -31,6 +32,8 @@ from typing import (
     Type,
     Union,
 )
+import uuid
+import warnings
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -90,6 +93,19 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
 
 
 MsgGenerator = Generator[Msg, Any, None]
+
+
+#: Return type of a plan, usually None. Always optional for dry-runs.
+P = TypeVar("P")
+
+#: Object usually returned from plan functions that is fed to the RunEngine
+MsgGenerator = Generator[Msg, Any, Optional[P]]
+
+#: Metadata passed from a plan to the RunEngine for embedding in a start document
+CustomPlanMetadata = Dict[str, Any]
+
+#: Scalar or iterable of values, one to be applied to each point in a scan
+ScalarOrIterable = Union[float, Iterable[float]]
 
 
 class RunEngineControlException(Exception):
