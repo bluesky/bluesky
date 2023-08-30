@@ -5,8 +5,10 @@ from functools import partial
 import collections
 from collections import defaultdict
 import time
-
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Tuple
+from cycler import Cycler
 import numpy as np
+
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
     from cytools import partition
@@ -16,13 +18,41 @@ except ImportError:
 from . import plan_patterns
 
 from . import utils
-from .utils import Msg, get_hinted_fields
+from .utils import (
+    Msg,
+    get_hinted_fields,
+    ScalarOrIterable,
+    CustomPlanMetadata,
+    MsgGenerator,
+)
 
 from . import preprocessors as bpp
 from . import plan_stubs as bps
+from .protocols import Flyable, Movable, Readable
+
+#: Plan function that can be used for each shot in a detector acquisition involving no actuation
+PerShot = Callable[[Iterable[Readable], Optional[bps.TakeReading]], MsgGenerator]
+
+#: Plan function that can be used for each step in a scan
+PerStep = Callable[
+    [
+        Iterable[Readable],
+        Mapping[Movable, Any],
+        Mapping[Movable, Any],
+        Optional[bps.TakeReading],
+    ],
+    MsgGenerator,
+]
 
 
-def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
+def count(
+    detectors: List[Readable],
+    num: Optional[int] = 1,
+    delay: Optional[ScalarOrIterable] = None,
+    *,
+    per_shot: Optional[PerShot] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Take one or more readings from detectors.
 
@@ -55,33 +85,40 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
         num_intervals = None
     else:
         num_intervals = num - 1
-    _md = {'detectors': [det.name for det in detectors],
-           'num_points': num,
-           'num_intervals': num_intervals,
-           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
-           'plan_name': 'count',
-           'hints': {}
-           }
+    _md = {
+        "detectors": [det.name for det in detectors],
+        "num_points": num,
+        "num_intervals": num_intervals,
+        "plan_args": {"detectors": list(map(repr, detectors)), "num": num},
+        "plan_name": "count",
+        "hints": {},
+    }
     _md.update(md or {})
-    _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
+    _md["hints"].setdefault("dimensions", [(("time",), "primary")])
 
     # per_shot might define a different stream, so do not predeclare primary
-    predeclare = (per_shot is None)
+    predeclare = per_shot is None
     if per_shot is None:
         per_shot = bps.one_shot
 
     @bpp.stage_decorator(detectors)
     @bpp.run_decorator(md=_md)
-    def inner_count():
+    def inner_count() -> MsgGenerator[str]:
         if predeclare:
-            yield from bps.declare_stream(*detectors, name='primary')
-        return (yield from bps.repeat(partial(per_shot, detectors),
-                                      num=num, delay=delay))
+            yield from bps.declare_stream(*detectors, name="primary")
+        return (
+            yield from bps.repeat(partial(per_shot, detectors), num=num, delay=delay)
+        )
 
     return (yield from inner_count())
 
 
-def list_scan(detectors, *args, per_step=None, md=None):
+def list_scan(
+    detectors: List[Readable],
+    *args: Tuple[Movable, List[Any]],
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one or more variables in steps simultaneously (inner product).
 
@@ -116,8 +153,10 @@ def list_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.rel_list_grid_scan`
     """
     if len(args) % 2 != 0:
-        raise ValueError("The list of arguments must contain a list of "
-                         "points for each defined motor")
+        raise ValueError(
+            "The list of arguments must contain a list of "
+            "points for each defined motor"
+        )
 
     md = md or {}  # reset md if it is None.
 
@@ -133,38 +172,45 @@ def list_scan(detectors, *args, per_step=None, md=None):
             length = len(pos_list)
         motors.append(motor)
         pos_lists.append(pos_list)
-    length_check = all(elem == list(lengths.values())[0] for elem in
-                       list(lengths.values()))
+    length_check = all(
+        elem == list(lengths.values())[0] for elem in list(lengths.values())
+    )
 
     if not length_check:
-        raise ValueError("The lengths of all lists in *args must be the same. "
-                         "However the lengths in args are : "
-                         "{}".format(lengths))
+        raise ValueError(
+            "The lengths of all lists in *args must be the same. "
+            "However the lengths in args are : "
+            "{}".format(lengths)
+        )
 
-    md_args = list(chain(*((repr(motor), pos_list)
-                           for motor, pos_list in partition(2, args))))
+    md_args = list(
+        chain(*((repr(motor), pos_list) for motor, pos_list in partition(2, args)))
+    )
     motor_names = list(lengths.keys())
 
-    _md = {'detectors': [det.name for det in detectors],
-           'motors': motor_names,
-           'num_points': length,
-           'num_intervals': length - 1,
-           'plan_args': {'detectors': list(map(repr, detectors)),
-                         'args': md_args,
-                         'per_step': repr(per_step)},
-           'plan_name': 'list_scan',
-           'plan_pattern': 'inner_list_product',
-           'plan_pattern_module': plan_patterns.__name__,
-           'plan_pattern_args': dict(args=md_args),
-           'hints': {},
-           }
+    _md = {
+        "detectors": [det.name for det in detectors],
+        "motors": motor_names,
+        "num_points": length,
+        "num_intervals": length - 1,
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "args": md_args,
+            "per_step": repr(per_step),
+        },
+        "plan_name": "list_scan",
+        "plan_pattern": "inner_list_product",
+        "plan_pattern_module": plan_patterns.__name__,
+        "plan_pattern_args": dict(args=md_args),
+        "hints": {},
+    }
     _md.update(md or {})
 
     x_fields = []
     for motor in motors:
         x_fields.extend(get_hinted_fields(motor))
 
-    default_dimensions = [(x_fields, 'primary')]
+    default_dimensions = [(x_fields, "primary")]
 
     default_hints = {}
     if len(x_fields) > 0:
@@ -172,16 +218,20 @@ def list_scan(detectors, *args, per_step=None, md=None):
 
     # now add default_hints and override any hints from the original md (if
     # exists)
-    _md['hints'] = default_hints
-    _md['hints'].update(md.get('hints', {}) or {})
+    _md["hints"] = default_hints
+    _md["hints"].update(md.get("hints", {}) or {})
 
     full_cycler = plan_patterns.inner_list_product(args)
 
-    return (yield from scan_nd(detectors, full_cycler, per_step=per_step,
-                               md=_md))
+    return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_list_scan(detectors, *args, per_step=None, md=None):
+def rel_list_scan(
+    detectors: List[Readable],
+    *args: Any,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in steps relative to current position.
 
@@ -220,7 +270,7 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
     :func:`bluesky.plans.rel_list_grid_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    _md = {'plan_name': 'rel_list_scan'}
+    _md = {"plan_name": "rel_list_scan"}
     _md.update(md or {})
 
     motors = [motor for motor, pos_list in partition(2, args)]
@@ -228,12 +278,18 @@ def rel_list_scan(detectors, *args, per_step=None, md=None):
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_relative_list_scan():
-        return (yield from list_scan(detectors, *args, per_step=per_step,
-                                     md=_md))
+        return (yield from list_scan(detectors, *args, per_step=per_step, md=_md))
+
     return (yield from inner_relative_list_scan())
 
 
-def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
+def list_grid_scan(
+    detectors: List[Readable],
+    *args: Any,
+    snake_axes: bool = False,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -281,34 +337,42 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
         md_args.extend([repr(motor), pos_list])
         motor_names.append(motor.name)
         motors.append(motor)
-    _md = {'shape': tuple(len(pos_list)
-                          for motor, pos_list in partition(2, args)),
-           'extents': tuple([min(pos_list), max(pos_list)]
-                            for motor, pos_list in partition(2, args)),
-           'snake_axes': snake_axes,
-           'plan_args': {'detectors': list(map(repr, detectors)),
-                         'args': md_args,
-                         'per_step': repr(per_step)},
-           'plan_name': 'list_grid_scan',
-           'plan_pattern': 'outer_list_product',
-           'plan_pattern_args': dict(args=md_args, snake_axes=snake_axes),
-           'plan_pattern_module': plan_patterns.__name__,
-           'motors': tuple(motor_names),
-           'hints': {},
-           }
+    _md = {
+        "shape": tuple(len(pos_list) for motor, pos_list in partition(2, args)),
+        "extents": tuple(
+            [min(pos_list), max(pos_list)] for motor, pos_list in partition(2, args)
+        ),
+        "snake_axes": snake_axes,
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "args": md_args,
+            "per_step": repr(per_step),
+        },
+        "plan_name": "list_grid_scan",
+        "plan_pattern": "outer_list_product",
+        "plan_pattern_args": dict(args=md_args, snake_axes=snake_axes),
+        "plan_pattern_module": plan_patterns.__name__,
+        "motors": tuple(motor_names),
+        "hints": {},
+    }
     _md.update(md or {})
     try:
-        _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
-                                               for m in motors])
+        _md["hints"].setdefault(
+            "dimensions", [(m.hints["fields"], "primary") for m in motors]
+        )
     except (AttributeError, KeyError):
         ...
 
-    return (yield from scan_nd(detectors, full_cycler,
-                               per_step=per_step, md=_md))
+    return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
-                       md=None):
+def rel_list_grid_scan(
+    detectors: List[Readable],
+    *args: Any,
+    snake_axes: bool = False,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory. Each point is
     relative to the current position.
@@ -350,7 +414,7 @@ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
     :func:`bluesky.plans.list_scan`
     :func:`bluesky.plans.rel_list_scan`
     """
-    _md = {'plan_name': 'rel_list_grid_scan'}
+    _md = {"plan_name": "rel_list_grid_scan"}
     _md.update(md or {})
 
     motors = [motor for motor, pos_list in partition(2, args)]
@@ -358,13 +422,25 @@ def rel_list_grid_scan(detectors, *args, snake_axes=False, per_step=None,
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_relative_list_grid_scan():
-        return (yield from list_grid_scan(detectors, *args,
-                                          snake_axes=snake_axes,
-                                          per_step=per_step, md=_md))
+        return (
+            yield from list_grid_scan(
+                detectors, *args, snake_axes=snake_axes, per_step=per_step, md=_md
+            )
+        )
+
     return (yield from inner_relative_list_grid_scan())
 
 
-def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def _scan_1d(
+    detectors: List[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps.
 
@@ -390,32 +466,37 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     --------
     :func:`bluesky.plans.rel_scan`
     """
-    _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor.name],
-           'num_points': num,
-           'num_intervals': num - 1,
-           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
-                         'motor': repr(motor),
-                         'start': start, 'stop': stop,
-                         'per_step': repr(per_step)},
-           'plan_name': 'scan',
-           'plan_pattern': 'linspace',
-           'plan_pattern_module': 'numpy',
-           'plan_pattern_args': dict(start=start, stop=stop, num=num),
-           'hints': {},
-           }
+    _md = {
+        "detectors": [det.name for det in detectors],
+        "motors": [motor.name],
+        "num_points": num,
+        "num_intervals": num - 1,
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "num": num,
+            "motor": repr(motor),
+            "start": start,
+            "stop": stop,
+            "per_step": repr(per_step),
+        },
+        "plan_name": "scan",
+        "plan_pattern": "linspace",
+        "plan_pattern_module": "numpy",
+        "plan_pattern_args": dict(start=start, stop=stop, num=num),
+        "hints": {},
+    }
     _md.update(md or {})
     try:
-        dimensions = [(motor.hints['fields'], 'primary')]
+        dimensions = [(motor.hints["fields"], "primary")]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].setdefault('dimensions', dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)
 
     if per_step is None:
         per_step = bps.one_1d_step
 
-    steps = np.linspace(**_md['plan_pattern_args'])
+    steps = np.linspace(**_md["plan_pattern_args"])
 
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
@@ -426,8 +507,16 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
     return (yield from inner_scan())
 
 
-def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None,
-                 md=None):
+def _rel_scan_1d(
+    detectors: List[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in equally spaced steps relative to current positon.
 
@@ -453,20 +542,32 @@ def _rel_scan_1d(detectors, motor, start, stop, num, *, per_step=None,
     --------
     :func:`bluesky.plans.scan`
     """
-    _md = {'plan_name': 'rel_scan'}
+    _md = {"plan_name": "rel_scan"}
     _md.update(md or {})
     # TODO read initial positions (redundantly) so they can be put in md here
 
     @bpp.reset_positions_decorator([motor])
     @bpp.relative_set_decorator([motor])
     def inner_relative_scan():
-        return (yield from _scan_1d(detectors, motor, start, stop,
-                                    num, per_step=per_step, md=_md))
+        return (
+            yield from _scan_1d(
+                detectors, motor, start, stop, num, per_step=per_step, md=_md
+            )
+        )
 
     return (yield from inner_relative_scan())
 
 
-def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
+def log_scan(
+    detectors: List[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step=None,
+    md=None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps.
 
@@ -492,47 +593,61 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     --------
     :func:`bluesky.plans.rel_log_scan`
     """
-    _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor.name],
-           'num_points': num,
-           'num_intervals': num - 1,
-           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num,
-                         'start': start, 'stop': stop, 'motor': repr(motor),
-                         'per_step': repr(per_step)},
-           'plan_name': 'log_scan',
-           'plan_pattern': 'logspace',
-           'plan_pattern_module': 'numpy',
-           'plan_pattern_args': dict(start=start, stop=stop, num=num),
-           'hints': {},
-           }
+    _md = {
+        "detectors": [det.name for det in detectors],
+        "motors": [motor.name],
+        "num_points": num,
+        "num_intervals": num - 1,
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "num": num,
+            "start": start,
+            "stop": stop,
+            "motor": repr(motor),
+            "per_step": repr(per_step),
+        },
+        "plan_name": "log_scan",
+        "plan_pattern": "logspace",
+        "plan_pattern_module": "numpy",
+        "plan_pattern_args": dict(start=start, stop=stop, num=num),
+        "hints": {},
+    }
     _md.update(md or {})
 
     try:
-        dimensions = [(motor.hints['fields'], 'primary')]
+        dimensions = [(motor.hints["fields"], "primary")]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].setdefault('dimensions', dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)
 
-    predeclare = (per_step is None)
+    predeclare = per_step is None
     if per_step is None:
         per_step = bps.one_1d_step
 
-    steps = np.logspace(**_md['plan_pattern_args'])
+    steps = np.logspace(**_md["plan_pattern_args"])
 
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
     def inner_log_scan():
         if predeclare:
-            yield from bps.declare_stream(motor, *detectors, name='primary')
+            yield from bps.declare_stream(motor, *detectors, name="primary")
         for step in steps:
             yield from per_step(detectors, motor, step)
 
     return (yield from inner_log_scan())
 
 
-def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
-                 md=None):
+def rel_log_scan(
+    detectors: List[Readable],
+    motor: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable in log-spaced steps relative to current position.
 
@@ -559,21 +674,35 @@ def rel_log_scan(detectors, motor, start, stop, num, *, per_step=None,
     :func:`bluesky.plans.log_scan`
     """
     # TODO read initial positions (redundantly) so they can be put in md here
-    _md = {'plan_name': 'rel_log_scan'}
+    _md = {"plan_name": "rel_log_scan"}
     _md.update(md or {})
 
     @bpp.reset_positions_decorator([motor])
     @bpp.relative_set_decorator([motor])
     def inner_relative_log_scan():
-        return (yield from log_scan(detectors, motor, start, stop, num,
-                                    per_step=per_step, md=_md))
+        return (
+            yield from log_scan(
+                detectors, motor, start, stop, num, per_step=per_step, md=_md
+            )
+        )
 
     return (yield from inner_relative_log_scan())
 
 
-def adaptive_scan(detectors, target_field, motor, start, stop,
-                  min_step, max_step, target_delta, backstep,
-                  threshold=0.8, *, md=None):
+def adaptive_scan(
+    detectors: List[Readable],
+    target_field: str,
+    motor: Movable,
+    start: float,
+    stop: float,
+    min_step: float,
+    max_step: float,
+    target_delta: float,
+    backstep: bool,
+    threshold: Optional[float] = 0.8,
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one variable with adaptively tuned step size.
 
@@ -607,30 +736,34 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     :func:`bluesky.plans.rel_adaptive_scan`
     """
     if not 0 < min_step < max_step:
-        raise ValueError("min_step and max_step must meet condition of "
-                         "max_step > min_step > 0")
+        raise ValueError(
+            "min_step and max_step must meet condition of " "max_step > min_step > 0"
+        )
 
-    _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor.name],
-           'plan_args': {'detectors': list(map(repr, detectors)),
-                         'motor': repr(motor),
-                         'start': start,
-                         'stop': stop,
-                         'min_step': min_step,
-                         'max_step': max_step,
-                         'target_delta': target_delta,
-                         'backstep': backstep,
-                         'threshold': threshold},
-           'plan_name': 'adaptive_scan',
-           'hints': {},
-           }
+    _md = {
+        "detectors": [det.name for det in detectors],
+        "motors": [motor.name],
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "motor": repr(motor),
+            "start": start,
+            "stop": stop,
+            "min_step": min_step,
+            "max_step": max_step,
+            "target_delta": target_delta,
+            "backstep": backstep,
+            "threshold": threshold,
+        },
+        "plan_name": "adaptive_scan",
+        "hints": {},
+    }
     _md.update(md or {})
     try:
-        dimensions = [(motor.hints['fields'], 'primary')]
+        dimensions = [(motor.hints["fields"], "primary")]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].setdefault('dimensions', dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)
 
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
@@ -645,19 +778,19 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         else:
             direction_sign = -1
         devices = tuple(utils.separate_devices(detectors + [motor]))
-        yield from bps.declare_stream(*devices, name='primary')
+        yield from bps.declare_stream(*devices, name="primary")
         while next_pos * direction_sign < stop * direction_sign:
-            yield Msg('checkpoint')
+            yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)
-            yield Msg('create', None, name='primary')
+            yield Msg("create", None, name="primary")
             for det in detectors:
-                yield Msg('trigger', det, group='B')
-            yield Msg('wait', None, 'B')
+                yield Msg("trigger", det, group="B")
+            yield Msg("wait", None, "B")
             for det in devices:
-                cur_det = yield Msg('read', det)
+                cur_det = yield Msg("read", det)
                 if target_field in cur_det:
-                    cur_I = cur_det[target_field]['value']
-            yield Msg('save')
+                    cur_I = cur_det[target_field]["value"]
+            yield Msg("save")
 
             # special case first first loop
             if past_I is None:
@@ -685,9 +818,20 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
     return (yield from adaptive_core())
 
 
-def rel_adaptive_scan(detectors, target_field, motor, start, stop,
-                      min_step, max_step, target_delta, backstep,
-                      threshold=0.8, *, md=None):
+def rel_adaptive_scan(
+    detectors: List[Readable],
+    target_field: str,
+    motor: Movable,
+    start: float,
+    stop: float,
+    min_step: float,
+    max_step: float,
+    target_delta: float,
+    backstep: bool,
+    threshold: Optional[float] = 0.8,
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Relative scan over one variable with adaptively tuned step size.
 
@@ -720,27 +864,44 @@ def rel_adaptive_scan(detectors, target_field, motor, start, stop,
     --------
     :func:`bluesky.plans.adaptive_scan`
     """
-    _md = {'plan_name': 'rel_adaptive_scan'}
+    _md = {"plan_name": "rel_adaptive_scan"}
     _md.update(md or {})
 
     @bpp.reset_positions_decorator([motor])
     @bpp.relative_set_decorator([motor])
     def inner_relative_adaptive_scan():
-        return (yield from adaptive_scan(detectors, target_field,
-                                         motor, start, stop, min_step,
-                                         max_step, target_delta,
-                                         backstep, threshold, md=_md))
+        return (
+            yield from adaptive_scan(
+                detectors,
+                target_field,
+                motor,
+                start,
+                stop,
+                min_step,
+                max_step,
+                target_delta,
+                backstep,
+                threshold,
+                md=_md,
+            )
+        )
 
     return (yield from inner_relative_adaptive_scan())
 
 
 def tune_centroid(
-        detectors, signal, motor,
-        start, stop, min_step,
-        num=10,
-        step_factor=3.0,
-        snake=False,
-        *, md=None):
+    detectors: List[Readable],
+    signal: str,
+    motor: Movable,
+    start: float,
+    stop: float,
+    min_step: float,
+    num: int = 10,
+    step_factor: float = 3.0,
+    snake: bool = False,
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     r"""
     plan: tune a motor to the centroid of signal(motor)
 
@@ -804,49 +965,52 @@ def tune_centroid(
     if step_factor <= 1.0:
         raise ValueError("step_factor must be greater than 1.0")
     try:
-        motor_name, = motor.hints['fields']
+        (motor_name,) = motor.hints["fields"]
     except (AttributeError, ValueError):
         motor_name = motor.name
-    _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor.name],
-           'plan_args': {'detectors': list(map(repr, detectors)),
-                         'motor': repr(motor),
-                         'start': start,
-                         'stop': stop,
-                         'num': num,
-                         'min_step': min_step, },
-           'plan_name': 'tune_centroid',
-           'hints': {},
-           }
+    _md = {
+        "detectors": [det.name for det in detectors],
+        "motors": [motor.name],
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "motor": repr(motor),
+            "start": start,
+            "stop": stop,
+            "num": num,
+            "min_step": min_step,
+        },
+        "plan_name": "tune_centroid",
+        "hints": {},
+    }
     _md.update(md or {})
     try:
-        dimensions = [(motor.hints['fields'], 'primary')]
+        dimensions = [(motor.hints["fields"], "primary")]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].setdefault('dimensions', dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)
 
     low_limit = min(start, stop)
     high_limit = max(start, stop)
 
     @bpp.stage_decorator(list(detectors) + [motor])
     @bpp.run_decorator(md=_md)
-    def _tune_core(start, stop, num, signal):
+    def _tune_core(start: float, stop: float, num: int, signal: str):
         next_pos = start
         step = (stop - start) / (num - 1)
         peak_position = None
         cur_I = None
-        sum_I = 0       # for peak centroid calculation, I(x)
+        sum_I = 0  # for peak centroid calculation, I(x)
         sum_xI = 0
 
-        yield from bps.declare_stream(motor, *detectors, name='primary')
+        yield from bps.declare_stream(motor, *detectors, name="primary")
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
-            yield Msg('checkpoint')
+            yield Msg("checkpoint")
             yield from bps.mv(motor, next_pos)
-            ret = (yield from bps.trigger_and_read(detectors + [motor]))
-            cur_I = ret[signal]['value']
+            ret = yield from bps.trigger_and_read(detectors + [motor])
+            cur_I = ret[signal]["value"]
             sum_I += cur_I
-            position = ret[motor_name]['value']
+            position = ret[motor_name]["value"]
             sum_xI += position * cur_I
 
             next_pos += step
@@ -856,12 +1020,14 @@ def tune_centroid(
                 if sum_I == 0:
                     return
                 peak_position = sum_xI / sum_I  # centroid
-                sum_I, sum_xI = 0, 0    # reset for next pass
+                sum_I, sum_xI = 0, 0  # reset for next pass
                 new_scan_range = (stop - start) / step_factor
-                start = np.clip(peak_position - new_scan_range/2,
-                                low_limit, high_limit)
-                stop = np.clip(peak_position + new_scan_range/2,
-                               low_limit, high_limit)
+                start = np.clip(
+                    peak_position - new_scan_range / 2, low_limit, high_limit
+                )
+                stop = np.clip(
+                    peak_position + new_scan_range / 2, low_limit, high_limit
+                )
                 if snake:
                     start, stop = stop, start
                 step = (stop - start) / (num - 1)
@@ -879,7 +1045,13 @@ def tune_centroid(
     return (yield from _tune_core(start, stop, num, signal))
 
 
-def scan_nd(detectors, cycler, *, per_step=None, md=None):
+def scan_nd(
+    detectors: List[Readable],
+    cycler: Cycler,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over an arbitrary N-dimensional trajectory.
 
@@ -906,20 +1078,22 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     >>> cy = cycler(motor1, [1, 2, 3]) * cycler(motor2, [4, 5, 6])
     >>> scan_nd([sensor], cy)
     """
-    _md = {'detectors': [det.name for det in detectors],
-           'motors': [motor.name for motor in cycler.keys],
-           'num_points': len(cycler),
-           'num_intervals': len(cycler) - 1,
-           'plan_args': {'detectors': list(map(repr, detectors)),
-                         'cycler': repr(cycler),
-                         'per_step': repr(per_step)},
-           'plan_name': 'scan_nd',
-           'hints': {},
-           }
+    _md = {
+        "detectors": [det.name for det in detectors],
+        "motors": [motor.name for motor in cycler.keys],
+        "num_points": len(cycler),
+        "num_intervals": len(cycler) - 1,
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "cycler": repr(cycler),
+            "per_step": repr(per_step),
+        },
+        "plan_name": "scan_nd",
+        "hints": {},
+    }
     _md.update(md or {})
     try:
-        dimensions = [(motor.hints['fields'], 'primary')
-                      for motor in cycler.keys]
+        dimensions = [(motor.hints["fields"], "primary") for motor in cycler.keys]
     except (AttributeError, KeyError):
         # Not all motors provide a 'fields' hint, so we have to skip it.
         pass
@@ -929,9 +1103,9 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         #  - the user did not pass it in and we got the default {}
         # If the user supplied hints includes a dimension entry, do not
         # change it, else set it to the one generated above
-        _md['hints'].setdefault('dimensions', dimensions)
+        _md["hints"].setdefault("dimensions", dimensions)
 
-    predeclare = (per_step is None)
+    predeclare = per_step is None
     if per_step is None:
         per_step = bps.one_nd_step
     else:
@@ -941,7 +1115,9 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         def _verify_1d_step(sig):
             if len(sig.parameters) < 3:
                 return False
-            for name, (p_name, p) in zip_longest(['detectors', 'motor', 'step'], sig.parameters.items()):
+            for name, (p_name, p) in zip_longest(
+                ["detectors", "motor", "step"], sig.parameters.items()
+            ):
                 # this is one of the first 3 positional arguements, check that the name matches
                 if name is not None:
                     if name != p_name:
@@ -958,7 +1134,9 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         def _verify_nd_step(sig):
             if len(sig.parameters) < 3:
                 return False
-            for name, (p_name, p) in zip_longest(['detectors', 'step', 'pos_cache'], sig.parameters.items()):
+            for name, (p_name, p) in zip_longest(
+                ["detectors", "step", "pos_cache"], sig.parameters.items()
+            ):
                 # this is one of the first 3 positional arguements, check that the name matches
                 if name is not None:
                     if name != p_name:
@@ -982,22 +1160,27 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
             # inner_product_scan was renamed scan).
             dims = len(list(cycler.keys))
             if dims != 1:
-                raise TypeError("Signature of per_step assumes 1D trajectory "
-                                "but {} motors are specified.".format(dims))
-            motor, = cycler.keys
+                raise TypeError(
+                    "Signature of per_step assumes 1D trajectory "
+                    "but {} motors are specified.".format(dims)
+                )
+            (motor,) = cycler.keys
             user_per_step = per_step
 
             def adapter(detectors, step, pos_cache):
                 # one_nd_step 'step' parameter is a dict; one_id_step 'step'
                 # parameter is a value
-                step, = step.values()
+                (step,) = step.values()
                 return (yield from user_per_step(detectors, motor, step))
+
             per_step = adapter
         else:
-            raise TypeError("per_step must be a callable with the signature \n "
-                            "<Signature (detectors, step, pos_cache)> or "
-                            "<Signature (detectors, motor, step)>. \n"
-                            "per_step signature received: {}".format(sig))
+            raise TypeError(
+                "per_step must be a callable with the signature \n "
+                "<Signature (detectors, step, pos_cache)> or "
+                "<Signature (detectors, motor, step)>. \n"
+                "per_step signature received: {}".format(sig)
+            )
     pos_cache = defaultdict(lambda: None)  # where last position is stashed
     cycler = utils.merge_cycler(cycler)
     motors = list(cycler.keys)
@@ -1006,22 +1189,34 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
     @bpp.run_decorator(md=_md)
     def inner_scan_nd():
         if predeclare:
-            yield from bps.declare_stream(*motors, *detectors, name='primary')
+            yield from bps.declare_stream(*motors, *detectors, name="primary")
         for step in list(cycler):
             yield from per_step(detectors, step, pos_cache)
 
     return (yield from inner_scan_nd())
 
 
-def inner_product_scan(detectors, num, *args, per_step=None, md=None):
+def inner_product_scan(
+    detectors: List[Readable],
+    num: int,
+    *args: Any,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     # For scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
-    md.setdefault('plan_name', 'inner_product_scan')
+    md.setdefault("plan_name", "inner_product_scan")
     yield from scan(detectors, *args, num, per_step=None, md=md)
 
 
-def scan(detectors, *args, num=None, per_step=None, md=None):
+def scan(
+    detectors,
+    *args: Any,
+    num: Optional[int] = None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory.
 
@@ -1063,32 +1258,42 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
     # ... which requires some special processing.
     if num is None:
         if len(args) % 3 != 1:
-            raise ValueError("The number of points to scan must be provided "
-                             "as the last positional argument or as keyword "
-                             "argument 'num'.")
+            raise ValueError(
+                "The number of points to scan must be provided "
+                "as the last positional argument or as keyword "
+                "argument 'num'."
+            )
         num = args[-1]
         args = args[:-1]
 
     if not (float(num).is_integer() and num > 0.0):
-        raise ValueError(f"The parameter `num` is expected to be a number of "
-                         f"steps (not step size!) It must therefore be a "
-                         f"whole number. The given value was {num}.")
+        raise ValueError(
+            f"The parameter `num` is expected to be a number of "
+            f"steps (not step size!) It must therefore be a "
+            f"whole number. The given value was {num}."
+        )
     num = int(num)
 
-    md_args = list(chain(*((repr(motor), start, stop)
-                           for motor, start, stop in partition(3, args))))
-    motor_names = tuple(motor.name for motor, start, stop
-                        in partition(3, args))
+    md_args = list(
+        chain(
+            *((repr(motor), start, stop) for motor, start, stop in partition(3, args))
+        )
+    )
+    motor_names = tuple(motor.name for motor, start, stop in partition(3, args))
     md = md or {}
-    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
-                         'num': num, 'args': md_args,
-                         'per_step': repr(per_step)},
-           'plan_name': 'scan',
-           'plan_pattern': 'inner_product',
-           'plan_pattern_module': plan_patterns.__name__,
-           'plan_pattern_args': dict(num=num, args=md_args),
-           'motors': motor_names
-           }
+    _md = {
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "num": num,
+            "args": md_args,
+            "per_step": repr(per_step),
+        },
+        "plan_name": "scan",
+        "plan_pattern": "inner_product",
+        "plan_pattern_module": plan_patterns.__name__,
+        "plan_pattern_args": dict(num=num, args=md_args),
+        "motors": motor_names,
+    }
     _md.update(md)
 
     # get hints for best effort callback
@@ -1102,7 +1307,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
     for motor in motors:
         x_fields.extend(get_hinted_fields(motor))
 
-    default_dimensions = [(x_fields, 'primary')]
+    default_dimensions = [(x_fields, "primary")]
 
     default_hints = {}
     if len(x_fields) > 0:
@@ -1110,16 +1315,21 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
 
     # now add default_hints and override any hints from the original md (if
     # exists)
-    _md['hints'] = default_hints
-    _md['hints'].update(md.get('hints', {}) or {})
+    _md["hints"] = default_hints
+    _md["hints"].update(md.get("hints", {}) or {})
 
     full_cycler = plan_patterns.inner_product(num=num, args=args)
 
-    return (yield from scan_nd(detectors, full_cycler,
-                               per_step=per_step, md=_md))
+    return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+def grid_scan(
+    detectors,
+    *args,
+    snake_axes=None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh; each motor is on an independent trajectory.
 
@@ -1173,15 +1383,19 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     #   any values of `snakeX` in `args`.
 
     args_pattern = plan_patterns.classify_outer_product_args_pattern(args)
-    if (snake_axes is not None) and \
-            (args_pattern == plan_patterns.OuterProductArgsPattern.PATTERN_2):
-        raise ValueError("Mixing of deprecated and new API interface is not allowed: "
-                         "the parameter 'snake_axes' can not be used if snaking is "
-                         "set as part of 'args'")
+    if (snake_axes is not None) and (
+        args_pattern == plan_patterns.OuterProductArgsPattern.PATTERN_2
+    ):
+        raise ValueError(
+            "Mixing of deprecated and new API interface is not allowed: "
+            "the parameter 'snake_axes' can not be used if snaking is "
+            "set as part of 'args'"
+        )
 
     # For consistency, set 'snake_axes' to False if new API call is detected
-    if (snake_axes is None) and \
-            (args_pattern != plan_patterns.OuterProductArgsPattern.PATTERN_2):
+    if (snake_axes is None) and (
+        args_pattern != plan_patterns.OuterProductArgsPattern.PATTERN_2
+    ):
         snake_axes = False
 
     chunk_args = list(plan_patterns.chunk_outer_product_args(args, args_pattern))
@@ -1194,8 +1408,10 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
 
     # Check that the same motor is not listed multiple times. This indicates an error in the script.
     if len(set(motors)) != len(motors):
-        raise ValueError(f"Some motors are listed multiple times in the argument list 'args': "
-                         f"'{motors}'")
+        raise ValueError(
+            f"Some motors are listed multiple times in the argument list 'args': "
+            f"'{motors}'"
+        )
 
     if snake_axes is not None:
 
@@ -1204,26 +1420,34 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
             _motor, _start, _stop, _num, _snake = chunk
             return _motor, _start, _stop, _num, value
 
-        if isinstance(snake_axes, collections.abc.Iterable) and not isinstance(snake_axes, str):
+        if isinstance(snake_axes, collections.abc.Iterable) and not isinstance(
+            snake_axes, str
+        ):
             # Always convert to a tuple (in case a `snake_axes` is an iterator).
             snake_axes = tuple(snake_axes)
 
             # Check if the list of axes (motors) contains repeated entries.
             if len(set(snake_axes)) != len(snake_axes):
-                raise ValueError(f"The list of axes 'snake_axes' contains repeated elements: "
-                                 f"'{snake_axes}'")
+                raise ValueError(
+                    f"The list of axes 'snake_axes' contains repeated elements: "
+                    f"'{snake_axes}'"
+                )
 
             # Check if the snaking is enabled for the slowest motor.
             if len(motors) and (motors[0] in snake_axes):
-                raise ValueError(f"The list of axes 'snake_axes' contains the slowest motor: "
-                                 f"'{snake_axes}'")
+                raise ValueError(
+                    f"The list of axes 'snake_axes' contains the slowest motor: "
+                    f"'{snake_axes}'"
+                )
 
             # Check that all motors in the chunk_args are controlled in the scan.
             #   It is very likely that the script running the plan has a bug.
             if any([_ not in motors for _ in snake_axes]):
-                raise ValueError(f"The list of axes 'snake_axes' contains motors "
-                                 f"that are not controlled during the scan: "
-                                 f"'{snake_axes}'")
+                raise ValueError(
+                    f"The list of axes 'snake_axes' contains motors "
+                    f"that are not controlled during the scan: "
+                    f"'{snake_axes}'"
+                )
 
             # Enable snaking for the selected axes.
             #   If the argument `snake_axes` is specified (not None), then
@@ -1238,14 +1462,17 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
 
         elif snake_axes is True:  # 'snake_axes' has boolean value `True`
             # Set all 'snake' values except for the slowest motor
-            chunk_args = [_set_snaking(_, True) if n > 0 else _
-                          for n, _ in enumerate(chunk_args)]
+            chunk_args = [
+                _set_snaking(_, True) if n > 0 else _ for n, _ in enumerate(chunk_args)
+            ]
         elif snake_axes is False:  # 'snake_axes' has boolean value `True`
             # Set all 'snake' values
             chunk_args = [_set_snaking(_, False) for _ in chunk_args]
         else:
-            raise ValueError(f"Parameter 'snake_axes' is not iterable, boolean or None: "
-                             f"'{snake_axes}', type: {type(snake_axes)}")
+            raise ValueError(
+                f"Parameter 'snake_axes' is not iterable, boolean or None: "
+                f"'{snake_axes}', type: {type(snake_axes)}"
+            )
 
     # Prepare the argument list for the `outer_product` function
     args_modified = []
@@ -1266,36 +1493,44 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
             md_args.append(snake)
         motor_names.append(motor.name)
         motors.append(motor)
-    _md = {'shape': tuple(num for motor, start, stop, num, snake
-                          in chunk_args),
-           'extents': tuple([start, stop] for motor, start, stop, num, snake
-                            in chunk_args),
-           'snaking': tuple(snake for motor, start, stop, num, snake
-                            in chunk_args),
-           # 'num_points': inserted by scan_nd
-           'plan_args': {'detectors': list(map(repr, detectors)),
-                         'args': md_args,
-                         'per_step': repr(per_step)},
-           'plan_name': 'grid_scan',
-           'plan_pattern': 'outer_product',
-           'plan_pattern_args': dict(args=md_args),
-           'plan_pattern_module': plan_patterns.__name__,
-           'motors': tuple(motor_names),
-           'hints': {},
-           }
+    _md = {
+        "shape": tuple(num for motor, start, stop, num, snake in chunk_args),
+        "extents": tuple(
+            [start, stop] for motor, start, stop, num, snake in chunk_args
+        ),
+        "snaking": tuple(snake for motor, start, stop, num, snake in chunk_args),
+        # 'num_points': inserted by scan_nd
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "args": md_args,
+            "per_step": repr(per_step),
+        },
+        "plan_name": "grid_scan",
+        "plan_pattern": "outer_product",
+        "plan_pattern_args": dict(args=md_args),
+        "plan_pattern_module": plan_patterns.__name__,
+        "motors": tuple(motor_names),
+        "hints": {},
+    }
     _md.update(md or {})
-    _md['hints'].setdefault('gridding', 'rectilinear')
+    _md["hints"].setdefault("gridding", "rectilinear")
     try:
-        _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
-                                               for m in motors])
+        _md["hints"].setdefault(
+            "dimensions", [(m.hints["fields"], "primary") for m in motors]
+        )
     except (AttributeError, KeyError):
         ...
 
-    return (yield from scan_nd(detectors, full_cycler,
-                               per_step=per_step, md=_md))
+    return (yield from scan_nd(detectors, full_cycler, per_step=per_step, md=_md))
 
 
-def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
+def rel_grid_scan(
+    detectors: List[Readable],
+    *args: Any,
+    snake_axes: bool = None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over a mesh relative to current position.
 
@@ -1336,30 +1571,43 @@ def rel_grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
     # Notes: the deprecated function call is also supported. See the notes
     #   following the docstring for 'grid_scan' function
 
-    _md = {'plan_name': 'rel_grid_scan'}
+    _md = {"plan_name": "rel_grid_scan"}
     _md.update(md or {})
-    motors = [m[0] for m in
-              plan_patterns.chunk_outer_product_args(args)]
+    motors = [m[0] for m in plan_patterns.chunk_outer_product_args(args)]
 
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_rel_grid_scan():
-        return (yield from grid_scan(detectors, *args,
-                                     snake_axes=snake_axes,
-                                     per_step=per_step, md=_md))
+        return (
+            yield from grid_scan(
+                detectors, *args, snake_axes=snake_axes, per_step=per_step, md=_md
+            )
+        )
 
     return (yield from inner_rel_grid_scan())
 
 
-def relative_inner_product_scan(detectors, num, *args, per_step=None, md=None):
+def relative_inner_product_scan(
+    detectors: List[Readable],
+    num: int,
+    *args: Any,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     # For rel_scan, num is the _last_ positional arg instead of the first one.
     # Notice the swapped order here.
     md = md or {}
-    md.setdefault('plan_name', 'relative_inner_product_scan')
+    md.setdefault("plan_name", "relative_inner_product_scan")
     yield from rel_scan(detectors, *args, num, per_step=per_step, md=md)
 
 
-def rel_scan(detectors, *args, num=None, per_step=None, md=None):
+def rel_scan(
+    detectors: List[Readable],
+    *args: Any,
+    num=None,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Scan over one multi-motor trajectory relative to current position.
 
@@ -1394,7 +1642,7 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     :func:`bluesky.plans.inner_product_scan`
     :func:`bluesky.plans.scan_nd`
     """
-    _md = {'plan_name': 'rel_scan'}
+    _md = {"plan_name": "rel_scan"}
     md = md or {}
     _md.update(md)
     motors = [motor for motor, start, stop in partition(3, args)]
@@ -1402,13 +1650,19 @@ def rel_scan(detectors, *args, num=None, per_step=None, md=None):
     @bpp.reset_positions_decorator(motors)
     @bpp.relative_set_decorator(motors)
     def inner_rel_scan():
-        return (yield from scan(detectors, *args, num=num,
-                                per_step=per_step, md=_md))
+        return (yield from scan(detectors, *args, num=num, per_step=per_step, md=_md))
 
     return (yield from inner_rel_scan())
 
 
-def tweak(detector, target_field, motor, step, *, md=None):
+def tweak(
+    detector: List[Readable],
+    target_field: str,
+    motor: Movable,
+    step: float,
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Move and motor and read a detector with an interactive prompt.
 
@@ -1423,23 +1677,26 @@ def tweak(detector, target_field, motor, step, *, md=None):
     md : dict, optional
         metadata
     """
-    prompt_str = '{0}, {1:.3}, {2:.3}, ({3}) '
+    prompt_str = "{0}, {1:.3}, {2:.3}, ({3}) "
 
-    _md = {'detectors': [detector.name],
-           'motors': [motor.name],
-           'plan_args': {'detector': repr(detector),
-                         'target_field': target_field,
-                         'motor': repr(motor),
-                         'step': step},
-           'plan_name': 'tweak',
-           'hints': {},
-           }
+    _md = {
+        "detectors": [detector.name],
+        "motors": [motor.name],
+        "plan_args": {
+            "detector": repr(detector),
+            "target_field": target_field,
+            "motor": repr(motor),
+            "step": step,
+        },
+        "plan_name": "tweak",
+        "hints": {},
+    }
     try:
-        dimensions = [(motor.hints['fields'], 'primary')]
+        dimensions = [(motor.hints["fields"], "primary")]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
+        _md["hints"].update({"dimensions": dimensions})
     _md.update(md or {})
     d = detector
     try:
@@ -1455,40 +1712,52 @@ def tweak(detector, target_field, motor, step, *, md=None):
         nonlocal step
 
         while True:
-            yield Msg('create', None, name='primary')
-            ret_mot = yield Msg('read', motor)
+            yield Msg("create", None, name="primary")
+            ret_mot = yield Msg("read", motor)
             if ret_mot is None:
                 return
             key = list(ret_mot.keys())[0]
-            pos = ret_mot[key]['value']
-            yield Msg('trigger', d, group='A')
-            yield Msg('wait', None, 'A')
-            reading = yield Msg('read', d)
-            val = reading[target_field]['value']
-            yield Msg('save')
-            prompt = prompt_str.format(motor.name, float(pos),
-                                       float(val), step)
-            new_step = yield Msg('input', prompt=prompt)
+            pos = ret_mot[key]["value"]
+            yield Msg("trigger", d, group="A")
+            yield Msg("wait", None, "A")
+            reading = yield Msg("read", d)
+            val = reading[target_field]["value"]
+            yield Msg("save")
+            prompt = prompt_str.format(motor.name, float(pos), float(val), step)
+            new_step = yield Msg("input", prompt=prompt)
             if new_step:
                 try:
                     step = float(new_step)
                 except ValueError:
                     break
-            yield Msg('set', motor, pos + step, group='A')
-            print('Motor moving...')
+            yield Msg("set", motor, pos + step, group="A")
+            print("Motor moving...")
             sys.stdout.flush()
-            yield Msg('wait', None, 'A')
+            yield Msg("wait", None, "A")
             clear_output(wait=True)
             # stackoverflow.com/a/12586667/380231
-            print('\x1b[1A\x1b[2K\x1b[1A')
+            print("\x1b[1A\x1b[2K\x1b[1A")
 
     return (yield from tweak_core())
 
 
-def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
-                  y_range, dr, factor, *, dr_y=None, tilt=0.0, per_step=None,
-                  md=None):
-    '''Absolute fermat spiral scan, centered around (x_start, y_start)
+def spiral_fermat(
+    detectors: List[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_start: float,
+    y_start: float,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    factor: float,
+    *,
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
+    """Absolute fermat spiral scan, centered around (x_start, y_start)
 
     Parameters
     ----------
@@ -1527,44 +1796,80 @@ def spiral_fermat(detectors, x_motor, y_motor, x_start, y_start, x_range,
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.rel_spiral_fermat`
-    '''
-    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
-                        y_start=y_start, x_range=x_range, y_range=y_range,
-                        dr=dr, factor=factor, dr_y=dr_y, tilt=tilt)
+    """
+    pattern_args = dict(
+        x_motor=x_motor,
+        y_motor=y_motor,
+        x_start=x_start,
+        y_start=y_start,
+        x_range=x_range,
+        y_range=y_range,
+        dr=dr,
+        factor=factor,
+        dr_y=dr_y,
+        tilt=tilt,
+    )
     cyc = plan_patterns.spiral_fermat(**pattern_args)
 
     # Before including pattern_args in metadata, replace objects with reprs.
-    pattern_args['x_motor'] = repr(x_motor)
-    pattern_args['y_motor'] = repr(y_motor)
-    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
-                         'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
-                         'x_start': x_start, 'y_start': y_start,
-                         'x_range': x_range, 'y_range': y_range,
-                         'dr': dr, 'factor': factor, 'dr_y': dr_y,
-                         'tilt': tilt, 'per_step': repr(per_step)},
-           'extents': tuple([[x_start - x_range, x_start + x_range],
-                             [y_start - y_range, y_start + y_range]]),
-           'plan_name': 'spiral_fermat',
-           'plan_pattern': 'spiral_fermat',
-           'plan_pattern_module': plan_patterns.__name__,
-           'plan_pattern_args': pattern_args,
-           'hints': {},
-           }
+    pattern_args["x_motor"] = repr(x_motor)
+    pattern_args["y_motor"] = repr(y_motor)
+    _md = {
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "x_motor": repr(x_motor),
+            "y_motor": repr(y_motor),
+            "x_start": x_start,
+            "y_start": y_start,
+            "x_range": x_range,
+            "y_range": y_range,
+            "dr": dr,
+            "factor": factor,
+            "dr_y": dr_y,
+            "tilt": tilt,
+            "per_step": repr(per_step),
+        },
+        "extents": tuple(
+            [
+                [x_start - x_range, x_start + x_range],
+                [y_start - y_range, y_start + y_range],
+            ]
+        ),
+        "plan_name": "spiral_fermat",
+        "plan_pattern": "spiral_fermat",
+        "plan_pattern_module": plan_patterns.__name__,
+        "plan_pattern_args": pattern_args,
+        "hints": {},
+    }
     try:
-        dimensions = [(x_motor.hints['fields'], 'primary'),
-                      (y_motor.hints['fields'], 'primary')]
+        dimensions = [
+            (x_motor.hints["fields"], "primary"),
+            (y_motor.hints["fields"], "primary"),
+        ]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
+        _md["hints"].update({"dimensions": dimensions})
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
-                      factor, *, dr_y=None, tilt=0.0, per_step=None, md=None):
-    '''Relative fermat spiral scan
+def rel_spiral_fermat(
+    detectors: List[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    factor: float,
+    *,
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
+    """Relative fermat spiral scan
 
     Parameters
     ----------
@@ -1599,25 +1904,51 @@ def rel_spiral_fermat(detectors, x_motor, y_motor, x_range, y_range, dr,
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.spiral_fermat`
-    '''
-    _md = {'plan_name': 'rel_spiral_fermat'}
+    """
+    _md = {"plan_name": "rel_spiral_fermat"}
     _md.update(md or {})
 
     @bpp.reset_positions_decorator([x_motor, y_motor])
     @bpp.relative_set_decorator([x_motor, y_motor])
     def inner_relative_spiral_fermat():
-        return (yield from spiral_fermat(detectors, x_motor, y_motor,
-                                         0, 0,
-                                         x_range, y_range,
-                                         dr, factor, dr_y=dr_y, tilt=tilt,
-                                         per_step=per_step, md=_md))
+        return (
+            yield from spiral_fermat(
+                detectors,
+                x_motor,
+                y_motor,
+                0,
+                0,
+                x_range,
+                y_range,
+                dr,
+                factor,
+                dr_y=dr_y,
+                tilt=tilt,
+                per_step=per_step,
+                md=_md,
+            )
+        )
 
     return (yield from inner_relative_spiral_fermat())
 
 
-def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
-           nth, *, dr_y=None, tilt=0.0, per_step=None, md=None):
-    '''Spiral scan, centered around (x_start, y_start)
+def spiral(
+    detectors: List[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_start: float,
+    y_start: float,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    nth: float,
+    *,
+    dr_y: Optional[float] = None,
+    tilt: Optional[float] = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
+    """Spiral scan, centered around (x_start, y_start)
 
     Parameters
     ----------
@@ -1654,45 +1985,80 @@ def spiral(detectors, x_motor, y_motor, x_start, y_start, x_range, y_range, dr,
     :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.spiral_fermat`
     :func:`bluesky.plans.rel_spiral_fermat`
-    '''
-    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_start=x_start,
-                        y_start=y_start, x_range=x_range, y_range=y_range,
-                        dr=dr, nth=nth, dr_y=dr_y, tilt=tilt)
+    """
+    pattern_args = dict(
+        x_motor=x_motor,
+        y_motor=y_motor,
+        x_start=x_start,
+        y_start=y_start,
+        x_range=x_range,
+        y_range=y_range,
+        dr=dr,
+        nth=nth,
+        dr_y=dr_y,
+        tilt=tilt,
+    )
     cyc = plan_patterns.spiral(**pattern_args)
 
     # Before including pattern_args in metadata, replace objects with reprs.
-    pattern_args['x_motor'] = repr(x_motor)
-    pattern_args['y_motor'] = repr(y_motor)
-    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
-                         'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
-                         'x_start': x_start, 'y_start': y_start,
-                         'x_range': x_range, 'y_range': y_range,
-                         'dr': dr, 'dr_y': dr_y, 'nth': nth, 'tilt': tilt,
-                         'per_step': repr(per_step)},
-           'extents': tuple([[x_start - x_range, x_start + x_range],
-                             [y_start - y_range, y_start + y_range]]),
-           'plan_name': 'spiral',
-           'plan_pattern': 'spiral',
-           'plan_pattern_args': pattern_args,
-           'plan_pattern_module': plan_patterns.__name__,
-           'hints': {},
-           }
+    pattern_args["x_motor"] = repr(x_motor)
+    pattern_args["y_motor"] = repr(y_motor)
+    _md = {
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "x_motor": repr(x_motor),
+            "y_motor": repr(y_motor),
+            "x_start": x_start,
+            "y_start": y_start,
+            "x_range": x_range,
+            "y_range": y_range,
+            "dr": dr,
+            "dr_y": dr_y,
+            "nth": nth,
+            "tilt": tilt,
+            "per_step": repr(per_step),
+        },
+        "extents": tuple(
+            [
+                [x_start - x_range, x_start + x_range],
+                [y_start - y_range, y_start + y_range],
+            ]
+        ),
+        "plan_name": "spiral",
+        "plan_pattern": "spiral",
+        "plan_pattern_args": pattern_args,
+        "plan_pattern_module": plan_patterns.__name__,
+        "hints": {},
+    }
     try:
-        dimensions = [(x_motor.hints['fields'], 'primary'),
-                      (y_motor.hints['fields'], 'primary')]
+        dimensions = [
+            (x_motor.hints["fields"], "primary"),
+            (y_motor.hints["fields"], "primary"),
+        ]
     except (AttributeError, KeyError):
         pass
     else:
-        _md['hints'].update({'dimensions': dimensions})
+        _md["hints"].update({"dimensions": dimensions})
     _md.update(md or {})
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
-               *, dr_y=None, tilt=0.0, per_step=None, md=None):
-
-    '''Relative spiral scan
+def rel_spiral(
+    detectors: List[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    dr: float,
+    nth: float,
+    *,
+    dr_y: float = None,
+    tilt: float = 0.0,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
+    """Relative spiral scan
 
     Parameters
     ----------
@@ -1724,25 +2090,49 @@ def rel_spiral(detectors, x_motor, y_motor, x_range, y_range, dr, nth,
     --------
     :func:`bluesky.plans.spiral`
     :func:`bluesky.plans.spiral_fermat`
-    '''
-    _md = {'plan_name': 'rel_spiral'}
+    """
+    _md = {"plan_name": "rel_spiral"}
     _md.update(md or {})
 
     @bpp.reset_positions_decorator([x_motor, y_motor])
     @bpp.relative_set_decorator([x_motor, y_motor])
     def inner_relative_spiral():
-        return (yield from spiral(detectors, x_motor, y_motor,
-                                  0, 0,
-                                  x_range, y_range, dr, nth,
-                                  dr_y=dr_y, tilt=tilt,
-                                  per_step=per_step, md=_md))
+        return (
+            yield from spiral(
+                detectors,
+                x_motor,
+                y_motor,
+                0,
+                0,
+                x_range,
+                y_range,
+                dr,
+                nth,
+                dr_y=dr_y,
+                tilt=tilt,
+                per_step=per_step,
+                md=_md,
+            )
+        )
 
     return (yield from inner_relative_spiral())
 
 
-def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
-                  y_range, x_num, y_num, *, per_step=None, md=None):
-    '''Absolute square spiral scan, centered around (x_center, y_center)
+def spiral_square(
+    detectors: List[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_center: float,
+    y_center: float,
+    x_range: float,
+    y_range: float,
+    x_num: float,
+    y_num: float,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
+    """Absolute square spiral scan, centered around (x_center, y_center)
 
     Parameters
     ----------
@@ -1778,42 +2168,69 @@ def spiral_square(detectors, x_motor, y_motor, x_center, y_center, x_range,
     :func:`bluesky.plans.relative_spiral`
     :func:`bluesky.plans.spiral_fermat`
     :func:`bluesky.plans.relative_spiral_fermat`
-    '''
-    pattern_args = dict(x_motor=x_motor, y_motor=y_motor, x_center=x_center,
-                        y_center=y_center, x_range=x_range, y_range=y_range,
-                        x_num=x_num, y_num=y_num)
+    """
+    pattern_args = dict(
+        x_motor=x_motor,
+        y_motor=y_motor,
+        x_center=x_center,
+        y_center=y_center,
+        x_range=x_range,
+        y_range=y_range,
+        x_num=x_num,
+        y_num=y_num,
+    )
     cyc = plan_patterns.spiral_square_pattern(**pattern_args)
 
     # Before including pattern_args in metadata, replace objects with reprs.
-    pattern_args['x_motor'] = repr(x_motor)
-    pattern_args['y_motor'] = repr(y_motor)
-    _md = {'plan_args': {'detectors': list(map(repr, detectors)),
-                         'x_motor': repr(x_motor), 'y_motor': repr(y_motor),
-                         'x_center': x_center, 'y_center': y_center,
-                         'x_range': x_range, 'y_range': y_range,
-                         'x_num': x_num, 'y_num': y_num,
-                         'per_step': repr(per_step)},
-           'plan_name': 'spiral_square',
-           'plan_pattern': 'spiral_square',
-           'shape': (y_num, x_num),
-           'extents': ((y_center - y_range / 2, y_center + y_range / 2),
-                       (x_center - x_range / 2, x_center + x_range / 2)),
-           'hints': {},
-           }
+    pattern_args["x_motor"] = repr(x_motor)
+    pattern_args["y_motor"] = repr(y_motor)
+    _md = {
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "x_motor": repr(x_motor),
+            "y_motor": repr(y_motor),
+            "x_center": x_center,
+            "y_center": y_center,
+            "x_range": x_range,
+            "y_range": y_range,
+            "x_num": x_num,
+            "y_num": y_num,
+            "per_step": repr(per_step),
+        },
+        "plan_name": "spiral_square",
+        "plan_pattern": "spiral_square",
+        "shape": (y_num, x_num),
+        "extents": (
+            (y_center - y_range / 2, y_center + y_range / 2),
+            (x_center - x_range / 2, x_center + x_range / 2),
+        ),
+        "hints": {},
+    }
     _md.update(md or {})
-    _md['hints'].setdefault('gridding', 'rectilinear_nonsequential')
+    _md["hints"].setdefault("gridding", "rectilinear_nonsequential")
     try:
-        _md['hints'].setdefault('dimensions', [(m.hints['fields'], 'primary')
-                                               for m in [y_motor, x_motor]])
+        _md["hints"].setdefault(
+            "dimensions", [(m.hints["fields"], "primary") for m in [y_motor, x_motor]]
+        )
     except (AttributeError, KeyError):
         ...
 
     return (yield from scan_nd(detectors, cyc, per_step=per_step, md=_md))
 
 
-def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
-                      x_num, y_num, *, per_step=None, md=None):
-    '''Relative square spiral scan, centered around current (x, y) position.
+def rel_spiral_square(
+    detectors: List[Readable],
+    x_motor: Movable,
+    y_motor: Movable,
+    x_range: float,
+    y_range: float,
+    x_num: float,
+    y_num: float,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
+    """Relative square spiral scan, centered around current (x, y) position.
 
     Parameters
     ----------
@@ -1845,28 +2262,42 @@ def rel_spiral_square(detectors, x_motor, y_motor, x_range, y_range,
     :func:`bluesky.plans.relative_spiral`
     :func:`bluesky.plans.spiral_fermat`
     :func:`bluesky.plans.relative_spiral_fermat`
-    '''
-    _md = {'plan_name': 'rel_spiral_square'}
+    """
+    _md = {"plan_name": "rel_spiral_square"}
     _md.update(md or {})
 
     @bpp.reset_positions_decorator([x_motor, y_motor])
     @bpp.relative_set_decorator([x_motor, y_motor])
     def inner_relative_spiral():
-        return (yield from spiral_square(detectors, x_motor, y_motor,
-                                         0, 0,
-                                         x_range, y_range, x_num, y_num,
-                                         per_step=per_step, md=_md))
+        return (
+            yield from spiral_square(
+                detectors,
+                x_motor,
+                y_motor,
+                0,
+                0,
+                x_range,
+                y_range,
+                x_num,
+                y_num,
+                per_step=per_step,
+                md=_md,
+            )
+        )
 
     return (yield from inner_relative_spiral())
 
 
-def ramp_plan(go_plan,
-              monitor_sig,
-              inner_plan_func,
-              take_pre_data=True,
-              timeout=None,
-              period=None, md=None):
-    '''Take data while ramping one or more positioners.
+def ramp_plan(
+    go_plan: MsgGenerator,
+    monitor_sig: Readable,
+    inner_plan_func: Callable[[], MsgGenerator],
+    take_pre_data: bool = True,
+    timeout: Optional[float] = None,
+    period: Optional[float] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
+    """Take data while ramping one or more positioners.
 
     The pseudo code for this plan is ::
 
@@ -1888,19 +2319,22 @@ def ramp_plan(go_plan,
 
         This plan must return a `ophyd.StatusBase` object.
 
+    monitor_sig : readable
+        signal to be monitored
+
     inner_plan_func : generator function
         generator which takes no input
 
         This will be called for every data point.  This should create
         one or more events.
 
+    take_pre_data: Bool, optional
+        If True, add a pre data at beginning
+
     timeout : float, optional
         If not None, the maximum time the ramp can run.
 
         In seconds
-
-    take_pre_data: Bool, optional
-        If True, add a pre data at beginning
 
     period : float, optional
         If not None, take data no faster than this.  If None, take
@@ -1910,8 +2344,8 @@ def ramp_plan(go_plan,
         data with no dead time.
 
         In seconds.
-    '''
-    _md = {'plan_name': 'ramp_plan'}
+    """
+    _md = {"plan_name": "ramp_plan"}
     _md.update(md or {})
 
     @bpp.monitor_during_decorator((monitor_sig,))
@@ -1926,7 +2360,7 @@ def ramp_plan(go_plan,
         if take_pre_data:
             yield from inner_plan_func()
         # start the ramp
-        status = (yield from go_plan)
+        status = yield from go_plan
 
         while not status.done:
             start_time = time.time()
@@ -1945,7 +2379,11 @@ def ramp_plan(go_plan,
     return (yield from polling_plan())
 
 
-def fly(flyers, *, md=None):
+def fly(
+    flyers: List[Flyable],
+    *,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Perform a fly scan with one or more 'flyers'.
 
@@ -1977,8 +2415,17 @@ def fly(flyers, *, md=None):
     return uid
 
 
-def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
-             per_step=None, md=None):
+def x2x_scan(
+    detectors: List[Readable],
+    motor1: Movable,
+    motor2: Movable,
+    start: float,
+    stop: float,
+    num: int,
+    *,
+    per_step: Optional[PerStep] = None,
+    md: Optional[CustomPlanMetadata] = None,
+) -> MsgGenerator[str]:
     """
     Relatively scan over two motors in a 2:1 ratio
 
@@ -1996,6 +2443,9 @@ def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
         The relative limits of the first motor.  The second motor
         will move between ``start / 2`` and ``stop / 2``
 
+    num : int
+        number of steps in the scan
+
     per_step : callable, optional
         hook for cutomizing action of inner loop (messages per step).
         See docstring of :func:`bluesky.plan_stubs.one_nd_step` (the default)
@@ -2006,21 +2456,34 @@ def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
 
 
     """
-    _md = {'plan_name': 'x2x_scan',
-           'plan_args': {'detectors': list(map(repr, detectors)),
-                         'motor1': motor1.name,
-                         'motor2': motor2.name,
-                         'start': start, 'stop': stop, 'num': num,
-                         'per_step': repr(per_step)}
-           }
+    _md = {
+        "plan_name": "x2x_scan",
+        "plan_args": {
+            "detectors": list(map(repr, detectors)),
+            "motor1": motor1.name,
+            "motor2": motor2.name,
+            "start": start,
+            "stop": stop,
+            "num": num,
+            "per_step": repr(per_step),
+        },
+    }
 
     _md.update(md or {})
-    return (yield from relative_inner_product_scan(
-        detectors, num,
-        motor1, start, stop,
-        motor2, start / 2, stop / 2,
-        per_step=per_step,
-        md=_md))
+    return (
+        yield from relative_inner_product_scan(
+            detectors,
+            num,
+            motor1,
+            start,
+            stop,
+            motor2,
+            start / 2,
+            stop / 2,
+            per_step=per_step,
+            md=_md,
+        )
+    )
 
 
 relative_list_scan = rel_list_scan  # back-compat
