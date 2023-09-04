@@ -1023,7 +1023,7 @@ this signal and react like so. We will examine this output piece by piece.
     Your RunEngine is entering a paused state. These are your options for changing
     the state of the RunEngine:
     RE.resume()    Resume the plan.
-    RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+    RE.abort()     Perform cleanup, then kill plan. Mark exit_status='abort'.
     RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
     RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 
@@ -1101,7 +1101,7 @@ options. If we decide not to continue we can quit in three different ways:
     Your RunEngine is entering a paused state. These are your options for changing
     the state of the RunEngine:
     RE.resume()    Resume the plan.
-    RE.abort()     Perform cleanup, then kill plan. Mark exit_stats='aborted'.
+    RE.abort()     Perform cleanup, then kill plan. Mark exit_status='abort'.
     RE.stop()      Perform cleanup, then kill plan. Mark exit_status='success'.
     RE.halt()      Emergency Stop: Do not perform cleanup --- just stop.
 
