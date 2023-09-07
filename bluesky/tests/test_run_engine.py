@@ -1395,7 +1395,7 @@ def test_exceptions_kill_run_and_failed_status_holds_detail(RE):
     with pytest.raises(FailedStatus) as exc:
         RE([Msg('set', dummy, 1, group='test'),
             Msg('wait', group='test')])
-        assert type(exc.args[0]) == UnknownStatusFailure
+        assert isinstance(exc.args[0], UnknownStatusFailure)
 
 
 @requires_ophyd
@@ -1427,7 +1427,7 @@ def test_status_propagates_exception_through_run_engine(RE):
         assert traceback[-1].name == "set"
         assert traceback[-1].line == "1/0"
 
-        assert type(exc.args[0]) == ZeroDivisionError
+        assert isinstance(exc.args[0] == ZeroDivisionError)
 
 
 def test_colliding_streams(RE, hw):
