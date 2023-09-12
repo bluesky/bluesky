@@ -65,8 +65,8 @@ def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
         stream_resource=new_uid(),
         uid=new_uid(),
         data_keys=["det2"],
-        seq_nums={"a": 12},
-        indices={"b", 1},
+        seq_nums={"start": 0, "stop": 0},
+        indices={"start": 1, "stop": 2},
     )
     yield "stream_datum", stream_datum
 
@@ -172,14 +172,24 @@ def collect(self) -> SyncOrAsync[Iterator[PartialEvent]]:
     return partial_events
 
 
+def kickoff_dummy_callback(self, *_, **__):
+    class X:
+        def add_callback(cls, *_, **__):
+            ...
+    return X
+
+
+def complete_dummy_callback(self, *_, **__):
+    class X:
+        def add_callback(cls, *_, **__):
+            ...
+    return X
+
+
 def test_flyscan_with_pages_with_no_name(RE):
     class X(Flyable, EventPageCollectable):
-        def kickoff(self, *_, **__):
-            ...
-
-        def complete(self, *_, **__):
-            ...
-
+        kickoff = kickoff_dummy_callback
+        complete = complete_dummy_callback
         collect_pages = collect_Pageable_without_name
         describe_collect = describe_without_name
         name = "x"
@@ -188,6 +198,8 @@ def test_flyscan_with_pages_with_no_name(RE):
     collector = []
     RE([
             Msg("open_run", x),
+            Msg("kickoff", x),
+            Msg("complete", x),
             Msg("collect", x),
             Msg("close_run", x),
         ],
@@ -197,12 +209,8 @@ def test_flyscan_with_pages_with_no_name(RE):
 
 def test_flyscan_with_pages_passed_in_name(RE):
     class X(Flyable, EventPageCollectable):
-        def kickoff(self, *_, **__):
-            ...
-
-        def complete(self, *_, **__):
-            ...
-
+        kickoff = kickoff_dummy_callback
+        complete = complete_dummy_callback
         collect_pages = collect_Pageable_with_name
         describe_collect = describe_with_name
         name = "x"
@@ -229,12 +237,8 @@ def test_flyscan_with_pages_passed_in_name(RE):
 )
 def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
     class X(Flyable, EventPageCollectable, WritesExternalAssets):
-        def kickoff(self, *_, **__):
-            ...
-
-        def complete(self, *_, **__):
-            ...
-
+        kickoff = kickoff_dummy_callback
+        complete = complete_dummy_callback
         collect_pages = collect_Pageable_without_name
         describe_collect = describe_without_name
         collect_asset_docs = collect_asset_docs_fun
@@ -244,7 +248,9 @@ def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, col
     collector = []
     RE([
             Msg("open_run", x),
+            Msg("kickoff", x),
             Msg("collect", x),
+            Msg("complete", x),
             Msg("close_run", x),
         ],
         lambda *args: collector.append(args)
@@ -262,12 +268,8 @@ def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, col
 )
 def test_flyscan_with_pages_passed_in_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
     class X(Flyable, EventPageCollectable, WritesExternalAssets):
-        def kickoff(self, *_, **__):
-            ...
-
-        def complete(self, *_, **__):
-            ...
-
+        kickoff = kickoff_dummy_callback
+        complete = complete_dummy_callback
         collect_pages = collect_Pageable_with_name
         describe_collect = describe_with_name
         collect_asset_docs = collect_asset_docs_fun
@@ -277,6 +279,8 @@ def test_flyscan_with_pages_passed_in_name_and_external_assets(RE, asset_type, c
     collector = []
     RE([
             Msg("open_run", x),
+            Msg("kickoff", x),
+            Msg("complete", x),
             Msg("collect", x, name="1"),
             Msg("close_run", x),
         ],
@@ -310,12 +314,8 @@ def test_rd_desc_with_declare_stream(RE):
 
 def test_flyscan_without_pageing_or_name(RE):
     class X(Flyable, EventCollectable):
-        def kickoff(self, *_, **__):
-            ...
-
-        def complete(self, *_, **__):
-            ...
-
+        kickoff = kickoff_dummy_callback
+        complete = complete_dummy_callback
         collect = collect
         describe_collect = describe_without_name
         name = "x"
@@ -324,6 +324,8 @@ def test_flyscan_without_pageing_or_name(RE):
     collector = []
     RE([
             Msg("open_run", x),
+            Msg("kickoff", x),
+            Msg("complete", x),
             Msg("collect", x),
             Msg("close_run", x),
         ],
@@ -332,13 +334,10 @@ def test_flyscan_without_pageing_or_name(RE):
 
 
 def test_flyscan_without_paging_with_name(RE):
+
     class X(Flyable, EventCollectable):
-        def kickoff(self, *_, **__):
-            ...
-
-        def complete(self, *_, **__):
-            ...
-
+        kickoff = kickoff_dummy_callback
+        complete = complete_dummy_callback
         collect = collect
         describe_collect = describe_with_name
         name = "x"
@@ -347,6 +346,8 @@ def test_flyscan_without_paging_with_name(RE):
     collector = []
     RE([
             Msg("open_run", x),
+            Msg("kickoff", x),
+            Msg("complete", x),
             Msg("collect", x, name="1"),
             Msg("close_run", x),
         ],
@@ -393,12 +394,8 @@ def test_describe_collect_pre_declare_stream(RE):
     class X(Flyable, EventPageCollectable):
         collect_pages = collect_Pageable_with_name
         describe_collect = describe_with_name
-
-        def kickoff(self, *_, **__):
-            ...
-
-        def complete(self, *_, **__):
-            ...
+        kickoff = kickoff_dummy_callback
+        complete = complete_dummy_callback
         name = "x"
 
     x = X()
@@ -407,6 +404,8 @@ def test_describe_collect_pre_declare_stream(RE):
         RE([
                 Msg("open_run", x),
                 Msg("declare_stream", None, x, collect=True, name="primary"),
+                Msg("kickoff", x),
+                Msg("complete", x),
                 Msg("collect", x, stream=True),
                 Msg("close_run", x),
             ],

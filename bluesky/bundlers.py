@@ -1,25 +1,25 @@
-from collections import deque
 import inspect
 import time as ttime
-from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set, Optional, Union
-from event_model import DocumentNames, compose_run, ComposeDescriptorBundle, pack_event_page, DataKey
+from collections import deque
+from typing import (Any, Deque, Dict, FrozenSet, Iterable, List, Optional, Set,
+                    Tuple, Union)
+
+from event_model import (ComposeDescriptorBundle, DataKey, Datum,
+                         DocumentNames, EventModelValueError, Resource,
+                         StreamDatum, StreamRange, StreamResource, compose_run,
+                         pack_event_page)
+
 from .log import doc_logger
-from .protocols import (
-    T, Callback, Configurable, PartialEvent, Flyable,
-    HasName, Readable, Reading, Subscribable, check_supports,  EventCollectable, EventPageCollectable, Collectable
-)
-from .utils import (
-    new_uid,
-    IllegalMessageSequence,
-    _rearrange_into_parallel_dicts,
-    short_uid,
-    Msg,
-    maybe_await,
-    maybe_collect_asset_docs,
-    maybe_update_hints,
-)
+from .protocols import (Callback, Collectable, Configurable, EventCollectable,
+                        EventPageCollectable, Flyable, HasName, PartialEvent,
+                        Readable, Reading, Subscribable, T, check_supports)
+from .utils import (IllegalMessageSequence, Msg,
+                    _rearrange_into_parallel_dicts, maybe_await,
+                    maybe_collect_asset_docs, maybe_update_hints, new_uid,
+                    short_uid)
 
 ObjDict = Dict[Any, Dict[str, T]]
+ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
 
 
 class RunBundler:
@@ -55,6 +55,7 @@ class RunBundler:
         # this is state on the RE, mirror it here rather than refer to
         # the parent
         self.record_interruptions = record_interruptions
+        self._paused_before_collection = False
         # this is RE.emit, but lifted to this context
         self.emit = emit
         self.emit_sync = emit_sync
@@ -313,9 +314,8 @@ class RunBundler:
             # Ask the object for any resource or datum documents is has cached
             # and cache them as well. Likewise, these will be emitted if and
             # when _save is called.
-            self._asset_docs_cache.extend(
-                [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
-            )
+            asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
+            self._asset_docs_cache.extend(asset_docs_collected)
 
         return reading
 
@@ -423,6 +423,9 @@ class RunBundler:
             self._interruptions_counter += 1
             self.emit_sync(DocumentNames.event, doc)
 
+        if content == "pause" and self._uncollected:
+            self._paused_before_collection = True
+
     def rewind(self):
         self._sequence_counters.clear()
         self._sequence_counters.update(self._sequence_counters_copy)
@@ -506,11 +509,14 @@ class RunBundler:
                 "got {!s}".format(frozenset(d_objs), objs_read)
             )
 
+        # Fill in seq_nums for the stream_datum recieved
+        await self._fill_stream_datum_seq_nums(self._asset_docs_cache)
+
         # Resource and Datum documents
         for resource_or_datum_name, resource_or_datum_doc in self._asset_docs_cache:
             # Add a 'run_start' field to resource documents on their way out
             # since this field could not have been set correctly before this point.
-            self._pack_external_assets(resource_or_datum_name, resource_or_datum_doc, message_stream_name=desc_key)
+            self._pack_external_asset(resource_or_datum_name, resource_or_datum_doc, message_stream_name=desc_key)
 
             doc_logger.debug(
                 "[%s] document emitted %r",
@@ -718,7 +724,7 @@ class RunBundler:
 
         self._local_descriptors[collect_obj] = local_descriptors
 
-    async def _pack_external_assets(self, name, doc, message_stream_name=None):
+    async def _pack_external_asset(self, name: str, doc: ExternalAssetDoc, message_stream_name=None):
         """Packs some external asset document `doc` with relevant information from the run."""
         if name in ["resource", "stream_resource"]:
             doc["run_start"] = self._run_start_uid
@@ -819,6 +825,75 @@ class RunBundler:
             await self.emit(DocumentNames.event_page, ev_page)
         return payload
 
+    async def _fill_stream_datum_seq_nums(
+            self,
+            asset_docs: Iterable[Tuple[str, ExternalAssetDoc]]):
+        """
+        Calculates the seq_nums from the indices for each stream_datum recieved.
+        """
+
+        # A dict of the data_keys to last seq_nums calculated
+        last_seq_nums_generated: Dict[FrozenSet(str), StreamRange] = {}
+
+        # A dict of the data_keys to the indices recieved, used to validate correct output from the device
+        indices_recieved: Dict[FrozenSet(str), Deque[StreamRange]] = {}
+
+        for name, doc in asset_docs:
+            if name != "stream_datum":
+                continue
+
+            if doc["seq_nums"] != StreamRange(start=0, stop=0):
+                raise EventModelValueError(
+                    f"Recieved `seq_nums` {doc['seq_nums']} from devices {doc['data_keys']} "
+                    "during `collect()` or `describe_collect()`. `seq_nums` should be None or "
+                    "`StreamRange(start=0, stop=0)` on `ComposeStreamDatum` when used with the "
+                    "run engine."
+                )
+
+            data_keys_frozenset = frozenset(doc["data_keys"])
+
+            # Cache the indices recieved for validation later
+            if data_keys_frozenset not in indices_recieved:
+                indices_recieved[data_keys_frozenset] = deque()
+            indices_recieved[data_keys_frozenset].append(doc["indices"])
+
+            indices_difference = doc["indices"]["stop"] - doc["indices"]["start"]
+
+            seq_num_previous_stop = last_seq_nums_generated.get(data_keys_frozenset, {}).get("stop", -1)
+
+            doc["seq_nums"] = StreamRange(
+                start=seq_num_previous_stop + 1, stop=seq_num_previous_stop + 1 + indices_difference
+            )
+            last_seq_nums_generated[data_keys_frozenset] = doc["seq_nums"]
+
+        if not indices_recieved:
+            return  # There were no stream_datum
+
+        # Check that the indices match up
+        indices_recieved_deque = deque(indices_recieved.items())
+        old_data_keys, old_indices = indices_recieved_deque.popleft()
+        while indices_recieved_deque:
+            new_data_keys, new_indices = indices_recieved_deque.popleft()
+            if len(new_indices) != len(old_indices):
+                raise EventModelValueError(
+                    "Recieved stream_datum documents from the same stream with different data_keys: "
+                    f"{old_data_keys} sent {len(old_indices)} indices and {new_data_keys} sent "
+                    f"{len(new_indices)}."
+                )
+
+            if new_indices != old_indices:
+                non_equal_indices_idx = [
+                    idx for idx in range(len(new_indices))
+                    if old_indices[idx] != new_indices[idx]
+                ]
+
+                raise EventModelValueError(
+                    "Recieved stream_datum documents from the same stream with different indices: "
+                    f"{str(old_data_keys)} contain indices {[old_indices[n] for n in non_equal_indices_idx]} "
+                    f"and {str(new_data_keys)} contain indices {[new_indices[n] for n in non_equal_indices_idx]}"
+                )
+            old_data_keys, old_indices = new_data_keys, new_indices
+
     async def collect(self, msg):
         """
         Collect data cached by a flyer and emit documents.
@@ -866,8 +941,13 @@ class RunBundler:
         local_descriptors = self._local_descriptors[collect_obj]
 
         # Pack a Resource or Datum document with relevant information and emit
-        async for name, doc in maybe_collect_asset_docs(msg, collect_obj):
-            self._pack_external_assets(name, doc, message_stream_name=message_stream_name)
+        collected_asset_docs = [x async for x in maybe_collect_asset_docs(msg, collect_obj)]
+
+        # Fill in seq_nums for the stream_datum recieved
+        await self._fill_stream_datum_seq_nums(collected_asset_docs)
+
+        for name, doc in collected_asset_docs:
+            self._pack_external_asset(name, doc, message_stream_name=message_stream_name)
             await self.emit(DocumentNames(name), doc)
 
         if isinstance(collect_obj, EventCollectable):
