@@ -8,6 +8,7 @@ import operator
 import uuid
 from functools import reduce
 from typing import Any, Dict, Generator, Iterator, List, Optional, Callable, TypeVar, Union
+from typing import Iterable as TypingIterable
 from weakref import ref, WeakKeyDictionary
 import types
 import inspect
@@ -71,7 +72,7 @@ MsgGenerator = Generator[Msg, Any, Optional[P]]
 CustomPlanMetadata = Dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
-ScalarOrIterableFloat = Union[float, Iterable[float]]
+ScalarOrIterableFloat = Union[float, TypingIterable[float]]
 
 
 class RunEngineControlException(Exception):
