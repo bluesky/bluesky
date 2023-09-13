@@ -463,7 +463,9 @@ class RunBundler:
         for resource_or_datum_name, resource_or_datum_doc in self._asset_docs_cache:
             # Add a 'run_start' field to resource documents on their way out
             # since this field could not have been set correctly before this point.
-            if resource_or_datum_name == "resource":
+            if resource_or_datum_name in (
+                DocumentNames.resource, DocumentNames.stream_resource
+            ):
                 resource_or_datum_doc["run_start"] = self._run_start_uid
 
             doc_logger.debug(
@@ -669,7 +671,9 @@ class RunBundler:
         # Resource and Datum documents
         for name, doc in maybe_collect_asset_docs(msg, collect_obj):
             # Add a 'run_start' field to the resource document on its way out.
-            if name == "resource":
+            if name in (
+                DocumentNames.resource, DocumentNames.stream_resource
+            ):
                 doc["run_start"] = self._run_start_uid
             await self.emit(DocumentNames(name), doc)
 
