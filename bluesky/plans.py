@@ -5,7 +5,7 @@ from functools import partial
 import collections
 from collections import defaultdict
 import time
-from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 from cycler import Cycler
 import numpy as np
 
@@ -115,7 +115,7 @@ def count(
 
 def list_scan(
     detectors: Sequence[Readable],
-    *args: Tuple[Movable, List[Any]],
+    *args: Tuple[Union[Movable, Any], List[Any]],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -228,7 +228,7 @@ def list_scan(
 
 def rel_list_scan(
     detectors: Sequence[Readable],
-    *args: Any,
+    *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -285,7 +285,7 @@ def rel_list_scan(
 
 def list_grid_scan(
     detectors: Sequence[Readable],
-    *args: Any,
+    *args: Union[Movable, Any],
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -368,7 +368,7 @@ def list_grid_scan(
 
 def rel_list_grid_scan(
     detectors: Sequence[Readable],
-    *args: Any,
+    *args: Union[Movable, Any],
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -1199,7 +1199,7 @@ def scan_nd(
 def inner_product_scan(
     detectors: Sequence[Readable],
     num: int,
-    *args: Any,
+    *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -1212,7 +1212,7 @@ def inner_product_scan(
 
 def scan(
     detectors,
-    *args: Any,
+    *args: Union[Movable, Any],
     num: Optional[int] = None,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -1526,7 +1526,7 @@ def grid_scan(
 
 def rel_grid_scan(
     detectors: Sequence[Readable],
-    *args: Any,
+    *args: Union[Movable, Any],
     snake_axes: bool = None,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -1590,7 +1590,7 @@ def rel_grid_scan(
 def relative_inner_product_scan(
     detectors: Sequence[Readable],
     num: int,
-    *args: Any,
+    *args: Union[Movable, Any],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
 ) -> MsgGenerator[str]:
@@ -1603,7 +1603,7 @@ def relative_inner_product_scan(
 
 def rel_scan(
     detectors: Sequence[Readable],
-    *args: Any,
+    *args: Union[Movable, Any],
     num=None,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
