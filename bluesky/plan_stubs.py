@@ -49,7 +49,7 @@ from .utils import (
     ensure_generator,
     short_uid as _short_uid,
     MsgGenerator,
-    ScalarOrIterable,
+    ScalarOrIterableFloat,
 )
 
 from event_model import ComposeEvent
@@ -1522,7 +1522,7 @@ def one_nd_step(
 def repeat(
     plan: Callable[[], MsgGenerator],
     num: int = 1,
-    delay: Optional[ScalarOrIterable] = None,
+    delay: Optional[ScalarOrIterableFloat] = None,
 ) -> MsgGenerator[Any]:
     """
     Repeat a plan num times with delay and checkpoint between each repeat.

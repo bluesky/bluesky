@@ -21,7 +21,7 @@ from . import utils
 from .utils import (
     Msg,
     get_hinted_fields,
-    ScalarOrIterable,
+    ScalarOrIterableFloat,
     CustomPlanMetadata,
     MsgGenerator,
 )
@@ -48,7 +48,7 @@ PerStep = Callable[
 def count(
     detectors: Sequence[Readable],
     num: Optional[int] = 1,
-    delay: Optional[ScalarOrIterable] = None,
+    delay: Optional[ScalarOrIterableFloat] = None,
     *,
     per_shot: Optional[PerShot] = None,
     md: Optional[CustomPlanMetadata] = None,
