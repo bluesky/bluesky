@@ -1,34 +1,35 @@
 import asyncio
-from traceback import FrameSummary, extract_tb
-from event_model import DocumentNames
-import threading
-import types
 import os
 import signal
 import sys
-from collections import defaultdict
+import threading
 import time as ttime
-import pytest
-from bluesky.protocols import Status
-from bluesky.tests import requires_ophyd
-from bluesky.run_engine import (RunEngineStateMachine,
-                                TransitionError, IllegalMessageSequence,
-                                NoReplayAllowed, FailedStatus,
-                                RunEngineInterrupted,
-                                RequestStop,
-                                RequestAbort)
-from bluesky import Msg
+import types
+from collections import defaultdict
 from functools import partial
-from bluesky.tests.utils import MsgCollector, DocCollector
-from bluesky.plans import (count, grid_scan)
-from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint, declare_stream, wait)
-from bluesky.preprocessors import (finalize_wrapper, run_decorator,
-                                   reset_positions_decorator,
-                                   run_wrapper, rewindable_wrapper,
-                                   subs_wrapper, baseline_wrapper,
-                                   SupplementalData)
-from .utils import _fabricate_asycio_event
+from traceback import FrameSummary, extract_tb
 from typing import List
+
+import pytest
+from event_model import DocumentNames
+
+from bluesky import Msg
+from bluesky.plan_stubs import (abs_set, checkpoint, declare_stream,
+                                trigger_and_read, wait)
+from bluesky.plans import count, grid_scan
+from bluesky.preprocessors import (SupplementalData, baseline_wrapper,
+                                   finalize_wrapper, reset_positions_decorator,
+                                   rewindable_wrapper, run_decorator,
+                                   run_wrapper, subs_wrapper)
+from bluesky.protocols import Status
+from bluesky.run_engine import (FailedStatus, IllegalMessageSequence,
+                                NoReplayAllowed, RequestAbort, RequestStop,
+                                RunEngineInterrupted, RunEngineStateMachine,
+                                TransitionError)
+from bluesky.tests import requires_ophyd
+from bluesky.tests.utils import DocCollector, MsgCollector
+
+from .utils import _fabricate_asycio_event
 
 
 def test_states():
@@ -1395,7 +1396,7 @@ def test_exceptions_kill_run_and_failed_status_holds_detail(RE):
     with pytest.raises(FailedStatus) as exc:
         RE([Msg('set', dummy, 1, group='test'),
             Msg('wait', group='test')])
-        assert type(exc.args[0]) is UnknownStatusFailure
+        assert isinstance(exc.args[0], UnknownStatusFailure)
 
 
 @requires_ophyd
@@ -1427,7 +1428,7 @@ def test_status_propagates_exception_through_run_engine(RE):
         assert traceback[-1].name == "set"
         assert traceback[-1].line == "1/0"
 
-        assert type(exc.args[0]) is ZeroDivisionError
+        assert isinstance(exc.args[0], ZeroDivisionError)
 
 
 def test_colliding_streams(RE, hw):
@@ -1810,7 +1811,7 @@ def test_broken_read_exception(RE):
 def test_self_describe(RE):
     def inner():
         cls = yield Msg('RE_class')
-        assert type(RE) is cls
+        assert isinstance(RE, cls)
 
     RE(inner())
 
