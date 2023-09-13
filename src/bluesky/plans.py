@@ -7,8 +7,7 @@ from collections import defaultdict
 from functools import partial
 from itertools import chain, zip_longest
 
-
-from typing import Any, Callable, Iterable, List, Mapping, Optional, Tuple
+from typing import Any, Callable, Iterable, List, Mapping, Optional, Sequence, Tuple
 from cycler import Cycler
 import numpy as np
 
@@ -51,7 +50,7 @@ PerStep = Callable[
 
 
 def count(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     num: Optional[int] = 1,
     delay: Optional[ScalarOrIterable] = None,
     *,
@@ -123,7 +122,7 @@ def count(
 
 
 def list_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     *args: Tuple[Movable, List[Any]],
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -236,7 +235,7 @@ def list_scan(
 
 
 def rel_list_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     *args: Any,
     per_step: Optional[PerStep] = None,
     md: Optional[CustomPlanMetadata] = None,
@@ -293,7 +292,7 @@ def rel_list_scan(
 
 
 def list_grid_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     *args: Any,
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
@@ -376,7 +375,7 @@ def list_grid_scan(
 
 
 def rel_list_grid_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     *args: Any,
     snake_axes: bool = False,
     per_step: Optional[PerStep] = None,
@@ -441,7 +440,7 @@ def rel_list_grid_scan(
 
 
 def _scan_1d(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     motor: Movable,
     start: float,
     stop: float,
@@ -517,7 +516,7 @@ def _scan_1d(
 
 
 def _rel_scan_1d(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     motor: Movable,
     start: float,
     stop: float,
@@ -568,7 +567,7 @@ def _rel_scan_1d(
 
 
 def log_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     motor: Movable,
     start: float,
     stop: float,
@@ -648,7 +647,7 @@ def log_scan(
 
 
 def rel_log_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     motor: Movable,
     start: float,
     stop: float,
@@ -699,7 +698,7 @@ def rel_log_scan(
 
 
 def adaptive_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     target_field: str,
     motor: Movable,
     start: float,
@@ -829,7 +828,7 @@ def adaptive_scan(
 
 
 def rel_adaptive_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     target_field: str,
     motor: Movable,
     start: float,
@@ -900,7 +899,7 @@ def rel_adaptive_scan(
 
 
 def tune_centroid(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     signal: str,
     motor: Movable,
     start: float,
@@ -1056,7 +1055,7 @@ def tune_centroid(
 
 
 def scan_nd(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     cycler: Cycler,
     *,
     per_step: Optional[PerStep] = None,
@@ -1207,7 +1206,7 @@ def scan_nd(
 
 
 def inner_product_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     num: int,
     *args: Any,
     per_step: Optional[PerStep] = None,
@@ -1535,7 +1534,7 @@ def grid_scan(
 
 
 def rel_grid_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     *args: Any,
     snake_axes: bool = None,
     per_step: Optional[PerStep] = None,
@@ -1598,7 +1597,7 @@ def rel_grid_scan(
 
 
 def relative_inner_product_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     num: int,
     *args: Any,
     per_step: Optional[PerStep] = None,
@@ -1612,7 +1611,7 @@ def relative_inner_product_scan(
 
 
 def rel_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     *args: Any,
     num=None,
     per_step: Optional[PerStep] = None,
@@ -1666,7 +1665,7 @@ def rel_scan(
 
 
 def tweak(
-    detector: List[Readable],
+    detector: Sequence[Readable],
     target_field: str,
     motor: Movable,
     step: float,
@@ -1752,7 +1751,7 @@ def tweak(
 
 
 def spiral_fermat(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_start: float,
@@ -1866,7 +1865,7 @@ def spiral_fermat(
 
 
 def rel_spiral_fermat(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_range: float,
@@ -1943,7 +1942,7 @@ def rel_spiral_fermat(
 
 
 def spiral(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_start: float,
@@ -2055,7 +2054,7 @@ def spiral(
 
 
 def rel_spiral(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_range: float,
@@ -2129,7 +2128,7 @@ def rel_spiral(
 
 
 def spiral_square(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_center: float,
@@ -2229,7 +2228,7 @@ def spiral_square(
 
 
 def rel_spiral_square(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     x_motor: Movable,
     y_motor: Movable,
     x_range: float,
@@ -2426,7 +2425,7 @@ def fly(
 
 
 def x2x_scan(
-    detectors: List[Readable],
+    detectors: Sequence[Readable],
     motor1: Movable,
     motor2: Movable,
     start: float,
