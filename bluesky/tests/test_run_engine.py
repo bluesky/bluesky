@@ -11,57 +11,76 @@ import time as ttime
 import pytest
 from bluesky.protocols import Status
 from bluesky.tests import requires_ophyd
-from bluesky.run_engine import (RunEngineStateMachine,
-                                TransitionError, IllegalMessageSequence,
-                                NoReplayAllowed, FailedStatus,
-                                RunEngineInterrupted,
-                                RequestStop,
-                                RequestAbort)
+from bluesky.run_engine import (
+    RunEngineStateMachine,
+    TransitionError,
+    IllegalMessageSequence,
+    NoReplayAllowed,
+    FailedStatus,
+    RunEngineInterrupted,
+    RequestStop,
+    RequestAbort,
+)
 from bluesky import Msg
 from functools import partial
 from bluesky.tests.utils import MsgCollector, DocCollector
-from bluesky.plans import (count, grid_scan)
-from bluesky.plan_stubs import (abs_set, trigger_and_read, checkpoint, declare_stream, wait)
-from bluesky.preprocessors import (finalize_wrapper, run_decorator,
-                                   reset_positions_decorator,
-                                   run_wrapper, rewindable_wrapper,
-                                   subs_wrapper, baseline_wrapper,
-                                   SupplementalData)
+from bluesky.plans import count, grid_scan
+from bluesky.plan_stubs import (
+    abs_set,
+    trigger_and_read,
+    checkpoint,
+    declare_stream,
+    wait,
+)
+from bluesky.preprocessors import (
+    finalize_wrapper,
+    run_decorator,
+    reset_positions_decorator,
+    run_wrapper,
+    rewindable_wrapper,
+    subs_wrapper,
+    baseline_wrapper,
+    SupplementalData,
+)
 from .utils import _fabricate_asycio_event
 from typing import List
 
 
 def test_states():
-    assert RunEngineStateMachine.States.states() == ['idle',
-                                                     'running',
-                                                     'pausing',
-                                                     'paused',
-                                                     'halting',
-                                                     'stopping',
-                                                     'aborting',
-                                                     'suspending',
-                                                     'panicked',
-                                                     ]
+    assert RunEngineStateMachine.States.states() == [
+        "idle",
+        "running",
+        "pausing",
+        "paused",
+        "halting",
+        "stopping",
+        "aborting",
+        "suspending",
+        "panicked",
+    ]
 
 
 def test_panic_trap(RE):
-    RE._state = 'panicked'
+    RE._state = "panicked"
     for k in RunEngineStateMachine.States.states():
-        if k != 'panicked':
+        if k != "panicked":
             with pytest.raises(TransitionError):
                 RE._state = k
 
 
 def test_state_is_readonly(RE):
     with pytest.raises(AttributeError):
-        RE.state = 'running'
+        RE.state = "running"
 
 
-@pytest.mark.parametrize("deferred_pause_delay, is_pause_set", [
-    (None, False),  # Do not pause
-    (0.1, False),  # Pause before the checkpoint
-    (1.4, True),  # Pause after the checkpoint
-])
+@pytest.mark.parametrize(
+    "deferred_pause_delay, is_pause_set",
+    [
+        (None, False),  # Do not pause
+        (0.1, False),  # Pause before the checkpoint
+        (1.4, True),  # Pause after the checkpoint
+    ],
+)
 def test_deferred_pause_requested(RE, deferred_pause_delay, is_pause_set):
     """
     Test for ``deferred_pause_requested``.
@@ -101,18 +120,19 @@ def test_verbose(RE, hw):
     # Emit all four kinds of document, exercising the logging.
     RE(
         [
-            Msg('open_run'),
-            Msg('declare_stream', None, hw.det, name='primary'),
-            Msg('create', name='primary'), Msg('read', hw.det),
-            Msg('save'),
-            Msg('close_run')
+            Msg("open_run"),
+            Msg("declare_stream", None, hw.det, name="primary"),
+            Msg("create", name="primary"),
+            Msg("read", hw.det),
+            Msg("save"),
+            Msg("close_run"),
         ]
     )
 
 
 def test_reset(RE):
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('open_run'), Msg('pause')])
+        RE([Msg("open_run"), Msg("pause")])
 
     assert len(RE._run_bundlers) > 0
     RE.reset()
@@ -121,23 +141,23 @@ def test_reset(RE):
 
 def test_running_from_paused_state_raises(RE):
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('pause')])
-    assert RE.state == 'paused'
+        RE([Msg("pause")])
+    assert RE.state == "paused"
     with pytest.raises(RuntimeError):
-        RE([Msg('null')])
+        RE([Msg("null")])
     RE.resume()
-    assert RE.state == 'idle'
-    RE([Msg('null')])
+    assert RE.state == "idle"
+    RE([Msg("null")])
 
 
 def test_resuming_from_idle_state_raises(RE):
     with pytest.raises(RuntimeError):
         RE.resume()
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('pause')])
-    assert RE.state == 'paused'
+        RE([Msg("pause")])
+    assert RE.state == "paused"
     RE.resume()
-    assert RE.state == 'idle'
+    assert RE.state == "idle"
     with pytest.raises(RuntimeError):
         RE.resume()
 
@@ -162,18 +182,18 @@ def test_register(RE):
     RE.verbose = True
 
     async def func(msg):
-        mutable['flag'] = True
+        mutable["flag"] = True
 
     def plan():
-        yield Msg('custom-command')
+        yield Msg("custom-command")
 
-    RE.register_command('custom-command', func)
+    RE.register_command("custom-command", func)
     RE(plan())
-    assert 'flag' in mutable
+    assert "flag" in mutable
     # Unregister command; now the Msg should not be recognized.
-    RE.unregister_command('custom-command')
+    RE.unregister_command("custom-command")
     with pytest.raises(KeyError):
-        RE([Msg('custom-command')])
+        RE([Msg("custom-command")])
 
 
 def test_stop_motors_and_log_any_errors(RE, hw):
@@ -193,17 +213,15 @@ def test_stop_motors_and_log_any_errors(RE, hw):
     broken_motor.stop = types.MethodType(stop_encounters_error, broken_motor)
 
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('set', broken_motor, 1), Msg('set', motor, 1),
-            Msg('pause')])
-    assert 'motor1' in stopped
-    assert 'motor2' in stopped
+        RE([Msg("set", broken_motor, 1), Msg("set", motor, 1), Msg("pause")])
+    assert "motor1" in stopped
+    assert "motor2" in stopped
     RE.stop()
 
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('set', motor, 1), Msg('set', broken_motor, 1),
-            Msg('pause')])
-    assert 'motor1' in stopped
-    assert 'motor2' in stopped
+        RE([Msg("set", motor, 1), Msg("set", broken_motor, 1), Msg("pause")])
+    assert "motor1" in stopped
+    assert "motor2" in stopped
     RE.stop()
 
 
@@ -229,43 +247,43 @@ def test_unstage_and_log_errors(RE):
             unstaged[self.name] = True
             return [self]
 
-    a = MoverWithFlag(name='a')
-    b = BrokenMoverWithFlag(name='b')
+    a = MoverWithFlag(name="a")
+    b = BrokenMoverWithFlag(name="b")
 
     unstaged.clear()
-    RE([Msg('stage', a), Msg('stage', b)])
-    assert 'a' in unstaged
-    assert 'b' in unstaged
+    RE([Msg("stage", a), Msg("stage", b)])
+    assert "a" in unstaged
+    assert "b" in unstaged
 
     unstaged.clear()
-    RE([Msg('stage', b), Msg('stage', a)])
-    assert 'a' in unstaged
-    assert 'b' in unstaged
+    RE([Msg("stage", b), Msg("stage", a)])
+    assert "a" in unstaged
+    assert "b" in unstaged
 
 
 def test_open_run_twice_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('open_run')])
+        RE([Msg("open_run"), Msg("open_run")])
 
 
 def test_saving_without_an_open_bundle_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('save')])
+        RE([Msg("open_run"), Msg("save")])
 
 
 def test_dropping_without_an_open_bundle_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('drop')])
+        RE([Msg("open_run"), Msg("drop")])
 
 
 def test_opening_a_bundle_without_a_run_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('create', name='primary')])
+        RE([Msg("create", name="primary")])
 
 
 def test_checkpoint_inside_a_bundle_is_illegal(RE):
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('create', name='primary'), Msg('checkpoint')])
+        RE([Msg("open_run"), Msg("create", name="primary"), Msg("checkpoint")])
 
 
 def test_redundant_monitors_are_illegal(RE):
@@ -291,61 +309,68 @@ def test_redundant_monitors_are_illegal(RE):
         def clear_sub(self, *args, **kwargs):
             pass
 
-    dummy = Dummy('dummy')
+    dummy = Dummy("dummy")
 
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('open_run'), Msg('monitor', dummy),
-            Msg('monitor', dummy)])
+        RE([Msg("open_run"), Msg("monitor", dummy), Msg("monitor", dummy)])
 
     # Monitoring, unmonitoring, and monitoring again is legal.
-    RE([Msg('open_run'), Msg('monitor', dummy), Msg('unmonitor', dummy),
-        Msg('monitor', dummy)])
+    RE(
+        [
+            Msg("open_run"),
+            Msg("monitor", dummy),
+            Msg("unmonitor", dummy),
+            Msg("monitor", dummy),
+        ]
+    )
 
     # Monitoring outside a run is illegal.
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('monitor', dummy)])
+        RE([Msg("monitor", dummy)])
 
     # Unmonitoring something that was never monitored is illegal.
     with pytest.raises(IllegalMessageSequence):
-        RE([Msg('unmonitor', dummy)])
+        RE([Msg("unmonitor", dummy)])
 
 
 def test_empty_bundle(RE, hw):
     mutable = {}
 
     def cb(name, doc):
-        mutable['flag'] = True
+        mutable["flag"] = True
 
     # In this case, an Event should be emitted.
     mutable.clear()
-    RE([
-        Msg('open_run'),
-        Msg('declare_stream', None, hw.det, name='primary'),
-        Msg('create', name='primary'),
-        Msg('read', hw.det),
-        Msg('save')],
-       {'event': cb})
-    assert 'flag' in mutable
+    RE(
+        [
+            Msg("open_run"),
+            Msg("declare_stream", None, hw.det, name="primary"),
+            Msg("create", name="primary"),
+            Msg("read", hw.det),
+            Msg("save"),
+        ],
+        {"event": cb},
+    )
+    assert "flag" in mutable
 
     # In this case, an Event should not be emitted because the bundle is
     # emtpy (i.e., there are no readings.)
     mutable.clear()
     RE(
         [
-            Msg('open_run'),
-            Msg('declare_stream', None, name='primary'),
-            Msg('create', name='primary'),
-            Msg('save')
+            Msg("open_run"),
+            Msg("declare_stream", None, name="primary"),
+            Msg("create", name="primary"),
+            Msg("save"),
         ],
-        {'event': cb}
+        {"event": cb},
     )
-    assert 'flag' not in mutable
+    assert "flag" not in mutable
 
 
 def test_dispatcher_unsubscribe_all(RE):
     def count_callbacks(RE):
-        return sum([len(cbs) for cbs in
-                    RE.dispatcher.cb_registry.callbacks.values()])
+        return sum([len(cbs) for cbs in RE.dispatcher.cb_registry.callbacks.values()])
 
     def cb(name, doc):
         pass
@@ -362,27 +387,28 @@ def test_stage_and_unstage_are_optional_methods(RE):
 
     dummy = Dummy()
 
-    RE([Msg('stage', dummy), Msg('unstage', dummy)])
+    RE([Msg("stage", dummy), Msg("unstage", dummy)])
 
 
 def test_need_both_stage_and_unstage_for_stagable(RE):
     class StageOnly(object):
-
         def stage(self):
             raise Exception
 
     class UnstageOnly(object):
-
         def unstage(self):
             raise Exception
 
     stage_only = StageOnly()
     unstage_only = UnstageOnly()
-    RE([Msg("stage", stage_only),
-        Msg("stage", unstage_only),
-        Msg("unstage", stage_only),
-        Msg("unstage", unstage_only)]
-       )
+    RE(
+        [
+            Msg("stage", stage_only),
+            Msg("stage", unstage_only),
+            Msg("unstage", stage_only),
+            Msg("unstage", unstage_only),
+        ]
+    )
 
 
 def test_pause_resume_devices(RE):
@@ -399,17 +425,16 @@ def test_pause_resume_devices(RE):
         def resume(self):
             resumed[self.name] = True
 
-    dummy = Dummy('dummy')
+    dummy = Dummy("dummy")
 
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('stage', dummy), Msg('pause')])
+        RE([Msg("stage", dummy), Msg("pause")])
     RE.resume()
-    assert 'dummy' in paused
-    assert 'dummy' in resumed
+    assert "dummy" in paused
+    assert "dummy" in resumed
 
 
 def test_stage_and_unstage_status_objects(RE):
-
     from ophyd import StatusBase
 
     staged = {}
@@ -469,7 +494,7 @@ def test_stage_and_unstage_status_objects(RE):
 def test_bad_call_args(RE):
     with pytest.raises(Exception):
         RE(53)
-    assert RE.state == 'idle'
+    assert RE.state == "idle"
 
 
 def test_record_interruptions(RE):
@@ -486,7 +511,7 @@ def test_record_interruptions(RE):
 
     # The 'pause' inside the run should generate an event iff
     # record_interruptions is True.
-    plan = [Msg('pause'), Msg('open_run'), Msg('pause'), Msg('close_run')]
+    plan = [Msg("pause"), Msg("open_run"), Msg("pause"), Msg("close_run")]
 
     assert not RE.record_interruptions
     with pytest.raises(RunEngineInterrupted):
@@ -494,8 +519,8 @@ def test_record_interruptions(RE):
     with pytest.raises(RunEngineInterrupted):
         RE.resume()
     RE.resume()
-    assert len(docs['descriptor']) == 0
-    assert len(docs['event']) == 0
+    assert len(docs["descriptor"]) == 0
+    assert len(docs["event"]) == 0
 
     RE.record_interruptions = True
     with pytest.raises(RunEngineInterrupted):
@@ -503,10 +528,10 @@ def test_record_interruptions(RE):
     with pytest.raises(RunEngineInterrupted):
         RE.resume()
     RE.resume()
-    assert len(docs['descriptor']) == 1
-    assert len(docs['event']) == 2
-    docs['event'][0]['data']['interruption'] == 'pause'
-    docs['event'][1]['data']['interruption'] == 'resume'
+    assert len(docs["descriptor"]) == 1
+    assert len(docs["event"]) == 2
+    docs["event"][0]["data"]["interruption"] == "pause"
+    docs["event"][1]["data"]["interruption"] == "resume"
 
 
 @requires_ophyd
@@ -517,28 +542,35 @@ def _make_unrewindable_marker():
         def pause(self):
             raise NoReplayAllowed()
 
-    motor = SynAxis(name='motor')
+    motor = SynAxis(name="motor")
 
     def test_plan(motor, det):
-        yield Msg('set', motor, 0)
-        yield Msg('trigger', det)
-        yield Msg('pause')
-        yield Msg('set', motor, 1)
-        yield Msg('trigger', det)
+        yield Msg("set", motor, 0)
+        yield Msg("trigger", det)
+        yield Msg("pause")
+        yield Msg("set", motor, 1)
+        yield Msg("trigger", det)
 
     inps = []
-    inps.append((test_plan,
-                 motor,
-                 UnReplayableSynGauss('det', motor, 'motor', center=0, Imax=1),
-                 ['set', 'trigger', 'pause', 'set', 'trigger']))
+    inps.append(
+        (
+            test_plan,
+            motor,
+            UnReplayableSynGauss("det", motor, "motor", center=0, Imax=1),
+            ["set", "trigger", "pause", "set", "trigger"],
+        )
+    )
 
-    inps.append((test_plan,
-                 motor,
-                 SynGauss('det', motor, 'motor', center=0, Imax=1),
-                 ['set', 'trigger', 'pause',
-                  'set', 'trigger', 'set', 'trigger']))
+    inps.append(
+        (
+            test_plan,
+            motor,
+            SynGauss("det", motor, "motor", center=0, Imax=1),
+            ["set", "trigger", "pause", "set", "trigger", "set", "trigger"],
+        )
+    )
 
-    return pytest.mark.parametrize('plan,motor,det,msg_seq', inps)
+    return pytest.mark.parametrize("plan,motor,det,msg_seq", inps)
 
 
 @_make_unrewindable_marker()
@@ -563,43 +595,66 @@ def _make_unrewindable_suspender_marker():
         def pause(self):
             raise NoReplayAllowed()
 
-    motor = SynAxis(name='motor')
+    motor = SynAxis(name="motor")
 
     def test_plan(motor, det):
-        yield Msg('set', motor, 0)
-        yield Msg('trigger', det)
-        yield Msg('sleep', None, 1)
-        yield Msg('set', motor, 0)
-        yield Msg('trigger', det)
+        yield Msg("set", motor, 0)
+        yield Msg("trigger", det)
+        yield Msg("sleep", None, 1)
+        yield Msg("set", motor, 0)
+        yield Msg("trigger", det)
 
     inps = []
-    inps.append((test_plan,
-                 motor,
-                 UnReplayableSynGauss('det', motor, 'motor', center=0, Imax=1),
-                 ['set', 'trigger', 'sleep',
-                  "_start_suspender",
-                  'rewindable',
-                  'wait_for', "_resume_from_suspender",
-                  'rewindable',
-                  'set', 'trigger']))
+    inps.append(
+        (
+            test_plan,
+            motor,
+            UnReplayableSynGauss("det", motor, "motor", center=0, Imax=1),
+            [
+                "set",
+                "trigger",
+                "sleep",
+                "_start_suspender",
+                "rewindable",
+                "wait_for",
+                "_resume_from_suspender",
+                "rewindable",
+                "set",
+                "trigger",
+            ],
+        )
+    )
 
-    inps.append((test_plan,
-                 motor,
-                 SynGauss('det', motor, 'motor', center=0, Imax=1),
-                 ['set', 'trigger', 'sleep',
-                  "_start_suspender",
-                  'rewindable',
-                  'wait_for', "_resume_from_suspender",
-                  'rewindable',
-                  'set',
-                  'trigger', 'sleep', 'set', 'trigger']))
+    inps.append(
+        (
+            test_plan,
+            motor,
+            SynGauss("det", motor, "motor", center=0, Imax=1),
+            [
+                "set",
+                "trigger",
+                "sleep",
+                "_start_suspender",
+                "rewindable",
+                "wait_for",
+                "_resume_from_suspender",
+                "rewindable",
+                "set",
+                "trigger",
+                "sleep",
+                "set",
+                "trigger",
+            ],
+        )
+    )
 
-    return pytest.mark.parametrize('plan,motor,det,msg_seq', inps)
+    return pytest.mark.parametrize("plan,motor,det,msg_seq", inps)
 
 
 @_make_unrewindable_suspender_marker()
 def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
     from bluesky.utils import ts_msg_hook
+
     msgs = []
     loop = RE.loop
 
@@ -611,34 +666,33 @@ def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
 
     ev = _fabricate_asycio_event(loop)
 
-    threading.Timer(.5, RE.request_suspend,
-                    kwargs=dict(fut=ev.wait)).start()
+    threading.Timer(0.5, RE.request_suspend, kwargs=dict(fut=ev.wait)).start()
 
     def verbose_set():
-        print('seting')
+        print("seting")
         ev.set()
-    loop.call_soon_threadsafe(
-        loop.call_later, 1, verbose_set)
+
+    loop.call_soon_threadsafe(loop.call_later, 1, verbose_set)
 
     RE(plan(motor, det))
     assert [m.command for m in msgs] == msg_seq
 
 
-@pytest.mark.parametrize('unpause_func', [lambda RE: RE.stop(),
-                                          lambda RE: RE.abort(),
-                                          lambda RE: RE.resume()])
+@pytest.mark.parametrize(
+    "unpause_func",
+    [lambda RE: RE.stop(), lambda RE: RE.abort(), lambda RE: RE.resume()],
+)
 def test_cleanup_after_pause(RE, unpause_func, hw):
-
     motor = hw.motor
     motor.set(1024)
 
     @reset_positions_decorator()
     def simple_plan(motor):
         for j in range(15):
-            yield Msg('set', motor, j)
-        yield Msg('pause')
+            yield Msg("set", motor, j)
+        yield Msg("pause")
         for j in range(15):
-            yield Msg('set', motor, -j)
+            yield Msg("set", motor, -j)
 
     with pytest.raises(RunEngineInterrupted):
         RE(simple_plan(motor))
@@ -647,12 +701,15 @@ def test_cleanup_after_pause(RE, unpause_func, hw):
     assert motor.position == 1024
 
 
-@pytest.mark.parametrize('unpause_func,excp',
-                         [(lambda RE: RE.stop(), RequestStop),
-                          (lambda RE: RE.abort(), RequestAbort),
-                          (lambda RE: RE.halt(), GeneratorExit)])
+@pytest.mark.parametrize(
+    "unpause_func,excp",
+    [
+        (lambda RE: RE.stop(), RequestStop),
+        (lambda RE: RE.abort(), RequestAbort),
+        (lambda RE: RE.halt(), GeneratorExit),
+    ],
+)
 def test_exit_raise(RE, unpause_func, excp):
-
     flag = False
 
     @reset_positions_decorator()
@@ -660,7 +717,7 @@ def test_exit_raise(RE, unpause_func, excp):
         nonlocal flag
         try:
             yield from checkpoint()
-            yield Msg('pause')
+            yield Msg("pause")
         except excp:
             flag = True
 
@@ -671,32 +728,35 @@ def test_exit_raise(RE, unpause_func, excp):
 
 
 @pytest.mark.skipif(
-    os.environ.get('TRAVIS', None) == 'true' and sys.platform == 'darwin',
-    reason=("The file-descriptor wake up based signal handling "
-            "does not work on travis on OSX"))
+    os.environ.get("TRAVIS", None) == "true" and sys.platform == "darwin",
+    reason=(
+        "The file-descriptor wake up based signal handling "
+        "does not work on travis on OSX"
+    ),
+)
 def test_sigint_three_hits(RE, hw):
     import time
+
     motor = hw.motor
-    motor.delay = .5
+    motor.delay = 0.5
 
     pid = os.getpid()
 
     def sim_kill(n):
         for j in range(n):
-            time.sleep(.05)
+            time.sleep(0.05)
             os.kill(pid, signal.SIGINT)
 
     lp = RE.loop
     motor.loop = lp
 
     def self_sig_int_plan():
-        threading.Timer(.05, sim_kill, (3,)).start()
+        threading.Timer(0.05, sim_kill, (3,)).start()
         yield from abs_set(motor, 1, wait=True)
 
     start_time = ttime.time()
     with pytest.raises(RunEngineInterrupted):
-        RE(finalize_wrapper(self_sig_int_plan(),
-                            abs_set(motor, 0, wait=True)))
+        RE(finalize_wrapper(self_sig_int_plan(), abs_set(motor, 0, wait=True)))
     end_time = ttime.time()
     # not enough time for motor to cleanup, but long enough to start
     assert 0.05 < end_time - start_time < 0.2
@@ -707,22 +767,21 @@ def test_sigint_three_hits(RE, hw):
     assert 0.3 < done_cleanup_time - end_time < 0.6
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5),
-                    reason="requires python3.5")
+@pytest.mark.skipif(sys.version_info < (3, 5), reason="requires python3.5")
 def test_sigint_many_hits_pln(RE):
     pid = os.getpid()
 
     def sim_kill(n=1):
         for j in range(n):
-            print('KILL', j)
+            print("KILL", j)
             ttime.sleep(0.05)
             os.kill(pid, signal.SIGINT)
 
     def hanging_plan():
         "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
         for j in range(100):
-            ttime.sleep(.1)
-        yield Msg('null')
+            ttime.sleep(0.1)
+        yield Msg("null")
 
     start_time = ttime.time()
     timer = threading.Timer(0.2, sim_kill, (11,))
@@ -732,7 +791,7 @@ def test_sigint_many_hits_pln(RE):
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
-    assert RE.state == 'idle'
+    assert RE.state == "idle"
 
 
 def test_sigint_many_hits_panic(RE):
@@ -740,15 +799,15 @@ def test_sigint_many_hits_panic(RE):
 
     def sim_kill(n=1):
         for j in range(n):
-            print('KILL', j, ttime.monotonic() - start_time)
+            print("KILL", j, ttime.monotonic() - start_time)
             ttime.sleep(0.05)
             os.kill(pid, signal.SIGINT)
 
     def hanging_plan():
         "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
-        yield Msg('null')
+        yield Msg("null")
         ttime.sleep(5)
-        yield Msg('null')
+        yield Msg("null")
 
     start_time = ttime.monotonic()
     timer = threading.Timer(0.2, sim_kill, (11,))
@@ -758,7 +817,7 @@ def test_sigint_many_hits_panic(RE):
     # Check that hammering SIGINT escaped from that 5-second sleep.
     assert (ttime.monotonic() - start_time) < 2.5
     # The KeyboardInterrupt but because we could not shut down, panic!
-    assert RE.state == 'panicked'
+    assert RE.state == "panicked"
 
     with pytest.raises(RuntimeError):
         RE([])
@@ -779,35 +838,34 @@ def test_sigint_many_hits_panic(RE):
         RE.request_pause()
 
 
-@pytest.mark.skipif(sys.version_info < (3, 5),
-                    reason="requires python3.5")
+@pytest.mark.skipif(sys.version_info < (3, 5), reason="requires python3.5")
 def test_sigint_many_hits_cb(RE):
     pid = os.getpid()
 
     def sim_kill(n=1):
         for j in range(n):
-            print('KILL')
+            print("KILL")
             ttime.sleep(0.05)
             os.kill(pid, signal.SIGINT)
 
     @run_decorator()
     def infinite_plan():
         while True:
-            yield Msg('null')
+            yield Msg("null")
 
     def hanging_callback(name, doc):
         for j in range(100):
-            ttime.sleep(.1)
+            ttime.sleep(0.1)
 
     start_time = ttime.time()
     timer = threading.Timer(0.2, sim_kill, (11,))
     timer.start()
     with pytest.raises(RunEngineInterrupted):
-        RE(infinite_plan(), {'start': hanging_callback})
+        RE(infinite_plan(), {"start": hanging_callback})
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
     # The KeyboardInterrupt will have been converted to a hard pause.
-    assert RE.state == 'idle'
+    assert RE.state == "idle"
     # Check that hammering SIGINT escaped from that 10-second sleep.
     assert ttime.time() - start_time < 2
 
@@ -821,14 +879,14 @@ def test_no_context_manager(RE):
 
     def sim_kill(n=1):
         for j in range(n):
-            print('KILL', j)
+            print("KILL", j)
             ttime.sleep(0.05)
             os.kill(pid, signal.SIGINT)
 
     def hanging_plan():
         "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
         ttime.sleep(2)
-        yield Msg('null')
+        yield Msg("null")
 
     # Only send one SIGINT
     timer = threading.Timer(0.5, sim_kill, (1,))
@@ -864,8 +922,8 @@ def test_many_context_managers(RE):
             Manager.exits += 1
 
     n = 42
-    RE.context_managers.extend([Manager]*n)
-    RE([Msg('null')])
+    RE.context_managers.extend([Manager] * n)
+    RE([Msg("null")])
     assert Manager.enters == n
     assert Manager.exits == n
 
@@ -874,42 +932,42 @@ def _make_plan_marker():
     @reset_positions_decorator()
     def raiser(motor):
         for j in range(15):
-            yield Msg('set', motor, j)
+            yield Msg("set", motor, j)
         raise RuntimeError()
 
     @reset_positions_decorator()
     def pausing_raiser(motor):
         for j in range(15):
-            yield Msg('set', motor, j)
-        yield Msg('pause')
+            yield Msg("set", motor, j)
+        yield Msg("pause")
         raise RuntimeError()
 
     @reset_positions_decorator()
     def bad_set(motor):
         for j in range(15):
-            yield Msg('set', motor, j)
-            yield Msg('set', None, j)
+            yield Msg("set", motor, j)
+            yield Msg("set", None, j)
 
     @reset_positions_decorator()
     def bad_msg(motor):
         for j in range(15):
-            yield Msg('set', motor, j)
-        yield Msg('aardvark')
+            yield Msg("set", motor, j)
+        yield Msg("aardvark")
 
     @reset_positions_decorator()
     def cannot_pauser(motor):
-        yield Msg('clear_checkpoint')
+        yield Msg("clear_checkpoint")
         for j in range(15):
-            yield Msg('set', motor, j)
-        yield Msg('pause')
+            yield Msg("set", motor, j)
+        yield Msg("pause")
 
-    return pytest.mark.parametrize('plan', [raiser, bad_set, bad_msg,
-                                            pausing_raiser, cannot_pauser])
+    return pytest.mark.parametrize(
+        "plan", [raiser, bad_set, bad_msg, pausing_raiser, cannot_pauser]
+    )
 
 
 @_make_plan_marker()
 def test_cleanup_pathological_plans(RE, hw, plan):
-
     motor = hw.motor
     motor.set(1024)
     try:
@@ -917,7 +975,7 @@ def test_cleanup_pathological_plans(RE, hw, plan):
             RE(plan(motor))
         except RunEngineInterrupted:
             pass
-        if RE.state == 'paused':
+        if RE.state == "paused":
             assert motor.position != 1024
             RE.resume()
     except Exception:
@@ -952,19 +1010,18 @@ def test_invalid_generator(RE, hw, capsys):
 
     def base_plan(motor):
         for j in range(5):
-            yield Msg('set', motor, j * 2 + 1)
-        yield Msg('pause')
+            yield Msg("set", motor, j * 2 + 1)
+        yield Msg("pause")
 
     def post_plan(motor):
-        yield Msg('set', motor, 500)
+        yield Msg("set", motor, 500)
 
     def pre_suspend_plan():
-        yield Msg('set', motor, -500)
-        raise GeneratorExit('this one')
+        yield Msg("set", motor, -500)
+        raise GeneratorExit("this one")
 
     def make_plan():
-        return patho_finalize_wrapper(base_plan(motor),
-                                      post_plan(motor))
+        return patho_finalize_wrapper(base_plan(motor), post_plan(motor))
 
     with pytest.raises(RunEngineInterrupted):
         RE(make_plan())
@@ -973,14 +1030,15 @@ def test_invalid_generator(RE, hw, capsys):
     try:
         RE.resume()
     except ValueError as sf:
-        assert sf.__cause__.args[0] == 'this one'
+        assert sf.__cause__.args[0] == "this one"
 
     actual_err, _ = capsys.readouterr()
-    expected_prefix = 'The plan '
-    expected_postfix = (' tried to yield a value on close.  '
-                        'Please fix your plan.\n')[::-1]
-    assert actual_err[:len(expected_prefix)] == expected_prefix
-    assert actual_err[::-1][:len(expected_postfix)] == expected_postfix
+    expected_prefix = "The plan "
+    expected_postfix = (
+        " tried to yield a value on close.  " "Please fix your plan.\n"
+    )[::-1]
+    assert actual_err[: len(expected_prefix)] == expected_prefix
+    assert actual_err[::-1][: len(expected_postfix)] == expected_postfix
 
 
 def test_exception_cascade_REside(RE):
@@ -989,19 +1047,19 @@ def test_exception_cascade_REside(RE):
     def pausing_plan():
         nonlocal except_hit
         for j in range(5):
-            yield Msg('null')
+            yield Msg("null")
         try:
-            yield Msg('pause')
+            yield Msg("pause")
         except Exception:
             except_hit = True
             raise
 
     def pre_plan():
-        yield Msg('aardvark')
+        yield Msg("aardvark")
 
     def post_plan():
         for j in range(5):
-            yield Msg('null')
+            yield Msg("null")
 
     with pytest.raises(RunEngineInterrupted):
         RE(pausing_plan())
@@ -1019,20 +1077,20 @@ def test_exception_cascade_planside(RE):
     def pausing_plan():
         nonlocal except_hit
         for j in range(5):
-            yield Msg('null')
+            yield Msg("null")
         try:
-            yield Msg('pause')
+            yield Msg("pause")
         except Exception:
             except_hit = True
             raise
 
     def pre_plan():
-        yield Msg('null')
+        yield Msg("null")
         raise RuntimeError()
 
     def post_plan():
         for j in range(5):
-            yield Msg('null')
+            yield Msg("null")
 
     with pytest.raises(RunEngineInterrupted):
         RE(pausing_plan())
@@ -1054,18 +1112,25 @@ def test_sideband_cancel(RE):
     def side_band_kill():
         RE.loop.call_soon_threadsafe(RE._task.cancel)
 
-    scan = [Msg('wait_for', None, [ev.wait, ]), ]
-    assert RE.state == 'idle'
+    scan = [
+        Msg(
+            "wait_for",
+            None,
+            [
+                ev.wait,
+            ],
+        ),
+    ]
+    assert RE.state == "idle"
     start = ttime.time()
-    threading.Timer(.5, side_band_kill).start()
-    loop.call_soon_threadsafe(
-        loop.call_later, 2, done)
+    threading.Timer(0.5, side_band_kill).start()
+    loop.call_soon_threadsafe(loop.call_later, 2, done)
     RE(scan)
-    assert RE.state == 'idle'
+    assert RE.state == "idle"
     assert RE._task.cancelled()
     stop = ttime.time()
 
-    assert .5 < (stop - start) < 2
+    assert 0.5 < (stop - start) < 2
 
 
 def test_no_rewind(RE):
@@ -1076,7 +1141,7 @@ def test_no_rewind(RE):
 
     RE.rewindable = False
 
-    plan = [Msg('null')] * 3 + [Msg('pause')] + [Msg('null')] * 3
+    plan = [Msg("null")] * 3 + [Msg("pause")] + [Msg("null")] * 3
     RE.msg_hook = msg_collector
     with pytest.raises(RunEngineInterrupted):
         RE(plan)
@@ -1092,9 +1157,11 @@ def test_no_rewindable_msg(RE):
     def msg_collector(msg):
         msg_lst.append(msg)
 
-    plan = ([Msg('null')] * 3 +
-            [Msg('pause'), Msg('rewindable', None, False)] +
-            [Msg('null')] * 3)
+    plan = (
+        [Msg("null")] * 3
+        + [Msg("pause"), Msg("rewindable", None, False)]
+        + [Msg("null")] * 3
+    )
 
     RE.msg_hook = msg_collector
 
@@ -1106,51 +1173,66 @@ def test_no_rewindable_msg(RE):
     assert msg_lst[7:] == plan[4:]
 
 
-@pytest.mark.parametrize('start_state', [True, False])
+@pytest.mark.parametrize("start_state", [True, False])
 def test_rewindable_state_retrival(RE, start_state):
     RE.rewindable = start_state
 
     def rewind_plan(start_value):
-        ret = yield Msg('rewindable', None, None)
+        ret = yield Msg("rewindable", None, None)
         assert ret is start_state
         cache_state = ret
-        ret = yield Msg('rewindable', None, start_state)
+        ret = yield Msg("rewindable", None, start_state)
         assert ret is start_state
 
-        ret = yield Msg('rewindable', None, not start_state)
+        ret = yield Msg("rewindable", None, not start_state)
         assert ret is (not start_state)
 
-        ret = yield Msg('rewindable', None, cache_state)
+        ret = yield Msg("rewindable", None, cache_state)
         assert ret is start_state
 
     RE(rewind_plan(start_state))
     assert RE.rewindable is start_state
 
 
-@pytest.mark.parametrize('start_state,msg_seq', ((True, ['open_run',
-                                                         'declare_stream',
-                                                         'rewindable',
-                                                         'rewindable',
-                                                         'trigger',
-                                                         'trigger',
-                                                         'wait',
-                                                         'create',
-                                                         'read',
-                                                         'read',
-                                                         'save',
-                                                         'rewindable',
-                                                         'close_run']),
-                                                 (False, ['open_run',
-                                                          'declare_stream',
-                                                          'rewindable',
-                                                          'trigger',
-                                                          'trigger',
-                                                          'wait',
-                                                          'create',
-                                                          'read',
-                                                          'read',
-                                                          'save',
-                                                          'close_run'])))
+@pytest.mark.parametrize(
+    "start_state,msg_seq",
+    (
+        (
+            True,
+            [
+                "open_run",
+                "declare_stream",
+                "rewindable",
+                "rewindable",
+                "trigger",
+                "trigger",
+                "wait",
+                "create",
+                "read",
+                "read",
+                "save",
+                "rewindable",
+                "close_run",
+            ],
+        ),
+        (
+            False,
+            [
+                "open_run",
+                "declare_stream",
+                "rewindable",
+                "trigger",
+                "trigger",
+                "wait",
+                "create",
+                "read",
+                "read",
+                "save",
+                "close_run",
+            ],
+        ),
+    ),
+)
 def test_nonrewindable_detector(RE, hw, start_state, msg_seq):
     class FakeSig:
         def get(self):
@@ -1163,7 +1245,7 @@ def test_nonrewindable_detector(RE, hw, start_state, msg_seq):
     RE.msg_hook = m_col
 
     def test():
-        yield from declare_stream(hw.motor, hw.det, name='primary')
+        yield from declare_stream(hw.motor, hw.det, name="primary")
         return (yield from trigger_and_read([hw.motor, hw.det]))
 
     RE(run_wrapper(test()))
@@ -1171,13 +1253,13 @@ def test_nonrewindable_detector(RE, hw, start_state, msg_seq):
     assert [m.command for m in m_col.msgs] == msg_seq
 
 
-@pytest.mark.parametrize('start_state,msg_seq', ((True,
-                                                  ['rewindable',
-                                                   'rewindable',
-                                                   'aardvark',
-                                                   'rewindable']),
-                                                 (False, ['rewindable',
-                                                          'aardvark'])))
+@pytest.mark.parametrize(
+    "start_state,msg_seq",
+    (
+        (True, ["rewindable", "rewindable", "aardvark", "rewindable"]),
+        (False, ["rewindable", "aardvark"]),
+    ),
+)
 def test_nonrewindable_finalizer(RE, hw, start_state, msg_seq):
     class FakeSig:
         def get(self):
@@ -1192,7 +1274,7 @@ def test_nonrewindable_finalizer(RE, hw, start_state, msg_seq):
 
     def evil_plan():
         assert RE.rewindable is False
-        yield Msg('aardvark')
+        yield Msg("aardvark")
 
     with pytest.raises(KeyError):
         RE(rewindable_wrapper(evil_plan(), False))
@@ -1210,11 +1292,11 @@ def test_halt_from_pause(RE):
     def pausing_plan():
         nonlocal except_hit
         for j in range(5):
-            yield Msg('null')
+            yield Msg("null")
         try:
-            yield Msg('pause')
+            yield Msg("pause")
         except Exception:
-            yield Msg('null')
+            yield Msg("null")
             except_hit = True
             raise
 
@@ -1222,7 +1304,7 @@ def test_halt_from_pause(RE):
         RE(pausing_plan())
     RE.halt()
     assert not except_hit
-    assert [m.command for m in m_coll.msgs] == ['null'] * 5 + ['pause']
+    assert [m.command for m in m_coll.msgs] == ["null"] * 5 + ["pause"]
 
 
 def test_halt_async(RE):
@@ -1233,25 +1315,30 @@ def test_halt_async(RE):
     def sleeping_plan():
         nonlocal except_hit
         try:
-            yield Msg('sleep', None, 50)
+            yield Msg("sleep", None, 50)
         except Exception:
-            yield Msg('null')
+            yield Msg("null")
             except_hit = True
             raise
 
-    threading.Timer(.1, RE.halt).start()
+    threading.Timer(0.1, RE.halt).start()
     start = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(sleeping_plan())
     stop = ttime.time()
-    assert .09 < stop - start < 5
+    assert 0.09 < stop - start < 5
     assert not except_hit
-    assert [m.command for m in m_coll.msgs] == ['sleep']
+    assert [m.command for m in m_coll.msgs] == ["sleep"]
 
 
-@pytest.mark.parametrize('cancel_func',
-                         [lambda RE: RE.stop(), lambda RE: RE.abort(),
-                          lambda RE: RE.request_pause(defer=False)])
+@pytest.mark.parametrize(
+    "cancel_func",
+    [
+        lambda RE: RE.stop(),
+        lambda RE: RE.abort(),
+        lambda RE: RE.request_pause(defer=False),
+    ],
+)
 def test_prompt_stop(RE, cancel_func):
     except_hit = False
     m_coll = MsgCollector()
@@ -1260,30 +1347,35 @@ def test_prompt_stop(RE, cancel_func):
     def sleeping_plan():
         nonlocal except_hit
         try:
-            yield Msg('sleep', None, 50)
+            yield Msg("sleep", None, 50)
         except Exception:
-            yield Msg('null')
+            yield Msg("null")
             except_hit = True
             raise
 
-    threading.Timer(.1, partial(cancel_func, RE)).start()
+    threading.Timer(0.1, partial(cancel_func, RE)).start()
     start = ttime.time()
     with pytest.raises(RunEngineInterrupted):
         RE(sleeping_plan())
     stop = ttime.time()
-    if RE.state != 'idle':
+    if RE.state != "idle":
         RE.abort()
     assert 0.09 < stop - start < 5
     assert except_hit
-    assert [m.command for m in m_coll.msgs] == ['sleep', 'null']
+    assert [m.command for m in m_coll.msgs] == ["sleep", "null"]
 
 
-@pytest.mark.parametrize('change_func', [lambda RE: RE.stop(),
-                                         lambda RE: RE.abort(),
-                                         lambda RE: RE.halt(),
-                                         lambda RE: RE.request_pause(),
-                                         lambda RE: RE.request_pause(defer=True),
-                                         lambda RE: RE.resume()])
+@pytest.mark.parametrize(
+    "change_func",
+    [
+        lambda RE: RE.stop(),
+        lambda RE: RE.abort(),
+        lambda RE: RE.halt(),
+        lambda RE: RE.request_pause(),
+        lambda RE: RE.request_pause(defer=True),
+        lambda RE: RE.resume(),
+    ],
+)
 def test_bad_from_idle_transitions(RE, change_func):
     with pytest.raises(TransitionError):
         change_func(RE)
@@ -1291,12 +1383,14 @@ def test_bad_from_idle_transitions(RE, change_func):
 
 def test_empty_cache_pause(RE):
     RE.rewindable = False
-    pln = [Msg('open_run'),
-           Msg('declare_stream', None, name='primary'),
-           Msg('create', name='primary'),
-           Msg('pause'),
-           Msg('save'),
-           Msg('close_run')]
+    pln = [
+        Msg("open_run"),
+        Msg("declare_stream", None, name="primary"),
+        Msg("create", name="primary"),
+        Msg("pause"),
+        Msg("save"),
+        Msg("close_run"),
+    ]
     with pytest.raises(RunEngineInterrupted):
         RE(pln)
     RE.resume()
@@ -1310,18 +1404,19 @@ def test_state_hook(RE):
 
     RE.state_hook = log_state
     with pytest.raises(RunEngineInterrupted):
-        RE([Msg('open_run'), Msg('pause'), Msg('close_run')])
+        RE([Msg("open_run"), Msg("pause"), Msg("close_run")])
     RE.resume()
-    expected = [('running', 'idle'),
-                ('pausing', 'running'),
-                ('paused', 'pausing'),
-                ('running', 'paused'),
-                ('idle', 'running')]
+    expected = [
+        ("running", "idle"),
+        ("pausing", "running"),
+        ("paused", "pausing"),
+        ("running", "paused"),
+        ("idle", "running"),
+    ]
     assert states == expected
 
 
 def test_max_depth(RE):
-
     RE.max_depth is None
     RE([])  # should not raise
 
@@ -1335,10 +1430,9 @@ def test_max_depth(RE):
 
 
 def test_preprocessors(RE):
-
     def custom_cleanup(plan):
         yield from plan
-        yield Msg('null', 'cleanup')  # just a sentinel
+        yield Msg("null", "cleanup")  # just a sentinel
 
     def my_sub(name, doc):
         pass
@@ -1349,31 +1443,34 @@ def test_preprocessors(RE):
     RE.preprocessors = [custom_cleanup, custom_subs]
     actual = []
     RE.msg_hook = lambda msg: actual.append(msg)
-    RE([Msg('null')])
+    RE([Msg("null")])
     print(actual)
-    expected = [Msg('subscribe', None, my_sub, 'all'),
-                Msg('null'),
-                Msg('null', 'cleanup'),
-                Msg('unsubscribe', None, token=0)]
+    expected = [
+        Msg("subscribe", None, my_sub, "all"),
+        Msg("null"),
+        Msg("null", "cleanup"),
+        Msg("unsubscribe", None, token=0),
+    ]
     assert actual == expected
 
 
 @requires_ophyd
 def test_pardon_failures(RE):
     from ophyd import StatusBase
+
     st = StatusBase()
 
     class Dummy:
-        name = 'dummy'
+        name = "dummy"
 
         def set(self, val):
             return st
 
     dummy = Dummy()
 
-    RE([Msg('set', dummy, 1)])
+    RE([Msg("set", dummy, 1)])
     st._finished(success=False)
-    RE([Msg('null')])
+    RE([Msg("null")])
 
 
 @requires_ophyd
@@ -1383,7 +1480,7 @@ def test_exceptions_kill_run_and_failed_status_holds_detail(RE):
     from ophyd.utils.errors import UnknownStatusFailure
 
     class Dummy:
-        name = 'dummy'
+        name = "dummy"
 
         def set(self, val):
             st = StatusBase()
@@ -1393,9 +1490,8 @@ def test_exceptions_kill_run_and_failed_status_holds_detail(RE):
     dummy = Dummy()
 
     with pytest.raises(FailedStatus) as exc:
-        RE([Msg('set', dummy, 1, group='test'),
-            Msg('wait', group='test')])
-        assert type(exc.args[0]) == UnknownStatusFailure
+        RE([Msg("set", dummy, 1, group="test"), Msg("wait", group="test")])
+        assert isinstance(exc.args[0], UnknownStatusFailure)
 
 
 @requires_ophyd
@@ -1404,12 +1500,12 @@ def test_status_propagates_exception_through_run_engine(RE):
     from ophyd import StatusBase
 
     class DummyV1:
-        name = 'dummy'
+        name = "dummy"
 
         def set(self, val):
             st = StatusBase()
             try:
-                1/0
+                1 / 0
             except ZeroDivisionError as exc:
                 st.set_exception(exc)
 
@@ -1418,8 +1514,7 @@ def test_status_propagates_exception_through_run_engine(RE):
     dummy1 = DummyV1()
 
     with pytest.raises(FailedStatus) as exc:
-        RE([Msg('set', dummy1, 1, group='test'),
-            Msg('wait', group='test')])
+        RE([Msg("set", dummy1, 1, group="test"), Msg("wait", group="test")])
 
         traceback: List[FrameSummary] = extract_tb(exc.__traceback__)
         assert traceback[0].filename == __file__
@@ -1427,31 +1522,32 @@ def test_status_propagates_exception_through_run_engine(RE):
         assert traceback[-1].name == "set"
         assert traceback[-1].line == "1/0"
 
-        assert type(exc.args[0]) == ZeroDivisionError
+        assert isinstance(exc.args[0], ZeroDivisionError)
 
 
 def test_colliding_streams(RE, hw):
-
-    collector = {'primary': [], 'baseline': []}
+    collector = {"primary": [], "baseline": []}
     descs = {}
 
     def local_cb(name, doc):
-        if name == 'descriptor':
-            descs[doc['uid']] = doc['name']
-        elif name == 'event':
-            collector[descs[doc['descriptor']]].append(doc)
+        if name == "descriptor":
+            descs[doc["uid"]] = doc["name"]
+        elif name == "event":
+            collector[descs[doc["descriptor"]]].append(doc)
 
-    RE(baseline_wrapper(grid_scan([hw.motor],
-                                  hw.motor, -1, 1, 5,
-                                  hw.motor1, -5, 5, 7, True),
-                        [hw.motor, hw.motor1]),
-       local_cb)
+    RE(
+        baseline_wrapper(
+            grid_scan([hw.motor], hw.motor, -1, 1, 5, hw.motor1, -5, 5, 7, True),
+            [hw.motor, hw.motor1],
+        ),
+        local_cb,
+    )
 
-    assert len(collector['primary']) == 35
-    assert len(collector['baseline']) == 2
+    assert len(collector["primary"]) == 35
+    assert len(collector["baseline"]) == 2
 
-    assert list(range(1, 36)) == [e['seq_num'] for e in collector['primary']]
-    assert list(range(1, 3)) == [e['seq_num'] for e in collector['baseline']]
+    assert list(range(1, 36)) == [e["seq_num"] for e in collector["primary"]]
+    assert list(range(1, 3)) == [e["seq_num"] for e in collector["baseline"]]
 
 
 def test_old_subscribe(RE):
@@ -1462,23 +1558,22 @@ def test_old_subscribe(RE):
         collector.append(doc)
 
     with pytest.warns(UserWarning):
-        RE.subscribe('all', collect)
+        RE.subscribe("all", collect)
 
-    RE([Msg('open_run'), Msg('close_run')])
+    RE([Msg("open_run"), Msg("close_run")])
     assert len(collector) == 2
 
     RE.unsubscribe(0)
     with pytest.warns(UserWarning):
-        RE.subscribe('start', collect)
+        RE.subscribe("start", collect)
 
-    RE([Msg('open_run'), Msg('close_run')])
+    RE([Msg("open_run"), Msg("close_run")])
     assert len(collector) == 3
 
     RE.unsubscribe(1)
 
 
 def test_waiting_hook(RE, hw):
-
     collector = []
 
     def collect(sts):
@@ -1486,7 +1581,7 @@ def test_waiting_hook(RE, hw):
 
     RE.waiting_hook = collect
 
-    RE([Msg('set', hw.motor, 5, group='A'), Msg('wait', group='A')])
+    RE([Msg("set", hw.motor, 5, group="A"), Msg("wait", group="A")])
 
     sts, none = collector
     assert isinstance(sts, set)
@@ -1494,9 +1589,13 @@ def test_waiting_hook(RE, hw):
     assert none is None
     collector.clear()
 
-    RE([Msg('set', hw.motor1, 5, group='A'),
-        Msg('set', hw.motor2, 3, group='A'),
-        Msg('wait', group='A')])
+    RE(
+        [
+            Msg("set", hw.motor1, 5, group="A"),
+            Msg("set", hw.motor2, 3, group="A"),
+            Msg("wait", group="A"),
+        ]
+    )
 
     sts, none = collector
     assert isinstance(sts, set)
@@ -1506,12 +1605,11 @@ def test_waiting_hook(RE, hw):
 
 
 def test_hints(RE):
-
     class Detector:
         def __init__(self, name):
             self.name = name
             self.parent = None
-            self.hints = {'vis': 'placeholder'}
+            self.hints = {"vis": "placeholder"}
 
         async def read(self):
             await asyncio.sleep(0.1)
@@ -1526,37 +1624,34 @@ def test_hints(RE):
         async def describe_configuration(self):
             return {}
 
-    det = Detector('det')
+    det = Detector("det")
 
     collector = []
 
-    RE(count([det]),
-       {'descriptor': lambda name, doc: collector.append(doc)})
+    RE(count([det]), {"descriptor": lambda name, doc: collector.append(doc)})
     doc = collector.pop()
-    assert doc['hints']['det'] == {'vis': 'placeholder'}
+    assert doc["hints"]["det"] == {"vis": "placeholder"}
 
 
 def test_filled(RE, hw, db):
-
     collector = []
 
     def collect(name, doc):
-        if name == 'event':
+        if name == "event":
             collector.append(doc)
 
     RE(count([hw.det]), collect)
 
-    event, = collector
-    assert event['filled'] == {}
+    (event,) = collector
+    assert event["filled"] == {}
     collector.clear()
 
     RE(count([hw.img]), collect)
-    event, = collector
-    assert event['filled'] == {'img': False}
+    (event,) = collector
+    assert event["filled"] == {"img": False}
 
 
 def test_double_call(RE):
-
     uid1 = RE(count([]))
     uid2 = RE(count([]))
 
@@ -1564,7 +1659,6 @@ def test_double_call(RE):
 
 
 def test_num_events(RE, hw, db):
-
     RE.subscribe(db.insert)
 
     rs1 = RE(count([]))
@@ -1573,7 +1667,7 @@ def test_num_events(RE, hw, db):
     else:
         uid1 = rs1[0]
     h = db[uid1]
-    assert h.stop['num_events'] == {'primary': 0}
+    assert h.stop["num_events"] == {"primary": 0}
 
     rs2 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1581,7 +1675,7 @@ def test_num_events(RE, hw, db):
     else:
         uid2 = rs2[0]
     h = db[uid2]
-    assert h.stop['num_events'] == {'primary': 5}
+    assert h.stop["num_events"] == {"primary": 5}
 
     sd = SupplementalData(baseline=[hw.det])
     RE.preprocessors.append(sd)
@@ -1592,7 +1686,7 @@ def test_num_events(RE, hw, db):
     else:
         uid3 = rs3[0]
     h = db[uid3]
-    assert h.stop['num_events'] == {'primary': 0, 'baseline': 2}
+    assert h.stop["num_events"] == {"primary": 0, "baseline": 2}
 
     rs4 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1600,7 +1694,7 @@ def test_num_events(RE, hw, db):
     else:
         uid4 = rs4[0]
     h = db[uid4]
-    assert h.stop['num_events'] == {'primary': 5, 'baseline': 2}
+    assert h.stop["num_events"] == {"primary": 5, "baseline": 2}
 
 
 def test_raise_if_interrupted_deprecation(RE):
@@ -1608,18 +1702,18 @@ def test_raise_if_interrupted_deprecation(RE):
         RE([], raise_if_interrupted=True)
 
 
-@pytest.mark.parametrize('bail_func,status', (('resume', 'success'),
-                                              ('stop', 'success'),
-                                              ('abort', 'abort'),
-                                              ('halt', 'abort')))
+@pytest.mark.parametrize(
+    "bail_func,status",
+    (("resume", "success"), ("stop", "success"), ("abort", "abort"), ("halt", "abort")),
+)
 def test_force_stop_exit_status(bail_func, status, RE):
     d = DocCollector()
     RE.subscribe(d.insert)
 
     @run_decorator()
     def bad_plan():
-        print('going in')
-        yield Msg('pause')
+        print("going in")
+        yield Msg("pause")
 
     with pytest.raises(RunEngineInterrupted):
         RE(bad_plan())
@@ -1636,9 +1730,9 @@ def test_force_stop_exit_status(bail_func, status, RE):
     else:
         uid = rs[0]
     assert len(d.start) == 1
-    assert d.start[0]['uid'] == uid
+    assert d.start[0]["uid"] == uid
     assert len(d.stop) == 1
-    assert d.stop[uid]['exit_status'] == status
+    assert d.stop[uid]["exit_status"] == status
 
 
 def test_exceptions_exit_status(RE):
@@ -1650,17 +1744,17 @@ def test_exceptions_exit_status(RE):
 
     @run_decorator()
     def bad_plan():
-        yield Msg('null')
-        raise Snowflake('boo')
+        yield Msg("null")
+        raise Snowflake("boo")
 
     with pytest.raises(Snowflake) as sf:
         RE(bad_plan())
 
     assert len(d.start) == 1
-    rs = d.start[0]['uid']
+    rs = d.start[0]["uid"]
     assert len(d.stop) == 1
-    assert d.stop[rs]['exit_status'] == 'fail'
-    assert d.stop[rs]['reason'] == str(sf.value)
+    assert d.stop[rs]["exit_status"] == "fail"
+    assert d.stop[rs]["reason"] == str(sf.value)
 
 
 def test_plan_return(RE):
@@ -1668,8 +1762,8 @@ def test_plan_return(RE):
         pytest.skip()
 
     def test_plan():
-        yield Msg('null')
-        return 'plan_result'
+        yield Msg("null")
+        return "plan_result"
 
     rs = RE(test_plan())
     assert rs.plan_result == "plan_result"
@@ -1682,9 +1776,9 @@ def test_plan_return_resume(RE):
         pytest.skip()
 
     def test_plan():
-        yield Msg('null')
-        yield Msg('pause')
-        return 'plan_result'
+        yield Msg("null")
+        yield Msg("pause")
+        return "plan_result"
 
     with pytest.raises(RunEngineInterrupted):
         RE(test_plan())
@@ -1697,20 +1791,20 @@ def test_drop(RE, hw):
     det = hw.det
 
     def inner(msg):
-        yield Msg('create', name='primary')
-        yield Msg('read', det)
+        yield Msg("create", name="primary")
+        yield Msg("read", det)
         yield Msg(msg)
 
     # Drop first, drop after saving, save after dropping
     def plan():
-        yield Msg('open_run')
-        yield Msg('declare_stream', None, det, name='primary')
-        yield from inner('drop')
-        yield from inner('save')
-        yield from inner('drop')
-        yield from inner('save')
-        yield from inner('save')
-        yield Msg('close_run')
+        yield Msg("open_run")
+        yield Msg("declare_stream", None, det, name="primary")
+        yield from inner("drop")
+        yield from inner("save")
+        yield from inner("drop")
+        yield from inner("save")
+        yield from inner("save")
+        yield Msg("close_run")
 
     docs = defaultdict(list)
 
@@ -1719,47 +1813,47 @@ def test_drop(RE, hw):
 
     RE(plan(), collector)
 
-    assert len(docs['event']) == 3
+    assert len(docs["event"]) == 3
 
 
 def test_failing_describe_callback(RE, hw):
-
     class TestException(Exception):
         pass
+
     det = hw.det
     det2 = hw.det2
 
     def evil_cb(name, doc):
-        if any(k in doc['data_keys'] for k in det.describe()):
+        if any(k in doc["data_keys"] for k in det.describe()):
             raise TestException
 
-    RE.subscribe(evil_cb, 'descriptor')
+    RE.subscribe(evil_cb, "descriptor")
 
     def plan():
-        yield Msg('open_run')
+        yield Msg("open_run")
         try:
-            yield Msg('declare_stream', None, det,  name='det1')
-            yield Msg('create', name='det1')
-            yield Msg('read', det)
-            yield Msg('save')
+            yield Msg("declare_stream", None, det, name="det1")
+            yield Msg("create", name="det1")
+            yield Msg("read", det)
+            yield Msg("save")
         finally:
-            yield Msg('declare_stream', None, det2,  name='det2')
-            yield Msg('create', name="det2")
-            yield Msg('read', det2)
-            yield Msg('save')
-        yield Msg('close_run')
+            yield Msg("declare_stream", None, det2, name="det2")
+            yield Msg("create", name="det2")
+            yield Msg("read", det2)
+            yield Msg("save")
+        yield Msg("close_run")
 
     with pytest.raises(TestException):
         RE(plan())
 
 
 def test_print_commands(RE):
-    ''' test the printing of commands available.
-        NOTE : An error here likely just means that this interface has changed.
-        You'll likely want to change the test.
-        (A test here is still a good idea as it at least raises awareness about
-        the changes made breaking past API)
-    '''
+    """test the printing of commands available.
+    NOTE : An error here likely just means that this interface has changed.
+    You'll likely want to change the test.
+    (A test here is still a good idea as it at least raises awareness about
+    the changes made breaking past API)
+    """
 
     # testing the commands list
     commands1 = list(RE._command_registry.keys())
@@ -1775,8 +1869,7 @@ def test_print_commands(RE):
         docstring = func.__doc__
         if verbose is False:
             docstring = docstring.split("\n")[0]
-        print_command_reg1 = print_command_reg1 +\
-            "{} : {}\n".format(command, docstring)
+        print_command_reg1 = print_command_reg1 + "{} : {}\n".format(command, docstring)
 
     print_command_reg2 = RE.print_command_registry()
     assert print_command_reg1 == print_command_reg2
@@ -1802,14 +1895,14 @@ def test_broken_read_exception(RE):
         def trigger(self):
             ...
 
-    obj = Dummy('broken read')
+    obj = Dummy("broken read")
     with pytest.raises(RuntimeError):
-        RE([Msg('read', obj)])
+        RE([Msg("read", obj)])
 
 
 def test_self_describe(RE):
     def inner():
-        cls = yield Msg('RE_class')
+        cls = yield Msg("RE_class")
         assert type(RE) is cls
 
     RE(inner())
@@ -1859,10 +1952,10 @@ def test_wait_with_timeout(set_finished, RE):
                 status.set_finished()
             return status
 
-    mock_device = MockDevice(name='mock_device')
+    mock_device = MockDevice(name="mock_device")
 
     def plan():
-        yield Msg('stage', mock_device, group='test_group')
+        yield Msg("stage", mock_device, group="test_group")
         yield from wait(group="test_group", timeout=0.1)
 
     if set_finished:
