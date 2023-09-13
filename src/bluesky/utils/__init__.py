@@ -105,7 +105,7 @@ MsgGenerator = Generator[Msg, Any, Optional[P]]
 CustomPlanMetadata = Dict[str, Any]
 
 #: Scalar or iterable of values, one to be applied to each point in a scan
-ScalarOrIterable = Union[float, Iterable[float]]
+ScalarOrIterableFloat = Union[float, Iterable[float]]
 
 
 class RunEngineControlException(Exception):
