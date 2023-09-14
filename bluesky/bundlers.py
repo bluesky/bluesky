@@ -726,16 +726,18 @@ class RunBundler:
 
     async def _pack_external_asset(self, name: str, doc: ExternalAssetDoc, message_stream_name=None):
         """Packs some external asset document `doc` with relevant information from the run."""
-        if name in ["resource", "stream_resource"]:
+        if name in (
+                DocumentNames.resource, DocumentNames.stream_resource
+        ):
             doc["run_start"] = self._run_start_uid
-        elif name == "stream_datum":
+        elif name == DocumentNames.stream_datum:
             if doc["descriptor"]:
                 raise RuntimeError(
                     f"Bluesky recieved a stream_datum {doc['uid']} with a descriptor_uid already filled in, "
                     f"with the value {doc['descriptor']} this should be an empty string"
                 )
             doc["descriptor"] = self._descriptors[message_stream_name]["uid"]
-        elif name in ["datum"]:
+        elif name == DocumentNames.datum:
             ...
         else:
             raise RuntimeError(
@@ -839,7 +841,7 @@ class RunBundler:
         indices_recieved: Dict[FrozenSet(str), Deque[StreamRange]] = {}
 
         for name, doc in asset_docs:
-            if name != "stream_datum":
+            if name != DocumentNames.stream_datum:
                 continue
 
             if doc["seq_nums"] != StreamRange(start=0, stop=0):
