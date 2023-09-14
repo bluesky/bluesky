@@ -66,7 +66,7 @@ def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
         uid=new_uid(),
         data_keys=["det2"],
         seq_nums={"start": 0, "stop": 0},
-        indices={"start": 1, "stop": 2},
+        indices={"start": 0, "stop": 2},
     )
     yield "stream_datum", stream_datum
 
@@ -232,7 +232,8 @@ def test_flyscan_with_pages_passed_in_name(RE):
         ("resource", collect_asset_docs_Resource),
         ("datum", collect_asset_docs_Datum),
         ("stream_resource", collect_asset_docs_StreamResource),
-        ("stream_datum", collect_asset_docs_StreamDatum),
+        # We leave out stream datum since the bundler needs a name to fill
+        # stream_datum seq_nums in collect()
     ]
 )
 def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
@@ -425,7 +426,7 @@ def test_describe_collect_pre_declare_stream(RE):
 def test_describe_with_external_assets_no_collect(RE, asset_type, collect_asset_docs_fun):
 
     class X(Collectable, WritesExternalAssets):
-        describe_collect = describe_without_name
+        describe_collect = describe_with_name
         collect_asset_docs = collect_asset_docs_fun
         name = "x"
 
@@ -433,8 +434,12 @@ def test_describe_with_external_assets_no_collect(RE, asset_type, collect_asset_
     collector = []
     RE([
             Msg("open_run", x),
-            Msg("collect", x),
+            Msg("collect", x, name="primary"),
             Msg("close_run", x),
         ],
         lambda *args: collector.append(args)
        )
+
+    from pprint import pprint
+
+    pprint(collector)

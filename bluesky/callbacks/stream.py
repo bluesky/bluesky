@@ -85,7 +85,7 @@ class LiveDispatcher(CallbackBase):
         Process a modified event document then emit it for the modified stream
 
         This will pass an Event document to the dispatcher. If we have received
-        a new event descriptor from the original stream, or we have recieved a
+        a new event descriptor from the original stream, or we have received a
         new set of `id_args` or `descriptor_id` , a new descriptor document is
         first issued and passed through to the dispatcher.  When issuing a new
         event, the new descriptor is given a new source field.

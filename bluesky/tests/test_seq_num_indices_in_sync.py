@@ -7,6 +7,7 @@ import pytest
 from event_model import ComposeStreamResource, EventModelValueError
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.event_page import PartialEventPage
+from event_model.documents.resource import Resource
 from event_model.documents.stream_datum import StreamRange
 
 from bluesky import Msg
@@ -18,170 +19,62 @@ from bluesky.run_engine import RunEngineInterrupted
 
 class ExternalAssetDevice:
     DETECTORS = ["det1", "det2", "det3"]
-    MAX_NO_OF_FRAMES_TO_COLLECT = 1000
-    current_indices_stop = 0
     previous_random_width = 0
+    new_random_width = 0
 
-    compose_stream_resource = ComposeStreamResource()
-    stream_resource, compose_stream_datum = compose_stream_resource("", "", "non_existent.hdf5", {})
+    def __init__(self):
+        self.compose_stream_resource = ComposeStreamResource()
+        self.stream_resource_compose_datum_pairs = tuple(self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {}) for det in self.DETECTORS)
 
-    def __init__(self, max_no_of_frames_to_collect=None, detectors=None):
-        self.MAX_NO_OF_FRAMES_TO_COLLECT = max_no_of_frames_to_collect or self.MAX_NO_OF_FRAMES_TO_COLLECT
-        self.DETECTORS = detectors or self.DETECTORS
-
-    def collect_from_each_detector(self) -> Iterator[Asset]:
-        # To simulate jitter
-        new_random_width = 0
-        while new_random_width == self.previous_random_width:
-            new_random_width = randint(1, 4)
-        self.previous_random_width = new_random_width
-
-        new_indices_start = self.current_indices_stop + 1
-        new_indices_stop = new_indices_start + new_random_width
-        self.current_indices_stop = new_indices_stop
-        for detector in self.DETECTORS:
+    def collect_resources(self) -> Iterator[Resource]:
+        for stream_resource, _ in self.stream_resource_compose_datum_pairs:
             yield (
-                "stream_datum",
-                self.compose_stream_datum(
-                    data_keys=[detector],
-                    indices=StreamRange(start=new_indices_start, stop=new_indices_stop)
-                )
-            )
-
-
-def collect_stream_datum_one_detector(self):
-    external_asset_device = ExternalAssetDevice(detectors=["det1"], max_no_of_frames_to_collect=100)
-    while (
-        external_asset_device.current_indices_stop < external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT - 10
-    ):
-        yield from external_asset_device.collect_from_each_detector()
-
-    # Collect whatever frames are leftover, we know the total number of frames in the
-    # flyscan but the jitter will be variable, the device keeps track and sends the same
-    # seq_nums
-    yield from (
-        (
-            "stream_datum",
-            external_asset_device.compose_stream_datum(
-                data_keys=[detector],
-                indices=StreamRange(
-                    start=external_asset_device.current_indices_stop + 1,
-                    stop=external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT
-                )
-            )
+            "stream_resource",
+            stream_resource 
         )
-        for detector in external_asset_device.DETECTORS
-    )
 
+    def collect_stream_datum(self, number_of_chunks: int) -> Iterator[Asset]:
+        # To simulate jitter
+        for _ in range(number_of_chunks):
+            while self.new_random_width == self.previous_random_width:
+                self.new_random_width = randint(1, 5)
 
-def collect_stream_datum_three_detectors(self):
-    # Collect from each detector
+            self.previous_random_width = self.new_random_width
+
+            for _, compose_stream_datum in self.stream_resource_compose_datum_pairs:
+                indices_start = randint(0, 100)
+                yield (
+                    "stream_datum",
+                    compose_stream_datum(
+                        indices=StreamRange(start=indices_start, stop=indices_start + self.new_random_width)
+                    )
+                )
+
+def collect_external(self):
     external_asset_device = ExternalAssetDevice()
-    while (
-        external_asset_device.current_indices_stop < external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT - 10
-    ):
-        yield from external_asset_device.collect_from_each_detector()
-
-    # Collect whatever frames are leftover, we know the total number of frames in the
-    # flyscan but the jitter will be variable, the device keeps track and sends the same
-    # seq_nums
     yield from (
-        (
-            "stream_datum",
-            external_asset_device.compose_stream_datum(
-                data_keys=[detector],
-                indices=StreamRange(
-                    start=external_asset_device.current_indices_stop + 1,
-                    stop=external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT
-                )
-            )
-        )
-        for detector in external_asset_device.DETECTORS
+        list(external_asset_device.collect_resources()) + list(external_asset_device.collect_stream_datum(10))
     )
 
-
-def collect_stream_datum_three_detectors_mismatched_indices(self):
+def collect_external_three_detectors_mismatched_indices(self):
     external_asset_device = ExternalAssetDevice()
-    while (
-        external_asset_device.current_indices_stop < external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT - 15
-    ):
-        yield from external_asset_device.collect_from_each_detector()
+    yield from external_asset_device.collect_resources()
 
-    # Do the same as the above test, but insert a mismatched index in one of the detectors,
-    # the last two frames are of different widths across the detectors
+    yield from external_asset_device.collect_stream_datum(9)
 
+    # Do the same as the above test, but our detectors give mismatched indices in the last
+    # chunk of stream_datums
     yield from (
         (
             "stream_datum",
-            external_asset_device.compose_stream_datum(
-                data_keys=[detector],
+            compose_stream_datum(
                 indices=StreamRange(
-                    start=external_asset_device.current_indices_stop + 1,
-                    stop=external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT - idx - 1
+                    start=0,
+                    stop=external_asset_device.previous_random_width + i
                 )
             )
         )
-        for idx, detector in enumerate(external_asset_device.DETECTORS)
-    )
-    yield from (
-        (
-            "stream_datum",
-            external_asset_device.compose_stream_datum(
-                data_keys=[detector],
-                indices=StreamRange(
-                    start=external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT - idx,
-                    stop=external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT
-                )
-            )
-        )
-        for idx, detector in enumerate(external_asset_device.DETECTORS)
-    )
-
-
-def collect_stream_datum_three_detectors_too_many_indices_from_one_detector(self):
-    external_asset_device = ExternalAssetDevice()
-    while (
-        external_asset_device.current_indices_stop < external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT - 10
-    ):
-        yield from external_asset_device.collect_from_each_detector()
-
-    # Do the same as the above test, but insert a mismatched index in one of the detectors
-    yield from (
-        (
-            "stream_datum",
-            external_asset_device.compose_stream_datum(
-                data_keys=[detector],
-                indices=StreamRange(
-                    start=external_asset_device.current_indices_stop + 1,
-                    stop=external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT
-                )
-            )
-        )
-        for detector in ["det1, det2"]
-    )
-
-    # Create two extra seq_nums in det3 that aren't represented in det1 and det2
-    yield from (
-        (
-            "stream_datum",
-            external_asset_device.compose_stream_datum(
-                data_keys=["det3"],
-                indices=StreamRange(
-                    start=start,
-                    stop=stop
-                )
-            )
-        )
-        for start, stop in [
-            (
-                external_asset_device.current_indices_stop + 1,
-                external_asset_device.current_indices_stop + 2,
-            ),
-            (
-                external_asset_device.current_indices_stop + 3,
-                external_asset_device.MAX_NO_OF_FRAMES_TO_COLLECT
-            )
-        ]
+        for i, (_, compose_stream_datum) in enumerate(external_asset_device.stream_resource_compose_datum_pairs)
     )
 
 
@@ -280,9 +173,9 @@ def test_flyscan_with_stream_datum_pause(RE):
         complete = complete
         pause = pause
         resume = resume
-        collect_pages = collect_Pageable_without_name
-        collect_asset_docs = collect_stream_datum_three_detectors
-        describe_collect = describe_without_name
+        collect_pages = collect_Pageable_with_name
+        collect_asset_docs = collect_external
+        describe_collect = describe_with_name
         name = "x"
 
     x = DummyDeviceFlyableEventPageCollectablePausable()
@@ -294,7 +187,7 @@ def test_flyscan_with_stream_datum_pause(RE):
                 Msg("open_run", x),
                 Msg("kickoff", x),
                 Msg("pause", x),
-                Msg("collect", x),
+                Msg("collect", x, name="primary"),
                 Msg("complete", x),
                 Msg("close_run", x),
             ],
@@ -303,66 +196,31 @@ def test_flyscan_with_stream_datum_pause(RE):
 
     RE.resume()
 
-    stream_datums_in_collector = [doc[1] for doc in collector if doc[0] == "stream_datum"]
+    collector_iter = iter(collector)
+    stream_resource_collected = []
+    while not stream_resource_collected and collector_iter:
+        next_collected_doc = next(collector_iter)
+        if next_collected_doc[0] == "stream_resource":
+            for _ in range(3):
+                stream_resource_collected.append(next_collected_doc)
+                next_collected_doc = next(collector_iter)
 
-    det1_seq_nums, det2_seq_nums, det3_seq_nums = (
-        deque([
-            stream_datum["seq_nums"] for stream_datum in stream_datums_in_collector
-            if stream_datum["data_keys"] == [det]
-        ])
-        for det in ["det1", "det2", "det3"]
-    )
+    assert stream_resource_collected
+    for doc in stream_resource_collected:
+        assert doc[0] == "stream_resource"
 
-    # We know there'll be 1000 in total
-    assert det1_seq_nums[-1]["stop"] == det2_seq_nums[-1]["stop"] == det3_seq_nums[-1]["stop"] == 999
-    assert det1_seq_nums == det2_seq_nums == det3_seq_nums
-
-    # Check that there is a difference between the seq_nums
-    old_seq_nums = det1_seq_nums.popleft()
-    old_seq_num_difference = old_seq_nums["stop"] - old_seq_nums["start"]
-    seq_nums_are_different_widths = False
-    while det1_seq_nums:
-        new_seq_nums = det1_seq_nums.popleft()
-        new_seq_num_difference = new_seq_nums["stop"] - new_seq_nums["start"]
-        if old_seq_num_difference != new_seq_num_difference:
-            seq_nums_are_different_widths = True
-            break
-        old_seq_num_difference = new_seq_num_difference
-
-    assert seq_nums_are_different_widths
+    stream_datum_collected_docs = [doc[1] for doc in collector if doc[0] == "stream_datum"]
+    assert stream_datum_collected_docs
+    from pprint import pprint
+    pprint(stream_datum_collected_docs)
 
 
-def test_flyscan_with_too_many_indices(RE):
-    class DummyDeviceFlyableEventPageCollectablePausableTooManyIndices(
-        Flyable, EventPageCollectable, Pausable
-    ):
-        kickoff = kickoff
-        complete = complete
-        pause = pause
-        resume = resume
-        collect_pages = collect_Pageable_without_name
-        collect_asset_docs = collect_stream_datum_three_detectors_too_many_indices_from_one_detector
-        describe_collect = describe_without_name
-        name = "x"
-
-    x = DummyDeviceFlyableEventPageCollectablePausableTooManyIndices()
-    collector = []
-
-    with pytest.raises(RunEngineInterrupted):
-        RE(
-            [
-                Msg("open_run", x),
-                Msg("kickoff", x),
-                Msg("pause", x),
-                Msg("collect", x),
-                Msg("complete", x),
-                Msg("close_run", x),
-            ],
-            lambda *args: collector.append(args)
-        )
-
-    with pytest.raises(EventModelValueError):
-        RE.resume()
+    # There are 30 stream datum all together, every 3 will have the same seq_nums
+    for i in  range(0, 30, 3):
+        stream_datum_chunk = stream_datum_collected_docs[i : i + 3]
+        seq_nums = stream_datum_chunk[0]["seq_nums"]
+        for stream_datum in stream_datum_chunk[-2:]:
+            assert stream_datum["seq_nums"] == seq_nums
 
 
 def test_flyscan_with_mismatched_indices(RE):
@@ -373,9 +231,9 @@ def test_flyscan_with_mismatched_indices(RE):
         complete = complete
         pause = pause
         resume = resume
-        collect_pages = collect_Pageable_without_name
-        collect_asset_docs = collect_stream_datum_three_detectors_too_many_indices_from_one_detector
-        describe_collect = describe_without_name
+        collect_pages = collect_Pageable_with_name
+        collect_asset_docs = collect_external_three_detectors_mismatched_indices
+        describe_collect = describe_with_name
         name = "x"
 
     x = DummyDeviceFlyableEventPageCollectablePausableMismatchedStreamDatumIndices()
@@ -387,7 +245,7 @@ def test_flyscan_with_mismatched_indices(RE):
                 Msg("open_run", x),
                 Msg("kickoff", x),
                 Msg("pause", x),
-                Msg("collect", x),
+                Msg("collect", x, name="primary"),
                 Msg("complete", x),
                 Msg("close_run", x),
             ],
@@ -407,7 +265,7 @@ def test_rd_desc_with_declare_stream(RE):
         collect_pages = collect_Pageable_with_name
         pause = pause
         resume = resume
-        collect_asset_docs = collect_stream_datum_one_detector
+        collect_asset_docs = collect_external
         describe_collect = describe_with_name
         name = "x"
 

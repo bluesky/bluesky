@@ -1,8 +1,9 @@
 import inspect
 import time as ttime
+from itertools import cycle
 from collections import deque
 from typing import (Any, Deque, Dict, FrozenSet, Iterable, List, Optional, Set,
-                    Tuple, Union)
+                    Tuple, Union, Iterator)
 
 from event_model import (ComposeDescriptorBundle, DataKey, Datum,
                          DocumentNames, EventModelValueError, Resource,
@@ -60,6 +61,8 @@ class RunBundler:
         self.emit = emit
         self.emit_sync = emit_sync
         self.log = log
+        # cache for the previous seq_nums calculated during an objects collect() or save()
+        self._previous_seq_nums_calculated: Dict[Any, StreamRange] = {}
 
     async def open_run(self, msg):
         self.run_is_open = True
@@ -509,30 +512,9 @@ class RunBundler:
                 "got {!s}".format(frozenset(d_objs), objs_read)
             )
 
-        # Fill in seq_nums for the stream_datum recieved
-        await self._fill_stream_datum_seq_nums(self._asset_docs_cache)
-
         # Resource and Datum documents
-        for resource_or_datum_name, resource_or_datum_doc in self._asset_docs_cache:
-            # Add a 'run_start' field to resource documents on their way out
-            # since this field could not have been set correctly before this point.
-            self._pack_external_asset(resource_or_datum_name, resource_or_datum_doc, message_stream_name=desc_key)
-
-            doc_logger.debug(
-                "[%s] document emitted %r",
-                resource_or_datum_name,
-                resource_or_datum_doc,
-                extra={
-                    "doc_name": resource_or_datum_name,
-                    "run_uid": self._run_start_uid,
-                    "doc": resource_or_datum_doc
-                }
-            )
-
-            await self.emit(
-                DocumentNames(resource_or_datum_name),
-                resource_or_datum_doc
-            )
+        await self._pack_external_assets(self._asset_docs_cache, message_stream_name=desc_key)
+            
 
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
@@ -724,26 +706,101 @@ class RunBundler:
 
         self._local_descriptors[collect_obj] = local_descriptors
 
-    async def _pack_external_asset(self, name: str, doc: ExternalAssetDoc, message_stream_name=None):
-        """Packs some external asset document `doc` with relevant information from the run."""
-        if name in (
-                DocumentNames.resource, DocumentNames.stream_resource
-        ):
-            doc["run_start"] = self._run_start_uid
-        elif name == DocumentNames.stream_datum:
-            if doc["descriptor"]:
-                raise RuntimeError(
-                    f"Bluesky recieved a stream_datum {doc['uid']} with a descriptor_uid already filled in, "
-                    f"with the value {doc['descriptor']} this should be an empty string"
-                )
-            doc["descriptor"] = self._descriptors[message_stream_name]["uid"]
-        elif name == DocumentNames.datum:
-            ...
-        else:
-            raise RuntimeError(
-                f"Tried to emit an external asset {name}, acceptable external assets are "
-                "`resource`, `stream_resource`, `datum`, or `stream_datum`"
+    async def _pack_seq_nums_into_stream_datum(
+        self, doc: StreamDatum, current_seq_counter: int, old_indices_difference: int, detector_counter: Iterator[int]
+    ) -> int:
+        if doc["seq_nums"] != StreamRange(start=0, stop=0):
+            raise EventModelValueError(
+                f"Received `seq_nums` {doc['seq_nums']} from devices {doc['data_keys']} "
+                "during `collect()` or `describe_collect()`. `seq_nums` should be None or "
+                "`StreamRange(start=0, stop=0)` on `ComposeStreamDatum` when used with the "
+                "run engine."
             )
+
+        indices_difference = doc["indices"]["stop"] - doc["indices"]["start"]
+
+        # We allow a new width between indices if we've received indices for each detector
+        if next(detector_counter) != 0 and (indices_difference != old_indices_difference):
+            raise EventModelValueError(
+                f"Received `indices` {doc['indices']} during `collect()` these are of a different "
+                f"width `{indices_difference}` than other detectors in the same collect() or save()."
+            )
+
+        doc["seq_nums"] = StreamRange(
+            start=current_seq_counter + 1, stop=current_seq_counter + 1 + indices_difference
+        )
+
+        return indices_difference
+
+    async def _pack_external_assets(
+        self,
+        asset_docs: Iterable[Tuple[str, ExternalAssetDoc]],
+        message_stream_name: Optional[str]
+    ):
+        """Packs some external asset documents with relevant information from the run."""
+        
+
+        # Current seq_e
+        current_seq_counter = (
+            self._sequence_counters[message_stream_name]
+            if message_stream_name in self._sequence_counters else 0
+        )
+
+        old_indices_difference = 0
+        stream_resource_data_keys = []
+        detector_counter = None
+
+        for name, doc in asset_docs:
+            if name == DocumentNames.resource.value:
+                doc["run_start"] = self._run_start_uid
+            elif name == DocumentNames.stream_resource.value:
+                if old_indices_difference != 0:
+                    raise RuntimeError("Receieved a `stream_resource` document after `stream_datum` documents.")
+                if doc["data_key"] in stream_resource_data_keys:
+                    raise RuntimeError(f"Received a second `stream_resource` with a `data_key` {doc['data_key']}.")
+                doc["run_start"] = self._run_start_uid
+                
+                # Information required to pack stream_datum seq_nums
+                stream_resource_data_keys.append(doc["data_key"])
+                detector_counter = cycle(range(len(stream_resource_data_keys)))
+            elif name == DocumentNames.stream_datum.value:
+                if not stream_resource_data_keys:
+                    raise RuntimeError(
+                        "Received `stream_datum` without recieving any `stream_resource`"
+                    )
+                if doc["descriptor"]:
+                    raise RuntimeError(
+                        f"Received a `stream_datum` {doc['uid']} with a `descriptor` uid already "
+                        f"filled in, with the value {doc['descriptor']} this should be an empty string."
+                    )
+                doc["descriptor"] = self._descriptors[message_stream_name].descriptor_doc["uid"]
+                old_indices_difference = await self._pack_seq_nums_into_stream_datum(
+                    doc,
+                    current_seq_counter,
+                    old_indices_difference,
+                    detector_counter
+                )
+
+            elif name == DocumentNames.datum.value:
+                ...
+            else:
+                raise RuntimeError(
+                    f"Tried to emit an external asset {name}, acceptable external assets are "
+                    "`resource`, `stream_resource`, `datum`, or `stream_datum`"
+                )
+
+            await self.emit(DocumentNames(name), doc)
+
+            doc_logger.debug(
+                    "[%s] document emitted %r",
+                    name,
+                    doc,
+                    extra={
+                        "doc_name": name,
+                        "run_uid": self._run_start_uid,
+                        "doc": doc
+                    }
+                )
 
     async def _collect_events(
         self,
@@ -751,7 +808,7 @@ class RunBundler:
         local_descriptors,
         return_payload: bool,
         stream: bool,
-        message_stream_name: str
+        message_stream_name: Optional[str]
     ):
         event_list: List[PartialEvent] = []
         payload = []
@@ -827,75 +884,6 @@ class RunBundler:
             await self.emit(DocumentNames.event_page, ev_page)
         return payload
 
-    async def _fill_stream_datum_seq_nums(
-            self,
-            asset_docs: Iterable[Tuple[str, ExternalAssetDoc]]):
-        """
-        Calculates the seq_nums from the indices for each stream_datum recieved.
-        """
-
-        # A dict of the data_keys to last seq_nums calculated
-        last_seq_nums_generated: Dict[FrozenSet(str), StreamRange] = {}
-
-        # A dict of the data_keys to the indices recieved, used to validate correct output from the device
-        indices_recieved: Dict[FrozenSet(str), Deque[StreamRange]] = {}
-
-        for name, doc in asset_docs:
-            if name != DocumentNames.stream_datum:
-                continue
-
-            if doc["seq_nums"] != StreamRange(start=0, stop=0):
-                raise EventModelValueError(
-                    f"Recieved `seq_nums` {doc['seq_nums']} from devices {doc['data_keys']} "
-                    "during `collect()` or `describe_collect()`. `seq_nums` should be None or "
-                    "`StreamRange(start=0, stop=0)` on `ComposeStreamDatum` when used with the "
-                    "run engine."
-                )
-
-            data_keys_frozenset = frozenset(doc["data_keys"])
-
-            # Cache the indices recieved for validation later
-            if data_keys_frozenset not in indices_recieved:
-                indices_recieved[data_keys_frozenset] = deque()
-            indices_recieved[data_keys_frozenset].append(doc["indices"])
-
-            indices_difference = doc["indices"]["stop"] - doc["indices"]["start"]
-
-            seq_num_previous_stop = last_seq_nums_generated.get(data_keys_frozenset, {}).get("stop", -1)
-
-            doc["seq_nums"] = StreamRange(
-                start=seq_num_previous_stop + 1, stop=seq_num_previous_stop + 1 + indices_difference
-            )
-            last_seq_nums_generated[data_keys_frozenset] = doc["seq_nums"]
-
-        if not indices_recieved:
-            return  # There were no stream_datum
-
-        # Check that the indices match up
-        indices_recieved_deque = deque(indices_recieved.items())
-        old_data_keys, old_indices = indices_recieved_deque.popleft()
-        while indices_recieved_deque:
-            new_data_keys, new_indices = indices_recieved_deque.popleft()
-            if len(new_indices) != len(old_indices):
-                raise EventModelValueError(
-                    "Recieved stream_datum documents from the same stream with different data_keys: "
-                    f"{old_data_keys} sent {len(old_indices)} indices and {new_data_keys} sent "
-                    f"{len(new_indices)}."
-                )
-
-            if new_indices != old_indices:
-                non_equal_indices_idx = [
-                    idx for idx in range(len(new_indices))
-                    if old_indices[idx] != new_indices[idx]
-                ]
-
-                raise EventModelValueError(
-                    "Recieved stream_datum documents from the same stream with different indices: "
-                    f"{str(old_data_keys)} contain indices {[old_indices[n] for n in non_equal_indices_idx]} "
-                    f"and {str(new_data_keys)} contain indices {[new_indices[n] for n in non_equal_indices_idx]}"
-                )
-            old_data_keys, old_indices = new_data_keys, new_indices
-
     async def collect(self, msg):
         """
         Collect data cached by a flyer and emit documents.
@@ -945,12 +933,8 @@ class RunBundler:
         # Pack a Resource or Datum document with relevant information and emit
         collected_asset_docs = [x async for x in maybe_collect_asset_docs(msg, collect_obj)]
 
-        # Fill in seq_nums for the stream_datum recieved
-        await self._fill_stream_datum_seq_nums(collected_asset_docs)
-
-        for name, doc in collected_asset_docs:
-            self._pack_external_asset(name, doc, message_stream_name=message_stream_name)
-            await self.emit(DocumentNames(name), doc)
+        # pack the external assets with data tracked by the bundler
+        seq_num_width = await self._pack_external_assets(collected_asset_docs, message_stream_name=message_stream_name)
 
         if isinstance(collect_obj, EventCollectable):
             payload = await self._collect_events(
@@ -967,6 +951,12 @@ class RunBundler:
             )
         else:
             return_payload = False
+            if not message_stream_name:
+                raise RuntimeError(
+                    "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
+                    "requires a `name=stream_name` argument"
+                )
+            self._sequence_counters[message_stream_name] += seq_num_width
 
         if return_payload:
             return payload
