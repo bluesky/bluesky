@@ -24,6 +24,7 @@ from typing_extensions import TypedDict
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
     """A dictionary containing the optional per-reading metadata of a piece of scan data"""
+
     #: * -ve: alarm unknown, e.g. device disconnected
     #: * 0: ok, no alarm
     #: * +ve: there is an alarm
@@ -36,6 +37,7 @@ class ReadingOptional(TypedDict, total=False):
 
 class Reading(ReadingOptional):
     """A dictionary containing the value and timestamp of a piece of scan data"""
+
     #: The current value, as a JSON encodable type or numpy array
     value: Any
     #: Timestamp in seconds since the UNIX epoch
@@ -49,6 +51,7 @@ Dtype = Literal["string", "number", "array", "boolean", "integer"]
 # Just the data_key definition
 class DescriptorOptional(TypedDict, total=False):
     """A dictionary containing optional per-scan metadata of a series of Readings"""
+
     #: Where the data is stored if it is stored external to the events
     external: str
     #: The names for dimensions of the data. Empty list if scalar data
@@ -63,6 +66,7 @@ class DescriptorOptional(TypedDict, total=False):
 
 class Descriptor(DescriptorOptional):
     """A dictionary containing the source and datatype of a series of Readings"""
+
     #: The source of the data, e.g. an EPICS Process Variable
     source: str
     #: The JSON type of the data in the event. Deprecated for dtype_str
@@ -76,6 +80,7 @@ class Descriptor(DescriptorOptional):
 # But exclude descriptor, seq_num, uid added by RE
 class PartialEventOptional(TypedDict, total=False):
     """A dictionary containing optional Event data"""
+
     #: If any data key is in an external asset it should be present in this
     #: dictionary with value False
     filled: Dict[str, bool]
@@ -83,6 +88,7 @@ class PartialEventOptional(TypedDict, total=False):
 
 class PartialEvent(PartialEventOptional):
     """A dictionary containing Event data"""
+
     #: The event data for each data key
     data: Dict[str, Any]
     #: The timestamps for each data key
@@ -95,12 +101,14 @@ class PartialEvent(PartialEventOptional):
 # But exclude run_start added by RE
 class PartialResourceOptional(TypedDict, total=False):
     """A dictionary containing optional information needed to load an external resource"""
+
     #: Whether the path is a posix or windows path. If not given default to posix
     path_semantics: Literal["posix", "windows"]
 
 
 class PartialResource(TypedDict):
     """A dictionary containing information needed to load an external resource"""
+
     #: Hint about the format of the resource, and how it should be loaded
     spec: str
     #: Relative path, should not change over lifecycle of the resource
@@ -117,6 +125,7 @@ class PartialResource(TypedDict):
 # https://github.com/bluesky/event-model/blob/master/event_model/schemas/datum.json
 class Datum(TypedDict):
     """A dictionary containing information to load event data from a Resource"""
+
     #: The UID of a Resource
     resource: str
     #: UID that can be referenced in an Event
@@ -125,7 +134,9 @@ class Datum(TypedDict):
     datum_kwargs: Dict[str, Any]
 
 
-Asset = Union[Tuple[Literal["resource"], PartialResource], Tuple[Literal["datum"], Datum]]
+Asset = Union[
+    Tuple[Literal["resource"], PartialResource], Tuple[Literal["datum"], Datum]
+]
 
 T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
@@ -185,6 +196,17 @@ class HasParent(Protocol):
 
 
 @runtime_checkable
+class HasChildren(Protocol):
+    @abstractmethod
+    def children(self) -> Iterator[Tuple[str, Any]]:
+        """``None``, or an iterator returning a tuple of str, Any.
+
+        each tuple contains the name of the child, and the reference to it.
+        """
+        ...
+
+
+@runtime_checkable
 class WritesExternalAssets(Protocol):
     @abstractmethod
     def collect_asset_docs(self) -> Iterator[Asset]:
@@ -236,8 +258,7 @@ class Configurable(Protocol):
 class Triggerable(Protocol):
     @abstractmethod
     def trigger(self) -> Status:
-        """Return a ``Status`` that is marked done when the device is done triggering.
-        """
+        """Return a ``Status`` that is marked done when the device is done triggering."""
         ...
 
 
@@ -294,6 +315,7 @@ class Movable(Protocol):
 
 class Location(TypedDict, Generic[T]):
     """A dictionary containing the location of a Device"""
+
     #: Where the Device was requested to move to
     setpoint: T
     #: Where the Device actually is at the moment
@@ -454,6 +476,7 @@ class Checkable(Protocol):
 
 class Hints(TypedDict, total=False):
     """A dictionary of optional hints for visualization"""
+
     #: A list of the interesting fields to plot
     fields: List[str]
     #: Partition fields (and their stream name) into dimensions for plotting
@@ -489,6 +512,8 @@ def check_supports(obj, protocol: Type[T]) -> T:
         readable = check_supports(obj, Readable)
         readable.read()
     """
-    assert isinstance(obj, protocol), \
-        "%s does not implement all %s methods" % (obj, protocol.__name__)
+    assert isinstance(obj, protocol), "%s does not implement all %s methods" % (
+        obj,
+        protocol.__name__,
+    )
     return obj
