@@ -51,6 +51,7 @@ def collect_asset_docs_Datum(self) -> Iterator[Asset]:
 def collect_asset_docs_StreamResource(self) -> Iterator[Asset]:
     stream_resource = StreamResource(
         resource_kwargs={"argument": 1},
+        data_key="det2",
         resource_path="An/awesome/path",
         root="some_detail",
         spec=".hdf5",
@@ -63,11 +64,15 @@ def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
 
     stream_datum = StreamDatum(
         stream_resource=new_uid(),
+        descriptor="",
         uid=new_uid(),
-        data_keys=["det2"],
         seq_nums={"start": 0, "stop": 0},
         indices={"start": 0, "stop": 2},
     )
+
+    # We need some stream_resouce to describe the stream_datum in the collect
+    yield from list(collect_asset_docs_StreamResource(None))
+
     yield "stream_datum", stream_datum
 
 
@@ -98,8 +103,13 @@ def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
         ],
         lambda *args: collector.append(args)
        )
-    assert len(collector) == 5
-    assert collector[2][0] == asset_type
+    if asset_type != "stream_datum":
+        assert len(collector) == 5
+        assert collector[2][0] == asset_type
+    else:
+        # We also need a stream_resource when collcting stream_datum
+        assert len(collector) == 6
+        assert collector[3][0] == asset_type
 
 
 def describe_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
@@ -439,7 +449,3 @@ def test_describe_with_external_assets_no_collect(RE, asset_type, collect_asset_
         ],
         lambda *args: collector.append(args)
        )
-
-    from pprint import pprint
-
-    pprint(collector)

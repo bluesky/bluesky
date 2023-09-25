@@ -61,8 +61,6 @@ class RunBundler:
         self.emit = emit
         self.emit_sync = emit_sync
         self.log = log
-        # cache for the previous seq_nums calculated during an objects collect() or save()
-        self._previous_seq_nums_calculated: Dict[Any, StreamRange] = {}
 
     async def open_run(self, msg):
         self.run_is_open = True
@@ -514,7 +512,6 @@ class RunBundler:
 
         # Resource and Datum documents
         await self._pack_external_assets(self._asset_docs_cache, message_stream_name=desc_key)
-            
 
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
@@ -707,8 +704,13 @@ class RunBundler:
         self._local_descriptors[collect_obj] = local_descriptors
 
     async def _pack_seq_nums_into_stream_datum(
-        self, doc: StreamDatum, current_seq_counter: int, old_indices_difference: int, detector_counter: Iterator[int]
+        self,
+        doc: StreamDatum,
+        message_stream_name: str,
+        stream_datum_data_key_counter: Iterator[int],
+        stream_datum_previous_indices_difference: int
     ) -> int:
+
         if doc["seq_nums"] != StreamRange(start=0, stop=0):
             raise EventModelValueError(
                 f"Received `seq_nums` {doc['seq_nums']} from devices {doc['data_keys']} "
@@ -719,16 +721,28 @@ class RunBundler:
 
         indices_difference = doc["indices"]["stop"] - doc["indices"]["start"]
 
-        # We allow a new width between indices if we've received indices for each detector
-        if next(detector_counter) != 0 and (indices_difference != old_indices_difference):
+        if (
+            stream_datum_previous_indices_difference and
+            stream_datum_previous_indices_difference != indices_difference
+        ):
             raise EventModelValueError(
                 f"Received `indices` {doc['indices']} during `collect()` these are of a different "
                 f"width `{indices_difference}` than other detectors in the same collect() or save()."
             )
 
+        index_in_chunk = next(stream_datum_data_key_counter)
+
+        current_seq_counter = self._sequence_counters[message_stream_name]
+
         doc["seq_nums"] = StreamRange(
-            start=current_seq_counter + 1, stop=current_seq_counter + 1 + indices_difference
+            start=current_seq_counter, stop=current_seq_counter + indices_difference
         )
+
+        if index_in_chunk == 0:
+            self._sequence_counters[message_stream_name] += indices_difference
+
+            # Return a prevous width of 0 to allow the next stream_datum to have a new width
+            return 0
 
         return indices_difference
 
@@ -738,47 +752,47 @@ class RunBundler:
         message_stream_name: Optional[str]
     ):
         """Packs some external asset documents with relevant information from the run."""
-        
 
-        # Current seq_e
-        current_seq_counter = (
-            self._sequence_counters[message_stream_name]
-            if message_stream_name in self._sequence_counters else 0
-        )
-
-        old_indices_difference = 0
         stream_resource_data_keys = []
-        detector_counter = None
+        stream_datum_data_key_counter = None
+        stream_datum_previous_indices_difference = 0
 
         for name, doc in asset_docs:
             if name == DocumentNames.resource.value:
                 doc["run_start"] = self._run_start_uid
             elif name == DocumentNames.stream_resource.value:
-                if old_indices_difference != 0:
-                    raise RuntimeError("Receieved a `stream_resource` document after `stream_datum` documents.")
+                if stream_datum_data_key_counter:
+                    raise RuntimeError("Received a `stream_resource` document after `stream_datum` documents.")
+
                 if doc["data_key"] in stream_resource_data_keys:
                     raise RuntimeError(f"Received a second `stream_resource` with a `data_key` {doc['data_key']}.")
+
                 doc["run_start"] = self._run_start_uid
-                
+
                 # Information required to pack stream_datum seq_nums
                 stream_resource_data_keys.append(doc["data_key"])
-                detector_counter = cycle(range(len(stream_resource_data_keys)))
+
             elif name == DocumentNames.stream_datum.value:
                 if not stream_resource_data_keys:
                     raise RuntimeError(
                         "Received `stream_datum` without recieving any `stream_resource`"
                     )
+                if not stream_datum_data_key_counter:
+                    # Create a counter of data_keys for `stream_datum` `indices` to be validated against
+                    counter_list = list(range(len(stream_resource_data_keys)))
+                    counter_list.reverse()
+                    stream_datum_data_key_counter = cycle(counter_list)
                 if doc["descriptor"]:
                     raise RuntimeError(
                         f"Received a `stream_datum` {doc['uid']} with a `descriptor` uid already "
                         f"filled in, with the value {doc['descriptor']} this should be an empty string."
                     )
                 doc["descriptor"] = self._descriptors[message_stream_name].descriptor_doc["uid"]
-                old_indices_difference = await self._pack_seq_nums_into_stream_datum(
+                stream_datum_previous_indices_difference = await self._pack_seq_nums_into_stream_datum(
                     doc,
-                    current_seq_counter,
-                    old_indices_difference,
-                    detector_counter
+                    message_stream_name,
+                    stream_datum_data_key_counter,
+                    stream_datum_previous_indices_difference
                 )
 
             elif name == DocumentNames.datum.value:
@@ -934,7 +948,7 @@ class RunBundler:
         collected_asset_docs = [x async for x in maybe_collect_asset_docs(msg, collect_obj)]
 
         # pack the external assets with data tracked by the bundler
-        seq_num_width = await self._pack_external_assets(collected_asset_docs, message_stream_name=message_stream_name)
+        await self._pack_external_assets(collected_asset_docs, message_stream_name=message_stream_name)
 
         if isinstance(collect_obj, EventCollectable):
             payload = await self._collect_events(
@@ -956,7 +970,6 @@ class RunBundler:
                     "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
                     "requires a `name=stream_name` argument"
                 )
-            self._sequence_counters[message_stream_name] += seq_num_width
 
         if return_payload:
             return payload
