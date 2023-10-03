@@ -1,9 +1,9 @@
+import asyncio
 import inspect
 import time as ttime
-from itertools import cycle
 from collections import deque
 from typing import (Any, Deque, Dict, FrozenSet, Iterable, List, Optional, Set,
-                    Tuple, Union, Iterator)
+                    Tuple, Union)
 
 from event_model import (ComposeDescriptorBundle, DataKey, Datum,
                          DocumentNames, EventModelValueError, Resource,
@@ -56,7 +56,6 @@ class RunBundler:
         # this is state on the RE, mirror it here rather than refer to
         # the parent
         self.record_interruptions = record_interruptions
-        self._paused_before_collection = False
         # this is RE.emit, but lifted to this context
         self.emit = emit
         self.emit_sync = emit_sync
@@ -191,13 +190,15 @@ class RunBundler:
         )
 
     async def _ensure_cached(self, obj, collect=False):
+        coros = []
         if (not collect and obj not in self._describe_cache):
-            await self._cache_describe(obj)
+            coros.append(self._cache_describe(obj))
         elif (collect and obj not in self._describe_collect_cache):
-            await self._cache_describe_collect(obj)
+            coros.append(self._cache_describe_collect(obj))
         if obj not in self._config_desc_cache:
-            await self._cache_describe_config(obj)
-            await self._cache_read_config(obj)
+            coros.append(self._cache_describe_config(obj))
+            coros.append(self._cache_read_config(obj))
+        await asyncio.gather(*coros)
 
     async def declare_stream(self, msg):
         """Generate and emit an EventDescriptor."""
@@ -212,8 +213,8 @@ class RunBundler:
         assert no_obj is None
         objs = frozenset(objs)
         objs_dks = {}
+        await asyncio.gather(*[self._ensure_cached(obj, collect=collect) for obj in objs])
         for obj in objs:
-            await self._ensure_cached(obj, collect=collect)
             if collect:
                 dks = self._describe_collect_cache[obj]
                 formatted_data_keys = self._maybe_format_datakeys_with_stream_name(
@@ -424,9 +425,6 @@ class RunBundler:
             self._interruptions_counter += 1
             self.emit_sync(DocumentNames.event, doc)
 
-        if content == "pause" and self._uncollected:
-            self._paused_before_collection = True
-
     def rewind(self):
         self._sequence_counters.clear()
         self._sequence_counters.update(self._sequence_counters_copy)
@@ -503,7 +501,8 @@ class RunBundler:
                 objs_dks[obj] = self._describe_cache[obj]
 
             descriptor_doc, compose_event, d_objs = await self._prepare_stream(desc_key, objs_dks)
-            # do have the descriptor cached
+
+        # do have the descriptor cached
         elif frozenset(d_objs) != objs_read:
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
@@ -511,7 +510,13 @@ class RunBundler:
             )
 
         # Resource and Datum documents
-        await self._pack_external_assets(self._asset_docs_cache, message_stream_name=desc_key)
+        indices_generated = await self._pack_external_assets(self._asset_docs_cache, message_stream_name=desc_key)
+        if indices_generated > 1:
+            raise RuntimeError(
+                "Received multiple indices in a `stream_datum` document for one event, "
+                " during a `read()` `save()`. `stream_datum` should have indices {\"start\": n, \"stop\": n+1} "
+                "in a `read()` `save()`."
+            )
 
         # Merge list of readings into single dict.
         readings = {k: v for d in self._read_cache for k, v in d.items()}
@@ -707,7 +712,6 @@ class RunBundler:
         self,
         doc: StreamDatum,
         message_stream_name: str,
-        stream_datum_data_key_counter: Iterator[int],
         stream_datum_previous_indices_difference: int
     ) -> int:
 
@@ -730,19 +734,10 @@ class RunBundler:
                 f"width `{indices_difference}` than other detectors in the same collect() or save()."
             )
 
-        index_in_chunk = next(stream_datum_data_key_counter)
-
         current_seq_counter = self._sequence_counters[message_stream_name]
-
         doc["seq_nums"] = StreamRange(
             start=current_seq_counter, stop=current_seq_counter + indices_difference
         )
-
-        if index_in_chunk == 0:
-            self._sequence_counters[message_stream_name] += indices_difference
-
-            # Return a prevous width of 0 to allow the next stream_datum to have a new width
-            return 0
 
         return indices_difference
 
@@ -753,48 +748,38 @@ class RunBundler:
     ):
         """Packs some external asset documents with relevant information from the run."""
 
-        stream_resource_data_keys = []
-        stream_datum_data_key_counter = None
         stream_datum_previous_indices_difference = 0
+        number_of_stream_datum_receieved = 0
 
         for name, doc in asset_docs:
             if name == DocumentNames.resource.value:
                 doc["run_start"] = self._run_start_uid
             elif name == DocumentNames.stream_resource.value:
-                if stream_datum_data_key_counter:
+                if number_of_stream_datum_receieved:
                     raise RuntimeError("Received a `stream_resource` document after `stream_datum` documents.")
-
-                if doc["data_key"] in stream_resource_data_keys:
-                    raise RuntimeError(f"Received a second `stream_resource` with a `data_key` {doc['data_key']}.")
 
                 doc["run_start"] = self._run_start_uid
 
-                # Information required to pack stream_datum seq_nums
-                stream_resource_data_keys.append(doc["data_key"])
-
             elif name == DocumentNames.stream_datum.value:
-                if not stream_resource_data_keys:
-                    raise RuntimeError(
-                        "Received `stream_datum` without recieving any `stream_resource`"
-                    )
-                if not stream_datum_data_key_counter:
-                    # Create a counter of data_keys for `stream_datum` `indices` to be validated against
-                    counter_list = list(range(len(stream_resource_data_keys)))
-                    counter_list.reverse()
-                    stream_datum_data_key_counter = cycle(counter_list)
                 if doc["descriptor"]:
                     raise RuntimeError(
                         f"Received a `stream_datum` {doc['uid']} with a `descriptor` uid already "
                         f"filled in, with the value {doc['descriptor']} this should be an empty string."
                     )
-                doc["descriptor"] = self._descriptors[message_stream_name].descriptor_doc["uid"]
+
+                if message_stream_name in self._descriptors:
+                    doc["descriptor"] = self._descriptors[message_stream_name].descriptor_doc["uid"]
+                else:
+                    raise RuntimeError(
+                        f"`descriptor` not made for stream {message_stream_name}."
+                    )
+
                 stream_datum_previous_indices_difference = await self._pack_seq_nums_into_stream_datum(
                     doc,
                     message_stream_name,
-                    stream_datum_data_key_counter,
                     stream_datum_previous_indices_difference
                 )
-
+                number_of_stream_datum_receieved += 1
             elif name == DocumentNames.datum.value:
                 ...
             else:
@@ -816,13 +801,15 @@ class RunBundler:
                     }
                 )
 
+        return stream_datum_previous_indices_difference
+
     async def _collect_events(
         self,
         collect_obj: EventCollectable,
         local_descriptors,
         return_payload: bool,
         stream: bool,
-        message_stream_name: Optional[str]
+        message_stream_name: Optional[str],
     ):
         event_list: List[PartialEvent] = []
         payload = []
@@ -869,7 +856,7 @@ class RunBundler:
 
     async def _collect_event_pages(
             self, collect_obj, local_descriptors, return_payload: bool, message_stream_name: str
-            ):
+    ):
         payload = []
 
         if message_stream_name:
@@ -886,8 +873,7 @@ class RunBundler:
             ev_page = compose_event_page(data=ev_page["data"], timestamps=ev_page["timestamps"])
             doc_logger.debug(
                 "[event_page] document is emitted with data keys %r (run_uid=%r)",
-                ev_page['data'].keys(), self._run_start_uid,
-                ev_page["uid"],
+                ev_page['data'].keys(), ev_page["uid"],
                 extra={
                     'doc_name': 'event_page',
                     'run_uid': self._run_start_uid,
@@ -948,7 +934,9 @@ class RunBundler:
         collected_asset_docs = [x async for x in maybe_collect_asset_docs(msg, collect_obj)]
 
         # pack the external assets with data tracked by the bundler
-        await self._pack_external_assets(collected_asset_docs, message_stream_name=message_stream_name)
+        indices_difference = await self._pack_external_assets(
+            collected_asset_docs, message_stream_name=message_stream_name
+        )
 
         if isinstance(collect_obj, EventCollectable):
             payload = await self._collect_events(
@@ -970,6 +958,13 @@ class RunBundler:
                     "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
                     "requires a `name=stream_name` argument"
                 )
+            if not indices_difference:
+                raise RuntimeError(
+                    "A `collect` message returned no events/event_pages or stream_datums"
+                )
+
+            # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
+            self._sequence_counters[message_stream_name] += indices_difference
 
         if return_payload:
             return payload

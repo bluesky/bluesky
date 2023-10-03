@@ -25,7 +25,7 @@ from .utils import (
 )
 
 
-def declare_stream(*objs, **kwargs):
+def declare_stream(*objs, name=None, collect=False):
     """
     Bundle future readings into a new Event document.
 
@@ -46,7 +46,7 @@ def declare_stream(*objs, **kwargs):
     --------
     :func:`bluesky.plan_stubs.save`
     """
-    return (yield Msg('declare_stream', None, *separate_devices(objs), **kwargs))
+    return (yield Msg('declare_stream', None, *separate_devices(objs), name=name, collect=collect))
 
 
 def create(name='primary'):

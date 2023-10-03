@@ -48,7 +48,8 @@ def collect_asset_docs_Datum(self) -> Iterator[Asset]:
     yield "datum", datum
 
 
-def collect_asset_docs_StreamResource(self) -> Iterator[Asset]:
+def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
+    # We need some stream_resouce to describe the stream_datum in the collect
     stream_resource = StreamResource(
         resource_kwargs={"argument": 1},
         data_key="det2",
@@ -59,20 +60,13 @@ def collect_asset_docs_StreamResource(self) -> Iterator[Asset]:
     )
     yield "stream_resource", stream_resource
 
-
-def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
-
     stream_datum = StreamDatum(
         stream_resource=new_uid(),
         descriptor="",
         uid=new_uid(),
         seq_nums={"start": 0, "stop": 0},
-        indices={"start": 0, "stop": 2},
+        indices={"start": 0, "stop": 1},
     )
-
-    # We need some stream_resouce to describe the stream_datum in the collect
-    yield from list(collect_asset_docs_StreamResource(None))
-
     yield "stream_datum", stream_datum
 
 
@@ -81,8 +75,8 @@ def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
     [
         ("resource", collect_asset_docs_Resource),
         ("datum", collect_asset_docs_Datum),
-        ("stream_resource", collect_asset_docs_StreamResource),
         ("stream_datum", collect_asset_docs_StreamDatum),
+        # StreamResource is receieved in the collect of stream_datum
     ]
 )
 def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
@@ -96,7 +90,7 @@ def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
     collector = []
     RE([
             Msg("open_run", x),
-            Msg("create", name="x"),
+            Msg("create", name="primary"),
             Msg("read", x),
             Msg("save", x),
             Msg("close_run", x),
@@ -209,8 +203,8 @@ def test_flyscan_with_pages_with_no_name(RE):
     RE([
             Msg("open_run", x),
             Msg("kickoff", x),
-            Msg("complete", x),
             Msg("collect", x),
+            Msg("complete", x),
             Msg("close_run", x),
         ],
         lambda *args: collector.append(args)
@@ -229,7 +223,7 @@ def test_flyscan_with_pages_passed_in_name(RE):
     collector = []
     RE([
             Msg("open_run", x),
-            Msg("collect", x, name="1"),
+            Msg("collect", x, name="primary"),
             Msg("close_run", x),
         ],
         lambda *args: collector.append(args)
@@ -241,17 +235,16 @@ def test_flyscan_with_pages_passed_in_name(RE):
     [
         ("resource", collect_asset_docs_Resource),
         ("datum", collect_asset_docs_Datum),
-        ("stream_resource", collect_asset_docs_StreamResource),
-        # We leave out stream datum since the bundler needs a name to fill
-        # stream_datum seq_nums in collect()
+        ("stream_datum", collect_asset_docs_StreamDatum),
+        # StreamResource is receieved in the collect of stream_datum
     ]
 )
 def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
     class X(Flyable, EventPageCollectable, WritesExternalAssets):
         kickoff = kickoff_dummy_callback
         complete = complete_dummy_callback
-        collect_pages = collect_Pageable_without_name
-        describe_collect = describe_without_name
+        collect_pages = collect_Pageable_with_name
+        describe_collect = describe_with_name
         collect_asset_docs = collect_asset_docs_fun
         name = "x"
 
@@ -260,7 +253,7 @@ def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, col
     RE([
             Msg("open_run", x),
             Msg("kickoff", x),
-            Msg("collect", x),
+            Msg("collect", x, name="primary"),
             Msg("complete", x),
             Msg("close_run", x),
         ],
@@ -273,8 +266,8 @@ def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, col
     [
         ("resource", collect_asset_docs_Resource),
         ("datum", collect_asset_docs_Datum),
-        ("stream_resource", collect_asset_docs_StreamResource),
         ("stream_datum", collect_asset_docs_StreamDatum),
+        # StreamResource is receieved in the collect of stream_datum
     ]
 )
 def test_flyscan_with_pages_passed_in_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
@@ -301,8 +294,6 @@ def test_flyscan_with_pages_passed_in_name_and_external_assets(RE, asset_type, c
 
 def test_rd_desc_with_declare_stream(RE):
     class X(Readable, EventPageCollectable):
-        # TODO Ask Tom about what we're thinking here, do
-        # we want a describe and describe_collect for readable?
         read = read_Readable
         collect_pages = collect_Pageable_with_name
         describe = describe_Readable
@@ -359,7 +350,7 @@ def test_flyscan_without_paging_with_name(RE):
             Msg("open_run", x),
             Msg("kickoff", x),
             Msg("complete", x),
-            Msg("collect", x, name="1"),
+            Msg("collect", x, name="primary"),
             Msg("close_run", x),
         ],
         lambda *args: collector.append(args)
@@ -424,20 +415,11 @@ def test_describe_collect_pre_declare_stream(RE):
            )
 
 
-@pytest.mark.parametrize(
-    'asset_type,collect_asset_docs_fun',
-    [
-        ("resource", collect_asset_docs_Resource),
-        ("datum", collect_asset_docs_Datum),
-        ("stream_resource", collect_asset_docs_StreamResource),
-        ("stream_datum", collect_asset_docs_StreamDatum),
-    ]
-)
-def test_describe_with_external_assets_no_collect(RE, asset_type, collect_asset_docs_fun):
+def test_describe_with_stream_datum_no_events(RE):
 
     class X(Collectable, WritesExternalAssets):
         describe_collect = describe_with_name
-        collect_asset_docs = collect_asset_docs_fun
+        collect_asset_docs = collect_asset_docs_StreamDatum
         name = "x"
 
     x = X()
