@@ -1,5 +1,4 @@
 cycler
-event-model>=1.14.0
 historydict
 msgpack
 msgpack-numpy

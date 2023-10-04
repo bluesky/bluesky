@@ -24,6 +24,7 @@ pip install --upgrade pip
 
 with open('requirements.txt') as f:
     requirements = f.read().split()
+requirements.__add__(["event-model @ git+https://github.com/evalott100/event-model@98b9905df5b3c49c6bb96ecc32d8be3dc2ba41e2"])
 
 with open('README.md', encoding='utf-8') as readme_file:
     readme = readme_file.read()
