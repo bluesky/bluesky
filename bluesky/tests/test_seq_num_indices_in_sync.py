@@ -115,18 +115,10 @@ class ExternalAssetDevice:
 
     def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
         def timestamps():
-            return {
-                "det1": [1] * self.new_random_width,
-                "det2": [2] * self.new_random_width,
-                "det3": [3] * self.new_random_width
-            }
+            return {"det4": [1] * self.new_random_width}
 
         def data():
-            return {
-                "det1": ["a"] * self.new_random_width,
-                "det2": ["b"] * self.new_random_width,
-                "det3": ["c"] * self.new_random_width
-            }
+            return {"det4": ["a"] * self.new_random_width}
 
         return [
             PartialEventPage(
@@ -170,10 +162,12 @@ def describe_Readable(self) -> Dict[str, DataKey]:
 
 
 def describe_collect_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
-    return {
+    description = {
         str(det): DataKey(shape=[], source="stream1", dtype="string", external="STREAM:")
         for det in ["det1", "det2", "det3"]
     }
+    description.update({"det4": DataKey(shape=[], source="stream1", dtype="string")})
+    return description
 
 
 def test_flyscan_with_stream_datum_pause(RE):

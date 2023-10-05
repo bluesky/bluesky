@@ -49,6 +49,8 @@ class RunBundler:
         self._sequence_counters: Dict[Any, int] = dict()
         self._sequence_counters_copy: Dict[Any, int] = dict()  # for if we redo data-points
         self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # cache of {obj: (cb, kwargs)}
+        # a cache of stream_resource uid to the data_keys that stream_resource collects for
+        self._stream_resource_data_keys: Dict[str, Iterable[str]] = dict()
         self.run_is_open = False
         self._uncollected = set()  # objects after kickoff(), before collect()
         # we expect the RE to take care of the composition
@@ -739,6 +741,11 @@ class RunBundler:
             start=current_seq_counter, stop=current_seq_counter + indices_difference
         )
 
+        if doc["stream_resource"] not in self._stream_resource_data_keys:
+            raise RuntimeError(
+                f"Receieved a `steam_datum` referring to an unknown stream resource {doc['stream_resource']}"
+            )
+
         return indices_difference
 
     async def _pack_external_assets(
@@ -749,16 +756,36 @@ class RunBundler:
         """Packs some external asset documents with relevant information from the run."""
 
         stream_datum_previous_indices_difference = 0
-        number_of_stream_datum_receieved = 0
+        data_keys_received = set()
+        descriptor_doc = None
+        external_data_keys = None
+
+        if message_stream_name:
+            descriptor_doc = self._descriptors[message_stream_name].descriptor_doc
+            external_data_keys = [
+                x for x in descriptor_doc["data_keys"]
+                if (
+                    "external" in descriptor_doc["data_keys"][x]
+                    and descriptor_doc["data_keys"][x]["external"] == "STREAM:"
+                )
+            ]
 
         for name, doc in asset_docs:
             if name == DocumentNames.resource.value:
                 doc["run_start"] = self._run_start_uid
             elif name == DocumentNames.stream_resource.value:
-                if number_of_stream_datum_receieved:
-                    raise RuntimeError("Received a `stream_resource` document after `stream_datum` documents.")
-
                 doc["run_start"] = self._run_start_uid
+
+                if doc["uid"] in self._stream_resource_data_keys:
+                    raise RuntimeError(f"Received `stream_resource` with uid {doc['uid']} twice.")
+
+                self._stream_resource_data_keys[doc["uid"]] = doc["data_key"]
+
+                if not external_data_keys or doc["data_key"] not in external_data_keys:
+                    raise RuntimeError(
+                        f"Receieved a `stream_resource` with data_key {doc['data_key']} that is not in the "
+                        f"descriptor 'STREAM:' data_keys {external_data_keys}"
+                    )
 
             elif name == DocumentNames.stream_datum.value:
                 if doc["descriptor"]:
@@ -766,20 +793,18 @@ class RunBundler:
                         f"Received a `stream_datum` {doc['uid']} with a `descriptor` uid already "
                         f"filled in, with the value {doc['descriptor']} this should be an empty string."
                     )
-
-                if message_stream_name in self._descriptors:
-                    doc["descriptor"] = self._descriptors[message_stream_name].descriptor_doc["uid"]
-                else:
+                if not descriptor_doc:
                     raise RuntimeError(
                         f"`descriptor` not made for stream {message_stream_name}."
                     )
+                data_keys_received.add(self._stream_resource_data_keys[doc["stream_resource"]])
 
+                doc["descriptor"] = descriptor_doc["uid"]
                 stream_datum_previous_indices_difference = await self._pack_seq_nums_into_stream_datum(
                     doc,
                     message_stream_name,
                     stream_datum_previous_indices_difference
                 )
-                number_of_stream_datum_receieved += 1
             elif name == DocumentNames.datum.value:
                 ...
             else:
@@ -801,6 +826,13 @@ class RunBundler:
                     }
                 )
 
+        # Check we have a stream_datum for each external data_key in the descriptor
+        if descriptor_doc and data_keys_received and set(external_data_keys) != data_keys_received:
+            raise RuntimeError(
+                f"Received `stream_datum` for each of the data_keys {data_keys_received}, "
+                f"expected `stream_datum` for each of the data_keys {set(external_data_keys)}."
+            )
+
         return stream_datum_previous_indices_difference
 
     async def _collect_events(
@@ -816,6 +848,14 @@ class RunBundler:
 
         if message_stream_name:
             compose_event = self._descriptors[message_stream_name].compose_event
+            data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
+            external_data_keys = [
+                x for x in data_keys
+                if (
+                    "external" in data_keys[x]
+                    and data_keys[x]["external"] == "STREAM:"
+                )
+            ]
 
         for ev in collect_obj.collect():
             if return_payload:
@@ -824,6 +864,17 @@ class RunBundler:
             if not message_stream_name:
                 objs_read = frozenset(ev["data"])
                 compose_event = local_descriptors[objs_read].compose_event
+                data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
+                external_data_keys = [
+                    x for x in data_keys
+                    if (
+                        "external" in data_keys[x]
+                        and data_keys[x]["external"] == "STREAM:"
+                    )
+                ]
+
+            if [x for x in external_data_keys if x in ev["data"]]:
+                raise RuntimeError("Received an event containing data for external data keys.")
 
             ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
 
@@ -861,6 +912,14 @@ class RunBundler:
 
         if message_stream_name:
             compose_event_page = self._descriptors[message_stream_name].compose_event_page
+            data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
+            external_data_keys = [
+                x for x in data_keys
+                if (
+                    "external" in data_keys[x]
+                    and data_keys[x]["external"] == "STREAM:"
+                )
+            ]
 
         for ev_page in collect_obj.collect_pages():
             if return_payload:
@@ -869,6 +928,17 @@ class RunBundler:
             if not message_stream_name:
                 objs_read = frozenset(ev_page["data"])
                 compose_event_page = local_descriptors[objs_read].compose_event_page
+                data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
+                external_data_keys = [
+                    x for x in data_keys
+                    if (
+                        "external" in data_keys[x]
+                        and data_keys[x]["external"] == "STREAM:"
+                    )
+                ]
+
+            if [x for x in external_data_keys if x in ev_page["data"]]:
+                raise RuntimeError("Received an event_page containing data for external data keys.")
 
             ev_page = compose_event_page(data=ev_page["data"], timestamps=ev_page["timestamps"])
             doc_logger.debug(

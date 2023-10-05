@@ -27,41 +27,40 @@ def describe_Readable(self) -> Dict[str, DataKey]:
     )
 
 
-def collect_asset_docs_Resource(self) -> Iterator[Asset]:
+def collect_asset_docs_Datum(self) -> Iterator[Asset]:
+    resource_uid = new_uid()
     resource = PartialResource(
         resource_kwargs={"some_argument": 1337},
         root="awesome",
         spec=".dat",
         resource_path="no/really,/awesome",
-        uid=new_uid(),
+        uid=resource_uid
     )
 
     yield "resource", resource
-
-
-def collect_asset_docs_Datum(self) -> Iterator[Asset]:
     datum = Datum(
         datum_id="some_resource_name/123123",
-        resource="uid_of_that_resource",
+        resource=resource_uid,
         datum_kwargs={"some_argument": 1234},
     )
     yield "datum", datum
 
 
-def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
-    # We need some stream_resouce to describe the stream_datum in the collect
+def collect_asset_docs_StreamDatum_one_detector(self) -> Iterator[Asset]:
+    resource_uid = new_uid()
+
     stream_resource = StreamResource(
         resource_kwargs={"argument": 1},
-        data_key="det2",
+        data_key="det1",
         resource_path="An/awesome/path",
         root="some_detail",
         spec=".hdf5",
-        uid=new_uid(),
+        uid=resource_uid,
     )
     yield "stream_resource", stream_resource
 
     stream_datum = StreamDatum(
-        stream_resource=new_uid(),
+        stream_resource=resource_uid,
         descriptor="",
         uid=new_uid(),
         seq_nums={"start": 0, "stop": 0},
@@ -70,16 +69,40 @@ def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
     yield "stream_datum", stream_datum
 
 
+def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
+    detectors = ["det1", "det2"]
+    resource_uid = {det: new_uid() for det in detectors}
+    for det in detectors:
+        stream_resource = StreamResource(
+            resource_kwargs={"argument": 1},
+            data_key=det,
+            resource_path="An/awesome/path",
+            root="some_detail",
+            spec=".hdf5",
+            uid=resource_uid[det],
+        )
+        yield "stream_resource", stream_resource
+
+    for det in detectors * 2:
+        stream_datum = StreamDatum(
+            stream_resource=resource_uid[det],
+            descriptor="",
+            uid=new_uid(),
+            seq_nums={"start": 0, "stop": 0},
+            indices={"start": 0, "stop": 1},
+        )
+        yield "stream_datum", stream_datum
+
+
 @pytest.mark.parametrize(
-    'asset_type,collect_asset_docs_fun',
+    'asset_type,resource_type,collect_asset_docs_fun',
     [
-        ("resource", collect_asset_docs_Resource),
-        ("datum", collect_asset_docs_Datum),
-        ("stream_datum", collect_asset_docs_StreamDatum),
-        # StreamResource is receieved in the collect of stream_datum
+        ("datum", "resource", collect_asset_docs_Datum),
+        ("stream_datum", "stream_resource", collect_asset_docs_StreamDatum_one_detector),
+        # Resources are received before collecting the datum
     ]
 )
-def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
+def test_rd_desc_different_asset_types(RE, asset_type, resource_type, collect_asset_docs_fun):
     class X(Readable, WritesExternalAssets):
         read = read_Readable
         describe = describe_Readable
@@ -88,7 +111,8 @@ def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
 
     x = X()
     collector = []
-    RE([
+    RE(
+        [
             Msg("open_run", x),
             Msg("create", name="primary"),
             Msg("read", x),
@@ -96,31 +120,32 @@ def test_rd_desc_different_asset_types(RE, asset_type, collect_asset_docs_fun):
             Msg("close_run", x),
         ],
         lambda *args: collector.append(args)
-       )
-    if asset_type != "stream_datum":
-        assert len(collector) == 5
-        assert collector[2][0] == asset_type
-    else:
-        # We also need a stream_resource when collcting stream_datum
-        assert len(collector) == 6
-        assert collector[3][0] == asset_type
+    )
+
+    assert len([x for x in collector if x[0] == "event"]) == 1
+    assert len([x for x in collector if x[0] == "event_page"]) == 0
+    datums = [x for x in collector if x[0] == asset_type]
+    resources = [x for x in collector if x[0] == resource_type]
+    assert len(datums) == 1
+    assert len(resources) == 1
 
 
-def describe_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
+def describe_with_name_stream_detectors(self) -> SyncOrAsync[Dict[str, DataKey]]:
     data_keys = {
-        str(det): DataKey(shape=[], source="stream1", dtype="string")
-        for det in ["det1", "det2", "det3"]
+        str(det): DataKey(shape=[], source="stream1", dtype="string", external="STREAM:")
+        for det in ["det1", "det2"]
     }
+    data_keys.update({"det3": DataKey(shape=[], source="stream1", dtype="string")})
 
     return data_keys
 
 
 def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
     def timestamps():
-        return {"det1": [1.1, 1.2], "det2": [2.2, 2.3], "det3": [3.3, 3.4]}
+        return {"det3": [3.3, 3.4]}
 
     def data():
-        return {"det1": [4321, 5432], "det2": [1234, 2345], "det3": [0, 1]}
+        return {"det3": [0, 1]}
 
     partial_event_pages = [
         PartialEventPage(
@@ -130,6 +155,14 @@ def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
     ]
 
     return partial_event_pages
+
+
+def describe_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
+    data_keys = {
+        str(det): DataKey(shape=[], source="stream1", dtype="string")
+        for det in ["det1", "det2", "det3"]
+    }
+    return data_keys
 
 
 def describe_without_name(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
@@ -160,7 +193,7 @@ def collect_Pageable_without_name(self) -> SyncOrAsync[Iterator[PartialEventPage
     return partial_event_pages
 
 
-def collect(self) -> SyncOrAsync[Iterator[PartialEvent]]:
+def collect_events_all_detectors(self) -> SyncOrAsync[Iterator[PartialEvent]]:
     def timestamps(x):
         return {"det1": x + 0.1, "det2": x + 0.2, "det3": x + 0.3}
 
@@ -210,13 +243,17 @@ def test_flyscan_with_pages_with_no_name(RE):
         lambda *args: collector.append(args)
        )
 
+    event_pages = [x for x in collector if x[0] == "event_page"]
+    assert len(event_pages) == 17
+    assert len(event_pages[0][1]["timestamps"]["det1"]) == 1
+
 
 def test_flyscan_with_pages_passed_in_name(RE):
     class X(Flyable, EventPageCollectable):
         kickoff = kickoff_dummy_callback
         complete = complete_dummy_callback
         collect_pages = collect_Pageable_with_name
-        describe_collect = describe_with_name
+        describe_collect = describe_with_name_stream_detectors
         name = "x"
 
     x = X()
@@ -233,7 +270,6 @@ def test_flyscan_with_pages_passed_in_name(RE):
 @pytest.mark.parametrize(
     'asset_type,collect_asset_docs_fun',
     [
-        ("resource", collect_asset_docs_Resource),
         ("datum", collect_asset_docs_Datum),
         ("stream_datum", collect_asset_docs_StreamDatum),
         # StreamResource is receieved in the collect of stream_datum
@@ -244,7 +280,7 @@ def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, col
         kickoff = kickoff_dummy_callback
         complete = complete_dummy_callback
         collect_pages = collect_Pageable_with_name
-        describe_collect = describe_with_name
+        describe_collect = describe_with_name_stream_detectors
         collect_asset_docs = collect_asset_docs_fun
         name = "x"
 
@@ -260,11 +296,21 @@ def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, col
         lambda *args: collector.append(args)
        )
 
+    event_pages_in_collector = [x[1] for x in collector if x[0] == "event_page"]
+    assert len(event_pages_in_collector) == 7
+    # One detector is collected in an event_page
+    assert len(event_pages_in_collector[0]["data"]) == 1
+    assert len(event_pages_in_collector[0]["data"]["det3"]) == 2
+
+    if asset_type == "stream_datum":
+        # Two detector are collected in stream_datum, each with two stream_datum
+        datum_in_collector = [x[1] for x in collector if x[0] == asset_type]
+        assert len(datum_in_collector) == 4
+
 
 @pytest.mark.parametrize(
     'asset_type,collect_asset_docs_fun',
     [
-        ("resource", collect_asset_docs_Resource),
         ("datum", collect_asset_docs_Datum),
         ("stream_datum", collect_asset_docs_StreamDatum),
         # StreamResource is receieved in the collect of stream_datum
@@ -275,7 +321,7 @@ def test_flyscan_with_pages_passed_in_name_and_external_assets(RE, asset_type, c
         kickoff = kickoff_dummy_callback
         complete = complete_dummy_callback
         collect_pages = collect_Pageable_with_name
-        describe_collect = describe_with_name
+        describe_collect = describe_with_name_stream_detectors
         collect_asset_docs = collect_asset_docs_fun
         name = "x"
 
@@ -297,7 +343,7 @@ def test_rd_desc_with_declare_stream(RE):
         read = read_Readable
         collect_pages = collect_Pageable_with_name
         describe = describe_Readable
-        describe_collect = describe_with_name
+        describe_collect = describe_with_name_stream_detectors
         name = "name"
 
     x = X()
@@ -318,7 +364,7 @@ def test_flyscan_without_pageing_or_name(RE):
     class X(Flyable, EventCollectable):
         kickoff = kickoff_dummy_callback
         complete = complete_dummy_callback
-        collect = collect
+        collect = collect_events_all_detectors
         describe_collect = describe_without_name
         name = "x"
 
@@ -340,7 +386,7 @@ def test_flyscan_without_paging_with_name(RE):
     class X(Flyable, EventCollectable):
         kickoff = kickoff_dummy_callback
         complete = complete_dummy_callback
-        collect = collect
+        collect = collect_events_all_detectors
         describe_collect = describe_with_name
         name = "x"
 
@@ -359,7 +405,7 @@ def test_flyscan_without_paging_with_name(RE):
 
 def test_describe_collect_with_stream(RE):
     class X(EventCollectable):
-        collect = collect
+        collect = collect_events_all_detectors
         describe_collect = describe_without_name
         name = "x"
 
@@ -418,7 +464,7 @@ def test_describe_collect_pre_declare_stream(RE):
 def test_describe_with_stream_datum_no_events(RE):
 
     class X(Collectable, WritesExternalAssets):
-        describe_collect = describe_with_name
+        describe_collect = describe_with_name_stream_detectors
         collect_asset_docs = collect_asset_docs_StreamDatum
         name = "x"
 
