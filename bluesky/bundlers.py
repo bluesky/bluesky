@@ -895,10 +895,12 @@ class RunBundler:
         """
 
         collect_obj = check_supports(msg.obj, Collectable)
-        assert not (isinstance(collect_obj, EventCollectable) and isinstance(collect_obj, EventPageCollectable)), \
-            "collect() was called for a device which is both EventCollectable and EventPageCollectable. "\
-            "If you want to have an EventCollectable device format only some events as event_pages "\
-            "then use `stream=False`."
+        if isinstance(collect_obj, EventCollectable) and isinstance(collect_obj, EventPageCollectable):
+            doc_logger.warn(
+                "collect() was called for a device %r which is both EventCollectable "
+                "and EventPageCollectable.",
+                collect_obj.name
+            )
 
         if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
@@ -938,11 +940,7 @@ class RunBundler:
             collected_asset_docs, message_stream_name=message_stream_name
         )
 
-        if isinstance(collect_obj, EventCollectable):
-            payload = await self._collect_events(
-                collect_obj, local_descriptors, return_payload, stream, message_stream_name
-            )
-        elif isinstance(collect_obj, EventPageCollectable):
+        if isinstance(collect_obj, EventPageCollectable):
             if stream:
                 raise IllegalMessageSequence(
                     "A 'collect' with `stream=True` was sent for an EventPageCollectable device, "
@@ -950,6 +948,10 @@ class RunBundler:
                 )
             payload = await self._collect_event_pages(
                 collect_obj, local_descriptors, return_payload, message_stream_name
+            )
+        elif isinstance(collect_obj, EventCollectable):
+            payload = await self._collect_events(
+                collect_obj, local_descriptors, return_payload, stream, message_stream_name
             )
         else:
             return_payload = False
