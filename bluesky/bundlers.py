@@ -762,13 +762,7 @@ class RunBundler:
 
         if message_stream_name:
             descriptor_doc = self._descriptors[message_stream_name].descriptor_doc
-            external_data_keys = [
-                x for x in descriptor_doc["data_keys"]
-                if (
-                    "external" in descriptor_doc["data_keys"][x]
-                    and descriptor_doc["data_keys"][x]["external"] == "STREAM:"
-                )
-            ]
+            external_data_keys = self.get_external_data_keys(descriptor_doc["data_keys"])
 
         for name, doc in asset_docs:
             if name == DocumentNames.resource.value:
@@ -835,6 +829,16 @@ class RunBundler:
 
         return stream_datum_previous_indices_difference
 
+    def get_external_data_keys(self, data_keys: Dict[str, DataKey]) -> List[DataKey]:
+        """Get the external data keys from the descriptor data_keys dictionary"""
+        return [
+            x for x in data_keys
+            if (
+                "external" in data_keys[x]
+                and data_keys[x]["external"] == "STREAM:"
+            )
+        ]
+
     async def _collect_events(
         self,
         collect_obj: EventCollectable,
@@ -849,14 +853,6 @@ class RunBundler:
         if message_stream_name:
             compose_event = self._descriptors[message_stream_name].compose_event
             data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
-            external_data_keys = [
-                x for x in data_keys
-                if (
-                    "external" in data_keys[x]
-                    and data_keys[x]["external"] == "STREAM:"
-                )
-            ]
-
         for ev in collect_obj.collect():
             if return_payload:
                 payload.append(ev)
@@ -865,15 +861,8 @@ class RunBundler:
                 objs_read = frozenset(ev["data"])
                 compose_event = local_descriptors[objs_read].compose_event
                 data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
-                external_data_keys = [
-                    x for x in data_keys
-                    if (
-                        "external" in data_keys[x]
-                        and data_keys[x]["external"] == "STREAM:"
-                    )
-                ]
 
-            if [x for x in external_data_keys if x in ev["data"]]:
+            if [x for x in self.get_external_data_keys(data_keys) if x in ev["data"]]:
                 raise RuntimeError("Received an event containing data for external data keys.")
 
             ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
@@ -913,13 +902,6 @@ class RunBundler:
         if message_stream_name:
             compose_event_page = self._descriptors[message_stream_name].compose_event_page
             data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
-            external_data_keys = [
-                x for x in data_keys
-                if (
-                    "external" in data_keys[x]
-                    and data_keys[x]["external"] == "STREAM:"
-                )
-            ]
 
         for ev_page in collect_obj.collect_pages():
             if return_payload:
@@ -929,15 +911,8 @@ class RunBundler:
                 objs_read = frozenset(ev_page["data"])
                 compose_event_page = local_descriptors[objs_read].compose_event_page
                 data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
-                external_data_keys = [
-                    x for x in data_keys
-                    if (
-                        "external" in data_keys[x]
-                        and data_keys[x]["external"] == "STREAM:"
-                    )
-                ]
 
-            if [x for x in external_data_keys if x in ev_page["data"]]:
+            if [x for x in self.get_external_data_keys(data_keys) if x in ev_page["data"]]:
                 raise RuntimeError("Received an event_page containing data for external data keys.")
 
             ev_page = compose_event_page(data=ev_page["data"], timestamps=ev_page["timestamps"])
@@ -968,7 +943,7 @@ class RunBundler:
         if isinstance(collect_obj, EventCollectable) and isinstance(collect_obj, EventPageCollectable):
             doc_logger.warn(
                 "collect() was called for a device %r which is both EventCollectable "
-                "and EventPageCollectable.",
+                "and EventPageCollectable. Using device.collect_pages().",
                 collect_obj.name
             )
 
