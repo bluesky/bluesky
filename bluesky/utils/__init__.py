@@ -1119,6 +1119,11 @@ def new_uid():
     return str(uuid.uuid4())
 
 
+def group_uuid(name: str) -> str:
+    # Unique but readable
+    return f"{name}-{new_uid()[:6]}"
+
+
 def sanitize_np(val):
     "Convert any numpy objects into built-in Python types."
     if isinstance(val, (np.generic, np.ndarray)):

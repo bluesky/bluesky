@@ -16,7 +16,7 @@ except ImportError:
 from . import plan_patterns
 
 from . import utils
-from .utils import Msg, get_hinted_fields
+from .utils import Msg, get_hinted_fields, group_uuid
 
 from . import preprocessors as bpp
 from . import plan_stubs as bps
@@ -1975,6 +1975,44 @@ def fly(flyers, *, md=None):
         yield from bps.collect(flyer)
     yield from bps.close_run()
     return uid
+
+
+def fly_with_checkpoint(flyer, flush_period=0.5, checkpoint_every_collect=False):
+    """
+    Perform a fly scan with a single flyer, optionally performing checkpoints.
+
+    Parameters
+    ----------
+    flyer : collection
+        object that support the flyer interface
+    flush_period: float, optional
+        how often to check if the flyer is complete
+    checkpoint_every_collect: bool, optional
+        wether or not to checkpoint while waiting for group to complete.
+    
+    Yields
+    ------
+    msg : Msg
+        'kickoff', 'wait', 'complete, 'wait', 'collect' messages
+
+    See Also
+    --------
+    :func:`bluesky.plans.fly`
+    """
+    yield from bps.kickoff(flyer)
+    complete_group = group_uuid("complete")
+    yield from bps.complete(flyer, group=complete_group)
+    done = False
+    while not done:
+        try:
+            yield from bps.wait(group=complete_group, timeout=flush_period)
+        except TimeoutError:
+            pass
+        else:
+            done = True
+        yield from bps.collect(flyer, stream=True, return_payload=False)
+        if checkpoint_every_collect:
+            yield from bps.checkpoint()
 
 
 def x2x_scan(detectors, motor1, motor2, start, stop, num, *,
