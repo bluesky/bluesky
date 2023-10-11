@@ -101,12 +101,7 @@ To produce data in a step scan, a device must be Readable:
 A dict of stream name to Descriptors is returned from :meth:`describe`, where a
 `Descriptor` is a dictionary with the following keys:
 
-.. autoclass:: bluesky.protocols.Descriptor
-    :members:
-
-The following keys can optionally be present in a `Desciptor`:
-
-.. autoclass:: bluesky.protocols.DescriptorOptional
+.. autoclass:: bluesky.protocols.DataKey
     :members:
 
 A dict of stream name to Reading is returned from :meth:`read`, where a
@@ -151,11 +146,6 @@ A Resource will be yielded to show that data will be written to an external reso
 like a file on disk:
 
 .. autoclass:: bluesky.protocols.PartialResource
-    :members:
-
-which can optionally include:
-
-.. autoclass:: bluesky.protocols.PartialResourceOptional
     :members:
 
 While a Datum will be yielded to specify a single frame of data in a Resource:
@@ -222,8 +212,6 @@ The yielded values from ``collect()`` are partial Event dictionaries:
 If any of the data keys are in external assets rather than including the data,
 a ``filled`` key should be present:
 
-.. autoclass:: bluesky.protocols.PartialEventOptional
-    :members:
 
 Flyable devices can also implement :class:`Configurable` if they have
 configuration that only needs to be read once at the start of scan
