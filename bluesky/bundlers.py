@@ -1,25 +1,26 @@
-from collections import deque
+import asyncio
 import inspect
 import time as ttime
-from typing import Any, Deque, Dict, FrozenSet, List, Tuple, Set
-from event_model import DocumentNames, compose_run, ComposeDescriptorBundle
+from collections import deque
+from typing import (Any, Deque, Dict, FrozenSet, Iterable, List, Optional, Set,
+                    Tuple, Union)
+
+from event_model import (ComposeDescriptorBundle, DataKey, Datum,
+                         DocumentNames, EventModelValueError, Resource,
+                         StreamDatum, StreamRange, StreamResource, compose_run,
+                         pack_event_page)
+
 from .log import doc_logger
-from .protocols import (
-    T, Callback, Configurable, PartialEvent, Descriptor, Flyable,
-    HasName, Readable, Reading, Subscribable, check_supports
-)
-from .utils import (
-    new_uid,
-    IllegalMessageSequence,
-    _rearrange_into_parallel_dicts,
-    short_uid,
-    Msg,
-    maybe_await,
-    maybe_collect_asset_docs,
-    maybe_update_hints,
-)
+from .protocols import (Callback, Collectable, Configurable, EventCollectable,
+                        EventPageCollectable, Flyable, HasName, PartialEvent,
+                        Readable, Reading, Subscribable, T, check_supports)
+from .utils import (IllegalMessageSequence, Msg,
+                    _rearrange_into_parallel_dicts, maybe_await,
+                    maybe_collect_asset_docs, maybe_update_hints, new_uid,
+                    short_uid)
 
 ObjDict = Dict[Any, Dict[str, T]]
+ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
 
 
 class RunBundler:
@@ -33,8 +34,10 @@ class RunBundler:
         self._objs_read: Deque[HasName] = deque()  # objects read in one Event
         self._read_cache: Deque[Dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
-        self._describe_cache: ObjDict[Descriptor] = dict()  # cache of all obj.describe() output
-        self._config_desc_cache: ObjDict[Descriptor] = dict()  # " obj.describe_configuration()
+        self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output
+        self._describe_collect_cache: ObjDict[Dict[str, DataKey]] = dict()  # cache of all obj.describe() output
+
+        self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()
         self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values
         self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps
         # cache of {name: (doc, compose_event, compose_event_page)}
@@ -46,6 +49,8 @@ class RunBundler:
         self._sequence_counters: Dict[Any, int] = dict()
         self._sequence_counters_copy: Dict[Any, int] = dict()  # for if we redo data-points
         self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # cache of {obj: (cb, kwargs)}
+        # a cache of stream_resource uid to the data_keys that stream_resource collects for
+        self._stream_resource_data_keys: Dict[str, Iterable[str]] = dict()
         self.run_is_open = False
         self._uncollected = set()  # objects after kickoff(), before collect()
         # we expect the RE to take care of the composition
@@ -67,7 +72,9 @@ class RunBundler:
         run = compose_run(uid=self._run_start_uid, event_counters=self._sequence_counters, metadata=self._md)
         doc = run.start_doc
         self._compose_descriptor = run.compose_descriptor
+        self._compose_resource = run.compose_resource
         self._compose_stop = run.compose_stop
+        self._compose_stream_resource = run.compose_stream_resource
 
         await self.emit(DocumentNames.start, doc)
         doc_logger.debug("[start] document is emitted (run_uid=%r)", self._run_start_uid,
@@ -80,11 +87,13 @@ class RunBundler:
             # To store the interruptions uid outside of event-model
             self._interruptions_desc_uid = new_uid()
             dk = {"dtype": "string", "shape": [], "source": "RunEngine"}
-            self._interruptions_desc, self._interruptions_compose_event, *_ = self._compose_descriptor(
+            descriptor_bundle = self._compose_descriptor(
                 uid=self._interruptions_desc_uid,
                 name="interruptions",
                 data_keys={"interruption": dk},
             )
+            self._interruptions_desc = descriptor_bundle.descriptor_doc
+            self._interruptions_compose_event = descriptor_bundle.compose_event
             await self.emit(DocumentNames.descriptor, self._interruptions_desc)
 
         return self._run_start_uid
@@ -127,26 +136,31 @@ class RunBundler:
         self.run_is_open = False
         return doc["run_start"]
 
-    async def _prepare_stream(self, desc_key, objs_read):
+    async def _prepare_stream(
+        self,
+        desc_key: str,
+        objs_dks: Dict[Any, Dict[str, DataKey]],
+    ):
         # We do not have an Event Descriptor for this set
         # so one must be created.
         data_keys = {}
         config = {}
         object_keys = {}
         hints = {}
-        for obj in objs_read:
-            dks = self._describe_cache[obj]
-            obj_name = obj.name
-            # dks is an OrderedDict. Record that order as a list.
-            object_keys[obj_name] = list(dks)
-            for field, dk in dks.items():
-                dk["object_name"] = obj_name
-            data_keys.update(dks)
-            config[obj_name] = {}
-            config[obj_name]["data"] = self._config_values_cache[obj]
-            config[obj_name]["timestamps"] = self._config_ts_cache[obj]
-            config[obj_name]["data_keys"] = self._config_desc_cache[obj]
+
+        for obj, dks in objs_dks.items():
             maybe_update_hints(hints, obj)
+            # dks is an OrderedDict. Record that order as a list.
+            object_keys[obj.name] = list(dks)
+            for key in dks.keys():
+                dks[key]["object_name"] = obj.name
+            data_keys.update(dks)
+            config[obj.name] = {
+                "data": self._config_values_cache[obj],
+                "timestamps": self._config_ts_cache[obj],
+                "data_keys": self._config_desc_cache[obj]
+            }
+
         self._descriptors[desc_key] = self._compose_descriptor(
             desc_key,
             data_keys,
@@ -166,26 +180,60 @@ class RunBundler:
                 'run_uid': self._run_start_uid,
                 'data_keys': data_keys.keys()}
         )
-        self._descriptor_objs[desc_key] = objs_read
-        return self._descriptors[desc_key].descriptor_doc, self._descriptors[desc_key].compose_event
+        self._descriptor_objs[desc_key] = objs_dks
+        if desc_key not in self._sequence_counters:
+            self._sequence_counters[desc_key] = 1
+            self._sequence_counters_copy[desc_key] = 1
 
-    async def _ensure_cached(self, obj):
-        if obj not in self._describe_cache:
-            await self._cache_describe(obj)
+        return (
+            self._descriptors[desc_key].descriptor_doc,
+            self._descriptors[desc_key].compose_event,
+            list(objs_dks)
+        )
+
+    async def _ensure_cached(self, obj, collect=False):
+        coros = []
+        if (not collect and obj not in self._describe_cache):
+            coros.append(self._cache_describe(obj))
+        elif (collect and obj not in self._describe_collect_cache):
+            coros.append(self._cache_describe_collect(obj))
         if obj not in self._config_desc_cache:
-            await self._cache_describe_config(obj)
-            await self._cache_read_config(obj)
+            coros.append(self._cache_describe_config(obj))
+            coros.append(self._cache_read_config(obj))
+        await asyncio.gather(*coros)
 
     async def declare_stream(self, msg):
         """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
-        stream_name = kwargs['name']
+        try:
+            stream_name = kwargs['name']
+        except KeyError:
+            raise IllegalMessageSequence(
+                "A 'declare_stream' message was sent without a 'name' kwarg,"
+            )
+        collect = kwargs.get('collect', False)
         assert no_obj is None
         objs = frozenset(objs)
+        objs_dks = {}
+        await asyncio.gather(*[self._ensure_cached(obj, collect=collect) for obj in objs])
         for obj in objs:
-            await self._ensure_cached(obj)
+            if collect:
+                dks = self._describe_collect_cache[obj]
+                formatted_data_keys = self._maybe_format_datakeys_with_stream_name(
+                    dks, message_stream_name=stream_name
+                )
+                assert len(formatted_data_keys) == 1 \
+                    and formatted_data_keys[0][0] == stream_name, \
+                    (
+                        "`declare_stream` contained `collect=True` but  `describe_collect` to did "
+                        f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
+                    )
+            else:
+                dks = self._describe_cache[obj]
 
-        return (await self._prepare_stream(stream_name, objs))
+            objs_dks[obj] = dks
+
+        return (await self._prepare_stream(stream_name, objs_dks))
 
     async def create(self, msg):
         """
@@ -270,9 +318,8 @@ class RunBundler:
             # Ask the object for any resource or datum documents is has cached
             # and cache them as well. Likewise, these will be emitted if and
             # when _save is called.
-            self._asset_docs_cache.extend(
-                maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)
-            )
+            asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
+            self._asset_docs_cache.extend(asset_docs_collected)
 
         return reading
 
@@ -288,6 +335,7 @@ class RunBundler:
             conf_keys = await maybe_await(obj.describe_configuration())
         else:
             conf_keys = {}
+
         self._config_desc_cache[obj] = conf_keys
 
     async def _cache_read_config(self, obj):
@@ -335,7 +383,8 @@ class RunBundler:
 
         await self._ensure_cached(obj)
 
-        _, compose_event = await self._prepare_stream(name, (obj,))
+        stream_bundle = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
+        compose_event = stream_bundle[1]
 
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
@@ -437,10 +486,6 @@ class RunBundler:
         desc_key = self._bundle_name
 
         # This is a separate check because it can be reset on resume.
-        seq_num_key = desc_key
-        if seq_num_key not in self._sequence_counters:
-            self._sequence_counters[seq_num_key] = 1
-            self._sequence_counters_copy[seq_num_key] = 1
         self.bundling = False
         self._bundle_name = None
 
@@ -449,39 +494,30 @@ class RunBundler:
         )
         d_objs = self._descriptor_objs.get(desc_key, None)
 
+        objs_dks = {}
+
         # we do not have the descriptor cached, make it
-        if descriptor_doc is None:
-            descriptor_doc, compose_event = await self._prepare_stream(desc_key, objs_read)
-            # do have the descriptor cached
-        elif d_objs != objs_read:
+        if descriptor_doc is None or d_objs is None:
+            for obj in objs_read:
+                await self._ensure_cached(obj, collect=isinstance(obj, Collectable))
+                objs_dks[obj] = self._describe_cache[obj]
+
+            descriptor_doc, compose_event, d_objs = await self._prepare_stream(desc_key, objs_dks)
+
+        # do have the descriptor cached
+        elif frozenset(d_objs) != objs_read:
             raise RuntimeError(
                 "Mismatched objects read, expected {!s}, "
-                "got \n\n\n{!s}".format(d_objs, objs_read)
+                "got {!s}".format(frozenset(d_objs), objs_read)
             )
 
         # Resource and Datum documents
-        for resource_or_datum_name, resource_or_datum_doc in self._asset_docs_cache:
-            # Add a 'run_start' field to resource documents on their way out
-            # since this field could not have been set correctly before this point.
-            if resource_or_datum_name in (
-                DocumentNames.resource.value, DocumentNames.stream_resource.value
-            ):
-                resource_or_datum_doc["run_start"] = self._run_start_uid
-
-            doc_logger.debug(
-                "[%s] document emitted %r",
-                resource_or_datum_name,
-                resource_or_datum_doc,
-                extra={
-                    "doc_name": resource_or_datum_name,
-                    "run_uid": self._run_start_uid,
-                    "doc": resource_or_datum_doc
-                }
-            )
-
-            await self.emit(
-                DocumentNames(resource_or_datum_name),
-                resource_or_datum_doc
+        indices_generated = await self._pack_external_assets(self._asset_docs_cache, message_stream_name=desc_key)
+        if indices_generated > 1:
+            raise RuntimeError(
+                "Received multiple indices in a `stream_datum` document for one event, "
+                " during a `read()` `save()`. `stream_datum` should have indices {\"start\": n, \"stop\": n+1} "
+                "in a `read()` `save()`."
             )
 
         # Merge list of readings into single dict.
@@ -493,7 +529,7 @@ class RunBundler:
         filled = {
             k: False
             for k, v in self._descriptors[desc_key].descriptor_doc["data_keys"].items()
-            if "external" in v
+            if "external" in v and v["external"] != "STREAM:"
         }
         event_doc = compose_event(
             data=data,
@@ -597,49 +633,73 @@ class RunBundler:
         """
         ...
 
-    async def _cache_describe_collect(self, collect_obj: Flyable):
+    def _maybe_format_datakeys_with_stream_name(
+        self,
+        describe_collect_dict: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]],
+        message_stream_name: Optional[str] = None,
+    ) -> List[Tuple[str, Dict[str, DataKey]]]:
+        """
+        Check if the dictionary returned by describe collect is a dict
+            `{str: DataKey}` or a `{str: {str: DataKey}}`.
+        If a `message_stream_name` is passed then return a singleton list of the form of
+            `{message_stream_name: describe_collect_dict}.items()`.
+        If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
+        """
+        def has_str_source(d: dict):
+            return isinstance(d, dict) and isinstance(d.get("source", None), str)
+        if describe_collect_dict:
+            first_value = list(describe_collect_dict.values())[0]
+            if has_str_source(first_value):
+                # We have Dict[str, DataKey], so return just this
+                # If stream name not given then default to "primary"
+                return [(message_stream_name or "primary", describe_collect_dict)]
+            elif all(has_str_source(v) for v in first_value.values()):
+                # We have Dict[str, Dict[str, DataKey]] so return its items
+                if message_stream_name and list(describe_collect_dict) != [message_stream_name]:
+                    # The collect contained a name and describe_collect returned a Dict[str, Dict[str, DataKey]],
+                    # this is only acceptable if the only key in the parent dict is message_stream_name
+
+                    raise RuntimeError(
+                        f"Expected a single stream {message_stream_name!r}, got {describe_collect_dict}"
+                    )
+                return list(describe_collect_dict.items())
+            else:
+                raise RuntimeError(
+                    f"Invalid describe_collect return: {describe_collect_dict} when collect "
+                    f"was called on {message_stream_name}"
+                )
+        else:
+            # Empty dict, could be either but we don't care
+            return []
+
+    async def _cache_describe_collect(self, obj: Collectable):
+        "Read the object's describe and cache it."
+        obj = check_supports(obj, Collectable)
+        self._describe_collect_cache[obj] = await maybe_await(obj.describe_collect())
+
+    async def _describe_collect(self, collect_obj: Flyable, message_stream_name: Optional[str] = None):
         "Read the object's describe_collect and cache it."
-        describe_collect = await maybe_await(collect_obj.describe_collect())
-        collect_obj_config: Dict[str, Dict[str, Any]] = {}
+
+        await self._ensure_cached(collect_obj, collect=True)
+
+        describe_collect = self._describe_collect_cache[collect_obj]
+
+        describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(
+                describe_collect, message_stream_name=message_stream_name
+        ))
+
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
+
         # collect_obj.describe_collect() returns a dictionary like this:
         #     {name_for_desc1: data_keys_for_desc1,
         #      name_for_desc2: data_keys_for_desc2, ...}
-        for stream_name, stream_data_keys in describe_collect.items():
-            if stream_name not in self._descriptors:
-                # We do not have an Event Descriptor for this set.
-                # if we have not yet read the configuration, do so
-                if collect_obj.name not in collect_obj_config:
-                    if collect_obj not in self._config_desc_cache:
-                        await self._cache_describe_config(collect_obj)
-                        await self._cache_read_config(collect_obj)
-                    collect_obj_config[collect_obj.name] = {
-                        "data": self._config_values_cache[collect_obj],
-                        "timestamps": self._config_ts_cache[collect_obj],
-                        "data_keys": self._config_desc_cache[collect_obj]
-                    }
-                hints = {}
-                maybe_update_hints(hints, collect_obj)
-                descriptor_bundle = self._compose_descriptor(
-                    data_keys=stream_data_keys,
-                    name=stream_name,
-                    configuration=collect_obj_config,
-                    hints=hints,
-                    object_keys={collect_obj.name: list(stream_data_keys)},
-                )
-                await self.emit(DocumentNames.descriptor, descriptor_bundle.descriptor_doc)
-                doc_logger.debug("[descriptor] document is emitted with name %r "
-                                 "containing data keys %r (run_uid=%r)", stream_name,
-                                 stream_data_keys.keys(), self._run_start_uid,
-                                 extra={'doc_name': 'descriptor',
-                                        'run_uid': self._run_start_uid,
-                                        'data_keys': stream_data_keys.keys()})
-                self._descriptor_objs[stream_name] = stream_data_keys
-                self._descriptors[stream_name] = descriptor_bundle
-                self._sequence_counters[stream_name] = 1
+        for stream_name, stream_data_keys in describe_collect_items:
+            if stream_name not in self._descriptor_objs or collect_obj not in self._descriptor_objs[stream_name]:
+                # We do not have an Event Descriptor for this collect_obj.
+                await self._prepare_stream(stream_name, {collect_obj: stream_data_keys})
             else:
                 objs_read = self._descriptor_objs[stream_name]
-                if stream_data_keys != objs_read:
+                if stream_data_keys != objs_read[collect_obj]:
                     raise RuntimeError(
                         "Mismatched objects read, "
                         "expected {!s}, "
@@ -647,7 +707,227 @@ class RunBundler:
                     )
 
             local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
+
         self._local_descriptors[collect_obj] = local_descriptors
+
+    async def _pack_seq_nums_into_stream_datum(
+        self,
+        doc: StreamDatum,
+        message_stream_name: str,
+        stream_datum_previous_indices_difference: int
+    ) -> int:
+
+        if doc["seq_nums"] != StreamRange(start=0, stop=0):
+            raise EventModelValueError(
+                f"Received `seq_nums` {doc['seq_nums']} from devices {doc['data_keys']} "
+                "during `collect()` or `describe_collect()`. `seq_nums` should be None or "
+                "`StreamRange(start=0, stop=0)` on `ComposeStreamDatum` when used with the "
+                "run engine."
+            )
+
+        indices_difference = doc["indices"]["stop"] - doc["indices"]["start"]
+
+        if (
+            stream_datum_previous_indices_difference and
+            stream_datum_previous_indices_difference != indices_difference
+        ):
+            raise EventModelValueError(
+                f"Received `indices` {doc['indices']} during `collect()` these are of a different "
+                f"width `{indices_difference}` than other detectors in the same collect() or save()."
+            )
+
+        current_seq_counter = self._sequence_counters[message_stream_name]
+        doc["seq_nums"] = StreamRange(
+            start=current_seq_counter, stop=current_seq_counter + indices_difference
+        )
+
+        if doc["stream_resource"] not in self._stream_resource_data_keys:
+            raise RuntimeError(
+                f"Receieved a `steam_datum` referring to an unknown stream resource {doc['stream_resource']}"
+            )
+
+        return indices_difference
+
+    async def _pack_external_assets(
+        self,
+        asset_docs: Iterable[Tuple[str, ExternalAssetDoc]],
+        message_stream_name: Optional[str]
+    ):
+        """Packs some external asset documents with relevant information from the run."""
+
+        stream_datum_previous_indices_difference = 0
+        data_keys_received = set()
+        descriptor_doc = None
+        external_data_keys = None
+
+        if message_stream_name:
+            descriptor_doc = self._descriptors[message_stream_name].descriptor_doc
+            external_data_keys = self.get_external_data_keys(descriptor_doc["data_keys"])
+
+        for name, doc in asset_docs:
+            if name == DocumentNames.resource.value:
+                doc["run_start"] = self._run_start_uid
+            elif name == DocumentNames.stream_resource.value:
+                doc["run_start"] = self._run_start_uid
+
+                if doc["uid"] in self._stream_resource_data_keys:
+                    raise RuntimeError(f"Received `stream_resource` with uid {doc['uid']} twice.")
+
+                self._stream_resource_data_keys[doc["uid"]] = doc["data_key"]
+
+                if not external_data_keys or doc["data_key"] not in external_data_keys:
+                    raise RuntimeError(
+                        f"Receieved a `stream_resource` with data_key {doc['data_key']} that is not in the "
+                        f"descriptor 'STREAM:' data_keys {external_data_keys}"
+                    )
+
+            elif name == DocumentNames.stream_datum.value:
+                if doc["descriptor"]:
+                    raise RuntimeError(
+                        f"Received a `stream_datum` {doc['uid']} with a `descriptor` uid already "
+                        f"filled in, with the value {doc['descriptor']} this should be an empty string."
+                    )
+                if not descriptor_doc:
+                    raise RuntimeError(
+                        f"`descriptor` not made for stream {message_stream_name}."
+                    )
+                data_keys_received.add(self._stream_resource_data_keys[doc["stream_resource"]])
+
+                doc["descriptor"] = descriptor_doc["uid"]
+                stream_datum_previous_indices_difference = await self._pack_seq_nums_into_stream_datum(
+                    doc,
+                    message_stream_name,
+                    stream_datum_previous_indices_difference
+                )
+            elif name == DocumentNames.datum.value:
+                ...
+            else:
+                raise RuntimeError(
+                    f"Tried to emit an external asset {name}, acceptable external assets are "
+                    "`resource`, `stream_resource`, `datum`, or `stream_datum`"
+                )
+
+            await self.emit(DocumentNames(name), doc)
+
+            doc_logger.debug(
+                    "[%s] document emitted %r",
+                    name,
+                    doc,
+                    extra={
+                        "doc_name": name,
+                        "run_uid": self._run_start_uid,
+                        "doc": doc
+                    }
+                )
+
+        # Check we have a stream_datum for each external data_key in the descriptor
+        if descriptor_doc and data_keys_received and set(external_data_keys) != data_keys_received:
+            raise RuntimeError(
+                f"Received `stream_datum` for each of the data_keys {data_keys_received}, "
+                f"expected `stream_datum` for each of the data_keys {set(external_data_keys)}."
+            )
+
+        return stream_datum_previous_indices_difference
+
+    def get_external_data_keys(self, data_keys: Dict[str, DataKey]) -> List[DataKey]:
+        """Get the external data keys from the descriptor data_keys dictionary"""
+        return [
+            x for x in data_keys
+            if (
+                "external" in data_keys[x]
+                and data_keys[x]["external"] == "STREAM:"
+            )
+        ]
+
+    async def _collect_events(
+        self,
+        collect_obj: EventCollectable,
+        local_descriptors,
+        return_payload: bool,
+        stream: bool,
+        message_stream_name: Optional[str],
+    ):
+        event_list: List[PartialEvent] = []
+        payload = []
+
+        if message_stream_name:
+            compose_event = self._descriptors[message_stream_name].compose_event
+            data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
+        for ev in collect_obj.collect():
+            if return_payload:
+                payload.append(ev)
+
+            if not message_stream_name:
+                objs_read = frozenset(ev["data"])
+                compose_event = local_descriptors[objs_read].compose_event
+                data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
+
+            if [x for x in self.get_external_data_keys(data_keys) if x in ev["data"]]:
+                raise RuntimeError("Received an event containing data for external data keys.")
+
+            ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
+
+            if stream:
+                doc_logger.debug(
+                    "[event] document is emitted with data keys %r (run_uid=%r)",
+                    ev['data'].keys(), self._run_start_uid,
+                    ev["uid"],
+                    extra={
+                        'doc_name': 'event',
+                        'run_uid': self._run_start_uid,
+                        'data_keys': ev['data'].keys()
+                    }
+                )
+                await self.emit(DocumentNames.event, ev)
+            else:
+                event_list.append(ev)
+
+        if not stream:
+            await self.emit(DocumentNames.event_page, pack_event_page(*event_list))
+            doc_logger.debug(
+                "[event_page] document is emitted for descriptors (run_uid=%r)",
+                self._run_start_uid,
+                extra={
+                    'doc_name': 'event_page',
+                    'run_uid': self._run_start_uid
+                }
+            )
+        return payload
+
+    async def _collect_event_pages(
+            self, collect_obj, local_descriptors, return_payload: bool, message_stream_name: str
+    ):
+        payload = []
+
+        if message_stream_name:
+            compose_event_page = self._descriptors[message_stream_name].compose_event_page
+            data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
+
+        for ev_page in collect_obj.collect_pages():
+            if return_payload:
+                payload.append(ev_page)
+
+            if not message_stream_name:
+                objs_read = frozenset(ev_page["data"])
+                compose_event_page = local_descriptors[objs_read].compose_event_page
+                data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
+
+            if [x for x in self.get_external_data_keys(data_keys) if x in ev_page["data"]]:
+                raise RuntimeError("Received an event_page containing data for external data keys.")
+
+            ev_page = compose_event_page(data=ev_page["data"], timestamps=ev_page["timestamps"])
+            doc_logger.debug(
+                "[event_page] document is emitted with data keys %r (run_uid=%r)",
+                ev_page['data'].keys(), ev_page["uid"],
+                extra={
+                    'doc_name': 'event_page',
+                    'run_uid': self._run_start_uid,
+                    'data_keys': ev_page['data'].keys()
+                }
+            )
+
+            await self.emit(DocumentNames.event_page, ev_page)
+        return payload
 
     async def collect(self, msg):
         """
@@ -656,9 +936,16 @@ class RunBundler:
         Expect message object is
 
             Msg('collect', collect_obj)
-            Msg('collect', flyer_object, stream=True, return_payload=False)
+            Msg('collect', flyer_object, stream=True, return_payload=False, name='stream_name')
         """
-        collect_obj = check_supports(msg.obj, Flyable)
+
+        collect_obj = check_supports(msg.obj, Collectable)
+        if isinstance(collect_obj, EventCollectable) and isinstance(collect_obj, EventPageCollectable):
+            doc_logger.warn(
+                "collect() was called for a device %r which is both EventCollectable "
+                "and EventPageCollectable. Using device.collect_pages().",
+                collect_obj.name
+            )
 
         if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
@@ -668,58 +955,64 @@ class RunBundler:
             )
         self._uncollected.discard(collect_obj)
 
-        # Resource and Datum documents
-        for name, doc in maybe_collect_asset_docs(msg, collect_obj):
-            # Add a 'run_start' field to the resource document on its way out.
-            if name in (
-                DocumentNames.resource.value, DocumentNames.stream_resource.value
-            ):
-                doc["run_start"] = self._run_start_uid
-            await self.emit(DocumentNames(name), doc)
-
-        # Populate descriptors and local descriptors from describe_collect
-        # if not already called
-        if collect_obj not in self._local_descriptors:
-            await self._cache_describe_collect(collect_obj)
-        local_descriptors = self._local_descriptors[collect_obj]
+        # If message_stream_name is given then only one descriptor is generated on `describe_collect`
+        message_stream_name = msg.kwargs.get("name", None)
 
         # If stream is True, run 'event' subscription per document.
-        # If stream is False, run 'bulk_events' subscription once.
+        # If stream is False, run 'event_page' subscription once.
         stream = msg.kwargs.get("stream", False)
+
         # If True, accumulate all the Events in memory and return them at the
         # end, providing the plan access to the Events. If False, do not
         # accumulate, and return None.
         return_payload = msg.kwargs.get('return_payload', True)
-        payload = []
-        bulk_data: Dict[str, List[PartialEvent]] = {}
 
-        for ev in collect_obj.collect():
-            if return_payload:
-                payload.append(ev)
+        # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
+        if message_stream_name:
+            if message_stream_name not in self._descriptors:
+                await self._describe_collect(collect_obj, message_stream_name=message_stream_name)
+        else:
+            if collect_obj not in self._local_descriptors:
+                await self._describe_collect(collect_obj)
 
-            objs_read = frozenset(ev["data"])
-            descriptor_doc, compose_event, _ = local_descriptors[objs_read]
+        local_descriptors = self._local_descriptors[collect_obj]
 
-            descriptor_uid = descriptor_doc["uid"]
-            ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
+        # Pack a Resource or Datum document with relevant information and emit
+        collected_asset_docs = [x async for x in maybe_collect_asset_docs(msg, collect_obj)]
 
+        # pack the external assets with data tracked by the bundler
+        indices_difference = await self._pack_external_assets(
+            collected_asset_docs, message_stream_name=message_stream_name
+        )
+
+        if isinstance(collect_obj, EventPageCollectable):
             if stream:
-                doc_logger.debug("[event] document is emitted with data keys %r (run_uid=%r)",
-                                 ev['data'].keys(), self._run_start_uid,
-                                 ev["uid"],
-                                 extra={'doc_name': 'event',
-                                        'run_uid': self._run_start_uid,
-                                        'data_keys': ev['data'].keys()})
-                await self.emit(DocumentNames.event, ev)
-            else:
-                bulk_data.setdefault(descriptor_uid, []).append(ev)
+                raise IllegalMessageSequence(
+                    "A 'collect' with `stream=True` was sent for an EventPageCollectable device, "
+                    "stream is not used for EventPages"
+                )
+            payload = await self._collect_event_pages(
+                collect_obj, local_descriptors, return_payload, message_stream_name
+            )
+        elif isinstance(collect_obj, EventCollectable):
+            payload = await self._collect_events(
+                collect_obj, local_descriptors, return_payload, stream, message_stream_name
+            )
+        else:
+            return_payload = False
+            if not message_stream_name:
+                raise RuntimeError(
+                    "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
+                    "requires a `name=stream_name` argument"
+                )
+            if not indices_difference:
+                raise RuntimeError(
+                    "A `collect` message returned no events/event_pages or stream_datums"
+                )
 
-        if not stream:
-            await self.emit(DocumentNames.bulk_events, bulk_data)
-            doc_logger.debug("[bulk events] document is emitted for descriptors (run_uid=%r)",
-                             self._run_start_uid,
-                             extra={'doc_name': 'bulk_events',
-                                    'run_uid': self._run_start_uid})
+            # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
+            self._sequence_counters[message_stream_name] += indices_difference
+
         if return_payload:
             return payload
 

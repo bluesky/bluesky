@@ -1831,19 +1831,20 @@ class RunEngine:
         return (await current_run.create(msg))
 
     async def _declare_stream(self, msg):
-        """Trigger the run engine to start bundling future obj.read() calls for
+        """Trigger the run engine to start bundling future obj.describe() calls for
          an Event document
 
         Expected message object is:
 
-            Msg('create', None, name='primary')
-            Msg('create', name='primary')
+            Msg('declare_stream', None, name='primary')
+            Msg('declare_stream', name='primary')
+            Msg('create', name='primary', collect=True)
 
         Note that the `name` kwarg will be the 'name' field of the resulting
         descriptor. So descriptor['name'] = msg.kwargs['name'].
 
-        Also note that changing the 'name' of the Event will create a new
-        Descriptor document.
+        If `collect` is set to True (default false) then `describe_collect` will be called
+        on declare_stream, rather than `describe`.
         """
         run_key = msg.run
         try:
@@ -2099,7 +2100,7 @@ class RunEngine:
         Expected message object is:
 
             Msg('collect', flyer_object)
-            Msg('collect', flyer_object, stream=True, return_payload=False)
+            Msg('collect', flyer_object, stream=True, return_payload=False, name="a_name")
         """
         run_key = msg.run
         try:

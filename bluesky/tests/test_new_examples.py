@@ -65,7 +65,10 @@ from bluesky.preprocessors import (
 from bluesky.plans import count, scan, rel_scan, inner_product_scan
 
 import bluesky.plans as bp
-from bluesky.protocols import Descriptor, Locatable, Location, Readable, Reading, Status
+from bluesky.protocols import (
+    Descriptor, Locatable, Location, Readable,
+    Reading, Status
+)
 
 from bluesky.utils import all_safe_rewind, IllegalMessageSequence
 
@@ -108,7 +111,7 @@ import threading
      (kickoff, ('foo',), {'custom': 5}, [Msg('kickoff', 'foo',
                                              group=None, custom=5)]),
      (collect, ('foo',), {}, [Msg('collect', 'foo',
-                                  stream=False, return_payload=True)]),
+                                  stream=False, return_payload=True, name=None)]),
      (configure, ('det', 1), {'a': 2}, [Msg('configure', 'det', 1, a=2)]),
      (stage, ('det',), {}, [Msg('stage', 'det', group=None)]),
      (stage, ('det',), {"group": "A"}, [Msg('stage', 'det', group="A")]),
@@ -328,7 +331,7 @@ def test_descriptor_layout_from_monitor(RE, hw):
     descriptor, = collector
     assert descriptor['object_keys'] == {det.name: list(det.describe().keys())}
     assert descriptor['data_keys'] == {
-        k: {**v, 'object_name': det.name} for k, v in det.describe().items()
+        k: {**v, "object_name": det.name} for k, v in det.describe().items()
     }
     conf = descriptor['configuration'][det.name]
     assert conf['data_keys'] == det.describe_configuration()

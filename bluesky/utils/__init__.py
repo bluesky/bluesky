@@ -23,6 +23,7 @@ import threading
 import time
 from tqdm import tqdm
 from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
+from typing import AsyncIterator
 import warnings
 
 import msgpack
@@ -31,7 +32,7 @@ import zict
 
 from bluesky.protocols import (
     T, Asset, HasParent, HasHints, Hints, Movable, Readable,
-    SyncOrAsync, WritesExternalAssets, check_supports
+    SyncOrAsync, SyncOrAsyncIterator, WritesExternalAssets, check_supports
 )
 
 try:
@@ -1823,10 +1824,20 @@ def maybe_update_hints(hints: Dict[str, Hints], obj):
         hints[obj.name] = obj.hints
 
 
-def maybe_collect_asset_docs(msg, obj, *args, **kwargs) -> Iterator[Asset]:
+async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator[T]:
+    if inspect.isasyncgen(iterator):
+        async for v in iterator:
+            yield v
+    else:
+        for v in iterator:
+            yield v
+
+
+async def maybe_collect_asset_docs(msg, obj, *args, **kwargs) -> Iterator[Asset]:
     if isinstance(obj, WritesExternalAssets):
         warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
-        yield from obj.collect_asset_docs(*args, **kwargs)
+        async for v in iterate_maybe_async(obj.collect_asset_docs(*args, **kwargs)):
+            yield v
 
 
 async def maybe_await(ret: SyncOrAsync[T]) -> T:
