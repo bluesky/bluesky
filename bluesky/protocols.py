@@ -120,7 +120,7 @@ class HasParent(Protocol):
 @runtime_checkable
 class WritesExternalAssets(Protocol):
     @abstractmethod
-    def collect_asset_docs(self) -> SyncOrAsyncIterator[Iterator[Asset]]:
+    def collect_asset_docs(self) -> SyncOrAsyncIterator[Asset]:
         """Create the resource, datum, stream_resource, and stream_datum
         documents describing data in external source.
 
