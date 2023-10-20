@@ -1,7 +1,7 @@
 import asyncio
 from collections import defaultdict
 import time as ttime
-from typing import Dict
+from typing import Dict, List
 import pytest
 from bluesky import Msg, RunEngineInterrupted
 from bluesky.plan_stubs import (
@@ -375,11 +375,20 @@ def test_lazily_stage(hw):
 
     processed_plan = list(lazily_stage_wrapper(plan()))
 
-    expected = [Msg('stage', det1), Msg('read', det1), Msg('read', det1),
-                Msg('stage', det2), Msg('read', det2), Msg('unstage', det2),
-                Msg('unstage', det1)]
+    expected_plan: List[Msg] = [
+        Msg('stage', det1), Msg('read', det1), Msg('read', det1),
+        Msg('stage', det2), Msg('read', det2), Msg('unstage', det2),
+        Msg('unstage', det1)
+    ]
 
-    assert processed_plan == expected
+    # Prevent issue with unstage_all creating a randomly assigned group
+    assert len(processed_plan) == len(expected_plan)
+    for i in range(len(expected_plan)):
+        expected, actual = expected_plan[i], processed_plan[i]
+        assert actual.command == expected.command
+        assert actual.obj == expected.obj
+    groups = {msg.kwargs["group"] for msg in processed_plan if msg.command == "unstage"}
+    assert len(groups) == 1  # All unstage messages are in the same group
 
 
 def test_subs():

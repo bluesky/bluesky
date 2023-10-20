@@ -11,7 +11,8 @@ from .utils import (get_hinted_fields, normalize_subs_input, root_ancestor,
                     short_uid as _short_uid, make_decorator,
                     RunEngineControlException, merge_axis)
 from functools import wraps
-from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read, declare_stream)
+from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read,
+                         declare_stream, stage_all, unstage_all)
 
 
 def plan_mutator(plan, msg_proc):
@@ -917,12 +918,11 @@ def lazily_stage_wrapper(plan):
         else:
             return None, None
 
-    def unstage_all():
-        for device in reversed(devices_staged):
-            yield Msg('unstage', device)
+    def inner_unstage_all():
+        yield from unstage_all(*reversed(devices_staged))
 
     return (yield from finalize_wrapper(plan_mutator(plan, inner),
-                                        unstage_all()))
+                                        inner_unstage_all()))
 
 
 def stage_wrapper(plan, devices):
@@ -950,12 +950,10 @@ def stage_wrapper(plan, devices):
     devices = separate_devices(root_ancestor(device) for device in devices)
 
     def stage_devices():
-        for d in devices:
-            yield Msg('stage', d)
+        yield from stage_all(*devices)
 
     def unstage_devices():
-        for d in reversed(devices):
-            yield Msg('unstage', d)
+        yield from unstage_all(*reversed(devices))
 
     def inner():
         yield from stage_devices()
