@@ -918,11 +918,11 @@ def lazily_stage_wrapper(plan):
         else:
             return None, None
 
-    def unstage_all():
+    def inner_unstage_all():
         yield from unstage_all(*reversed(devices_staged))
 
     return (yield from finalize_wrapper(plan_mutator(plan, inner),
-                                        unstage_all()))
+                                        inner_unstage_all()))
 
 
 def stage_wrapper(plan, devices):
