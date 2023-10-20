@@ -375,13 +375,14 @@ def test_lazily_stage(hw):
 
     processed_plan = list(lazily_stage_wrapper(plan()))
 
-    expected_plan: List[Msg] = [Msg('stage', det1), Msg('read', det1), Msg('read', det1),
-                Msg('stage', det2), Msg('read', det2), Msg('unstage', det2),
-                Msg('unstage', det1)]
+    expected_plan: List[Msg] = [
+        Msg('stage', det1), Msg('read', det1), Msg('read', det1),
+        Msg('stage', det2), Msg('read', det2), Msg('unstage', det2),
+        Msg('unstage', det1)
+    ]
 
     # Prevent issue with unstage_all creating a randomly assigned group
     assert len(processed_plan) == len(expected_plan)
-    group: str = ""
     for i in range(len(expected_plan)):
         expected, actual = expected_plan[i], processed_plan[i]
         assert actual.command == expected.command
