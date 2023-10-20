@@ -46,6 +46,10 @@ class _RunEnginePanic(Exception):
     ...
 
 
+class WaitForTimeoutError(TimeoutError):
+    ...
+
+
 @dataclass
 class RunEngineResult():
     """
@@ -1738,7 +1742,7 @@ class RunEngine:
         futs = [asyncio.ensure_future(f()) for f in futs]
         _, pending = await asyncio.wait(futs, **self._loop_for_kwargs, **msg.kwargs)
         if pending:
-            raise TimeoutError("Plan failed to complete in the specified time")
+            raise WaitForTimeoutError("Plan failed to complete in the specified time")
 
     async def _open_run(self, msg):
         """Instruct the RunEngine to start a new "run"
@@ -2203,6 +2207,11 @@ class RunEngine:
                     # bar.
                     self.waiting_hook(status_objs)
                 await self._wait_for(Msg('wait_for', None, futs, timeout=msg.kwargs.get("timeout", None)))
+            except WaitForTimeoutError:
+                # We might wait to call wait again, so put the futures and status objects back in
+                self._groups[group] = futs
+                self._status_objs[group] = status_objs
+                raise
             finally:
                 if self.waiting_hook is not None:
                     # Notify the waiting_hook function that we have moved on by

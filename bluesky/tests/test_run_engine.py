@@ -1400,6 +1400,30 @@ def test_exceptions_kill_run_and_failed_status_holds_detail(RE):
 
 
 @requires_ophyd
+def test_wait_with_timeout_can_be_repeated(RE):
+    from ophyd import StatusBase
+
+    class Dummy:
+        name = 'dummy'
+
+        def set(self, val):
+            self.st = StatusBase()
+            return self.st
+
+    def plan():
+        dummy = Dummy()
+        yield Msg('set', dummy, 1, group='test')
+        with pytest.raises(TimeoutError):
+            yield Msg('wait', group='test', timeout=0.1)
+        with pytest.raises(TimeoutError):
+            yield Msg('wait', group='test', timeout=0.1)
+        dummy.st.set_finished()
+        yield Msg('wait', group='test')
+
+    RE(plan())
+
+
+@requires_ophyd
 def test_status_propagates_exception_through_run_engine(RE):
     # just to make sure that 'pardon_failures' does not block *real* failures
     from ophyd import StatusBase
