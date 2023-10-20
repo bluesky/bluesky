@@ -1005,10 +1005,6 @@ class RunBundler:
                     "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
                     "requires a `name=stream_name` argument"
                 )
-            if not indices_difference:
-                raise RuntimeError(
-                    "A `collect` message returned no events/event_pages or stream_datums"
-                )
 
             # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
             self._sequence_counters[message_stream_name] += indices_difference
