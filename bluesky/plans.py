@@ -5,6 +5,7 @@ from functools import partial
 import collections
 from collections import defaultdict
 import time
+import os
 
 import numpy as np
 try:
@@ -66,7 +67,7 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     _md['hints'].setdefault('dimensions', [(('time',), 'primary')])
 
     # per_shot might define a different stream, so do not predeclare primary
-    predeclare = (per_shot is None)
+    predeclare = (per_shot is None and os.environ.get('BLUESKY_PREDECLARE', False))
     if per_shot is None:
         per_shot = bps.one_shot
 
@@ -514,7 +515,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
     else:
         _md['hints'].setdefault('dimensions', dimensions)
 
-    predeclare = (per_step is None)
+    predeclare = (per_step is None and os.environ.get('BLUESKY_PREDECLARE', False))
     if per_step is None:
         per_step = bps.one_1d_step
 
@@ -645,7 +646,8 @@ def adaptive_scan(detectors, target_field, motor, start, stop,
         else:
             direction_sign = -1
         devices = tuple(utils.separate_devices(detectors + [motor]))
-        yield from bps.declare_stream(*devices, name='primary')
+        if os.environ.get('BLUESKY_PREDECLARE', False):
+            yield from bps.declare_stream(*devices, name='primary')
         while next_pos * direction_sign < stop * direction_sign:
             yield Msg('checkpoint')
             yield from bps.mv(motor, next_pos)
@@ -838,8 +840,8 @@ def tune_centroid(
         cur_I = None
         sum_I = 0       # for peak centroid calculation, I(x)
         sum_xI = 0
-
-        yield from bps.declare_stream(motor, *detectors, name='primary')
+        if os.environ.get('BLUESKY_PREDECLARE', False):
+            yield from bps.declare_stream(motor, *detectors, name='primary')
         while abs(step) >= min_step and low_limit <= next_pos <= high_limit:
             yield Msg('checkpoint')
             yield from bps.mv(motor, next_pos)
@@ -931,7 +933,7 @@ def scan_nd(detectors, cycler, *, per_step=None, md=None):
         # change it, else set it to the one generated above
         _md['hints'].setdefault('dimensions', dimensions)
 
-    predeclare = (per_step is None)
+    predeclare = (per_step is None and os.environ.get('BLUESKY_PREDECLARE', False))
     if per_step is None:
         per_step = bps.one_nd_step
     else:
