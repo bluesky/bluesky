@@ -307,7 +307,10 @@ def print_summary_wrapper(plan):
     """
 
     read_cache = []
-    for msg in plan:
+
+    def spy(msg):
+        nonlocal read_cache
+
         cmd = msg.command
         if cmd == 'open_run':
             print('{:=^80}'.format(' Open Run '))
@@ -322,7 +325,9 @@ def print_summary_wrapper(plan):
             read_cache.append(msg.obj.name)
         elif cmd == 'save':
             print('  Read {}'.format(read_cache))
-        yield msg
+        return msg
+
+    return (yield from msg_mutator(plan, spy))
 
 
 def run_wrapper(plan, *, md=None):
