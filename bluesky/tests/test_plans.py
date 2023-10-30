@@ -5,6 +5,7 @@ from bluesky.tests.utils import DocCollector
 import bluesky.plans as bp
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
+from bluesky.utils import RequestStop
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
@@ -714,3 +715,37 @@ def test_describe_failure(RE):
             st
         )
     st.verify()
+
+
+def test_errors_through_msg_mutator(hw):
+    gen = bp.rel_scan([], hw.motor, 5, -5, 10)
+
+    msgs = []
+
+    msgs.append(next(gen))
+    msgs.append(next(gen))
+    msgs.append(next(gen))
+    msgs.append(next(gen))
+    msgs.append(next(gen))
+    msgs.append(gen.throw(RequestStop))
+    try:
+        while True:
+            msgs.append(next(gen))
+    except RequestStop:
+        pass
+    else:
+        raise False
+
+    target = [
+        "stage",
+        "open_run",
+        "declare_stream",
+        "checkpoint",
+        "set",
+        "close_run",
+        "unstage",
+        "set",
+        "wait",
+    ]
+
+    assert target == [m.command for m in msgs]
