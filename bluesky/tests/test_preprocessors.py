@@ -1,6 +1,10 @@
 import bluesky.plan_stubs as bps
-from bluesky.run_engine import RunEngine
-from bluesky.preprocessors import contingency_decorator
+from bluesky.run_engine import RunEngine, RequestStop
+from bluesky.preprocessors import (
+    contingency_decorator,
+    msg_mutator,
+    contingency_wrapper,
+)
 import pytest
 from unittest.mock import MagicMock
 
@@ -77,3 +81,38 @@ def test_given_a_plan_that_raises_contigency_with_no_auto_raise_and_except_plan_
         assert exception == expected_exception
 
     except_plan.assert_called_once()
+
+
+def test_exceptions_through_msg_mutator():
+    from bluesky import Msg
+
+    def outer():
+        for j in range(50):
+            yield Msg(f"step {j}")
+
+    def attach(msg):
+        cmd = msg.command
+        return msg._replace(command=f"{cmd}+")
+
+    def except_plan(e):
+        yield Msg("handle it")
+
+    gen = msg_mutator(contingency_wrapper(outer(), except_plan=except_plan), attach)
+
+    msgs = []
+
+    msgs.append(next(gen))
+    msgs.append(next(gen))
+    msgs.append(next(gen))
+    msgs.append(next(gen))
+    msgs.append(gen.throw(RequestStop))
+    try:
+        while True:
+            msgs.append(next(gen))
+    except RequestStop:
+        pass
+    else:
+        raise False
+    assert ["step 0+", "step 1+", "step 2+", "step 3+", "handle it+"] == [
+        m.command for m in msgs
+    ]

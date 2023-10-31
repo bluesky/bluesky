@@ -214,7 +214,7 @@ def plan_mutator(plan, msg_proc):
 
 def msg_mutator(plan, msg_proc):
     """
-    A simple preprocessor that mutates or deletes single messages in a plan
+    A simple preprocessor that mutates or deletes single messages in a plan.
 
     To *insert* messages, use ``plan_mutator`` instead.
 
@@ -234,20 +234,38 @@ def msg_mutator(plan, msg_proc):
     --------
     :func:`bluesky.plans.plan_mutator`
     """
-    ret = None
-    while True:
-        try:
-            msg = plan.send(ret)
-            msg = msg_proc(msg)
-            # if None, just skip message
-            # feed 'None' back down into the base plan,
-            # this may break some plans
-            if msg is None:
-                ret = None
-                continue
-            ret = yield msg
-        except StopIteration as e:
-            return e.value
+    try:
+        msg = plan.send(None)
+    except StopIteration as _e:
+        ret = _e.value
+    else:
+        while 1:
+            try:
+                msg = msg_proc(msg)
+                # if None, just skip message
+                # feed 'None' back down into the base plan,
+                # this may break some plans
+                if msg is None:
+                    _s = None
+                else:
+                    _s = yield msg
+            except GeneratorExit:
+                plan.close()
+                raise
+            except BaseException as _e:
+                try:
+                    msg = plan.throw(_e)
+                except StopIteration as _e:
+                    ret = _e.value
+                    break
+            else:
+                try:
+                    msg = plan.send(_s)
+                except StopIteration as _e:
+                    ret = _e.value
+                    break
+
+    return ret
 
 
 def pchain(*args):
@@ -289,7 +307,10 @@ def print_summary_wrapper(plan):
     """
 
     read_cache = []
-    for msg in plan:
+
+    def spy(msg):
+        nonlocal read_cache
+
         cmd = msg.command
         if cmd == 'open_run':
             print('{:=^80}'.format(' Open Run '))
@@ -304,7 +325,9 @@ def print_summary_wrapper(plan):
             read_cache.append(msg.obj.name)
         elif cmd == 'save':
             print('  Read {}'.format(read_cache))
-        yield msg
+        return msg
+
+    return (yield from msg_mutator(plan, spy))
 
 
 def run_wrapper(plan, *, md=None):

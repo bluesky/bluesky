@@ -1,3 +1,5 @@
+import warnings
+
 import ast
 import pytest
 import jsonschema
@@ -214,10 +216,10 @@ def test_plot_ints(RE):
     RE(bps.mov(s, int(0)))
     assert s.describe()['s']['dtype'] == 'integer'
     s.kind = 'hinted'
-    with pytest.warns(None) as record:
-        RE(count([s], num=35))
 
-    assert len(record) == 0
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        RE(count([s], num=35))
 
 
 def test_plot_prune_fifo(RE, hw):
@@ -326,9 +328,9 @@ def test_many_motors(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
     movement = [(motor, 1, 5, 5) for motor in motors]
-    with pytest.warns(None) as record:
+    with pytest.warns((RuntimeWarning, UserWarning)):
         RE(grid_scan(dets, *[item for sublist in movement for item in sublist]))
-    assert len(record) > 0
+
     assert not bec._live_plots
     assert not bec._live_grids
     assert not bec._live_scatters
