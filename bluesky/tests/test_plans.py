@@ -197,7 +197,8 @@ def test_relative_pseudo(hw, RE, db):
     assert (tb1[get_hint(p.pseudo1)] == np.linspace(0, 2, 5)).all()
 
 
-def test_reset_wrapper(hw, RE):
+def test_reset_wrapper(hw, RE, monkeypatch):
+    monkeypatch.setenv('BLUESKY_PREDECLARE', '1')
     p = hw.pseudo3x3
     m_col = MsgCollector()
     RE.msg_hook = m_col
@@ -717,7 +718,8 @@ def test_describe_failure(RE):
     st.verify()
 
 
-def test_errors_through_msg_mutator(hw):
+def test_errors_through_msg_mutator(hw, monkeypatch):
+    monkeypatch.setenv('BLUESKY_PREDECLARE', '1')
     gen = bp.rel_scan([], hw.motor, 5, -5, 10)
 
     msgs = []
@@ -749,3 +751,20 @@ def test_errors_through_msg_mutator(hw):
     ]
 
     assert target == [m.command for m in msgs]
+
+
+@pytest.mark.parametrize('predeclare', [True, False])
+def test_predeclare_env(hw, monkeypatch, predeclare):
+    from cycler import cycler
+
+    if predeclare:
+        monkeypatch.setenv('BLUESKY_PREDECLARE', '1')
+
+    for p in [bp.count([hw.det]),
+              bp.scan_nd([hw.det], cycler(hw.motor1, [1, 2, 3]) * cycler(hw.motor2, [4, 5, 6])),
+              bp.log_scan([hw.det], hw.motor, 1, 20, 5)]:
+        cmds = [m.command for m in p]
+        if predeclare:
+            assert 'declare_stream' in cmds
+        else:
+            assert 'declare_stream' not in cmds

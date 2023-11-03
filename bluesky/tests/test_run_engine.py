@@ -1588,8 +1588,10 @@ def test_double_call(RE):
     assert uid1 != uid2
 
 
-def test_num_events(RE, hw, db):
-
+@pytest.mark.parametrize('predeclare', [True, False])
+def test_num_events(RE, hw, db, predeclare, monkeypatch):
+    if predeclare:
+        monkeypatch.setenv('BLUESKY_PREDECLARE', '1')
     RE.subscribe(db.insert)
 
     rs1 = RE(count([]))
@@ -1598,7 +1600,10 @@ def test_num_events(RE, hw, db):
     else:
         uid1 = rs1[0]
     h = db[uid1]
-    assert h.stop['num_events'] == {'primary': 0}
+    if predeclare:
+        assert h.stop['num_events'] == {'primary': 0}
+    else:
+        assert h.stop['num_events'] == {}
 
     rs2 = RE(count([hw.det], 5))
     if RE.call_returns_result:
@@ -1617,7 +1622,10 @@ def test_num_events(RE, hw, db):
     else:
         uid3 = rs3[0]
     h = db[uid3]
-    assert h.stop['num_events'] == {'primary': 0, 'baseline': 2}
+    if predeclare:
+        assert h.stop['num_events'] == {'primary': 0, 'baseline': 2}
+    else:
+        assert h.stop['num_events'] == {'baseline': 2}
 
     rs4 = RE(count([hw.det], 5))
     if RE.call_returns_result:
