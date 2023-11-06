@@ -2,9 +2,29 @@
  Release History
 =================
 
-Unreleased
-==========
+v1.12.0 (2023-11-06)
+====================
 
+Added
+-----
+* The `~bluesky.plan_stubs.wait` plan accepts a new optional parameter,
+  ``timeout``.
+* Add an option to contingency_wrapper to not automatically re-raise if the
+  except plan returns a value rather than raising its own exception.
+* Add support for new experimental document types, StreamResource and
+  StreamDatum.
+
+Changed
+-------
+
+* In v0.11.0 bluesky implemented a new Msg to declare streams proactively,
+  rather than creating them implicitly while preparing to emit the first Event.
+  Built-in plans were updated to use this approach. It had unintended downstream
+  consequences. Specifically, some ophyd objects (notable AD) that were using
+  the trigger method to sort out what the keys will be. If you call describe
+  before trigger you get different answers so going all-in on this by default
+  is a bit too aggressive. Pre-declaring streams is now opt-in, using the
+  env var ``BLUESKY_PREDECLARE``.
 * Changed `~bluesky.bundlers` to use event-model compose functions
   * In the run stop document, 'num_events' will now include streams even if
   they have no events associated with them.
@@ -12,12 +32,17 @@ Unreleased
   * In the run stop document, 'num_changes' will now contain descriptors even if
   they have no events associated with them.
   * Events produced by monitors are now checked against their corresponding Descriptor document.
-
-v1.11.0 (2023-06-06)
-====================
+* If a collect message results in no document being collected, a `RuntimeError`
+  was being raised. Now, no error is raised; this is considered a possibility
+  in normal successful operation.
 
 Fixed
 -----
+
+* Fixed leak in registry used by ``RE.subscribe``, which would grow without bound
+* Fixed a documentation-build issue, which moved the minimum version of matplotlib
+  required for documentation-building to 3.5.0 (Nov 2021).
+* Fixed bug in exception handling in ``msg_mutator``.
 
 v1.11.0 (2023-06-06)
 ====================
