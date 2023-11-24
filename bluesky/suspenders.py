@@ -1,10 +1,13 @@
 import asyncio
-from datetime import datetime, timedelta
-from abc import ABCMeta, abstractmethod, abstractproperty
 import operator
 import threading
+from abc import ABCMeta, abstractmethod, abstractproperty
+from contextlib import ContextDecorator
+from datetime import datetime, timedelta
 from functools import partial
 from warnings import warn
+
+import bluesky
 
 
 class SuspenderBase(metaclass=ABCMeta):
@@ -693,7 +696,19 @@ class SuspendWhenChanged(SuspenderBase):
             )
         if not self.allow_resume:
             just += '.  "RE.abort()" and then restart session to use new configuration.'
-        return ': '.join(
-            s
-            for s in (just, self._tripped_message)
-            if s)
+        return ": ".join(s for s in (just, self._tripped_message) if s)
+
+
+class IgnoreSuspenders(ContextDecorator):
+    def __init__(self, re: bluesky.RunEngine, *suspenders):
+        self._suspenders = suspenders
+        self._re = re
+
+    def __enter__(self):
+        for suspender in self._suspenders:
+            self._re.remove_suspender(suspender)
+        return self._suspenders
+
+    def __exit__(self):
+        for suspender in self._suspenders:
+            self._re.install_suspender(suspender)
