@@ -128,6 +128,10 @@ class NoReplayAllowed(Exception):
     pass
 
 
+class RefusePause(Exception):
+    pass
+
+
 class IllegalMessageSequence(Exception):
     pass
 
