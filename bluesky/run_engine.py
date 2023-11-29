@@ -39,7 +39,8 @@ from .utils import (CallbackRegistry, SigintHandler,
                     RunEngineInterrupted, IllegalMessageSequence,
                     FailedPause, FailedStatus, InvalidCommand,
                     PlanHalt, Msg, ensure_generator, single_gen,
-                    DefaultDuringTask, warn_if_msg_args_or_kwargs)
+                    DefaultDuringTask, warn_if_msg_args_or_kwargs,
+                    RefusePause)
 
 
 class _RunEnginePanic(Exception):
@@ -1444,16 +1445,28 @@ class RunEngine:
                     await self._stop_movable_objects(success=True)
                     # Notify Devices of the pause in case they want to
                     # clean up.
+                    # track of any devices refuse to pause
+                    refuse_to_pause = False
                     for obj in self._objs_seen:
                         if isinstance(obj, Pausable):
                             try:
                                 await maybe_await(obj.pause())
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
+                            except RefusePause:
+                                await self._clear_checkpoint(Msg("clear_checkpoint"))
+                                refuse_to_pause = True
+                    # if anything refused to pause, go back to top and let
+                    # FailedPause propogate to plans
+                    if refuse_to_pause:
+                        continue
+                    # otherwise move to paused state
                     self._state = 'paused'
+
                     # Let RunEngine.__call__ return...
                     self._blocking_event.set()
 
+                    # ... and wait things to be resumed externally
                     await self._run_permit.wait()
                     # Restore any monitors
                     for current_run in self._run_bundlers.values():
