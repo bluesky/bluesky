@@ -177,6 +177,14 @@ class Triggerable(Protocol):
 
 
 @runtime_checkable
+class Preparable(Protocol):
+    @abstractmethod
+    def prepare(self, value) -> Status:
+        """Prepare a device for fly scanning, i.e. configure the correct triggers."""
+        ...
+
+
+@runtime_checkable
 class Readable(HasName, Protocol):
     @abstractmethod
     def read(self) -> SyncOrAsync[Dict[str, Reading]]:

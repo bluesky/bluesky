@@ -14,7 +14,7 @@ import weakref
 from dataclasses import dataclass
 import typing
 from .bundlers import RunBundler, maybe_await
-from .protocols import (Flyable, Locatable, Movable, Pausable, Readable, Stageable,
+from .protocols import (Flyable, Locatable, Movable, Pausable, Preparable, Readable, Stageable,
                         Status, Stoppable, Triggerable, check_supports)
 
 import concurrent
@@ -477,6 +477,7 @@ class RunEngine:
             'pause': self._pause,
             '_resume_from_suspender': self._resume,
             '_start_suspender': self._start_suspender,
+            'prepare': self._prepare,
             'collect': self._collect,
             'kickoff': self._kickoff,
             'complete': self._complete,
@@ -1986,6 +1987,51 @@ class RunEngine:
                 "A 'drop' message was sent but no " "run is open."
             ) from ke
         await current_run.drop(msg)
+
+    async def _prepare(self, msg):
+        """Prepare a flyer for a flyscan
+        
+        Expected message object is:
+
+        If `flyer_object` obeys the Preparable protocol, it should have a .prepare
+        method that takes an argument to be set:
+
+            Msg('prepare', flyer_object, value)
+
+        Where value represents an initial state to move the flyer to.
+        """
+        run_key = msg.run
+        try:
+            current_run = self._run_bundlers[run_key]
+        except KeyError as ke:
+            raise IllegalMessageSequence("A 'prepare' message was sent but no "
+                                         "run is open.") from ke
+
+        obj = check_supports(msg.obj, Preparable)
+        kwargs = dict(msg.kwargs)
+        group = kwargs.pop('group', None)
+        self._movable_objs_touched.add(obj)
+        ret = obj.prepare(*msg.args, **kwargs)
+        p_event = asyncio.Event(**self._loop_for_kwargs)
+        pardon_failures = self._pardon_failures
+
+        await current_run.prepare(msg)
+
+        def done_callback(status=None):
+            self.log.debug("The object %r reports set is done "
+                           "with status %r", obj, ret.success)
+            self._loop.call_soon_threadsafe(
+                self._status_object_completed, ret, p_event, pardon_failures)
+
+        try:
+            ret.add_callback(done_callback)
+        except AttributeError:
+            # for ophyd < v0.8.0
+            ret.finished_cb = done_callback
+        self._groups[group].add(p_event.wait)
+        self._status_objs[group].add(ret)
+
+        return ret
 
     async def _kickoff(self, msg):
         """Start a flyscan object

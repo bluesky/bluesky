@@ -615,6 +615,10 @@ class RunBundler:
         """
         self._uncollected.add(msg.obj)
 
+    async def prepare(self, msg):
+        """Prepare a flyer before a flyscan."""
+        ...
+
     async def complete(self, msg):
         """
         Tell a flyer, 'stop collecting, whenever you are ready'.
