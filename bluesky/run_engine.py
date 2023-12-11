@@ -1990,7 +1990,7 @@ class RunEngine:
 
     async def _prepare(self, msg):
         """Prepare a flyer for a flyscan
-        
+
         Expected message object is:
 
         If `flyer_object` obeys the Preparable protocol, it should have a .prepare
@@ -2010,8 +2010,7 @@ class RunEngine:
         obj = check_supports(msg.obj, Preparable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop('group', None)
-        self._movable_objs_touched.add(obj)
-        ret = obj.prepare(*msg.args, **kwargs)
+        ret = maybe_await(obj.prepare(*msg.args, **kwargs))
         p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
 
