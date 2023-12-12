@@ -1,9 +1,18 @@
+import pytest
+from bluesky.callbacks.mpl_plotting import LivePlot
+from bluesky import (Msg, IllegalMessageSequence,
+                     RunEngineInterrupted, FailedStatus)
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
 import os
 import signal
 import threading
 import time
 import time as ttime
 from functools import partial
+
+from bluesky.utils import FailedPause, RefusePause
+from .utils import _fabricate_asycio_event
 
 import pytest
 
@@ -352,6 +361,97 @@ def test_pause_resume(RE):
     time.sleep(3)
     assert mid - start > 1
     assert stop - start > 2
+
+
+def test_caught_pause_in_flyer(RE):
+    from ophyd.status import Status
+
+
+    class MyFlyer:
+        name = "flyer"
+
+        def kickoff(self):
+            status = Status()
+            status.set_finished()
+            return status
+
+        def complete(self):
+            self.complete_status = Status()
+            return self.complete_status
+
+        def pause(self):
+            # Let the plan handle it
+            raise RefusePause()
+
+        def resume(self):
+            pass
+
+
+    flyers = [MyFlyer(), MyFlyer()]
+    msgs = []
+    RE.msg_hook = msgs.append
+
+    def do_scan(start_from: int):
+        # This will be prepare, but this will do for the test
+        msgs.append({"prepare": start_from})
+        for flyer in flyers:
+            yield from bps.kickoff(flyer, group="kickoff", wait=False)
+        yield from bps.wait(group="kickoff")
+        for flyer in flyers:
+            yield from bps.complete(flyer, group="complete", wait=False)
+        yield from bps.wait(group="complete")
+        # Just to check we got to the end
+        yield from bps.null()
+
+
+    @bpp.run_decorator()
+    def pausing_plan():
+        done = False
+        start_from = 1
+        while not done:
+            try:
+                yield from do_scan(start_from)
+            except FailedPause:
+                yield from bps.checkpoint()
+                # Here we would inspect the counter values, and work out where to start from
+                start_from += 1
+            else:
+                done = True
+
+    pid = os.getpid()
+
+    def sim_kill():
+        os.kill(pid, signal.SIGINT)
+
+    def complete_flyers():
+        for flyer in flyers:
+            flyer.complete_status.set_finished()
+
+    threading.Timer(1, sim_kill).start()  # deferred pause
+    threading.Timer(1.5, sim_kill).start()  # actual pause
+    threading.Timer(3, complete_flyers).start()  # let it complete
+
+    RE(pausing_plan())
+    assert msgs == [
+        Msg('open_run'),
+        {'prepare': 1},
+        Msg('kickoff', flyers[0], group='kickoff'),
+        Msg('kickoff', flyers[1], group='kickoff'),
+        Msg('wait', group='kickoff', timeout=None),
+        Msg('complete', flyers[0], group='complete'),
+        Msg('complete', flyers[1], group='complete'),
+        Msg('wait', group='complete', timeout=None),
+        Msg('checkpoint'),
+        {'prepare': 2},
+        Msg('kickoff', flyers[0], group='kickoff'),
+        Msg('kickoff', flyers[1], group='kickoff'),
+        Msg('wait', group='kickoff', timeout=None),
+        Msg('complete', flyers[0], group='complete'),
+        Msg('complete', flyers[1], group='complete'),
+        Msg('wait', group='complete', timeout=None),
+        Msg('null'),
+        Msg('close_run', exit_status=None, reason=None),
+    ]
 
 
 def test_pause_abort(RE):
