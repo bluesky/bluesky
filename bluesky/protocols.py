@@ -182,9 +182,9 @@ class Preparable(Protocol):
     def prepare(self, value) -> Status:
         """Prepare a device for scanning.
 
-        This method provides similar functionality to ``Stageable.stage`` and 
+        This method provides similar functionality to ``Stageable.stage`` and
         ``Movable.set``, with key differences:
-        
+
         ``Stageable.stage``
         ^^^^^^^^^^^^^^^^^^^
         Staging a device translates to, "I'm going to use this in a scan, but I'm
@@ -195,9 +195,9 @@ class Preparable(Protocol):
         ``Movable.set``
         ^^^^^^^^^^^^^^^
         For some devices, preparation for a scan could involve multiple soft or
-        hardware signals being configured and/or set. ``prepare`` therefore allows 
+        hardware signals being configured and/or set. ``prepare`` therefore allows
         these to be bundled together, along with other logic.
-        
+
         For example, a Flyable device should have the following methods called on it to
         perform a fly-scan:
 
