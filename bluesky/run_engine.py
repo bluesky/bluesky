@@ -2010,7 +2010,7 @@ class RunEngine:
         obj = check_supports(msg.obj, Preparable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop('group', None)
-        ret = maybe_await(obj.prepare(*msg.args, **kwargs))
+        ret = obj.prepare(*msg.args, **kwargs)
         p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
 
