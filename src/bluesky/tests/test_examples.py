@@ -366,7 +366,6 @@ def test_pause_resume(RE):
 def test_caught_pause_in_flyer(RE):
     from ophyd.status import Status
 
-
     class MyFlyer:
         name = "flyer"
 
@@ -386,7 +385,6 @@ def test_caught_pause_in_flyer(RE):
         def resume(self):
             pass
 
-
     flyers = [MyFlyer(), MyFlyer()]
     msgs = []
     RE.msg_hook = msgs.append
@@ -402,7 +400,6 @@ def test_caught_pause_in_flyer(RE):
         yield from bps.wait(group="complete")
         # Just to check we got to the end
         yield from bps.null()
-
 
     @bpp.run_decorator()
     def pausing_plan():
