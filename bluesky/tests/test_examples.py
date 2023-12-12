@@ -1,6 +1,6 @@
 import pytest
 from bluesky.callbacks.mpl_plotting import LivePlot
-from bluesky import (Msg, IllegalMessageSequence, 
+from bluesky import (Msg, IllegalMessageSequence,
                      RunEngineInterrupted, FailedStatus)
 import bluesky.plan_stubs as bps
 import bluesky.preprocessors as bpp
@@ -348,7 +348,6 @@ def test_pause_resume(RE):
 def test_caught_pause_in_flyer(RE):
     from ophyd.status import Status
 
-
     class MyFlyer:
         name = "flyer"
 
@@ -356,19 +355,18 @@ def test_caught_pause_in_flyer(RE):
             status = Status()
             status.set_finished()
             return status
-        
+
         def complete(self):
             self.complete_status = Status()
             return self.complete_status
-        
+
         def pause(self):
             # Let the plan handle it
             raise RefusePause()
-        
+
         def resume(self):
             pass
 
-        
     flyers = [MyFlyer(), MyFlyer()]
     msgs = []
     RE.msg_hook = msgs.append
@@ -385,14 +383,13 @@ def test_caught_pause_in_flyer(RE):
         # Just to check we got to the end
         yield from bps.null()
 
-
     @bpp.run_decorator()
     def pausing_plan():
         done = False
         start_from = 1
         while not done:
             try:
-                yield from do_scan(start_from)            
+                yield from do_scan(start_from)
             except FailedPause:
                 yield from bps.checkpoint()
                 # Here we would inspect the counter values, and work out where to start from
@@ -435,7 +432,7 @@ def test_caught_pause_in_flyer(RE):
         Msg('close_run', exit_status=None, reason=None),
     ]
 
-    
+
 def test_pause_abort(RE):
     ev = _fabricate_asycio_event(RE.loop)
 
