@@ -431,7 +431,7 @@ def test_prepare(RE):
 
     flyer = PreparableFlyer(name="flyer")
 
-    #First, check we cannot call prepare if no run is open.
+    # First, check we cannot call prepare if no run is open.
     with pytest.raises(IllegalMessageSequence):
         RE([Msg("prepare", flyer)])
 
