@@ -2014,8 +2014,6 @@ class RunEngine:
         p_event = asyncio.Event(**self._loop_for_kwargs)
         pardon_failures = self._pardon_failures
 
-        await current_run.prepare(msg)
-
         def done_callback(status=None):
             self.log.debug("The object %r reports set is done "
                            "with status %r", obj, ret.success)

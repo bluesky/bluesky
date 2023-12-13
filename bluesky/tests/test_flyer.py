@@ -5,6 +5,7 @@ import pytest
 
 from bluesky import Msg
 from bluesky.plans import fly, count
+from bluesky.protocols import Preparable
 from bluesky.run_engine import IllegalMessageSequence
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector
@@ -418,3 +419,38 @@ def test_describe_config_optional(RE):
 
     assert "simple_flyer" in desc["object_keys"]
     assert "simple_flyer" in desc["configuration"]
+
+
+def test_prepare(RE):
+    """Tests that obj.prepare is correctly called for a fly scan."""
+    class PreparableFlyer(FlyerDevice, Preparable):
+        @call_counter
+        def prepare(self, value):
+            self.value = value
+            return NullStatus()
+
+    flyer = PreparableFlyer(name="flyer")
+
+    #First, check we cannot call prepare if no run is open.
+    with pytest.raises(IllegalMessageSequence):
+        RE([Msg("prepare", flyer)])
+
+    fly_scan_sequence = [
+        Msg("open_run"),
+        Msg("prepare", flyer, 123),
+        Msg("kickoff", flyer, group="foo"),
+        Msg("wait", group="foo"),
+        Msg("complete", flyer, group="bar"),
+        Msg("wait", group="bar"),
+        Msg("collect", flyer),
+        Msg("close_run"),
+    ]
+
+    RE(fly_scan_sequence)
+
+    assert flyer.value == 123
+
+    assert flyer.call_counts["prepare"] == 1
+    assert flyer.call_counts["kickoff"] == 1
+    assert flyer.call_counts["complete"] == 1
+    assert flyer.call_counts["collect"] == 1
