@@ -431,9 +431,10 @@ def test_prepare(RE):
 
     flyer = PreparableFlyer(name="flyer")
 
-    # First, check we cannot call prepare if no run is open.
-    with pytest.raises(IllegalMessageSequence):
-        RE([Msg("prepare", flyer)])
+    # We can prepare the flyer even if no run is open,
+    RE([Msg("prepare", flyer, "abcdefg")])
+
+    assert flyer.value == "abcdefg"
 
     fly_scan_sequence = [
         Msg("open_run"),
@@ -450,7 +451,7 @@ def test_prepare(RE):
 
     assert flyer.value == 123
 
-    assert flyer.call_counts["prepare"] == 1
+    assert flyer.call_counts["prepare"] == 2 #called once at start of test
     assert flyer.call_counts["kickoff"] == 1
     assert flyer.call_counts["complete"] == 1
     assert flyer.call_counts["collect"] == 1

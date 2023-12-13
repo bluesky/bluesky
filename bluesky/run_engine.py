@@ -2000,13 +2000,6 @@ class RunEngine:
 
         Where value represents an initial state to move the flyer to.
         """
-        run_key = msg.run
-        try:
-            self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'prepare' message was sent but no "
-                                         "run is open.") from ke
-
         obj = check_supports(msg.obj, Preparable)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop('group', None)
