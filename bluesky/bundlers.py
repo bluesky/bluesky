@@ -430,6 +430,13 @@ class RunBundler:
     def rewind(self):
         self._sequence_counters.clear()
         self._sequence_counters.update(self._sequence_counters_copy)
+        # make sure we do not forget about streams we roll back to the
+        # very beginning of
+        for desc_key in self._descriptor_objs:
+            if desc_key not in self._sequence_counters:
+                self._sequence_counters[desc_key] = 1
+                self._sequence_counters_copy[desc_key] = 1
+
         # This is needed to 'cancel' an open bundling (e.g. create) if
         # the pause happens after a 'checkpoint', after a 'create', but
         # before the paired 'save'.
