@@ -369,6 +369,12 @@ def test_caught_pause_in_flyer(RE):
     class MyFlyer:
         name = "flyer"
 
+        def prepare(self, start_from):
+            status = Status()
+            self.start_from = start_from
+            status.set_finished()
+            return status
+
         def kickoff(self):
             status = Status()
             status.set_finished()
@@ -390,8 +396,9 @@ def test_caught_pause_in_flyer(RE):
     RE.msg_hook = msgs.append
 
     def do_scan(start_from: int):
-        # This will be prepare, but this will do for the test
-        msgs.append({"prepare": start_from})
+        for flyer in flyers:
+            yield from bps.prepare(flyer, start_from, group="prepare", wait=False)
+        yield from bps.wait(group="prepare")
         for flyer in flyers:
             yield from bps.kickoff(flyer, group="kickoff", wait=False)
         yield from bps.wait(group="kickoff")
@@ -431,7 +438,9 @@ def test_caught_pause_in_flyer(RE):
     RE(pausing_plan())
     assert msgs == [
         Msg('open_run'),
-        {'prepare': 1},
+        Msg('prepare', flyers[0], 1, group='prepare'),
+        Msg('prepare', flyers[1], 1, group='prepare'),
+        Msg('wait', group='prepare', timeout=None),
         Msg('kickoff', flyers[0], group='kickoff'),
         Msg('kickoff', flyers[1], group='kickoff'),
         Msg('wait', group='kickoff', timeout=None),
@@ -439,7 +448,9 @@ def test_caught_pause_in_flyer(RE):
         Msg('complete', flyers[1], group='complete'),
         Msg('wait', group='complete', timeout=None),
         Msg('checkpoint'),
-        {'prepare': 2},
+        Msg('prepare', flyers[0], 2, group='prepare'),
+        Msg('prepare', flyers[1], 2, group='prepare'),
+        Msg('wait', group='prepare', timeout=None),
         Msg('kickoff', flyers[0], group='kickoff'),
         Msg('kickoff', flyers[1], group='kickoff'),
         Msg('wait', group='kickoff', timeout=None),
@@ -449,6 +460,7 @@ def test_caught_pause_in_flyer(RE):
         Msg('null'),
         Msg('close_run', exit_status=None, reason=None),
     ]
+    assert [flyer.start_from for flyer in flyers] == [2, 2]
 
 
 def test_pause_abort(RE):
