@@ -255,6 +255,9 @@ the required method.
 .. autoclass:: bluesky.protocols.Hints
     :members:
 
+.. autoclass:: bluesky.protocols.Preparable
+   :members:
+   :show-inheritance:
 
 Checking if an object supports an interface
 -------------------------------------------
