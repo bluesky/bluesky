@@ -590,6 +590,39 @@ def input_plan(prompt=''):
     return (yield Msg('input', prompt=prompt))
 
 
+def prepare(obj, *args, group=None, wait=False, **kwargs):
+    """
+    Prepare a device.
+
+    Parameters
+    ----------
+    obj : Preparable
+        Device with 'prepare' method
+    group : string (or any hashable object), optional
+        identifier used by 'wait'
+    wait : boolean, optional
+        If True, wait for completion before processing any more messages.
+        False by default.
+    kwargs
+        passed through to ``obj.prepare()``
+
+    Yields
+    ------
+    msg : Msg
+        Msg('kickoff', obj)
+
+    See Also
+    --------
+    :func:`bluesky.plan_stubs.complete`
+    :func:`bluesky.plan_stubs.collect`
+    :func:`bluesky.plan_stubs.wait`
+    """
+    ret = (yield Msg('prepare', obj, *args, group=group, **kwargs))
+    if wait:
+        yield from _wait(group=group)
+    return ret
+
+
 def kickoff(obj, *, group=None, wait=False, **kwargs):
     """
     Kickoff a fly-scanning device.

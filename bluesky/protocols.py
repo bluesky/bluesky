@@ -177,6 +177,48 @@ class Triggerable(Protocol):
 
 
 @runtime_checkable
+class Preparable(Protocol):
+    @abstractmethod
+    def prepare(self, value) -> Status:
+        """Prepare a device for scanning.
+
+        This method provides similar functionality to ``Stageable.stage`` and
+        ``Movable.set``, with key differences:
+
+        ``Stageable.stage``
+        ^^^^^^^^^^^^^^^^^^^
+        Staging a device translates to, "I'm going to use this in a scan, but I'm
+        not sure how". Preparing it translates to, "I'm about to do a step or a fly
+        scan with these parameters". Staging should be universal across many different
+        types of scans, however prepare is specific to an input value passed in.
+
+        ``Movable.set``
+        ^^^^^^^^^^^^^^^
+        For some devices, preparation for a scan could involve multiple soft or
+        hardware signals being configured and/or set. ``prepare`` therefore allows
+        these to be bundled together, along with other logic.
+
+        For example, a Flyable device should have the following methods called on it to
+        perform a fly-scan:
+
+            prepare(flyscan_params)
+            kickoff()
+            complete()
+
+        If the device is a detector, ``collect_asset_docs`` can be called repeatedly
+        while ``complete`` is not done to publish frames. Alternatively, to step-scan a
+        detector,
+
+            prepare(frame_params) to setup N software triggered frames
+            trigger() to take N frames
+            collect_asset_docs() to publish N frames
+
+        Returns a Status that is marked done when the device is ready for a scan.
+        """
+        ...
+
+
+@runtime_checkable
 class Readable(HasName, Protocol):
     @abstractmethod
     def read(self) -> SyncOrAsync[Dict[str, Reading]]:
