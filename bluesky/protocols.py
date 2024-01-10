@@ -55,9 +55,13 @@ class Reading(ReadingOptional):
 Asset = Union[
     Tuple[Literal["resource"], PartialResource],
     Tuple[Literal["datum"], Datum],
-    Tuple[Literal["stream_resource"], StreamResource],
-    Tuple[Literal["stream_datum"], StreamDatum]
     ]
+
+StreamAsset = Union [
+    Tuple[Literal["stream_resource"], StreamResource],
+    Tuple[Literal["stream_datum"], StreamDatum],
+    ]
+
 
 T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
@@ -121,8 +125,8 @@ class HasParent(Protocol):
 class WritesExternalAssets(Protocol):
     @abstractmethod
     def collect_asset_docs(self) -> SyncOrAsyncIterator[Asset]:
-        """Create the resource, datum, stream_resource, and stream_datum
-        documents describing data in external source.
+        """Create the resource and datum documents describing data in external
+            source.
 
         Example yielded values:
 
@@ -145,6 +149,19 @@ class WritesExternalAssets(Protocol):
         """
         ...
 
+
+class WritesStreamAssets(Protocol):
+    @abstractmethod
+    def collect_asset_docs(self, index: Optional[int]=None) -> SyncOrAsyncIterator[StreamAsset]:
+        """Collect the asset docs up a given index.
+        
+        The asset docs will be collected from multiple streams synchronised on the
+        highest common stream index. """
+        ...
+    
+    @abstractmethod
+    def get_index(self) -> SyncOrAsync[int]:
+        ...
 
 @runtime_checkable
 class Configurable(Protocol):
