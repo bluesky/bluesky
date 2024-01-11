@@ -2,7 +2,7 @@ import asyncio
 import inspect
 import time as ttime
 from collections import deque
-from typing import (Any, Deque, Dict, FrozenSet, Iterable, List, Optional,
+from typing import (Any, Awaitable, Callable, Deque, Dict, FrozenSet, Iterable, List, Optional, Set,
                     Tuple, Union)
 
 from event_model import (ComposeDescriptorBundle, DataKey, Datum,
@@ -13,7 +13,7 @@ from event_model import (ComposeDescriptorBundle, DataKey, Datum,
 from .log import doc_logger
 from .protocols import (Callback, Collectable, Configurable, EventCollectable,
                         EventPageCollectable, Flyable, HasName, PartialEvent,
-                        Readable, Reading, Subscribable, T, check_supports)
+                        Readable, Reading, Subscribable, T, SyncOrAsync, WritesStreamAssets, check_supports)
 from .utils import (IllegalMessageSequence, Msg,
                     _rearrange_into_parallel_dicts, maybe_await,
                     maybe_collect_asset_docs, maybe_update_hints, new_uid,
@@ -318,7 +318,7 @@ class RunBundler:
             # Ask the object for any resource or datum documents is has cached
             # and cache them as well. Likewise, these will be emitted if and
             # when _save is called.
-            asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
+            asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)] #also this
             self._asset_docs_cache.extend(asset_docs_collected)
 
         return reading
@@ -884,7 +884,7 @@ class RunBundler:
         return payload
 
     async def _collect_event_pages(
-            self, collect_obj, local_descriptors, return_payload: bool, message_stream_name: str
+            self, collect_obj: EventPageCollectable, local_descriptors, return_payload: bool, message_stream_name: str
     ):
         payload = []
 
@@ -924,17 +924,12 @@ class RunBundler:
 
         Expect message object is
 
-            Msg('collect', collect_obj)
-            Msg('collect', flyer_object, stream=True, return_payload=False, name='stream_name')
+            Msg('collect', collect_obj, collect_obj_2, ...)
+            Msg('collect', flyer_object, flyer_object_2, ..., stream=True, return_payload=False, name='stream_name')
+        
+        Where there must be at least one collect or flyer object. If multiple are used
+        they must obey the WritesStreamAssets protocol.
         """
-
-        collect_obj = check_supports(msg.obj, Collectable)
-        if isinstance(collect_obj, EventCollectable) and isinstance(collect_obj, EventPageCollectable):
-            doc_logger.warn(
-                "collect() was called for a device %r which is both EventCollectable "
-                "and EventPageCollectable. Using device.collect_pages().",
-                collect_obj.name
-            )
 
         if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
@@ -942,7 +937,6 @@ class RunBundler:
             raise IllegalMessageSequence(
                 "A 'collect' message was sent but no run is open."
             )
-        self._uncollected.discard(collect_obj)
 
         # If message_stream_name is given then only one descriptor is generated on `describe_collect`
         message_stream_name = msg.kwargs.get("name", None)
@@ -956,50 +950,83 @@ class RunBundler:
         # accumulate, and return None.
         return_payload = msg.kwargs.get('return_payload', True)
 
-        # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
-        if message_stream_name:
-            if message_stream_name not in self._descriptors:
-                await self._describe_collect(collect_obj, message_stream_name=message_stream_name)
+        collect_objects = [check_supports(msg.obj, Collectable) for obj in (msg.obj,)+ msg.args]
+
+        # Get references to get_index methods if we have more than one collect object
+        # raise error if collect_objects don't obey WritesStreamAssests protocol
+        indices: List[Callable[[None],SyncOrAsync[int]]] = []
+        if len(collect_objects) > 1:
+            for collect_object in collect_objects:
+                indices.append(check_supports(collect_object, WritesStreamAssets).get_index)
+
+        for collect_object in collect_objects:   
+            if isinstance(collect_object, EventCollectable) and isinstance(collect_object, EventPageCollectable):
+                doc_logger.warn(
+                    "collect() was called for a device %r which is both EventCollectable "
+                    "and EventPageCollectable. Using device.collect_pages().",
+                    collect_object.name
+                )
+            self._uncollected.discard(collect_object)
+
+            # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
+            if message_stream_name:
+                if message_stream_name not in self._descriptors:
+                    await self._describe_collect(collect_object, message_stream_name=message_stream_name)
+            else:
+                if collect_object not in self._local_descriptors:
+                    await self._describe_collect(collect_object)
+
+            local_descriptors = self._local_descriptors[collect_object]
+
+        # Get the indicies from the collect objects
+        coros = [maybe_await(get_index()) for get_index in indices]
+        if coros:
+            # There is more than one collect object, so collect up to a minimum index
+            min_index = min(await asyncio.gather(*coros))
         else:
-            if collect_obj not in self._local_descriptors:
-                await self._describe_collect(collect_obj)
+            # There is only one collect object, so don't pass an index down
+            min_index = None
 
-        local_descriptors = self._local_descriptors[collect_obj]
-
-        # Pack a Resource or Datum document with relevant information and emit
-        collected_asset_docs = [x async for x in maybe_collect_asset_docs(msg, collect_obj)]
-
-        # pack the external assets with data tracked by the bundler
+        # Pack a Resource or Datum document with relevant information and emit  
+        all_collected_asset_docs = [x for collect_object in collect_objects async for x in maybe_collect_asset_docs(msg, min_index, collect_object) ]
         indices_difference = await self._pack_external_assets(
-            collected_asset_docs, message_stream_name=message_stream_name
+            all_collected_asset_docs, message_stream_name=message_stream_name
         )
 
-        if isinstance(collect_obj, EventPageCollectable):
-            if stream:
-                raise IllegalMessageSequence(
-                    "A 'collect' with `stream=True` was sent for an EventPageCollectable device, "
-                    "stream is not used for EventPages"
+        if len(collect_objects) == 1:
+            if isinstance(collect_object, EventPageCollectable):
+                if stream:
+                    raise IllegalMessageSequence(
+                        "A 'collect' with `stream=True` was sent for an EventPageCollectable device, "
+                        "stream is not used for EventPages"
+                    )
+                payload = await self._collect_event_pages(
+                    collect_object, local_descriptors, return_payload, message_stream_name
                 )
-            payload = await self._collect_event_pages(
-                collect_obj, local_descriptors, return_payload, message_stream_name
-            )
-        elif isinstance(collect_obj, EventCollectable):
-            payload = await self._collect_events(
-                collect_obj, local_descriptors, return_payload, stream, message_stream_name
-            )
+                # TODO: check that event pages have same length as indices_difference
+            elif isinstance(collect_object, EventCollectable):
+                payload = await self._collect_events(
+                    collect_object, local_descriptors, return_payload, stream, message_stream_name
+                )
+                # TODO: check that events have same length as indices_difference
+            else:
+                return_payload = False
+                if not message_stream_name:
+                    raise RuntimeError(
+                        "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
+                        "requires a `name=stream_name` argument"
+                    )
+            
+                # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
+                self._sequence_counters[message_stream_name] += indices_difference
+                
+            if return_payload:
+                return payload
+            
         else:
-            return_payload = False
-            if not message_stream_name:
-                raise RuntimeError(
-                    "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
-                    "requires a `name=stream_name` argument"
-                )
-
             # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
             self._sequence_counters[message_stream_name] += indices_difference
 
-        if return_payload:
-            return payload
 
     async def backstop_collect(self):
         for obj in list(self._uncollected):
