@@ -953,6 +953,17 @@ class RunBundler:
         collect_obj = check_supports(msg.obj, Collectable)
         collect_objects = collect_obj.detectors
 
+
+        # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
+        if message_stream_name:
+            if message_stream_name not in self._descriptors:
+                await self._describe_collect(collect_obj, message_stream_name=message_stream_name)
+        else:
+            if collect_obj not in self._local_descriptors:
+                await self._describe_collect(collect_obj)
+
+        local_descriptors = self._local_descriptors[collect_obj]
+
         # Get references to get_index methods if we have more than one collect object
         # raise error if collect_objects don't obey WritesStreamAssests protocol
         indices: List[Callable[[None],SyncOrAsync[int]]] = []
@@ -968,16 +979,6 @@ class RunBundler:
                     collect_object.name
                 )
             self._uncollected.discard(collect_object)
-
-            # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
-            if message_stream_name:
-                if message_stream_name not in self._descriptors:
-                    await self._describe_collect(collect_object, message_stream_name=message_stream_name)
-            else:
-                if collect_object not in self._local_descriptors:
-                    await self._describe_collect(collect_object)
-
-            local_descriptors = self._local_descriptors[collect_object]
 
         # Get the indicies from the collect objects
         coros = [maybe_await(get_index()) for get_index in indices]
