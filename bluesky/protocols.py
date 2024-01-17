@@ -149,7 +149,7 @@ class WritesExternalAssets(Protocol):
         """
         ...
 
-
+@runtime_checkable
 class WritesStreamAssets(Protocol):
     @abstractmethod
     def collect_asset_docs(self, index: Optional[int]=None) -> SyncOrAsyncIterator[StreamAsset]:
