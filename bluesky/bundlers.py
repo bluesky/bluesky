@@ -950,7 +950,8 @@ class RunBundler:
         # accumulate, and return None.
         return_payload = msg.kwargs.get('return_payload', True)
 
-        collect_objects = [check_supports(msg.obj, Collectable) for obj in (msg.obj,)+ msg.args]
+        collect_obj = check_supports(msg.obj, Collectable)
+        collect_objects = collect_obj.detectors
 
         # Get references to get_index methods if we have more than one collect object
         # raise error if collect_objects don't obey WritesStreamAssests protocol
@@ -982,15 +983,18 @@ class RunBundler:
         coros = [maybe_await(get_index()) for get_index in indices]
         if coros:
             # There is more than one collect object, so collect up to a minimum index
-            min_index = min(await asyncio.gather(*coros))
+            min_index = min(await asyncio.gather(*coros))  
         else:
             # There is only one collect object, so don't pass an index down
             min_index = None
-
-        # Pack a Resource or Datum document with relevant information and emit  
-        all_collected_asset_docs = [x for collect_object in collect_objects async for x in maybe_collect_asset_docs(msg, min_index, collect_object) ]
+    
+        collected_asset_docs = [
+            x for collect_object in collect_objects
+            async for x in maybe_collect_asset_docs(msg,collect_object, index=min_index,)
+            ]
+        
         indices_difference = await self._pack_external_assets(
-            all_collected_asset_docs, message_stream_name=message_stream_name
+            collected_asset_docs, message_stream_name=message_stream_name
         )
 
         if len(collect_objects) == 1:
