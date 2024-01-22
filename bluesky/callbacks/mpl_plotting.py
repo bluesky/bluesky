@@ -78,6 +78,28 @@ class QtAwareCallback(CallbackBase):
             return CallbackBase.__call__(self, name, doc)
 
 
+def _ensure_ax(ax):
+    """
+    Ensure that user input is normalized to an Axes.
+
+    Parameters
+    ----------
+    ax : Axes | None | Callable[None, Axes | None]
+
+    Returns
+    -------
+    Axes
+    """
+    if callable(ax):
+        ax = ax()
+
+    if ax is None:
+        import matplotlib.pyplot as plt
+        _, ax = plt.subplots()
+
+    return ax
+
+
 @make_class_safe(logger=logger)
 class LivePlot(QtAwareCallback):
     """
@@ -104,8 +126,8 @@ class LivePlot(QtAwareCallback):
         passed to Axes.set_xlim
     ylim : tuple, optional
         passed to Axes.set_ylim
-    ax : Axes, optional
-        matplotib Axes; if none specified, new figure and axes are made.
+    ax : Axes | Callable[None, Axes], optional
+        matplotib Axes or function to get one; if None specified, new figure and axes are made.
     fig : Figure, optional
         deprecated: use ax instead
     epoch : {'run', 'unix'}, optional
@@ -127,7 +149,7 @@ class LivePlot(QtAwareCallback):
         def setup():
             # Run this code in start() so that it runs on the correct thread.
             nonlocal y, x, legend_keys, xlim, ylim, ax, fig, epoch, kwargs
-            import matplotlib.pyplot as plt
+
             with self.__setup_lock:
                 if self.__setup_event.is_set():
                     return
@@ -141,9 +163,7 @@ class LivePlot(QtAwareCallback):
                               "Instead, use the new keyword argument `ax` to "
                               "provide specific Axes to plot on.")
                 ax = fig.gca()
-            if ax is None:
-                fig, ax = plt.subplots()
-            self.ax = ax
+            self.ax = _ensure_ax(ax)
 
             if legend_keys is None:
                 legend_keys = []
@@ -265,8 +285,8 @@ class LiveScatter(QtAwareCallback):
     cmap : str or colormap, optional
        The color map to use
 
-    ax : Axes, optional
-        matplotib Axes; if none specified, new figure and axes are made.
+    ax : Axes | Callable[None, Axes], optional
+        matplotib Axes or function to get one; if None specified, new figure and axes are made.
 
     All additional keyword arguments are passed through to ``Axes.scatter``.
 
@@ -287,11 +307,9 @@ class LiveScatter(QtAwareCallback):
                 if self.__setup_event.is_set():
                     return
                 self.__setup_event.set()
-            import matplotlib.pyplot as plt
+
             import matplotlib.colors as mcolors
-            if ax is None:
-                fig, ax = plt.subplots()
-                fig.show()
+            self.ax = _ensure_ax(ax)
             ax.cla()
             self.x = x
             self.y = y
@@ -300,7 +318,7 @@ class LiveScatter(QtAwareCallback):
             ax.set_ylabel(y)
             ax.set_aspect('equal')
             self._sc = []
-            self.ax = ax
+
             ax.margins(.1)
             self._xdata, self._ydata, self._Idata = [], [], []
             self._norm = mcolors.Normalize()
@@ -416,9 +434,8 @@ class LiveGrid(QtAwareCallback):
 
     aspect : str or float, optional
        Passed through to :meth:`matplotlib.axes.Axes.imshow`
-
-    ax : Axes, optional
-        matplotib Axes; if none specified, new figure and axes are made.
+    ax : Axes | Callable[None, Axes], optional
+        matplotib Axes or function to get one; if None specified, new figure and axes are made.
 
     x_positive: string, optional
         Defines the positive direction of the x axis, takes the values 'right'
@@ -448,16 +465,14 @@ class LiveGrid(QtAwareCallback):
                 if self.__setup_event.is_set():
                     return
                 self.__setup_event.set()
-            import matplotlib.pyplot as plt
             import matplotlib.colors as mcolors
-            if ax is None:
-                fig, ax = plt.subplots()
+            self.ax = _ensure_ax(ax)
             ax.cla()
             self.I = I  # noqa: E741
             ax.set_xlabel(xlabel)
             ax.set_ylabel(ylabel)
             ax.set_aspect(aspect)
-            self.ax = ax
+
             self._Idata = np.ones(raster_shape) * np.nan
             self._norm = mcolors.Normalize()
             if clim is not None:
@@ -573,8 +588,8 @@ class LiveFitPlot(LivePlot):
         passed to Axes.set_xlim
     ylim : tuple, optional
         passed to Axes.set_ylim
-    ax : Axes, optional
-        matplotib Axes; if none specified, new figure and axes are made.
+    ax : Axes | Callable[None, Axes], optional
+        matplotib Axes or function to get one; if None specified, new figure and axes are made.
     All additional keyword arguments are passed through to ``Axes.plot``.
     """
     def __init__(self, livefit, *, num_points=100, legend_keys=None, xlim=None,
@@ -655,19 +670,17 @@ def plot_peak_stats(peak_stats, ax=None):
     Parameters
     ----------
     peak_stats : PeakStats
-    ax : matplotlib.Axes, optional
-
+    ax : Axes | Callable[None, Axes], optional
+        matplotib Axes or function to get one; if None specified, new figure and axes are made.
     Returns
     -------
     arts : dict
         dictionary of matplotlib Artist objects, for further styling
 
     """
-    import matplotlib.pyplot as plt
     arts = {}
     ps = peak_stats  # for brevity
-    if ax is None:
-        fig, ax = plt.subplots()
+    ax = _ensure_ax(ax)
     ax.margins(.1)
     # Plot points, vertical lines, and a legend. Collect Artist objs to return.
     points, = ax.plot(ps.x_data, ps.y_data, 'o')
