@@ -59,7 +59,11 @@ def count(detectors, num=1, delay=None, *, per_shot=None, md=None):
     _md = {'detectors': [det.name for det in detectors],
            'num_points': num,
            'num_intervals': num_intervals,
-           'plan_args': {'detectors': list(map(repr, detectors)), 'num': num},
+           'plan_args': {
+               'detectors': list(map(repr, detectors)),
+               'num': num,
+               'delay': delay
+               },
            'plan_name': 'count',
            'hints': {}
            }
