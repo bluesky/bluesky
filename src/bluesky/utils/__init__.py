@@ -128,7 +128,7 @@ class NoReplayAllowed(Exception):
     pass
 
 
-class RefusePause(Exception):
+class UncleanPause(Exception):
     pass
 
 
