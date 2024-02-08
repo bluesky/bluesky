@@ -40,7 +40,7 @@ from .utils import (CallbackRegistry, SigintHandler,
                     FailedPause, FailedStatus, InvalidCommand,
                     PlanHalt, Msg, ensure_generator, single_gen,
                     DefaultDuringTask, warn_if_msg_args_or_kwargs,
-                    RefusePause)
+                    UncleanPause)
 
 
 class _RunEnginePanic(Exception):
@@ -1454,7 +1454,7 @@ class RunEngine:
                                 await maybe_await(obj.pause())
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
-                            except RefusePause:
+                            except UncleanPause:
                                 await self._clear_checkpoint(Msg("clear_checkpoint"))
                                 refuse_to_pause = True
                     # if anything refused to pause, go back to top and let

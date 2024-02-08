@@ -11,7 +11,7 @@ import time
 import threading
 from functools import partial
 
-from bluesky.utils import FailedPause, RefusePause
+from bluesky.utils import FailedPause, UncleanPause
 from .utils import _fabricate_asycio_event
 
 with pytest.warns(UserWarning):
@@ -350,6 +350,7 @@ def test_caught_pause_in_flyer(RE):
 
     class MyFlyer:
         name = "flyer"
+        _unclean_pause = True
 
         def prepare(self, start_from):
             status = Status()
@@ -358,6 +359,7 @@ def test_caught_pause_in_flyer(RE):
             return status
 
         def kickoff(self):
+            self._unclean_pause = True
             status = Status()
             status.set_finished()
             return status
@@ -367,8 +369,9 @@ def test_caught_pause_in_flyer(RE):
             return self.complete_status
 
         def pause(self):
-            # Let the plan handle it
-            raise RefusePause()
+            if self._unclean_pause:
+                self._unclean_pause = False
+                raise UncleanPause()
 
         def resume(self):
             pass
@@ -387,6 +390,7 @@ def test_caught_pause_in_flyer(RE):
         for flyer in flyers:
             yield from bps.complete(flyer, group="complete", wait=False)
         yield from bps.wait(group="complete")
+
         # Just to check we got to the end
         yield from bps.null()
 
@@ -399,8 +403,13 @@ def test_caught_pause_in_flyer(RE):
                 yield from do_scan(start_from)
             except FailedPause:
                 yield from bps.checkpoint()
-                # Here we would inspect the counter values, and work out where to start from
+
+                # In a real run, this is where we would inspect the
+                # counter values, and work out where to start from
                 start_from += 1
+
+                # The second pause now the flyers are ready
+                yield from bps.pause()
             else:
                 done = True
 
@@ -415,9 +424,10 @@ def test_caught_pause_in_flyer(RE):
 
     threading.Timer(1, sim_kill).start()  # deferred pause
     threading.Timer(1.5, sim_kill).start()  # actual pause
-    threading.Timer(3, complete_flyers).start()  # let it complete
-
     RE(pausing_plan())
+
+    assert [flyer.start_from for flyer in flyers] == [1, 1]
+
     assert msgs == [
         Msg('open_run'),
         Msg('prepare', flyers[0], 1, group='prepare'),
@@ -430,6 +440,21 @@ def test_caught_pause_in_flyer(RE):
         Msg('complete', flyers[1], group='complete'),
         Msg('wait', group='complete', timeout=None),
         Msg('checkpoint'),
+
+        # The real message adds these because the run fails on trying to
+        # resume when the state isn't paused
+        # Msg('pause', obj=None, args=(), kwargs={'defer': False}, run=None),
+        # Msg('close_run', obj=None, args=(), kwargs={'exit_status': 'fail', 'reason': ''}, run=None),
+
+    ]
+
+    msgs.clear()
+    threading.Timer(1, complete_flyers).start()  # let it complete after we've resumed
+    RE.resume()
+
+    assert [flyer.start_from for flyer in flyers] == [2, 2]
+
+    assert msgs == [
         Msg('prepare', flyers[0], 2, group='prepare'),
         Msg('prepare', flyers[1], 2, group='prepare'),
         Msg('wait', group='prepare', timeout=None),
@@ -442,7 +467,6 @@ def test_caught_pause_in_flyer(RE):
         Msg('null'),
         Msg('close_run', exit_status=None, reason=None),
     ]
-    assert [flyer.start_from for flyer in flyers] == [2, 2]
 
 
 def test_pause_abort(RE):
