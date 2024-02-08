@@ -53,11 +53,11 @@ from .utils import (
     Msg,
     NoReplayAllowed,
     PlanHalt,
-    RefusePause,
     RequestAbort,
     RequestStop,
     RunEngineInterrupted,
     SigintHandler,
+    UncleanPause,
     ensure_generator,
     normalize_subs_input,
     single_gen,
@@ -1527,7 +1527,7 @@ class RunEngine:
                                 await maybe_await(obj.pause())
                             except NoReplayAllowed:
                                 self._reset_checkpoint_state_meth()
-                            except RefusePause:
+                            except UncleanPause:
                                 await self._clear_checkpoint(Msg("clear_checkpoint"))
                                 refuse_to_pause = True
                     # if anything refused to pause, go back to top and let
