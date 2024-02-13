@@ -615,24 +615,6 @@ class RunBundler:
         """
         self._uncollected.add(msg.obj)
 
-    async def complete(self, msg):
-        """
-        Tell a flyer, 'stop collecting, whenever you are ready'.
-
-        The flyer returns a status object. Some flyers respond to this
-        command by stopping collection and returning a finished status
-        object immediately. Other flyers finish their given course and
-        finish whenever they finish, irrespective of when this command is
-        issued.
-
-        Expected message object is::
-
-            Msg('complete', flyer, group=<GROUP>)
-
-        where <GROUP> is a hashable identifier.
-        """
-        ...
-
     def _maybe_format_datakeys_with_stream_name(
         self,
         describe_collect_dict: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]],

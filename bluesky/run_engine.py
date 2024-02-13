@@ -2097,14 +2097,6 @@ class RunEngine:
 
         where <GROUP> is a hashable identifier.
         """
-        run_key = msg.run
-        try:
-            current_run = self._run_bundlers[run_key]
-        except KeyError as ke:
-            raise IllegalMessageSequence("A 'complete' message was sent but no "
-                                         "run is open.") from ke
-
-        await current_run.complete(msg)
         kwargs = dict(msg.kwargs)
         group = kwargs.pop("group", None)
         obj = check_supports(msg.obj, Flyable)

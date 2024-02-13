@@ -174,9 +174,11 @@ The co-routines for managing flyers
    :toctree: generated
 
    RunBundler.kickoff
-   RunBundler.complete
    RunBundler.collect
    RunBundler.backstop_collect
+
+Note: There is a ``complete`` plan stub and run engine call, which should be used after
+kickoff whose logic does not reside in the RunBundler.
 
 The co-routines for changing a device configuration
 
