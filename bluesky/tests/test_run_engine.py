@@ -15,7 +15,7 @@ from event_model import DocumentNames
 
 from bluesky import Msg
 from bluesky.plan_stubs import (abs_set, checkpoint, declare_stream,
-                                trigger_and_read, wait)
+                                trigger_and_read, wait, pause)
 from bluesky.plans import count, grid_scan
 from bluesky.preprocessors import (SupplementalData, baseline_wrapper,
                                    finalize_wrapper, reset_positions_decorator,
@@ -1903,3 +1903,60 @@ def test_wait_with_timeout(set_finished, RE):
     else:
         with pytest.raises(TimeoutError):
             RE(plan())
+
+
+def test_1event_rewind(RE, hw):
+    cache = []
+
+    def hook(msg):
+        cache.append(msg)
+
+    doc_cache = []
+
+    def cb(name, doc):
+        doc_cache.append((name, doc))
+
+    @run_decorator()
+    def broken():
+        yield from checkpoint()
+        yield from trigger_and_read([hw.det], name="primary")
+        yield from pause()
+        yield from trigger_and_read([hw.det], name="primary")
+
+    RE.msg_hook = hook
+    with pytest.raises(RunEngineInterrupted):
+        RE(broken(), cb)
+    RE.resume()
+
+    assert [_[1]["seq_num"] for _ in doc_cache if _[0] == "event"] == [1, 1, 2]
+
+    assert [_[0] for _ in doc_cache] == [
+        "start",
+        "descriptor",
+        "event",
+        "event",
+        "event",
+        "stop",
+    ]
+
+    assert [msg.command for msg in cache] == [
+        "open_run",
+        "checkpoint",
+        "trigger",
+        "wait",
+        "create",
+        "read",
+        "save",
+        "pause",
+        "trigger",
+        "wait",
+        "create",
+        "read",
+        "save",
+        "trigger",
+        "wait",
+        "create",
+        "read",
+        "save",
+        "close_run",
+    ]

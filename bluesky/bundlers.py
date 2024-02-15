@@ -2,7 +2,7 @@ import asyncio
 import inspect
 import time as ttime
 from collections import deque
-from typing import (Any, Deque, Dict, FrozenSet, Iterable, List, Optional, Set,
+from typing import (Any, Deque, Dict, FrozenSet, Iterable, List, Optional,
                     Tuple, Union)
 
 from event_model import (ComposeDescriptorBundle, DataKey, Datum,
@@ -42,7 +42,7 @@ class RunBundler:
         self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps
         # cache of {name: (doc, compose_event, compose_event_page)}
         self._descriptors: Dict[Any, ComposeDescriptorBundle] = dict()
-        self._descriptor_objs: Dict[str, Set[HasName]] = dict()
+        self._descriptor_objs: Dict[str, Dict[HasName, Dict[str, DataKey]]] = dict()
         # cache of {obj: {objs_frozen_set: (doc, compose_event, compose_event_page)}
         self._local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = dict()
         # a seq_num counter per stream
@@ -139,7 +139,7 @@ class RunBundler:
     async def _prepare_stream(
         self,
         desc_key: str,
-        objs_dks: Dict[Any, Dict[str, DataKey]],
+        objs_dks: Dict[HasName, Dict[str, DataKey]],
     ):
         # We do not have an Event Descriptor for this set
         # so one must be created.
@@ -430,6 +430,13 @@ class RunBundler:
     def rewind(self):
         self._sequence_counters.clear()
         self._sequence_counters.update(self._sequence_counters_copy)
+        # make sure we do not forget about streams we roll back to the
+        # very beginning of
+        for desc_key in self._descriptor_objs:
+            if desc_key not in self._sequence_counters:
+                self._sequence_counters[desc_key] = 1
+                self._sequence_counters_copy[desc_key] = 1
+
         # This is needed to 'cancel' an open bundling (e.g. create) if
         # the pause happens after a 'checkpoint', after a 'create', but
         # before the paired 'save'.
