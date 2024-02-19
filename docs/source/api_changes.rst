@@ -2,6 +2,26 @@
  Release History
 =================
 
+v1.13.0a1 (2024-02-20)
+======================
+
+Added
+-----
+
+* Added a new prepare command to RunEngine and bundler, as well as protocol.
+  This allows a step between ``stage`` and ``kickoff`` so flyers can prepare.
+  by @rosesyrett in https://github.com/bluesky/bluesky/pull/1639
+* Add delay to plan_args of count plan by @DiamondJoseph in https://github.com/bluesky/bluesky/pull/1655
+
+Fixed
+-----
+
+* typing_extensions needs NotRequired (new 4.0.0) by @maffettone in https://github.com/bluesky/bluesky/pull/1635
+* Fixed examples in debugging docs by @DominicOram in https://github.com/bluesky/bluesky/pull/1500
+* Remove empty complete method from RunBundler by @rosesyrett in https://github.com/bluesky/bluesky/pull/1644
+* Handle case of rewinding to before the beginning of a stream by @tacaswell in https://github.com/bluesky/bluesky/pull/1648
+
+
 v1.12.0 (2023-11-06)
 ====================
 
