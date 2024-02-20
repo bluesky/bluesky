@@ -666,38 +666,75 @@ class RunBundler:
         obj = check_supports(obj, Collectable)
         self._describe_collect_cache[obj] = await maybe_await(obj.describe_collect())
 
-    async def _describe_collect(self, collect_obj: Flyable, message_stream_name: Optional[str] = None):
-        "Read the object's describe_collect and cache it."
+    async def _describe_collect(self, collect_objects: List[Collectable], message_stream_name: Optional[str] = None):
+        """Read object(s) describe_collect and cache it.
+        
+        Read describe collect for each collect object (one or more) and ensure it is
+        cached in the _describe_collect_cache. 
+        """
 
-        await self._ensure_cached(collect_obj, collect=True)
+        # Cache the desciptors for each of the collect objects
+        describe_collect = {}
+        for collect_obj in collect_objects:
+            await self._ensure_cached(collect_obj, collect=True)
+            describe_collect.update(self._describe_collect_cache[collect_obj])
 
-        describe_collect = self._describe_collect_cache[collect_obj]
+        ##### Is this formatting step still needed for backwards compatablity?
+            # (Because i would like to change it)
 
+        # describe_collect is a dictionary like this:
+        #     {name_for_desc1: data_keys_for_desc1,
+        #      name_for_desc2: data_keys_for_desc2, ...}
+        # with an entry for each detector:
+        # Which we need to make describe_collect_items, which is only used in the below
+        # for loop
         describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(
-                describe_collect, message_stream_name=message_stream_name
+                describe_collect,
+                message_stream_name=message_stream_name
         ))
+        # it would be much nicer to have an object like this:
+
+        describe_collect_all = {collect_obj: self._describe_collect_cache[collect_obj]
+                                for collect_obj in collect_objects}
+
+        # and instead write something that checks the format of the datakeys without
+        # appending the stream name? (replaceing _maybe_format_datakeys_with_stream_name)
+
+        # It would also massively clean up the section after else.
+
 
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
-        # collect_obj.describe_collect() returns a dictionary like this:
-        #     {name_for_desc1: data_keys_for_desc1,
-        #      name_for_desc2: data_keys_for_desc2, ...}
-        for stream_name, stream_data_keys in describe_collect_items:
-            if stream_name not in self._descriptor_objs or collect_obj not in self._descriptor_objs[stream_name]:
+        # Is this structure still needed for backwards compatability?
+        # (the stuff after the "or" below) Or the (formatting with describe_collect_items)
+        for stream_name, stream_data_keys in describe_collect_items: 
+            if stream_name not in self._descriptor_objs or (
+                collect_obj not in self._descriptor_objs[stream_name]
+                for collect_obj in collect_objects
+            ):
                 # We do not have an Event Descriptor for this collect_obj.
-                await self._prepare_stream(stream_name, {collect_obj: stream_data_keys})
-            else:
+                await self._prepare_stream(
+                    stream_name,
+                    {collect_obj: self._describe_collect_cache[collect_obj]
+                     for collect_obj in collect_objects})
+            else: # test this
                 objs_read = self._descriptor_objs[stream_name]
-                if stream_data_keys != objs_read[collect_obj]:
-                    raise RuntimeError(
-                        "Mismatched objects read, "
-                        "expected {!s}, "
-                        "got {!s}".format(stream_data_keys, objs_read)
-                    )
-
+                for collect_obj, data_key in objs_read.items():
+                    if data_key.items() <= stream_data_keys.items() and (
+                        data_key != objs_read[collect_obj]):
+                        raise RuntimeError(
+                            "Mismatched objects read, "
+                            "expected {!s}, "
+                            "got {!s}".format(describe_collect_all, objs_read)
+                        )
             local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
 
-        self._local_descriptors[collect_obj] = local_descriptors
+            
+            self._local_descriptors[frozenset(collect_objects)] = local_descriptors
+            # I don't think we want to do this.
+            # Do we instead want to have a local discriptor for each collect object?
+
+
 
     async def _pack_seq_nums_into_stream_datum(
         self,
@@ -923,11 +960,10 @@ class RunBundler:
         Collect data cached by a flyer and emit documents.
 
         Expect message object is
-
-            Msg('collect', collect_obj, collect_obj_2, ...)
-            Msg('collect', flyer_object, flyer_object_2, ..., stream=True, return_payload=False, name='stream_name')
+            Msg('collect',  collect_obj,  collect_obj_2, ..., stream=True, 
+                return_payload=False, name='stream_name')
         
-        Where there must be at least one collect or flyer object. If multiple are used
+        Where there must be at least one collect object. If multiple are used
         they must obey the WritesStreamAssets protocol.
         """
 
@@ -950,19 +986,8 @@ class RunBundler:
         # accumulate, and return None.
         return_payload = msg.kwargs.get('return_payload', True)
 
-        collect_obj = check_supports(msg.obj, Collectable)
-        collect_objects = collect_obj.detectors
-
-
-        # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
-        if message_stream_name:
-            if message_stream_name not in self._descriptors:
-                await self._describe_collect(collect_obj, message_stream_name=message_stream_name)
-        else:
-            if collect_obj not in self._local_descriptors:
-                await self._describe_collect(collect_obj)
-
-        local_descriptors = self._local_descriptors[collect_obj]
+        # Get a list of the collectable objects from the message obj and args
+        collect_objects = [check_supports(obj, Collectable) for obj in (msg.obj,)+ msg.args]
 
         # Get references to get_index methods if we have more than one collect object
         # raise error if collect_objects don't obey WritesStreamAssests protocol
@@ -979,6 +1004,20 @@ class RunBundler:
                     collect_object.name
                 )
             self._uncollected.discard(collect_object)
+
+        # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
+        if message_stream_name:
+            if message_stream_name not in self._descriptors:
+                await self._describe_collect(collect_objects, message_stream_name=message_stream_name)
+        else:
+            #  this will not work the new way
+            for collect_object in collect_objects: # i think this way is ment to be done if you only have one collect object?
+                if collect_objects not in self._local_descriptors:
+                    await self._describe_collect(collect_objects)
+
+        #or this
+        local_descriptors = self._local_descriptors[frozenset(collect_objects)]
+
 
         # Get the indicies from the collect objects
         coros = [maybe_await(get_index()) for get_index in indices]
