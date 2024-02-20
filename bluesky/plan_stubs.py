@@ -695,14 +695,13 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     return ret
 
 
-def collect(obj, *, stream=False, return_payload=True, name=None):
+def collect(obj, *args, stream=False, return_payload=True, name=None):
     """
     Collect data cached by a fly-scanning device and emit documents.
 
     Parameters
     ----------
-    obj : fly-able
-        Device with 'kickoff', 'complete', and 'collect' methods
+    obj : list of devices with 'kickoff', 'complete', and 'collect' methods
     stream : boolean, optional
         If False (default), emit Event documents in one bulk dump. If True,
         emit events one at time.
@@ -726,8 +725,8 @@ def collect(obj, *, stream=False, return_payload=True, name=None):
     :func:`bluesky.plan_stubs.complete`
     :func:`bluesky.plan_stubs.wait`
     """
-    return (yield Msg('collect', obj, stream=stream, return_payload=return_payload, name=name))
-
+    return (yield Msg('collect', obj, *args, stream=stream, return_payload=return_payload, name=name))
+ 
 
 def configure(obj, *args, **kwargs):
     """
