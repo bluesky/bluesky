@@ -12,6 +12,7 @@ lmfit
 matplotlib >=3.5.0
 mongoquery
 mypy
+myst-parser
 networkx
 nose
 numpydoc
