@@ -2,7 +2,7 @@ import asyncio
 import inspect
 import time as ttime
 from collections import deque
-from typing import (Any, Awaitable, Callable, Deque, Dict, FrozenSet, Iterable, List, Optional, Set,
+from typing import (Any, Callable, Deque, Dict, FrozenSet, Iterable, List, Optional,
                     Tuple, Union)
 
 from event_model import (ComposeDescriptorBundle, DataKey, Datum,
@@ -318,7 +318,7 @@ class RunBundler:
             # Ask the object for any resource or datum documents is has cached
             # and cache them as well. Likewise, these will be emitted if and
             # when _save is called.
-            asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)] #also this
+            asset_docs_collected = [x async for x in maybe_collect_asset_docs(msg, obj, *msg.args, **msg.kwargs)]
             self._asset_docs_cache.extend(asset_docs_collected)
 
         return reading
@@ -668,9 +668,9 @@ class RunBundler:
 
     async def _describe_collect(self, collect_objects: List[Flyable], message_stream_name: Optional[str] = None):
         """Read object(s) describe_collect and cache it.
-        
+
         Read describe collect for each collect object (one or more) and ensure it is
-        cached in the _describe_collect_cache. 
+        cached in the _describe_collect_cache.
         """
 
         # Cache the desciptors for each of the collect objects
@@ -698,7 +698,7 @@ class RunBundler:
 
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
-        for stream_name, stream_data_keys in describe_collect_items: 
+        for stream_name, stream_data_keys in describe_collect_items:
             if stream_name not in self._descriptor_objs or (
                 collect_obj not in self._descriptor_objs[stream_name]
                 for collect_obj in collect_objects
@@ -711,12 +711,14 @@ class RunBundler:
                     await self._prepare_stream(
                         stream_name,
                         {collect_obj: self._describe_collect_cache[collect_obj]
-                        for collect_obj in collect_objects}) 
+                            for collect_obj in collect_objects}
+                        )
             else:
                 objs_read = self._descriptor_objs[stream_name]
                 for collect_obj, data_key in objs_read.items():
                     if data_key.items() <= stream_data_keys.items() and (
-                        data_key != objs_read[collect_obj]):
+                        data_key != objs_read[collect_obj]
+                    ):
                         raise RuntimeError(
                             "Mismatched objects read, "
                             "expected {!s}, "
@@ -910,7 +912,8 @@ class RunBundler:
         return payload
 
     async def _collect_event_pages(
-            self, collect_obj: EventPageCollectable, local_descriptors, return_payload: bool, message_stream_name: str
+            self, collect_obj: EventPageCollectable, local_descriptors, return_payload: bool,
+            message_stream_name: str
     ):
         payload = []
 
@@ -949,9 +952,9 @@ class RunBundler:
         Collect data cached by a flyer and emit documents.
 
         Expect message object is
-            Msg('collect',  collect_obj,  collect_obj_2, ..., stream=True, 
+            Msg('collect',  collect_obj,  collect_obj_2, ..., stream=True,
                 return_payload=False, name='stream_name')
-        
+
         Where there must be at least one collect object. If multiple are used
         they must obey the WritesStreamAssets protocol.
         """
@@ -976,16 +979,16 @@ class RunBundler:
         return_payload = msg.kwargs.get('return_payload', True)
 
         # Get a list of the collectable objects from the message obj and args
-        collect_objects = [check_supports(obj, Collectable) for obj in (msg.obj,)+ msg.args]
+        collect_objects = [check_supports(obj, Collectable) for obj in (msg.obj,) + msg.args]
 
         # Get references to get_index methods if we have more than one collect object
         # raise error if collect_objects don't obey WritesStreamAssests protocol
-        indices: List[Callable[[None],SyncOrAsync[int]]] = []
+        indices: List[Callable[[None], SyncOrAsync[int]]] = []
         if len(collect_objects) > 1:
             for collect_object in collect_objects:
                 indices.append(check_supports(collect_object, WritesStreamAssets).get_index)
 
-        for collect_object in collect_objects:   
+        for collect_object in collect_objects:
             if isinstance(collect_object, EventCollectable) and isinstance(collect_object, EventPageCollectable):
                 doc_logger.warn(
                     "collect() was called for a device %r which is both EventCollectable "
@@ -998,28 +1001,26 @@ class RunBundler:
         if message_stream_name:
             if message_stream_name not in self._descriptors:
                 await self._describe_collect(collect_objects, message_stream_name=message_stream_name)
-        else:          
-                if frozenset(collect_objects) not in self._local_descriptors:
-                    await self._describe_collect(collect_objects)
+        else:
+            if frozenset(collect_objects) not in self._local_descriptors:
+                await self._describe_collect(collect_objects)
 
-        #or this
         local_descriptors = self._local_descriptors[frozenset(collect_objects)]
-
 
         # Get the indicies from the collect objects
         coros = [maybe_await(get_index()) for get_index in indices]
         if coros:
             # There is more than one collect object, so collect up to a minimum index
-            min_index = min(await asyncio.gather(*coros))  
+            min_index = min(await asyncio.gather(*coros))
         else:
             # There is only one collect object, so don't pass an index down
             min_index = None
-    
+
         collected_asset_docs = [
             x for collect_object in collect_objects
-            async for x in maybe_collect_asset_docs(msg,collect_object, index=min_index,)
+            async for x in maybe_collect_asset_docs(msg, collect_object, index=min_index,)
             ]
-        
+
         indices_difference = await self._pack_external_assets(
             collected_asset_docs, message_stream_name=message_stream_name
         )
@@ -1047,17 +1048,16 @@ class RunBundler:
                         "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
                         "requires a `name=stream_name` argument"
                     )
-            
+
                 # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
                 self._sequence_counters[message_stream_name] += indices_difference
-                
+
             if return_payload:
                 return payload
-            
+
         else:
             # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
             self._sequence_counters[message_stream_name] += indices_difference
-
 
     async def backstop_collect(self):
         for obj in list(self._uncollected):

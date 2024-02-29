@@ -57,7 +57,7 @@ Asset = Union[
     Tuple[Literal["datum"], Datum],
     ]
 
-StreamAsset = Union [
+StreamAsset = Union[
     Tuple[Literal["stream_resource"], StreamResource],
     Tuple[Literal["stream_datum"], StreamDatum],
     ]
@@ -149,10 +149,11 @@ class WritesExternalAssets(Protocol):
         """
         ...
 
+
 @runtime_checkable
 class WritesStreamAssets(Protocol):
     @abstractmethod
-    def collect_asset_docs(self, index: Optional[int]=None) -> SyncOrAsyncIterator[StreamAsset]:
+    def collect_asset_docs(self, index: Optional[int] = None) -> SyncOrAsyncIterator[StreamAsset]:
         """Create the resource and datum documents describing data in external
             source up to a given index if provided.
 
@@ -180,11 +181,12 @@ class WritesStreamAssets(Protocol):
             })
             """
         ...
-    
+
     @abstractmethod
     def get_index(self) -> SyncOrAsync[int]:
         """Retrive the current index of writer."""
         ...
+
 
 @runtime_checkable
 class Configurable(Protocol):
