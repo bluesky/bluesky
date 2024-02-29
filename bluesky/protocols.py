@@ -153,14 +153,37 @@ class WritesExternalAssets(Protocol):
 class WritesStreamAssets(Protocol):
     @abstractmethod
     def collect_asset_docs(self, index: Optional[int]=None) -> SyncOrAsyncIterator[StreamAsset]:
-        """Collect the asset docs up a given index.
-        
-        The asset docs will be collected from multiple streams synchronised on the
-        highest common stream index. """
+        """Create the resource and datum documents describing data in external
+            source up to a given index if provided.
+
+            An index will be provided when using stream resources and datums. The asset
+            docs will be collected from multiple streams and synchronised on the
+            highest common stream index.
+
+        Example yielded values:
+
+        .. code-block:: python
+
+            ('resource', {
+                'path_semantics': 'posix',
+                'resource_kwargs': {'frame_per_point': 1},
+                'resource_path': 'det.h5',
+                'root': '/tmp/tmpcvxbqctr/',
+                'spec': 'AD_HDF5',
+                'uid': '9123df61-a09f-49ae-9d23-41d4d6c6d788'
+            })
+            # or
+            ('datum', {
+                'datum_id': '9123df61-a09f-49ae-9d23-41d4d6c6d788/0',
+                'datum_kwargs': {'point_number': 0},
+                'resource': '9123df61-a09f-49ae-9d23-41d4d6c6d788'}
+            })
+            """
         ...
     
     @abstractmethod
     def get_index(self) -> SyncOrAsync[int]:
+        """Retrive the current index of writer."""
         ...
 
 @runtime_checkable
