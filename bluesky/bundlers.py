@@ -670,62 +670,76 @@ class RunBundler:
         """Read object(s) describe_collect and cache it.
 
         Read describe collect for each collect object (one or more) and ensure it is
-        cached in the _describe_collect_cache.
+        cached in the _describe_collect_cache. If there are multiple devices then they
+        must all be collected under one stream.
+
+        This is currently split into two distinct branches to match the use cases, but
+        should be refactored.
         """
+        if len(collect_objects) == 1:  # There is only one collect object
+            collect_obj = collect_objects[0]
 
-        # Cache the desciptors for each of the collect objects
-        describe_collect = {}
-        for collect_obj in collect_objects:
             await self._ensure_cached(collect_obj, collect=True)
-            describe_collect.update(self._describe_collect_cache[collect_obj])
 
-        # describe_collect is a dictionary like this:
-        #     {name_for_desc1: data_keys_for_desc1,
-        #      name_for_desc2: data_keys_for_desc2, ...}
-        # with an entry for each detector:
-        # Which we need to make describe_collect_items, which bundles data keys with
-        # respective stream names.
-        describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(
-                describe_collect,
-                message_stream_name=message_stream_name
-        ))
-        # However this bundles without consideration of collect_object because previously
-        # there was only one.
+            describe_collect = self._describe_collect_cache[collect_obj]
 
-        # An idea for a different format
-        describe_collect_all = {collect_obj: self._describe_collect_cache[collect_obj]
-                                for collect_obj in collect_objects}
+            describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(
+                    describe_collect, message_stream_name=message_stream_name
+            ))
 
-        local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
+            local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
-        for stream_name, stream_data_keys in describe_collect_items:
-            if stream_name not in self._descriptor_objs or (
-                collect_obj not in self._descriptor_objs[stream_name]
+            # collect_obj.describe_collect() returns a dictionary like this:
+            #     {name_for_desc1: data_keys_for_desc1,
+            #      name_for_desc2: data_keys_for_desc2, ...}
+            for stream_name, stream_data_keys in describe_collect_items:
+                if stream_name not in self._descriptor_objs or (
+                    collect_obj not in self._descriptor_objs[stream_name]
+                ):
+                    # We do not have an Event Descriptor for this collect_obj.
+                    await self._prepare_stream(stream_name, {collect_obj: stream_data_keys})
+                else:
+                    objs_read = self._descriptor_objs[stream_name]
+                    if stream_data_keys != objs_read[collect_obj]:
+                        raise RuntimeError(
+                            "Mismatched objects read, "
+                            "expected {!s}, "
+                            "got {!s}".format(stream_data_keys, objs_read)
+                        )
+
+                local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
+            self._local_descriptors[frozenset(collect_objects)] = local_descriptors
+
+        else:  # There are multiple collect objects
+            await asyncio.gather(*[self._ensure_cached(obj, collect=True) for obj in collect_objects])
+
+            describe_collect_all = {collect_obj: self._describe_collect_cache[collect_obj]
+                                    for collect_obj in collect_objects}
+
+            local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
+
+            if message_stream_name not in self._descriptor_objs or (
+                collect_obj not in self._descriptor_objs[message_stream_name]
                 for collect_obj in collect_objects
             ):
-                # We do not have an Event Descriptor for this collect_obj.
-                if len(collect_objects) == 1:
-                    # Support the old pattern for single collect objects
-                    await self._prepare_stream(stream_name, {collect_objects[0]: stream_data_keys})
-                else:
-                    await self._prepare_stream(
-                        stream_name,
-                        {collect_obj: self._describe_collect_cache[collect_obj]
-                            for collect_obj in collect_objects}
-                        )
+                await self._prepare_stream(message_stream_name, describe_collect_all)
             else:
-                objs_read = self._descriptor_objs[stream_name]
-                for collect_obj, data_key in objs_read.items():
-                    if data_key.items() <= stream_data_keys.items() and (
-                        data_key != objs_read[collect_obj]
-                    ):
+                objs_read = self._descriptor_objs[message_stream_name]
+                for collect_object, _ in objs_read.items():
+                    if describe_collect_all[collect_object] == objs_read[collect_object]:
                         raise RuntimeError(
                             "Mismatched objects read, "
                             "expected {!s}, "
                             "got {!s}".format(describe_collect_all, objs_read)
                         )
-            local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
-        self._local_descriptors[frozenset(collect_objects)] = local_descriptors
+
+            all_data_keys = {
+                data_key: value
+                for stream_data_keys in list(describe_collect_all.values())
+                for data_key, value in stream_data_keys.items()
+            }
+            local_descriptors[frozenset(all_data_keys)] = self._descriptors[message_stream_name]
+            self._local_descriptors[frozenset(collect_objects)] = local_descriptors
 
     async def _pack_seq_nums_into_stream_datum(
         self,
