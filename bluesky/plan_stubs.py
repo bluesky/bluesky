@@ -726,7 +726,7 @@ def collect(obj, *args, stream=False, return_payload=True, name=None):
     :func:`bluesky.plan_stubs.wait`
     """
     return (yield Msg('collect', obj, *args, stream=stream, return_payload=return_payload, name=name))
- 
+
 
 def configure(obj, *args, **kwargs):
     """
