@@ -18,6 +18,7 @@ from .protocols import (Flyable, Locatable, Movable, Pausable, Preparable, Reada
                         Status, Stoppable, Triggerable, check_supports)
 
 import concurrent
+import copy
 
 from event_model import DocumentNames
 from .log import logger, msg_logger, state_logger, ComposableLogAdapter
@@ -1778,7 +1779,10 @@ class RunEngine:
         # The metadata is final. Validate it now, at the last moment.
         # Use copy for some reasonable (admittedly not total) protection
         # against users mutating the md with their validator.
-        self.md_validator(dict(md))
+        # self.md_validator(dict(md))
+        
+        # This is a temporary fix to lelt the kafka consumers run properly.
+        md = self.md_validator(copy.deepcopy(md))
 
         current_run = self._run_bundlers[run_key] = type(self).RunBundler(
             md, self.record_interruptions, self.emit, self.emit_sync, self.log,
@@ -2705,6 +2709,7 @@ def _default_md_validator(md):
             "GOOD: sample='dirt' "
             "GOOD: sample={'color': 'red', 'number': 5} "
             "BAD: sample=[1, 2] ")
+    return md
 
 
 def _ensure_event_loop_running(loop):
