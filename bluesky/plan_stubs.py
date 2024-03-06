@@ -630,9 +630,9 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     Parameters
     ----------
     obj : fly-able
-        Device with 'kickoff', 'complete', and 'collect' methods
+        Device with 'kickoff', and 'complete' methods.
     group : string (or any hashable object), optional
-        identifier used by 'wait'
+        identifier used by 'wait'.
     wait : boolean, optional
         If True, wait for completion before processing any more messages.
         False by default.
