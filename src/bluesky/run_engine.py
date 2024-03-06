@@ -412,9 +412,8 @@ class RunEngine:
         except ImportError:
             self.log.debug("Failed to import ophyd.")
 
-        from ._version import get_versions
-        self.md['versions']['bluesky'] = get_versions()['version']
-        del get_versions
+        from ._version import __version__
+        self.md['versions']['bluesky'] = __version__
 
         if preprocessors is None:
             preprocessors = []

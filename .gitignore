@@ -30,7 +30,7 @@ cover/*
 
 # Sphinx documentation
 docs/_build/
-docs/source/generated
+docs/generated
 
 # PyBuilder
 target/
@@ -106,7 +106,7 @@ target/
 .tags
 
 # sphinx
-doc/source/generated/*.rst
+docs/generated/*.rst
 .pytest_cache
 
 **/_version.py
