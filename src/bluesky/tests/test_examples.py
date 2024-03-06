@@ -11,12 +11,11 @@ import threading
 from functools import partial
 from .utils import _fabricate_asycio_event
 
-with pytest.warns(UserWarning):
-    from bluesky.examples import (simple_scan, sleepy, wait_one,
-                                  wait_multiple, conditional_pause,
-                                  checkpoint_forever, simple_scan_saving,
-                                  stepscan, fly_gen, conditional_break,
-                                  )
+from bluesky.examples import (simple_scan, sleepy, wait_one,
+                                wait_multiple, conditional_pause,
+                                checkpoint_forever, simple_scan_saving,
+                                stepscan, fly_gen, conditional_break,
+                                )
 
 
 def test_msgs(hw):

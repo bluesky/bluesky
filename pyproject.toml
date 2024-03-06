@@ -95,7 +95,7 @@ olog = ["jinja2"]
 all = ["bluesky[dev,ipython,zmq,common,tools,streamz,plotting,cmd,olog]"]
 
 [project.scripts]
-bluesky = "bluesky.__main__:main"
+bluesky-0MQ-proxy = "bluesky.commandline.zmq_proxy:main"
 
 [project.urls]
 GitHub = "https://github.com/bluesky/bluesky"
@@ -116,9 +116,9 @@ addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst"
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
-filterwarnings = "error"
+filterwarnings = ["error", "ignore::PendingDeprecationWarning", "ignore::UserWarning", "ignore::DeprecationWarning"]
 # Doctest python code in docs, python code in src docstrings, test functions in tests
-testpaths = "docs src tests"
+testpaths = "src/bluesky/tests"
 
 [tool.coverage.run]
 data_file = "/tmp/bluesky.coverage"

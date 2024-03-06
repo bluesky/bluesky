@@ -6,7 +6,8 @@ import numpy as np
 from functools import partial
 from typing import Any, List, Optional, TextIO
 
-from IPython.core.display import display, HTML
+from IPython import display
+from IPython.core.display import HTML
 from ipywidgets import HBox
 from tqdm.notebook import tqdm as tqdm_nb
 from threading import RLock

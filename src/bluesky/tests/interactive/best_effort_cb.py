@@ -15,11 +15,10 @@ from ophyd.sim import det4, motor1, motor2
 from bluesky import RunEngine
 from bluesky.callbacks.best_effort import BestEffortCallback
 
-from databroker.tests.utils import temp_config
+from databroker.v0 import temp_config
 from databroker import Broker
 
 plt.ion()
-install_qt_kicker()
 
 # db setup
 config = temp_config()
@@ -30,7 +29,7 @@ def cleanup():
     shutil.rmtree(tempdir)
 
 
-db = Broker.from_config(config)
+db = Broker.named("temp")
 
 RE = RunEngine({})
 # subscribe BEC

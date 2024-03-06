@@ -236,13 +236,11 @@ def monitor_context(plan_stack, signals):
 
     With custom event stream names
 
-    >>> with monitor_context(plan_stack, {sig1: 'sig1', sig2: 'sig2'}):
-            ...
+    >>> with monitor_context(plan_stack, {sig1: 'sig1', sig2: 'sig2'}): ...
 
     With no event stream names
 
-    >>> with monitor_context(plan_stack, [sig1, sig2]):
-            ...
+    >>> with monitor_context(plan_stack, [sig1, sig2]): ...
     """
     warnings.warn("monitor_context is deprecated. Use monitor_wrapper or "
                   "monitor_decorator.")
