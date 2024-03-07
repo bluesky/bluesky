@@ -1,479 +1,497 @@
-from typing import Dict, Iterator
-from bluesky import Msg
+from typing import Dict, Iterator, Optional
 from event_model.documents.event_descriptor import DataKey
-from event_model.documents.event_page import PartialEventPage
 from event_model.documents.event import PartialEvent
 from event_model.documents.resource import PartialResource
 from event_model.documents.datum import Datum
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
-from bluesky.utils import new_uid, IllegalMessageSequence
-from itertools import chain
+from bluesky.utils import new_uid
+import bluesky.plans as bp
+import bluesky.plan_stubs as bps
 import pytest
 from bluesky.protocols import (
-    Asset, Readable,
-    Reading, SyncOrAsync, WritesExternalAssets, Flyable, EventCollectable, EventPageCollectable, Collectable
+    Asset,
+    Readable,
+    Reading,
+    HasName,
+    WritesExternalAssets,
+    EventCollectable,
+    EventPageCollectable,
+    Collectable,
+    WritesStreamAssets,
+    StreamAsset,
 )
 
 
-def read_Readable(self) -> Dict[str, Reading]:
-    return dict(det2=dict(value=1.2, timestamp=0.0))
+class DocHolder(dict):
+    def append(self, name, doc):
+        self.setdefault(name, []).append(doc)
+
+    def assert_emitted(self, **numbers: int):
+        assert list(self) == list(numbers)
+        assert {name: len(d) for name, d in self.items()} == numbers
 
 
-def describe_Readable(self) -> Dict[str, DataKey]:
-    return dict(
-        det1=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),
-        det2=dict(source="hw2", dtype="number", shape=[])
-    )
+def merge_dicts(*functions):
+    def wrapper(self):
+        ret = {}
+        for f in functions:
+            ret.update(f(self))
+        return ret
+
+    return wrapper
 
 
-def collect_asset_docs_Datum(self) -> Iterator[Asset]:
-    resource_uid = new_uid()
+def merge_iterators(*iterators):
+    def wrapper(self):
+        for it in iterators:
+            yield from it(self)
+
+    return wrapper
+
+
+class Named(HasName):
+    name: str = ""
+    parent = None
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+def describe_datum(self: Named) -> Dict[str, DataKey]:
+    return {
+        f"{self.name}-datum": DataKey(
+            source="file", dtype="number", shape=[1000, 1500], external="OLD:"
+        )
+    }
+
+
+def collect_asset_docs_datum(self) -> Iterator[Asset]:
     resource = PartialResource(
-        resource_kwargs={"some_argument": 1337},
-        root="awesome",
-        spec=".dat",
-        resource_path="no/really,/awesome",
-        uid=resource_uid
+        resource_kwargs={"resource_arg": 42},
+        root="/root",
+        spec="ADHDF5_SWMR",
+        resource_path="/path.h5",
+        uid="RESOURCEUID",
     )
-
     yield "resource", resource
     datum = Datum(
-        datum_id="some_resource_name/123123",
-        resource=resource_uid,
-        datum_kwargs={"some_argument": 1234},
+        datum_id="RESOURCEUID/1",
+        resource="RESOURCEUID",
+        datum_kwargs={"datum_arg": 43},
     )
     yield "datum", datum
 
 
-def collect_asset_docs_StreamDatum_one_detector(self) -> Iterator[Asset]:
-    resource_uid = new_uid()
-
-    stream_resource = StreamResource(
-        resource_kwargs={"argument": 1},
-        data_key="det1",
-        resource_path="An/awesome/path",
-        root="some_detail",
-        spec=".hdf5",
-        uid=resource_uid,
-    )
-    yield "stream_resource", stream_resource
-
-    stream_datum = StreamDatum(
-        stream_resource=resource_uid,
-        descriptor="",
-        uid=new_uid(),
-        seq_nums={"start": 0, "stop": 0},
-        indices={"start": 0, "stop": 1},
-    )
-    yield "stream_datum", stream_datum
+def read_datum(self: Named) -> Dict[str, Reading]:
+    return {f"{self.name}-datum": {"value": "RESOURCEUID/1", "timestamp": 456}}
 
 
-def collect_asset_docs_StreamDatum(self) -> Iterator[Asset]:
-    detectors = ["det1", "det2"]
-    resource_uid = {det: new_uid() for det in detectors}
-    for det in detectors:
+def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
+    return {
+        f"{self.name}-sd1": DataKey(
+            source="file", dtype="number", shape=[1000, 1500], external="STREAM:"
+        ),
+        f"{self.name}-sd2": DataKey(
+            source="file", dtype="number", shape=[], external="STREAM:"
+        ),
+    }
+
+
+def get_index(self) -> int:
+    return 10
+
+
+def collect_asset_docs_stream_datum(
+    self: Named, index: Optional[int] = None
+) -> Iterator[StreamAsset]:
+    index = index or 1
+    for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
         stream_resource = StreamResource(
-            resource_kwargs={"argument": 1},
-            data_key=det,
-            resource_path="An/awesome/path",
-            root="some_detail",
-            spec=".hdf5",
-            uid=resource_uid[det],
+            resource_kwargs={"dataset": f"/{data_key}/data"},
+            data_key=data_key,
+            root="/root",
+            resource_path="/path.h5",
+            spec="ADHDF5_SWMR_STREAM",
+            uid=new_uid(),
         )
         yield "stream_resource", stream_resource
 
-    for det in detectors * 2:
         stream_datum = StreamDatum(
-            stream_resource=resource_uid[det],
+            stream_resource=stream_resource["uid"],
             descriptor="",
-            uid=new_uid(),
+            uid=f'{stream_resource["uid"]}/1',
+            indices={"start": 0, "stop": index},
             seq_nums={"start": 0, "stop": 0},
-            indices={"start": 0, "stop": 1},
         )
         yield "stream_datum", stream_datum
 
 
-@pytest.mark.parametrize(
-    'asset_type,resource_type,collect_asset_docs_fun',
-    [
-        ("datum", "resource", collect_asset_docs_Datum),
-        ("stream_datum", "stream_resource", collect_asset_docs_StreamDatum_one_detector),
-        # Resources are received before collecting the datum
-    ]
-)
-def test_rd_desc_different_asset_types(RE, asset_type, resource_type, collect_asset_docs_fun):
-    class X(Readable, WritesExternalAssets):
-        read = read_Readable
-        describe = describe_Readable
-        collect_asset_docs = collect_asset_docs_fun
-        name = "x"
+def read_empty(self) -> Dict[str, Reading]:
+    return {}
 
-    x = X()
-    collector = []
-    RE(
-        [
-            Msg("open_run", x),
-            Msg("create", name="primary"),
-            Msg("read", x),
-            Msg("save", x),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
+
+def describe_pv(self: Named) -> Dict[str, DataKey]:
+    return {f"{self.name}-pv": DataKey(source="pv", dtype="number", shape=[])}
+
+
+def read_pv(self: Named) -> Dict[str, Reading]:
+    return {f"{self.name}-pv": Reading(value=5.8, timestamp=123)}
+
+
+def test_datum_readable_counts(RE):
+    class DatumReadable(Named, Readable, WritesExternalAssets):
+        describe = describe_datum
+        read = read_datum
+        collect_asset_docs = collect_asset_docs_datum
+
+    det = DatumReadable(name="det")
+    docs = DocHolder()
+    RE(bp.count([det]), docs.append)
+    docs.assert_emitted(start=1, descriptor=1, resource=1, datum=1, event=1, stop=1)
+    assert docs["descriptor"][0]["name"] == "primary"
+    assert list(docs["descriptor"][0]["data_keys"]) == ["det-datum"]
+    assert docs["event"][0]["descriptor"] == docs["descriptor"][0]["uid"]
+    assert docs["event"][0]["data"] == {"det-datum": "RESOURCEUID/1"}
+    assert docs["event"][0]["timestamps"] == {"det-datum": 456}
+    assert docs["event"][0]["filled"] == {"det-datum": False}
+
+
+def test_stream_datum_readable_counts(RE):
+    class StreamDatumReadable(Named, Readable, WritesStreamAssets):
+        describe = describe_stream_datum
+        read = read_empty
+        collect_asset_docs = collect_asset_docs_stream_datum
+        get_index = get_index
+
+    det = StreamDatumReadable(name="det")
+    docs = DocHolder()
+    RE(bp.count([det]), docs.append)
+    docs.assert_emitted(
+        start=1, descriptor=1, stream_resource=2, stream_datum=2, event=1, stop=1
+    )
+    assert docs["descriptor"][0]["name"] == "primary"
+    assert list(docs["descriptor"][0]["data_keys"]) == ["det-sd1", "det-sd2"]
+    assert all(
+        sd["descriptor"] == docs["descriptor"][0]["uid"] for sd in docs["stream_datum"]
+    )
+    assert docs["event"][0]["data"] == {}
+    assert docs["event"][0]["filled"] == {}
+
+
+def test_combinations_counts(RE):
+    class PvAndDatumReadable(Named, Readable, WritesExternalAssets):
+        describe = merge_dicts(describe_pv, describe_datum)
+        read = merge_dicts(read_pv, read_datum)
+        collect_asset_docs = collect_asset_docs_datum
+
+    class PvAndStreamDatumReadable(Named, Readable, WritesExternalAssets):
+        describe = merge_dicts(describe_pv, describe_stream_datum)
+        read = merge_dicts(read_pv, read_empty)
+        collect_asset_docs = collect_asset_docs_stream_datum
+        get_index = get_index
+
+    det1 = PvAndDatumReadable(name="det1")
+    det2 = PvAndStreamDatumReadable(name="det2")
+    docs = DocHolder()
+    RE(bp.count([det1, det2]), docs.append)
+    docs.assert_emitted(
+        start=1,
+        descriptor=1,
+        resource=1,
+        datum=1,
+        stream_resource=2,
+        stream_datum=2,
+        event=1,
+        stop=1,
+    )
+    assert docs["descriptor"][0]["name"] == "primary"
+    assert list(docs["descriptor"][0]["data_keys"]) == [
+        "det1-pv",
+        "det1-datum",
+        "det2-pv",
+        "det2-sd1",
+        "det2-sd2",
+    ]
+    assert docs["event"][0]["descriptor"] == docs["descriptor"][0]["uid"]
+    assert docs["event"][0]["data"] == {
+        "det1-datum": "RESOURCEUID/1",
+        "det1-pv": 5.8,
+        "det2-pv": 5.8,
+    }
+    assert docs["event"][0]["timestamps"] == {
+        "det1-datum": 456,
+        "det1-pv": 123,
+        "det2-pv": 123,
+    }
+    assert docs["event"][0]["filled"] == {"det1-datum": False}
+
+
+def collect_plan(*objs, pre_declare: bool, stream=False):
+    yield from bps.open_run()
+    if pre_declare:
+        yield from bps.declare_stream(*objs, collect=True)
+    yield from bps.collect(*objs, stream=stream)
+    yield from bps.close_run()
+
+
+def describe_collect_old_pv(self) -> Dict[str, Dict[str, DataKey]]:
+    return {
+        stream: {
+            f"{stream}-{pv}": DataKey(source="pv", dtype="number", shape=[])
+            for pv in ["pv1", "pv2"]
+        }
+        for stream in ["stream1", "stream2"]
+    }
+
+
+def collect_old_pv(self) -> Iterator[PartialEvent]:
+    for i in range(2):
+        for stream in ["stream1", "stream2"]:
+            yield PartialEvent(
+                data={f"{stream}-{pv}": i for pv in ["pv1", "pv2"]},
+                timestamps={f"{stream}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
+            )
+
+
+def describe_collect_old_datum(self: Named):
+    return {
+        "stream3": {
+            f"{self.name}-datum": DataKey(
+                source="file", dtype="number", shape=[1000, 1500], external="OLD:"
+            )
+        }
+    }
+
+
+def collect_old_datum(self):
+    yield PartialEvent(
+        data={f"{self.name}-datum": "RESOURCEUID/1"},
+        timestamps={f"{self.name}-datum": 456},
+        filled={f"{self.name}-datum": False},
     )
 
-    assert len([x for x in collector if x[0] == "event"]) == 1
-    assert len([x for x in collector if x[0] == "event_page"]) == 0
-    datums = [x for x in collector if x[0] == asset_type]
-    resources = [x for x in collector if x[0] == resource_type]
-    assert len(datums) == 1
-    assert len(resources) == 1
+
+class OldPvCollectable(Named, EventCollectable):
+    describe_collect = describe_collect_old_pv
+    collect = collect_old_pv
 
 
-def describe_with_name_stream_detectors(self) -> SyncOrAsync[Dict[str, DataKey]]:
-    data_keys = {
-        str(det): DataKey(shape=[], source="stream1", dtype="string", external="STREAM:")
-        for det in ["det1", "det2"]
+def test_collect_stream_true_raises(RE):
+    with pytest.raises(
+        RuntimeError,
+        match="Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported",
+    ):
+        RE(collect_plan(OldPvCollectable("det"), pre_declare=False, stream=True))
+
+
+def test_old_describe_fails_predeclare(RE):
+    with pytest.raises(
+        RuntimeError,
+        match="Old style describe_collect output with stream name not supported in declare_stream",
+    ):
+        RE(collect_plan(OldPvCollectable(name="det"), pre_declare=True))
+
+
+def describe_collect_two_streams_same_names(self):
+    return {
+        stream: {"pv": DataKey(source="pv", dtype="number", shape=[])}
+        for stream in ["stream1", "stream2"]
     }
-    data_keys.update({"det3": DataKey(shape=[], source="stream1", dtype="string")})
-
-    return data_keys
 
 
-def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
-    def timestamps():
-        return {"det3": [3.3, 3.4]}
-
-    def data():
-        return {"det3": [0, 1]}
-
-    partial_event_pages = [
-        PartialEventPage(
-            timestamps=timestamps(), data=data()
-        )
-        for x in range(7)
-    ]
-
-    return partial_event_pages
+def collect_one_pv(self):
+    yield PartialEvent(data={"pv": 0}, timestamps={"pv": 100})
 
 
-def describe_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
-    data_keys = {
-        str(det): DataKey(shape=[], source="stream1", dtype="string")
-        for det in ["det1", "det2", "det3"]
+def test_same_key_in_multiple_streams_fails(RE):
+    class MultiKeyOldCollectable(Named, EventCollectable):
+        describe_collect = describe_collect_two_streams_same_names
+        collect = collect_one_pv
+
+    with pytest.raises(
+        RuntimeError,
+        match="Multiple streams ['stream1', 'stream2'] would emit the same data_keys ['pv']",
+    ):
+        RE(collect_plan(MultiKeyOldCollectable(name="det"), pre_declare=False))
+
+
+def test_old_pv_collectable(RE):
+    det = OldPvCollectable(name="det")
+    docs = DocHolder()
+    RE(collect_plan(det, pre_declare=False), docs.append)
+    docs.assert_emitted(start=1, descriptor=2, event_page=2, stop=1)
+    assert [d["name"] for d in docs["descriptor"]] == ["stream1", "stream2"]
+    assert list(docs["descriptor"][0]["data_keys"]) == ["stream1-pv1", "stream1-pv2"]
+    assert list(docs["descriptor"][1]["data_keys"]) == ["stream2-pv1", "stream2-pv2"]
+    assert docs["event_page"][0]["data"] == {
+        "stream1-pv1": [0, 1],
+        "stream1-pv2": [0, 1],
     }
-    return data_keys
-
-
-def describe_without_name(self) -> SyncOrAsync[Dict[str, Dict[str, DataKey]]]:
-    data_keys = {
-        str(name): {
-            str(det): DataKey(shape=[], source="stream1", dtype="string") for det in ["det1", "det2", "det3"]
-        }
-        for name in chain(["primary"], range(16))
+    assert docs["event_page"][0]["timestamps"] == {
+        "stream1-pv1": [100, 101],
+        "stream1-pv2": [100, 101],
     }
-    return data_keys
+    assert docs["event_page"][1]["data"] == {
+        "stream2-pv1": [0, 1],
+        "stream2-pv2": [0, 1],
+    }
 
 
-def collect_Pageable_without_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
+def test_old_datum_collectable(RE):
+    class OldDatumCollectable(Named, EventCollectable, WritesExternalAssets):
+        describe_collect = describe_collect_old_datum
+        collect = collect_old_datum
+        collect_asset_docs = collect_asset_docs_datum
 
-    def timestamps():
-        return {det: [1.0] for det in ["det1", "det2", "det3"]}
+    det = OldDatumCollectable(name="det")
+    docs = DocHolder()
+    RE(collect_plan(det, pre_declare=False), docs.append)
+    docs.assert_emitted(
+        start=1, descriptor=1, resource=1, datum=1, event_page=1, stop=1
+    )
+    assert docs["descriptor"][0]["name"] == "stream3"
+    assert list(docs["descriptor"][0]["data_keys"]) == ["det-datum"]
+    assert docs["event_page"][0]["descriptor"] == docs["descriptor"][0]["uid"]
+    assert docs["event_page"][0]["data"] == {"det-datum": ["RESOURCEUID/1"]}
+    assert docs["event_page"][0]["timestamps"] == {"det-datum": [456]}
+    assert docs["event_page"][0]["filled"] == {"det-datum": [False]}
 
-    def data(name):
-        return {det: [name] for det in ["det1", "det2", "det3"]}
 
-    partial_event_pages = [
-        PartialEventPage(
-            timestamps=timestamps(), data=data(name)
+def test_old_datum_and_pv_collectable(RE):
+    class OldPvAndDatumCollectable(Named, EventCollectable, WritesExternalAssets):
+        describe_collect = merge_dicts(
+            describe_collect_old_pv, describe_collect_old_datum
         )
-        for name in chain(["primary"], range(16))
-    ]
+        collect = merge_iterators(collect_old_pv, collect_old_datum)
+        collect_asset_docs = collect_asset_docs_datum
 
-    return partial_event_pages
+    det = OldPvAndDatumCollectable(name="det")
+    docs = DocHolder()
+    RE(collect_plan(det, pre_declare=False), docs.append)
+    docs.assert_emitted(
+        start=1, descriptor=3, resource=1, datum=1, event_page=3, stop=1
+    )
+    assert [d["name"] for d in docs["descriptor"]] == ["stream1", "stream2", "stream3"]
+    assert list(docs["descriptor"][0]["data_keys"]) == ["stream1-pv1", "stream1-pv2"]
+    assert list(docs["descriptor"][2]["data_keys"]) == ["det-datum"]
+    assert docs["event_page"][0]["data"] == {
+        "stream1-pv1": [0, 1],
+        "stream1-pv2": [0, 1],
+    }
+    assert docs["event_page"][1]["data"] == {
+        "stream2-pv1": [0, 1],
+        "stream2-pv2": [0, 1],
+    }
+    assert docs["event_page"][2]["data"] == {"det-datum": ["RESOURCEUID/1"]}
 
 
-def collect_events_all_detectors(self) -> SyncOrAsync[Iterator[PartialEvent]]:
-    def timestamps(x):
-        return {"det1": x + 0.1, "det2": x + 0.2, "det3": x + 0.3}
+def describe_collect_pv(self: Named) -> Dict[str, Dict[str, DataKey]]:
+    return {
+        f"{self.name}-{pv}": DataKey(source="pv", dtype="number", shape=[])
+        for pv in ["pv1", "pv2"]
+    }
 
-    def data(x):
-        return {"det1": x, "det2": x*2, "det3": x*3}
 
-    partial_events = [
-        PartialEvent(
-            timestamps=timestamps(x), data=data(x), time=float(x)
+def collect_pv(self: Named) -> Iterator[PartialEvent]:
+    for i in range(2):
+        yield PartialEvent(
+            data={f"{self.name}-{pv}": i for pv in ["pv1", "pv2"]},
+            timestamps={f"{self.name}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
         )
-        for x in range(16)
-    ]
-    return partial_events
 
 
-def kickoff_dummy_callback(self, *_, **__):
-    class X:
-        def add_callback(cls, *_, **__):
-            ...
-    return X
+def collect_pages_pv(self: Named) -> Iterator[PartialEvent]:
+    yield PartialEvent(
+        data={f"{self.name}-{pv}": [0, 1] for pv in ["pv1", "pv2"]},
+        timestamps={f"{self.name}-{pv}": [100, 101] for pv in ["pv1", "pv2"]},
+    )
 
 
-def complete_dummy_callback(self, *_, **__):
-    class X:
-        def add_callback(cls, *_, **__):
-            ...
-    return X
+class PvCollectable(Named, EventCollectable):
+    describe_collect = describe_collect_pv
+    collect = collect_pv
 
 
-def test_flyscan_with_pages_with_no_name(RE):
-    class X(Flyable, EventPageCollectable):
-        kickoff = kickoff_dummy_callback
-        complete = complete_dummy_callback
-        collect_pages = collect_Pageable_without_name
-        describe_collect = describe_without_name
-        name = "x"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("kickoff", x),
-            Msg("collect", x),
-            Msg("complete", x),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
-
-    event_pages = [x for x in collector if x[0] == "event_page"]
-    assert len(event_pages) == 17
-    assert len(event_pages[0][1]["timestamps"]["det1"]) == 1
+class PvPageCollectable(Named, EventPageCollectable):
+    describe_collect = describe_collect_pv
+    collect_pages = collect_pages_pv
 
 
-def test_flyscan_with_pages_passed_in_name(RE):
-    class X(Flyable, EventPageCollectable):
-        kickoff = kickoff_dummy_callback
-        complete = complete_dummy_callback
-        collect_pages = collect_Pageable_with_name
-        describe_collect = describe_with_name_stream_detectors
-        name = "x"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("collect", x, name="primary"),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
+class StreamDatumCollectable(Named, Collectable, WritesStreamAssets):
+    describe_collect = describe_stream_datum
+    collect_asset_docs = collect_asset_docs_stream_datum
+    get_index = get_index
 
 
+def test_new_collect_needs_predeclare(RE):
+    with pytest.raises(
+        RuntimeError,
+        match="New style describe_collect output requires declare_stream before collect",
+    ):
+        RE(collect_plan(PvCollectable(name="det"), pre_declare=False))
+
+
+@pytest.mark.parametrize("cls", [PvCollectable, PvPageCollectable])
+def test_pv_collectable(RE, cls):
+    det = cls(name="det")
+    docs = DocHolder()
+    RE(collect_plan(det, pre_declare=True), docs.append)
+    docs.assert_emitted(start=1, descriptor=1, event_page=1, stop=1)
+    assert docs["descriptor"][0]["name"] == "primary"
+    assert list(docs["descriptor"][0]["data_keys"]) == ["det-pv1", "det-pv2"]
+    assert docs["event_page"][0]["data"] == {
+        "det-pv1": [0, 1],
+        "det-pv2": [0, 1],
+    }
+    assert docs["event_page"][0]["timestamps"] == {
+        "det-pv1": [100, 101],
+        "det-pv2": [100, 101],
+    }
+
+
+def test_stream_datum_collectable(RE):
+    det = StreamDatumCollectable(name="det")
+    docs = DocHolder()
+    RE(collect_plan(det, pre_declare=True), docs.append)
+    docs.assert_emitted(
+        start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1
+    )
+    assert docs["descriptor"][0]["name"] == "primary"
+    assert list(docs["descriptor"][0]["data_keys"]) == ["det-sd1", "det-sd2"]
+    assert docs["stream_resource"][0]["data_key"] == "det-sd1"
+    assert docs["stream_resource"][1]["data_key"] == "det-sd2"
+    assert docs["stream_datum"][0]["descriptor"] == docs["descriptor"][0]["uid"]
+    assert docs["stream_datum"][1]["descriptor"] == docs["descriptor"][0]["uid"]
+
+
+@pytest.mark.parametrize("cls1", [PvCollectable, PvPageCollectable])
 @pytest.mark.parametrize(
-    'asset_type,collect_asset_docs_fun',
-    [
-        ("datum", collect_asset_docs_Datum),
-        ("stream_datum", collect_asset_docs_StreamDatum),
-        # StreamResource is receieved in the collect of stream_datum
-    ]
+    "cls2", [PvCollectable, PvPageCollectable, StreamDatumCollectable]
 )
-def test_flyscan_with_pages_with_no_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
-    class X(Flyable, EventPageCollectable, WritesExternalAssets):
-        kickoff = kickoff_dummy_callback
-        complete = complete_dummy_callback
-        collect_pages = collect_Pageable_with_name
-        describe_collect = describe_with_name_stream_detectors
-        collect_asset_docs = collect_asset_docs_fun
-        name = "x"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("kickoff", x),
-            Msg("collect", x, name="primary"),
-            Msg("complete", x),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
-
-    event_pages_in_collector = [x[1] for x in collector if x[0] == "event_page"]
-    assert len(event_pages_in_collector) == 7
-    # One detector is collected in an event_page
-    assert len(event_pages_in_collector[0]["data"]) == 1
-    assert len(event_pages_in_collector[0]["data"]["det3"]) == 2
-
-    if asset_type == "stream_datum":
-        # Two detector are collected in stream_datum, each with two stream_datum
-        datum_in_collector = [x[1] for x in collector if x[0] == asset_type]
-        assert len(datum_in_collector) == 4
+def test_many_collectables_fails(RE, cls1, cls2):
+    det1, det2 = cls1(name="det1"), cls2(name="det2")
+    with pytest.raises(
+        RuntimeError,
+        match="Cannot collect the output of multiple collect() or collect_pages() into the same stream",
+    ):
+        RE(collect_plan(det1, det2, pre_declare=False))
 
 
-@pytest.mark.parametrize(
-    'asset_type,collect_asset_docs_fun',
-    [
-        ("datum", collect_asset_docs_Datum),
-        ("stream_datum", collect_asset_docs_StreamDatum),
-        # StreamResource is receieved in the collect of stream_datum
-    ]
-)
-def test_flyscan_with_pages_passed_in_name_and_external_assets(RE, asset_type, collect_asset_docs_fun):
-    class X(Flyable, EventPageCollectable, WritesExternalAssets):
-        kickoff = kickoff_dummy_callback
-        complete = complete_dummy_callback
-        collect_pages = collect_Pageable_with_name
-        describe_collect = describe_with_name_stream_detectors
-        collect_asset_docs = collect_asset_docs_fun
-        name = "x"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("kickoff", x),
-            Msg("complete", x),
-            Msg("collect", x, name="1"),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
-
-
-def test_rd_desc_with_declare_stream(RE):
-    class X(Readable, EventPageCollectable):
-        read = read_Readable
-        collect_pages = collect_Pageable_with_name
-        describe = describe_Readable
-        describe_collect = describe_with_name_stream_detectors
-        name = "name"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("create", name="x"),
-            Msg("declare_stream", None, x, collect=True, name="primary"),
-            Msg("read", x),
-            Msg("save", x),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
-
-
-def test_flyscan_without_pageing_or_name(RE):
-    class X(Flyable, EventCollectable):
-        kickoff = kickoff_dummy_callback
-        complete = complete_dummy_callback
-        collect = collect_events_all_detectors
-        describe_collect = describe_without_name
-        name = "x"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("kickoff", x),
-            Msg("complete", x),
-            Msg("collect", x),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
-
-
-def test_flyscan_without_paging_with_name(RE):
-
-    class X(Flyable, EventCollectable):
-        kickoff = kickoff_dummy_callback
-        complete = complete_dummy_callback
-        collect = collect_events_all_detectors
-        describe_collect = describe_with_name
-        name = "x"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("kickoff", x),
-            Msg("complete", x),
-            Msg("collect", x, name="primary"),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
-
-
-def test_describe_collect_with_stream(RE):
-    class X(EventCollectable):
-        collect = collect_events_all_detectors
-        describe_collect = describe_without_name
-        name = "x"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("collect", x, stream=True),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
-
-
-def test_describe_collect_paging_with_stream(RE):
-    class X(EventPageCollectable):
-        collect_pages = collect_Pageable_without_name
-        describe_collect = describe_without_name
-        name = "x"
-
-    x = X()
-    collector = []
-    with pytest.raises(IllegalMessageSequence):
-        RE([
-                Msg("open_run", x),
-                Msg("collect", x, stream=True),
-                Msg("close_run", x),
-            ],
-            lambda *args: collector.append(args)
-           )
-
-
-def test_describe_collect_pre_declare_stream(RE):
-    class X(Flyable, EventPageCollectable):
-        collect_pages = collect_Pageable_with_name
-        describe_collect = describe_with_name
-        kickoff = kickoff_dummy_callback
-        complete = complete_dummy_callback
-        name = "x"
-
-    x = X()
-    collector = []
-    with pytest.raises(IllegalMessageSequence):
-        RE([
-                Msg("open_run", x),
-                Msg("declare_stream", None, x, collect=True, name="primary"),
-                Msg("kickoff", x),
-                Msg("complete", x),
-                Msg("collect", x, stream=True),
-                Msg("close_run", x),
-            ],
-            lambda *args: collector.append(args)
-           )
-
-
-def test_describe_with_stream_datum_no_events(RE):
-
-    class X(Collectable, WritesExternalAssets):
-        describe_collect = describe_with_name_stream_detectors
-        collect_asset_docs = collect_asset_docs_StreamDatum
-        name = "x"
-
-    x = X()
-    collector = []
-    RE([
-            Msg("open_run", x),
-            Msg("collect", x, name="primary"),
-            Msg("close_run", x),
-        ],
-        lambda *args: collector.append(args)
-       )
+def test_many_stream_datum_collectables(RE):
+    det1, det2 = (
+        StreamDatumCollectable(name="det1"),
+        StreamDatumCollectable(name="det2"),
+    )
+    docs = DocHolder()
+    RE(collect_plan(det1, det2, pre_declare=True), docs.append)
+    docs.assert_emitted(
+        start=1, descriptor=1, stream_resource=4, stream_datum=4, stop=1
+    )
+    data_keys = ["det1-sd1", "det1-sd2", "det2-sd1", "det2-sd2"]
+    assert docs["descriptor"][0]["name"] == "primary"
+    assert list(docs["descriptor"][0]["data_keys"]) == data_keys
+    assert [d["data_key"] for d in docs["stream_resource"]] == data_keys
+    assert all(
+        d["descriptor"] == docs["descriptor"][0]["uid"] for d in docs["stream_datum"]
+    )
