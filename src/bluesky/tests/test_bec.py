@@ -51,7 +51,7 @@ def test_disable(RE, hw):
     RE(scan([det], motor, 1, 5, 5))
     assert bec._table is not None
 
-    bec.peaks.com
+    bec.peaks.com  # noqa: B018
     bec.peaks["com"]
     assert ast.literal_eval(repr(bec.peaks)) == vars(bec.peaks)
 
@@ -203,9 +203,9 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     assert err_msg_substr not in caplog.text, "Best Effort Callback failed while executing nested plans"
 
 
-from importlib.metadata import metadata
+from importlib.metadata import metadata  # noqa: E402
 
-from packaging import version
+from packaging import version  # noqa: E402
 
 JSONSCHEMA_VERSION: str = version.parse(metadata("jsonschema")["version"])
 
@@ -318,7 +318,7 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
         if stats_value is not None:
             assert np.allclose(stats_value, out_value)
         else:
-            stats_value == out_value
+            stats_value == out_value  # noqa: B015
 
     for field in der_fields:
         stats_value = getattr(ps.derivative_stats, field)
@@ -326,7 +326,7 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
         if stats_value is not None:
             assert np.allclose(stats_value, out_value)
         else:
-            stats_value == out_value
+            stats_value == out_value  # noqa: B015
 
 
 def test_many_motors(RE, hw):

@@ -121,10 +121,10 @@ class BestEffortCallback(QtAwareCallback):
 
         # We can only cope with all the dimensions belonging to the same
         # stream unless we resample. We are not doing to handle that yet.
-        if len(set(d[1] for d in dimensions)) != 1:
+        if len(set(d[1] for d in dimensions)) != 1:  # noqa: C401
             self._cleanup_motor_heuristic = True
             dimensions = GUESS  # Fall back on our GUESS.
-            warn("We are ignoring the dimensions hinted because we cannot " "combine streams.")
+            warn("We are ignoring the dimensions hinted because we cannot " "combine streams.")  # noqa: B028
 
         # for each dimension, choose one field only
         # the plan can supply a list of fields. It's assumed the first
@@ -142,11 +142,11 @@ class BestEffortCallback(QtAwareCallback):
         tt = datetime.fromtimestamp(self._start_doc["time"]).utctimetuple()
         if self._heading_enabled:
             print(
-                "\n\nTransient Scan ID: {0}     Time: {1}".format(
+                "\n\nTransient Scan ID: {0}     Time: {1}".format(  # noqa: UP030
                     self._start_doc.get("scan_id", ""), time.strftime("%Y-%m-%d %H:%M:%S", tt)
                 )
             )
-            print("Persistent Unique Scan ID: '{0}'".format(self._start_doc["uid"]))
+            print("Persistent Unique Scan ID: '{0}'".format(self._start_doc["uid"]))  # noqa: UP030
 
     def _set_up_plots(self, doc, stream_name, columns):
         """Using the descriptor doc"""
@@ -196,7 +196,7 @@ class BestEffortCallback(QtAwareCallback):
             ndims = len(dim_fields)
             if not 0 < ndims < 3:
                 # we need 1 or 2 dims to do anything, do not make empty figures
-                warn(
+                warn(  # noqa: B028
                     "Plots are only made for 1 or 2 dimensions. "
                     "Adjust the metadata hints field for BestEffortCallback to produce plots."
                 )
@@ -242,7 +242,7 @@ class BestEffortCallback(QtAwareCallback):
                 for y_key, ax in zip(columns, axes):
                     dtype = doc["data_keys"][y_key]["dtype"]
                     if dtype not in ("number", "integer"):
-                        warn(f"Omitting {y_key} from plot because dtype is {dtype}" "")
+                        warn(f"Omitting {y_key} from plot because dtype is {dtype}" "")  # noqa: B028
                         continue
                     # Create an instance of LivePlot and an instance of PeakStats.
                     live_plot = LivePlotPlusPeaks(y=y_key, x=x_key, ax=ax, peak_results=self.peaks)
@@ -271,7 +271,7 @@ class BestEffortCallback(QtAwareCallback):
                         extents = self._start_doc["extents"]
                         shape = self._start_doc["shape"]
                     except KeyError:
-                        warn("Need both 'shape' and 'extents' in plan metadata to " "create LiveGrid.")
+                        warn("Need both 'shape' and 'extents' in plan metadata to " "create LiveGrid.")  # noqa: B028
                     else:
                         data_range = np.array([float(np.diff(e)) for e in extents])
                         y_step, x_step = data_range / [max(1, s - 1) for s in shape]

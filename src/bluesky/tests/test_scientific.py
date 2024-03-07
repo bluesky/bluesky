@@ -128,7 +128,7 @@ def test_peak_statistics_with_derivatives(RE):
     assert type(ps.derivative_stats.cen) is np.float64
     assert type(ps.derivative_stats.crossings) is np.ndarray
     if len(ps.derivative_stats.crossings) >= 2:
-        assert type(ps.derivative_stats.fwhm) is float
+        assert type(ps.derivative_stats.fwhm) is float  # noqa: E721
     else:
         assert ps.derivative_stats.fwhm is None
     assert len(ps.derivative_stats.x) == num_points - 1

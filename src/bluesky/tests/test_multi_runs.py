@@ -129,7 +129,7 @@ def test_multirun_smoke_fail(RE, hw):
             yield from srkw(bps.open_run(md={rid: rid}), run=rid)
         raise Exception("womp womp")
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         RE(interlaced_plan([hw.det], hw.motor), dc.insert)
 
     assert len(dc.start) == len(dc.stop)

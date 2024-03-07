@@ -10,7 +10,7 @@ try:
 except ImportError:
     raise ImportError("""
 The simulated hardware objects in the bluesky.examples module have been
-moved to ophyd.sim. A version of ophyd v0.8.0 or greater is required.""")
+moved to ophyd.sim. A version of ophyd v0.8.0 or greater is required.""")  # noqa: B904
 else:
     warnings.warn(
         """
@@ -209,7 +209,7 @@ def multi_sample_temperature_ramp(
     for idx, temp in enumerate(np.arange(tstart, tstop, tstep)):
         # todo would be cute to have the temperature reduce peak noise
         yield Msg("set", temp_controller, temp)
-        for sample, sample_position, peak_pos in zip(sample_names, sample_positions, peak_centers):
+        for sample, sample_position, peak_pos in zip(sample_names, sample_positions, peak_centers):  # noqa: B007
             yield Msg("open_run", sample_name=sample, target_temp=temp)
             detector.center = peak_pos
             detector.sigma = 0.5 + 0.25 * idx

@@ -142,7 +142,7 @@ class LivePlot(QtAwareCallback):
                     raise ValueError(
                         "Values were given for both `fig` and `ax`. " "Only one can be used; prefer ax."
                     )
-                warnings.warn(
+                warnings.warn(  # noqa: B028
                     "The `fig` keyword arugment of LivePlot is "
                     "deprecated and will be removed in the future. "
                     "Instead, use the new keyword argument `ax` to "
@@ -171,7 +171,7 @@ class LivePlot(QtAwareCallback):
             self.kwargs = kwargs
             self.lines = []
             self.legend = None
-            self.legend_title = " :: ".join([name for name in self.legend_keys])
+            self.legend_title = " :: ".join([name for name in self.legend_keys])  # noqa: C416
             self._epoch_offset = None  # used if x == 'time'
             self._epoch = epoch
 
@@ -243,7 +243,7 @@ class LivePlot(QtAwareCallback):
             print("LivePlot did not get any data that corresponds to the " f"y axis. {self.y}")
         if len(self.y_data) != len(self.x_data):
             print(
-                "LivePlot has a different number of elements for x ({}) and" "y ({})".format(
+                "LivePlot has a different number of elements for x ({}) and" "y ({})".format(  # noqa: UP032
                     len(self.x_data), len(self.y_data)
                 )
             )
@@ -287,7 +287,7 @@ class LiveScatter(QtAwareCallback):
         self,
         x,
         y,
-        I,
+        I,  # noqa: E741
         *,
         xlim=None,
         ylim=None,  # noqa: E741
@@ -398,7 +398,7 @@ class LiveMesh(LiveScatter):
     __doc__ = LiveScatter.__doc__
 
     def __init__(self, *args, **kwargs):
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             "LiveMesh has been renamed to LiveScatter. The name "
             "LiveMesh will eventually be removed. Use LiveScatter."
         )
@@ -460,7 +460,7 @@ class LiveGrid(QtAwareCallback):
     def __init__(
         self,
         raster_shape,
-        I,
+        I,  # noqa: E741
         *,  # noqa: E741
         clim=None,
         cmap="viridis",
@@ -584,7 +584,7 @@ class LiveRaster(LiveGrid):
     __doc__ = LiveGrid.__doc__
 
     def __init__(self, *args, **kwargs):
-        warnings.warn(
+        warnings.warn(  # noqa: B028
             "LiveRaster has been renamed to LiveGrid. The name "
             "LiveRaster will eventually be removed. Use LiveGrid."
         )

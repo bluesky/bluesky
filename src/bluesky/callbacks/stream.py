@@ -40,14 +40,14 @@ class LiveDispatcher(CallbackBase):
         self.dispatcher = Dispatcher()
         # Local caches for internal use
         self.seq_count = 0  # Maintain our own sequence count for this stream
-        self.raw_descriptors = dict()  # Store raw descriptors for use later
+        self.raw_descriptors = dict()  # Store raw descriptors for use later  # noqa: C408
         self._stream_start_uid = None  # Generated start doc uid
-        self._descriptors = dict()  # Dictionary of sent descriptors
+        self._descriptors = dict()  # Dictionary of sent descriptors  # noqa: C408
 
     def start(self, doc, _md=None):
         """Receive a raw start document, re-emit it for the modified stream"""
         self._stream_start_uid = new_uid()
-        _md = _md or dict()
+        _md = _md or dict()  # noqa: C408
         # Create a new start document with a new uid, start time, and the uid
         # of the original start document. Preserve the rest of the metadata
         # that we retrieved from the start document
@@ -110,14 +110,14 @@ class LiveDispatcher(CallbackBase):
         anywhere.
         """
         id_args = id_args or (doc["descriptor"],)
-        config = config or dict()
+        config = config or dict()  # noqa: C408
         # Determine the descriptor id
         desc_id = frozenset((tuple(doc["data"].keys()), stream_name, id_args))
         # If we haven't described this configuration
         # Send a new document to our subscribers
         if stream_name not in self._descriptors or desc_id not in self._descriptors[stream_name]:
             # Create a new description document for the output of the stream
-            data_keys = dict()
+            data_keys = dict()  # noqa: C408
             # Parse the event document creating a new description. If the key
             # existed in the original source description, just assume that it
             # is the same type, units and shape. Otherwise do some
@@ -155,7 +155,7 @@ class LiveDispatcher(CallbackBase):
             # Store information about our descriptors
             desc = dict(desc)
             if stream_name not in self._descriptors:
-                self._descriptors[stream_name] = dict()
+                self._descriptors[stream_name] = dict()  # noqa: C408
             self._descriptors[stream_name][desc_id] = desc
             # Emit the document to all subscribers
             self.emit(DocumentNames.descriptor, desc)
@@ -170,7 +170,7 @@ class LiveDispatcher(CallbackBase):
             {
                 "uid": new_uid(),
                 "descriptor": desc_uid,
-                "timestamps": dict((key, current_time) for key in doc["data"].keys()),
+                "timestamps": dict((key, current_time) for key in doc["data"].keys()),  # noqa: C402
                 "seq_num": self.seq_count,
                 "time": current_time,
             },
@@ -184,10 +184,11 @@ class LiveDispatcher(CallbackBase):
         # Create a new stop document with a new_uid, pointing to the correct
         # start document uid, and tally the number of events we have emitted.
         # The rest of the stop information is passed on to the next callback
-        _md = _md or dict()
-        num_events = dict((stream, len(self._descriptors[stream])) for stream in self._descriptors.keys())
+        _md = _md or dict()  # noqa: C408
+        num_events = dict((stream, len(self._descriptors[stream])) for stream in self._descriptors.keys())  # noqa: C402
         md = ChainMap(
-            dict(run_start=self._stream_start_uid, time=ttime.time(), uid=new_uid(), num_events=num_events), doc
+            dict(run_start=self._stream_start_uid, time=ttime.time(), uid=new_uid(), num_events=num_events),  # noqa: C408
+            doc,  # noqa: C408
         )
         self.emit(DocumentNames.stop, dict(md))
         # Clear the local caches for the run

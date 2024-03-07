@@ -57,7 +57,7 @@ def test_ramp(RE):
     assert len(db.descriptor[uid]) == 2
     descs = {d["name"]: d for d in db.descriptor[uid]}
 
-    assert set(descs) == set(["primary", "mot_monitor"])
+    assert set(descs) == set(["primary", "mot_monitor"])  # noqa: C405
 
     primary_events = db.event[descs["primary"]["uid"]]
     assert len(primary_events) > 11

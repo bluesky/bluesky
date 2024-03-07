@@ -62,23 +62,23 @@ class RunBundler:
         self._objs_read: Deque[HasName] = deque()  # objects read in one Event
         self._read_cache: Deque[Dict[str, Reading]] = deque()  # cache of obj.read() in one Event
         self._asset_docs_cache = deque()  # cache of obj.collect_asset_docs()
-        self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output
-        self._describe_collect_cache: ObjDict[Dict[str, DataKey]] = dict()  # cache of all obj.describe() output
+        self._describe_cache: ObjDict[DataKey] = dict()  # cache of all obj.describe() output  # noqa: C408
+        self._describe_collect_cache: ObjDict[Dict[str, DataKey]] = dict()  # noqa: C408  # cache of all obj.describe() output
 
-        self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()
-        self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values
-        self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps
+        self._config_desc_cache: ObjDict[DataKey] = dict()  # " obj.describe_configuration()  # noqa: C408
+        self._config_values_cache: ObjDict[Any] = dict()  # " obj.read_configuration() values  # noqa: C408
+        self._config_ts_cache: ObjDict[Any] = dict()  # " obj.read_configuration() timestamps  # noqa: C408
         # cache of {name: (doc, compose_event, compose_event_page)}
-        self._descriptors: Dict[Any, ComposeDescriptorBundle] = dict()
-        self._descriptor_objs: Dict[str, Dict[HasName, Dict[str, DataKey]]] = dict()
+        self._descriptors: Dict[Any, ComposeDescriptorBundle] = dict()  # noqa: C408
+        self._descriptor_objs: Dict[str, Dict[HasName, Dict[str, DataKey]]] = dict()  # noqa: C408
         # cache of {obj: {objs_frozen_set: (doc, compose_event, compose_event_page)}
-        self._local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = dict()
+        self._local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = dict()  # noqa: C408
         # a seq_num counter per stream
-        self._sequence_counters: Dict[Any, int] = dict()
-        self._sequence_counters_copy: Dict[Any, int] = dict()  # for if we redo data-points
-        self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # cache of {obj: (cb, kwargs)}
+        self._sequence_counters: Dict[Any, int] = dict()  # noqa: C408
+        self._sequence_counters_copy: Dict[Any, int] = dict()  # for if we redo data-points  # noqa: C408
+        self._monitor_params: Dict[Subscribable, Tuple[Callback, Dict]] = dict()  # noqa: C408  # cache of {obj: (cb, kwargs)}
         # a cache of stream_resource uid to the data_keys that stream_resource collects for
-        self._stream_resource_data_keys: Dict[str, Iterable[str]] = dict()
+        self._stream_resource_data_keys: Dict[str, Iterable[str]] = dict()  # noqa: C408
         self.run_is_open = False
         self._uncollected = set()  # objects after kickoff(), before collect()
         # we expect the RE to take care of the composition
@@ -148,7 +148,7 @@ class RunBundler:
             )
         self.log.debug("Stopping run %r", self._run_start_uid)
         # Clear any uncleared monitoring callbacks.
-        for obj, (cb, kwargs) in list(self._monitor_params.items()):
+        for obj, (cb, kwargs) in list(self._monitor_params.items()):  # noqa: B007
             obj.clear_sub(cb)
             del self._monitor_params[obj]
         reason = msg.kwargs.get("reason", None)
@@ -574,7 +574,7 @@ class RunBundler:
         )
 
     def clear_monitors(self):
-        for obj, (cb, kwargs) in list(self._monitor_params.items()):
+        for obj, (cb, kwargs) in list(self._monitor_params.items()):  # noqa: B007
             try:
                 obj.clear_sub(cb)
             except Exception:
@@ -593,7 +593,7 @@ class RunBundler:
         self.reset_checkpoint_state()
 
     async def suspend_monitors(self):
-        for obj, (cb, kwargs) in self._monitor_params.items():
+        for obj, (cb, kwargs) in self._monitor_params.items():  # noqa: B007
             obj.clear_sub(cb)
 
     async def restore_monitors(self):
@@ -723,7 +723,7 @@ class RunBundler:
             return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
         assert all(
-            [not is_data_key(value) for value in describe_collect.values()]
+            not is_data_key(value) for value in describe_collect.values()
         ), "Single nested data keys should be pre-decalred"
 
         # Make sure you can't use identidal data keys in multiple streams

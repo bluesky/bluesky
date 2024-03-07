@@ -152,7 +152,7 @@ def list_scan(detectors, *args, per_step=None, md=None):
         "plan_name": "list_scan",
         "plan_pattern": "inner_list_product",
         "plan_pattern_module": plan_patterns.__name__,
-        "plan_pattern_args": dict(args=md_args),
+        "plan_pattern_args": dict(args=md_args),  # noqa: C408
         "hints": {},
     }
     _md.update(md or {})
@@ -273,7 +273,7 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
     md_args = []
     motor_names = []
     motors = []
-    for i, (motor, pos_list) in enumerate(partition(2, args)):
+    for i, (motor, pos_list) in enumerate(partition(2, args)):  # noqa: B007
         md_args.extend([repr(motor), pos_list])
         motor_names.append(motor.name)
         motors.append(motor)
@@ -284,7 +284,7 @@ def list_grid_scan(detectors, *args, snake_axes=False, per_step=None, md=None):
         "plan_args": {"detectors": list(map(repr, detectors)), "args": md_args, "per_step": repr(per_step)},
         "plan_name": "list_grid_scan",
         "plan_pattern": "outer_list_product",
-        "plan_pattern_args": dict(args=md_args, snake_axes=repr(snake_axes)),
+        "plan_pattern_args": dict(args=md_args, snake_axes=repr(snake_axes)),  # noqa: C408
         "plan_pattern_module": plan_patterns.__name__,
         "motors": tuple(motor_names),
         "hints": {},
@@ -395,7 +395,7 @@ def _scan_1d(detectors, motor, start, stop, num, *, per_step=None, md=None):
         "plan_name": "scan",
         "plan_pattern": "linspace",
         "plan_pattern_module": "numpy",
-        "plan_pattern_args": dict(start=start, stop=stop, num=num),
+        "plan_pattern_args": dict(start=start, stop=stop, num=num),  # noqa: C408
         "hints": {},
     }
     _md.update(md or {})
@@ -500,7 +500,7 @@ def log_scan(detectors, motor, start, stop, num, *, per_step=None, md=None):
         "plan_name": "log_scan",
         "plan_pattern": "logspace",
         "plan_pattern_module": "numpy",
-        "plan_pattern_args": dict(start=start, stop=stop, num=num),
+        "plan_pattern_args": dict(start=start, stop=stop, num=num),  # noqa: C408
         "hints": {},
     }
     _md.update(md or {})
@@ -1121,7 +1121,7 @@ def scan(detectors, *args, num=None, per_step=None, md=None):
         "plan_name": "scan",
         "plan_pattern": "inner_product",
         "plan_pattern_module": plan_patterns.__name__,
-        "plan_pattern_args": dict(num=num, args=md_args),
+        "plan_pattern_args": dict(num=num, args=md_args),  # noqa: C408
         "motors": motor_names,
     }
     _md.update(md)
@@ -1251,7 +1251,7 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
 
             # Check that all motors in the chunk_args are controlled in the scan.
             #   It is very likely that the script running the plan has a bug.
-            if any([_ not in motors for _ in snake_axes]):
+            if any([_ not in motors for _ in snake_axes]):  # noqa: C419
                 raise ValueError(
                     f"The list of axes 'snake_axes' contains motors "
                     f"that are not controlled during the scan: "
@@ -1308,7 +1308,7 @@ def grid_scan(detectors, *args, snake_axes=None, per_step=None, md=None):
         "plan_args": {"detectors": list(map(repr, detectors)), "args": md_args, "per_step": repr(per_step)},
         "plan_name": "grid_scan",
         "plan_pattern": "outer_product",
-        "plan_pattern_args": dict(args=md_args),
+        "plan_pattern_args": dict(args=md_args),  # noqa: C408
         "plan_pattern_module": plan_patterns.__name__,
         "motors": tuple(motor_names),
         "hints": {},
@@ -1567,7 +1567,7 @@ def spiral_fermat(
     :func:`bluesky.plans.rel_spiral`
     :func:`bluesky.plans.rel_spiral_fermat`
     """
-    pattern_args = dict(
+    pattern_args = dict(  # noqa: C408
         x_motor=x_motor,
         y_motor=y_motor,
         x_start=x_start,
@@ -1599,7 +1599,7 @@ def spiral_fermat(
             "tilt": tilt,
             "per_step": repr(per_step),
         },
-        "extents": tuple([[x_start - x_range, x_start + x_range], [y_start - y_range, y_start + y_range]]),
+        "extents": tuple([[x_start - x_range, x_start + x_range], [y_start - y_range, y_start + y_range]]),  # noqa: C409
         "plan_name": "spiral_fermat",
         "plan_pattern": "spiral_fermat",
         "plan_pattern_module": plan_patterns.__name__,
@@ -1737,7 +1737,7 @@ def spiral(
     :func:`bluesky.plans.spiral_fermat`
     :func:`bluesky.plans.rel_spiral_fermat`
     """
-    pattern_args = dict(
+    pattern_args = dict(  # noqa: C408
         x_motor=x_motor,
         y_motor=y_motor,
         x_start=x_start,
@@ -1769,7 +1769,7 @@ def spiral(
             "tilt": tilt,
             "per_step": repr(per_step),
         },
-        "extents": tuple([[x_start - x_range, x_start + x_range], [y_start - y_range, y_start + y_range]]),
+        "extents": tuple([[x_start - x_range, x_start + x_range], [y_start - y_range, y_start + y_range]]),  # noqa: C409
         "plan_name": "spiral",
         "plan_pattern": "spiral",
         "plan_pattern_args": pattern_args,
@@ -1890,7 +1890,7 @@ def spiral_square(
     :func:`bluesky.plans.spiral_fermat`
     :func:`bluesky.plans.relative_spiral_fermat`
     """
-    pattern_args = dict(
+    pattern_args = dict(  # noqa: C408
         x_motor=x_motor,
         y_motor=y_motor,
         x_center=x_center,

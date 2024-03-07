@@ -191,7 +191,7 @@ def get_obj_fields(fields):
             try:
                 field_list = sorted(field.describe().keys())
             except AttributeError:
-                raise ValueError(
+                raise ValueError(  # noqa: B904
                     "Fields must be strings or objects with a " "'describe' method that return a dict."
                 )
             string_fields.extend(field_list)
@@ -343,7 +343,7 @@ class LiveTable(CallbackBase):
                 continue
 
             if dk_entry["dtype"] not in self._FMT_MAP:
-                warnings.warn(
+                warnings.warn(  # noqa: B028
                     "The key {} will be skipped because LiveTable "
                     "does not know how to display the dtype {}"
                     "".format(k, dk_entry["dtype"])

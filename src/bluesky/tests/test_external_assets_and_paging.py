@@ -2,6 +2,7 @@ import re
 from typing import Dict, Iterator, Optional
 
 import pytest
+from event_model.documents import Datum
 from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.resource import PartialResource

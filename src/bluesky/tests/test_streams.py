@@ -27,7 +27,7 @@ class NegativeStream(LiveDispatcher):
         super().start(doc)
 
     def event(self, doc):
-        modified = dict()
+        modified = dict()  # noqa: C408
         for key, val in doc["data"].items():
             modified[f"modified_{key}"] = -math.fabs(val)
         doc["data"] = modified
@@ -60,10 +60,10 @@ class AverageStream(LiveDispatcher):
         self.averager = self.in_node.partition(self.n)
 
         def average_events(cache):
-            average_evt = dict()
+            average_evt = dict()  # noqa: C408
             desc_id = cache[0]["descriptor"]
             # Check that all of our events came from the same configuration
-            if not all([desc_id == evt["descriptor"] for evt in cache]):
+            if not all([desc_id == evt["descriptor"] for evt in cache]):  # noqa: C419
                 raise Exception("The events in this bundle are from " "different configurations!")
             # Use the last descriptor to avoid strings and objects
             data_keys = self.raw_descriptors[desc_id]["data_keys"]
@@ -107,9 +107,9 @@ def test_straight_through_stream(RE, hw):
     events = d.event[desc["uid"]]
     print(desc)
     print([evt["data"] for evt in events])
-    tmp_valid = all([evt["data"][key] <= 0 for evt in events for key in evt["data"].keys()])
+    tmp_valid = all([evt["data"][key] <= 0 for evt in events for key in evt["data"].keys()])  # noqa: C419
     assert tmp_valid
-    tmp_valid = all([key in desc["data_keys"] for key in events[0]["data"].keys()])
+    tmp_valid = all([key in desc["data_keys"] for key in events[0]["data"].keys()])  # noqa: C419
     assert tmp_valid
 
 
@@ -131,7 +131,7 @@ def test_average_stream(RE, hw):
     assert desc_uid in d.event
     evt = d.event[desc_uid][0]
     assert evt["seq_num"] == 1
-    assert all([key in d.descriptor[start_uid][0]["data_keys"] for key in evt["data"].keys()])
+    assert all([key in d.descriptor[start_uid][0]["data_keys"] for key in evt["data"].keys()])  # noqa: C419
     # See that we returned the correct average
     assert evt["data"]["motor"] == -0.5  # mean of range(-5, 5)
     assert evt["data"]["motor_setpoint"] == -0.5  # mean of range(-5, 5)

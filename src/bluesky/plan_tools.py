@@ -14,7 +14,7 @@ def print_summary(plan):
     plan : iterable
         Must yield `Msg` objects
     """
-    warn("bluesky.plan_tools.print_summary is deprecated. Use " "bluesky.simulators.summarize_plan instead.")
+    warn("bluesky.plan_tools.print_summary is deprecated. Use " "bluesky.simulators.summarize_plan instead.")  # noqa: B028
     return _bs.summarize_plan(plan)
 
 
@@ -33,7 +33,7 @@ def print_summary_wrapper(plan):
     ------
     msg : `Msg`
     """
-    warn("The bluesky.plan_tools module is deprecated. Use " "bluesky.simulators instead.")
+    warn("The bluesky.plan_tools module is deprecated. Use " "bluesky.simulators instead.")  # noqa: B028
     yield from _bs.print_summary_wrapper(plan)
 
 
@@ -57,5 +57,5 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     lw : float, optional
         Width of lines drawn between points
     """
-    warn("The bluesky.plan_tools module is deprecated. Use " "bluesky.simulators instead.")
+    warn("The bluesky.plan_tools module is deprecated. Use " "bluesky.simulators instead.")  # noqa: B028
     return _bs.plot_raster_path(plan, x_motor, y_motor, ax=ax, probe_size=probe_size, lw=lw)

@@ -142,14 +142,14 @@ def resume(self, *_, **__): ...
 
 
 def read_Readable(self) -> Dict[str, Reading]:
-    return dict(det3=dict(value=1.2, timestamp=0.0))
+    return dict(det3=dict(value=1.2, timestamp=0.0))  # noqa: C408
 
 
 def describe_Readable(self) -> Dict[str, DataKey]:
-    return dict(
-        det1=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),
-        det2=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),
-        det3=dict(source="hw2", dtype="number", shape=[]),
+    return dict(  # noqa: C408
+        det1=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),  # noqa: C408
+        det2=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),  # noqa: C408
+        det3=dict(source="hw2", dtype="number", shape=[]),  # noqa: C408
     )
 
 

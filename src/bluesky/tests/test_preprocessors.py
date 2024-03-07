@@ -114,5 +114,5 @@ def test_exceptions_through_msg_mutator():
     except RequestStop:
         pass
     else:
-        raise False
+        raise False  # noqa: B016
     assert ["step 0+", "step 1+", "step 2+", "step 3+", "handle it+"] == [m.command for m in msgs]

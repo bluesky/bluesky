@@ -68,11 +68,11 @@ def plan_mutator(plan, msg_proc):
     :func:`bluesky.plans.msg_mutator`
     """
     # internal stacks
-    msgs_seen = dict()
+    msgs_seen = dict()  # noqa: C408
     plan_stack = deque()
     result_stack = deque()
-    tail_cache = dict()
-    tail_result_cache = dict()
+    tail_cache = dict()  # noqa: C408
+    tail_result_cache = dict()  # noqa: C408
     exception = None
 
     parent_plan = plan
@@ -928,7 +928,7 @@ def lazily_stage_wrapper(plan):
         messages from plan with 'stage' messages inserted and 'unstage'
         messages appended
     """
-    COMMANDS = set(["read", "set", "trigger", "kickoff"])
+    COMMANDS = set(["read", "set", "trigger", "kickoff"])  # noqa: C405
     # Cache devices in the order they are staged; then unstage in reverse.
     devices_staged = []
 

@@ -72,7 +72,7 @@ def test_raising_ignored_or_not(RE, hw):
         RE(stepscan(hw.det, hw.motor), cb)
 
     RE.ignore_callback_exceptions = False
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         RE(stepscan(hw.det, hw.motor), cb)
 
 
@@ -291,7 +291,7 @@ def test_live_fit(RE, hw):
     try:
         import lmfit
     except ImportError:
-        raise pytest.skip("requires lmfit")
+        raise pytest.skip("requires lmfit")  # noqa: B904
 
     def gaussian(x, A, sigma, x0):
         return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
@@ -311,7 +311,7 @@ def test_live_fit_multidim(RE, hw):
     try:
         import lmfit
     except ImportError:
-        raise pytest.skip("requires lmfit")
+        raise pytest.skip("requires lmfit")  # noqa: B904
 
     hw.motor1.delay = 0
     hw.motor2.delay = 0
@@ -350,7 +350,7 @@ def test_live_fit_plot(RE, hw):
     try:
         import lmfit
     except ImportError:
-        raise pytest.skip("requires lmfit")
+        raise pytest.skip("requires lmfit")  # noqa: B904
 
     def gaussian(x, A, sigma, x0):
         return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
@@ -621,9 +621,9 @@ def test_callbackclass_safe_logger(EvilBaseClass):
 @pytest.mark.parametrize(
     "documents",
     (
-        list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 1)))
-        + list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 2)))
-        + list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 3)))
+        list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 1)))  # noqa: C401
+        + list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 2)))  # noqa: C401
+        + list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 3)))  # noqa: C401
         + [list(DocumentNames)]
     ),
 )

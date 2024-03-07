@@ -311,7 +311,7 @@ def mvr(*args, group=None, **kwargs):
     :func:`bluesky.plan_stubs.mv`
     """
     objs = []
-    for obj, val in partition(2, args):
+    for obj, val in partition(2, args):  # noqa: B007
         objs.append(obj)
 
     from .preprocessors import relative_set_decorator
@@ -1151,7 +1151,7 @@ def repeater(n, gen_func, *args, **kwargs):
         n = 0
         it = itertools.count
 
-    for j in it(n):
+    for j in it(n):  # noqa: B007
         yield from gen_func(*args, **kwargs)
 
 
@@ -1344,7 +1344,7 @@ def repeat(plan, num=1, delay=None):
             pass
         else:
             if num - 1 > num_delays:
-                raise ValueError("num=%r but delays only provides %r " "entries" % (num, num_delays))
+                raise ValueError("num=%r but delays only provides %r " "entries" % (num, num_delays))  # noqa: UP031
         delay = iter(delay)
 
     def repeated_plan():
@@ -1361,7 +1361,7 @@ def repeat(plan, num=1, delay=None):
                     break
                 else:
                     # num specifies a number of iterations less than delay
-                    raise ValueError("num=%r but delays only provides %r " "entries" % (num, i))
+                    raise ValueError("num=%r but delays only provides %r " "entries" % (num, i))  # noqa: B904, UP031
             if d is not None:
                 d = d - (time.time() - now)
                 if d > 0:  # Sleep if and only if time is left to do it.

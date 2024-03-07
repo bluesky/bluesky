@@ -157,7 +157,7 @@ def test_flyer_descriptor(RE, hw):
             }
 
     flyers = [Flyer(name="flyer"), TrivialFlyer()]
-    descriptors = dict()
+    descriptors = dict()  # noqa: C408
 
     RE(
         fly(flyers),
@@ -204,7 +204,7 @@ def test_flyer_descriptor(RE, hw):
 def test_device_flyer_descriptor(RE, hw):
     # TrivialFlyer is not a Device
     flyers = [FlyerDevice(name="flyer-detector"), TrivialFlyer()]
-    descriptors = dict()
+    descriptors = dict()  # noqa: C408
 
     RE(
         fly(flyers),
@@ -272,7 +272,7 @@ def test_device_redundent_config_reading(RE):
 
 class FlyerDetector(Device):
     def __init__(self, name, *args, **kwargs):
-        super().__init__(name=name, *args, **kwargs)
+        super().__init__(name=name, *args, **kwargs)  # noqa: B026
 
     def describe_configuration(self):
         return {

@@ -333,7 +333,7 @@ def test_rd_fails(hw):
     obj.noise.kind = "normal"
     obj.val.kind = "normal"
     msg = re.escape(
-        f"Your object {obj} ({obj.name}.{obj.dotted_name}) " + f"and has {len(obj.read_attrs)} read attrs.  We "
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) and has {len(obj.read_attrs)} read attrs.  We "
     )
     with pytest.raises(ValueError, match=msg):
         list(bps.rd(obj))
@@ -341,7 +341,7 @@ def test_rd_fails(hw):
     obj.read_attrs = []
 
     msg = re.escape(
-        f"Your object {obj} ({obj.name}.{obj.dotted_name}) " + f"and has {len(obj.read_attrs)} read attrs.  We "
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) and has {len(obj.read_attrs)} read attrs.  We "
     )
     with pytest.raises(ValueError, match=msg):
         list(bps.rd(obj))
@@ -427,9 +427,9 @@ def _grid_scan_position_list(args, snake_axes):
         for n, chunk in enumerate(chunk_args):
             motor, start, stop, num, snake = chunk
             if motor in snake_axes:
-                chunk_args[n] = tuple([motor, start, stop, num, True])
+                chunk_args[n] = tuple([motor, start, stop, num, True])  # noqa: C409
             else:
-                chunk_args[n] = tuple([motor, start, stop, num, False])
+                chunk_args[n] = tuple([motor, start, stop, num, False])  # noqa: C409
     elif snake_axes is True:
         chunk_args = [
             (motor, start, stop, num, True) if n > 0 else (motor, start, stop, num, False)
@@ -522,9 +522,9 @@ def test_grid_scans(RE, hw, args, snake_axes, plan, is_relative):
     # Generate the list of positions based on
     positions_expected, snaking_expected = _grid_scan_position_list(args=args, snake_axes=snake_axes)
 
-    assert snaking == snaking_expected, (
-        "The contents of the 'snaking' field in the start document " "does not match the expected values"
-    )
+    assert (
+        snaking == snaking_expected
+    ), "The contents of the 'snaking' field in the start document does not match the expected values"
 
     assert set(positions.keys()) == set(
         positions_expected.keys()
@@ -574,7 +574,7 @@ def test_grid_scans_failing(RE, hw, plan):
     # Attempt to enable snaking for motors that are not controlled during the scan
     with pytest.raises(
         ValueError,
-        match="The list of axes 'snake_axes' contains motors " "that are not controlled during the scan",
+        match="The list of axes 'snake_axes' contains motors that are not controlled during the scan",
     ):
         args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9)
         snake_axes = [hw.motor1, hw.motor3]
@@ -624,7 +624,7 @@ def test_describe_failure(RE):
 
         def verify(self):
             assert self.event_count == 2
-            assert self.stream_names == set(["baseline"])
+            assert self.stream_names == set(["baseline"])  # noqa: C405
 
     st = StreamTester()
     with pytest.raises(Aardvark, match="Look, an aardvark!"):
@@ -655,7 +655,7 @@ def test_errors_through_msg_mutator(hw, monkeypatch):
     except RequestStop:
         pass
     else:
-        raise False
+        raise False  # noqa: B016
 
     target = [
         "stage",

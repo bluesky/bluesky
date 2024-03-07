@@ -83,7 +83,7 @@ author = "Brookhaven National Lab"
 # built documents.
 #
 # The short X.Y version.
-import bluesky
+import bluesky  # noqa: E402
 
 version = bluesky.__version__
 # The full version, including alpha/beta/rc tags.

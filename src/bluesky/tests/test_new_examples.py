@@ -145,8 +145,8 @@ def test_mv(hw):
     actual = list(mv(hw.motor1, 1, hw.motor2, 2))
     strip_group(actual)
     for msg in actual[:2]:
-        msg.command == "set"
-    assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])
+        msg.command == "set"  # noqa: B015
+    assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])  # noqa: C403, C405
     assert actual[2] == Msg("wait", None)
 
 
@@ -155,8 +155,8 @@ def test_mv_with_timeout(hw):
     # move motors first to ensure that movement is absolute, not relative
     actual = list(mv(hw.motor1, 1, hw.motor2, 2, timeout=42))
     for msg in actual[:2]:
-        msg.command == "set"
-        msg.kwargs["timeout"] == 42
+        msg.command == "set"  # noqa: B015
+        msg.kwargs["timeout"] == 42  # noqa: B015
 
 
 def test_mvr(RE, hw):
@@ -170,8 +170,8 @@ def test_mvr(RE, hw):
     actual = list(mv(hw.motor1, 1, hw.motor2, 2))
     strip_group(actual)
     for msg in actual[:2]:
-        msg.command == "set"
-    assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])
+        msg.command == "set"  # noqa: B015
+    assert set([msg.obj for msg in actual[:2]]) == set([hw.motor1, hw.motor2])  # noqa: C403, C405
     assert actual[2] == Msg("wait", None)
 
 
@@ -191,7 +191,7 @@ def test_locatable_message_multiple_objects(RE, hw):
             await asyncio.sleep(0)
             # Increment the next value and return the original value
             AsyncLocatable.value += 1
-            return dict(setpoint=value, readback=value)
+            return dict(setpoint=value, readback=value)  # noqa: C408
 
     rds = []
     one = AsyncLocatable()
@@ -205,25 +205,25 @@ def test_locatable_message_multiple_objects(RE, hw):
 
     RE(multi_rd())
     assert rds == [
-        [dict(setpoint=1.0, readback=1.0)],
-        dict(setpoint=2.0, readback=2.0),
+        [dict(setpoint=1.0, readback=1.0)],  # noqa: C408
+        dict(setpoint=2.0, readback=2.0),  # noqa: C408
         # Check they happened at the same time, so have the same value
-        [dict(setpoint=3.0, readback=3.0), dict(setpoint=3.0, readback=3.0)],
+        [dict(setpoint=3.0, readback=3.0), dict(setpoint=3.0, readback=3.0)],  # noqa: C408
         # And now it will skip one as they both incremented above
-        dict(setpoint=5.0, readback=5.0),
+        dict(setpoint=5.0, readback=5.0),  # noqa: C408
     ]
 
 
 def test_rd_locatable(RE, hw):
     class Jittery(Readable, Locatable):
         def describe(self) -> Dict[str, Descriptor]:
-            return dict(x=dict(source="dummy", dtype="number", shape=[]))
+            return dict(x=dict(source="dummy", dtype="number", shape=[]))  # noqa: C408
 
         def read(self) -> Dict[str, Reading]:
-            return dict(x=dict(value=1.2, timestamp=0.0))
+            return dict(x=dict(value=1.2, timestamp=0.0))  # noqa: C408
 
         def locate(self) -> Location:
-            return dict(setpoint=1.0, readback=1.1)
+            return dict(setpoint=1.0, readback=1.1)  # noqa: C408
 
         def set(self, value) -> Status:
             self.position = value + 0.1
@@ -257,7 +257,7 @@ def test_mvr_with_location(RE, hw):
 
         async def locate(self) -> Location:
             await asyncio.sleep(0.1)
-            return dict(setpoint=self.position - 0.1, readback=self.position)
+            return dict(setpoint=self.position - 0.1, readback=self.position)  # noqa: C408
 
     m = AlmostThereMotor()
     assert isinstance(m, Locatable)
@@ -276,8 +276,8 @@ def test_mvr_with_timeout(hw):
     # move motors first to ensure that movement is absolute, not relative
     actual = list(mvr(hw.motor1, 1, hw.motor2, 2, timeout=42))
     for msg in actual[:2]:
-        msg.command == "set"
-        msg.kwargs["timeout"] == 42
+        msg.command == "set"  # noqa: B015
+        msg.kwargs["timeout"] == 42  # noqa: B015
 
 
 def strip_group(plan):
@@ -332,7 +332,7 @@ def test_descriptor_layout_from_monitor(RE, hw):
     assert conf["data"] == vals
     assert conf["timestamps"].keys() == timestamps.keys()
     for val in conf["timestamps"].values():
-        assert type(val) is float  # can't check actual value; time has passed
+        assert type(val) is float  # can't check actual value; time has passed  # noqa: E721
 
 
 def test_fly_during():

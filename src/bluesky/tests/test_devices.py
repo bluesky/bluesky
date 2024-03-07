@@ -37,10 +37,10 @@ class SigNew:
         self._callbacks: List[Callback] = []
 
     def read(self) -> Dict[str, Reading]:
-        return {self.name: dict(value=0, timestamp=0)}
+        return {self.name: dict(value=0, timestamp=0)}  # noqa: C408
 
     def describe(self) -> Dict[str, Descriptor]:
-        return {self.name: dict(source="", dtype="number", shape=[])}
+        return {self.name: dict(source="", dtype="number", shape=[])}  # noqa: C408
 
     def subscribe(self, function: Callback) -> None:
         self._callbacks.append(function)
@@ -50,7 +50,7 @@ class SigNew:
 
     def _run_subs(self, *args, **kwargs):
         for cb in self._callbacks:
-            cb({self.name: dict(value=0, timestamp=time())})
+            cb({self.name: dict(value=0, timestamp=time())})  # noqa: C408
 
 
 @requires_ophyd
@@ -228,7 +228,7 @@ def test_overlapped_but_identical(RE, det1, det_list):
     def test_plan(det1, det_list):
         yield from declare_stream(det1, name="primary")
         yield from trigger_and_read([det1])
-        for p in itertools.permutations(det_list):
+        for p in itertools.permutations(det_list):  # noqa: B007
             yield from trigger_and_read(det_list)
 
     d = DocCollector()

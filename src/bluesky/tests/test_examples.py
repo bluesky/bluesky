@@ -36,13 +36,13 @@ def test_msgs(hw):
     m = Msg("read", hw.motor)
     assert m.command == "read"
     assert m.obj is hw.motor
-    assert m.args == tuple()
+    assert m.args == tuple()  # noqa: C408
     assert m.kwargs == {}
 
     m = Msg("create", name="primary")
     assert m.command == "create"
     assert m.obj is None
-    assert m.args == tuple()
+    assert m.args == tuple()  # noqa: C408
     assert m.kwargs == {"name": "primary"}
 
     m = Msg("sleep", None, 5)
@@ -637,12 +637,12 @@ def test_failed_status_object(RE):
     class failer:
         def set(self, inp):
             st = StatusBase()
-            threading.Timer(1, st._finished, kwargs=dict(success=False)).start()
+            threading.Timer(1, st._finished, kwargs=dict(success=False)).start()  # noqa: C408
             return st
 
         def trigger(self):
             st = StatusBase()
-            threading.Timer(1, st._finished, kwargs=dict(success=False)).start()
+            threading.Timer(1, st._finished, kwargs=dict(success=False)).start()  # noqa: C408
             return st
 
         def stop(self, *, success=False):

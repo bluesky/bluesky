@@ -60,7 +60,7 @@ class Publisher:
 
     def __init__(self, address, *, prefix=b"", RE=None, zmq=None, serializer=pickle.dumps):
         if RE is not None:
-            warnings.warn(
+            warnings.warn(  # noqa: B028
                 "The RE argument to Publisher is deprecated and "
                 "will be removed in a future release of bluesky. "
                 "Update your code to subscribe this Publisher "

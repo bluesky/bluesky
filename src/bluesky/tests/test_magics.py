@@ -44,8 +44,8 @@ def compare_msgs(actual, expected):
 def test_bluesky_magics(pln, plnargs, magic, line, detectors_factory, RE, hw):
     # Build a FakeIPython instance to use the magics with.
     dets = [hw.invariant1]
-    hw.invariant1._ophyd_labels_ = set(["detectors", "favorite_detectors"])
-    hw.invariant2._ophyd_labels_ = set(["detectors"])
+    hw.invariant1._ophyd_labels_ = set(["detectors", "favorite_detectors"])  # noqa: C405
+    hw.invariant2._ophyd_labels_ = set(["detectors"])  # noqa: C405
     ip = FakeIPython(
         {
             "motor1": hw.motor1,
@@ -159,7 +159,7 @@ def test_interrupted(RE, hw):
     pid = os.getpid()
 
     def sim_kill(n=1):
-        for j in range(n):
+        for j in range(n):  # noqa: B007
             print("KILL")
             os.kill(pid, signal.SIGINT)
 

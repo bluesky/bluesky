@@ -66,7 +66,7 @@ def EchoRE(plan, *, debug=False, msg_list=None):
 def echo_plan(*, command="echo", num=4):
     """Testing plan which expects to get back a message with an equal object"""
     seed = str(uuid.uuid4())[:6]
-    for ch in map(lambda x: chr(97 + x), range(num)):
+    for ch in map(lambda x: chr(97 + x), range(num)):  # noqa: C417
         sent = f"{seed}_{ch}"
         ret = yield Msg(command, sent)
         assert ret.obj == sent
@@ -182,7 +182,7 @@ def test_finialize_fail():
     num = 5
     cmd = "echo"
     plan = finalize_wrapper(erroring_plan(), echo_plan(command=cmd, num=num))
-    msgs = list()
+    msgs = list()  # noqa: C408
     try:
         EchoRE(plan, msg_list=msgs)
     except RuntimeError:
@@ -204,7 +204,7 @@ def test_finialize_pause():
     num = 5
     cmd = "echo"
     plan = finalize_wrapper(erroring_plan(), echo_plan(command=cmd, num=num), pause_for_debug=True)
-    msgs = list()
+    msgs = list()  # noqa: C408
     try:
         EchoRE(plan, msg_list=msgs)
     except RuntimeError:
@@ -227,7 +227,7 @@ def test_finialize_success():
     cmd = "echo"
     plan = finalize_wrapper(single_message_gen(Msg(suc_cmd, None)), echo_plan(command=cmd, num=num))
 
-    msgs = list()
+    msgs = list()  # noqa: C408
     try:
         EchoRE(plan, msg_list=msgs)
     except RuntimeError:

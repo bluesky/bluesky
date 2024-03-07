@@ -477,7 +477,7 @@ def test_stage_and_unstage_status_objects(RE):
 
 
 def test_bad_call_args(RE):
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         RE(53)
     assert RE.state == "idle"
 
@@ -515,8 +515,8 @@ def test_record_interruptions(RE):
     RE.resume()
     assert len(docs["descriptor"]) == 1
     assert len(docs["event"]) == 2
-    docs["event"][0]["data"]["interruption"] == "pause"
-    docs["event"][1]["data"]["interruption"] == "resume"
+    docs["event"][0]["data"]["interruption"] == "pause"  # noqa: B015
+    docs["event"][1]["data"]["interruption"] == "resume"  # noqa: B015
 
 
 @requires_ophyd
@@ -651,7 +651,7 @@ def test_unrewindable_det_suspend(RE, plan, motor, det, msg_seq):
 
     ev = _fabricate_asycio_event(loop)
 
-    threading.Timer(0.5, RE.request_suspend, kwargs=dict(fut=ev.wait)).start()
+    threading.Timer(0.5, RE.request_suspend, kwargs=dict(fut=ev.wait)).start()  # noqa: C408
 
     def verbose_set():
         print("seting")
@@ -711,7 +711,7 @@ def test_exit_raise(RE, unpause_func, excp):
 
 @pytest.mark.skipif(
     os.environ.get("TRAVIS", None) == "true" and sys.platform == "darwin",
-    reason=("The file-descriptor wake up based signal handling " "does not work on travis on OSX"),
+    reason=("The file-descriptor wake up based signal handling does not work on travis on OSX"),
 )
 def test_sigint_three_hits(RE, hw):
     import time
@@ -722,7 +722,7 @@ def test_sigint_three_hits(RE, hw):
     pid = os.getpid()
 
     def sim_kill(n):
-        for j in range(n):
+        for j in range(n):  # noqa: B007
             time.sleep(0.05)
             os.kill(pid, signal.SIGINT)
 
@@ -758,7 +758,7 @@ def test_sigint_many_hits_pln(RE):
 
     def hanging_plan():
         "a plan that blocks the RunEngine's normal Ctrl+C handing with a sleep"
-        for j in range(100):
+        for j in range(100):  # noqa: B007
             ttime.sleep(0.1)
         yield Msg("null")
 
@@ -822,7 +822,7 @@ def test_sigint_many_hits_cb(RE):
     pid = os.getpid()
 
     def sim_kill(n=1):
-        for j in range(n):
+        for j in range(n):  # noqa: B007
             print("KILL")
             ttime.sleep(0.05)
             os.kill(pid, signal.SIGINT)
@@ -833,7 +833,7 @@ def test_sigint_many_hits_cb(RE):
             yield Msg("null")
 
     def hanging_callback(name, doc):
-        for j in range(100):
+        for j in range(100):  # noqa: B007
             ttime.sleep(0.1)
 
     start_time = ttime.time()
@@ -966,7 +966,7 @@ def test_finalizer_closeable():
 
     plan = finalize_wrapper(pre, post)
 
-    for j in range(3):
+    for j in range(3):  # noqa: B007
         next(plan)
     plan.close()
 
@@ -1011,7 +1011,7 @@ def test_invalid_generator(RE, hw, capsys):
 
     actual_err, _ = capsys.readouterr()
     expected_prefix = "The plan "
-    expected_postfix = (" tried to yield a value on close.  " "Please fix your plan.\n")[::-1]
+    expected_postfix = (" tried to yield a value on close.  Please fix your plan.\n")[::-1]
     assert actual_err[: len(expected_prefix)] == expected_prefix
     assert actual_err[::-1][: len(expected_postfix)] == expected_postfix
 
@@ -1021,7 +1021,7 @@ def test_exception_cascade_REside(RE):
 
     def pausing_plan():
         nonlocal except_hit
-        for j in range(5):
+        for j in range(5):  # noqa: B007
             yield Msg("null")
         try:
             yield Msg("pause")
@@ -1033,7 +1033,7 @@ def test_exception_cascade_REside(RE):
         yield Msg("aardvark")
 
     def post_plan():
-        for j in range(5):
+        for j in range(5):  # noqa: B007
             yield Msg("null")
 
     with pytest.raises(RunEngineInterrupted):
@@ -1051,7 +1051,7 @@ def test_exception_cascade_planside(RE):
 
     def pausing_plan():
         nonlocal except_hit
-        for j in range(5):
+        for j in range(5):  # noqa: B007
             yield Msg("null")
         try:
             yield Msg("pause")
@@ -1064,7 +1064,7 @@ def test_exception_cascade_planside(RE):
         raise RuntimeError()
 
     def post_plan():
-        for j in range(5):
+        for j in range(5):  # noqa: B007
             yield Msg("null")
 
     with pytest.raises(RunEngineInterrupted):
@@ -1259,7 +1259,7 @@ def test_halt_from_pause(RE):
 
     def pausing_plan():
         nonlocal except_hit
-        for j in range(5):
+        for j in range(5):  # noqa: B007
             yield Msg("null")
         try:
             yield Msg("pause")
@@ -1380,7 +1380,7 @@ def test_state_hook(RE):
 
 
 def test_max_depth(RE):
-    RE.max_depth is None
+    RE.max_depth is None  # noqa: B015
     RE([])  # should not raise
 
     # assume test framework needs less than 100 stacks... haha
@@ -1492,7 +1492,7 @@ def test_status_propagates_exception_through_run_engine(RE):
         def set(self, val):
             st = StatusBase()
             try:
-                1 / 0
+                1 / 0  # noqa: B018
             except ZeroDivisionError as exc:
                 st.set_exception(exc)
 
@@ -1856,7 +1856,7 @@ def test_print_commands(RE):
         docstring = func.__doc__
         if verbose is False:
             docstring = docstring.split("\n")[0]
-        print_command_reg1 = print_command_reg1 + f"{command} : {docstring}\n"
+        print_command_reg1 += f"{command} : {docstring}\n"
 
     print_command_reg2 = RE.print_command_registry()
     assert print_command_reg1 == print_command_reg2
@@ -1917,7 +1917,7 @@ def test_thread_name(RE):
 def test_unsubscribe(RE):
     def foo(name, doc): ...
 
-    for j in range(15):
+    for j in range(15):  # noqa: B007
         cid = RE.subscribe(foo)
         RE.unsubscribe(cid)
 

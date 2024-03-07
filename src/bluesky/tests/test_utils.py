@@ -18,7 +18,7 @@ from bluesky.utils import (
 def test_single_msg_to_gen():
     m = Msg("set", None, 0)
 
-    m_list = [m for m in ensure_generator(m)]
+    m_list = [m for m in ensure_generator(m)]  # noqa: C416
 
     assert len(m_list) == 1
     assert m_list[0] == m
@@ -207,7 +207,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                     def f(list_out, *, kwarg_value):
                         list_out.append(_f_print(f"{func_name}", kwarg_value))
 
-                    return f
+                    return f  # noqa: B023
 
                 o_name = f"f{n_callable}"
                 f = _get_f(func_name=o_name)
@@ -225,7 +225,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                         def __call__(self, list_out, *, kwarg_value):
                             list_out.append(_f_print(f"{self._func_name}", kwarg_value))
 
-                    return cl(func_name)
+                    return cl(func_name)  # noqa: B023
 
                 o_name = f"f{n_callable}"
                 cl = _get_class_instance(func_name=o_name)
@@ -243,7 +243,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                         def func(self, list_out, *, kwarg_value):
                             list_out.append(_f_print(f"{self._func_name}", kwarg_value))
 
-                    return cl(func_name)
+                    return cl(func_name)  # noqa: B023
 
                 o_name = f"f{n_callable}"
                 cl_inst = _get_class_instance(func_name=o_name)
@@ -259,7 +259,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                         def func(cls, list_out, *, kwarg_value):
                             list_out.append(_f_print(f"{func_name}", kwarg_value))
 
-                    return cl()
+                    return cl()  # noqa: B023
 
                 o_name = f"f{n_callable}"
                 cl = _get_class_instance(func_name=o_name)
@@ -275,7 +275,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                         def func(list_out, *, kwarg_value):
                             list_out.append(_f_print(f"{func_name}", kwarg_value))
 
-                    return cl()
+                    return cl()  # noqa: B023
 
                 o_name = f"f{n_callable}"
                 cl = _get_class_instance(func_name=o_name)
@@ -291,7 +291,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                         def __call__(cls, list_out, *, kwarg_value):
                             list_out.append(_f_print(f"{func_name}", kwarg_value))
 
-                    return cl()
+                    return cl()  # noqa: B023
 
                 o_name = f"f{n_callable}"
                 cl_inst = _get_class_instance(func_name=o_name)
@@ -307,7 +307,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                         def __call__(list_out, *, kwarg_value):
                             list_out.append(_f_print(f"{func_name}", kwarg_value))
 
-                    return cl()
+                    return cl()  # noqa: B023
 
                 o_name = f"f{n_callable}"
                 cl_inst = _get_class_instance(func_name=o_name)
@@ -388,7 +388,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 sigs_remaining = list(set(obj_signal[n + 1 :]))
                 assert len(cb._func_cid_map) == len(sigs_remaining), "Incorrect number of signals"
                 assert len(cb.callbacks) == len(sigs_remaining), "Incorrect number of signals"
-                for sig_name, n_objects in signals.items():
+                for sig_name, n_objects in signals.items():  # noqa: B007
                     if sig_name in sigs_remaining:
                         assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(
                             sig_name
@@ -400,7 +400,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 _process_each_signal(n_start_check=n + 1)
 
             else:
-                assert False, f"Unknown callable type: {callable_type}"
+                assert False, f"Unknown callable type: {callable_type}"  # noqa: B011
 
     if delete_objects and callable_type == "bound_method":
         # Dictionary entries for signals are deleted when the objects are deleted
@@ -414,7 +414,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             # NOTE: as the objects are deleted, the dictionary entries for the signals still remain
             assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
             assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
-            for sig_name, n_objects in signals.items():
+            for sig_name, n_objects in signals.items():  # noqa: B007
                 assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(
                     sig_name
                 ), f"Incorrect number of callbacks for '{sig_name}'"

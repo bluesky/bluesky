@@ -355,7 +355,7 @@ def run_fuzz():
 
     RE = setup_test_run_engine()
     print("I am missing the following types of messages from my list")
-    print(set(RE._command_registry.keys()) - set([msg.command for msg in message_objects]))
+    print(set(RE._command_registry.keys()) - set([msg.command for msg in message_objects]))  # noqa: C403
 
     num_message = 100
     # num_SIGINT = 10

@@ -72,7 +72,7 @@ def summarize_plan(plan):
     plan : iterable
         Must yield `Msg` objects
     """
-    for msg in print_summary_wrapper(plan):
+    for msg in print_summary_wrapper(plan):  # noqa: B007
         ...
 
 
@@ -102,5 +102,5 @@ async def check_limits_async(plan):
             if isinstance(obj, Checkable):
                 await maybe_await(obj.check_value(msg.args[0]))
             else:
-                warn(f"{obj.name} has no check_value() method" f" to check if {msg.args[0]} is within its limits.")
+                warn(f"{obj.name} has no check_value() method" f" to check if {msg.args[0]} is within its limits.")  # noqa: B028
                 ignore.append(obj)

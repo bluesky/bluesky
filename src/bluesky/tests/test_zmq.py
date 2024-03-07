@@ -75,7 +75,7 @@ def test_zmq(RE, hw):
 
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []
-    for i in range(len(local_accumulator)):
+    for i in range(len(local_accumulator)):  # noqa: B007
         remote_accumulator.append(queue.get(timeout=2))
     p.close()
     proxy_proc.terminate()
@@ -182,7 +182,7 @@ def test_zmq_no_RE(RE):
 
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []
-    for i in range(2):
+    for i in range(2):  # noqa: B007
         remote_accumulator.append(queue.get(timeout=2))
     p.close()
     proxy_proc.terminate()
@@ -250,7 +250,7 @@ def test_zmq_no_RE_newserializer(RE):
 
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []
-    for i in range(2):
+    for i in range(2):  # noqa: B007
         remote_accumulator.append(queue.get(timeout=2))
     p.close()
     proxy_proc.terminate()
@@ -319,7 +319,7 @@ def test_zmq_prefix(RE, hw):
 
     # Get the two documents from the queue (or timeout --- test will fail)
     remote_accumulator = []
-    for i in range(len(local_accumulator)):
+    for i in range(len(local_accumulator)):  # noqa: B007
         remote_accumulator.append(queue.get(timeout=2))
     p.close()
     proxy_proc.terminate()

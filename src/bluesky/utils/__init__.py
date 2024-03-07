@@ -63,7 +63,7 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
     __slots__ = ()
 
     def __new__(cls, command, obj=None, *args, run=None, **kwargs):
-        return super(Msg, cls).__new__(cls, command, obj, args, kwargs, run)
+        return super(Msg, cls).__new__(cls, command, obj, args, kwargs, run)  # noqa: UP008
 
     def __repr__(self):
         return (
@@ -276,7 +276,7 @@ class CallbackRegistry:
     def __init__(self, ignore_exceptions=False, allowed_sigs=None):
         self.ignore_exceptions = ignore_exceptions
         self.allowed_sigs = allowed_sigs
-        self.callbacks = dict()
+        self.callbacks = dict()  # noqa: C408
         self._cid = 0
         self._func_cid_map = {}
 
@@ -324,7 +324,7 @@ class CallbackRegistry:
         self._cid += 1
         cid = self._cid
         self._func_cid_map[sig][proxy] = cid
-        self.callbacks.setdefault(sig, dict())
+        self.callbacks.setdefault(sig, dict())  # noqa: C408
         self.callbacks[sig][cid] = proxy
         return cid
 
@@ -352,7 +352,7 @@ class CallbackRegistry:
         cid : int
             The callback index and return value from ``connect``
         """
-        for eventname, callbackd in self.callbacks.items():
+        for eventname, callbackd in self.callbacks.items():  # noqa: B007
             try:
                 # This may or may not remove entries in 'self._func_cid_map'.
                 del callbackd[cid]
@@ -360,7 +360,7 @@ class CallbackRegistry:
                 continue
             else:
                 # Look for cid in 'self._func_cid_map' as well. It may still be there.
-                for sig, functions in self._func_cid_map.items():
+                for sig, functions in self._func_cid_map.items():  # noqa: B007
                     for function, value in list(functions.items()):
                         if value == cid:
                             del functions[function]
@@ -383,7 +383,7 @@ class CallbackRegistry:
                 raise ValueError(f"Allowed signals are {self.allowed_sigs}")
         exceptions = []
         if sig in self.callbacks:
-            for cid, func in list(self.callbacks[sig].items()):
+            for cid, func in list(self.callbacks[sig].items()):  # noqa: B007
                 try:
                     func(*args, **kwargs)
                 except ReferenceError:
@@ -564,7 +564,7 @@ def normalize_subs_input(subs):
             "names to lists of callables."
         )
     # Validates that all entries are callables.
-    for name, funcs in normalized.items():
+    for name, funcs in normalized.items():  # noqa: B007
         for func in funcs:
             if not callable(func):
                 raise ValueError(
@@ -872,7 +872,7 @@ def get_history():
             "will not be persistent or have any history of the "
             "values."
         )
-        return dict()
+        return dict()  # noqa: C408
     else:
         for path in SEARCH_PATH:
             if os.path.isfile(path):
@@ -933,7 +933,7 @@ def install_qt_kicker(loop=None, update_rate=0.03):
     update_rate : number
         Seconds between periodic updates. Default is 0.03.
     """
-    warnings.warn(
+    warnings.warn(  # noqa: B028
         "bluesky.utils.install_qt_kicker is no longer necessary and "
         "has no effect. Please remove your use of it. It may be "
         "removed in a future release of bluesky."
@@ -1237,8 +1237,8 @@ def apply_to_dict_recursively(d, f):
     return d
 
 
-class ProgressBarBase(abc.ABC):
-    def update(
+class ProgressBarBase(abc.ABC):  # noqa: B024
+    def update(  # noqa: B027
         self,
         pos: Any,
         *,
@@ -1253,7 +1253,7 @@ class ProgressBarBase(abc.ABC):
         time_remaining: float = None,
     ): ...
 
-    def clear(self): ...
+    def clear(self): ...  # noqa: B027
 
 
 class TerminalProgressBar(ProgressBarBase):
@@ -1364,7 +1364,7 @@ class TerminalProgressBar(ProgressBarBase):
         with self.lock:
             self.done = True
             if self.drawn:
-                for meter in self.meters:
+                for meter in self.meters:  # noqa: B007
                     self.fp.write("\r")
                     self.fp.write(" " * self.ncols)
                     self.fp.write("\r")
@@ -1416,13 +1416,13 @@ class ProgressBarManager:
         if status_objs_or_none is not None:
             # Start a new ProgressBar.
             if self.pbar is not None:
-                warnings.warn("Previous ProgressBar never competed.")
+                warnings.warn("Previous ProgressBar never competed.")  # noqa: B028
                 self.pbar.clear()
             self.pbar = self.pbar_factory(status_objs_or_none)
         else:
             # Clean up an old one.
             if self.pbar is None:
-                warnings.warn("There is no Progress bar to clean up.")
+                warnings.warn("There is no Progress bar to clean up.")  # noqa: B028
             else:
                 self.pbar.clear()
                 self.pbar = None
@@ -1827,7 +1827,7 @@ In the future the passing of Msg.args and Msg.kwargs down to hardware from
 Msg("{msg.command}") may be deprecated. If you have a use case for these,
 we would like to know about it, so please open an issue at
 https://github.com/bluesky/bluesky/issues"""
-        warnings.warn(error_msg, PendingDeprecationWarning)
+        warnings.warn(error_msg, PendingDeprecationWarning)  # noqa: B028
 
 
 def maybe_update_hints(hints: Dict[str, Hints], obj):
