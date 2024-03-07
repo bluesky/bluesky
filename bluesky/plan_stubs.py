@@ -13,7 +13,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Locatable, Triggerable, Status
+from .protocols import Locatable, Triggerable, Status, Readable
 from .utils import (
     get_hinted_fields,
     merge_cycler,
@@ -1078,9 +1078,10 @@ def trigger_and_read(devices, name='primary'):
         def read_plan():
             ret = {}  # collect and return readings to give plan access to them
             for obj in devices:
-                reading = (yield from read(obj))
-                if reading is not None:
-                    ret.update(reading)
+                if isinstance(obj, Readable):
+                    reading = (yield from read(obj))
+                    if reading is not None:
+                        ret.update(reading)
             return ret
 
         def standard_path():
