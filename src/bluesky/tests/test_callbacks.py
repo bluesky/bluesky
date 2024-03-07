@@ -1,45 +1,47 @@
+import time
 from collections import defaultdict
-from bluesky.run_engine import Msg, RunEngineInterrupted
-from bluesky.plans import scan, grid_scan, count, inner_product_scan
-from bluesky.object_plans import AbsScanPlan
-from bluesky.preprocessors import run_wrapper, subs_wrapper
-from bluesky.plan_stubs import pause
+from io import StringIO
+from itertools import permutations
+from unittest.mock import MagicMock
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pytest
+from event_model import DocumentNames, compose_run
+
 import bluesky.plans as bp
 import bluesky.preprocessors as bpp
-from bluesky.callbacks import CallbackCounter, LiveTable, LiveFit, CallbackBase
+from bluesky.callbacks import CallbackBase, CallbackCounter, LiveFit, LiveTable
+from bluesky.callbacks.broker import BrokerCallbackBase
 from bluesky.callbacks.core import make_callback_safe, make_class_safe
 from bluesky.callbacks.mpl_plotting import (
-    LiveScatter,
-    LivePlot,
-    LiveGrid,
     LiveFitPlot,
-    LiveRaster,
+    LiveGrid,
     LiveMesh,
+    LivePlot,
+    LiveRaster,
+    LiveScatter,
 )
-from bluesky.callbacks.broker import BrokerCallbackBase
-from bluesky.tests.utils import _print_redirect, MsgCollector, DocCollector
-from event_model import compose_run, DocumentNames
-import pytest
-import numpy as np
-import matplotlib.pyplot as plt
-from io import StringIO
-from unittest.mock import MagicMock
-from itertools import permutations
-import time
+from bluesky.object_plans import AbsScanPlan
+from bluesky.plan_stubs import pause
+from bluesky.plans import count, grid_scan, inner_product_scan, scan
+from bluesky.preprocessors import run_wrapper, subs_wrapper
+from bluesky.run_engine import Msg, RunEngineInterrupted
+from bluesky.tests.utils import DocCollector, MsgCollector, _print_redirect
 
 
 # copied from examples.py to avoid import
 def stepscan(det, motor):
-    yield Msg('open_run')
-    yield Msg('declare_stream', None, det, motor, name='primary')
+    yield Msg("open_run")
+    yield Msg("declare_stream", None, det, motor, name="primary")
     for i in range(-5, 5):
-        yield Msg('create', name='primary')
-        yield Msg('set', motor, i)
-        yield Msg('trigger', det)
-        yield Msg('read', motor)
-        yield Msg('read', det)
-        yield Msg('save')
-    yield Msg('close_run')
+        yield Msg("create", name="primary")
+        yield Msg("set", motor, i)
+        yield Msg("trigger", det)
+        yield Msg("read", motor)
+        yield Msg("read", det)
+        yield Msg("save")
+    yield Msg("close_run")
 
 
 def exception_raiser(name, doc):
@@ -48,7 +50,7 @@ def exception_raiser(name, doc):
 
 def test_all(RE, hw):
     c = CallbackCounter()
-    RE(stepscan(hw.det, hw.motor), {'all': c})
+    RE(stepscan(hw.det, hw.motor), {"all": c})
     assert c.value == 10 + 1 + 2  # events, descriptor, start and stop
 
     c = CallbackCounter()
@@ -99,22 +101,19 @@ def test_subs_input(hw):
     # Test input normalization on OO plans
     obj_ascan = AbsScanPlan([hw.det], hw.motor, 1, 5, 4)
     obj_ascan.subs = cb1
-    assert obj_ascan.subs == {'all': [cb1], 'start': [], 'stop': [],
-                              'descriptor': [], 'event': []}
-    obj_ascan.subs.update({'start': [cb2]})
-    assert obj_ascan.subs == {'all': [cb1], 'start': [cb2], 'stop': [],
-                              'descriptor': [], 'event': []}
+    assert obj_ascan.subs == {"all": [cb1], "start": [], "stop": [], "descriptor": [], "event": []}
+    obj_ascan.subs.update({"start": [cb2]})
+    assert obj_ascan.subs == {"all": [cb1], "start": [cb2], "stop": [], "descriptor": [], "event": []}
     obj_ascan.subs = [cb2, cb3]
-    assert obj_ascan.subs == {'all': [cb2, cb3], 'start': [], 'stop': [],
-                              'descriptor': [], 'event': []}
+    assert obj_ascan.subs == {"all": [cb2, cb3], "start": [], "stop": [], "descriptor": [], "event": []}
 
 
 def test_subscribe_msg(RE, hw):
-    assert RE.state == 'idle'
+    assert RE.state == "idle"
     c = CallbackCounter()
 
     def counting_stepscan(det, motor):
-        yield Msg('subscribe', None, c, 'start')
+        yield Msg("subscribe", None, c, "start")
         yield from stepscan(det, motor)
 
     RE(counting_stepscan(hw.det, hw.motor))  # should advance c
@@ -126,37 +125,35 @@ def test_subscribe_msg(RE, hw):
 
 
 def test_unknown_cb_raises(RE):
-
     def f(name, doc):
         pass
 
     with pytest.raises(KeyError):
-        RE.subscribe(f, 'not a thing')
+        RE.subscribe(f, "not a thing")
     # back-compat alias for subscribe
     with pytest.raises(KeyError):
-        RE.subscribe_lossless(f, 'not a thing')
+        RE.subscribe_lossless(f, "not a thing")
     with pytest.raises(KeyError):
-        RE._subscribe_lossless(f, 'not a thing')
+        RE._subscribe_lossless(f, "not a thing")
 
 
 def test_table_warns():
-    table = LiveTable(['field'])
-    table('start', {})
+    table = LiveTable(["field"])
+    table("start", {})
     with pytest.warns(UserWarning):
-        table('descriptor', {'uid': 'asdf', 'name': 'primary',
-                             'data_keys': {'field': {'dtype': 'array'}}})
+        table("descriptor", {"uid": "asdf", "name": "primary", "data_keys": {"field": {"dtype": "array"}}})
 
 
 def test_table_external(RE, hw, db):
     RE.subscribe(db.insert)
-    RE(count([hw.img]), LiveTable(['img']))
+    RE(count([hw.img]), LiveTable(["img"]))
 
 
 def _compare_tables(fout, known_table):
-    for ln, kn in zip(fout, known_table.split('\n')):
+    for ln, kn in zip(fout, known_table.split("\n")):
         # this is to strip the `\n` from the print output
         ln = ln.rstrip()
-        if ln[0] == '+':
+        if ln[0] == "+":
             # test the full line on the divider lines
             assert ln == kn
         else:
@@ -167,21 +164,18 @@ def _compare_tables(fout, known_table):
 
 
 def test_table(RE, hw):
-
     with _print_redirect() as fout:
         hw.det.precision = 2
         hw.motor.precision = 2
         hw.motor.setpoint.put(0.0)  # Make dtype 'number' not 'integer'.
         hw.det.trigger()
-        assert hw.det.describe()['det']['precision'] == 2
-        assert hw.motor.describe()['motor']['precision'] == 2
-        assert hw.det.describe()['det']['dtype'] == 'number'
-        assert hw.motor.describe()['motor']['dtype'] == 'number'
+        assert hw.det.describe()["det"]["precision"] == 2
+        assert hw.motor.describe()["motor"]["precision"] == 2
+        assert hw.det.describe()["det"]["dtype"] == "number"
+        assert hw.motor.describe()["motor"]["dtype"] == "number"
 
-        table = LiveTable(['det', 'motor'], min_width=16, extra_pad=2, separator_lines=False)
-        ad_scan = bp.adaptive_scan([hw.det], 'det', hw.motor,
-                                   -15.0, 5., .01, 1, .05,
-                                   True)
+        table = LiveTable(["det", "motor"], min_width=16, extra_pad=2, separator_lines=False)
+        ad_scan = bp.adaptive_scan([hw.det], "det", hw.motor, -15.0, 5.0, 0.01, 1, 0.05, True)
         # use lossless sub here because rows can get dropped
         token = RE.subscribe(table)
         RE(ad_scan)
@@ -272,16 +266,14 @@ KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 
 def test_evil_table_names(RE):
     from ophyd import Signal
+
     sigs = [
         Signal(value=0, name="a:b"),
         Signal(value=0, name="a,b"),
         Signal(value=0, name="a'b"),
         Signal(value=0, name="🐍"),
     ]
-    table = LiveTable(
-        [s.name for s in sigs],
-        min_width=5, extra_pad=2, separator_lines=False
-    )
+    table = LiveTable([s.name for s in sigs], min_width=5, extra_pad=2, separator_lines=False)
     with _print_redirect() as fout:
         print()  # get a blank line in camptured output
         RE(bpp.subs_wrapper(bp.count(sigs, num=2), table))
@@ -299,101 +291,83 @@ def test_live_fit(RE, hw):
     try:
         import lmfit
     except ImportError:
-        raise pytest.skip('requires lmfit')
+        raise pytest.skip("requires lmfit")
 
     def gaussian(x, A, sigma, x0):
-        return A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
+        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
 
     model = lmfit.Model(gaussian)
-    init_guess = {'A': 2,
-                  'sigma': lmfit.Parameter('sigma', 3, min=0),
-                  'x0': -0.2}
-    cb = LiveFit(model, 'det', {'x': 'motor'}, init_guess,
-                 update_every=50)
+    init_guess = {"A": 2, "sigma": lmfit.Parameter("sigma", 3, min=0), "x0": -0.2}
+    cb = LiveFit(model, "det", {"x": "motor"}, init_guess, update_every=50)
     RE(scan([hw.det], hw.motor, -1, 1, 50), cb)
     # results are in cb.result.values
 
-    expected = {'A': 1, 'sigma': 1, 'x0': 0}
+    expected = {"A": 1, "sigma": 1, "x0": 0}
     for k, v in expected.items():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
 
 
 def test_live_fit_multidim(RE, hw):
-
     try:
         import lmfit
     except ImportError:
-        raise pytest.skip('requires lmfit')
+        raise pytest.skip("requires lmfit")
 
     hw.motor1.delay = 0
     hw.motor2.delay = 0
     hw.det4.exposure_time = 0
 
     def gaussian(x, y, A, sigma, x0, y0):
-        return A * np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma ** 2))
+        return A * np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2 * sigma**2))
 
-    model = lmfit.Model(gaussian, ['x', 'y'])
-    init_guess = {'A': 2,
-                  'sigma': lmfit.Parameter('sigma', 3, min=0),
-                  'x0': -0.2,
-                  'y0': 0.3}
-    cb = LiveFit(model, 'det4', {'x': 'motor1', 'y': 'motor2'}, init_guess,
-                 update_every=50)
-    RE(grid_scan([hw.det4],
-                 hw.motor1, -1, 1, 10,
-                 hw.motor2, -1, 1, 10, False),
-       cb)
+    model = lmfit.Model(gaussian, ["x", "y"])
+    init_guess = {"A": 2, "sigma": lmfit.Parameter("sigma", 3, min=0), "x0": -0.2, "y0": 0.3}
+    cb = LiveFit(model, "det4", {"x": "motor1", "y": "motor2"}, init_guess, update_every=50)
+    RE(grid_scan([hw.det4], hw.motor1, -1, 1, 10, hw.motor2, -1, 1, 10, False), cb)
 
-    expected = {'A': 1, 'sigma': 1, 'x0': 0, 'y0': 0}
+    expected = {"A": 1, "sigma": 1, "x0": 0, "y0": 0}
     for k, v in expected.items():
         assert np.allclose(cb.result.values[k], v, atol=1e-6)
 
 
 def test_live_plot_from_callbacks():
     import bluesky.callbacks.core
+
     # We don't want the shims in callbacks.core, see #1133 for discussion
-    assert not hasattr(bluesky.callbacks.core, 'LivePlot')
+    assert not hasattr(bluesky.callbacks.core, "LivePlot")
     # We still want the shims in callbacks.__init__
     from bluesky.callbacks import LivePlot as LivePlotFromCallbacks
+
     assert LivePlotFromCallbacks is LivePlot
 
     # Make sure we can subclass it
-    class FromCallbacks(LivePlotFromCallbacks):
-        ...
+    class FromCallbacks(LivePlotFromCallbacks): ...
 
-    FromCallbacks('det', 'motor')
+    FromCallbacks("det", "motor")
 
 
 def test_live_fit_plot(RE, hw):
     try:
         import lmfit
     except ImportError:
-        raise pytest.skip('requires lmfit')
+        raise pytest.skip("requires lmfit")
 
     def gaussian(x, A, sigma, x0):
-        return A * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
+        return A * np.exp(-((x - x0) ** 2) / (2 * sigma**2))
 
     model = lmfit.Model(gaussian)
-    init_guess = {'A': 2,
-                  'sigma': lmfit.Parameter('sigma', 3, min=0),
-                  'x0': -0.2}
-    livefit = LiveFit(model, 'det', {'x': 'motor'}, init_guess,
-                      update_every=50)
-    lfplot = LiveFitPlot(livefit, color='r')
-    lplot = LivePlot('det', 'motor', ax=plt.gca(), marker='o', ls='none')
+    init_guess = {"A": 2, "sigma": lmfit.Parameter("sigma", 3, min=0), "x0": -0.2}
+    livefit = LiveFit(model, "det", {"x": "motor"}, init_guess, update_every=50)
+    lfplot = LiveFitPlot(livefit, color="r")
+    lplot = LivePlot("det", "motor", ax=plt.gca(), marker="o", ls="none")
     RE(scan([hw.det], hw.motor, -1, 1, 50), [lplot, lfplot])
-    expected = {'A': 1, 'sigma': 1, 'x0': 0}
+    expected = {"A": 1, "sigma": 1, "x0": 0}
     for k, v in expected.items():
         assert np.allclose(livefit.result.values[k], v, atol=1e-6)
 
 
-@pytest.mark.parametrize('int_meth, stop_num, msg_num',
-                         [('stop', 1, 5),
-                          ('abort', 1, 5),
-                          ('halt', 1, 3)])
-def test_interrupted_with_callbacks(RE, int_meth,
-                                    stop_num, msg_num):
-
+@pytest.mark.parametrize("int_meth, stop_num, msg_num", [("stop", 1, 5), ("abort", 1, 5), ("halt", 1, 3)])
+def test_interrupted_with_callbacks(RE, int_meth, stop_num, msg_num):
     docs = defaultdict(list)
 
     def collector_cb(name, doc):
@@ -403,50 +377,43 @@ def test_interrupted_with_callbacks(RE, int_meth,
     RE.msg_hook = MsgCollector()
 
     with pytest.raises(RunEngineInterrupted):
-        RE(subs_wrapper(run_wrapper(pause()),
-                        {'all': collector_cb}))
+        RE(subs_wrapper(run_wrapper(pause()), {"all": collector_cb}))
     getattr(RE, int_meth)()
 
-    assert len(docs['start']) == 1
-    assert len(docs['event']) == 0
-    assert len(docs['descriptor']) == 0
-    assert len(docs['stop']) == stop_num
+    assert len(docs["start"]) == 1
+    assert len(docs["event"]) == 0
+    assert len(docs["descriptor"]) == 0
+    assert len(docs["stop"]) == stop_num
     assert len(RE.msg_hook.msgs) == msg_num
 
 
 def test_live_grid(RE, hw):
     hw.motor1.delay = 0
     hw.motor2.delay = 0
-    RE(grid_scan([hw.det4],
-                 hw.motor1, -3, 3, 6,
-                 hw.motor2, -5, 5, 10, False),
-       LiveGrid((6, 10), 'det4'))
+    RE(grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2, -5, 5, 10, False), LiveGrid((6, 10), "det4"))
 
     # Test the deprecated name.
     with pytest.warns(UserWarning):
-        RE(grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2,
-                     -5, 5, 10, False),
-           LiveRaster((6, 10), 'det4'))
+        RE(grid_scan([hw.det4], hw.motor1, -3, 3, 6, hw.motor2, -5, 5, 10, False), LiveRaster((6, 10), "det4"))
 
 
 def test_live_scatter(RE, hw):
-    RE(grid_scan([hw.det5],
-                 hw.jittery_motor1, -3, 3, 6,
-                 hw.jittery_motor2, -5, 5, 10, False),
-       LiveScatter('jittery_motor1', 'jittery_motor2', 'det5',
-                   xlim=(-3, 3), ylim=(-5, 5)))
+    RE(
+        grid_scan([hw.det5], hw.jittery_motor1, -3, 3, 6, hw.jittery_motor2, -5, 5, 10, False),
+        LiveScatter("jittery_motor1", "jittery_motor2", "det5", xlim=(-3, 3), ylim=(-5, 5)),
+    )
 
     # Test the deprecated name.
     with pytest.warns(UserWarning):
-        RE(grid_scan([hw.det5],
-                     hw.jittery_motor1, -3, 3, 6,
-                     hw.jittery_motor2, -5, 5, 10, False),
-           LiveMesh('jittery_motor1', 'jittery_motor2', 'det5',
-                    xlim=(-3, 3), ylim=(-5, 5)))
+        RE(
+            grid_scan([hw.det5], hw.jittery_motor1, -3, 3, 6, hw.jittery_motor2, -5, 5, 10, False),
+            LiveMesh("jittery_motor1", "jittery_motor2", "det5", xlim=(-3, 3), ylim=(-5, 5)),
+        )
 
 
-@pytest.mark.xfail(raises=NotImplementedError,
-                   reason='This tests an API databroker has removed, and needs updating.')
+@pytest.mark.xfail(
+    raises=NotImplementedError, reason="This tests an API databroker has removed, and needs updating."
+)
 def test_broker_base(RE, hw, db):
     class BrokerChecker(BrokerCallbackBase):
         def __init__(self, field, *, db=None):
@@ -454,10 +421,10 @@ def test_broker_base(RE, hw, db):
 
         def event(self, doc):
             super().event(doc)
-            assert isinstance(doc['data'][self.fields[0]], np.ndarray)
+            assert isinstance(doc["data"][self.fields[0]], np.ndarray)
 
     RE.subscribe(db.insert)
-    bc = BrokerChecker(('img',), db=db)
+    bc = BrokerChecker(("img",), db=db)
     RE.subscribe(bc)
     RE(count([hw.img]))
 
@@ -469,51 +436,45 @@ def test_broker_base_no_unpack(RE, hw, db):
 
         def event(self, doc):
             super().event(doc)
-            assert isinstance(doc['data'][self.fields[0]], np.ndarray)
+            assert isinstance(doc["data"][self.fields[0]], np.ndarray)
 
-    bc = BrokerChecker(('img',), db=db)
+    bc = BrokerChecker(("img",), db=db)
     RE.subscribe(bc)
     RE(count([hw.direct_img]))
 
 
 def test_plotting_hints(RE, hw, db):
-    ''' This tests the run and checks that the correct hints are created.
-        Hints are mainly created to help the BestEffortCallback in plotting the
-        data.
-        Use a callback to do the checking.
-    '''
+    """This tests the run and checks that the correct hints are created.
+    Hints are mainly created to help the BestEffortCallback in plotting the
+    data.
+    Use a callback to do the checking.
+    """
     dc = DocCollector()
     RE.subscribe(dc.insert)
 
     # check that the inner product hints are passed correctly
-    hint = {'dimensions': [([hw.motor1.name, hw.motor2.name, hw.motor3.name],
-                            'primary')]}
-    RE(inner_product_scan([hw.det], 20, hw.motor1, -1, 1, hw.motor2, -1, 1,
-                          hw.motor3, -2, 0))
-    assert dc.start[-1]['hints'] == hint
+    hint = {"dimensions": [([hw.motor1.name, hw.motor2.name, hw.motor3.name], "primary")]}
+    RE(inner_product_scan([hw.det], 20, hw.motor1, -1, 1, hw.motor2, -1, 1, hw.motor3, -2, 0))
+    assert dc.start[-1]["hints"] == hint
 
     # check that the outer product (grid_scan) hints are passed correctly
-    hint = {'dimensions': [(['motor1'], 'primary'),
-                           (['motor2'], 'primary'),
-                           (['motor3'], 'primary')]}
+    hint = {"dimensions": [(["motor1"], "primary"), (["motor2"], "primary"), (["motor3"], "primary")]}
     # grid_scan passes "rectilinear" gridding as well
     # make sure this is also passed
     output_hint = hint.copy()
-    output_hint['gridding'] = 'rectilinear'
-    RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
-                 True, hw.motor3, -2, 0, 2, True))
+    output_hint["gridding"] = "rectilinear"
+    RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2, True, hw.motor3, -2, 0, 2, True))
 
-    assert dc.start[-1]['hints'] == output_hint
+    assert dc.start[-1]["hints"] == output_hint
 
     # check that if gridding is supplied, it's not overwritten by grid_scan
     # check that the outer product (grid_scan) hints are passed correctly
-    hint = {'dimensions': [(['motor1'], 'primary'),
-                           (['motor2'], 'primary'),
-                           (['motor3'], 'primary')],
-            'gridding': 'rectilinear'}
-    RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2,
-                 True, hw.motor3, -2, 0, 2, True))
-    assert dc.start[-1]['hints'] == hint
+    hint = {
+        "dimensions": [(["motor1"], "primary"), (["motor2"], "primary"), (["motor3"], "primary")],
+        "gridding": "rectilinear",
+    }
+    RE(grid_scan([hw.det], hw.motor1, -1, 1, 2, hw.motor2, -1, 1, 2, True, hw.motor3, -2, 0, 2, True))
+    assert dc.start[-1]["hints"] == hint
 
 
 def test_broken_table():
@@ -526,15 +487,9 @@ def test_broken_table():
         },
     )
 
-    ev1 = compose_event(
-        data={"x": 1, "y": 2.0}, timestamps={k: time.time() for k in ("x", "y")}
-    )
-    ev2 = compose_event(
-        data={"x": 1, "y": 2}, timestamps={k: time.time() for k in ("x", "y")}
-    )
-    ev3 = compose_event(
-        data={"x": 1.0, "y": 2.0}, timestamps={k: time.time() for k in ("x", "y")}
-    )
+    ev1 = compose_event(data={"x": 1, "y": 2.0}, timestamps={k: time.time() for k in ("x", "y")})
+    ev2 = compose_event(data={"x": 1, "y": 2}, timestamps={k: time.time() for k in ("x", "y")})
+    ev3 = compose_event(data={"x": 1.0, "y": 2.0}, timestamps={k: time.time() for k in ("x", "y")})
     ev4 = compose_event(
         data={"x": 1.0, "y": "aardvark"},
         timestamps={k: time.time() for k in ("x", "y")},
@@ -570,8 +525,8 @@ def test_callback_safe():
 
 
 def test_callback_safe_logger():
-    from unittest.mock import MagicMock
     from types import SimpleNamespace
+    from unittest.mock import MagicMock
 
     logger = SimpleNamespace(exception=MagicMock())
 
@@ -589,8 +544,7 @@ def test_callback_safe_logger():
 
 @pytest.fixture
 def EvilBaseClass(request):
-    class MyError(RuntimeError):
-        ...
+    class MyError(RuntimeError): ...
 
     class EvilCallback(CallbackBase):
         my_excepttion_type = MyError
@@ -643,8 +597,7 @@ def test_callbackclass(EvilBaseClass):
 
 def test_callbackclass_safe(EvilBaseClass):
     @make_class_safe
-    class SafeEvilBaseClass(EvilBaseClass):
-        ...
+    class SafeEvilBaseClass(EvilBaseClass): ...
 
     scb = SafeEvilBaseClass()
     for n in DocumentNames:
@@ -655,8 +608,7 @@ def test_callbackclass_safe_logger(EvilBaseClass):
     logger = MagicMock()
 
     @make_class_safe(logger=logger)
-    class SafeEvilBaseClass2(EvilBaseClass):
-        ...
+    class SafeEvilBaseClass2(EvilBaseClass): ...
 
     scb = SafeEvilBaseClass2()
     for n in DocumentNames:
@@ -669,24 +621,9 @@ def test_callbackclass_safe_logger(EvilBaseClass):
 @pytest.mark.parametrize(
     "documents",
     (
-        list(
-            set(
-                tuple(sorted(x, key=lambda x: x.name))
-                for x in permutations(DocumentNames, 1)
-            )
-        )
-        + list(
-            set(
-                tuple(sorted(x, key=lambda x: x.name))
-                for x in permutations(DocumentNames, 2)
-            )
-        )
-        + list(
-            set(
-                tuple(sorted(x, key=lambda x: x.name))
-                for x in permutations(DocumentNames, 3)
-            )
-        )
+        list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 1)))
+        + list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 2)))
+        + list(set(tuple(sorted(x, key=lambda x: x.name)) for x in permutations(DocumentNames, 3)))
         + [list(DocumentNames)]
     ),
 )
@@ -698,8 +635,7 @@ def test_callbackclass_safe_filtered(EvilBaseClass, documents, monkeypatch, stri
     logger = MagicMock()
 
     @make_class_safe(logger=logger, to_wrap=tuple(x.name for x in documents))
-    class SafeEvilBaseClass2(EvilBaseClass):
-        ...
+    class SafeEvilBaseClass2(EvilBaseClass): ...
 
     scb = SafeEvilBaseClass2()
     for n in documents:
@@ -728,9 +664,7 @@ def test_in_plan_qt_callback(RE, hw):
         motor.delay = 1
 
         plan = bp.scan([det], motor, -5, 5, 25)
-        plan = subs_wrapper(
-            bp.scan([det], motor, -5, 5, 25), LivePlot(det.name, motor.name)
-        )
+        plan = subs_wrapper(bp.scan([det], motor, -5, 5, 25), LivePlot(det.name, motor.name))
         return (yield from plan)
 
     RE(my_plan())

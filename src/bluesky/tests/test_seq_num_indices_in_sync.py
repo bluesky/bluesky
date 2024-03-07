@@ -9,9 +9,16 @@ from event_model.documents.resource import Resource
 from event_model.documents.stream_datum import StreamRange
 
 from bluesky import Msg
-from bluesky.protocols import (Asset, EventPageCollectable, Flyable, Pausable,
-                               Readable, Reading, SyncOrAsync,
-                               WritesExternalAssets)
+from bluesky.protocols import (
+    Asset,
+    EventPageCollectable,
+    Flyable,
+    Pausable,
+    Readable,
+    Reading,
+    SyncOrAsync,
+    WritesExternalAssets,
+)
 from bluesky.run_engine import RunEngineInterrupted
 
 
@@ -24,7 +31,7 @@ class ExternalAssetDevice:
         number_of_chunks: int,
         number_of_frames: int,
         detectors: Optional[List[str]] = None,
-        stream_datum_contains_one_index: bool = False
+        stream_datum_contains_one_index: bool = False,
     ):
         self.detectors = detectors or ["det1", "det2", "det3"]
         self.compose_stream_resource = ComposeStreamResource()
@@ -62,8 +69,7 @@ class ExternalAssetDevice:
 
         elif self.current_chunk == self.number_of_chunks - 1:  # Last collect()
             self.new_random_width = (
-                self.number_of_frames
-                - self.sequence_counter_at_chunks[self.number_of_chunks - 2]
+                self.number_of_frames - self.sequence_counter_at_chunks[self.number_of_chunks - 2]
             )
         else:
             self.new_random_width = (
@@ -79,7 +85,7 @@ class ExternalAssetDevice:
                 "stream_datum",
                 compose_stream_datum(
                     indices=StreamRange(start=indices_start, stop=indices_start + self.new_random_width)
-                )
+                ),
             )
 
     def collect_stream_datum_mismatched_indices(self):
@@ -90,24 +96,16 @@ class ExternalAssetDevice:
         yield from (
             (
                 "stream_datum",
-                compose_stream_datum(
-                    indices=StreamRange(
-                        start=indices_start,
-                        stop=indices_start + i
-                    )
-                )
+                compose_stream_datum(indices=StreamRange(start=indices_start, stop=indices_start + i)),
             )
-            for i, (_, compose_stream_datum)
-            in enumerate(self.stream_resource_compose_datum_pairs)
+            for i, (_, compose_stream_datum) in enumerate(self.stream_resource_compose_datum_pairs)
         )
 
     def collect_stream_datum_repeat_stream_resource(self) -> Iterator[Asset]:
-        if self.current_chunk == int(self.number_of_chunks/2):
+        if self.current_chunk == int(self.number_of_chunks / 2):
             # New stream_resource half way through the run
             self.stream_resource_compose_datum_pairs = tuple(
-                self.compose_stream_resource(
-                    "", "", f"non_existent_{det}.hdf5", det, {}
-                ) for det in self.detectors
+                self.compose_stream_resource("", "", f"non_existent_{det}.hdf5", det, {}) for det in self.detectors
             )
             yield from self.collect_resources()
 
@@ -120,33 +118,27 @@ class ExternalAssetDevice:
         def data():
             return {"det4": ["a"] * self.new_random_width}
 
-        return [
-            PartialEventPage(
-                timestamps=timestamps(), data=data()
-            )
-        ]
+        return [PartialEventPage(timestamps=timestamps(), data=data())]
 
 
 def kickoff(self, *_, **__):
     class X:
-        def add_callback(cls, *_, **__):
-            ...
+        def add_callback(cls, *_, **__): ...
+
     return X
 
 
 def complete(self, *_, **__):
     class X:
-        def add_callback(cls, *_, **__):
-            ...
+        def add_callback(cls, *_, **__): ...
+
     return X
 
 
-def pause(self, *_, **__):
-    ...
+def pause(self, *_, **__): ...
 
 
-def resume(self, *_, **__):
-    ...
+def resume(self, *_, **__): ...
 
 
 def read_Readable(self) -> Dict[str, Reading]:
@@ -157,7 +149,7 @@ def describe_Readable(self) -> Dict[str, DataKey]:
     return dict(
         det1=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),
         det2=dict(source="hw1", dtype="number", shape=[], external="STREAM:"),
-        det3=dict(source="hw2", dtype="number", shape=[])
+        det3=dict(source="hw2", dtype="number", shape=[]),
     )
 
 
@@ -173,9 +165,7 @@ def describe_collect_with_name(self) -> SyncOrAsync[Dict[str, DataKey]]:
 def test_flyscan_with_stream_datum_pause(RE):
     external_asset_device = ExternalAssetDevice(10, 100)
 
-    class DummyDeviceFlyableEventPageCollectablePausable(
-        Flyable, EventPageCollectable, Pausable
-    ):
+    class DummyDeviceFlyableEventPageCollectablePausable(Flyable, EventPageCollectable, Pausable):
         kickoff = kickoff
         complete = complete
         pause = pause
@@ -199,7 +189,7 @@ def test_flyscan_with_stream_datum_pause(RE):
                 Msg("complete", x),
                 Msg("close_run", x),
             ],
-            lambda *args: collector.append(args)
+            lambda *args: collector.append(args),
         )
 
     RE.resume()
@@ -226,7 +216,7 @@ def test_flyscan_with_stream_datum_pause(RE):
 
     # There are 30 stream datum all together, every 3 will have the same seq_nums
     for i in range(0, 30, 3):
-        stream_datum_chunk = stream_datum_collected_docs[i:i + 3]
+        stream_datum_chunk = stream_datum_collected_docs[i : i + 3]
         seq_nums = stream_datum_chunk[0]["seq_nums"]
         for stream_datum in stream_datum_chunk[-2:]:
             assert stream_datum["seq_nums"] == seq_nums
@@ -235,7 +225,6 @@ def test_flyscan_with_stream_datum_pause(RE):
 
 
 def test_flyscan_with_mismatched_indices(RE):
-
     external_asset_device = ExternalAssetDevice(9, 100)
 
     class DummyDeviceFlyableEventPageCollectablePausableMismatchedStreamDatumIndices(
@@ -263,10 +252,7 @@ def test_flyscan_with_mismatched_indices(RE):
     ]
 
     with pytest.raises(RunEngineInterrupted):
-        RE(
-            plan,
-            lambda *args: collector.append(args)
-        )
+        RE(plan, lambda *args: collector.append(args))
 
     with pytest.raises(EventModelValueError):
         RE.resume()
@@ -277,9 +263,7 @@ def test_rd_desc_with_declare_stream(RE):
         10, 10, detectors=["det1", "det2"], stream_datum_contains_one_index=True
     )
 
-    class DummyDeviceReadablePausableExternalAssets(
-        Readable, Pausable, WritesExternalAssets
-    ):
+    class DummyDeviceReadablePausableExternalAssets(Readable, Pausable, WritesExternalAssets):
         read = read_Readable
         describe = describe_Readable
         pause = pause
@@ -295,14 +279,12 @@ def test_rd_desc_with_declare_stream(RE):
             Msg("create", name="hw1"),
             Msg("read", x),
             Msg("save", x),
-        ] * 10,
+        ]
+        * 10,
         Msg("close_run", x),
     ]
 
-    RE(
-        plan,
-        lambda *args: collector.append(args)
-    )
+    RE(plan, lambda *args: collector.append(args))
 
     stream_datums_in_collector = [doc[1] for doc in collector if doc[0] == "stream_datum"]
     assert len(stream_datums_in_collector) == 20
@@ -312,9 +294,7 @@ def test_rd_desc_with_declare_stream(RE):
 def test_changing_stream_resource_after_stream_datum_emitted(RE):
     external_asset_device = ExternalAssetDevice(10, 100)
 
-    class DummyDeviceFlyableEventPageCollectable(
-        Flyable, EventPageCollectable
-    ):
+    class DummyDeviceFlyableEventPageCollectable(Flyable, EventPageCollectable):
         kickoff = kickoff
         complete = complete
         collect_pages = external_asset_device.collect_Pageable_with_name
@@ -333,10 +313,7 @@ def test_changing_stream_resource_after_stream_datum_emitted(RE):
         Msg("close_run", x),
     ]
 
-    RE(
-        plan,
-        lambda *args: collector.append(args)
-    )
+    RE(plan, lambda *args: collector.append(args))
 
     stream_datum_collected_docs = [doc[1] for doc in collector if doc[0] == "stream_datum"]
     assert len(stream_datum_collected_docs) == 30
@@ -360,7 +337,7 @@ def test_changing_stream_resource_after_stream_datum_emitted(RE):
 
     # There are 30 stream datum all together, every 3 will have the same seq_nums
     for i in range(0, 30, 3):
-        stream_datum_chunk = stream_datum_collected_docs[i:i + 3]
+        stream_datum_chunk = stream_datum_collected_docs[i : i + 3]
         seq_nums = stream_datum_chunk[0]["seq_nums"]
         for stream_datum in stream_datum_chunk[-2:]:
             assert stream_datum["seq_nums"] == seq_nums

@@ -5,6 +5,7 @@ import sys
 
 try:
     import colorama
+
     colorama.init()
 except ImportError:
     colorama = None
@@ -13,20 +14,18 @@ try:
 except ImportError:
     curses = None
 
-__all__ = ('config_bluesky_logging', 'get_handler',
-           'LogFormatter', 'set_handler')
+__all__ = ("config_bluesky_logging", "get_handler", "LogFormatter", "set_handler")
 
 
 def _stderr_supports_color():
     try:
-        if hasattr(sys.stderr, 'isatty') and sys.stderr.isatty():
+        if hasattr(sys.stderr, "isatty") and sys.stderr.isatty():
             if curses:
                 curses.setupterm()
                 if curses.tigetnum("colors") > 0:
                     return True
             elif colorama:
-                if sys.stderr is getattr(colorama.initialise, 'wrapped_stderr',
-                                         object()):
+                if sys.stderr is getattr(colorama.initialise, "wrapped_stderr", object()):
                     return True
     except Exception:
         # Very broad exception handling because it's always better to
@@ -42,7 +41,7 @@ class ComposableLogAdapter(logging.LoggerAdapter):
         # and passes through log_adapater.extra instead. This subclass merges
         # the extra passed via keyword argument with the extra in the
         # attribute, giving precedence to the keyword argument.
-        kwargs["extra"] = {**self.extra, **kwargs.get('extra', {})}
+        kwargs["extra"] = {**self.extra, **kwargs.get("extra", {})}
         return msg, kwargs
 
 
@@ -58,9 +57,9 @@ class LogFormatter(logging.Formatter):
       doc_name, doc_uid) when present.
 
     """
-    DEFAULT_FORMAT = \
-        '%(color)s[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s'
-    DEFAULT_DATE_FORMAT = '%y%m%d %H:%M:%S'
+
+    DEFAULT_FORMAT = "%(color)s[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s %(message)s"
+    DEFAULT_DATE_FORMAT = "%y%m%d %H:%M:%S"
     DEFAULT_COLORS = {
         logging.DEBUG: 4,  # Blue
         logging.INFO: 2,  # Green
@@ -68,8 +67,9 @@ class LogFormatter(logging.Formatter):
         logging.ERROR: 1,  # Red
     }
 
-    def __init__(self, fmt=DEFAULT_FORMAT, datefmt=DEFAULT_DATE_FORMAT,
-                 style='%', color=True, colors=DEFAULT_COLORS):
+    def __init__(
+        self, fmt=DEFAULT_FORMAT, datefmt=DEFAULT_DATE_FORMAT, style="%", color=True, colors=DEFAULT_COLORS
+    ):
         r"""
         :arg bool color: Enables color support.
         :arg str fmt: Log message format.
@@ -96,8 +96,7 @@ class LogFormatter(logging.Formatter):
                 # works with unicode strings.  The explicit calls to
                 # unicode() below are harmless in python2 but will do the
                 # right conversion in python 3.
-                fg_color = (curses.tigetstr("setaf") or
-                            curses.tigetstr("setf") or "")
+                fg_color = curses.tigetstr("setaf") or curses.tigetstr("setf") or ""
 
                 for levelno, code in colors.items():
                     self._colors[levelno] = str(curses.tparm(fg_color, code), "ascii")
@@ -106,50 +105,51 @@ class LogFormatter(logging.Formatter):
                 # If curses is not present (currently we'll only get here for
                 # colorama on windows), assume hard-coded ANSI color codes.
                 for levelno, code in colors.items():
-                    self._colors[levelno] = '\033[2;3%dm' % code
-                self._normal = '\033[0m'
+                    self._colors[levelno] = "\033[2;3%dm" % code
+                self._normal = "\033[0m"
         else:
-            self._normal = ''
+            self._normal = ""
 
     def format(self, record):
         message = []
         message.append(record.getMessage())
-        record.message = ' '.join(message)
+        record.message = " ".join(message)
         record.asctime = self.formatTime(record, self.datefmt)
 
         try:
             record.color = self._colors[record.levelno]
             record.end_color = self._normal
         except KeyError:
-            record.color = ''
-            record.end_color = ''
+            record.color = ""
+            record.end_color = ""
 
         formatted = self._fmt % record.__dict__
 
         if record.exc_info and not record.exc_text:
             record.exc_text = self.formatException(record.exc_info)
         if record.exc_text:
-            formatted = '{}\n{}'.format(formatted.rstrip(), record.exc_text)
+            formatted = f"{formatted.rstrip()}\n{record.exc_text}"
         return formatted.replace("\n", "\n    ")
 
 
 plain_log_format = "[%(levelname)1.1s %(asctime)s.%(msecs)03d %(module)15s:%(lineno)5d] %(message)s"
-color_log_format = ("%(color)s[%(levelname)1.1s %(asctime)s.%(msecs)03d "
-                    "%(module)15s:%(lineno)5d]%(end_color)s %(message)s")
+color_log_format = (
+    "%(color)s[%(levelname)1.1s %(asctime)s.%(msecs)03d " "%(module)15s:%(lineno)5d]%(end_color)s %(message)s"
+)
 
 
-logger = logging.getLogger('bluesky')
-doc_logger = logging.getLogger('bluesky.emit_document')
-msg_logger = logging.getLogger('bluesky.RE.msg')
-state_logger = logging.getLogger('bluesky.RE.state')
+logger = logging.getLogger("bluesky")
+doc_logger = logging.getLogger("bluesky.emit_document")
+msg_logger = logging.getLogger("bluesky.RE.msg")
+state_logger = logging.getLogger("bluesky.RE.state")
 current_handler = None
 
 
 def validate_level(level) -> int:
-    '''
+    """
     Return a int for level comparison
 
-    '''
+    """
     if isinstance(level, int):
         levelno = level
     elif isinstance(level, str):
@@ -161,8 +161,9 @@ def validate_level(level) -> int:
         raise ValueError("Your level is illegal, please use one of python logging string")
 
 
-def _set_handler_with_logger(logger_name='bluesky', file=sys.stdout, datefmt='%H:%M:%S', color=True,
-                             level='WARNING'):
+def _set_handler_with_logger(
+    logger_name="bluesky", file=sys.stdout, datefmt="%H:%M:%S", color=True, level="WARNING"
+):
     if isinstance(file, str):
         handler = logging.FileHandler(file)
     else:
@@ -173,14 +174,13 @@ def _set_handler_with_logger(logger_name='bluesky', file=sys.stdout, datefmt='%H
         format = color_log_format
     else:
         format = plain_log_format
-    handler.setFormatter(
-        LogFormatter(format, datefmt=datefmt))
+    handler.setFormatter(LogFormatter(format, datefmt=datefmt))
     logging.getLogger(logger_name).addHandler(handler)
     if logger.getEffectiveLevel() > levelno:
         logger.setLevel(levelno)
 
 
-def config_bluesky_logging(file=sys.stdout, datefmt='%H:%M:%S', color=True, level='WARNING'):
+def config_bluesky_logging(file=sys.stdout, datefmt="%H:%M:%S", color=True, level="WARNING"):
     """
     Set a new handler on the ``logging.getLogger('bluesky')`` logger.
 
@@ -234,8 +234,7 @@ def config_bluesky_logging(file=sys.stdout, datefmt='%H:%M:%S', color=True, leve
         format = color_log_format
     else:
         format = plain_log_format
-    handler.setFormatter(
-        LogFormatter(format, datefmt=datefmt))
+    handler.setFormatter(LogFormatter(format, datefmt=datefmt))
     if current_handler in logger.handlers:
         logger.removeHandler(current_handler)
     logger.addHandler(handler)

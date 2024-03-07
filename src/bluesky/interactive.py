@@ -1,6 +1,8 @@
-import matplotlib.widgets as mwidgets
-from bluesky.plans import grid_scan
 from collections import ChainMap
+
+import matplotlib.widgets as mwidgets
+
+from bluesky.plans import grid_scan
 
 
 class ROIPlanCreator:
@@ -13,9 +15,7 @@ class ROIPlanCreator:
             The axes to install the widget on
         """
         self.ax = ax
-        self.widget = mwidgets.RectangleSelector(
-            self.ax, self._onselect, useblit=True, interactive=True
-        )
+        self.widget = mwidgets.RectangleSelector(self.ax, self._onselect, useblit=True, interactive=True)
         self._pt1 = self._pt2 = None
 
     def _onselect(self, pt1, pt2):

@@ -2,9 +2,9 @@ import tempfile
 
 import mypy.api
 import pytest
+from ophyd import sim
 
 from bluesky import protocols as bs_protocols
-from ophyd import sim
 
 
 def test_status():

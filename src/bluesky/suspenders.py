@@ -1,8 +1,8 @@
 import asyncio
-from datetime import datetime, timedelta
-from abc import ABCMeta, abstractmethod, abstractproperty
 import operator
 import threading
+from abc import ABCMeta, abstractmethod, abstractproperty
+from datetime import datetime, timedelta
 from functools import partial
 from warnings import warn
 
@@ -30,10 +30,9 @@ class SuspenderBase(metaclass=ABCMeta):
     tripped_message : str, optional
         Message to include in the trip notification
     """
-    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None,
-                 tripped_message=''):
-        """
-        """
+
+    def __init__(self, signal, *, sleep=0, pre_plan=None, post_plan=None, tripped_message=""):
+        """ """
         self.RE = None
         self._ev = None
         self._tripped = False
@@ -45,16 +44,13 @@ class SuspenderBase(metaclass=ABCMeta):
         self._post_plan = post_plan
 
     def __repr__(self):
-        return (
-            "{}({!r}, sleep={}, pre_plan={}, post_plan={},"
-            "tripped_message={})".format(
-                type(self).__name__,
-                self._sig,
-                self._sleep,
-                self._pre_plan,
-                self._post_plan,
-                self._tripped_message,
-            )
+        return "{}({!r}, sleep={}, pre_plan={}, post_plan={}," "tripped_message={})".format(
+            type(self).__name__,
+            self._sig,
+            self._sleep,
+            self._pre_plan,
+            self._post_plan,
+            self._tripped_message,
         )
 
     def install(self, RE, *, event_type=None):
@@ -179,13 +175,11 @@ class SuspenderBase(metaclass=ABCMeta):
             sleep = self._sleep
 
             def local():
-                ts = (datetime.now() + timedelta(seconds=sleep)).strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+                ts = (datetime.now() + timedelta(seconds=sleep)).strftime("%Y-%m-%d %H:%M:%S")
                 print(
-                    "Suspender {!r} reports a return to nominal "
-                    "conditions. Will sleep for {} seconds and then "
-                    "release suspension at {}.".format(self, sleep, ts)
+                    f"Suspender {self!r} reports a return to nominal "
+                    f"conditions. Will sleep for {sleep} seconds and then "
+                    f"release suspension at {ts}."
                 )
                 # we can use call_later here because this function
                 # is scheduled to be run in the event loop thread
@@ -221,12 +215,11 @@ class SuspenderBase(metaclass=ABCMeta):
 
     def _get_justification(self):
         if not self.tripped:
-            return ''
+            return ""
 
-        template = 'Suspender of type {} stopped by signal {!r}'
+        template = "Suspender of type {} stopped by signal {!r}"
         just = template.format(self.__class__.__name__, self._sig)
-        return ': '.join(s for s in (just, self._tripped_message)
-                         if s)
+        return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
 class SuspendBoolHigh(SuspenderBase):
@@ -258,11 +251,10 @@ class SuspendBoolHigh(SuspenderBase):
 
     def _get_justification(self):
         if not self.tripped:
-            return ''
+            return ""
 
-        just = 'Signal {} is high'.format(self._sig.name)
-        return ': '.join(s for s in (just, self._tripped_message)
-                         if s)
+        just = f"Signal {self._sig.name} is high"
+        return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
 class SuspendBoolLow(SuspenderBase):
@@ -294,11 +286,10 @@ class SuspendBoolLow(SuspenderBase):
 
     def _get_justification(self):
         if not self.tripped:
-            return ''
+            return ""
 
-        just = 'Signal {} is low'.format(self._sig.name)
-        return ': '.join(s for s in (just, self._tripped_message)
-                         if s)
+        just = f"Signal {self._sig.name} is low"
+        return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
 class _Threshold(SuspenderBase):
@@ -307,8 +298,8 @@ class _Threshold(SuspenderBase):
     signal fall above or below a threshold.  Allow for a possibly different
     threshold to resume.
     """
-    def __init__(self, signal, suspend_thresh, *,
-                 resume_thresh=None, **kwargs):
+
+    def __init__(self, signal, suspend_thresh, *, resume_thresh=None, **kwargs):
         super().__init__(signal, **kwargs)
         self._suspend_thresh = suspend_thresh
         if resume_thresh is None:
@@ -361,13 +352,14 @@ class SuspendFloor(_Threshold):
     post_plan : iterable or iterator, optional
             a generator, list, or similar containing `Msg` objects
     """
+
     def _validate(self):
         if self._resume_thresh < self._suspend_thresh:
-            raise ValueError("Resume threshold must be equal or greater "
-                             "than suspend threshold, you passed: "
-                             "suspend: {}  resume: {}".format(
-                                 self._suspend_thresh,
-                                 self._resume_thresh))
+            raise ValueError(
+                "Resume threshold must be equal or greater "
+                "than suspend threshold, you passed: "
+                f"suspend: {self._suspend_thresh}  resume: {self._resume_thresh}"
+            )
 
     @property
     def _op(self):
@@ -375,16 +367,14 @@ class SuspendFloor(_Threshold):
 
     def _get_justification(self):
         if not self.tripped:
-            return ''
+            return ""
 
         just = (
-            f'Signal {self._sig.name} = {self._sig.get()!r} ' +
-            f'fell below {self._suspend_thresh} ' +
-            f'and has not yet crossed above {self._resume_thresh}.'
+            f"Signal {self._sig.name} = {self._sig.get()!r} "
+            + f"fell below {self._suspend_thresh} "
+            + f"and has not yet crossed above {self._resume_thresh}."
         )
-        return ': '.join(
-            s for s in (just, self._tripped_message) if s
-        )
+        return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
 class SuspendCeil(_Threshold):
@@ -417,13 +407,14 @@ class SuspendCeil(_Threshold):
     post_plan : iterable or iterator, optional
             a generator, list, or similar containing `Msg` objects
     """
+
     def _validate(self):
         if self._resume_thresh > self._suspend_thresh:
-            raise ValueError("Resume threshold must be equal or less "
-                             "than suspend threshold, you passed: "
-                             "suspend: {}  resume: {}".format(
-                                 self._suspend_thresh,
-                                 self._resume_thresh))
+            raise ValueError(
+                "Resume threshold must be equal or less "
+                "than suspend threshold, you passed: "
+                f"suspend: {self._suspend_thresh}  resume: {self._resume_thresh}"
+            )
 
     @property
     def _op(self):
@@ -431,16 +422,14 @@ class SuspendCeil(_Threshold):
 
     def _get_justification(self):
         if not self.tripped:
-            return ''
+            return ""
 
         just = (
-            f'Signal {self._sig.name} = {self._sig.get()!r} ' +
-            f'went above {self._suspend_thresh} ' +
-            f'and has not yet crossed below {self._resume_thresh}.'
+            f"Signal {self._sig.name} = {self._sig.get()!r} "
+            + f"went above {self._suspend_thresh} "
+            + f"and has not yet crossed below {self._resume_thresh}."
         )
-        return ': '.join(
-            s for s in (just, self._tripped_message) if s
-        )
+        return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
 class _SuspendBandBase(SuspenderBase):
@@ -448,14 +437,15 @@ class _SuspendBandBase(SuspenderBase):
     Private base-class for suspenders based on keeping a scalar inside
     or outside of a band
     """
+
     def __init__(self, signal, band_bottom, band_top, **kwargs):
         super().__init__(signal, **kwargs)
         if not band_bottom < band_top:
-            raise ValueError("The bottom of the band must be strictly "
-                             "less than the top of the band.\n"
-                             "bottom: {}\ttop: {}".format(
-                                 band_bottom, band_top)
-                             )
+            raise ValueError(
+                "The bottom of the band must be strictly "
+                "less than the top of the band.\n"
+                f"bottom: {band_bottom}\ttop: {band_top}"
+            )
         self._bot = band_bottom
         self._top = band_top
 
@@ -484,6 +474,7 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
     post_plan : iterable or iterator, optional
             a generator, list, or similar containing `Msg` objects
     """
+
     def _should_resume(self, value):
         return self._bot < value < self._top
 
@@ -492,21 +483,21 @@ class SuspendWhenOutsideBand(_SuspendBandBase):
 
     def _get_justification(self):
         if not self.tripped:
-            return ''
+            return ""
 
-        just = ('Signal {} = {!r} is outside of the range ({}, {})'
-                ''.format(self._sig.name, self._sig.get(),
-                          self._bot, self._top)
-                )
-        return ': '.join(s for s in (just, self._tripped_message)
-                         if s)
+        just = "Signal {} = {!r} is outside of the range ({}, {})" "".format(
+            self._sig.name, self._sig.get(), self._bot, self._top
+        )
+        return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
 class SuspendInBand(SuspendWhenOutsideBand):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        warn("SuspendInBand has been renamed SuspendWhenOutsideBand to make "
-             "its meaning more clear. Its behavior has not changed.")
+        warn(
+            "SuspendInBand has been renamed SuspendWhenOutsideBand to make "
+            "its meaning more clear. Its behavior has not changed."
+        )
 
 
 class SuspendOutBand(_SuspendBandBase):
@@ -536,6 +527,7 @@ class SuspendOutBand(_SuspendBandBase):
     post_plan : iterable or iterator, optional
             a generator, list, or similar containing `Msg` objects
     """
+
     def __init__(self, *args, **kwargs):
         warn("bluesky.suspenders.SuspendOutBand is deprecated.")
         super().__init__(*args, **kwargs)
@@ -544,18 +536,16 @@ class SuspendOutBand(_SuspendBandBase):
         return not (self._bot < value < self._top)
 
     def _should_suspend(self, value):
-        return (self._bot < value < self._top)
+        return self._bot < value < self._top
 
     def _get_justification(self):
         if not self.tripped:
-            return ''
+            return ""
 
-        just = ('Signal {} = {!r} is inside of the range ({}, {})'
-                ''.format(self._sig.name, self._sig.get(),
-                          self._bot, self._top)
-                )
-        return ': '.join(s for s in (just, self._tripped_message)
-                         if s)
+        just = "Signal {} = {!r} is inside of the range ({}, {})" "".format(
+            self._sig.name, self._sig.get(), self._bot, self._top
+        )
+        return ": ".join(s for s in (just, self._tripped_message) if s)
 
 
 class SuspendWhenChanged(SuspenderBase):
@@ -661,20 +651,23 @@ class SuspendWhenChanged(SuspenderBase):
     useful in other contexts of instrument control beyond the realm of bluesky.
     """
 
-    def __init__(self, signal, *,
-                 expected_value=None,
-                 allow_resume=False,
-                 sleep=0, pre_plan=None, post_plan=None, tripped_message='',
-                 **kwargs):
-
+    def __init__(
+        self,
+        signal,
+        *,
+        expected_value=None,
+        allow_resume=False,
+        sleep=0,
+        pre_plan=None,
+        post_plan=None,
+        tripped_message="",
+        **kwargs,
+    ):
         self.expected_value = expected_value or signal.value
         self.allow_resume = allow_resume
-        super().__init__(signal,
-                         sleep=sleep,
-                         pre_plan=pre_plan,
-                         post_plan=post_plan,
-                         tripped_message=tripped_message,
-                         **kwargs)
+        super().__init__(
+            signal, sleep=sleep, pre_plan=pre_plan, post_plan=post_plan, tripped_message=tripped_message, **kwargs
+        )
 
     def _should_suspend(self, value):
         return value != self.expected_value
@@ -684,16 +677,9 @@ class SuspendWhenChanged(SuspenderBase):
 
     def _get_justification(self):
         if not self.tripped:
-            return ''
+            return ""
 
-        just = (
-            f'Signal {self._sig.name}'
-            f', got "{self._sig.get()}"'
-            f', expected "{self.expected_value}"'
-            )
+        just = f"Signal {self._sig.name}" f', got "{self._sig.get()}"' f', expected "{self.expected_value}"'
         if not self.allow_resume:
             just += '.  "RE.abort()" and then restart session to use new configuration.'
-        return ': '.join(
-            s
-            for s in (just, self._tripped_message)
-            if s)
+        return ": ".join(s for s in (just, self._tripped_message) if s)

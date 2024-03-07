@@ -1,11 +1,12 @@
 # Example: consecutive execution of single-run plans
 
+from databroker import Broker
+from ophyd.sim import hw
+
 from bluesky import RunEngine
 from bluesky.callbacks.best_effort import BestEffortCallback
-from databroker import Broker
-from bluesky.plans import scan, rel_scan
+from bluesky.plans import rel_scan, scan
 
-from ophyd.sim import hw
 hw = hw()
 
 RE = RunEngine({})

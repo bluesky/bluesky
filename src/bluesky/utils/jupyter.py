@@ -1,16 +1,15 @@
 import hashlib
 import sys
 import time
-import numpy as np
-
 from functools import partial
+from threading import RLock
 from typing import Any, List, Optional, TextIO
 
+import numpy as np
 from IPython import display
 from IPython.core.display import HTML
 from ipywidgets import HBox
 from tqdm.notebook import tqdm as tqdm_nb
-from threading import RLock
 
 from bluesky.utils import ProgressBarBase, ProgressBarManager, _L2norm
 
@@ -22,9 +21,7 @@ class NotebookProgressBar(ProgressBarBase):
     creation_time: float
     lock: RLock
 
-    def __init__(self,
-                 status_objs: List[Any],
-                 delay_draw: float = 0.2):
+    def __init__(self, status_objs: List[Any], delay_draw: float = 0.2):
         """
         Represents status objects with Jupyter Notebook progress bars.
 
@@ -53,18 +50,18 @@ class NotebookProgressBar(ProgressBarBase):
                     st.watch(partial(self.update, pos))
 
     def update(
-            self,
-            pos: Any,
-            *,
-            name: str = None,
-            current: Any = None,
-            initial: Any = None,
-            target: Any = None,
-            unit: str = "units",
-            precision: Any = None,
-            fraction: Any = None,
-            time_elapsed: float = None,
-            time_remaining: float = None,
+        self,
+        pos: Any,
+        *,
+        name: str = None,
+        current: Any = None,
+        initial: Any = None,
+        target: Any = None,
+        unit: str = "units",
+        precision: Any = None,
+        fraction: Any = None,
+        time_elapsed: float = None,
+        time_remaining: float = None,
     ):
         if all(x is not None for x in (current, initial, target)):
             # In this case there is enough information to draw a progress bar with
@@ -107,13 +104,13 @@ class NotebookProgressBar(ProgressBarBase):
             self.draw(pos, name or "", "[In progress. No progress bar available.]")
 
     def draw(
-            self,
-            pos: int,
-            label: str = "",
-            meta: str = "",
-            color: str = "#97d4e8",
-            total: float = 1.0,
-            value: Optional[float] = None,
+        self,
+        pos: int,
+        label: str = "",
+        meta: str = "",
+        color: str = "#97d4e8",
+        total: float = 1.0,
+        value: Optional[float] = None,
     ) -> None:
         """
         Draws the progress bar or a message if there is

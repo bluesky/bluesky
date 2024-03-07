@@ -1,18 +1,22 @@
-import pytest
-import numpy as np
-
-from functools import reduce
 import operator
+from functools import reduce
+
+import numpy as np
+import pytest
+from cycler import cycler
 
 from bluesky.utils import (
-    ensure_generator, Msg, merge_cycler, is_movable, CallbackRegistry,
-    warn_if_msg_args_or_kwargs
+    CallbackRegistry,
+    Msg,
+    ensure_generator,
+    is_movable,
+    merge_cycler,
+    warn_if_msg_args_or_kwargs,
 )
-from cycler import cycler
 
 
 def test_single_msg_to_gen():
-    m = Msg('set', None, 0)
+    m = Msg("set", None, 0)
 
     m_list = [m for m in ensure_generator(m)]
 
@@ -20,24 +24,21 @@ def test_single_msg_to_gen():
     assert m_list[0] == m
 
 
-@pytest.mark.parametrize('traj',
-                         ({'pseudo1': [10, 11, 12],
-                           'pseudo2': [20, 21, 22]},
-                          {'pseudo1': [10, 11, 12],
-                           'pseudo2': [20, 21, 22],
-                           'pseudo3': [30, 31, 32]},
-                          )
-                         )
+@pytest.mark.parametrize(
+    "traj",
+    (
+        {"pseudo1": [10, 11, 12], "pseudo2": [20, 21, 22]},
+        {"pseudo1": [10, 11, 12], "pseudo2": [20, 21, 22], "pseudo3": [30, 31, 32]},
+    ),
+)
 def test_cycler_merge_pseudo(hw, traj):
     p3x3 = hw.pseudo3x3
     sig = hw.sig
     keys = traj.keys()
     tlen = len(next(iter(traj.values())))
-    expected_merge = [{k: traj[k][j] for k in keys}
-                      for j in range(tlen)]
+    expected_merge = [{k: traj[k][j] for k in keys} for j in range(tlen)]
 
-    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), v)
-                                for k, v in traj.items()))
+    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), v) for k, v in traj.items()))
 
     mcyc = merge_cycler(cyc + cycler(sig, range(tlen)))
 
@@ -46,40 +47,46 @@ def test_cycler_merge_pseudo(hw, traj):
     assert mcyc.by_key()[sig] == list(range(tlen))
 
 
-@pytest.mark.parametrize('children',
-                         (
-                             ['pseudo1', 'real1'],
-                             ['pseudo1', 'pseudo2', 'real1']))
+@pytest.mark.parametrize("children", (["pseudo1", "real1"], ["pseudo1", "pseudo2", "real1"]))
 def test_cycler_merge_pseudo_real_clash(hw, children):
     p3x3 = hw.pseudo3x3
-    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5))
-                                for k in children))
+    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5)) for k in children))
 
     with pytest.raises(ValueError):
         merge_cycler(cyc)
 
 
-@pytest.mark.parametrize('children',
-                         (['pseudo1', ],
-                          ['pseudo1', 'pseudo2'],
-                          ['real1'],
-                          ['real1', 'real2']))
+@pytest.mark.parametrize(
+    "children",
+    (
+        [
+            "pseudo1",
+        ],
+        ["pseudo1", "pseudo2"],
+        ["real1"],
+        ["real1", "real2"],
+    ),
+)
 def test_cycler_parent_and_parts_fail(hw, children):
     p3x3 = hw.pseudo3x3
-    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5))
-                                for k in children))
+    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5)) for k in children))
     cyc += cycler(p3x3, range(5))
 
     with pytest.raises(ValueError):
         merge_cycler(cyc)
 
 
-@pytest.mark.parametrize('children',
-                         (['sig', ],))
+@pytest.mark.parametrize(
+    "children",
+    (
+        [
+            "sig",
+        ],
+    ),
+)
 def test_cycler_parent_and_parts_succed(hw, children):
     p3x3 = hw.pseudo3x3
-    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5))
-                                for k in children))
+    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5)) for k in children))
     cyc += cycler(p3x3, range(5))
     mcyc = merge_cycler(cyc)
 
@@ -87,18 +94,19 @@ def test_cycler_parent_and_parts_succed(hw, children):
     assert mcyc.by_key() == cyc.by_key()
 
 
-@pytest.mark.parametrize('children',
-                         (
-                             ['pseudo1'],
-                             ['pseudo2', 'sig'],
-                             ['real1'],
-                             ['real1', 'real2'],
-                             ['real1', 'real2', 'sig'],
-                         ))
+@pytest.mark.parametrize(
+    "children",
+    (
+        ["pseudo1"],
+        ["pseudo2", "sig"],
+        ["real1"],
+        ["real1", "real2"],
+        ["real1", "real2", "sig"],
+    ),
+)
 def test_cycler_merge_mixed(hw, children):
     p3x3 = hw.pseudo3x3
-    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5))
-                                for k in children))
+    cyc = reduce(operator.add, (cycler(getattr(p3x3, k), range(5)) for k in children))
 
     mcyc = merge_cycler(cyc)
 
@@ -107,13 +115,11 @@ def test_cycler_merge_mixed(hw, children):
 
 
 def test_is_movable(hw):
-
-    obj_list = [(10, False), (1.05, False), ("some_string", False),
-                (hw.det, False), (hw.motor, True)]
+    obj_list = [(10, False), (1.05, False), ("some_string", False), (hw.det, False), (hw.motor, True)]
     for obj, result in obj_list:
-        assert is_movable(obj) == result, \
-            f"The object {obj} is incorrectly recognized "\
-            f"as {'' if result else 'not '}movable"
+        assert is_movable(obj) == result, (
+            f"The object {obj} is incorrectly recognized " f"as {'' if result else 'not '}movable"
+        )
 
 
 # Indicates if the step when all external references to callables are deleted is included.
@@ -121,13 +127,18 @@ def test_is_movable(hw):
 # Settings for the 'set_allowed_signals' parameter of the CallbackRegistry class.
 @pytest.mark.parametrize("set_allowed_signals", [True, False])
 # Callable type
-@pytest.mark.parametrize("callable_type", ["bound_method",
-                                           "function",
-                                           "callable_object",
-                                           "class_method",
-                                           "static_method",
-                                           "callable_object_class_method",
-                                           "callable_object_static_method"])
+@pytest.mark.parametrize(
+    "callable_type",
+    [
+        "bound_method",
+        "function",
+        "callable_object",
+        "class_method",
+        "static_method",
+        "callable_object_class_method",
+        "callable_object_static_method",
+    ],
+)
 def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
     """
     Basic tests for CallbackRegistry class. The tests verify the behavior
@@ -195,6 +206,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 def _get_f(*, func_name):
                     def f(list_out, *, kwarg_value):
                         list_out.append(_f_print(f"{func_name}", kwarg_value))
+
                     return f
 
                 o_name = f"f{n_callable}"
@@ -204,6 +216,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 del f
 
             elif callable_type == "callable_object":
+
                 def _get_class_instance(*, func_name):
                     class cl:
                         def __init__(self, func_name):
@@ -221,6 +234,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 del cl
 
             elif callable_type == "bound_method":
+
                 def _get_class_instance(*, func_name):
                     class cl:
                         def __init__(self, func_name):
@@ -238,6 +252,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 del cl_inst
 
             elif callable_type == "class_method":
+
                 def _get_class_instance(*, func_name):
                     class cl:
                         @classmethod
@@ -253,6 +268,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 del cl
 
             elif callable_type == "static_method":
+
                 def _get_class_instance(*, func_name):
                     class cl:
                         @staticmethod
@@ -268,6 +284,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 del cl
 
             elif callable_type == "callable_object_class_method":
+
                 def _get_class_instance(*, func_name):
                     class cl:
                         @classmethod
@@ -283,6 +300,7 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
                 del cl_inst
 
             elif callable_type == "callable_object_static_method":
+
                 def _get_class_instance(*, func_name):
                     class cl:
                         @staticmethod
@@ -311,10 +329,8 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
     assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
     assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
     for sig_name, n_objects in signals.items():
-        assert len(cb._func_cid_map[sig_name]) == n_objects, \
-            f"Incorrect number of callbacks for '{sig_name}'"
-        assert len(cb.callbacks[sig_name]) == n_objects, \
-            f"Incorrect number of callbacks for '{sig_name}'"
+        assert len(cb._func_cid_map[sig_name]) == n_objects, f"Incorrect number of callbacks for '{sig_name}'"
+        assert len(cb.callbacks[sig_name]) == n_objects, f"Incorrect number of callbacks for '{sig_name}'"
 
     def _process_each_signal(n_start_check=0):
         """Process each signal, check callback output starting from index `n_start_check`"""
@@ -327,14 +343,16 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             rand_value = np.random.rand()  # Some value that is expected to be part of the function output
             cb.process(sig_name, list_out, kwarg_value=rand_value)
 
-            assert len(list_out) == len([_ for _ in i_sig if _ >= n_start_check]), \
-                "Output list has incorrect number of entries"
+            assert len(list_out) == len(
+                [_ for _ in i_sig if _ >= n_start_check]
+            ), "Output list has incorrect number of entries"
             for n in i_sig:
                 if n >= n_start_check:
                     expected_substr = _f_print(obj_name[n], rand_value)
-                    assert list_out.count(expected_substr) == 1, \
-                        f"Signal '{sig_name}' was processed incorrectly: entry '{expected_substr}' " \
+                    assert list_out.count(expected_substr) == 1, (
+                        f"Signal '{sig_name}' was processed incorrectly: entry '{expected_substr}' "
                         f"was not found in the output '{list_out}'"
+                    )
 
     _process_each_signal()
 
@@ -344,30 +362,40 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             obj_to_delete[n] = None  # Overwriting the reference deletes the object
 
             # Check the function composition
-            if callable_type in ["function", "callable_object", "class_method", "static_method",
-                                 "callable_object_class_method", "callable_object_static_method"]:
+            if callable_type in [
+                "function",
+                "callable_object",
+                "class_method",
+                "static_method",
+                "callable_object_class_method",
+                "callable_object_static_method",
+            ]:
                 # Deleting objects should change nothing
                 assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
                 assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
                 for sig_name, n_objects in signals.items():
-                    assert len(cb._func_cid_map[sig_name]) == n_objects, \
-                        f"Incorrect number of callbacks for '{sig_name}'"
-                    assert len(cb.callbacks[sig_name]) == n_objects, \
-                        f"Incorrect number of callbacks for '{sig_name}'"
+                    assert (
+                        len(cb._func_cid_map[sig_name]) == n_objects
+                    ), f"Incorrect number of callbacks for '{sig_name}'"
+                    assert (
+                        len(cb.callbacks[sig_name]) == n_objects
+                    ), f"Incorrect number of callbacks for '{sig_name}'"
 
                 _process_each_signal()
 
             elif callable_type == "bound_method":
                 # Callbacks should be removed as they get deleted
-                sigs_remaining = list(set(obj_signal[n+1:]))
+                sigs_remaining = list(set(obj_signal[n + 1 :]))
                 assert len(cb._func_cid_map) == len(sigs_remaining), "Incorrect number of signals"
                 assert len(cb.callbacks) == len(sigs_remaining), "Incorrect number of signals"
                 for sig_name, n_objects in signals.items():
                     if sig_name in sigs_remaining:
-                        assert len(cb._func_cid_map[sig_name]) == obj_signal[n+1:].count(sig_name), \
-                            f"Incorrect number of callbacks for '{sig_name}'"
-                        assert len(cb.callbacks[sig_name]) == obj_signal[n+1:].count(sig_name), \
-                            f"Incorrect number of callbacks for '{sig_name}'"
+                        assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(
+                            sig_name
+                        ), f"Incorrect number of callbacks for '{sig_name}'"
+                        assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(
+                            sig_name
+                        ), f"Incorrect number of callbacks for '{sig_name}'"
 
                 _process_each_signal(n_start_check=n + 1)
 
@@ -387,10 +415,12 @@ def test_CallbackRegistry_1(delete_objects, set_allowed_signals, callable_type):
             assert len(cb._func_cid_map) == len(signals), "Incorrect number of signals"
             assert len(cb.callbacks) == len(signals), "Incorrect number of signals"
             for sig_name, n_objects in signals.items():
-                assert len(cb._func_cid_map[sig_name]) == obj_signal[n+1:].count(sig_name), \
-                    f"Incorrect number of callbacks for '{sig_name}'"
-                assert len(cb.callbacks[sig_name]) == obj_signal[n+1:].count(sig_name), \
-                    f"Incorrect number of callbacks for '{sig_name}'"
+                assert len(cb._func_cid_map[sig_name]) == obj_signal[n + 1 :].count(
+                    sig_name
+                ), f"Incorrect number of callbacks for '{sig_name}'"
+                assert len(cb.callbacks[sig_name]) == obj_signal[n + 1 :].count(
+                    sig_name
+                ), f"Incorrect number of callbacks for '{sig_name}'"
             _process_each_signal(n_start_check=n + 1)
 
 
@@ -453,12 +483,15 @@ def test_msg_args_kwargs_emits_warning_first_time(recwarn):
     warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {"arg": "value"})
     assert len(recwarn) == 1
     w = recwarn.pop(PendingDeprecationWarning)
-    assert str(w.message) == """\
+    assert (
+        str(w.message)
+        == """\
 About to call kickoff() with args () and kwargs {'arg': 'value'}.
 In the future the passing of Msg.args and Msg.kwargs down to hardware from
 Msg("kickoff") may be deprecated. If you have a use case for these,
 we would like to know about it, so please open an issue at
 https://github.com/bluesky/bluesky/issues"""
+    )
     assert len(recwarn) == 0
     # Second time doesn't warn
     warn_if_msg_args_or_kwargs(msg, device.kickoff, (), {"arg": "value"})

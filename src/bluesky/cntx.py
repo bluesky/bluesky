@@ -4,15 +4,12 @@
 # was little used and finally deprecated in v0.10.0. It will be removed in a
 # future release. It should not be used.
 
-from functools import wraps
-from contextlib import contextmanager
 import warnings
+from contextlib import contextmanager
+from functools import wraps
 
-from .utils import (normalize_subs_input, root_ancestor,
-                    separate_devices,
-                    Msg, single_gen)
-
-from .plan_stubs import (broadcast_msg, trigger_and_read)
+from .plan_stubs import broadcast_msg, trigger_and_read
+from .utils import Msg, normalize_subs_input, root_ancestor, separate_devices, single_gen
 
 
 def planify(func):
@@ -32,6 +29,7 @@ def planify(func):
         stack.
 
     """
+
     @wraps(func)
     def wrapped(*args, **kwargs):
         gen_stack = func(*args, **kwargs)
@@ -75,20 +73,19 @@ def subs_context(plan_stack, subs):
          name is one of {'all', 'start', 'stop', 'event', 'descriptor'} and
          doc is a dictionary.
     """
-    warnings.warn("subs_context is deprecated. "
-                  "Use subs_wrapper or subs_decorator.")
+    warnings.warn("subs_context is deprecated. " "Use subs_wrapper or subs_decorator.")
     subs = normalize_subs_input(subs)
     tokens = set()
 
     def _subscribe():
         for name, funcs in subs.items():
             for func in funcs:
-                token = yield Msg('subscribe', None, func, name)
+                token = yield Msg("subscribe", None, func, name)
                 tokens.add(token)
 
     def _unsubscribe():
         for token in tokens:
-            yield Msg('unsubscribe', None, token=token)
+            yield Msg("unsubscribe", None, token=token)
 
     plan_stack.append(_subscribe())
     try:
@@ -114,15 +111,14 @@ def run_context(plan_stack, *, md=None):
     md : dict, optional
         metadata to be passed into the 'open_run' message
     """
-    warnings.warn(
-        "run_context is deprecated. Use run_wrapper or run_decorator.")
-    plan_stack.append(single_gen(Msg('open_run', None, **dict(md or {}))))
+    warnings.warn("run_context is deprecated. Use run_wrapper or run_decorator.")
+    plan_stack.append(single_gen(Msg("open_run", None, **dict(md or {}))))
     yield plan_stack
-    plan_stack.append(single_gen(Msg('close_run')))
+    plan_stack.append(single_gen(Msg("close_run")))
 
 
 @contextmanager
-def event_context(plan_stack, name='primary'):
+def event_context(plan_stack, name="primary"):
     """Bundle readings into an 'event' (a datapoint).
 
     This encloses the contents in 'create' and 'save' messages.
@@ -139,11 +135,10 @@ def event_context(plan_stack, name='primary'):
     name : string, optional
         name of event stream; default is 'primary'
     """
-    warnings.warn(
-        "event_context is deprecated. Use create, save, or trigger_and_read.")
-    plan_stack.append(single_gen(Msg('create', None, name=name)))
+    warnings.warn("event_context is deprecated. Use create, save, or trigger_and_read.")
+    plan_stack.append(single_gen(Msg("create", None, name=name)))
     yield plan_stack
-    plan_stack.append(single_gen(Msg('save')))
+    plan_stack.append(single_gen(Msg("save")))
 
 
 @contextmanager
@@ -165,18 +160,17 @@ def stage_context(plan_stack, devices):
     --------
     :func:`bluesky.plans.lazily_stage`
     """
-    warnings.warn("stage_context is deprecated. "
-                  "Use stage_wrapper or stage_decorator.")
+    warnings.warn("stage_context is deprecated. " "Use stage_wrapper or stage_decorator.")
     # Resolve unique devices, avoiding redundant staging.
     devices = separate_devices(root_ancestor(device) for device in devices)
 
     def stage():
         # stage devices explicitly passed to 'devices' argument
-        yield from broadcast_msg('stage', devices)
+        yield from broadcast_msg("stage", devices)
 
     def unstage():
         # unstage devices explicitly passed to 'devices' argument
-        yield from broadcast_msg('unstage', reversed(devices))
+        yield from broadcast_msg("unstage", reversed(devices))
 
     plan_stack.append(stage())
     yield plan_stack
@@ -184,7 +178,7 @@ def stage_context(plan_stack, devices):
 
 
 @contextmanager
-def baseline_context(plan_stack, devices, name='baseline'):
+def baseline_context(plan_stack, devices, name="baseline"):
     """
     Read every device once upon entering and exiting the context.
 
@@ -203,8 +197,7 @@ def baseline_context(plan_stack, devices, name='baseline'):
     name : string, optional
         name for event stream; by default, 'baseline'
     """
-    warnings.warn("baseline_context is deprecated. Use baseline_wrapper or "
-                  "baseline_decorator.")
+    warnings.warn("baseline_context is deprecated. Use baseline_wrapper or " "baseline_decorator.")
     plan_stack.append(trigger_and_read(devices, name=name))
     yield
     plan_stack.append(trigger_and_read(devices, name=name))
@@ -242,9 +235,8 @@ def monitor_context(plan_stack, signals):
 
     >>> with monitor_context(plan_stack, [sig1, sig2]): ...
     """
-    warnings.warn("monitor_context is deprecated. Use monitor_wrapper or "
-                  "monitor_decorator.")
-    if hasattr(signals, 'items'):
+    warnings.warn("monitor_context is deprecated. Use monitor_wrapper or " "monitor_decorator.")
+    if hasattr(signals, "items"):
         # interpret input as dict of signals mapped to event stream names
         pass
     else:
@@ -252,7 +244,7 @@ def monitor_context(plan_stack, signals):
         signals = {sig: None for sig in signals}
 
     for sig, name in signals.items():
-        plan_stack.append(single_gen(Msg('monitor', sig, name=name)))
+        plan_stack.append(single_gen(Msg("monitor", sig, name=name)))
     yield
     for sig, name in signals.items():
-        plan_stack.append(single_gen(Msg('unmonitor', sig)))
+        plan_stack.append(single_gen(Msg("unmonitor", sig)))

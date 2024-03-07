@@ -1,11 +1,12 @@
 import itertools
-import uuid
-from cycler import cycler
 import operator
-from functools import reduce
-from collections.abc import Iterable
 import time
+import uuid
 import warnings
+from collections.abc import Iterable
+from functools import reduce
+
+from cycler import cycler
 
 try:
     # cytools is a drop-in replacement for toolz, implemented in Cython
@@ -13,14 +14,16 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Locatable, Triggerable, Status
+from .protocols import Locatable, Status, Triggerable
 from .utils import (
+    Msg,
+    all_safe_rewind,
+    ensure_generator,
     get_hinted_fields,
     merge_cycler,
     separate_devices,
-    all_safe_rewind,
-    Msg,
-    ensure_generator,
+)
+from .utils import (
     short_uid as _short_uid,
 )
 
@@ -46,10 +49,10 @@ def declare_stream(*objs, name: str, collect=False):
     --------
     :func:`bluesky.plan_stubs.save`
     """
-    return (yield Msg('declare_stream', None, *separate_devices(objs), name=name, collect=collect))
+    return (yield Msg("declare_stream", None, *separate_devices(objs), name=name, collect=collect))
 
 
-def create(name='primary'):
+def create(name="primary"):
     """
     Bundle future readings into a new Event document.
 
@@ -68,7 +71,7 @@ def create(name='primary'):
     --------
     :func:`bluesky.plan_stubs.save`
     """
-    return (yield Msg('create', name=name))
+    return (yield Msg("create", name=name))
 
 
 def save():
@@ -84,7 +87,7 @@ def save():
     --------
     :func:`bluesky.plan_stubs.create`
     """
-    return (yield Msg('save'))
+    return (yield Msg("save"))
 
 
 def drop():
@@ -101,7 +104,7 @@ def drop():
     :func:`bluesky.plan_stubs.save`
     :func:`bluesky.plan_stubs.create`
     """
-    return (yield Msg('drop'))
+    return (yield Msg("drop"))
 
 
 def read(obj):
@@ -117,7 +120,7 @@ def read(obj):
     msg : Msg
         Msg('read', obj)
     """
-    return (yield Msg('read', obj))
+    return (yield Msg("read", obj))
 
 
 def monitor(obj, *, name=None, **kwargs):
@@ -143,7 +146,7 @@ def monitor(obj, *, name=None, **kwargs):
     --------
     :func:`bluesky.plan_stubs.unmonitor`
     """
-    return (yield Msg('monitor', obj, name=name, **kwargs))
+    return (yield Msg("monitor", obj, name=name, **kwargs))
 
 
 def unmonitor(obj):
@@ -163,7 +166,7 @@ def unmonitor(obj):
     --------
     :func:`bluesky.plan_stubs.monitor`
     """
-    return (yield Msg('unmonitor', obj))
+    return (yield Msg("unmonitor", obj))
 
 
 def null():
@@ -175,7 +178,7 @@ def null():
     msg : Msg
         Msg('null')
     """
-    return (yield Msg('null'))
+    return (yield Msg("null"))
 
 
 def abs_set(obj, *args, group=None, wait=False, **kwargs):
@@ -207,9 +210,9 @@ def abs_set(obj, *args, group=None, wait=False, **kwargs):
     """
     if wait and group is None:
         group = str(uuid.uuid4())
-    ret = yield Msg('set', obj, *args, group=group, **kwargs)
+    ret = yield Msg("set", obj, *args, group=group, **kwargs)
     if wait:
-        yield Msg('wait', None, group=group)
+        yield Msg("wait", None, group=group)
     return ret
 
 
@@ -241,11 +244,7 @@ def rel_set(obj, *args, group=None, wait=False, **kwargs):
     """
     from .preprocessors import relative_set_wrapper
 
-    return (
-        yield from relative_set_wrapper(
-            abs_set(obj, *args, group=group, wait=wait, **kwargs)
-        )
-    )
+    return (yield from relative_set_wrapper(abs_set(obj, *args, group=group, wait=wait, **kwargs)))
 
 
 def mv(*args, group=None, **kwargs):
@@ -278,9 +277,9 @@ def mv(*args, group=None, **kwargs):
     cyl = reduce(operator.add, [cycler(obj, [val]) for obj, val in partition(2, args)])
     (step,) = merge_cycler(cyl)
     for obj, val in step.items():
-        ret = yield Msg('set', obj, val, group=group, **kwargs)
+        ret = yield Msg("set", obj, val, group=group, **kwargs)
         status_objects.append(ret)
-    yield Msg('wait', None, group=group)
+    yield Msg("wait", None, group=group)
     return tuple(status_objects)
 
 
@@ -441,7 +440,7 @@ def stop(obj):
     ------
     msg : Msg
     """
-    return (yield Msg('stop', obj))
+    return (yield Msg("stop", obj))
 
 
 def trigger(obj, *, group=None, wait=False):
@@ -461,9 +460,9 @@ def trigger(obj, *, group=None, wait=False):
     ------
     msg : Msg
     """
-    ret = yield Msg('trigger', obj, group=group)
+    ret = yield Msg("trigger", obj, group=group)
     if wait:
-        yield Msg('wait', None, group=group)
+        yield Msg("wait", None, group=group)
     return ret
 
 
@@ -484,7 +483,7 @@ def sleep(time):
     msg : Msg
         Msg('sleep', None, time)
     """
-    return (yield Msg('sleep', None, time))
+    return (yield Msg("sleep", None, time))
 
 
 def wait(group=None, *, timeout=None):
@@ -501,7 +500,7 @@ def wait(group=None, *, timeout=None):
     msg : Msg
         Msg('wait', None, group=group)
     """
-    return (yield Msg('wait', None, group=group, timeout=timeout))
+    return (yield Msg("wait", None, group=group, timeout=timeout))
 
 
 _wait = wait  # for internal references to avoid collision with 'wait' kwarg
@@ -520,7 +519,7 @@ def checkpoint():
     --------
     :func:`bluesky.plan_stubs.clear_checkpoint`
     """
-    return (yield Msg('checkpoint'))
+    return (yield Msg("checkpoint"))
 
 
 def clear_checkpoint():
@@ -536,7 +535,7 @@ def clear_checkpoint():
     --------
     :func:`bluesky.plan_stubs.checkpoint`
     """
-    return (yield Msg('clear_checkpoint'))
+    return (yield Msg("clear_checkpoint"))
 
 
 def pause():
@@ -553,7 +552,7 @@ def pause():
     :func:`bluesky.plan_stubs.deferred_pause`
     :func:`bluesky.plan_stubs.sleep`
     """
-    return (yield Msg('pause', None, defer=False))
+    return (yield Msg("pause", None, defer=False))
 
 
 def deferred_pause():
@@ -570,10 +569,10 @@ def deferred_pause():
     :func:`bluesky.plan_stubs.pause`
     :func:`bluesky.plan_stubs.sleep`
     """
-    return (yield Msg('pause', None, defer=True))
+    return (yield Msg("pause", None, defer=True))
 
 
-def input_plan(prompt=''):
+def input_plan(prompt=""):
     """
     Prompt the user for text input.
 
@@ -587,7 +586,7 @@ def input_plan(prompt=''):
     msg : Msg
         Msg('input', prompt=prompt)
     """
-    return (yield Msg('input', prompt=prompt))
+    return (yield Msg("input", prompt=prompt))
 
 
 def prepare(obj, *args, group=None, wait=False, **kwargs):
@@ -617,7 +616,7 @@ def prepare(obj, *args, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    ret = (yield Msg('prepare', obj, *args, group=group, **kwargs))
+    ret = yield Msg("prepare", obj, *args, group=group, **kwargs)
     if wait:
         yield from _wait(group=group)
     return ret
@@ -650,7 +649,7 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    ret = (yield Msg('kickoff', obj, group=group, **kwargs))
+    ret = yield Msg("kickoff", obj, group=group, **kwargs)
     if wait:
         yield from _wait(group=group)
     return ret
@@ -689,7 +688,7 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    ret = yield Msg('complete', obj, group=group, **kwargs)
+    ret = yield Msg("complete", obj, group=group, **kwargs)
     if wait:
         yield from _wait(group=group)
     return ret
@@ -725,7 +724,7 @@ def collect(obj, *args, stream=False, return_payload=True, name=None):
     :func:`bluesky.plan_stubs.complete`
     :func:`bluesky.plan_stubs.wait`
     """
-    return (yield Msg('collect', obj, *args, stream=stream, return_payload=return_payload, name=name))
+    return (yield Msg("collect", obj, *args, stream=stream, return_payload=return_payload, name=name))
 
 
 def configure(obj, *args, **kwargs):
@@ -745,7 +744,7 @@ def configure(obj, *args, **kwargs):
     msg : Msg
         ``Msg('configure', obj, *args, **kwargs)``
     """
-    return (yield Msg('configure', obj, *args, **kwargs))
+    return (yield Msg("configure", obj, *args, **kwargs))
 
 
 def stage(obj, *, group=None, wait=None):
@@ -770,7 +769,7 @@ def stage(obj, *, group=None, wait=None):
     :func:`bluesky.plan_stubs.unstage`
     :func:`bluesky.plan_stubs.stage_all`
     """
-    ret = yield Msg('stage', obj, group=group)
+    ret = yield Msg("stage", obj, group=group)
     old_style = not isinstance(ret, Status)
     if old_style:
         if (wait is None) or wait:
@@ -781,7 +780,7 @@ def stage(obj, *, group=None, wait=None):
             raise RuntimeError(f"{obj}: Is an old style device and cannot be told not to wait")
     else:
         if wait:
-            yield Msg('wait', None, group=group)
+            yield Msg("wait", None, group=group)
     return ret
 
 
@@ -809,12 +808,12 @@ def stage_all(*args, group=None):
     status_objects = []
 
     for obj in args:
-        ret = yield Msg('stage', obj, group=group)
+        ret = yield Msg("stage", obj, group=group)
         if isinstance(ret, Status):
             status_objects.append(ret)
 
     if status_objects:
-        yield Msg('wait', None, group=group)
+        yield Msg("wait", None, group=group)
 
 
 def unstage(obj, *, group=None, wait=None):
@@ -839,7 +838,7 @@ def unstage(obj, *, group=None, wait=None):
     :func:`bluesky.plan_stubs.stage`
     :func:`bluesky.plan_stubs.unstage_all`
     """
-    ret = yield Msg('unstage', obj, group=group)
+    ret = yield Msg("unstage", obj, group=group)
     old_style = not isinstance(ret, Status)
     if old_style:
         if (wait is None) or wait:
@@ -850,7 +849,7 @@ def unstage(obj, *, group=None, wait=None):
             raise RuntimeError(f"{obj}: Is an old style device and cannot be told not to wait")
     else:
         if wait:
-            yield Msg('wait', None, group=group)
+            yield Msg("wait", None, group=group)
     return ret
 
 
@@ -878,12 +877,12 @@ def unstage_all(*args, group=None):
     status_objects = []
 
     for obj in args:
-        ret = yield Msg('unstage', obj, group=group)
+        ret = yield Msg("unstage", obj, group=group)
         if isinstance(ret, Status):
             status_objects.append(ret)
 
     if status_objects:
-        yield Msg('wait', None, group=group)
+        yield Msg("wait", None, group=group)
 
 
 def subscribe(name, func):
@@ -906,7 +905,7 @@ def subscribe(name, func):
     --------
     :func:`bluesky.plan_stubs.unsubscribe`
     """
-    return (yield Msg('subscribe', None, func, name))
+    return (yield Msg("subscribe", None, func, name))
 
 
 def unsubscribe(token):
@@ -927,7 +926,7 @@ def unsubscribe(token):
     --------
     :func:`bluesky.plan_stubs.subscribe`
     """
-    return (yield Msg('unsubscribe', token=token))
+    return (yield Msg("unsubscribe", token=token))
 
 
 def install_suspender(suspender):
@@ -948,7 +947,7 @@ def install_suspender(suspender):
     --------
     :func:`bluesky.plan_stubs.remove_suspender`
     """
-    return (yield Msg('install_suspender', None, suspender))
+    return (yield Msg("install_suspender", None, suspender))
 
 
 def remove_suspender(suspender):
@@ -969,7 +968,7 @@ def remove_suspender(suspender):
     --------
     :func:`bluesky.plan_stubs.install_suspender`
     """
-    return (yield Msg('remove_suspender', None, suspender))
+    return (yield Msg("remove_suspender", None, suspender))
 
 
 def open_run(md=None):
@@ -990,7 +989,7 @@ def open_run(md=None):
     --------
     :func:`bluesky.plans_stubs.close_run`
     """
-    return (yield Msg('open_run', **(md or {})))
+    return (yield Msg("open_run", **(md or {})))
 
 
 def close_run(exit_status=None, reason=None):
@@ -1013,7 +1012,7 @@ def close_run(exit_status=None, reason=None):
     --------
     :func:`bluesky.plans_stubs.open_run`
     """
-    return (yield Msg('close_run', exit_status=exit_status, reason=reason))
+    return (yield Msg("close_run", exit_status=exit_status, reason=reason))
 
 
 def wait_for(futures, **kwargs):
@@ -1036,10 +1035,10 @@ def wait_for(futures, **kwargs):
     --------
     :func:`bluesky.plan_stubs.wait`
     """
-    return (yield Msg('wait_for', None, futures, **kwargs))
+    return (yield Msg("wait_for", None, futures, **kwargs))
 
 
-def trigger_and_read(devices, name='primary'):
+def trigger_and_read(devices, name="primary"):
     """
     Trigger and read a list of detectors and bundle readings into one Event.
 
@@ -1057,6 +1056,7 @@ def trigger_and_read(devices, name='primary'):
         messages to 'trigger', 'wait' and 'read'
     """
     from .preprocessors import contingency_wrapper
+
     # If devices is empty, don't emit 'create'/'save' messages.
     if not devices:
         yield from null()
@@ -1064,7 +1064,7 @@ def trigger_and_read(devices, name='primary'):
     rewindable = all_safe_rewind(devices)  # if devices can be re-triggered
 
     def inner_trigger_and_read():
-        grp = _short_uid('trigger')
+        grp = _short_uid("trigger")
         no_wait = True
         for obj in devices:
             if isinstance(obj, Triggerable):
@@ -1078,7 +1078,7 @@ def trigger_and_read(devices, name='primary'):
         def read_plan():
             ret = {}  # collect and return readings to give plan access to them
             for obj in devices:
-                reading = (yield from read(obj))
+                reading = yield from read(obj)
                 if reading is not None:
                     ret.update(reading)
             return ret
@@ -1090,16 +1090,12 @@ def trigger_and_read(devices, name='primary'):
             yield from drop()
             raise exp
 
-        ret = yield from contingency_wrapper(
-            read_plan(),
-            except_plan=exception_path,
-            else_plan=standard_path
-        )
+        ret = yield from contingency_wrapper(read_plan(), except_plan=exception_path, else_plan=standard_path)
         return ret
 
     from .preprocessors import rewindable_wrapper
-    return (yield from rewindable_wrapper(inner_trigger_and_read(),
-                                          rewindable))
+
+    return (yield from rewindable_wrapper(inner_trigger_and_read(), rewindable))
 
 
 def broadcast_msg(command, objs, *args, **kwargs):
@@ -1180,8 +1176,7 @@ def caching_repeater(n, plan):
     --------
     :func:`bluesky.plan_stubs.repeater`
     """
-    warnings.warn("The caching_repeater will be removed in a future version "
-                  "of bluesky.", stacklevel=2)
+    warnings.warn("The caching_repeater will be removed in a future version " "of bluesky.", stacklevel=2)
     if n is None:
         gen = itertools.count(0)
     else:
@@ -1213,7 +1208,7 @@ def one_shot(detectors, take_reading=None):
         Defaults to `trigger_and_read`
     """
     take_reading = trigger_and_read if take_reading is None else take_reading
-    yield Msg('checkpoint')
+    yield Msg("checkpoint")
     yield from take_reading(list(detectors))
 
 
@@ -1244,10 +1239,10 @@ def one_1d_step(detectors, motor, step, take_reading=None):
     take_reading = trigger_and_read if take_reading is None else take_reading
 
     def move():
-        grp = _short_uid('set')
-        yield Msg('checkpoint')
-        yield Msg('set', motor, step, group=grp)
-        yield Msg('wait', None, group=grp)
+        grp = _short_uid("set")
+        yield Msg("checkpoint")
+        yield Msg("set", motor, step, group=grp)
+        yield Msg("wait", None, group=grp)
 
     yield from move()
     return (yield from take_reading(list(detectors) + [motor]))
@@ -1266,15 +1261,15 @@ def move_per_step(step, pos_cache):
     pos_cache : dict
         mapping motors to their last-set positions
     """
-    yield Msg('checkpoint')
-    grp = _short_uid('set')
+    yield Msg("checkpoint")
+    grp = _short_uid("set")
     for motor, pos in step.items():
         if pos == pos_cache[motor]:
             # This step does not move this motor.
             continue
-        yield Msg('set', motor, pos, group=grp)
+        yield Msg("set", motor, pos, group=grp)
         pos_cache[motor] = pos
-    yield Msg('wait', None, group=grp)
+    yield Msg("wait", None, group=grp)
 
 
 def one_nd_step(detectors, step, pos_cache, take_reading=None):
@@ -1349,14 +1344,13 @@ def repeat(plan, num=1, delay=None):
             pass
         else:
             if num - 1 > num_delays:
-                raise ValueError("num=%r but delays only provides %r "
-                                 "entries" % (num, num_delays))
+                raise ValueError("num=%r but delays only provides %r " "entries" % (num, num_delays))
         delay = iter(delay)
 
     def repeated_plan():
         for i in iterator:
             now = time.time()  # Intercept the flow in its earliest moment.
-            yield Msg('checkpoint')
+            yield Msg("checkpoint")
             yield from ensure_generator(plan())
             try:
                 d = next(delay)
@@ -1367,11 +1361,10 @@ def repeat(plan, num=1, delay=None):
                     break
                 else:
                     # num specifies a number of iterations less than delay
-                    raise ValueError("num=%r but delays only provides %r "
-                                     "entries" % (num, i))
+                    raise ValueError("num=%r but delays only provides %r " "entries" % (num, i))
             if d is not None:
                 d = d - (time.time() - now)
                 if d > 0:  # Sleep if and only if time is left to do it.
-                    yield Msg('sleep', None, d)
+                    yield Msg("sleep", None, d)
 
     return (yield from repeated_plan())

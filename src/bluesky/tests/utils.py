@@ -1,9 +1,9 @@
-from collections import defaultdict
-import contextlib
-import tempfile
-import sys
-import threading
 import asyncio
+import contextlib
+import sys
+import tempfile
+import threading
+from collections import defaultdict
 
 
 @contextlib.contextmanager
@@ -43,7 +43,7 @@ class DocCollector:
         elif name == "descriptor":
             self.descriptor[doc["run_start"]].append(doc)
             self.event[doc["uid"]] = []
-        elif name == 'bulk_events':
+        elif name == "bulk_events":
             for k, v in doc.items():
                 self.event[k].extend(v)
         else:

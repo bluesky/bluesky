@@ -1,33 +1,35 @@
-from distutils.version import LooseVersion
-import pytest
+import collections
 import inspect
-from bluesky.tests.utils import DocCollector
-import bluesky.plans as bp
-import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
-from bluesky.utils import RequestStop
+import random
+import re
+from distutils.version import LooseVersion
+
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
-import random
-import re
-import collections
-from bluesky.tests.utils import MsgCollector
+import pytest
+
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
+import bluesky.preprocessors as bpp
 from bluesky.plan_patterns import chunk_outer_product_args, outer_product
+from bluesky.tests.utils import DocCollector, MsgCollector
+from bluesky.utils import RequestStop
 
 
 def _validate_start(start, expected_values):
-    '''Basic metadata validtion'''
+    """Basic metadata validtion"""
 
     plan_md_key = [
-        'plan_pattern_module',
-        'plan_pattern_args',
-        'plan_type',
-        'plan_pattern',
-        'plan_name',
-        'num_points',
-        'plan_args',
-        'detectors']
+        "plan_pattern_module",
+        "plan_pattern_args",
+        "plan_type",
+        "plan_pattern",
+        "plan_name",
+        "num_points",
+        "plan_args",
+        "detectors",
+    ]
 
     for k in plan_md_key:
         assert k in start
@@ -39,25 +41,28 @@ def test_plan_header(RE, hw):
     args = []
 
     ##
-    args.append((bp.grid_scan([hw.det],
-                              hw.motor, 1, 2, 3,
-                              hw.motor1, 4, 5, 6,
-                              hw.motor2, 7, 8, 9,
-                              snake_axes=True),
-                 {'motors': ('motor', 'motor1', 'motor2'),
-                  'extents': ([1, 2], [4, 5], [7, 8]),
-                  'shape': (3, 6, 9),
-                  'snaking': (False, True, True),
-                  'plan_pattern_module': 'bluesky.plan_patterns',
-                  'plan_pattern': 'outer_product',
-                  'plan_name': 'grid_scan'}))
+    args.append(
+        (
+            bp.grid_scan([hw.det], hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9, snake_axes=True),
+            {
+                "motors": ("motor", "motor1", "motor2"),
+                "extents": ([1, 2], [4, 5], [7, 8]),
+                "shape": (3, 6, 9),
+                "snaking": (False, True, True),
+                "plan_pattern_module": "bluesky.plan_patterns",
+                "plan_pattern": "outer_product",
+                "plan_name": "grid_scan",
+            },
+        )
+    )
 
     ##
-    args.append((bp.inner_product_scan([hw.det], 9,
-                                       hw.motor, 1, 2,
-                                       hw.motor1, 4, 5,
-                                       hw.motor2, 7, 8),
-                {'motors': ('motor', 'motor1', 'motor2')}))
+    args.append(
+        (
+            bp.inner_product_scan([hw.det], 9, hw.motor, 1, 2, hw.motor1, 4, 5, hw.motor2, 7, 8),
+            {"motors": ("motor", "motor1", "motor2")},
+        )
+    )
 
     for plan, target in args:
         c = DocCollector()
@@ -72,36 +77,29 @@ def test_ops_dimension_hints(RE, hw):
     motor1 = hw.motor1
     c = DocCollector()
     RE.subscribe(c.insert)
-    RE(bp.grid_scan([det],
-                    motor, -1, 1, 7,
-                    motor1, 0, 2, 3))
+    RE(bp.grid_scan([det], motor, -1, 1, 7, motor1, 0, 2, 3))
 
     st = c.start[0]
 
-    assert 'dimensions' in st['hints']
+    assert "dimensions" in st["hints"]
 
-    assert st['hints']['dimensions'] == [
-        (m.hints['fields'], 'primary') for m in (motor, motor1)]
+    assert st["hints"]["dimensions"] == [(m.hints["fields"], "primary") for m in (motor, motor1)]
 
 
 def test_mesh_pseudo(hw, RE):
-
     p3x3 = hw.pseudo3x3
     sig = hw.sig
     d = DocCollector()
 
     RE.subscribe(d.insert)
-    rs = RE(bp.grid_scan([sig],
-                         p3x3.pseudo1, 0, 3, 5,
-                         p3x3.pseudo2, 7, 10, 7))
+    rs = RE(bp.grid_scan([sig], p3x3.pseudo1, 0, 3, 5, p3x3.pseudo2, 7, 10, 7))
 
     if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
 
-    df = pd.DataFrame([_['data']
-                       for _ in d.event[d.descriptor[uid][0]['uid']]])
+    df = pd.DataFrame([_["data"] for _ in d.event[d.descriptor[uid][0]["uid"]]])
 
     for k in p3x3.describe():
         assert k in df
@@ -121,17 +119,14 @@ def test_rmesh_pseudo(hw, RE):
     d = DocCollector()
 
     RE.subscribe(d.insert)
-    rs = RE(bp.rel_grid_scan([sig],
-                             p3x3.pseudo1, 0, 3, 5,
-                             p3x3.pseudo2, 7, 10, 7))
+    rs = RE(bp.rel_grid_scan([sig], p3x3.pseudo1, 0, 3, 5, p3x3.pseudo2, 7, 10, 7))
 
     if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
 
-    df = pd.DataFrame([_['data']
-                       for _ in d.event[d.descriptor[uid][0]['uid']]])
+    df = pd.DataFrame([_["data"] for _ in d.event[d.descriptor[uid][0]["uid"]]])
 
     for k in p3x3.describe():
         assert k in df
@@ -147,37 +142,30 @@ def test_rmesh_pseudo(hw, RE):
 
 
 def test_relative_pseudo(hw, RE, db):
-
     RE.subscribe(db.insert)
     p = hw.pseudo3x3
     p.set(1, 1, 1)
     base_pos = p.position
 
     # this triggers the merging code path
-    rs = RE(bp.relative_inner_product_scan([p],
-                                           5,
-                                           p.pseudo1, -1, 1,
-                                           p.pseudo2, -2, -1))
+    rs = RE(bp.relative_inner_product_scan([p], 5, p.pseudo1, -1, 1, p.pseudo2, -2, -1))
 
     if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
 
-    tb1 = db[uid].table().drop('time', axis=1)
+    tb1 = db[uid].table().drop("time", axis=1)
     assert p.position == base_pos
 
     # this triggers this does not
-    rs = RE(bp.relative_inner_product_scan([p],
-                                           5,
-                                           p.real1, 1, -1,
-                                           p.real2, 2, 1))
+    rs = RE(bp.relative_inner_product_scan([p], 5, p.real1, 1, -1, p.real2, 2, 1))
     if RE.call_returns_result:
         uid = rs.run_start_uids[0]
     else:
         uid = rs[0]
 
-    tb2 = db[uid].table().drop('time', axis=1)
+    tb2 = db[uid].table().drop("time", axis=1)
     assert p.position == base_pos
 
     # same columns
@@ -186,7 +174,7 @@ def test_relative_pseudo(hw, RE, db):
     assert len(tb1) == len(tb2)
 
     def get_hint(c):
-        h = c.hints['fields']
+        h = c.hints["fields"]
         return h[0] if h else c.name
 
     for c in list(p.pseudo_positioners) + list(p.real_positioners):
@@ -198,31 +186,24 @@ def test_relative_pseudo(hw, RE, db):
 
 
 def test_reset_wrapper(hw, RE, monkeypatch):
-    monkeypatch.setenv('BLUESKY_PREDECLARE', '1')
+    monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
     p = hw.pseudo3x3
     m_col = MsgCollector()
     RE.msg_hook = m_col
 
-    RE(bp.relative_inner_product_scan([], 1,
-                                      p.pseudo1, 0, 1,
-                                      p.pseudo2, 0, 1))
-    expecte_objs = [p, None, None, None,
-                    p, None, p,
-                    None, None, p,
-                    None, None, p,
-                    p, None]
+    RE(bp.relative_inner_product_scan([], 1, p.pseudo1, 0, 1, p.pseudo2, 0, 1))
+    expecte_objs = [p, None, None, None, p, None, p, None, None, p, None, None, p, p, None]
     assert len(m_col.msgs) == 15
     assert [m.obj for m in m_col.msgs] == expecte_objs
 
 
-@pytest.mark.parametrize('pln', [bps.mv, bps.mvr])
+@pytest.mark.parametrize("pln", [bps.mv, bps.mvr])
 def test_pseudo_mv(hw, RE, pln):
     p = hw.pseudo3x3
     m_col = MsgCollector()
     RE.msg_hook = m_col
 
-    RE(pln(p.pseudo1, 1,
-           p.pseudo2, 1))
+    RE(pln(p.pseudo1, 1, p.pseudo2, 1))
     expecte_objs = [p, None]
     assert len(m_col.msgs) == 2
     assert [m.obj for m in m_col.msgs] == expecte_objs
@@ -253,7 +234,6 @@ def _good_per_step_factory():
 
 @_good_per_step_factory()
 def test_good_per_step_signature(hw, per_step):
-
     list(bp.scan([hw.det], hw.motor, -1, 1, 5, per_step=per_step))
 
 
@@ -292,14 +272,14 @@ def _bad_per_step_factory():
 @_bad_per_step_factory()
 def test_bad_per_step_signature(hw, per_step):
     sig = inspect.signature(per_step)
-    print(f'*** test bad_per_step {sig} ***\n')
+    print(f"*** test bad_per_step {sig} ***\n")
     with pytest.raises(
         TypeError,
         match=re.escape(
-           "per_step must be a callable with the signature \n "
+            "per_step must be a callable with the signature \n "
             "<Signature (detectors, step, pos_cache)> or "
             "<Signature (detectors, motor, step)>. \n"
-            "per_step signature received: {}".format(sig)
+            f"per_step signature received: {sig}"
         ),
     ):
         list(bp.scan([hw.det], hw.motor, -1, 1, 5, per_step=per_step))
@@ -307,7 +287,7 @@ def test_bad_per_step_signature(hw, per_step):
 
 def require_ophyd_1_4_0():
     ophyd = pytest.importorskip("ophyd")
-    if LooseVersion(ophyd.__version__) < LooseVersion('1.4.0'):
+    if LooseVersion(ophyd.__version__) < LooseVersion("1.4.0"):
         pytest.skip("Needs ophyd 1.4.0 for realistic ophyd.sim Devices.")
 
 
@@ -345,8 +325,7 @@ def test_rd_fails(hw):
     obj.noise.kind = "hinted"
     hints = obj.hints.get("fields", [])
     msg = re.escape(
-        f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
-        + f"has {len(hints)} items hinted ({hints}).  We "
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) " + f"has {len(hints)} items hinted ({hints}).  We "
     )
     with pytest.raises(ValueError, match=msg):
         list(bps.rd(obj))
@@ -354,8 +333,7 @@ def test_rd_fails(hw):
     obj.noise.kind = "normal"
     obj.val.kind = "normal"
     msg = re.escape(
-        f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
-        + f"and has {len(obj.read_attrs)} read attrs.  We "
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) " + f"and has {len(obj.read_attrs)} read attrs.  We "
     )
     with pytest.raises(ValueError, match=msg):
         list(bps.rd(obj))
@@ -363,8 +341,7 @@ def test_rd_fails(hw):
     obj.read_attrs = []
 
     msg = re.escape(
-        f"Your object {obj} ({obj.name}.{obj.dotted_name}) "
-        + f"and has {len(obj.read_attrs)} read attrs.  We "
+        f"Your object {obj} ({obj.name}.{obj.dotted_name}) " + f"and has {len(obj.read_attrs)} read attrs.  We "
     )
     with pytest.raises(ValueError, match=msg):
         list(bps.rd(obj))
@@ -454,12 +431,12 @@ def _grid_scan_position_list(args, snake_axes):
             else:
                 chunk_args[n] = tuple([motor, start, stop, num, False])
     elif snake_axes is True:
-        chunk_args = [(motor, start, stop, num, True) if n > 0
-                      else (motor, start, stop, num, False)
-                      for n, (motor, start, stop, num, _) in enumerate(chunk_args)]
+        chunk_args = [
+            (motor, start, stop, num, True) if n > 0 else (motor, start, stop, num, False)
+            for n, (motor, start, stop, num, _) in enumerate(chunk_args)
+        ]
     elif snake_axes is False:
-        chunk_args = [(motor, start, stop, num, False)
-                      for (motor, start, stop, num, _) in chunk_args]
+        chunk_args = [(motor, start, stop, num, False) for (motor, start, stop, num, _) in chunk_args]
     elif snake_axes is None:
         pass
     else:
@@ -493,55 +470,27 @@ def _grid_scan_position_list(args, snake_axes):
     return positions, snaking
 
 
-@pytest.mark.parametrize("args, snake_axes", [
-    # Calls using new arguments
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6,
-      "motor2", 7, 8, 9),
-     None),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6,
-      "motor2", 7, 8, 9),
-     False),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6,
-      "motor2", 7, 8, 9),
-     True),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6,
-      "motor2", 7, 8, 9),
-     []),  # Empty list will disable snaking
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6,
-      "motor2", 7, 8, 9),
-     ["motor1"]),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6,
-      "motor2", 7, 8, 9),
-     ["motor2"]),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6,
-      "motor2", 7, 8, 9),
-     ["motor1", "motor2"]),
-
-    # Deprecated calls
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, True,
-      "motor2", 7, 8, 9, True),
-     None),  # snake_axes may be only set to None
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, True,
-      "motor2", 7, 8, 9, False),
-     None),
-    (("motor", 1, 2, 3,
-      "motor1", 4, 5, 6, False,
-      "motor2", 7, 8, 9, True),
-     None),
-])
-@pytest.mark.parametrize("plan, is_relative", [
-    (bp.grid_scan, False),
-    (bp.rel_grid_scan, True)
-])
+@pytest.mark.parametrize(
+    "args, snake_axes",
+    [
+        # Calls using new arguments
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), None),
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), False),
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), True),
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), []),  # Empty list will disable snaking
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor1"]),
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor2"]),
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, "motor2", 7, 8, 9), ["motor1", "motor2"]),
+        # Deprecated calls
+        (
+            ("motor", 1, 2, 3, "motor1", 4, 5, 6, True, "motor2", 7, 8, 9, True),
+            None,
+        ),  # snake_axes may be only set to None
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, True, "motor2", 7, 8, 9, False), None),
+        (("motor", 1, 2, 3, "motor1", 4, 5, 6, False, "motor2", 7, 8, 9, True), None),
+    ],
+)
+@pytest.mark.parametrize("plan, is_relative", [(bp.grid_scan, False), (bp.rel_grid_scan, True)])
 def test_grid_scans(RE, hw, args, snake_axes, plan, is_relative):
     """
     Basic test of functionality of `grid_scan` and `rel_grid_scan`:
@@ -571,15 +520,15 @@ def test_grid_scans(RE, hw, args, snake_axes, plan, is_relative):
     snaking = c.start[0]["snaking"]
 
     # Generate the list of positions based on
-    positions_expected, snaking_expected = \
-        _grid_scan_position_list(args=args, snake_axes=snake_axes)
+    positions_expected, snaking_expected = _grid_scan_position_list(args=args, snake_axes=snake_axes)
 
-    assert snaking == snaking_expected, \
-        "The contents of the 'snaking' field in the start document "\
-        "does not match the expected values"
+    assert snaking == snaking_expected, (
+        "The contents of the 'snaking' field in the start document " "does not match the expected values"
+    )
 
-    assert set(positions.keys()) == set(positions_expected.keys()), \
-        "Different set of motors in dictionaries of actual and expected positions"
+    assert set(positions.keys()) == set(
+        positions_expected.keys()
+    ), "Different set of motors in dictionaries of actual and expected positions"
 
     # The dictionary of the initial postiions
     motor_pos_shift = {_motor.name: _pos for (_motor, _pos) in zip(motors, motors_pos)}
@@ -589,76 +538,57 @@ def test_grid_scans(RE, hw, args, snake_axes, plan, is_relative):
         #   Absolute plans will ignore the initial motor positions
         shift = motor_pos_shift[name] if is_relative else 0
         npt.assert_array_almost_equal(
-            positions[name], np.array(positions_expected[name]) + shift,
-            err_msg=f"Expected and actual positions for the motor '{name}' don't match")
+            positions[name],
+            np.array(positions_expected[name]) + shift,
+            err_msg=f"Expected and actual positions for the motor '{name}' don't match",
+        )
 
 
-@pytest.mark.parametrize("plan", [
-    bp.grid_scan,
-    bp.rel_grid_scan
-])
+@pytest.mark.parametrize("plan", [bp.grid_scan, bp.rel_grid_scan])
 def test_grid_scans_failing(RE, hw, plan):
     """Test the failing cases of 'grid_scan' and 'rel_grid_scan'"""
 
     # Multiple instance of the same motor in 'args'
     args_list = [
         # New style
-        (hw.motor, 1, 2, 3,
-         hw.motor1, 4, 5, 6,
-         hw.motor1, 7, 8, 9),
+        (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor1, 7, 8, 9),
         # Old style
-        (hw.motor, 1, 2, 3,
-         hw.motor1, 4, 5, 6, True,
-         hw.motor1, 7, 8, 9, False)
+        (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, True, hw.motor1, 7, 8, 9, False),
     ]
     for args in args_list:
-        with pytest.raises(ValueError,
-                           match="Some motors are listed multiple times in the argument list 'args'"):
+        with pytest.raises(ValueError, match="Some motors are listed multiple times in the argument list 'args'"):
             RE(plan([hw.det], *args))
 
     # 'snake_axes' contains repeated elements
-    with pytest.raises(ValueError,
-                       match="The list of axes 'snake_axes' contains repeated elements"):
-        args = (hw.motor, 1, 2, 3,
-                hw.motor1, 4, 5, 6,
-                hw.motor2, 7, 8, 9)
+    with pytest.raises(ValueError, match="The list of axes 'snake_axes' contains repeated elements"):
+        args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9)
         snake_axes = [hw.motor1, hw.motor2, hw.motor1]
         RE(plan([hw.det], *args, snake_axes=snake_axes))
 
     # Snaking is enabled for the slowest motor
-    with pytest.raises(ValueError,
-                       match="The list of axes 'snake_axes' contains the slowest motor"):
-        args = (hw.motor, 1, 2, 3,
-                hw.motor1, 4, 5, 6,
-                hw.motor2, 7, 8, 9)
+    with pytest.raises(ValueError, match="The list of axes 'snake_axes' contains the slowest motor"):
+        args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9)
         snake_axes = [hw.motor1, hw.motor]
         RE(plan([hw.det], *args, snake_axes=snake_axes))
 
     # Attempt to enable snaking for motors that are not controlled during the scan
-    with pytest.raises(ValueError,
-                       match="The list of axes 'snake_axes' contains motors "
-                             "that are not controlled during the scan"):
-        args = (hw.motor, 1, 2, 3,
-                hw.motor1, 4, 5, 6,
-                hw.motor2, 7, 8, 9)
+    with pytest.raises(
+        ValueError,
+        match="The list of axes 'snake_axes' contains motors " "that are not controlled during the scan",
+    ):
+        args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9)
         snake_axes = [hw.motor1, hw.motor3]
         RE(plan([hw.det], *args, snake_axes=snake_axes))
 
     # Mix deprecated and new API ('snake_axes' is used while snaking is set in 'args'
-    with pytest.raises(ValueError,
-                       match="Mixing of deprecated and new API interface is not allowed"):
-        args = (hw.motor, 1, 2, 3,
-                hw.motor1, 4, 5, 6, True,
-                hw.motor2, 7, 8, 9, False)
+    with pytest.raises(ValueError, match="Mixing of deprecated and new API interface is not allowed"):
+        args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, True, hw.motor2, 7, 8, 9, False)
         RE(plan([hw.det], *args, snake_axes=False))
 
     # The type of 'snake_axes' parameter is not allowed
     for snake_axes in (10, 50.439, "some string"):
-        with pytest.raises(ValueError,
-                           match="Parameter 'snake_axes' is not iterable, boolean or None"):
-            args = (hw.motor, 1, 2, 3,
-                    hw.motor1, 4, 5, 6,
-                    hw.motor2, 7, 8, 9)
+        with pytest.raises(ValueError, match="Parameter 'snake_axes' is not iterable, boolean or None"):
+            args = (hw.motor, 1, 2, 3, hw.motor1, 4, 5, 6, hw.motor2, 7, 8, 9)
             RE(plan([hw.det], *args, snake_axes=snake_axes))
 
 
@@ -679,7 +609,7 @@ def test_describe_failure(RE):
 
     bad_signal1 = BadSignalDescribe(value=5, name="Arty")
     bad_signal2 = BadSignalRead(value=5, name="Arty")
-    good_signal = ophyd.Signal(value=42, name='baseline')
+    good_signal = ophyd.Signal(value=42, name="baseline")
 
     class StreamTester:
         def __init__(self):
@@ -687,39 +617,28 @@ def test_describe_failure(RE):
             self.stream_names = set()
 
         def __call__(self, name, doc):
-            if name == 'event':
+            if name == "event":
                 self.event_count += 1
-            if name == 'descriptor':
-                self.stream_names.add(doc['name'])
+            if name == "descriptor":
+                self.stream_names.add(doc["name"])
 
         def verify(self):
             assert self.event_count == 2
-            assert self.stream_names == set(['baseline'])
+            assert self.stream_names == set(["baseline"])
+
     st = StreamTester()
     with pytest.raises(Aardvark, match="Look, an aardvark!"):
-        RE(
-            bpp.baseline_wrapper(
-                bp.count([bad_signal1]),
-                [good_signal]
-            ),
-            st
-        )
+        RE(bpp.baseline_wrapper(bp.count([bad_signal1]), [good_signal]), st)
     st.verify()
 
     st = StreamTester()
     with pytest.raises(Aardvark, match="Look, the other aardvark!"):
-        RE(
-            bpp.baseline_wrapper(
-                bp.count([bad_signal2]),
-                [good_signal]
-            ),
-            st
-        )
+        RE(bpp.baseline_wrapper(bp.count([bad_signal2]), [good_signal]), st)
     st.verify()
 
 
 def test_errors_through_msg_mutator(hw, monkeypatch):
-    monkeypatch.setenv('BLUESKY_PREDECLARE', '1')
+    monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
     gen = bp.rel_scan([], hw.motor, 5, -5, 10)
 
     msgs = []
@@ -753,18 +672,20 @@ def test_errors_through_msg_mutator(hw, monkeypatch):
     assert target == [m.command for m in msgs]
 
 
-@pytest.mark.parametrize('predeclare', [True, False])
+@pytest.mark.parametrize("predeclare", [True, False])
 def test_predeclare_env(hw, monkeypatch, predeclare):
     from cycler import cycler
 
     if predeclare:
-        monkeypatch.setenv('BLUESKY_PREDECLARE', '1')
+        monkeypatch.setenv("BLUESKY_PREDECLARE", "1")
 
-    for p in [bp.count([hw.det]),
-              bp.scan_nd([hw.det], cycler(hw.motor1, [1, 2, 3]) * cycler(hw.motor2, [4, 5, 6])),
-              bp.log_scan([hw.det], hw.motor, 1, 20, 5)]:
+    for p in [
+        bp.count([hw.det]),
+        bp.scan_nd([hw.det], cycler(hw.motor1, [1, 2, 3]) * cycler(hw.motor2, [4, 5, 6])),
+        bp.log_scan([hw.det], hw.motor, 1, 20, 5),
+    ]:
         cmds = [m.command for m in p]
         if predeclare:
-            assert 'declare_stream' in cmds
+            assert "declare_stream" in cmds
         else:
-            assert 'declare_stream' not in cmds
+            assert "declare_stream" not in cmds

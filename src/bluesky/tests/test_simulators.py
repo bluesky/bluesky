@@ -1,10 +1,7 @@
-from bluesky.plans import scan
-from bluesky.simulators import (print_summary, print_summary_wrapper,
-                                summarize_plan,
-                                check_limits,
-                                plot_raster_path)
 import pytest
-from bluesky.plans import grid_scan
+
+from bluesky.plans import grid_scan, scan
+from bluesky.simulators import check_limits, plot_raster_path, print_summary, print_summary_wrapper, summarize_plan
 
 
 def test_print_summary(hw):
@@ -20,15 +17,15 @@ def test_old_module_name(hw):
     motor = hw.motor
     motor1 = hw.motor1
     motor2 = hw.motor2
-    from bluesky.plan_tools import (print_summary, print_summary_wrapper,
-                                    plot_raster_path)
+    from bluesky.plan_tools import plot_raster_path, print_summary, print_summary_wrapper
+
     with pytest.warns(UserWarning):
         print_summary(scan([det], motor, -1, 1, 10))
     with pytest.warns(UserWarning):
         list(print_summary_wrapper(scan([det], motor, -1, 1, 10)))
     with pytest.warns(UserWarning):
         plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
-        plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
+        plot_raster_path(plan, "motor1", "motor2", probe_size=0.3)
 
 
 def test_check_limits(RE, hw):
@@ -36,7 +33,7 @@ def test_check_limits(RE, hw):
     motor = hw.motor
     # The motor object does not currently implement limits.
     # Use an assert to help us out if this changes in the future.
-    assert not hasattr(motor, 'limits')
+    assert not hasattr(motor, "limits")
 
     # # check_limits should warn if it can't find check_value
     # TODO: Is there _any_ object to test?
@@ -69,4 +66,4 @@ def test_plot_raster_path(hw):
     motor1 = hw.motor1
     motor2 = hw.motor2
     plan = grid_scan([det], motor1, -5, 5, 10, motor2, -7, 7, 15, True)
-    plot_raster_path(plan, 'motor1', 'motor2', probe_size=.3)
+    plot_raster_path(plan, "motor1", "motor2", probe_size=0.3)

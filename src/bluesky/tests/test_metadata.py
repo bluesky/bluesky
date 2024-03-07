@@ -1,14 +1,15 @@
+import ophyd
+
 import bluesky
 from bluesky.plans import count
-import ophyd
 
 
 def test_blueskyversion(RE):
-    assert RE.md['versions'].get('bluesky') == bluesky.__version__
+    assert RE.md["versions"].get("bluesky") == bluesky.__version__
 
 
 def test_ophydversion(RE):
-    assert RE.md['versions'].get('ophyd') == ophyd.__version__
+    assert RE.md["versions"].get("ophyd") == ophyd.__version__
 
 
 def test_old_md_validator(RE):

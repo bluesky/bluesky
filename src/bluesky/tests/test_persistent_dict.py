@@ -1,35 +1,35 @@
 import collections.abc
 import gc
-import pytest
 
 import numpy
+import pytest
 from numpy.testing import assert_array_equal
 
-from ..utils import PersistentDict
 from ..plans import count
+from ..utils import PersistentDict
 
 
 def test_persistent_dict(tmp_path):
     d = PersistentDict(tmp_path)
-    d['a'] = 1
-    d['b'] = (1, 2)
-    d['c'] = numpy.zeros((5, 5))
-    d['d'] = {'a': 10, 'b': numpy.ones((5, 5))}
+    d["a"] = 1
+    d["b"] = (1, 2)
+    d["c"] = numpy.zeros((5, 5))
+    d["d"] = {"a": 10, "b": numpy.ones((5, 5))}
     expected = dict(d)
     actual = PersistentDict(tmp_path)
     recursive_assert_equal(actual, expected)
 
     # Update a value and check again.
-    d['a'] = 2
+    d["a"] = 2
     expected = dict(d)
     actual.reload()  # Force load changes from disk
     recursive_assert_equal(actual, expected)
 
     # Test element deletion
-    del d['b']
+    del d["b"]
     with pytest.raises(KeyError):
-        d['b']
-    assert 'b' not in d
+        d["b"]
+    assert "b" not in d
 
     # Smoke test the accessor and the __repr__.
     assert d.directory == tmp_path
@@ -38,9 +38,9 @@ def test_persistent_dict(tmp_path):
 
 def test_persistent_dict_mutable_value(tmp_path):
     d = PersistentDict(tmp_path)
-    d['a'] = []
-    d['a'].append(1)
-    expected = {'a': [1]}
+    d["a"] = []
+    d["a"].append(1)
+    expected = {"a": [1]}
     # Check the in-memory version is updated
     recursive_assert_equal(d, expected)
     # Check that the __repr__ reflects this.
@@ -54,10 +54,10 @@ def test_persistent_dict_mutable_value(tmp_path):
 
 def test_pop(tmp_path):
     d = PersistentDict(tmp_path)
-    d['a'] = 1
-    d['b'] = 2
-    d.pop('b')
-    expected = {'a': 1}
+    d["a"] = 1
+    d["b"] = 2
+    d.pop("b")
+    expected = {"a": 1}
     # Check the in-memory version is updated
     recursive_assert_equal(d, expected)
     # Check that the __repr__ reflects this.
@@ -71,10 +71,10 @@ def test_pop(tmp_path):
 
 def test_popitem(tmp_path):
     d = PersistentDict(tmp_path)
-    d['a'] = 1
-    d['b'] = 2
+    d["a"] = 1
+    d["b"] = 2
     d.popitem()
-    expected = {'a': 1}
+    expected = {"a": 1}
     # Check the in-memory version is updated
     recursive_assert_equal(d, expected)
     # Check that the __repr__ reflects this.
@@ -89,7 +89,7 @@ def test_popitem(tmp_path):
 def test_update(tmp_path):
     d = PersistentDict(tmp_path)
     d.update(a=1)
-    expected = {'a': 1}
+    expected = {"a": 1}
     # Check the in-memory version is updated
     recursive_assert_equal(d, expected)
     # Check that the __repr__ reflects this.
@@ -103,8 +103,8 @@ def test_update(tmp_path):
 
 def test_setdefault(tmp_path):
     d = PersistentDict(tmp_path)
-    d.setdefault('a', 1)
-    expected = {'a': 1}
+    d.setdefault("a", 1)
+    expected = {"a": 1}
     # Check the in-memory version is updated
     recursive_assert_equal(d, expected)
     # Check that the __repr__ reflects this.
@@ -118,7 +118,7 @@ def test_setdefault(tmp_path):
 
 def test_clear(tmp_path):
     d = PersistentDict(tmp_path)
-    d['a'] = 1
+    d["a"] = 1
     d.clear()
     expected = {}
     # Check the in-memory version is updated
@@ -141,12 +141,12 @@ def test_integration(tmp_path, RE, hw):
     and RE, as happened with HistoryDict and RE.
     """
     d = PersistentDict(tmp_path)
-    d['a'] = 1
-    d['b'] = (1, 2)
-    d['c'] = numpy.zeros((5, 5))
-    d['d'] = {'a': 10, 'b': numpy.ones((5, 5))}
+    d["a"] = 1
+    d["b"] = (1, 2)
+    d["c"] = numpy.zeros((5, 5))
+    d["d"] = {"a": 10, "b": numpy.ones((5, 5))}
     expected = dict(d)
-    expected['scan_id'] = 1
+    expected["scan_id"] = 1
 
     RE.md = d
     RE(count([hw.det]))

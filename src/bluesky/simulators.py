@@ -1,7 +1,9 @@
 from warnings import warn
-from bluesky.utils import maybe_await
+
 from bluesky.preprocessors import print_summary_wrapper
 from bluesky.run_engine import call_in_bluesky_event_loop, in_bluesky_event_loop
+from bluesky.utils import maybe_await
+
 from .protocols import Checkable
 
 
@@ -28,37 +30,35 @@ def plot_raster_path(plan, x_motor, y_motor, ax=None, probe_size=None, lw=2):
     import matplotlib.pyplot as plt
     from matplotlib import collections as mcollections
     from matplotlib import patches as mpatches
+
     if ax is None:
         ax = plt.subplots()[1]
-    ax.set_aspect('equal')
+    ax.set_aspect("equal")
 
     cur_x = cur_y = None
     traj = []
     for msg in plan:
         cmd = msg.command
-        if cmd == 'set':
+        if cmd == "set":
             if msg.obj.name == x_motor:
                 cur_x = msg.args[0]
             if msg.obj.name == y_motor:
                 cur_y = msg.args[0]
-        elif cmd == 'save':
+        elif cmd == "save":
             traj.append((cur_x, cur_y))
 
     x, y = zip(*traj)
-    path, = ax.plot(x, y, marker='', linestyle='-', lw=lw)
+    (path,) = ax.plot(x, y, marker="", linestyle="-", lw=lw)
     ax.set_xlabel(x_motor)
     ax.set_ylabel(y_motor)
     if probe_size is None:
-        read_points = ax.scatter(x, y, marker='o', lw=lw)
+        read_points = ax.scatter(x, y, marker="o", lw=lw)
     else:
-        circles = [mpatches.Circle((_x, _y), probe_size,
-                                   facecolor='black', alpha=0.5)
-                   for _x, _y in traj]
+        circles = [mpatches.Circle((_x, _y), probe_size, facecolor="black", alpha=0.5) for _x, _y in traj]
 
-        read_points = mcollections.PatchCollection(circles,
-                                                   match_original=True)
+        read_points = mcollections.PatchCollection(circles, match_original=True)
         ax.add_collection(read_points)
-    return {'path': path, 'events': read_points}
+    return {"path": path, "events": read_points}
 
 
 def summarize_plan(plan):
@@ -98,10 +98,9 @@ async def check_limits_async(plan):
     ignore = []
     for msg in plan:
         obj = msg.obj
-        if msg.command == 'set' and obj not in ignore:
+        if msg.command == "set" and obj not in ignore:
             if isinstance(obj, Checkable):
                 await maybe_await(obj.check_value(msg.args[0]))
             else:
-                warn(f"{obj.name} has no check_value() method"
-                     f" to check if {msg.args[0]} is within its limits.")
+                warn(f"{obj.name} has no check_value() method" f" to check if {msg.args[0]} is within its limits.")
                 ignore.append(obj)

@@ -1,8 +1,9 @@
+import pytest
+
+import bluesky.preprocessors as bsp
 from bluesky import plan_stubs as bps
 from bluesky.preprocessors import set_run_key_wrapper as srkw
-import bluesky.preprocessors as bsp
 from bluesky.tests.utils import DocCollector
-import pytest
 
 
 def test_multirun_smoke(RE, hw):
@@ -14,7 +15,7 @@ def test_multirun_smoke(RE, hw):
         run_names = ["run_one", "run_two", "run_three"]
         for rid in run_names:
             yield from srkw(bps.open_run(md={rid: rid}), run=rid)
-            yield from srkw(bps.declare_stream(*to_read, name='primary'), run=rid)
+            yield from srkw(bps.declare_stream(*to_read, name="primary"), run=rid)
         for j in range(5):
             for i, rid in enumerate(run_names):
                 yield from bps.mov(motor, j + 0.1 * i)
@@ -27,7 +28,7 @@ def test_multirun_smoke(RE, hw):
 
     assert len(dc.start) == 3
     for start in dc.start:
-        desc, = dc.descriptor[start["uid"]]
+        (desc,) = dc.descriptor[start["uid"]]
         assert len(dc.event[desc["uid"]]) == 5
 
     for stop in dc.stop.values():
@@ -49,20 +50,20 @@ def test_multirun_smoke_nested(RE, hw):
     @bsp.set_run_key_decorator("run_one")
     @bsp.run_decorator(md={})
     def plan_inner():
-        yield from bps.declare_stream(*to_read, name='primary')
+        yield from bps.declare_stream(*to_read, name="primary")
         yield from some_plan()
 
     @bsp.set_run_key_decorator("run_two")
     @bsp.run_decorator(md={})
     def plan_middle():
-        yield from bps.declare_stream(*to_read, name='primary')
+        yield from bps.declare_stream(*to_read, name="primary")
         yield from some_plan()
         yield from plan_inner()
 
     @bsp.set_run_key_decorator(run="run_three")  # Try kwarg
     @bsp.run_decorator(md={})
     def plan_outer():
-        yield from bps.declare_stream(*to_read, name='primary')
+        yield from bps.declare_stream(*to_read, name="primary")
         yield from some_plan()
         yield from plan_middle()
 
@@ -70,7 +71,7 @@ def test_multirun_smoke_nested(RE, hw):
 
     assert len(dc.start) == 3
     for start in dc.start:
-        desc, = dc.descriptor[start["uid"]]
+        (desc,) = dc.descriptor[start["uid"]]
         assert len(dc.event[desc["uid"]]) == 5
 
     for stop in dc.stop.values():
@@ -89,27 +90,33 @@ def test_multirun_run_key_type(RE, hw):
 
     # The wrapper is expected to raise an exception if called with run ID = None
     with pytest.raises(ValueError, match="run ID can not be None"):
+
         def plan1():
             yield from srkw(empty_plan(), None)
+
         RE(plan1(), dc.insert)
 
     # Check with run ID of type reference
     def plan2():
         yield from srkw(empty_plan(), object())
+
     RE(plan2(), dc.insert)
 
     # Check with run ID of type 'int'
     def plan3():
         yield from srkw(empty_plan(), 10)
+
     RE(plan3(), dc.insert)
 
     # Check if call with correct parameter type are successful
     def plan4():
         yield from srkw(empty_plan(), "run_name")
+
     RE(plan4(), dc.insert)
 
     def plan5():
         yield from srkw(empty_plan(), run="run_name")
+
     RE(plan5(), dc.insert)
 
 

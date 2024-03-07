@@ -1,18 +1,26 @@
-from __future__ import generator_stop
-
-from collections import OrderedDict, deque, ChainMap
-from collections.abc import Iterable
 import uuid
+from collections import ChainMap, OrderedDict, deque
+from collections.abc import Iterable
+from functools import wraps
 
 from bluesky.protocols import Locatable
-from .utils import (get_hinted_fields, normalize_subs_input, root_ancestor,
-                    separate_devices,
-                    Msg, ensure_generator, single_gen,
-                    short_uid as _short_uid, make_decorator,
-                    RunEngineControlException, merge_axis)
-from functools import wraps
-from .plan_stubs import (open_run, close_run, mv, pause, trigger_and_read,
-                         declare_stream, stage_all, unstage_all)
+
+from .plan_stubs import close_run, declare_stream, mv, open_run, pause, stage_all, trigger_and_read, unstage_all
+from .utils import (
+    Msg,
+    RunEngineControlException,
+    ensure_generator,
+    get_hinted_fields,
+    make_decorator,
+    merge_axis,
+    normalize_subs_input,
+    root_ancestor,
+    separate_devices,
+    single_gen,
+)
+from .utils import (
+    short_uid as _short_uid,
+)
 
 
 def plan_mutator(plan, msg_proc):
@@ -269,7 +277,7 @@ def msg_mutator(plan, msg_proc):
 
 
 def pchain(*args):
-    '''Like `itertools.chain` but using `yield from`
+    """Like `itertools.chain` but using `yield from`
 
     This ensures than `.send` works as expected and the underlying
     plans get the return values
@@ -283,7 +291,7 @@ def pchain(*args):
     ------
     msg : Msg
         The messages from each plan in turn
-    '''
+    """
     rets = deque()
     for p in args:
         rets.append((yield from p))
@@ -312,19 +320,18 @@ def print_summary_wrapper(plan):
         nonlocal read_cache
 
         cmd = msg.command
-        if cmd == 'open_run':
-            print('{:=^80}'.format(' Open Run '))
-        elif cmd == 'close_run':
-            print('{:=^80}'.format(' Close Run '))
-        elif cmd == 'set':
-            print('{motor.name} -> {args[0]}'.format(motor=msg.obj,
-                                                     args=msg.args))
-        elif cmd == 'create':
+        if cmd == "open_run":
+            print("{:=^80}".format(" Open Run "))
+        elif cmd == "close_run":
+            print("{:=^80}".format(" Close Run "))
+        elif cmd == "set":
+            print(f"{msg.obj.name} -> {msg.args[0]}")
+        elif cmd == "create":
             read_cache = []
-        elif cmd == 'read':
+        elif cmd == "read":
             read_cache.append(msg.obj.name)
-        elif cmd == 'save':
-            print('  Read {}'.format(read_cache))
+        elif cmd == "save":
+            print(f"  Read {read_cache}")
         return msg
 
     return (yield from msg_mutator(plan, spy))
@@ -346,11 +353,9 @@ def run_wrapper(plan, *, md=None):
         if isinstance(e, RunEngineControlException):
             yield from close_run(exit_status=e.exit_status)
         else:
-            yield from close_run(exit_status='fail', reason=str(e))
+            yield from close_run(exit_status="fail", reason=str(e))
 
-    yield from contingency_wrapper(plan,
-                                   except_plan=except_plan,
-                                   else_plan=close_run)
+    yield from contingency_wrapper(plan, except_plan=except_plan, else_plan=close_run)
     return rs_uid
 
 
@@ -394,19 +399,18 @@ def subs_wrapper(plan, subs):
     def _subscribe():
         for name, funcs in subs.items():
             for func in funcs:
-                token = yield Msg('subscribe', None, func, name)
+                token = yield Msg("subscribe", None, func, name)
                 tokens.add(token)
 
     def _unsubscribe():
         for token in tokens:
-            yield Msg('unsubscribe', None, token=token)
+            yield Msg("unsubscribe", None, token=token)
 
     def _inner_plan():
         yield from _subscribe()
         return (yield from plan)
 
-    return (yield from finalize_wrapper(_inner_plan(),
-                                        _unsubscribe()))
+    return (yield from finalize_wrapper(_inner_plan(), _unsubscribe()))
 
 
 def suspend_wrapper(plan, suspenders):
@@ -431,18 +435,17 @@ def suspend_wrapper(plan, suspenders):
 
     def _install():
         for susp in suspenders:
-            yield Msg('install_suspender', None, susp)
+            yield Msg("install_suspender", None, susp)
 
     def _remove():
         for susp in suspenders:
-            yield Msg('remove_suspender', None, susp)
+            yield Msg("remove_suspender", None, susp)
 
     def _inner_plan():
         yield from _install()
         return (yield from plan)
 
-    return (yield from finalize_wrapper(_inner_plan(),
-                                        _remove()))
+    return (yield from finalize_wrapper(_inner_plan(), _remove()))
 
 
 def configure_count_time_wrapper(plan, time):
@@ -470,14 +473,13 @@ def configure_count_time_wrapper(plan, time):
         obj = msg.obj
         if obj is not None and obj not in devices_seen:
             devices_seen.add(obj)
-            if hasattr(obj, 'count_time'):
+            if hasattr(obj, "count_time"):
                 # TODO Do this with a 'read' Msg once reads can be
                 # marked as belonging to a different event stream (or no
                 # event stream.
                 original_times[obj] = obj.count_time.get()
                 # TODO do this with configure
-                return pchain(mv(obj.count_time, time),
-                              single_gen(msg)), None
+                return pchain(mv(obj.count_time, time), single_gen(msg)), None
         return None, None
 
     def reset():
@@ -488,12 +490,11 @@ def configure_count_time_wrapper(plan, time):
         # no-op
         return (yield from plan)
     else:
-        return (yield from finalize_wrapper(plan_mutator(plan, insert_set),
-                                            reset()))
+        return (yield from finalize_wrapper(plan_mutator(plan, insert_set), reset()))
 
 
 def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
-    '''try...finally helper
+    """try...finally helper
 
     Run the first plan and then the second.  If any of the messages
     raise an error in the RunEngine (or otherwise), the second plan
@@ -523,7 +524,7 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
     See Also
     --------
     :func:`contingency_wrapper`
-    '''
+    """
     # If final_plan is a generator *function* (as opposed to a generator
     # *instance*), call it.
     if callable(final_plan):
@@ -555,13 +556,10 @@ def finalize_wrapper(plan, final_plan, *, pause_for_debug=False):
     return ret
 
 
-def contingency_wrapper(plan, *,
-                        except_plan=None,
-                        else_plan=None,
-                        final_plan=None,
-                        pause_for_debug=False,
-                        auto_raise=True):
-    '''try...except...else...finally helper
+def contingency_wrapper(
+    plan, *, except_plan=None, else_plan=None, final_plan=None, pause_for_debug=False, auto_raise=True
+):
+    """try...except...else...finally helper
 
     See :func:`finalize_wrapper` for a simplified but less powerful
     error-handling preprocessor.
@@ -600,7 +598,7 @@ def contingency_wrapper(plan, *,
     See Also
     --------
     :func:`finalize_wrapper`
-    '''
+    """
     cleanup = True
     try:
         ret = yield from plan
@@ -639,7 +637,7 @@ def contingency_wrapper(plan, *,
 
 
 def finalize_decorator(final_plan):
-    '''try...finally helper
+    """try...finally helper
 
     Run the first plan and then the second.  If any of the messages
     raise an error in the RunEngine (or otherwise), the second plan
@@ -660,14 +658,17 @@ def finalize_decorator(final_plan):
     msg : Msg
         messages from `plan` until it terminates or an error is raised, then
         messages from `final_plan`
-    '''
+    """
+
     def dec(gen_func):
         @wraps(gen_func)
         def dec_inner(*inner_args, **inner_kwargs):
             if not callable(final_plan):
-                raise TypeError("final_plan must be a callable (e.g., a "
-                                "generator function) not an iterable (e.g., a "
-                                "generator instance).")
+                raise TypeError(
+                    "final_plan must be a callable (e.g., a "
+                    "generator function) not an iterable (e.g., a "
+                    "generator instance)."
+                )
             final_plan_instance = final_plan()
             plan = gen_func(*inner_args, **inner_kwargs)
             cleanup = True
@@ -689,12 +690,14 @@ def finalize_decorator(final_plan):
                 if cleanup:
                     yield from ensure_generator(final_plan_instance)
             return ret
+
         return dec_inner
+
     return dec
 
 
 def rewindable_wrapper(plan, rewindable):
-    '''Toggle the 'rewindable' state of the RE
+    """Toggle the 'rewindable' state of the RE
 
     Allow or disallow rewinding during the processing of the wrapped messages.
     Then restore the initial state (rewindable or not rewindable).
@@ -705,26 +708,25 @@ def rewindable_wrapper(plan, rewindable):
         The plan to wrap in a 'rewindable' or 'not rewindable' context
     rewindable : bool
 
-    '''
+    """
     initial_rewindable = True
 
     def capture_rewindable_state():
         nonlocal initial_rewindable
-        initial_rewindable = yield Msg('rewindable', None, None)
+        initial_rewindable = yield Msg("rewindable", None, None)
 
     def set_rewindable(rewindable):
         if initial_rewindable != rewindable:
-            return (yield Msg('rewindable', None, rewindable))
+            return (yield Msg("rewindable", None, rewindable))
 
     def restore_rewindable():
         if initial_rewindable != rewindable:
-            return (yield Msg('rewindable', None, initial_rewindable))
+            return (yield Msg("rewindable", None, initial_rewindable))
 
     if not rewindable:
         yield from capture_rewindable_state()
         yield from set_rewindable(rewindable)
-        return (yield from finalize_wrapper(plan,
-                                            restore_rewindable()))
+        return (yield from finalize_wrapper(plan, restore_rewindable()))
     else:
         return (yield from plan)
 
@@ -744,8 +746,9 @@ def inject_md_wrapper(plan, md):
     md : dict
         metadata
     """
+
     def _inject_md(msg):
-        if msg.command == 'open_run':
+        if msg.command == "open_run":
             msg = msg._replace(kwargs=ChainMap(md, msg.kwargs))
         return msg
 
@@ -778,10 +781,10 @@ def stub_wrapper(plan):
         Block open and close run messages
         """
         # Capture the metadata from open_run
-        if msg.command == 'open_run':
+        if msg.command == "open_run":
             md.update(msg.kwargs)
             return None
-        elif msg.command in ('close_run', 'stage', 'unstage'):
+        elif msg.command in ("close_run", "stage", "unstage"):
             return None
         return msg
 
@@ -812,23 +815,26 @@ def monitor_during_wrapper(plan, signals):
     --------
     :func:`bluesky.plans.fly_during_wrapper`
     """
-    monitor_msgs = [Msg('monitor', sig, name=sig.name + '_monitor')
-                    for sig in signals]
-    unmonitor_msgs = [Msg('unmonitor', sig) for sig in signals]
+    monitor_msgs = [Msg("monitor", sig, name=sig.name + "_monitor") for sig in signals]
+    unmonitor_msgs = [Msg("unmonitor", sig) for sig in signals]
 
     def insert_after_open(msg):
-        if msg.command == 'open_run':
+        if msg.command == "open_run":
+
             def new_gen():
                 yield from ensure_generator(monitor_msgs)
+
             return single_gen(msg), new_gen()
         else:
             return None, None
 
     def insert_before_close(msg):
-        if msg.command == 'close_run':
+        if msg.command == "close_run":
+
             def new_gen():
                 yield from ensure_generator(unmonitor_msgs)
                 yield msg
+
             return new_gen(), None
         else:
             return None, None
@@ -863,30 +869,34 @@ def fly_during_wrapper(plan, flyers):
     --------
     :func:`bluesky.plans.fly`
     """
-    grp1 = _short_uid('flyers-kickoff')
-    grp2 = _short_uid('flyers-complete')
-    kickoff_msgs = [Msg('kickoff', flyer, group=grp1) for flyer in flyers]
-    complete_msgs = [Msg('complete', flyer, group=grp2) for flyer in flyers]
-    collect_msgs = [Msg('collect', flyer) for flyer in flyers]
+    grp1 = _short_uid("flyers-kickoff")
+    grp2 = _short_uid("flyers-complete")
+    kickoff_msgs = [Msg("kickoff", flyer, group=grp1) for flyer in flyers]
+    complete_msgs = [Msg("complete", flyer, group=grp2) for flyer in flyers]
+    collect_msgs = [Msg("collect", flyer) for flyer in flyers]
     if flyers:
         # If there are any flyers, insert a 'wait' Msg after kickoff, complete
-        kickoff_msgs += [Msg('wait', None, group=grp1)]
-        complete_msgs += [Msg('wait', None, group=grp2)]
+        kickoff_msgs += [Msg("wait", None, group=grp1)]
+        complete_msgs += [Msg("wait", None, group=grp2)]
 
     def insert_after_open(msg):
-        if msg.command == 'open_run':
+        if msg.command == "open_run":
+
             def new_gen():
                 yield from ensure_generator(kickoff_msgs)
+
             return single_gen(msg), new_gen()
         else:
             return None, None
 
     def insert_before_close(msg):
-        if msg.command == 'close_run':
+        if msg.command == "close_run":
+
             def new_gen():
                 yield from ensure_generator(complete_msgs)
                 yield from ensure_generator(collect_msgs)
                 yield msg
+
             return new_gen(), None
         else:
             return None, None
@@ -918,7 +928,7 @@ def lazily_stage_wrapper(plan):
         messages from plan with 'stage' messages inserted and 'unstage'
         messages appended
     """
-    COMMANDS = set(['read', 'set', 'trigger', 'kickoff'])
+    COMMANDS = set(["read", "set", "trigger", "kickoff"])
     # Cache devices in the order they are staged; then unstage in reverse.
     devices_staged = []
 
@@ -928,7 +938,7 @@ def lazily_stage_wrapper(plan):
 
             def new_gen():
                 # Here we insert a 'stage' message
-                ret = yield Msg('stage', root)
+                ret = yield Msg("stage", root)
                 # and cache the result
                 if ret is None:
                     # The generator may be being list-ified.
@@ -937,6 +947,7 @@ def lazily_stage_wrapper(plan):
                 devices_staged.extend(ret)
                 # and then proceed with our regularly scheduled programming
                 yield msg
+
             return new_gen(), None
         else:
             return None, None
@@ -944,8 +955,7 @@ def lazily_stage_wrapper(plan):
     def inner_unstage_all():
         yield from unstage_all(*reversed(devices_staged))
 
-    return (yield from finalize_wrapper(plan_mutator(plan, inner),
-                                        inner_unstage_all()))
+    return (yield from finalize_wrapper(plan_mutator(plan, inner), inner_unstage_all()))
 
 
 def stage_wrapper(plan, devices):
@@ -1001,7 +1011,7 @@ def _normalize_devices(devices):
     # only include the coupled children if at least of the children
     # directly included is one of the coupled ones.
     for obj, type_map in go.items():
-        if len(type_map['pseudo']) > 0:
+        if len(type_map["pseudo"]) > 0:
             devices |= set(obj.pseudo_positioners)
             coupled_parents.add(obj)
     return devices, coupled_parents
@@ -1042,16 +1052,18 @@ def __read_and_stash_a_motor(obj, initial_positions, coupled_parents):
         else:
             fields = get_hinted_fields(obj)
             if len(fields) == 1:
-                k, = fields
-                setpoint = reading[k]['value']
+                (k,) = fields
+                setpoint = reading[k]["value"]
             elif len(fields) == 0:
                 k = list(reading.keys())[0]
-                setpoint = reading[k]['value']
+                setpoint = reading[k]["value"]
             else:
-                raise Exception("do not yet know how to deal with "
-                                "non pseudopositioner multi-axis.  Please "
-                                "contact DAMA to justify why you need "
-                                "this.")
+                raise Exception(
+                    "do not yet know how to deal with "
+                    "non pseudopositioner multi-axis.  Please "
+                    "contact DAMA to justify why you need "
+                    "this."
+                )
 
     initial_positions[obj] = setpoint
 
@@ -1095,8 +1107,8 @@ def relative_set_wrapper(plan, devices=None):
         coupled_parents = set()
 
     def rewrite_pos(msg):
-        if (msg.command == 'set') and (msg.obj in initial_positions):
-            rel_pos, = msg.args
+        if (msg.command == "set") and (msg.obj in initial_positions):
+            (rel_pos,) = msg.args
             abs_pos = initial_positions[msg.obj] + rel_pos
             new_msg = msg._replace(args=(abs_pos,))
             return new_msg
@@ -1106,11 +1118,11 @@ def relative_set_wrapper(plan, devices=None):
     def insert_reads(msg):
         eligible = (devices is None) or (msg.obj in devices)
         seen = msg.obj in initial_positions
-        if (msg.command == 'set') and eligible and not seen:
-            return (pchain(
-                __read_and_stash_a_motor(
-                    msg.obj, initial_positions, coupled_parents),
-                single_gen(msg)), None)
+        if (msg.command == "set") and eligible and not seen:
+            return (
+                pchain(__read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents), single_gen(msg)),
+                None,
+            )
         else:
             return None, None
 
@@ -1144,27 +1156,26 @@ def reset_positions_wrapper(plan, devices=None):
     def insert_reads(msg):
         eligible = devices is None or msg.obj in devices
         seen = msg.obj in initial_positions
-        if (msg.command == 'set') and eligible and not seen:
-            return (pchain(
-                    __read_and_stash_a_motor(
-                        msg.obj, initial_positions, coupled_parents),
-                    single_gen(msg)), None)
+        if (msg.command == "set") and eligible and not seen:
+            return (
+                pchain(__read_and_stash_a_motor(msg.obj, initial_positions, coupled_parents), single_gen(msg)),
+                None,
+            )
         else:
             return None, None
 
     def reset():
-        blk_grp = 'reset-{}'.format(str(uuid.uuid4())[:6])
+        blk_grp = f"reset-{str(uuid.uuid4())[:6]}"
         for k, v in initial_positions.items():
             if k.parent in coupled_parents:
                 continue
-            yield Msg('set', k, v, group=blk_grp)
-        yield Msg('wait', None, group=blk_grp)
+            yield Msg("set", k, v, group=blk_grp)
+        yield Msg("wait", None, group=blk_grp)
 
-    return (yield from finalize_wrapper(plan_mutator(plan, insert_reads),
-                                        reset()))
+    return (yield from finalize_wrapper(plan_mutator(plan, insert_reads), reset()))
 
 
-def baseline_wrapper(plan, devices, name='baseline'):
+def baseline_wrapper(plan, devices, name="baseline"):
     """
     Preprocessor that records a baseline of all `devices` after `open_run`
 
@@ -1186,15 +1197,17 @@ def baseline_wrapper(plan, devices, name='baseline'):
     msg : Msg
         messages from plan, with 'set' messages inserted
     """
+
     def head():
         yield from declare_stream(*devices, name=name)
         yield from trigger_and_read(devices, name=name)
 
     def insert_baseline(msg):
-        if msg.command == 'open_run':
+        if msg.command == "open_run":
             return None, head()
 
-        elif msg.command == 'close_run':
+        elif msg.command == "close_run":
+
             def post_baseline():
                 yield from trigger_and_read(devices, name=name)
                 return (yield msg)
@@ -1302,6 +1315,7 @@ class SupplementalData:
     >>> RE.preprocessors.append(sd)
     >>> sd.baseline.append(some_detector)
     """
+
     def __init__(self, *, baseline=None, monitors=None, flyers=None):
         if baseline is None:
             baseline = []
@@ -1314,9 +1328,9 @@ class SupplementalData:
         self.flyers = list(flyers)
 
     def __repr__(self):
-        return ("{cls}(baseline={baseline}, monitors={monitors}, "
-                "flyers={flyers})"
-                "").format(cls=type(self).__name__, **vars(self))
+        return ("{cls}(baseline={baseline}, monitors={monitors}, " "flyers={flyers})" "").format(
+            cls=type(self).__name__, **vars(self)
+        )
 
     # I'm not sure why anyone would want to pickle this but it's good manners
     # to avoid breaking pickling.

@@ -2,22 +2,22 @@ import functools
 from collections import defaultdict
 
 import pytest
+from ophyd import Component as Cpt
+from ophyd import Device
+from ophyd.sim import NullStatus, TrivialFlyer
 
 from bluesky import Msg
-from bluesky.plans import fly, count
+from bluesky.plans import count, fly
 from bluesky.protocols import Preparable
 from bluesky.run_engine import IllegalMessageSequence
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector
 
-from ophyd import Component as Cpt, Device
-from ophyd.sim import NullStatus, TrivialFlyer
-
 
 @requires_ophyd
 def test_flyer_with_collect_asset_documents(RE):
-
     from ophyd.sim import det, new_trivial_flyer, trivial_flyer
+
     from bluesky.preprocessors import fly_during_wrapper
 
     assert hasattr(new_trivial_flyer, "collect_asset_docs")
@@ -423,6 +423,7 @@ def test_describe_config_optional(RE):
 
 def test_prepare(RE):
     """Tests that obj.prepare is correctly called for a fly scan."""
+
     class PreparableFlyer(FlyerDevice, Preparable):
         @call_counter
         def prepare(self, value):

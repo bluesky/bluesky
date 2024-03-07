@@ -1,12 +1,4 @@
 from abc import abstractmethod
-
-from event_model.documents import Datum, StreamDatum, StreamResource
-# Including Dtype here because ophyd imports Dtype directly from protocols, not event-model.
-from event_model.documents.event_descriptor import DataKey, Dtype
-
-from event_model.documents.resource import PartialResource
-from event_model.documents.event import PartialEvent
-from event_model.documents.event_page import PartialEventPage
 from typing import (
     Any,
     AsyncIterator,
@@ -23,8 +15,16 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    runtime_checkable
+    runtime_checkable,
 )
+
+from event_model.documents import Datum, StreamDatum, StreamResource
+from event_model.documents.event import PartialEvent
+
+# Including Dtype here because ophyd imports Dtype directly from protocols, not event-model.
+from event_model.documents.event_descriptor import DataKey, Dtype
+from event_model.documents.event_page import PartialEventPage
+from event_model.documents.resource import PartialResource
 from typing_extensions import TypedDict
 
 # Squashes warning
@@ -34,6 +34,7 @@ Dtype = Dtype  # type: ignore
 # TODO: these are not placed in Events by RE yet
 class ReadingOptional(TypedDict, total=False):
     """A dictionary containing the optional per-reading metadata of a piece of scan data"""
+
     #: * -ve: alarm unknown, e.g. device disconnected
     #: * 0: ok, no alarm
     #: * +ve: there is an alarm
@@ -46,6 +47,7 @@ class ReadingOptional(TypedDict, total=False):
 
 class Reading(ReadingOptional):
     """A dictionary containing the value and timestamp of a piece of scan data"""
+
     #: The current value, as a JSON encodable type or numpy array
     value: Any
     #: Timestamp in seconds since the UNIX epoch
@@ -55,12 +57,12 @@ class Reading(ReadingOptional):
 Asset = Union[
     Tuple[Literal["resource"], PartialResource],
     Tuple[Literal["datum"], Datum],
-    ]
+]
 
 StreamAsset = Union[
     Tuple[Literal["stream_resource"], StreamResource],
     Tuple[Literal["stream_datum"], StreamDatum],
-    ]
+]
 
 
 T = TypeVar("T")
@@ -82,8 +84,7 @@ class Status(Protocol):
         ...
 
     @abstractmethod
-    def exception(self, timeout: Optional[float] = 0.0) -> Optional[BaseException]:
-        ...
+    def exception(self, timeout: Optional[float] = 0.0) -> Optional[BaseException]: ...
 
     @property
     @abstractmethod
@@ -179,7 +180,7 @@ class WritesStreamAssets(Protocol):
                 'datum_kwargs': {'point_number': 0},
                 'resource': '9123df61-a09f-49ae-9d23-41d4d6c6d788'}
             })
-            """
+        """
         ...
 
     @abstractmethod
@@ -213,8 +214,7 @@ class Configurable(Protocol):
 class Triggerable(Protocol):
     @abstractmethod
     def trigger(self) -> Status:
-        """Return a ``Status`` that is marked done when the device is done triggering.
-        """
+        """Return a ``Status`` that is marked done when the device is done triggering."""
         ...
 
 
@@ -353,6 +353,7 @@ class Movable(Protocol):
 
 class Location(TypedDict, Generic[T]):
     """A dictionary containing the location of a Device"""
+
     #: Where the Device was requested to move to
     setpoint: T
     #: Where the Device actually is at the moment
@@ -493,6 +494,7 @@ class Checkable(Protocol):
 
 class Hints(TypedDict, total=False):
     """A dictionary of optional hints for visualization"""
+
     #: A list of the interesting fields to plot
     fields: List[str]
     #: Partition fields (and their stream name) into dimensions for plotting
@@ -528,8 +530,7 @@ def check_supports(obj, protocol: Type[T]) -> T:
         readable = check_supports(obj, Readable)
         readable.read()
     """
-    assert isinstance(obj, protocol), \
-        "%s does not implement all %s methods" % (obj, protocol.__name__)
+    assert isinstance(obj, protocol), "%s does not implement all %s methods" % (obj, protocol.__name__)
     return obj
 
 

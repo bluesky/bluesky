@@ -1,13 +1,14 @@
 # Example: recursive runs
 
-from bluesky import RunEngine
-from bluesky.callbacks.best_effort import BestEffortCallback
-import bluesky.preprocessors as bpp
-import bluesky.plan_stubs as bps
 from databroker import Broker
 from event_model import RunRouter
-
 from ophyd.sim import hw
+
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
+from bluesky import RunEngine
+from bluesky.callbacks.best_effort import BestEffortCallback
+
 hw = hw()
 
 RE = RunEngine({})
@@ -42,15 +43,15 @@ def sim_plan_recursive(npts):
         @bpp.set_run_key_decorator(run_key)
         @bpp.run_decorator(md={})
         def plan(npts):
-            yield from bps.declare_stream(hw.motor1, hw.det1, name='primary')
-            for j in range(int(npts/2)):
+            yield from bps.declare_stream(hw.motor1, hw.det1, name="primary")
+            for j in range(int(npts / 2)):
                 yield from bps.mov(hw.motor1, j * 0.2)
                 yield from bps.trigger_and_read([hw.motor1, hw.det1])
 
             # Different parameter values may be passed to the recursively called plans
             yield from sim_plan_recursive(npts + 2)
 
-            for j in range(int(npts/2), npts):
+            for j in range(int(npts / 2), npts):
                 yield from bps.mov(hw.motor1, j * 0.2)
                 yield from bps.trigger_and_read([hw.motor1, hw.det1])
 

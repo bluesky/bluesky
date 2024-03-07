@@ -1,4 +1,5 @@
 import pickle
+
 from bluesky import SupplementalData
 from bluesky.plans import count
 from bluesky.preprocessors import pchain
@@ -74,9 +75,7 @@ def test_baseline(hw):
 
 
 def test_mixture(hw):
-    D = SupplementalData(baseline=[hw.det2],
-                         flyers=[hw.flyer1],
-                         monitors=[hw.rand])
+    D = SupplementalData(baseline=[hw.det2], flyers=[hw.flyer1], monitors=[hw.rand])
 
     original = list(count([hw.det]))
     processed = list(D(count([hw.det])))
@@ -84,44 +83,44 @@ def test_mixture(hw):
 
 
 def test_order(hw):
-    D = SupplementalData(baseline=[hw.det2],
-                         flyers=[hw.flyer1],
-                         monitors=[hw.rand])
+    D = SupplementalData(baseline=[hw.det2], flyers=[hw.flyer1], monitors=[hw.rand])
 
     def null_run():
-        yield Msg('open_run')
-        yield Msg('null')
-        yield Msg('close_run')
+        yield Msg("open_run")
+        yield Msg("null")
+        yield Msg("close_run")
 
     actual = [msg.command for msg in D(null_run())]
-    expected = ['open_run',
-                # baseline
-                'declare_stream',
-                'trigger',
-                'wait',
-                'create',
-                'read',
-                'save',
-                # monitors
-                'monitor',
-                # flyers
-                'kickoff',
-                'wait',
-                # plan
-                'null',
-                # flyers
-                'complete',
-                'wait',
-                'collect',
-                # montiors
-                'unmonitor',
-                # baseline
-                'trigger',
-                'wait',
-                'create',
-                'read',
-                'save',
-                'close_run']
+    expected = [
+        "open_run",
+        # baseline
+        "declare_stream",
+        "trigger",
+        "wait",
+        "create",
+        "read",
+        "save",
+        # monitors
+        "monitor",
+        # flyers
+        "kickoff",
+        "wait",
+        # plan
+        "null",
+        # flyers
+        "complete",
+        "wait",
+        "collect",
+        # montiors
+        "unmonitor",
+        # baseline
+        "trigger",
+        "wait",
+        "create",
+        "read",
+        "save",
+        "close_run",
+    ]
     assert actual == expected
 
 
@@ -133,9 +132,7 @@ def test_repr():
 
 
 def test_pickle():
-    D = SupplementalData(baseline=['placeholder1'],
-                         monitors=['placeholder2'],
-                         flyers=['placeholder3'])
+    D = SupplementalData(baseline=["placeholder1"], monitors=["placeholder2"], flyers=["placeholder3"])
     D2 = pickle.loads(pickle.dumps(D))
     assert D2.baseline == D.baseline
     assert D2.monitors == D.monitors

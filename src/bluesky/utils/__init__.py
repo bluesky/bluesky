@@ -1,38 +1,46 @@
-import collections.abc
-from collections import namedtuple
-import asyncio
-import os
-import sys
-import signal
-import operator
-import uuid
-from functools import reduce
-from typing import Any, Dict, Iterator, List, Optional, Callable
-from weakref import ref, WeakKeyDictionary
-import types
-import inspect
-from inspect import Parameter, Signature
-import itertools
 import abc
-from collections.abc import Iterable
-import numpy as np
-from cycler import cycler
+import asyncio
+import collections.abc
 import datetime
-from functools import wraps, partial
+import inspect
+import itertools
+import operator
+import os
+import signal
+import sys
 import threading
 import time
-from tqdm import tqdm
-from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
-from typing import AsyncIterator
+import types
+import uuid
 import warnings
+from collections import namedtuple
+from collections.abc import Iterable
+from functools import partial, reduce, wraps
+from inspect import Parameter, Signature
+from typing import Any, AsyncIterator, Callable, Dict, Iterator, List, Optional
+from weakref import WeakKeyDictionary, ref
 
 import msgpack
 import msgpack_numpy
+import numpy as np
 import zict
+from cycler import cycler
+from tqdm import tqdm
+from tqdm.utils import _screen_shape_wrapper, _term_move_up, _unicode
 
 from bluesky.protocols import (
-    T, Asset, HasParent, HasHints, Hints, Movable, Readable,
-    SyncOrAsync, SyncOrAsyncIterator, WritesExternalAssets, WritesStreamAssets, check_supports
+    Asset,
+    HasHints,
+    HasParent,
+    Hints,
+    Movable,
+    Readable,
+    SyncOrAsync,
+    SyncOrAsyncIterator,
+    T,
+    WritesExternalAssets,
+    WritesStreamAssets,
+    check_supports,
 )
 
 try:
@@ -58,8 +66,10 @@ class Msg(namedtuple("Msg_base", ["command", "obj", "args", "kwargs", "run"])):
         return super(Msg, cls).__new__(cls, command, obj, args, kwargs, run)
 
     def __repr__(self):
-        return (f"Msg({self.command!r}, obj={self.obj!r}, "
-                f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})")
+        return (
+            f"Msg({self.command!r}, obj={self.obj!r}, "
+            f"args={self.args}, kwargs={self.kwargs}, run={self.run!r})"
+        )
 
 
 class RunEngineControlException(Exception):
@@ -69,13 +79,13 @@ class RunEngineControlException(Exception):
 class RequestAbort(RunEngineControlException):
     """Request that the current run be aborted."""
 
-    exit_status = 'abort'
+    exit_status = "abort"
 
 
 class RequestStop(RunEngineControlException):
     """Request that the current run be stopped and marked successful."""
 
-    exit_status = 'success'
+    exit_status = "success"
 
 
 class RunEngineInterrupted(Exception):
@@ -106,8 +116,7 @@ class PlanHalt(GeneratorExit):
     pass
 
 
-class RampFail(RuntimeError):
-    ...
+class RampFail(RuntimeError): ...
 
 
 PLAN_TYPES = (types.GeneratorType,)
@@ -117,7 +126,7 @@ except ImportError:
     # < py35
     pass
 else:
-    PLAN_TYPES = PLAN_TYPES + (CoroutineType, )
+    PLAN_TYPES = PLAN_TYPES + (CoroutineType,)
     del CoroutineType
 
 
@@ -144,7 +153,7 @@ def ensure_generator(plan):
 
 
 def single_gen(msg):
-    '''Turn a single message into a plan
+    """Turn a single message into a plan
 
     If ``lambda x: yield x`` were valid Python, this would be equivalent.
     In Python 3.6 or 3.7 we might get lambda generators.
@@ -158,7 +167,7 @@ def single_gen(msg):
     ------
     msg : Msg
         the input message
-    '''
+    """
     return (yield msg)
 
 
@@ -176,6 +185,7 @@ class SignalHandler:
 
     https://www.gnu.org/software/libc/manual/html_node/Checking-for-Pending-Signals.html
     """
+
     def __init__(self, sig, log=None):
         self.sig = sig
         self.interrupted = False
@@ -193,8 +203,7 @@ class SignalHandler:
             self.interrupted = True
             self.count += 1
             if self.log is not None:
-                self.log.debug('SignalHandler caught SIGINT; count is %r',
-                               self.count)
+                self.log.debug("SignalHandler caught SIGINT; count is %r", self.count)
             if self.count > 10:
                 orig_func = self.original_handler
                 self.release()
@@ -215,8 +224,7 @@ class SignalHandler:
         self.released = True
         return True
 
-    def handle_signals(self):
-        ...
+    def handle_signals(self): ...
 
 
 class SigintHandler(SignalHandler):
@@ -234,32 +242,28 @@ class SigintHandler(SignalHandler):
         # TODO, there is a possible race condition between the two
         # pauses here
         if self.RE.state.is_running and (not self.RE._interrupted):
-            if (self.last_sigint_time is None or
-                    time.time() - self.last_sigint_time > 10):
+            if self.last_sigint_time is None or time.time() - self.last_sigint_time > 10:
                 # reset the counter to 1
                 # It's been 10 seconds since the last SIGINT. Reset.
                 self.count = 1
                 if self.last_sigint_time is not None:
-                    self.log.debug("It has been 10 seconds since the "
-                                   "last SIGINT. Resetting SIGINT "
-                                   "handler.")
+                    self.log.debug("It has been 10 seconds since the " "last SIGINT. Resetting SIGINT " "handler.")
                 # weeee push these to threads to not block the main thread
-                threading.Thread(target=self.RE.request_pause,
-                                 args=(True,)).start()
-                print("A 'deferred pause' has been requested. The "
-                      "RunEngine will pause at the next checkpoint. "
-                      "To pause immediately, hit Ctrl+C again in the "
-                      "next 10 seconds.")
+                threading.Thread(target=self.RE.request_pause, args=(True,)).start()
+                print(
+                    "A 'deferred pause' has been requested. The "
+                    "RunEngine will pause at the next checkpoint. "
+                    "To pause immediately, hit Ctrl+C again in the "
+                    "next 10 seconds."
+                )
 
                 self.last_sigint_time = time.time()
             elif self.count == 2:
-                print('trying a second time')
+                print("trying a second time")
                 # - Ctrl-C twice within 10 seconds -> hard pause
-                self.log.debug("RunEngine detected two SIGINTs. "
-                               "A hard pause will be requested.")
+                self.log.debug("RunEngine detected two SIGINTs. " "A hard pause will be requested.")
 
-                threading.Thread(target=self.RE.request_pause,
-                                 args=(False,)).start()
+                threading.Thread(target=self.RE.request_pause, args=(False,)).start()
             self.last_sigint_time = time.time()
 
 
@@ -268,6 +272,7 @@ class CallbackRegistry:
     See matplotlib.cbook.CallbackRegistry. This is a simplified since
     ``bluesky`` is python3.4+ only!
     """
+
     def __init__(self, ignore_exceptions=False, allowed_sigs=None):
         self.ignore_exceptions = ignore_exceptions
         self.allowed_sigs = allowed_sigs
@@ -301,8 +306,7 @@ class CallbackRegistry:
         """
         if self.allowed_sigs is not None:
             if sig not in self.allowed_sigs:
-                raise ValueError("Allowed signals are {0}".format(
-                    self.allowed_sigs))
+                raise ValueError(f"Allowed signals are {self.allowed_sigs}")
         self._func_cid_map.setdefault(sig, WeakKeyDictionary())
         # Note proxy not needed in python 3.
         # TODO rewrite this when support for python2.x gets dropped.
@@ -376,8 +380,7 @@ class CallbackRegistry:
         """
         if self.allowed_sigs is not None:
             if sig not in self.allowed_sigs:
-                raise ValueError("Allowed signals are {0}".format(
-                    self.allowed_sigs))
+                raise ValueError(f"Allowed signals are {self.allowed_sigs}")
         exceptions = []
         if sig in self.callbacks:
             for cid, func in list(self.callbacks[sig].items()):
@@ -394,7 +397,7 @@ class CallbackRegistry:
 
 
 class _BoundMethodProxy:
-    '''
+    """
     Our own proxy object which enables weak references to bound and unbound
     methods and arbitrary callables. Pulls information about the function,
     class, and instance out of a bound method. Stores a weak reference to the
@@ -403,7 +406,8 @@ class _BoundMethodProxy:
     @copyright: Copyright (c) 2005, 2006 IBM Corporation
     @license: The BSD License
     Minor bugfixes by Michael Droettboom
-    '''
+    """
+
     def __init__(self, cb):
         self._hash = hash(cb)
         self._destroy_callbacks = []
@@ -440,25 +444,25 @@ class _BoundMethodProxy:
     def __getstate__(self):
         d = self.__dict__.copy()
         # de-weak reference inst
-        inst = d['inst']
+        inst = d["inst"]
         if inst is not None:
-            d['inst'] = inst()
+            d["inst"] = inst()
         return d
 
     def __setstate__(self, statedict):
         self.__dict__ = statedict
-        inst = statedict['inst']
+        inst = statedict["inst"]
         # turn inst back into a weakref
         if inst is not None:
             self.inst = ref(inst)
 
     def __call__(self, *args, **kwargs):
-        '''
+        """
         Proxy for a call to the weak referenced object. Take
         arbitrary params to pass to the callable.
         Raises `ReferenceError`: When the weak reference refers to
         a dead object
-        '''
+        """
         if self.inst is not None and self.inst() is None:
             raise ReferenceError
         elif self.inst is not None:
@@ -474,10 +478,10 @@ class _BoundMethodProxy:
         return mtd(*args, **kwargs)
 
     def __eq__(self, other):
-        '''
+        """
         Compare the held function and instance with that held by
         another proxy.
-        '''
+        """
         try:
             if self.inst is None:
                 return self.func == other.func and other.inst is None
@@ -487,9 +491,9 @@ class _BoundMethodProxy:
             return False
 
     def __ne__(self, other):
-        '''
+        """
         Inverse of __eq__.
-        '''
+        """
         return not self.__eq__(other)
 
     def __hash__(self):
@@ -503,17 +507,16 @@ class _BoundMethodProxy:
 class StructMeta(type):
     def __new__(cls, name, bases, clsdict):
         clsobj = super().__new__(cls, name, bases, clsdict)
-        args_params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD)
-                       for name in clsobj._fields]
-        kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None)
-                         for name in ['md']]
+        args_params = [Parameter(name, Parameter.POSITIONAL_OR_KEYWORD) for name in clsobj._fields]
+        kwargs_params = [Parameter(name, Parameter.KEYWORD_ONLY, default=None) for name in ["md"]]
         sig = Signature(args_params + kwargs_params)
-        setattr(clsobj, '__signature__', sig)
+        clsobj.__signature__ = sig
         return clsobj
 
 
 class Struct(metaclass=StructMeta):
     "The _fields of any subclass become its attritubes and __init__ args."
+
     _fields = []
 
     def __init__(self, *args, **kwargs):
@@ -522,8 +525,7 @@ class Struct(metaclass=StructMeta):
         # http://bugs.python.org/msg221104
         bound = self.__signature__.bind(*args, **kwargs)
         for name, param in self.__signature__.parameters.items():
-            if (name not in bound.arguments and
-                    param.default is not inspect._empty):
+            if name not in bound.arguments and param.default is not inspect._empty:
                 bound.arguments[name] = param.default
         for name, val in bound.arguments.items():
             setattr(self, name, val)
@@ -535,7 +537,7 @@ class Struct(metaclass=StructMeta):
             setattr(self, attr, val)
 
 
-SUBS_NAMES = ['all', 'start', 'stop', 'event', 'descriptor']
+SUBS_NAMES = ["all", "start", "stop", "event", "descriptor"]
 
 
 def normalize_subs_input(subs):
@@ -544,33 +546,36 @@ def normalize_subs_input(subs):
     if subs is None:
         pass
     elif callable(subs):
-        normalized['all'].append(subs)
-    elif hasattr(subs, 'items'):
+        normalized["all"].append(subs)
+    elif hasattr(subs, "items"):
         for key, funcs in list(subs.items()):
             if key not in SUBS_NAMES:
-                raise KeyError("Keys must be one of {!r:0}".format(SUBS_NAMES))
+                raise KeyError(f"Keys must be one of {SUBS_NAMES!r:0}")
             if callable(funcs):
                 normalized[key].append(funcs)
             else:
                 normalized[key].extend(funcs)
     elif isinstance(subs, Iterable):
-        normalized['all'].extend(subs)
+        normalized["all"].extend(subs)
     else:
-        raise ValueError("Subscriptions should be a callable, a list of "
-                         "callables, or a dictionary mapping subscription "
-                         "names to lists of callables.")
+        raise ValueError(
+            "Subscriptions should be a callable, a list of "
+            "callables, or a dictionary mapping subscription "
+            "names to lists of callables."
+        )
     # Validates that all entries are callables.
     for name, funcs in normalized.items():
         for func in funcs:
             if not callable(func):
-                raise ValueError("subs values must be functions or lists "
-                                 "of functions. The offending entry is\n "
-                                 "{0}".format(func))
+                raise ValueError(
+                    "subs values must be functions or lists " "of functions. The offending entry is\n " f"{func}"
+                )
     return normalized
 
 
 class DefaultSubs:
     """a class-level descriptor"""
+
     def __init__(self, default=None):
         self._value = normalize_subs_input(default)
 
@@ -583,6 +588,7 @@ class DefaultSubs:
 
 class Subs:
     """a 'reusable' property"""
+
     def __init__(self, default=None):
         self.default = normalize_subs_input(default)
         self.data = WeakKeyDictionary()
@@ -623,7 +629,7 @@ def snake_cyclers(cyclers, snake_booleans):
     total_length = np.prod(lengths)
     for i, (c, snake) in enumerate(zip(cyclers, snake_booleans)):
         num_tiles = np.prod(lengths[:i])
-        num_repeats = np.prod(lengths[i+1:])
+        num_repeats = np.prod(lengths[i + 1 :])
         for k, v in c._transpose().items():
             if snake:
                 v = v + v[::-1]
@@ -732,7 +738,7 @@ def separate_devices(devices):
 
 
 def all_safe_rewind(devices):
-    '''If all devices can have their trigger method re-run on resume.
+    """If all devices can have their trigger method re-run on resume.
 
     Parameters
     ----------
@@ -743,9 +749,9 @@ def all_safe_rewind(devices):
     -------
     safe_rewind : bool
        If all the device can safely re-triggered
-    '''
+    """
     for d in devices:
-        if hasattr(d, 'rewindable'):
+        if hasattr(d, "rewindable"):
             rewindable = d.rewindable.get()
             if not rewindable:
                 return False
@@ -767,6 +773,7 @@ class PersistentDict(collections.abc.MutableMapping):
     but that the full contents are synced to disk when the PersistentDict
     instance is garbage collected.
     """
+
     def __init__(self, directory):
         self._directory = directory
         self._file = zict.File(directory)
@@ -782,8 +789,8 @@ class PersistentDict(collections.abc.MutableMapping):
             zfile.update((k, dump(v)) for k, v in cache.items())
 
         import weakref
-        self._finalizer = weakref.finalize(
-            self, finalize, self._file, self._cache, PersistentDict._dump)
+
+        self._finalizer = weakref.finalize(self, finalize, self._file, self._cache, PersistentDict._dump)
 
     @property
     def directory(self):
@@ -819,17 +826,11 @@ class PersistentDict(collections.abc.MutableMapping):
         "Encode as msgpack using numpy-aware encoder."
         # See https://github.com/msgpack/msgpack-python#string-and-binary-type
         # for more on use_bin_type.
-        return msgpack.packb(
-            obj,
-            default=msgpack_numpy.encode,
-            use_bin_type=True)
+        return msgpack.packb(obj, default=msgpack_numpy.encode, use_bin_type=True)
 
     @staticmethod
     def _load(file):
-        return msgpack.unpackb(
-            file,
-            object_hook=msgpack_numpy.decode,
-            raw=False)
+        return msgpack.unpackb(file, object_hook=msgpack_numpy.decode, raw=False)
 
     def flush(self):
         """Force a write of the current state to disk"""
@@ -842,11 +843,10 @@ class PersistentDict(collections.abc.MutableMapping):
 
 
 SEARCH_PATH = []
-ENV_VAR = 'BLUESKY_HISTORY_PATH'
+ENV_VAR = "BLUESKY_HISTORY_PATH"
 if ENV_VAR in os.environ:
     SEARCH_PATH.append(os.environ[ENV_VAR])
-SEARCH_PATH.extend([os.path.expanduser('~/.config/bluesky/bluesky_history.db'),
-                    '/etc/bluesky/bluesky_history.db'])
+SEARCH_PATH.extend([os.path.expanduser("~/.config/bluesky/bluesky_history.db"), "/etc/bluesky/bluesky_history.db"])
 
 
 def get_history():
@@ -867,9 +867,11 @@ def get_history():
     try:
         import historydict
     except ImportError:
-        print("You do not have historydict installed, your metadata "
-              "will not be persistent or have any history of the "
-              "values.")
+        print(
+            "You do not have historydict installed, your metadata "
+            "will not be persistent or have any history of the "
+            "values."
+        )
         return dict()
     else:
         for path in SEARCH_PATH:
@@ -882,12 +884,11 @@ def get_history():
             os.makedirs(os.path.dirname(path), exist_ok=True)
             print("Storing metadata history in a new file at %s." % path)
             return historydict.HistoryDict(path)
-        except IOError as exc:
+        except OSError as exc:
             print(exc)
             print("Failed to create metadata history file at %s" % path)
-            print("Storing HistoryDict in memory; it will not persist "
-                  "when session is ended.")
-            return historydict.HistoryDict(':memory:')
+            print("Storing HistoryDict in memory; it will not persist " "when session is ended.")
+            return historydict.HistoryDict(":memory:")
 
 
 _QT_KICKER_INSTALLED = {}
@@ -908,14 +909,14 @@ def install_kicker(loop=None, update_rate=0.03):
         Seconds between periodic updates. Default is 0.03.
     """
     import matplotlib
+
     backend = matplotlib.get_backend()
-    if backend == 'nbAgg':
+    if backend == "nbAgg":
         install_nb_kicker(loop=loop, update_rate=update_rate)
-    elif backend in ('Qt4Agg', 'Qt5Agg'):
+    elif backend in ("Qt4Agg", "Qt5Agg"):
         install_qt_kicker(loop=loop, update_rate=update_rate)
     else:
-        raise NotImplementedError("The matplotlib backend {} is not yet "
-                                  "supported.".format(backend))
+        raise NotImplementedError(f"The matplotlib backend {backend} is not yet " "supported.")
 
 
 def install_qt_kicker(loop=None, update_rate=0.03):
@@ -932,9 +933,11 @@ def install_qt_kicker(loop=None, update_rate=0.03):
     update_rate : number
         Seconds between periodic updates. Default is 0.03.
     """
-    warnings.warn("bluesky.utils.install_qt_kicker is no longer necessary and "
-                  "has no effect. Please remove your use of it. It may be "
-                  "removed in a future release of bluesky.")
+    warnings.warn(
+        "bluesky.utils.install_qt_kicker is no longer necessary and "
+        "has no effect. Please remove your use of it. It may be "
+        "removed in a future release of bluesky."
+    )
 
 
 def install_remote_qt_kicker(loop=None, update_rate=0.03):
@@ -960,12 +963,12 @@ def install_remote_qt_kicker(loop=None, update_rate=0.03):
     global _QT_KICKER_INSTALLED
     if loop in _QT_KICKER_INSTALLED:
         return
-    if not any(p in sys.modules for p in ['PyQt4', 'pyside', 'PyQt5']):
+    if not any(p in sys.modules for p in ["PyQt4", "pyside", "PyQt5"]):
         return
 
     import matplotlib.backends.backend_qt
-    from matplotlib.backends.backend_qt import _create_qApp
     from matplotlib._pylab_helpers import Gcf
+    from matplotlib.backends.backend_qt import _create_qApp
 
     _create_qApp()
     qApp = matplotlib.backends.backend_qt.qApp
@@ -1002,6 +1005,7 @@ def install_nb_kicker(loop=None, update_rate=0.03):
         Seconds between periodic updates. Default is 0.03.
     """
     import matplotlib
+
     if loop is None:
         loop = asyncio.get_event_loop()
     global _NB_KICKER_INSTALLED
@@ -1021,18 +1025,18 @@ def install_nb_kicker(loop=None, update_rate=0.03):
 
 
 def apply_sub_factories(factories, plan):
-    '''Run sub factory functions for a plan
+    """Run sub factory functions for a plan
 
     Factory functions should return lists, which will be added onto the
     subscription key (e.g., 'all' or 'start') specified in the factory
     definition.
 
     If the factory function returns None, the list will not be modified.
-    '''
+    """
     factories = normalize_subs_input(factories)
-    out = {k: list(itertools.filterfalse(lambda x: x is None,
-                                         (sf(plan) for sf in v)))
-           for k, v in factories.items()}
+    out = {
+        k: list(itertools.filterfalse(lambda x: x is None, (sf(plan) for sf in v))) for k, v in factories.items()
+    }
     return out
 
 
@@ -1048,8 +1052,8 @@ def update_sub_lists(out, inp):
             out[k] = list(v)
 
 
-def register_transform(RE, *, prefix='<', ip=None):
-    '''Register RunEngine IPython magic convenience transform
+def register_transform(RE, *, prefix="<", ip=None):
+    """Register RunEngine IPython magic convenience transform
     Assuming the default parameters
     This maps `< stuff(*args, **kwargs)` -> `RE(stuff(*args, **kwargs))`
     RE is assumed to be available in the global namespace
@@ -1062,20 +1066,21 @@ def register_transform(RE, *, prefix='<', ip=None):
         valid python syntax or an existing transform you are on your own.
     ip : IPython shell, optional
         If not passed, uses `IPython.get_ipython()` to get the current shell
-    '''
+    """
     import IPython
 
     if ip is None:
         ip = IPython.get_ipython()
 
-    if IPython.__version__ >= '7':
+    if IPython.__version__ >= "7":
+
         def tr_re(lines):
             if len(lines) != 1:
                 return lines
-            line, = lines
+            (line,) = lines
             head, split, tail = line.partition(prefix)
-            if split == prefix and head.strip() == '':
-                line = f'{RE}({tail.strip()})\n'
+            if split == prefix and head.strip() == "":
+                line = f"{RE}({tail.strip()})\n"
 
             return [line]
 
@@ -1087,8 +1092,8 @@ def register_transform(RE, *, prefix='<', ip=None):
         @StatelessInputTransformer.wrap
         def tr_re(line):
             if line.startswith(prefix):
-                line = line[len(prefix):].strip()
-                return '{}({})'.format(RE, line)
+                line = line[len(prefix) :].strip()
+                return f"{RE}({line})"
             return line
 
         ip.input_splitter.logical_line_transforms.append(tr_re())
@@ -1100,6 +1105,7 @@ class AsyncInput:
 
     adapted from http://stackoverflow.com/a/35514777/1221924
     """
+
     def __init__(self, loop=None):
         self.loop = loop or asyncio.get_event_loop()
         if sys.version_info < (3, 10):
@@ -1111,9 +1117,9 @@ class AsyncInput:
     def got_input(self):
         asyncio.ensure_future(self.q.put(sys.stdin.readline()), loop=self.loop)
 
-    async def __call__(self, prompt, end='\n', flush=False):
+    async def __call__(self, prompt, end="\n", flush=False):
         print(prompt, end=end, flush=flush)
-        return (await self.q.get()).rstrip('\n')
+        return (await self.q.get()).rstrip("\n")
 
 
 def new_uid():
@@ -1136,6 +1142,7 @@ def expiring_function(func, loop, *args, **kwargs):
     This is meant to used with the event loop's run_in_executor
     method. Outside that context, it doesn't make any sense.
     """
+
     def dummy(start_time, timeout):
         if loop.time() > start_time + timeout:
             return
@@ -1148,7 +1155,7 @@ def expiring_function(func, loop, *args, **kwargs):
 def short_uid(label=None, truncate=6):
     "Return a readable but unique id like 'label-fjfi5a'"
     if label:
-        return '-'.join([label, new_uid()[:truncate]])
+        return "-".join([label, new_uid()[:truncate]])
     else:
         return new_uid()[:truncate]
 
@@ -1158,20 +1165,21 @@ def ensure_uid(doc_or_uid):
     Accept a uid or a dict with a 'uid' key. Return the uid.
     """
     try:
-        return doc_or_uid['uid']
+        return doc_or_uid["uid"]
     except TypeError:
         return doc_or_uid
 
 
 def ts_msg_hook(msg, file=sys.stdout):
-    t = '{:%H:%M:%S.%f}'.format(datetime.datetime.now())
+    t = f"{datetime.datetime.now():%H:%M:%S.%f}"
     msg_fmt = "{: <17s} -> {!s: <15s} args: {}, kwargs: {}, run: {}".format(
         msg.command,
-        msg.obj.name if hasattr(msg.obj, 'name') else msg.obj,
+        msg.obj.name if hasattr(msg.obj, "name") else msg.obj,
         msg.args,
         msg.kwargs,
-        "'{}'".format(msg.run) if isinstance(msg.run, str) else msg.run)
-    print('{} {}'.format(t, msg_fmt), file=file)
+        f"'{msg.run}'" if isinstance(msg.run, str) else msg.run,
+    )
+    print(f"{t} {msg_fmt}", file=file)
 
 
 def make_decorator(wrapper):
@@ -1193,6 +1201,7 @@ def make_decorator(wrapper):
     This turns a 'wrapper' into a decorator, which accepts a generator
     function and returns a generator function.
     """
+
     @wraps(wrapper)
     def dec_outer(*args, **kwargs):
         def dec(gen_func):
@@ -1201,8 +1210,11 @@ def make_decorator(wrapper):
                 plan = gen_func(*inner_args, **inner_kwargs)
                 plan = wrapper(plan, *args, **kwargs)
                 return (yield from plan)
+
             return dec_inner
+
         return dec
+
     return dec_outer
 
 
@@ -1219,7 +1231,7 @@ def apply_to_dict_recursively(d, f):
        any func to be performed on d recursively
     """
     for key, val in d.items():
-        if hasattr(val, 'items'):
+        if hasattr(val, "items"):
             d[key] = apply_to_dict_recursively(d=val, f=f)
         d[key] = f(val)
     return d
@@ -1227,23 +1239,21 @@ def apply_to_dict_recursively(d, f):
 
 class ProgressBarBase(abc.ABC):
     def update(
-            self,
-            pos: Any,
-            *,
-            name: str = None,
-            current: Any = None,
-            initial: Any = None,
-            target: Any = None,
-            unit: str = "units",
-            precision: Any = None,
-            fraction: Any = None,
-            time_elapsed: float = None,
-            time_remaining: float = None,
-    ):
-        ...
+        self,
+        pos: Any,
+        *,
+        name: str = None,
+        current: Any = None,
+        initial: Any = None,
+        target: Any = None,
+        unit: str = "units",
+        precision: Any = None,
+        fraction: Any = None,
+        time_elapsed: float = None,
+        time_remaining: float = None,
+    ): ...
 
-    def clear(self):
-        ...
+    def clear(self): ...
 
 
 class TerminalProgressBar(ProgressBarBase):
@@ -1281,18 +1291,26 @@ class TerminalProgressBar(ProgressBarBase):
         # implemets the 'watch' method.
         for st in status_objs:
             with self.lock:
-                if hasattr(st, 'watch') and not st.done:
+                if hasattr(st, "watch") and not st.done:
                     pos = len(self.meters)
-                    self.meters.append('')
+                    self.meters.append("")
                     self.status_objs.append(st)
                     st.watch(partial(self.update, pos))
 
-    def update(self, pos, *,
-               name=None,
-               current=None, initial=None, target=None,
-               unit='units', precision=None,
-               fraction=None,
-               time_elapsed=None, time_remaining=None):
+    def update(
+        self,
+        pos,
+        *,
+        name=None,
+        current=None,
+        initial=None,
+        target=None,
+        unit="units",
+        precision=None,
+        fraction=None,
+        time_elapsed=None,
+        time_remaining=None,
+    ):
         if all(x is not None for x in (current, initial, target)):
             # Display a proper progress bar.
             total = round(_L2norm(target, initial), precision or 3)
@@ -1306,20 +1324,19 @@ class TerminalProgressBar(ProgressBarBase):
             # TODO Account for 'time_remaining' which might in some special
             # cases differ from the naive computaiton performed by
             # format_meter.
-            meter = tqdm.format_meter(n=n, total=total, elapsed=time_elapsed,
-                                      unit=unit,
-                                      prefix=name,
-                                      ncols=self.ncols)
+            meter = tqdm.format_meter(
+                n=n, total=total, elapsed=time_elapsed, unit=unit, prefix=name, ncols=self.ncols
+            )
         else:
             # Simply display completeness.
             if name is None:
-                name = ''
+                name = ""
             if self.status_objs[pos].done:
-                meter = name + ' [Complete.]'
+                meter = name + " [Complete.]"
             else:
-                meter = name + ' [In progress. No progress bar available.]'
-            meter += ' ' * (self.ncols - len(meter))
-            meter = meter[:self.ncols]
+                meter = name + " [In progress. No progress bar available.]"
+            meter += " " * (self.ncols - len(meter))
+            meter = meter[: self.ncols]
 
         self.meters[pos] = meter
         self.draw()
@@ -1332,7 +1349,7 @@ class TerminalProgressBar(ProgressBarBase):
                 return
             for meter in self.meters:
                 tqdm.status_printer(self.fp)(meter)
-                self.fp.write('\n')
+                self.fp.write("\n")
             self.fp.write(_unicode(_term_move_up() * len(self.meters)))
             self.drawn = True
 
@@ -1348,10 +1365,10 @@ class TerminalProgressBar(ProgressBarBase):
             self.done = True
             if self.drawn:
                 for meter in self.meters:
-                    self.fp.write('\r')
-                    self.fp.write(' ' * self.ncols)
-                    self.fp.write('\r')
-                    self.fp.write('\n')
+                    self.fp.write("\r")
+                    self.fp.write(" " * self.ncols)
+                    self.fp.write("\r")
+                    self.fp.write("\n")
                 self.fp.write(_unicode(_term_move_up() * len(self.meters)))
 
 
@@ -1371,8 +1388,7 @@ class ProgressBarManager:
     pbar_factory: Callable[[Any], ProgressBarBase]
     pbar: Optional[ProgressBarBase]
 
-    def __init__(self,
-                 pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
+    def __init__(self, pbar_factory: Callable[[Any], ProgressBarBase] = default_progress_bar):
         """
         Manages creation and tearing down of progress bars.
 
@@ -1414,11 +1430,11 @@ class ProgressBarManager:
 
 def _L2norm(x, y):
     "works on (3, 5) and ((0, 3), (4, 0))"
-    return np.sqrt(np.sum((np.asarray(x) - np.asarray(y))**2))
+    return np.sqrt(np.sum((np.asarray(x) - np.asarray(y)) ** 2))
 
 
 def merge_axis(objs):
-    '''Merge possibly related axis
+    """Merge possibly related axis
 
     This function will take a list of objects and separate it into
 
@@ -1450,7 +1466,8 @@ def merge_axis(objs):
 
     coupled : Dict[PseudoPositioner, Dict[str, List[OphydObj]]]
         Mapping of interdependent axis passed in.
-    '''
+    """
+
     def get_parent(o):
         return check_supports(o, HasParent).parent
 
@@ -1459,9 +1476,9 @@ def merge_axis(objs):
     complex_objs = set()
     for o in objs:
         parent = o.parent
-        if hasattr(o, 'RealPosition'):
+        if hasattr(o, "RealPosition"):
             complex_objs.add(o)
-        elif (parent is not None and hasattr(parent, 'RealPosition')):
+        elif parent is not None and hasattr(parent, "RealPosition"):
             maybe_coupled.add(o)
         else:
             independent_objs.add(o)
@@ -1470,14 +1487,14 @@ def merge_axis(objs):
     for parent, children in groupby(get_parent, maybe_coupled).items():
         real_p = set(parent.real_positioners)
         pseudo_p = set(parent.pseudo_positioners)
-        type_map = {'real': [], 'pseudo': [], 'unrelated': []}
+        type_map = {"real": [], "pseudo": [], "unrelated": []}
         for c in children:
             if c in real_p:
-                type_map['real'].append(c)
+                type_map["real"].append(c)
             elif c in pseudo_p:
-                type_map['pseudo'].append(c)
+                type_map["pseudo"].append(c)
             else:
-                type_map['unrelated'].append(c)
+                type_map["unrelated"].append(c)
         coupled[parent] = type_map
 
     return (independent_objs, complex_objs, coupled)
@@ -1507,12 +1524,11 @@ def merge_cycler(cyc):
        or fewer keys than the input.
 
     """
+
     def my_name(obj):
-        """Get the attribute name of this device on its parent Device
-        """
+        """Get the attribute name of this device on its parent Device"""
         parent = obj.parent
-        return next(iter([nm for nm in parent.component_names
-                          if getattr(parent, nm) is obj]))
+        return next(iter([nm for nm in parent.component_names if getattr(parent, nm) is obj]))
 
     io, co, gb = merge_axis(cyc.keys)
 
@@ -1524,26 +1540,24 @@ def merge_cycler(cyc):
     output_data = [cycler(i, input_data[i]) for i in io | co]
 
     for parent, type_map in gb.items():
+        if parent in co and (type_map["pseudo"] or type_map["real"]):
+            raise ValueError(
+                "A PseudoPostiioner and its children were both "
+                "passed in.  We do not yet know how to merge "
+                "these inputs, failing."
+            )
 
-        if parent in co and (type_map['pseudo'] or type_map['real']):
-            raise ValueError("A PseudoPostiioner and its children were both "
-                             "passed in.  We do not yet know how to merge "
-                             "these inputs, failing.")
-
-        if type_map['real'] and type_map['pseudo']:
-            raise ValueError("Passed in a mix of real and pseudo axis.  "
-                             "Can not cope, failing")
-        pseudo_axes = type_map['pseudo']
+        if type_map["real"] and type_map["pseudo"]:
+            raise ValueError("Passed in a mix of real and pseudo axis.  " "Can not cope, failing")
+        pseudo_axes = type_map["pseudo"]
         if len(pseudo_axes) > 1:
-            p_cyc = reduce(operator.add,
-                           (cycler(my_name(c), input_data[c])
-                            for c in type_map['pseudo']))
+            p_cyc = reduce(operator.add, (cycler(my_name(c), input_data[c]) for c in type_map["pseudo"]))
             output_data.append(cycler(parent, list(p_cyc)))
         elif len(pseudo_axes) == 1:
-            c, = pseudo_axes
+            (c,) = pseudo_axes
             output_data.append(cycler(c, input_data[c]))
 
-        for c in type_map['real'] + type_map['unrelated']:
+        for c in type_map["real"] + type_map["unrelated"]:
             output_data.append(cycler(c, input_data[c]))
 
     return reduce(operator.add, output_data)
@@ -1593,29 +1607,32 @@ class DefaultDuringTask(DuringTask):
         initializing the 'teleporter' if Qt backend is used.
 
         """
-        if 'matplotlib' in sys.modules:
+        if "matplotlib" in sys.modules:
             import matplotlib
+
             backend = matplotlib.get_backend().lower()
-            if 'qt' in backend:
+            if "qt" in backend:
                 from bluesky.callbacks.mpl_plotting import initialize_qt_teleporter
+
                 initialize_qt_teleporter()
 
     def block(self, blocking_event):
         # docstring inherited
         global _qapp
-        if 'matplotlib' not in sys.modules:
+        if "matplotlib" not in sys.modules:
             # We are not using matplotlib + Qt. Just wait on the Event.
             blocking_event.wait()
         # Figure out if we are using matplotlib with which backend
         # without importing anything that is not already imported.
         else:
             import matplotlib
+
             backend = matplotlib.get_backend().lower()
             # if with a Qt backend, do the scary thing
-            if 'qt' in backend:
-
-                from matplotlib.backends.qt_compat import QtCore, QtWidgets, QT_API
+            if "qt" in backend:
                 import functools
+
+                from matplotlib.backends.qt_compat import QT_API, QtCore, QtWidgets
 
                 @functools.lru_cache(None)
                 def _enum(name):
@@ -1643,13 +1660,13 @@ class DefaultDuringTask(DuringTask):
                     This is copied from Matplotlib.
                     """
                     # foo.bar.Enum.Entry (PyQt6) <=> foo.bar.Entry (non-PyQt6).
-                    return operator.attrgetter(
-                        name if QT_API == 'PyQt6' else name.rpartition(".")[0]
-                    )(sys.modules[QtCore.__package__])
+                    return operator.attrgetter(name if QT_API == "PyQt6" else name.rpartition(".")[0])(
+                        sys.modules[QtCore.__package__]
+                    )
 
                 app = QtWidgets.QApplication.instance()
                 if app is None:
-                    _qapp = app = QtWidgets.QApplication([b'bluesky'])
+                    _qapp = app = QtWidgets.QApplication([b"bluesky"])
                 assert app is not None
                 event_loop = QtCore.QEventLoop()
 
@@ -1668,21 +1685,19 @@ class DefaultDuringTask(DuringTask):
                 # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
                 # adapted from code at
                 # https://bitbucket.org/tortoisehg/thg/commits/550e1df5fbad
-                if os.name == 'posix' and hasattr(signal, 'set_wakeup_fd'):
+                if os.name == "posix" and hasattr(signal, "set_wakeup_fd"):
                     # Wake up Python interpreter via pipe so that SIGINT
                     # can be handled immediately.
                     # (http://qt-project.org/doc/qt-4.8/unix-signals.html)
                     # Updated docs:
                     # https://doc.qt.io/qt-5/unix-signals.html
                     import fcntl
+
                     rfd, wfd = os.pipe()
                     for fd in (rfd, wfd):
                         flags = fcntl.fcntl(fd, fcntl.F_GETFL)
                         fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-                    wakeupsn = QtCore.QSocketNotifier(
-                        rfd,
-                        _enum('QtCore.QSocketNotifier.Type').Read
-                    )
+                    wakeupsn = QtCore.QSocketNotifier(rfd, _enum("QtCore.QSocketNotifier.Type").Read)
                     origwakeupfd = signal.set_wakeup_fd(wfd)
 
                     def cleanup():
@@ -1700,7 +1715,7 @@ class DefaultDuringTask(DuringTask):
                         try:
                             os.read(int(rfd), 4096)
                         except OSError as inst:
-                            print('failed to read wakeup fd: %s\n' % inst)
+                            print("failed to read wakeup fd: %s\n" % inst)
 
                         wakeupsn.setEnabled(True)
 
@@ -1710,8 +1725,7 @@ class DefaultDuringTask(DuringTask):
                     # On Windows, non-blocking anonymous pipe or socket is
                     # not available.
 
-                    def null():
-                        ...
+                    def null(): ...
 
                     # we need to 'kick' the python interpreter so it sees
                     # system signals
@@ -1745,10 +1759,7 @@ class DefaultDuringTask(DuringTask):
 
                 try:
                     sys.excepthook = my_exception_hook
-                    (event_loop.exec()
-                     if hasattr(event_loop, "exec")
-                     else event_loop.exec_()
-                     )
+                    (event_loop.exec() if hasattr(event_loop, "exec") else event_loop.exec_())
                     # make sure any pending signals are processed
                     event_loop.processEvents()
                     if vals[1] is not None:
@@ -1758,10 +1769,10 @@ class DefaultDuringTask(DuringTask):
                         cleanup()
                     finally:
                         sys.excepthook = old_sys_handler
-            elif 'ipympl' in backend or 'nbagg' in backend:
+            elif "ipympl" in backend or "nbagg" in backend:
                 Gcf = matplotlib._pylab_helpers.Gcf
                 while True:
-                    done = blocking_event.wait(.1)
+                    done = blocking_event.wait(0.1)
                     for f_mgr in Gcf.get_all_fig_managers():
                         if f_mgr.canvas.figure.stale:
                             f_mgr.canvas.draw()
@@ -1776,8 +1787,8 @@ def _rearrange_into_parallel_dicts(readings):
     data = {}
     timestamps = {}
     for key, payload in readings.items():
-        data[key] = payload['value']
-        timestamps[key] = payload['timestamp']
+        data[key] = payload["value"]
+        timestamps[key] = payload["timestamp"]
     return data, timestamps
 
 

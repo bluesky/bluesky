@@ -1,25 +1,26 @@
 import re
 from typing import Dict, Iterator, Optional
-from event_model.documents.event_descriptor import DataKey
+
+import pytest
 from event_model.documents.event import PartialEvent
+from event_model.documents.event_descriptor import DataKey
 from event_model.documents.resource import PartialResource
-from event_model.documents.datum import Datum
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
-import bluesky.plans as bp
+
 import bluesky.plan_stubs as bps
-import pytest
+import bluesky.plans as bp
 from bluesky.protocols import (
     Asset,
-    Readable,
-    Reading,
-    HasName,
-    WritesExternalAssets,
+    Collectable,
     EventCollectable,
     EventPageCollectable,
-    Collectable,
-    WritesStreamAssets,
+    HasName,
+    Readable,
+    Reading,
     StreamAsset,
+    WritesExternalAssets,
+    WritesStreamAssets,
 )
 
 
@@ -77,11 +78,7 @@ class Named(HasName):
 
 def describe_datum(self: Named) -> Dict[str, DataKey]:
     """Describe a single data key backed with Resource"""
-    return {
-        f"{self.name}-datum": DataKey(
-            source="file", dtype="number", shape=[1000, 1500], external="OLD:"
-        )
-    }
+    return {f"{self.name}-datum": DataKey(source="file", dtype="number", shape=[1000, 1500], external="OLD:")}
 
 
 def collect_asset_docs_datum(self) -> Iterator[Asset]:
@@ -118,12 +115,8 @@ class DatumReadable(Named, Readable, WritesExternalAssets):
 def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
     """Describe 2 datasets which will be backed by StreamResources"""
     return {
-        f"{self.name}-sd1": DataKey(
-            source="file", dtype="number", shape=[1000, 1500], external="STREAM:"
-        ),
-        f"{self.name}-sd2": DataKey(
-            source="file", dtype="number", shape=[], external="STREAM:"
-        ),
+        f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1000, 1500], external="STREAM:"),
+        f"{self.name}-sd2": DataKey(source="file", dtype="number", shape=[], external="STREAM:"),
     }
 
 
@@ -132,9 +125,7 @@ def get_index(self) -> int:
     return 10
 
 
-def collect_asset_docs_stream_datum(
-    self: Named, index: Optional[int] = None
-) -> Iterator[StreamAsset]:
+def collect_asset_docs_stream_datum(self: Named, index: Optional[int] = None) -> Iterator[StreamAsset]:
     """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
     index = index or 1
     for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
@@ -196,10 +187,7 @@ class PvAndStreamDatumReadable(Named, Readable, WritesExternalAssets):
 def describe_collect_old_pv(self) -> Dict[str, Dict[str, DataKey]]:
     """Doubly nested old describe format with 2 pvs in each stream"""
     return {
-        stream: {
-            f"{stream}-{pv}": DataKey(source="pv", dtype="number", shape=[])
-            for pv in ["pv1", "pv2"]
-        }
+        stream: {f"{stream}-{pv}": DataKey(source="pv", dtype="number", shape=[]) for pv in ["pv1", "pv2"]}
         for stream in ["stream1", "stream2"]
     }
 
@@ -225,9 +213,7 @@ def describe_collect_old_datum(self: Named):
     """Produces a single data key in a stream backed by a Datum"""
     return {
         "stream3": {
-            f"{self.name}-datum": DataKey(
-                source="file", dtype="number", shape=[1000, 1500], external="OLD:"
-            )
+            f"{self.name}-datum": DataKey(source="file", dtype="number", shape=[1000, 1500], external="OLD:")
         }
     }
 
@@ -251,10 +237,7 @@ class OldDatumCollectable(Named, EventCollectable, WritesExternalAssets):
 
 def describe_collect_two_streams_same_names(self):
     """Buggy old describe output with the same data key in 2 streams"""
-    return {
-        stream: {"pv": DataKey(source="pv", dtype="number", shape=[])}
-        for stream in ["stream1", "stream2"]
-    }
+    return {stream: {"pv": DataKey(source="pv", dtype="number", shape=[])} for stream in ["stream1", "stream2"]}
 
 
 def collect_one_pv(self):
@@ -279,10 +262,7 @@ class OldPvAndDatumCollectable(Named, EventCollectable, WritesExternalAssets):
 
 def describe_collect_pv(self: Named) -> Dict[str, Dict[str, DataKey]]:
     """New style describe collect with 2 PVs"""
-    return {
-        f"{self.name}-{pv}": DataKey(source="pv", dtype="number", shape=[])
-        for pv in ["pv1", "pv2"]
-    }
+    return {f"{self.name}-{pv}": DataKey(source="pv", dtype="number", shape=[]) for pv in ["pv1", "pv2"]}
 
 
 def collect_pv(self: Named) -> Iterator[PartialEvent]:
@@ -345,14 +325,10 @@ def test_stream_datum_readable_counts(RE):
     det = StreamDatumReadableCollectable(name="det")
     docs = DocHolder()
     RE(bp.count([det], 2), docs.append)
-    docs.assert_emitted(
-        start=1, descriptor=1, stream_resource=2, stream_datum=4, event=2, stop=1
-    )
+    docs.assert_emitted(start=1, descriptor=1, stream_resource=2, stream_datum=4, event=2, stop=1)
     assert docs["descriptor"][0]["name"] == "primary"
     assert list(docs["descriptor"][0]["data_keys"]) == ["det-sd1", "det-sd2"]
-    assert all(
-        sd["descriptor"] == docs["descriptor"][0]["uid"] for sd in docs["stream_datum"]
-    )
+    assert all(sd["descriptor"] == docs["descriptor"][0]["uid"] for sd in docs["stream_datum"])
     assert all(e["data"] == {} for e in docs["event"])
     assert all(e["filled"] == {} for e in docs["event"])
     assert [sd["indices"] for sd in docs["stream_datum"]] == [
@@ -405,8 +381,10 @@ def test_combinations_counts(RE):
 def test_collect_stream_true_raises(RE):
     with pytest.raises(
         RuntimeError,
-        match=re.escape("Collect now emits EventPages (stream=False), "
-                        "so emitting Events (stream=True) is no longer supported"),
+        match=re.escape(
+            "Collect now emits EventPages (stream=False), "
+            "so emitting Events (stream=True) is no longer supported"
+        ),
     ):
         RE(collect_plan(OldPvCollectable("det"), pre_declare=False, stream=True))
 
@@ -469,9 +447,7 @@ def test_old_datum_collectable(RE):
     det = OldDatumCollectable(name="det")
     docs = DocHolder()
     RE(collect_plan(det, pre_declare=False), docs.append)
-    docs.assert_emitted(
-        start=1, descriptor=1, resource=1, datum=1, event_page=1, stop=1
-    )
+    docs.assert_emitted(start=1, descriptor=1, resource=1, datum=1, event_page=1, stop=1)
     assert docs["descriptor"][0]["name"] == "stream3"
     assert list(docs["descriptor"][0]["data_keys"]) == ["det-datum"]
     assert docs["event_page"][0]["descriptor"] == docs["descriptor"][0]["uid"]
@@ -484,9 +460,7 @@ def test_old_datum_and_pv_collectable(RE):
     det = OldPvAndDatumCollectable(name="det")
     docs = DocHolder()
     RE(collect_plan(det, pre_declare=False), docs.append)
-    docs.assert_emitted(
-        start=1, descriptor=3, resource=1, datum=1, event_page=3, stop=1
-    )
+    docs.assert_emitted(start=1, descriptor=3, resource=1, datum=1, event_page=3, stop=1)
     assert [d["name"] for d in docs["descriptor"]] == ["stream1", "stream2", "stream3"]
     assert list(docs["descriptor"][0]["data_keys"]) == ["stream1-pv1", "stream1-pv2"]
     assert list(docs["descriptor"][2]["data_keys"]) == ["det-datum"]
@@ -531,9 +505,7 @@ def test_stream_datum_collectable(RE):
     det = StreamDatumReadableCollectable(name="det")
     docs = DocHolder()
     RE(collect_plan(det, pre_declare=True, stream_name="main"), docs.append)
-    docs.assert_emitted(
-        start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1
-    )
+    docs.assert_emitted(start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1)
     assert docs["descriptor"][0]["name"] == "main"
     assert list(docs["descriptor"][0]["data_keys"]) == ["det-sd1", "det-sd2"]
     assert docs["stream_resource"][0]["data_key"] == "det-sd1"
@@ -546,9 +518,7 @@ def test_stream_datum_collectable_no_stream_name(RE):
     det = StreamDatumReadableCollectable(name="det")
     docs = DocHolder()
     RE(collect_plan_no_stream_name_in_collect(det, pre_declare=True, stream_name="main"), docs.append)
-    docs.assert_emitted(
-        start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1
-    )
+    docs.assert_emitted(start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1)
     assert docs["descriptor"][0]["name"] == "main"
     assert list(docs["descriptor"][0]["data_keys"]) == ["det-sd1", "det-sd2"]
     assert docs["stream_resource"][0]["data_key"] == "det-sd1"
@@ -558,9 +528,7 @@ def test_stream_datum_collectable_no_stream_name(RE):
 
 
 @pytest.mark.parametrize("cls1", [PvCollectable, PvPageCollectable])
-@pytest.mark.parametrize(
-    "cls2", [PvCollectable, PvPageCollectable, StreamDatumReadableCollectable]
-)
+@pytest.mark.parametrize("cls2", [PvCollectable, PvPageCollectable, StreamDatumReadableCollectable])
 def test_many_collectables_fails(RE, cls1, cls2):
     """If there are multiple objects they must all WritesStreamAssests"""
     det1, det2 = cls1(name="det1"), cls2(name="det2")
@@ -577,16 +545,12 @@ def test_many_stream_datum_collectables(RE):
     det2 = StreamDatumReadableCollectable(name="det2")
     docs = DocHolder()
     RE(collect_plan(det1, det2, pre_declare=True, stream_name="main"), docs.append)
-    docs.assert_emitted(
-        start=1, descriptor=1, stream_resource=4, stream_datum=4, stop=1
-    )
+    docs.assert_emitted(start=1, descriptor=1, stream_resource=4, stream_datum=4, stop=1)
     data_keys = ["det1-sd1", "det1-sd2", "det2-sd1", "det2-sd2"]
     assert docs["descriptor"][0]["name"] == "main"
     assert set(docs["descriptor"][0]["data_keys"]) == set(data_keys)  # This only works in a set
     assert [d["data_key"] for d in docs["stream_resource"]] == data_keys
-    assert all(
-        d["descriptor"] == docs["descriptor"][0]["uid"] for d in docs["stream_datum"]
-    )
+    assert all(d["descriptor"] == docs["descriptor"][0]["uid"] for d in docs["stream_datum"])
 
 
 def tomo_plan(*objs):
@@ -647,19 +611,11 @@ def test_multiple_declare_in_same_stream(RE):
     det2 = StreamDatumReadableCollectable(name="det2")
     docs = DocHolder()
     RE(change_conf_plan(det1, det2), docs.append)
-    docs.assert_emitted(
-        start=1, descriptor=2, stream_resource=4, stream_datum=8, stop=1
-    )
+    docs.assert_emitted(start=1, descriptor=2, stream_resource=4, stream_datum=8, stop=1)
     data_keys = ["det1-sd1", "det1-sd2", "det2-sd1", "det2-sd2"]
     assert docs["descriptor"][0]["name"] == "main"
     assert frozenset(docs["descriptor"][0]["data_keys"]) == frozenset(data_keys)
-    assert all(
-        d["descriptor"] == docs["descriptor"][0]["uid"]
-        for d in docs["stream_datum"][:4]
-    )
+    assert all(d["descriptor"] == docs["descriptor"][0]["uid"] for d in docs["stream_datum"][:4])
     assert docs["descriptor"][1]["name"] == "main"
     assert frozenset(docs["descriptor"][1]["data_keys"]) == frozenset(data_keys)
-    assert all(
-        d["descriptor"] == docs["descriptor"][1]["uid"]
-        for d in docs["stream_datum"][4:]
-    )
+    assert all(d["descriptor"] == docs["descriptor"][1]["uid"] for d in docs["stream_datum"][4:])

@@ -1,10 +1,12 @@
-from bluesky.magics import BlueskyMagics
-import bluesky.plans as bp
-import bluesky.plan_stubs as bps
 import os
-import pytest
 import signal
 from types import SimpleNamespace
+
+import pytest
+
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
+from bluesky.magics import BlueskyMagics
 
 
 class FakeIPython:
@@ -15,39 +17,44 @@ class FakeIPython:
 def compare_msgs(actual, expected):
     for a, e in zip(actual, expected):
         # Strip off randomized stuff that cannot be compared.
-        a.kwargs.pop('group', None)
-        e.kwargs.pop('group', None)
+        a.kwargs.pop("group", None)
+        e.kwargs.pop("group", None)
         assert a == e
 
 
-@pytest.mark.parametrize('pln,plnargs,magic,line,detectors_factory', [
-    (bps.mv, lambda hw: (hw.motor1, 2),
-     'mov', 'motor1 2', lambda hw: []),
-    (bps.mv, lambda hw: (hw.motor1, 2, hw.motor2, 3),
-     'mov', 'motor1 2 motor2 3', lambda hw: []),
-    (bps.mvr, lambda hw: (hw.motor1, 2),
-     'movr', 'motor1 2', lambda hw: []),
-    (bps.mvr, lambda hw: (hw.motor1, 2, hw.motor2, 3),
-     'movr', 'motor1 2 motor2 3', lambda hw: []),
-    (bp.count, lambda hw: ([hw.invariant1],),
-     'ct', 'favorite_detectors', lambda hw: []),
-    (bp.count, lambda hw: ([hw.invariant1, hw.invariant2],),
-     'ct', '', lambda hw: []),
-    (bp.count, lambda hw: ([hw.invariant1],),
-     'ct', 'dets', lambda hw: [hw.invariant1, hw.invariant2]),
-    (bp.count, lambda hw: ([hw.invariant1, hw.invariant2],),
-     'ct', '', lambda hw: [hw.invariant1, hw.invariant2]),
-    ])
-def test_bluesky_magics(pln, plnargs, magic, line, detectors_factory,
-                        RE, hw):
+@pytest.mark.parametrize(
+    "pln,plnargs,magic,line,detectors_factory",
+    [
+        (bps.mv, lambda hw: (hw.motor1, 2), "mov", "motor1 2", lambda hw: []),
+        (bps.mv, lambda hw: (hw.motor1, 2, hw.motor2, 3), "mov", "motor1 2 motor2 3", lambda hw: []),
+        (bps.mvr, lambda hw: (hw.motor1, 2), "movr", "motor1 2", lambda hw: []),
+        (bps.mvr, lambda hw: (hw.motor1, 2, hw.motor2, 3), "movr", "motor1 2 motor2 3", lambda hw: []),
+        (bp.count, lambda hw: ([hw.invariant1],), "ct", "favorite_detectors", lambda hw: []),
+        (bp.count, lambda hw: ([hw.invariant1, hw.invariant2],), "ct", "", lambda hw: []),
+        (bp.count, lambda hw: ([hw.invariant1],), "ct", "dets", lambda hw: [hw.invariant1, hw.invariant2]),
+        (
+            bp.count,
+            lambda hw: ([hw.invariant1, hw.invariant2],),
+            "ct",
+            "",
+            lambda hw: [hw.invariant1, hw.invariant2],
+        ),
+    ],
+)
+def test_bluesky_magics(pln, plnargs, magic, line, detectors_factory, RE, hw):
     # Build a FakeIPython instance to use the magics with.
     dets = [hw.invariant1]
-    hw.invariant1._ophyd_labels_ = set(['detectors', 'favorite_detectors'])
-    hw.invariant2._ophyd_labels_ = set(['detectors'])
-    ip = FakeIPython({'motor1': hw.motor1, 'motor2': hw.motor2,
-                      'invariant1': hw.invariant1, 'invariant2': hw.invariant2,
-                      'dets': dets}
-                     )
+    hw.invariant1._ophyd_labels_ = set(["detectors", "favorite_detectors"])
+    hw.invariant2._ophyd_labels_ = set(["detectors"])
+    ip = FakeIPython(
+        {
+            "motor1": hw.motor1,
+            "motor2": hw.motor2,
+            "invariant1": hw.invariant1,
+            "invariant2": hw.invariant2,
+            "dets": dets,
+        }
+    )
     sm = BlueskyMagics(ip)
     detectors = detectors_factory(hw)
     if detectors:
@@ -89,44 +96,44 @@ def test_bluesky_magics(pln, plnargs, magic, line, detectors_factory,
 def test_wa(hw):
     motor = hw.motor
     det = hw.motor
-    ip = FakeIPython({'motor': motor, 'det': det})
+    ip = FakeIPython({"motor": motor, "det": det})
     sm = BlueskyMagics(ip)
     # Test an empty list with no labels set.
-    sm.wa('')
+    sm.wa("")
 
     # Test again with labeled objects.
-    motor._ophyd_labels_ = ['motors']
-    motor._ophyd_labels_ = ['detectors']
+    motor._ophyd_labels_ = ["motors"]
+    motor._ophyd_labels_ = ["detectors"]
 
     # Test an empty list.
-    sm.wa('')
+    sm.wa("")
 
     # Test with a label whitelist
-    sm.wa('motors')
-    sm.wa('motors detectors')
-    sm.wa('motors typo')
+    sm.wa("motors")
+    sm.wa("motors detectors")
+    sm.wa("motors typo")
 
     with pytest.raises(ValueError):
-        sm.wa('[motors, detectors]')
+        sm.wa("[motors, detectors]")
 
 
 # The %wa magic doesn't use a RunEngine or a plan.
 def test_wa_legacy(hw):
     motor = hw.motor
-    ip = FakeIPython({'motor': motor})
+    ip = FakeIPython({"motor": motor})
     sm = BlueskyMagics(ip)
     BlueskyMagics.positioners.extend([motor])
     with pytest.warns(UserWarning):
-        sm.wa('')
+        sm.wa("")
 
     # Make motor support more attributes.
     motor.limits = (-1, 1)
     with pytest.warns(UserWarning):
-        sm.wa('')
+        sm.wa("")
     motor.user_offset = SimpleNamespace(get=lambda: 0)
 
     with pytest.warns(UserWarning):
-        sm.wa('[motor]')
+        sm.wa("[motor]")
 
     with pytest.warns(UserWarning):
         BlueskyMagics.positioners.clear()
@@ -136,9 +143,9 @@ def test_magics_missing_ns_key(RE, hw):
     ip = FakeIPython({})
     sm = BlueskyMagics(ip)
     with pytest.raises(NameError):
-        sm.mov('motor1 5')
-    ip.user_ns['motor1'] = hw.motor1
-    sm.mov('motor1 5')
+        sm.mov("motor1 5")
+    ip.user_ns["motor1"] = hw.motor1
+    sm.mov("motor1 5")
 
 
 def test_interrupted(RE, hw):
@@ -147,16 +154,16 @@ def test_interrupted(RE, hw):
 
     ip = FakeIPython({})
     sm = BlueskyMagics(ip)
-    ip.user_ns['motor'] = motor
+    ip.user_ns["motor"] = motor
 
     pid = os.getpid()
 
     def sim_kill(n=1):
         for j in range(n):
-            print('KILL')
+            print("KILL")
             os.kill(pid, signal.SIGINT)
 
     motor.loop = sm.RE.loop
     sm.RE.loop.call_later(1, sim_kill, 2)
-    sm.mov('motor 1')
-    assert sm.RE.state == 'idle'
+    sm.mov("motor 1")
+    assert sm.RE.state == "idle"

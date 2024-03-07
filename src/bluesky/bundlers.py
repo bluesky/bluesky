@@ -2,24 +2,50 @@ import asyncio
 import inspect
 import time as ttime
 from collections import defaultdict, deque
-from typing import (Any, Callable, Deque, Dict, FrozenSet, Iterable, List, Optional,
-                    Tuple, Union)
+from typing import Any, Callable, Deque, Dict, FrozenSet, Iterable, List, Optional, Tuple, Union
 
-from event_model import (ComposeDescriptorBundle, DataKey, Datum,
-                         DocumentNames, EventModelValueError, Resource,
-                         StreamDatum, StreamRange, StreamResource, compose_run,
-                         pack_event_page)
-
+from event_model import (
+    ComposeDescriptorBundle,
+    DataKey,
+    Datum,
+    DocumentNames,
+    EventModelValueError,
+    Resource,
+    StreamDatum,
+    StreamRange,
+    StreamResource,
+    compose_run,
+    pack_event_page,
+)
 from event_model.documents.event import Event
 
 from .log import doc_logger
-from .protocols import (Callback, Collectable, Configurable, EventCollectable,
-                        EventPageCollectable, Flyable, HasName,
-                        Readable, Reading, Subscribable, T, SyncOrAsync, WritesStreamAssets, check_supports)
-from .utils import (IllegalMessageSequence, Msg,
-                    _rearrange_into_parallel_dicts, maybe_await,
-                    maybe_collect_asset_docs, maybe_update_hints, new_uid,
-                    short_uid)
+from .protocols import (
+    Callback,
+    Collectable,
+    Configurable,
+    EventCollectable,
+    EventPageCollectable,
+    Flyable,
+    HasName,
+    Readable,
+    Reading,
+    Subscribable,
+    SyncOrAsync,
+    T,
+    WritesStreamAssets,
+    check_supports,
+)
+from .utils import (
+    IllegalMessageSequence,
+    Msg,
+    _rearrange_into_parallel_dicts,
+    maybe_await,
+    maybe_collect_asset_docs,
+    maybe_update_hints,
+    new_uid,
+    short_uid,
+)
 
 ObjDict = Dict[Any, Dict[str, T]]
 ExternalAssetDoc = Union[Datum, Resource, StreamDatum, StreamResource]
@@ -81,9 +107,11 @@ class RunBundler:
         self._compose_stream_resource = run.compose_stream_resource
 
         await self.emit(DocumentNames.start, doc)
-        doc_logger.debug("[start] document is emitted (run_uid=%r)", self._run_start_uid,
-                         extra={'doc_name': 'start',
-                                'run_uid': self._run_start_uid})
+        doc_logger.debug(
+            "[start] document is emitted (run_uid=%r)",
+            self._run_start_uid,
+            extra={"doc_name": "start", "run_uid": self._run_start_uid},
+        )
         await self.reset_checkpoint_state_coro()
 
         # Emit an Event Descriptor for recording any interruptions as Events.
@@ -133,9 +161,11 @@ class RunBundler:
             reason=reason,
         )
         await self.emit(DocumentNames.stop, doc)
-        doc_logger.debug("[stop] document is emitted (run_uid=%r)", self._run_start_uid,
-                         extra={'doc_name': 'stop',
-                                'run_uid': self._run_start_uid})
+        doc_logger.debug(
+            "[stop] document is emitted (run_uid=%r)",
+            self._run_start_uid,
+            extra={"doc_name": "stop", "run_uid": self._run_start_uid},
+        )
         await self.reset_checkpoint_state_coro()
         self.run_is_open = False
         return doc["run_start"]
@@ -162,7 +192,7 @@ class RunBundler:
             config[obj.name] = {
                 "data": self._config_values_cache[obj],
                 "timestamps": self._config_ts_cache[obj],
-                "data_keys": self._config_desc_cache[obj]
+                "data_keys": self._config_desc_cache[obj],
             }
 
         self._descriptors[desc_key] = self._compose_descriptor(
@@ -174,15 +204,11 @@ class RunBundler:
         )
         await self.emit(DocumentNames.descriptor, self._descriptors[desc_key].descriptor_doc)
         doc_logger.debug(
-            "[descriptor] document emitted with name %r containing "
-            "data keys %r (run_uid=%r)",
+            "[descriptor] document emitted with name %r containing " "data keys %r (run_uid=%r)",
             desc_key,
             data_keys.keys(),
             self._run_start_uid,
-            extra={
-                'doc_name': 'descriptor',
-                'run_uid': self._run_start_uid,
-                'data_keys': data_keys.keys()}
+            extra={"doc_name": "descriptor", "run_uid": self._run_start_uid, "data_keys": data_keys.keys()},
         )
         self._descriptor_objs[desc_key] = objs_dks
         if desc_key not in self._sequence_counters:
@@ -192,14 +218,14 @@ class RunBundler:
         return (
             self._descriptors[desc_key].descriptor_doc,
             self._descriptors[desc_key].compose_event,
-            list(objs_dks)
+            list(objs_dks),
         )
 
     async def _ensure_cached(self, obj, collect=False):
         coros = []
-        if (not collect and obj not in self._describe_cache):
+        if not collect and obj not in self._describe_cache:
             coros.append(self._cache_describe(obj))
-        elif (collect and obj not in self._describe_collect_cache):
+        elif collect and obj not in self._describe_collect_cache:
             coros.append(self._cache_describe_collect(obj))
         if obj not in self._config_desc_cache:
             coros.append(self._cache_describe_config(obj))
@@ -212,7 +238,7 @@ class RunBundler:
         stream_name = kwargs.get("name")
         assert stream_name is not None, "A stream name that is not None is required for pre-declare"
 
-        collect = kwargs.get('collect', False)
+        collect = kwargs.get("collect", False)
         assert no_obj is None
         objs = frozenset(objs)
         objs_dks = {}  # {collect_object: stream_data_keys}
@@ -221,18 +247,15 @@ class RunBundler:
         for obj in objs:
             if collect:
                 data_keys = self._describe_collect_cache[obj]
-                streams_and_data_keys: List[Tuple[str, Dict[str, Any]]] = \
-                    self._maybe_format_datakeys_with_stream_name(
-                        data_keys, message_stream_name=stream_name
-                    )
+                streams_and_data_keys: List[Tuple[str, Dict[str, Any]]] = (
+                    self._maybe_format_datakeys_with_stream_name(data_keys, message_stream_name=stream_name)
+                )
 
                 # ensure that there is only one stream and it is the stream we have provided.
-                assert len(streams_and_data_keys) == 1 \
-                    and streams_and_data_keys[0][0] == stream_name, \
-                    (
-                        "`declare_stream` contained `collect=True` but  `describe_collect` did "
-                        f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
-                    )
+                assert len(streams_and_data_keys) == 1 and streams_and_data_keys[0][0] == stream_name, (
+                    "`declare_stream` contained `collect=True` but  `describe_collect` did "
+                    f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
+                )
             else:
                 data_keys = self._describe_cache[obj]
 
@@ -241,7 +264,7 @@ class RunBundler:
         existing_stream_names = self._declared_stream_names.setdefault(objs, [])
         existing_stream_names.append(stream_name)
 
-        return (await self._prepare_stream(stream_name, objs_dks))
+        return await self._prepare_stream(stream_name, objs_dks)
 
     async def create(self, msg):
         """
@@ -274,7 +297,7 @@ class RunBundler:
             self._bundle_name = kwargs["name"]
         except KeyError:
             try:
-                self._bundle_name, = args
+                (self._bundle_name,) = args
             except ValueError:
                 raise ValueError(
                     "Msg('create') now requires a stream name, given as "
@@ -282,9 +305,7 @@ class RunBundler:
                 ) from None
         if self._strict_pre_declare:
             if self._bundle_name not in self._descriptors:
-                raise IllegalMessageSequence(
-                    "In strict mode you must pre-declare streams."
-                )
+                raise IllegalMessageSequence("In strict mode you must pre-declare streams.")
 
     async def read(self, msg, reading):
         """
@@ -378,16 +399,11 @@ class RunBundler:
         """
         obj = check_supports(msg.obj, Subscribable)
         if msg.args:
-            raise ValueError(
-                "The 'monitor' Msg does not accept positional " "arguments."
-            )
+            raise ValueError("The 'monitor' Msg does not accept positional " "arguments.")
         kwargs = dict(msg.kwargs)
         name = kwargs.pop("name", short_uid("monitor"))
         if obj in self._monitor_params:
-            raise IllegalMessageSequence(
-                "A 'monitor' message was sent for {}"
-                "which is already monitored".format(obj)
-            )
+            raise IllegalMessageSequence(f"A 'monitor' message was sent for {obj}" "which is already monitored")
 
         await self._ensure_cached(obj)
 
@@ -397,17 +413,18 @@ class RunBundler:
         def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
-                assert not args and not kwargs, \
-                    "If subscribe callback called with readings, " \
-                    "args and kwargs are not supported."
+                assert not args and not kwargs, (
+                    "If subscribe callback called with readings, " "args and kwargs are not supported."
+                )
             else:
                 # Ignore the inputs. Use this call as a signal to call read on the
                 # object, a crude way to be sure we get all the info we need.
                 readable_obj = check_supports(obj, Readable)
                 readings = readable_obj.read()
-                assert not inspect.isawaitable(readings), \
-                    f"{readable_obj} has async read() method and the callback " \
+                assert not inspect.isawaitable(readings), (
+                    f"{readable_obj} has async read() method and the callback "
                     "passed to subscribe() was not called with Dict[str, Reading]"
+                )
             data, timestamps = _rearrange_into_parallel_dicts(readings)
             doc = compose_event(
                 data=data,
@@ -460,9 +477,7 @@ class RunBundler:
         """
         obj = check_supports(msg.obj, Subscribable)
         if obj not in self._monitor_params:
-            raise IllegalMessageSequence(
-                f"Cannot 'unmonitor' {obj}; it is not " "being monitored."
-            )
+            raise IllegalMessageSequence(f"Cannot 'unmonitor' {obj}; it is not " "being monitored.")
         cb, kwargs = self._monitor_params[obj]
         obj.clear_sub(cb)
         del self._monitor_params[obj]
@@ -504,9 +519,11 @@ class RunBundler:
         self.bundling = False
         self._bundle_name = None
 
-        descriptor_doc, compose_event, _, = self._descriptors.get(
-            desc_key, (None, None, None)
-        )
+        (
+            descriptor_doc,
+            compose_event,
+            _,
+        ) = self._descriptors.get(desc_key, (None, None, None))
         d_objs = self._descriptor_objs.get(desc_key, None)
 
         objs_dks = {}
@@ -521,17 +538,14 @@ class RunBundler:
 
         # do have the descriptor cached
         elif frozenset(d_objs) != objs_read:
-            raise RuntimeError(
-                "Mismatched objects read, expected {!s}, "
-                "got {!s}".format(frozenset(d_objs), objs_read)
-            )
+            raise RuntimeError(f"Mismatched objects read, expected {frozenset(d_objs)!s}, " f"got {objs_read!s}")
 
         # Resource and Datum documents
         indices_generated = await self._pack_external_assets(self._asset_docs_cache, message_stream_name=desc_key)
         if indices_generated > 1:
             raise RuntimeError(
                 "Received multiple indices in a `stream_datum` document for one event, "
-                " during a `read()` `save()`. `stream_datum` should have indices {\"start\": n, \"stop\": n+1} "
+                ' during a `read()` `save()`. `stream_datum` should have indices {"start": n, "stop": n+1} '
                 "in a `read()` `save()`."
             )
 
@@ -556,10 +570,7 @@ class RunBundler:
             "[event] document emitted with data keys %r (run_uid=%r)",
             data.keys(),
             self._run_start_uid,
-            extra={
-                'doc_name': 'event',
-                'run_uid': self._run_start_uid,
-                'data_keys': data.keys()}
+            extra={"doc_name": "event", "run_uid": self._run_start_uid, "data_keys": data.keys()},
         )
 
     def clear_monitors(self):
@@ -572,7 +583,6 @@ class RunBundler:
                 del self._monitor_params[obj]
 
     def reset_checkpoint_state(self):
-
         # Keep a safe separate copy of the sequence counters to use if we
         # rewind and retake some data points.
 
@@ -631,7 +641,7 @@ class RunBundler:
         self._uncollected.add(msg.obj)
 
     # Could we have a look at changing this now? we use one of each use can in
-        # seperate places so it could be two seperate methods for each dictionary type.
+    # seperate places so it could be two seperate methods for each dictionary type.
     def _maybe_format_datakeys_with_stream_name(
         self,
         describe_collect_dict: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]],
@@ -644,8 +654,10 @@ class RunBundler:
             `{message_stream_name: describe_collect_dict}.items()`.
         If the `message_stream_name` is None then return the `describe_collect_dict.items()`.
         """
+
         def has_str_source(d: dict):
             return isinstance(d, dict) and isinstance(d.get("source", None), str)
+
         if describe_collect_dict:
             first_value = list(describe_collect_dict.values())[0]
             if has_str_source(first_value):
@@ -710,8 +722,9 @@ class RunBundler:
         def is_data_key(obj: Any) -> bool:
             return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
-        assert all([not is_data_key(value) for value in describe_collect.values()]), \
-            "Single nested data keys should be pre-decalred"
+        assert all(
+            [not is_data_key(value) for value in describe_collect.values()]
+        ), "Single nested data keys should be pre-decalred"
 
         # Make sure you can't use identidal data keys in multiple streams
         duplicates = defaultdict(dict)
@@ -737,21 +750,15 @@ class RunBundler:
                 objs_read = self._descriptor_objs[stream_name]
                 if stream_data_keys != objs_read[collect_object]:
                     raise RuntimeError(
-                        "Mismatched objects read, "
-                        "expected {!s}, "
-                        "got {!s}".format(stream_data_keys, objs_read)
+                        "Mismatched objects read, " f"expected {stream_data_keys!s}, " f"got {objs_read!s}"
                     )
             local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
 
         self._local_descriptors[collect_object] = local_descriptors
 
     async def _pack_seq_nums_into_stream_datum(
-        self,
-        doc: StreamDatum,
-        message_stream_name: str,
-        stream_datum_previous_indices_difference: int
+        self, doc: StreamDatum, message_stream_name: str, stream_datum_previous_indices_difference: int
     ) -> int:
-
         if doc["seq_nums"] != StreamRange(start=0, stop=0):
             raise EventModelValueError(
                 f"Received `seq_nums` {doc['seq_nums']} from devices {doc['data_keys']} "
@@ -763,8 +770,8 @@ class RunBundler:
         indices_difference = doc["indices"]["stop"] - doc["indices"]["start"]
 
         if (
-            stream_datum_previous_indices_difference and
-            stream_datum_previous_indices_difference != indices_difference
+            stream_datum_previous_indices_difference
+            and stream_datum_previous_indices_difference != indices_difference
         ):
             raise EventModelValueError(
                 f"Received `indices` {doc['indices']} during `collect()` these are of a different "
@@ -772,9 +779,7 @@ class RunBundler:
             )
 
         current_seq_counter = self._sequence_counters[message_stream_name]
-        doc["seq_nums"] = StreamRange(
-            start=current_seq_counter, stop=current_seq_counter + indices_difference
-        )
+        doc["seq_nums"] = StreamRange(start=current_seq_counter, stop=current_seq_counter + indices_difference)
 
         if doc["stream_resource"] not in self._stream_resource_data_keys:
             raise RuntimeError(
@@ -785,9 +790,7 @@ class RunBundler:
 
     # message strem name here?
     async def _pack_external_assets(
-        self,
-        asset_docs: Iterable[Tuple[str, ExternalAssetDoc]],
-        message_stream_name: Optional[str]
+        self, asset_docs: Iterable[Tuple[str, ExternalAssetDoc]], message_stream_name: Optional[str]
     ):
         """Packs some external asset documents with relevant information from the run."""
 
@@ -824,16 +827,12 @@ class RunBundler:
                         f"filled in, with the value {doc['descriptor']} this should be an empty string."
                     )
                 if not descriptor_doc:
-                    raise RuntimeError(
-                        f"`descriptor` not made for stream {message_stream_name}."
-                    )
+                    raise RuntimeError(f"`descriptor` not made for stream {message_stream_name}.")
                 data_keys_received.add(self._stream_resource_data_keys[doc["stream_resource"]])
 
                 doc["descriptor"] = descriptor_doc["uid"]
                 stream_datum_previous_indices_difference = await self._pack_seq_nums_into_stream_datum(
-                    doc,
-                    message_stream_name,
-                    stream_datum_previous_indices_difference
+                    doc, message_stream_name, stream_datum_previous_indices_difference
                 )
             elif name == DocumentNames.datum.value:
                 ...
@@ -846,15 +845,11 @@ class RunBundler:
             await self.emit(DocumentNames(name), doc)
 
             doc_logger.debug(
-                    "[%s] document emitted %r",
-                    name,
-                    doc,
-                    extra={
-                        "doc_name": name,
-                        "run_uid": self._run_start_uid,
-                        "doc": doc
-                    }
-                )
+                "[%s] document emitted %r",
+                name,
+                doc,
+                extra={"doc_name": name, "run_uid": self._run_start_uid, "doc": doc},
+            )
 
         # Check we have a stream_datum for each external data_key in the descriptor
         if descriptor_doc and data_keys_received and set(external_data_keys) != data_keys_received:
@@ -867,13 +862,7 @@ class RunBundler:
 
     def get_external_data_keys(self, data_keys: Dict[str, DataKey]) -> List[DataKey]:
         """Get the external data keys from the descriptor data_keys dictionary"""
-        return [
-            x for x in data_keys
-            if (
-                "external" in data_keys[x]
-                and data_keys[x]["external"] == "STREAM:"
-            )
-        ]
+        return [x for x in data_keys if ("external" in data_keys[x] and data_keys[x]["external"] == "STREAM:")]
 
     async def _collect_events(
         self,
@@ -908,8 +897,8 @@ class RunBundler:
                 event = compose_event(
                     data=partial_event["data"],
                     timestamps=partial_event["timestamps"],
-                    filled=partial_event["filled"]
-                    )
+                    filled=partial_event["filled"],
+                )
             else:
                 event = compose_event(data=partial_event["data"], timestamps=partial_event["timestamps"])
 
@@ -920,16 +909,12 @@ class RunBundler:
             doc_logger.debug(
                 "[event_page] document is emitted for descriptors (run_uid=%r)",
                 self._run_start_uid,
-                extra={
-                    'doc_name': 'event_page',
-                    'run_uid': self._run_start_uid
-                }
+                extra={"doc_name": "event_page", "run_uid": self._run_start_uid},
             )
         return payload
 
     async def _collect_event_pages(
-            self, collect_obj: EventPageCollectable, local_descriptors, return_payload: bool,
-            message_stream_name: str
+        self, collect_obj: EventPageCollectable, local_descriptors, return_payload: bool, message_stream_name: str
     ):
         payload = []
 
@@ -952,12 +937,13 @@ class RunBundler:
             ev_page = compose_event_page(data=ev_page["data"], timestamps=ev_page["timestamps"])
             doc_logger.debug(
                 "[event_page] document is emitted with data keys %r (run_uid=%r)",
-                ev_page['data'].keys(), ev_page["uid"],
+                ev_page["data"].keys(),
+                ev_page["uid"],
                 extra={
-                    'doc_name': 'event_page',
-                    'run_uid': self._run_start_uid,
-                    'data_keys': ev_page['data'].keys()
-                }
+                    "doc_name": "event_page",
+                    "run_uid": self._run_start_uid,
+                    "data_keys": ev_page["data"].keys(),
+                },
             )
 
             await self.emit(DocumentNames.event_page, ev_page)
@@ -979,9 +965,7 @@ class RunBundler:
         if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
             # code path impossible
-            raise IllegalMessageSequence(
-                "A 'collect' message was sent but no run is open."
-            )
+            raise IllegalMessageSequence("A 'collect' message was sent but no run is open.")
 
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'event_page' subscription once.
@@ -996,7 +980,7 @@ class RunBundler:
         # If True, accumulate all the Events in memory and return them at the
         # end, providing the plan access to the Events. If False, do not
         # accumulate, and return None.
-        return_payload = msg.kwargs.get('return_payload', True)
+        return_payload = msg.kwargs.get("return_payload", True)
 
         # Get a list of the collectable objects from the message obj and args
         collect_objects = [check_supports(obj, Collectable) for obj in (msg.obj,) + msg.args]
@@ -1013,7 +997,7 @@ class RunBundler:
                 doc_logger.warn(
                     "collect() was called for a device %r which is both EventCollectable "
                     "and EventPageCollectable. Using device.collect_pages().",
-                    obj.name
+                    obj.name,
                 )
             self._uncollected.discard(obj)
 
@@ -1026,8 +1010,9 @@ class RunBundler:
         # If a stream name was provided in the message, check the stream has been declared
         # If one was not provided, but a single stream has been declared, then use that stream.
         if message_stream_name:
-            assert message_stream_name in declared_stream_names, \
-                "If a message stream name is provided declare stream needs to be called first."
+            assert (
+                message_stream_name in declared_stream_names
+            ), "If a message stream name is provided declare stream needs to be called first."
             stream_name = message_stream_name
         elif declared_stream_names:
             assert len(frozenset(declared_stream_names)) == 1  # Allow duplicate declarations
@@ -1057,9 +1042,14 @@ class RunBundler:
             min_index = None
 
         collected_asset_docs = [
-            x for obj in collect_objects
-            async for x in maybe_collect_asset_docs(msg, obj, index=min_index,)
-            ]
+            x
+            for obj in collect_objects
+            async for x in maybe_collect_asset_docs(
+                msg,
+                obj,
+                index=min_index,
+            )
+        ]
 
         indices_difference = await self._pack_external_assets(
             collected_asset_docs, message_stream_name=stream_name
@@ -1068,7 +1058,6 @@ class RunBundler:
         # Make event pages for an object which is EventCollectable or EventPageCollectable
         # objects that are EventCollectable will now group the Events and Emit an Event Page
         if len(collect_objects) == 1 and not isinstance(collect_objects[0], WritesStreamAssets):
-
             local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
             collect_obj = collect_objects[0]
 
@@ -1087,9 +1076,7 @@ class RunBundler:
                 )
                 # TODO: check that event pages have same length as indices_difference
             elif isinstance(collect_obj, EventCollectable):
-                payload = await self._collect_events(
-                    collect_obj, local_descriptors, return_payload, stream_name
-                )
+                payload = await self._collect_events(collect_obj, local_descriptors, return_payload, stream_name)
                 # TODO: check that events have same length as indices_difference
             else:
                 return_payload = False

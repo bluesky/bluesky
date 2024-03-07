@@ -57,22 +57,24 @@ class Publisher:
     >>> RE = RunEngine({})
     >>> RE.subscribe(publisher)
     """
-    def __init__(self, address, *, prefix=b'',
-                 RE=None, zmq=None, serializer=pickle.dumps):
+
+    def __init__(self, address, *, prefix=b"", RE=None, zmq=None, serializer=pickle.dumps):
         if RE is not None:
-            warnings.warn("The RE argument to Publisher is deprecated and "
-                          "will be removed in a future release of bluesky. "
-                          "Update your code to subscribe this Publisher "
-                          "instance to (and, if needed, unsubscribe from) to "
-                          "the RunEngine manually.")
+            warnings.warn(
+                "The RE argument to Publisher is deprecated and "
+                "will be removed in a future release of bluesky. "
+                "Update your code to subscribe this Publisher "
+                "instance to (and, if needed, unsubscribe from) to "
+                "the RunEngine manually."
+            )
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
-        if b' ' in prefix:
-            raise ValueError("prefix {!r} may not contain b' '".format(prefix))
+        if b" " in prefix:
+            raise ValueError(f"prefix {prefix!r} may not contain b' '")
         if zmq is None:
             import zmq
         if isinstance(address, str):
-            address = address.split(':', maxsplit=1)
+            address = address.split(":", maxsplit=1)
         self.address = (address[0], int(address[1]))
         self.RE = RE
         url = "tcp://%s:%d" % self.address
@@ -86,9 +88,7 @@ class Publisher:
 
     def __call__(self, name, doc):
         doc = copy.deepcopy(doc)
-        message = b' '.join([self._prefix,
-                             name.encode(),
-                             self._serializer(doc)])
+        message = b" ".join([self._prefix, name.encode(), self._serializer(doc)])
         self._socket.send(message)
 
     def close(self):
@@ -144,6 +144,7 @@ class Proxy:
     56505
     >>> proxy.start()  # runs until interrupted
     """
+
     def __init__(self, in_port=None, out_port=None, *, zmq=None):
         if zmq is None:
             import zmq
@@ -187,9 +188,11 @@ class Proxy:
 
     def start(self):
         if self.closed:
-            raise RuntimeError("This Proxy has already been started and "
-                               "interrupted. Create a fresh instance with "
-                               "{}".format(repr(self)))
+            raise RuntimeError(
+                "This Proxy has already been started and "
+                "interrupted. Create a fresh instance with "
+                f"{repr(self)}"
+            )
         try:
             self.zmq.device(self.zmq.FORWARDER, self._frontend, self._backend)
         finally:
@@ -199,8 +202,7 @@ class Proxy:
             self._context.term()
 
     def __repr__(self):
-        return ("{}(in_port={in_port}, out_port={out_port})"
-                "".format(type(self).__name__, **vars(self)))
+        return "{}(in_port={in_port}, out_port={out_port})" "".format(type(self).__name__, **vars(self))
 
 
 class RemoteDispatcher(Dispatcher):
@@ -235,20 +237,29 @@ class RemoteDispatcher(Dispatcher):
     >>> d.subscribe(print)
     >>> d.start()  # runs until interrupted
     """
-    def __init__(self, address, *, prefix=b'',
-                 loop=None, zmq=None, zmq_asyncio=None,
-                 deserializer=pickle.loads, strict=False):
+
+    def __init__(
+        self,
+        address,
+        *,
+        prefix=b"",
+        loop=None,
+        zmq=None,
+        zmq_asyncio=None,
+        deserializer=pickle.loads,
+        strict=False,
+    ):
         if isinstance(prefix, str):
             raise ValueError("prefix must be bytes, not string")
-        if b' ' in prefix:
-            raise ValueError("prefix {!r} may not contain b' '".format(prefix))
+        if b" " in prefix:
+            raise ValueError(f"prefix {prefix!r} may not contain b' '")
         self._prefix = prefix
         if zmq is None:
             import zmq
         if zmq_asyncio is None:
             import zmq.asyncio as zmq_asyncio
         if isinstance(address, str):
-            address = address.split(':', maxsplit=1)
+            address = address.split(":", maxsplit=1)
         self._deserializer = deserializer
         self.address = (address[0], int(address[1]))
 
@@ -271,15 +282,17 @@ class RemoteDispatcher(Dispatcher):
         while True:
             message = await self._socket.recv()
             try:
-                prefix, name, doc = message.split(b' ', 2)
+                prefix, name, doc = message.split(b" ", 2)
             except ValueError as e:
                 if self._strict:
                     raise Bluesky0MQDecodeError from e
                 else:
-                    print(f"The message {message} could not be split into "
-                          "three parts by b' '.  Dropping message on floor "
-                          "and continuing"
-                          f"\n\n{e}")
+                    print(
+                        f"The message {message} could not be split into "
+                        "three parts by b' '.  Dropping message on floor "
+                        "and continuing"
+                        f"\n\n{e}"
+                    )
                     continue
 
             try:
@@ -288,9 +301,11 @@ class RemoteDispatcher(Dispatcher):
                 if self._strict:
                     raise Bluesky0MQDecodeError from e
                 else:
-                    print(f"The name {name} can not be decoded as utf-8. "
-                          "Dropping message on the floor and continuing. "
-                          f"\n\n{e}")
+                    print(
+                        f"The name {name} can not be decoded as utf-8. "
+                        "Dropping message on the floor and continuing. "
+                        f"\n\n{e}"
+                    )
                     continue
             if (not our_prefix) or prefix == our_prefix:
                 try:
@@ -300,21 +315,25 @@ class RemoteDispatcher(Dispatcher):
                         raise Bluesky0MQDecodeError from e
                     else:
                         if len(doc) > 1024:
-                            msg_doc = doc[:1024] + b'--SNIPPED--'
+                            msg_doc = doc[:1024] + b"--SNIPPED--"
                         else:
                             msg_doc = doc
-                        print(f"Failed to deserialize the {name} document "
-                              f"{msg_doc} using {self._deserializer}. "
-                              "Dropping on floor and continuing"
-                              f"\n\n{e}")
+                        print(
+                            f"Failed to deserialize the {name} document "
+                            f"{msg_doc} using {self._deserializer}. "
+                            "Dropping on floor and continuing"
+                            f"\n\n{e}"
+                        )
                         continue
                 self.loop.call_soon(self.process, DocumentNames[name], doc)
 
     def start(self):
         if self.closed:
-            raise RuntimeError("This RemoteDispatcher has already been "
-                               "started and interrupted. Create a fresh "
-                               f"instance with {self!r}")
+            raise RuntimeError(
+                "This RemoteDispatcher has already been "
+                "started and interrupted. Create a fresh "
+                f"instance with {self!r}"
+            )
         try:
             self._task = self.loop.create_task(self._poll())
             self.loop.run_until_complete(self._task)

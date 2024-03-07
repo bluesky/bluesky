@@ -1,8 +1,10 @@
 import copy
 import pprint
 import warnings
-import numpy as np
 from collections import namedtuple
+
+import numpy as np
+
 from .core import CallbackBase, CollectThenCompute
 
 
@@ -29,8 +31,8 @@ class LiveFit(CallbackBase):
     ----------
     result : lmfit.ModelResult
     """
-    def __init__(self, model, y, independent_vars, init_guess=None, *,
-                 update_every=1):
+
+    def __init__(self, model, y, independent_vars, init_guess=None, *, update_every=1):
         self.ydata = []
         self.independent_vars_data = {}
         self.__stale = False
@@ -55,10 +57,11 @@ class LiveFit(CallbackBase):
     @independent_vars.setter
     def independent_vars(self, val):
         if set(val) != set(self.model.independent_vars):
-            raise ValueError("keys {} must match the independent variables in "
-                             "the model "
-                             "{}".format(set(val),
-                                         set(self.model.independent_vars)))
+            raise ValueError(
+                "keys {} must match the independent variables in " "the model " "{}".format(
+                    set(val), set(self.model.independent_vars)
+                )
+            )
         self._independent_vars = val
         self.independent_vars_data.clear()
         self.independent_vars_data.update({k: [] for k in val})
@@ -76,10 +79,10 @@ class LiveFit(CallbackBase):
         super().start(doc)
 
     def event(self, doc):
-        if self.y not in doc['data']:
+        if self.y not in doc["data"]:
             return
-        y = doc['data'][self.y]
-        idv = {k: doc['data'][v] for k, v in self.independent_vars.items()}
+        y = doc["data"][self.y]
+        idv = {k: doc["data"][v] for k, v in self.independent_vars.items()}
 
         # Always stash the data for the next time the fit is updated.
         self.update_caches(y, idv)
@@ -110,8 +113,7 @@ class LiveFit(CallbackBase):
     def update_fit(self):
         N = len(self.model.param_names)
         if len(self.ydata) < N:
-            warnings.warn("LiveFitPlot cannot update fit until there are at least {} "
-                          "data points".format(N))
+            warnings.warn(f"LiveFitPlot cannot update fit until there are at least {N} " "data points")
         else:
             kwargs = {}
             kwargs.update(self.independent_vars_data)
@@ -163,9 +165,7 @@ def center_of_mass(input, labels=None, index=None):
     normalizer = np.sum(input, labels, index)
     grids = np.ogrid[[slice(0, i) for i in input.shape]]
 
-    results = [
-        np.sum(input * grids[dir].astype(float), labels, index) / normalizer
-        for dir in range(input.ndim)]
+    results = [np.sum(input * grids[dir].astype(float), labels, index) / normalizer for dir in range(input.ndim)]
 
     if np.isscalar(results[0]):
         return tuple(results)
@@ -210,11 +210,23 @@ class PeakStats(CollectThenCompute):
            be the fwhm.
     """
 
-    __slots__ = ("x", "y", "x_data", "y_data", "stats", "derivative_stats",
-                 "min", "max", "com", "cen", "crossings", "fwhm", "lin_bkg")
+    __slots__ = (
+        "x",
+        "y",
+        "x_data",
+        "y_data",
+        "stats",
+        "derivative_stats",
+        "min",
+        "max",
+        "com",
+        "cen",
+        "crossings",
+        "fwhm",
+        "lin_bkg",
+    )
 
-    def __init__(self, x, y, *, edge_count=None,
-                 calc_derivative_and_stats=False):
+    def __init__(self, x, y, *, edge_count=None, calc_derivative_and_stats=False):
         self.x = x
         self.y = y
         self._edge_count = edge_count
@@ -275,13 +287,13 @@ class PeakStats(CollectThenCompute):
 
         fields["min"] = (x[argmin_y], y_orig[argmin_y])
         fields["max"] = (x[argmax_y], y_orig[argmax_y])
-        fields["com"], = np.interp(center_of_mass(y), np.arange(len(x)), x)
+        (fields["com"],) = np.interp(center_of_mass(y), np.arange(len(x)), x)
         mid = (np.max(y) + np.min(y)) / 2
         crossings = np.where(np.diff((y > mid).astype(int)))[0]
         _cen_list = []
         for cr in crossings.ravel():
-            _x = x[cr:cr + 2]
-            _y = y[cr:cr + 2] - mid
+            _x = x[cr : cr + 2]
+            _y = y[cr : cr + 2] - mid
 
             dx = np.diff(_x)[0]
             dy = np.diff(_y)[0]
@@ -292,8 +304,7 @@ class PeakStats(CollectThenCompute):
             fields["cen"] = np.mean(_cen_list)
             fields["crossings"] = np.array(_cen_list)
             if len(_cen_list) >= 2:
-                fields["fwhm"] = np.abs(fields["crossings"][-1] - fields["crossings"][0],
-                                        dtype=float)
+                fields["fwhm"] = np.abs(fields["crossings"][-1] - fields["crossings"][0], dtype=float)
 
         Stats = namedtuple("Stats", field_names=fields.keys())
         stats = Stats(**fields)
@@ -309,8 +320,8 @@ class PeakStats(CollectThenCompute):
         y = []
         for event in self._events:
             try:
-                _x = event['data'][self.x]
-                _y = event['data'][self.y]
+                _x = event["data"][self.x]
+                _y = event["data"][self.y]
             except KeyError:
                 pass
             else:
@@ -326,8 +337,7 @@ class PeakStats(CollectThenCompute):
         self.y_data = y
 
         stats_fields = copy.deepcopy(self._stats_fields)
-        self.stats = self._calc_stats(x, y, stats_fields,
-                                      edge_count=self._edge_count)
+        self.stats = self._calc_stats(x, y, stats_fields, edge_count=self._edge_count)
 
         for field in self._stats_fields:
             setattr(self, field, getattr(self.stats, field))
@@ -339,11 +349,7 @@ class PeakStats(CollectThenCompute):
 
             stats_fields = copy.deepcopy(self._stats_fields)
             stats_fields.update({"x": x_der, "y": y_der})
-            self.derivative_stats = self._calc_stats(
-                x_der, y_der,
-                stats_fields,
-                edge_count=self._edge_count
-            )
+            self.derivative_stats = self._calc_stats(x_der, y_der, stats_fields, edge_count=self._edge_count)
 
         # reset y data
         y = self.y_data

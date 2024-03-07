@@ -1,11 +1,13 @@
-from collections import ChainMap
-from cycler import cycler
-import numpy as np
+import functools
+import logging
 import threading
 import warnings
-import functools
+from collections import ChainMap
+
+import numpy as np
+from cycler import cycler
+
 from .core import CallbackBase, get_obj_fields, make_class_safe
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +32,7 @@ def initialize_qt_teleporter():
         # Already initialized.
         return
     if threading.current_thread() is not threading.main_thread():
-        raise RuntimeError(
-            "initialize_qt_teleporter() may only be called from the main "
-            "thread.")
+        raise RuntimeError("initialize_qt_teleporter() may only be called from the main " "thread.")
     _get_teleporter()
 
 
@@ -47,7 +47,8 @@ def _get_teleporter():
             "thread before the bluesky qt 'teleporter' was created. "
             "To avoid this issue, "
             "call bluesky.callbacks.mpl_plotting.initialize_qt_teleporter() "
-            "from the main thread first.")
+            "from the main thread first."
+        )
 
     def handle_teleport(name, doc, obj):
         obj(name, doc, escape=True)
@@ -64,7 +65,8 @@ class QtAwareCallback(CallbackBase):
     def __init__(self, *args, use_teleporter=None, **kwargs):
         if use_teleporter is None:
             import matplotlib
-            use_teleporter = 'qt' in matplotlib.get_backend().lower()
+
+            use_teleporter = "qt" in matplotlib.get_backend().lower()
         if use_teleporter:
             self.__teleporter = _get_teleporter()
         else:
@@ -118,9 +120,11 @@ class LivePlot(QtAwareCallback):
     >>> my_plotter = LivePlot('det', 'motor', legend_keys=['sample'])
     >>> RE(my_scan, my_plotter)
     """
-    def __init__(self, y, x=None, *, legend_keys=None, xlim=None, ylim=None,
-                 ax=None, fig=None, epoch='run', **kwargs):
-        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
+
+    def __init__(
+        self, y, x=None, *, legend_keys=None, xlim=None, ylim=None, ax=None, fig=None, epoch="run", **kwargs
+    ):
+        super().__init__(use_teleporter=kwargs.pop("use_teleporter", None))
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
 
@@ -128,18 +132,22 @@ class LivePlot(QtAwareCallback):
             # Run this code in start() so that it runs on the correct thread.
             nonlocal y, x, legend_keys, xlim, ylim, ax, fig, epoch, kwargs
             import matplotlib.pyplot as plt
+
             with self.__setup_lock:
                 if self.__setup_event.is_set():
                     return
                 self.__setup_event.set()
             if fig is not None:
                 if ax is not None:
-                    raise ValueError("Values were given for both `fig` and `ax`. "
-                                     "Only one can be used; prefer ax.")
-                warnings.warn("The `fig` keyword arugment of LivePlot is "
-                              "deprecated and will be removed in the future. "
-                              "Instead, use the new keyword argument `ax` to "
-                              "provide specific Axes to plot on.")
+                    raise ValueError(
+                        "Values were given for both `fig` and `ax`. " "Only one can be used; prefer ax."
+                    )
+                warnings.warn(
+                    "The `fig` keyword arugment of LivePlot is "
+                    "deprecated and will be removed in the future. "
+                    "Instead, use the new keyword argument `ax` to "
+                    "provide specific Axes to plot on."
+                )
                 ax = fig.gca()
             if ax is None:
                 fig, ax = plt.subplots()
@@ -147,19 +155,19 @@ class LivePlot(QtAwareCallback):
 
             if legend_keys is None:
                 legend_keys = []
-            self.legend_keys = ['scan_id'] + legend_keys
+            self.legend_keys = ["scan_id"] + legend_keys
             if x is not None:
                 self.x, *others = get_obj_fields([x])
             else:
-                self.x = 'seq_num'
+                self.x = "seq_num"
             self.y, *others = get_obj_fields([y])
             self.ax.set_ylabel(y)
-            self.ax.set_xlabel(x or 'sequence #')
+            self.ax.set_xlabel(x or "sequence #")
             if xlim is not None:
                 self.ax.set_xlim(*xlim)
             if ylim is not None:
                 self.ax.set_ylim(*ylim)
-            self.ax.margins(.1)
+            self.ax.margins(0.1)
             self.kwargs = kwargs
             self.lines = []
             self.legend = None
@@ -172,12 +180,11 @@ class LivePlot(QtAwareCallback):
     def start(self, doc):
         self.__setup()
         # The doc is not used; we just use the signal that a new run began.
-        self._epoch_offset = doc['time']  # used if self.x == 'time'
+        self._epoch_offset = doc["time"]  # used if self.x == 'time'
         self.x_data, self.y_data = [], []
-        label = " :: ".join(
-            [str(doc.get(name, name)) for name in self.legend_keys])
-        kwargs = ChainMap(self.kwargs, {'label': label})
-        self.current_line, = self.ax.plot([], [], **kwargs)
+        label = " :: ".join([str(doc.get(name, name)) for name in self.legend_keys])
+        kwargs = ChainMap(self.kwargs, {"label": label})
+        (self.current_line,) = self.ax.plot([], [], **kwargs)
         self.lines.append(self.current_line)
         legend = self.ax.legend(loc=0, title=self.legend_title)
         try:
@@ -198,20 +205,20 @@ class LivePlot(QtAwareCallback):
             # be keys in the data or accessing the standard entries in every
             # event.
             try:
-                new_x = doc['data'][self.x]
+                new_x = doc["data"][self.x]
             except KeyError:
-                if self.x in ('time', 'seq_num'):
+                if self.x in ("time", "seq_num"):
                     new_x = doc[self.x]
                 else:
                     raise
-            new_y = doc['data'][self.y]
+            new_y = doc["data"][self.y]
         except KeyError:
             # wrong event stream, skip it
             return
 
         # Special-case 'time' to plot against against experiment epoch, not
         # UNIX epoch.
-        if self.x == 'time' and self._epoch == 'run':
+        if self.x == "time" and self._epoch == "run":
             new_x -= self._epoch_offset
 
         self.update_caches(new_x, new_y)
@@ -231,14 +238,15 @@ class LivePlot(QtAwareCallback):
 
     def stop(self, doc):
         if not self.x_data:
-            print('LivePlot did not get any data that corresponds to the '
-                  'x axis. {}'.format(self.x))
+            print("LivePlot did not get any data that corresponds to the " f"x axis. {self.x}")
         if not self.y_data:
-            print('LivePlot did not get any data that corresponds to the '
-                  'y axis. {}'.format(self.y))
+            print("LivePlot did not get any data that corresponds to the " f"y axis. {self.y}")
         if len(self.y_data) != len(self.x_data):
-            print('LivePlot has a different number of elements for x ({}) and'
-                  'y ({})'.format(len(self.x_data), len(self.y_data)))
+            print(
+                "LivePlot has a different number of elements for x ({}) and" "y ({})".format(
+                    len(self.x_data), len(self.y_data)
+                )
+            )
         super().stop(doc)
 
 
@@ -274,9 +282,21 @@ class LiveScatter(QtAwareCallback):
     --------
     :class:`bluesky.callbacks.mpl_plotting.LiveGrid`.
     """
-    def __init__(self, x, y, I, *, xlim=None, ylim=None,  # noqa: E741
-                 clim=None, cmap='viridis', ax=None, **kwargs):
-        super().__init__(use_teleporter=kwargs.pop('use_teleporter', None))
+
+    def __init__(
+        self,
+        x,
+        y,
+        I,
+        *,
+        xlim=None,
+        ylim=None,  # noqa: E741
+        clim=None,
+        cmap="viridis",
+        ax=None,
+        **kwargs,
+    ):
+        super().__init__(use_teleporter=kwargs.pop("use_teleporter", None))
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
 
@@ -287,8 +307,9 @@ class LiveScatter(QtAwareCallback):
                 if self.__setup_event.is_set():
                     return
                 self.__setup_event.set()
-            import matplotlib.pyplot as plt
             import matplotlib.colors as mcolors
+            import matplotlib.pyplot as plt
+
             if ax is None:
                 fig, ax = plt.subplots()
                 fig.show()
@@ -298,13 +319,13 @@ class LiveScatter(QtAwareCallback):
             self.I = I  # noqa: E741
             ax.set_xlabel(x)
             ax.set_ylabel(y)
-            ax.set_aspect('equal')
+            ax.set_aspect("equal")
             self._sc = []
             self.ax = ax
-            ax.margins(.1)
+            ax.margins(0.1)
             self._xdata, self._ydata, self._Idata = [], [], []
             self._norm = mcolors.Normalize()
-            self._minx, self._maxx, self._miny, self._maxy = (None,)*4
+            self._minx, self._maxx, self._miny, self._maxy = (None,) * 4
 
             self.xlim = xlim
             self.ylim = ylim
@@ -317,8 +338,8 @@ class LiveScatter(QtAwareCallback):
             self.clim = clim
             self.cmap = cmap
             self.kwargs = kwargs
-            self.kwargs.setdefault('edgecolor', 'face')
-            self.kwargs.setdefault('s', 50)
+            self.kwargs.setdefault("edgecolor", "face")
+            self.kwargs.setdefault("s", 50)
 
         self.__setup = setup
 
@@ -327,8 +348,9 @@ class LiveScatter(QtAwareCallback):
         self._xdata.clear()
         self._ydata.clear()
         self._Idata.clear()
-        sc = self.ax.scatter(self._xdata, self._ydata, c=self._Idata,
-                             norm=self._norm, cmap=self.cmap, **self.kwargs)
+        sc = self.ax.scatter(
+            self._xdata, self._ydata, c=self._Idata, norm=self._norm, cmap=self.cmap, **self.kwargs
+        )
         self._sc.append(sc)
         self.sc = sc
         cb = self.ax.figure.colorbar(sc, ax=self.ax)
@@ -336,9 +358,9 @@ class LiveScatter(QtAwareCallback):
         super().start(doc)
 
     def event(self, doc):
-        x = doc['data'][self.x]
-        y = doc['data'][self.y]
-        I = doc['data'][self.I]  # noqa: E741
+        x = doc["data"][self.x]
+        y = doc["data"][self.y]
+        I = doc["data"][self.I]  # noqa: E741
         self.update(x, y, I)
         super().event(doc)
 
@@ -376,8 +398,10 @@ class LiveMesh(LiveScatter):
     __doc__ = LiveScatter.__doc__
 
     def __init__(self, *args, **kwargs):
-        warnings.warn("LiveMesh has been renamed to LiveScatter. The name "
-                      "LiveMesh will eventually be removed. Use LiveScatter.")
+        warnings.warn(
+            "LiveMesh has been renamed to LiveScatter. The name "
+            "LiveMesh will eventually be removed. Use LiveScatter."
+        )
         super().__init__(*args, **kwargs)
 
 
@@ -432,10 +456,23 @@ class LiveGrid(QtAwareCallback):
     --------
     :class:`bluesky.callbacks.mpl_plotting.LiveScatter`.
     """
-    def __init__(self, raster_shape, I, *,  # noqa: E741
-                 clim=None, cmap='viridis',
-                 xlabel='x', ylabel='y', extent=None, aspect='equal',
-                 ax=None, x_positive='right', y_positive='up', **kwargs):
+
+    def __init__(
+        self,
+        raster_shape,
+        I,
+        *,  # noqa: E741
+        clim=None,
+        cmap="viridis",
+        xlabel="x",
+        ylabel="y",
+        extent=None,
+        aspect="equal",
+        ax=None,
+        x_positive="right",
+        y_positive="up",
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.__setup_lock = threading.Lock()
         self.__setup_event = threading.Event()
@@ -448,8 +485,9 @@ class LiveGrid(QtAwareCallback):
                 if self.__setup_event.is_set():
                     return
                 self.__setup_event.set()
-            import matplotlib.pyplot as plt
             import matplotlib.colors as mcolors
+            import matplotlib.pyplot as plt
+
             if ax is None:
                 fig, ax = plt.subplots()
             ax.cla()
@@ -483,52 +521,52 @@ class LiveGrid(QtAwareCallback):
         # origin must be 'lower' for the plot to fill in correctly
         # (the first voxel filled must be closest to what mpl thinks
         # is the 'lower left' of the image)
-        im = self.ax.imshow(self._Idata, norm=self._norm,
-                            cmap=self.cmap, interpolation='none',
-                            extent=extent, aspect=self.aspect,
-                            origin='lower')
+        im = self.ax.imshow(
+            self._Idata,
+            norm=self._norm,
+            cmap=self.cmap,
+            interpolation="none",
+            extent=extent,
+            aspect=self.aspect,
+            origin="lower",
+        )
 
         # make sure the 'positive direction' of the axes matches what
         # is defined in axes_positive
         xmin, xmax = self.ax.get_xlim()
-        if ((xmin > xmax and self.x_positive == 'right') or
-                (xmax > xmin and self.x_positive == 'left')):
+        if (xmin > xmax and self.x_positive == "right") or (xmax > xmin and self.x_positive == "left"):
             self.ax.set_xlim(xmax, xmin)
-        elif ((xmax >= xmin and self.x_positive == 'right') or
-                (xmin >= xmax and self.x_positive == 'left')):
+        elif (xmax >= xmin and self.x_positive == "right") or (xmin >= xmax and self.x_positive == "left"):
             self.ax.set_xlim(xmin, xmax)
         else:
             raise ValueError('x_positive must be either "right" or "left"')
 
         ymin, ymax = self.ax.get_ylim()
-        if ((ymin > ymax and self.y_positive == 'up') or
-                (ymax > ymin and self.y_positive == 'down')):
+        if (ymin > ymax and self.y_positive == "up") or (ymax > ymin and self.y_positive == "down"):
             self.ax.set_ylim(ymax, ymin)
-        elif ((ymax >= ymin and self.y_positive == 'up') or
-                (ymin >= ymax and self.y_positive == 'down')):
+        elif (ymax >= ymin and self.y_positive == "up") or (ymin >= ymax and self.y_positive == "down"):
             self.ax.set_ylim(ymin, ymax)
         else:
             raise ValueError('y_positive must be either "up" or "down"')
 
         self.im = im
-        self.ax.set_title('scan {uid} [{sid}]'.format(sid=doc['scan_id'],
-                                                      uid=doc['uid'][:6]))
-        self.snaking = doc.get('snaking', (False, False))
+        self.ax.set_title("scan {uid} [{sid}]".format(sid=doc["scan_id"], uid=doc["uid"][:6]))
+        self.snaking = doc.get("snaking", (False, False))
 
         cb = self.ax.figure.colorbar(im, ax=self.ax)
         cb.set_label(self.I)
         super().start(doc)
 
     def event(self, doc):
-        if self.I not in doc['data']:
+        if self.I not in doc["data"]:
             return
 
-        seq_num = doc['seq_num'] - 1
+        seq_num = doc["seq_num"] - 1
         pos = list(np.unravel_index(seq_num, self.raster_shape))
         if self.snaking[1] and (pos[0] % 2):
             pos[1] = self.raster_shape[1] - pos[1] - 1
         pos = tuple(pos)
-        I = doc['data'][self.I]  # noqa: E741
+        I = doc["data"][self.I]  # noqa: E741
         self.update(pos, I)
         super().event(doc)
 
@@ -546,8 +584,10 @@ class LiveRaster(LiveGrid):
     __doc__ = LiveGrid.__doc__
 
     def __init__(self, *args, **kwargs):
-        warnings.warn("LiveRaster has been renamed to LiveGrid. The name "
-                      "LiveRaster will eventually be removed. Use LiveGrid.")
+        warnings.warn(
+            "LiveRaster has been renamed to LiveGrid. The name "
+            "LiveRaster will eventually be removed. Use LiveGrid."
+        )
         super().__init__(*args, **kwargs)
 
 
@@ -577,15 +617,13 @@ class LiveFitPlot(LivePlot):
         matplotib Axes; if none specified, new figure and axes are made.
     All additional keyword arguments are passed through to ``Axes.plot``.
     """
-    def __init__(self, livefit, *, num_points=100, legend_keys=None, xlim=None,
-                 ylim=None, ax=None, **kwargs):
+
+    def __init__(self, livefit, *, num_points=100, legend_keys=None, xlim=None, ylim=None, ax=None, **kwargs):
         if len(livefit.independent_vars) != 1:
-            raise NotImplementedError("LiveFitPlot supports models with one "
-                                      "independent variable only.")
-        self.__x_key, = livefit.independent_vars.keys()  # this never changes
-        x, = livefit.independent_vars.values()  # this may change
-        super().__init__(livefit.y, x, legend_keys=legend_keys,
-                         xlim=xlim, ylim=xlim, ax=ax, **kwargs)
+            raise NotImplementedError("LiveFitPlot supports models with one " "independent variable only.")
+        (self.__x_key,) = livefit.independent_vars.keys()  # this never changes
+        (x,) = livefit.independent_vars.values()  # this may change
+        super().__init__(livefit.y, x, legend_keys=legend_keys, xlim=xlim, ylim=xlim, ax=ax, **kwargs)
         self.num_points = num_points
         self._livefit = livefit
         self._xlim = xlim
@@ -598,13 +636,13 @@ class LiveFitPlot(LivePlot):
     def start(self, doc):
         super().start(doc)
         self.livefit.start(doc)
-        self.x, = self.livefit.independent_vars.keys()  # in case it changed
+        (self.x,) = self.livefit.independent_vars.keys()  # in case it changed
         if self._has_been_run:
-            label = '_nolegend_'
+            label = "_nolegend_"
         else:
-            label = 'init guess'
+            label = "init guess"
         self._has_been_run = True
-        self.init_guess_line, = self.ax.plot([], [], color='grey', label=label)
+        (self.init_guess_line,) = self.ax.plot([], [], color="grey", label=label)
         self.lines.append(self.init_guess_line)
         # Put fit above other lines (default 2) but below text (default 3).
         [line.set_zorder(2.5) for line in self.lines]
@@ -664,23 +702,24 @@ def plot_peak_stats(peak_stats, ax=None):
 
     """
     import matplotlib.pyplot as plt
+
     arts = {}
     ps = peak_stats  # for brevity
     if ax is None:
         fig, ax = plt.subplots()
-    ax.margins(.1)
+    ax.margins(0.1)
     # Plot points, vertical lines, and a legend. Collect Artist objs to return.
-    points, = ax.plot(ps.x_data, ps.y_data, 'o')
+    (points,) = ax.plot(ps.x_data, ps.y_data, "o")
     vlines = []
-    styles = iter(cycler('color', 'krgbm'))
-    for style, attr in zip(styles, ['cen', 'com']):
+    styles = iter(cycler("color", "krgbm"))
+    for style, attr in zip(styles, ["cen", "com"]):
         print(style, attr)
         val = getattr(ps, attr)
         if val is None:
             continue
         vlines.append(ax.axvline(val, label=attr, **style))
 
-    for style, attr in zip(styles, ['max', 'min']):
+    for style, attr in zip(styles, ["max", "min"]):
         print(style, attr)
         val = getattr(ps, attr)
         if val is None:
@@ -690,10 +729,9 @@ def plot_peak_stats(peak_stats, ax=None):
 
     if ps.lin_bkg:
         lb = ps.lin_bkg
-        ln, = ax.plot(ps.x_data, ps.x_data*lb['m'] + lb['b'],
-                      ls='--', lw=2, color='k')
-        arts['bkg'] = ln
+        (ln,) = ax.plot(ps.x_data, ps.x_data * lb["m"] + lb["b"], ls="--", lw=2, color="k")
+        arts["bkg"] = ln
 
-    legend = ax.legend(loc='best')
-    arts.update({'points': points, 'vlines': vlines, 'legend': legend})
+    legend = ax.legend(loc="best")
+    arts.update({"points": points, "vlines": vlines, "legend": legend})
     return arts

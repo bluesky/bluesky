@@ -1,33 +1,33 @@
-import warnings
-
 import ast
-import pytest
-import jsonschema
 import time as ttime
+import warnings
 from datetime import datetime
+
 import numpy as np
-from bluesky.plans import scan, grid_scan
-import bluesky.preprocessors as bpp
-import bluesky.plan_stubs as bps
-from bluesky.preprocessors import SupplementalData
-from bluesky.callbacks.best_effort import BestEffortCallback
-from bluesky.utils import new_uid
+import pytest
 from event_model import RunRouter
+
+import bluesky.plan_stubs as bps
+import bluesky.preprocessors as bpp
+from bluesky.callbacks.best_effort import BestEffortCallback
+from bluesky.plans import grid_scan, scan
+from bluesky.preprocessors import SupplementalData
 from bluesky.tests.utils import DocCollector
+from bluesky.utils import new_uid
 
 
 def test_hints(RE, hw):
     motor = hw.motor
-    expected_hint = {'fields': [motor.name]}
+    expected_hint = {"fields": [motor.name]}
     assert motor.hints == expected_hint
     collector = []
 
     def collect(*args):
         collector.append(args)
 
-    RE(scan([], motor, 1, 2, 2), {'descriptor': collect})
+    RE(scan([], motor, 1, 2, 2), {"descriptor": collect})
     name, doc = collector.pop()
-    assert doc['hints'][motor.name] == expected_hint
+    assert doc["hints"][motor.name] == expected_hint
 
 
 def test_simple(RE, hw):
@@ -52,7 +52,7 @@ def test_disable(RE, hw):
     assert bec._table is not None
 
     bec.peaks.com
-    bec.peaks['com']
+    bec.peaks["com"]
     assert ast.literal_eval(repr(bec.peaks)) == vars(bec.peaks)
 
     bec.clear()
@@ -70,7 +70,7 @@ def test_disable(RE, hw):
 def test_blank_hints(RE, hw):
     bec = BestEffortCallback()
     RE.subscribe(bec)
-    RE(scan([hw.ab_det], hw.motor, 1, 5, 5, md={'hints': {}}))
+    RE(scan([hw.ab_det], hw.motor, 1, 5, 5, md={"hints": {}}))
 
 
 def test_with_baseline(RE, hw):
@@ -87,8 +87,8 @@ def test_underhinted_plan(RE, hw):
 
     @bpp.run_decorator()
     def broken_plan(dets):
-        yield from bps.declare_stream(*dets, name='primary')
-        yield from bps.trigger_and_read(dets, name='primary')
+        yield from bps.declare_stream(*dets, name="primary")
+        yield from bps.trigger_and_read(dets, name="primary")
 
     RE(broken_plan([hw.det]))
 
@@ -119,7 +119,7 @@ def test_many_grids(RE, hw):
 
 
 def test_push_start_document(capsys):
-    """ Pass the start document to BEC and verify if the scan information is printed correctly"""
+    """Pass the start document to BEC and verify if the scan information is printed correctly"""
 
     bec = BestEffortCallback()
 
@@ -131,14 +131,15 @@ def test_push_start_document(capsys):
     bec("start", {"scan_id": scan_id, "time": time, "uid": uid})
 
     captured = capsys.readouterr()
-    assert f"Transient Scan ID: {scan_id}" in captured.out, \
-        "BestEffortCallback: Scan ID is not printed correctly"
+    assert f"Transient Scan ID: {scan_id}" in captured.out, "BestEffortCallback: Scan ID is not printed correctly"
 
     tt = datetime.fromtimestamp(time).utctimetuple()
-    assert f"Time: {ttime.strftime('%Y-%m-%d %H:%M:%S', tt)}" in captured.out, \
-        "BestEffortCallback: Scan time is not printed correctly"
-    assert f"Persistent Unique Scan ID: '{uid}'" in captured.out, \
-        "BestEffortCallback: Scan UID is not printed correctly"
+    assert (
+        f"Time: {ttime.strftime('%Y-%m-%d %H:%M:%S', tt)}" in captured.out
+    ), "BestEffortCallback: Scan time is not printed correctly"
+    assert (
+        f"Persistent Unique Scan ID: '{uid}'" in captured.out
+    ), "BestEffortCallback: Scan UID is not printed correctly"
 
 
 def test_multirun_nested_plan(capsys, caplog, RE, hw):
@@ -157,7 +158,7 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     @bpp.stage_decorator([hw.det1, hw.motor])
     @bpp.run_decorator(md={})
     def plan_outer():
-        yield from bps.declare_stream(hw.det1, name='primary')
+        yield from bps.declare_stream(hw.det1, name="primary")
 
         yield from sequence()
         # Call inner plan from within the plan
@@ -180,8 +181,9 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     # Check if the expected error message is printed once the callback fails. The same
     #   substring will be used in the second part of the test to check if BEC did not fail.
     err_msg_substr = "is being suppressed to not interrupt plan execution"
-    assert err_msg_substr in str(caplog.text), \
-        "Best Effort Callback failed, but expected error message was not printed"
+    assert err_msg_substr in str(
+        caplog.text
+    ), "Best Effort Callback failed, but expected error message was not printed"
 
     RE.unsubscribe(bec_token)
     caplog.clear()
@@ -190,6 +192,7 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     def factory(name, doc):
         bec = BestEffortCallback()
         return [bec], []
+
     rr = RunRouter([factory])
     RE.subscribe(rr)
     RE(plan_outer())
@@ -197,28 +200,31 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     captured = capsys.readouterr()
     n_runs = captured.out.count(scan_uid_substr)
     assert n_runs == 2, "scan output contains incorrect number of runs"
-    assert err_msg_substr not in caplog.text, \
-        "Best Effort Callback failed while executing nested plans"
+    assert err_msg_substr not in caplog.text, "Best Effort Callback failed while executing nested plans"
+
+
+from importlib.metadata import metadata
 
 from packaging import version
-from importlib.metadata import metadata
+
 JSONSCHEMA_VERSION: str = version.parse(metadata("jsonschema")["version"])
 
-@pytest.mark.xfail(JSONSCHEMA_VERSION >= version.parse("3.0.0"),
-                   reason='Deprecations in jsonschema')
+
+@pytest.mark.xfail(JSONSCHEMA_VERSION >= version.parse("3.0.0"), reason="Deprecations in jsonschema")
 def test_plot_ints(RE):
     from ophyd import Signal
+
+    import bluesky.plan_stubs as bps
     from bluesky.callbacks.best_effort import BestEffortCallback
     from bluesky.plans import count
-    import bluesky.plan_stubs as bps
 
     bec = BestEffortCallback()
     RE.subscribe(bec)
 
-    s = Signal(name='s')
-    RE(bps.mov(s, int(0)))
-    assert s.describe()['s']['dtype'] == 'integer'
-    s.kind = 'hinted'
+    s = Signal(name="s")
+    RE(bps.mov(s, 0))
+    assert s.describe()["s"]["dtype"] == "integer"
+    s.kind = "hinted"
 
     with warnings.catch_warnings():
         warnings.simplefilter("error")
@@ -318,8 +324,7 @@ def test_bec_peak_stats_derivative_and_stats(RE, hw):
         stats_value = getattr(ps.derivative_stats, field)
         out_value = out["derivative_stats"][field]
         if stats_value is not None:
-            assert np.allclose(stats_value,
-                               out_value)
+            assert np.allclose(stats_value, out_value)
         else:
             stats_value == out_value
 

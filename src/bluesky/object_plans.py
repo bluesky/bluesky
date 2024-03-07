@@ -4,20 +4,34 @@
 # was deprecated in v0.10.0. It will be removed in a future release. It should
 # not be used. To build 'reusable' plans we now recommend `functools.partial`.
 
-from . import utils
 import warnings
 from collections import defaultdict
 
 # The code below adds no new logic, but it wraps the generators above in
 # classes for an alternative interface that is more stateful.
-
 from . import preprocessors as bpp
-from .plans import (count, list_scan, rel_list_scan, log_scan,
-                    rel_scan, adaptive_scan, rel_adaptive_scan,
-                    scan_nd, inner_product_scan, relative_inner_product_scan,
-                    grid_scan, scan, tweak, spiral, spiral_fermat,
-                    rel_spiral_fermat, rel_spiral, rel_log_scan,
-                    rel_grid_scan)
+from . import utils
+from .plans import (
+    adaptive_scan,
+    count,
+    grid_scan,
+    inner_product_scan,
+    list_scan,
+    log_scan,
+    rel_adaptive_scan,
+    rel_grid_scan,
+    rel_list_scan,
+    rel_log_scan,
+    rel_scan,
+    rel_spiral,
+    rel_spiral_fermat,
+    relative_inner_product_scan,
+    scan,
+    scan_nd,
+    spiral,
+    spiral_fermat,
+    tweak,
+)
 
 
 class Plan(utils.Struct):
@@ -37,6 +51,7 @@ class Plan(utils.Struct):
     - a hook for adding "flyable" objects to a plan
     - attributes for adding subscriptions and subscription factory functions
     """
+
     subs = utils.Subs({})
     sub_factories = utils.Subs({})
 
@@ -52,15 +67,17 @@ class Plan(utils.Struct):
 
         Any keyword arguments override present settings.
         """
-        warnings.warn("This plan and all object-oriented plans have been "
-                      "deprecated and will be removed in a future release "
-                      "of bluesky. Instead of Count or Scan use count or "
-                      "scan, etc.", stacklevel=2)
+        warnings.warn(
+            "This plan and all object-oriented plans have been "
+            "deprecated and will be removed in a future release "
+            "of bluesky. Instead of Count or Scan use count or "
+            "scan, etc.",
+            stacklevel=2,
+        )
         subs = defaultdict(list)
         utils.update_sub_lists(subs, self.subs)
-        utils.update_sub_lists(
-            subs, utils.apply_sub_factories(self.sub_factories, self))
-        flyers = getattr(self, 'flyers', [])
+        utils.update_sub_lists(subs, utils.apply_sub_factories(self.sub_factories, self))
+        flyers = getattr(self, "flyers", [])
 
         def cls_plan():
             current_settings = {}
@@ -89,7 +106,7 @@ PlanBase = Plan  # back-compat
 
 
 class Count(Plan):
-    _fields = ['detectors', 'num', 'delay']
+    _fields = ["detectors", "num", "delay"]
     __doc__ = count.__doc__
 
     def __init__(self, detectors, num=1, delay=0, *, md=None):
@@ -104,86 +121,101 @@ class Count(Plan):
 
 
 class ListScan(Plan):
-    _fields = ['detectors', 'motor', 'steps']
+    _fields = ["detectors", "motor", "steps"]
     __doc__ = list_scan.__doc__
 
     def _gen(self):
-        return list_scan(self.detectors, self.motor, self.steps,
-                         md=self.md)
+        return list_scan(self.detectors, self.motor, self.steps, md=self.md)
 
 
 AbsListScanPlan = ListScan  # back-compat
 
 
 class RelativeListScan(Plan):
-    _fields = ['detectors', 'motor', 'steps']
+    _fields = ["detectors", "motor", "steps"]
     __doc__ = rel_list_scan.__doc__
 
     def _gen(self):
-        return rel_list_scan(self.detectors, self.motor, self.steps,
-                             md=self.md)
+        return rel_list_scan(self.detectors, self.motor, self.steps, md=self.md)
 
 
 DeltaListScanPlan = RelativeListScan  # back-compat
 
 
 class Scan(Plan):
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    _fields = ["detectors", "motor", "start", "stop", "num"]
     __doc__ = scan.__doc__
 
     def _gen(self):
-        return scan(self.detectors, self.motor, self.start, self.stop,
-                    self.num, md=self.md)
+        return scan(self.detectors, self.motor, self.start, self.stop, self.num, md=self.md)
 
 
 AbsScanPlan = Scan  # back-compat
 
 
 class LogScan(Plan):
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    _fields = ["detectors", "motor", "start", "stop", "num"]
     __doc__ = log_scan.__doc__
 
     def _gen(self):
-        return log_scan(self.detectors, self.motor, self.start, self.stop,
-                        self.num, md=self.md)
+        return log_scan(self.detectors, self.motor, self.start, self.stop, self.num, md=self.md)
 
 
 LogAbsScanPlan = LogScan  # back-compat
 
 
 class RelativeScan(Plan):
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    _fields = ["detectors", "motor", "start", "stop", "num"]
     __doc__ = rel_scan.__doc__
 
     def _gen(self):
-        return rel_scan(self.detectors, self.motor, self.start, self.stop,
-                        self.num, md=self.md)
+        return rel_scan(self.detectors, self.motor, self.start, self.stop, self.num, md=self.md)
 
 
 DeltaScanPlan = RelativeScan  # back-compat
 
 
 class RelativeLogScan(Plan):
-    _fields = ['detectors', 'motor', 'start', 'stop', 'num']
+    _fields = ["detectors", "motor", "start", "stop", "num"]
     __doc__ = rel_log_scan.__doc__
 
     def _gen(self):
-        return rel_log_scan(self.detectors, self.motor, self.start,
-                            self.stop, self.num, md=self.md)
+        return rel_log_scan(self.detectors, self.motor, self.start, self.stop, self.num, md=self.md)
 
 
 LogDeltaScanPlan = RelativeLogScan  # back-compat
 
 
 class AdaptiveScan(Plan):
-    _fields = ['detectors', 'target_field', 'motor', 'start', 'stop',
-               'min_step', 'max_step', 'target_delta', 'backstep',
-               'threshold']
+    _fields = [
+        "detectors",
+        "target_field",
+        "motor",
+        "start",
+        "stop",
+        "min_step",
+        "max_step",
+        "target_delta",
+        "backstep",
+        "threshold",
+    ]
     __doc__ = adaptive_scan.__doc__
 
-    def __init__(self, detectors, target_field, motor, start, stop,
-                 min_step, max_step, target_delta, backstep,
-                 threshold=0.8, *, md=None):
+    def __init__(
+        self,
+        detectors,
+        target_field,
+        motor,
+        start,
+        stop,
+        min_step,
+        max_step,
+        target_delta,
+        backstep,
+        threshold=0.8,
+        *,
+        md=None,
+    ):
         self.detectors = detectors
         self.target_field = target_field
         self.motor = motor
@@ -198,10 +230,19 @@ class AdaptiveScan(Plan):
         self.md = md
 
     def _gen(self):
-        return adaptive_scan(self.detectors, self.target_field, self.motor,
-                             self.start, self.stop, self.min_step,
-                             self.max_step, self.target_delta,
-                             self.backstep, self.threshold, md=self.md)
+        return adaptive_scan(
+            self.detectors,
+            self.target_field,
+            self.motor,
+            self.start,
+            self.stop,
+            self.min_step,
+            self.max_step,
+            self.target_delta,
+            self.backstep,
+            self.threshold,
+            md=self.md,
+        )
 
 
 AdaptiveAbsScanPlan = AdaptiveScan  # back-compat
@@ -211,18 +252,26 @@ class RelativeAdaptiveScan(AdaptiveAbsScanPlan):
     __doc__ = rel_adaptive_scan.__doc__
 
     def _gen(self):
-        return rel_adaptive_scan(self.detectors, self.target_field,
-                                 self.motor, self.start, self.stop,
-                                 self.min_step, self.max_step,
-                                 self.target_delta, self.backstep,
-                                 self.threshold, md=self.md)
+        return rel_adaptive_scan(
+            self.detectors,
+            self.target_field,
+            self.motor,
+            self.start,
+            self.stop,
+            self.min_step,
+            self.max_step,
+            self.target_delta,
+            self.backstep,
+            self.threshold,
+            md=self.md,
+        )
 
 
 AdaptiveDeltaScanPlan = RelativeAdaptiveScan  # back-compat
 
 
 class ScanND(PlanBase):
-    _fields = ['detectors', 'cycler']
+    _fields = ["detectors", "cycler"]
     __doc__ = scan_nd.__doc__
 
     def _gen(self):
@@ -243,8 +292,7 @@ class InnerProductScan(Plan):
         self.md = md
 
     def _gen(self):
-        return inner_product_scan(self.detectors, self.num, *self.args,
-                                  md=self.md)
+        return inner_product_scan(self.detectors, self.num, *self.args, md=self.md)
 
 
 InnerProductAbsScanPlan = InnerProductScan  # back-compat
@@ -254,8 +302,7 @@ class RelativeInnerProductScan(InnerProductScan):
     __doc__ = relative_inner_product_scan.__doc__
 
     def _gen(self):
-        return relative_inner_product_scan(self.detectors, self.num,
-                                           *self.args, md=self.md)
+        return relative_inner_product_scan(self.detectors, self.num, *self.args, md=self.md)
 
 
 InnerProductDeltaScanPlan = RelativeInnerProductScan  # back-compat
@@ -281,63 +328,102 @@ class RelativeOuterProductScan(OuterProductScan):
     __doc__ = rel_grid_scan.__doc__
 
     def _gen(self):
-        return rel_grid_scan(self.detectors, *self.args,
-                             md=self.md)
+        return rel_grid_scan(self.detectors, *self.args, md=self.md)
 
 
 OuterProductDeltaScanPlan = RelativeOuterProductScan  # back-compat
 
 
 class Tweak(Plan):
-    _fields = ['detector', 'target_field', 'motor', 'step']
+    _fields = ["detector", "target_field", "motor", "step"]
     __doc__ = tweak.__doc__
 
     def _gen(self):
-        return tweak(self.detector, self.target_field, self.motor, self.step,
-                     md=self.md)
+        return tweak(self.detector, self.target_field, self.motor, self.step, md=self.md)
 
 
 class SpiralScan(Plan):
-    _fields = ['detectors', 'x_motor', 'y_motor', 'x_start', 'y_start',
-               'x_range', 'y_range', 'dr', 'nth', 'tilt']
+    _fields = ["detectors", "x_motor", "y_motor", "x_start", "y_start", "x_range", "y_range", "dr", "nth", "tilt"]
     __doc__ = spiral.__doc__
 
     def _gen(self):
-        return spiral(self.detectors, self.x_motor, self.y_motor, self.x_start,
-                      self.y_start, self.x_range, self.y_range, self.dr,
-                      self.nth, tilt=self.tilt, md=self.md)
+        return spiral(
+            self.detectors,
+            self.x_motor,
+            self.y_motor,
+            self.x_start,
+            self.y_start,
+            self.x_range,
+            self.y_range,
+            self.dr,
+            self.nth,
+            tilt=self.tilt,
+            md=self.md,
+        )
 
 
 class SpiralFermatScan(Plan):
-    _fields = ['detectors', 'x_motor', 'y_motor', 'x_start', 'y_start',
-               'x_range', 'y_range', 'dr', 'factor', 'tilt']
+    _fields = [
+        "detectors",
+        "x_motor",
+        "y_motor",
+        "x_start",
+        "y_start",
+        "x_range",
+        "y_range",
+        "dr",
+        "factor",
+        "tilt",
+    ]
     __doc__ = spiral_fermat.__doc__
 
     def _gen(self):
-        return spiral_fermat(self.detectors, self.x_motor, self.y_motor,
-                             self.x_start, self.y_start, self.x_range,
-                             self.y_range, self.dr, self.factor,
-                             tilt=self.tilt, md=self.md)
+        return spiral_fermat(
+            self.detectors,
+            self.x_motor,
+            self.y_motor,
+            self.x_start,
+            self.y_start,
+            self.x_range,
+            self.y_range,
+            self.dr,
+            self.factor,
+            tilt=self.tilt,
+            md=self.md,
+        )
 
 
 class RelativeSpiralScan(Plan):
-    _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
-               'nth', 'tilt']
+    _fields = ["detectors", "x_motor", "y_motor", "x_range", "y_range", "dr", "nth", "tilt"]
     __doc__ = rel_spiral.__doc__
 
     def _gen(self):
-        return rel_spiral(self.detectors, self.x_motor, self.y_motor,
-                          self.x_range, self.y_range, self.dr, self.nth,
-                          tilt=self.tilt, md=self.md)
+        return rel_spiral(
+            self.detectors,
+            self.x_motor,
+            self.y_motor,
+            self.x_range,
+            self.y_range,
+            self.dr,
+            self.nth,
+            tilt=self.tilt,
+            md=self.md,
+        )
 
 
 class RelativeSpiralFermatScan(Plan):
-    _fields = ['detectors', 'x_motor', 'y_motor', 'x_range', 'y_range', 'dr',
-               'factor', 'tilt']
+    _fields = ["detectors", "x_motor", "y_motor", "x_range", "y_range", "dr", "factor", "tilt"]
     __doc__ = rel_spiral_fermat.__doc__
 
     def _gen(self):
-        return rel_spiral_fermat(self.detectors, self.x_motor,
-                                 self.y_motor, self.x_range, self.y_range,
-                                 self.dr, self.factor, tilt=self.tilt,
-                                 md=self.md)
+        return rel_spiral_fermat(
+            self.detectors,
+            self.x_motor,
+            self.y_motor,
+            self.x_range,
+            self.y_range,
+            self.dr,
+            self.factor,
+            tilt=self.tilt,
+            md=self.md,
+        )

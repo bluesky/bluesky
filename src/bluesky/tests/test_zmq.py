@@ -1,20 +1,21 @@
 import multiprocessing
 import os
 import signal
-from subprocess import run
 import threading
 import time
+from subprocess import run
+
 import numpy as np
 import pytest
+from event_model import sanitize_doc
 
 from bluesky import Msg
 from bluesky.callbacks.zmq import Proxy, Publisher, RemoteDispatcher
 from bluesky.plans import count
-from event_model import sanitize_doc
 
 
 def test_proxy_script():
-    p = run(['bluesky-0MQ-proxy', '-h'])
+    p = run(["bluesky-0MQ-proxy", "-h"])
     assert p.returncode == 0
 
 
@@ -31,7 +32,7 @@ def test_zmq(RE, hw):
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
 
-    p = Publisher('127.0.0.1:5567')  # noqa
+    p = Publisher("127.0.0.1:5567")  # noqa
     RE.subscribe(p)
 
     # COMPONENT 3
@@ -41,18 +42,17 @@ def test_zmq(RE, hw):
 
     def make_and_start_dispatcher(queue):
         def put_in_queue(name, doc):
-            print('putting ', name, 'in queue')
+            print("putting ", name, "in queue")
             queue.put((name, doc))
 
-        d = RemoteDispatcher('127.0.0.1:5568')
+        d = RemoteDispatcher("127.0.0.1:5568")
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
         d.loop.call_later(9, d.stop)
         d.start()
 
     queue = multiprocessing.Queue()
-    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher,
-                                              daemon=True, args=(queue,))
+    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
@@ -67,9 +67,7 @@ def test_zmq(RE, hw):
         local_accumulator.append((name, doc))
 
     # Check that numpy stuff is sanitized by putting some in the start doc.
-    md = {'stuff': {'nested': np.array([1, 2, 3])},
-          'scalar_stuff': np.float64(3),
-          'array_stuff': np.ones((3, 3))}
+    md = {"stuff": {"nested": np.array([1, 2, 3])}, "scalar_stuff": np.float64(3), "array_stuff": np.ones((3, 3))}
 
     # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
     RE(count([hw.det]), local_cb, **md)
@@ -120,10 +118,10 @@ def test_zmq_components():
     repr(proxy)
 
     # test that two ways of specifying address are equivalent
-    d = RemoteDispatcher('localhost:5555')
-    assert d.address == ('localhost', 5555)
-    d = RemoteDispatcher(('localhost', 5555))
-    assert d.address == ('localhost', 5555)
+    d = RemoteDispatcher("localhost:5555")
+    assert d.address == ("localhost", 5555)
+    d = RemoteDispatcher(("localhost", 5555))
+    assert d.address == ("localhost", 5555)
 
     repr(d)
 
@@ -141,7 +139,7 @@ def test_zmq_no_RE(RE):
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
 
-    p = Publisher('127.0.0.1:5567')  # noqa
+    p = Publisher("127.0.0.1:5567")  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
@@ -150,18 +148,17 @@ def test_zmq_no_RE(RE):
 
     def make_and_start_dispatcher(queue):
         def put_in_queue(name, doc):
-            print('putting ', name, 'in queue')
+            print("putting ", name, "in queue")
             queue.put((name, doc))
 
-        d = RemoteDispatcher('127.0.0.1:5568')
+        d = RemoteDispatcher("127.0.0.1:5568")
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
         d.loop.call_later(9, d.stop)
         d.start()
 
     queue = multiprocessing.Queue()
-    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher,
-                                              daemon=True, args=(queue,))
+    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
@@ -175,7 +172,7 @@ def test_zmq_no_RE(RE):
     def local_cb(name, doc):
         local_accumulator.append((name, doc))
 
-    RE([Msg('open_run'), Msg('close_run')], local_cb)
+    RE([Msg("open_run"), Msg("close_run")], local_cb)
 
     # This time the Publisher isn't attached to an RE. Send the documents
     # manually. (The idea is, these might have come from a Broker instead...)
@@ -198,7 +195,7 @@ def test_zmq_no_RE(RE):
 
 
 def test_zmq_no_RE_newserializer(RE):
-    cloudpickle = pytest.importorskip('cloudpickle')
+    cloudpickle = pytest.importorskip("cloudpickle")
 
     # COMPONENT 1
     # Run a 0MQ proxy on a separate process.
@@ -211,7 +208,7 @@ def test_zmq_no_RE_newserializer(RE):
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
-    p = Publisher('127.0.0.1:5567', serializer=cloudpickle.dumps)  # noqa
+    p = Publisher("127.0.0.1:5567", serializer=cloudpickle.dumps)  # noqa
 
     # COMPONENT 3
     # Run a RemoteDispatcher on another separate process. Pass the documents
@@ -219,18 +216,17 @@ def test_zmq_no_RE_newserializer(RE):
     # test.
     def make_and_start_dispatcher(queue):
         def put_in_queue(name, doc):
-            print('putting ', name, 'in queue')
+            print("putting ", name, "in queue")
             queue.put((name, doc))
 
-        d = RemoteDispatcher('127.0.0.1:5568', deserializer=cloudpickle.loads)
+        d = RemoteDispatcher("127.0.0.1:5568", deserializer=cloudpickle.loads)
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
         d.loop.call_later(9, d.stop)
         d.start()
 
     queue = multiprocessing.Queue()
-    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher,
-                                              daemon=True, args=(queue,))
+    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
@@ -244,7 +240,7 @@ def test_zmq_no_RE_newserializer(RE):
     def local_cb(name, doc):
         local_accumulator.append((name, doc))
 
-    RE([Msg('open_run'), Msg('close_run')], local_cb)
+    RE([Msg("open_run"), Msg("close_run")], local_cb)
 
     # This time the Publisher isn't attached to an RE. Send the documents
     # manually. (The idea is, these might have come from a Broker instead...)
@@ -278,8 +274,8 @@ def test_zmq_prefix(RE, hw):
 
     # COMPONENT 2
     # Run a Publisher and a RunEngine in this main process.
-    p = Publisher('127.0.0.1:5567', prefix=b'sb')  # noqa
-    p2 = Publisher('127.0.0.1:5567', prefix=b'not_sb')  # noqa
+    p = Publisher("127.0.0.1:5567", prefix=b"sb")  # noqa
+    p2 = Publisher("127.0.0.1:5567", prefix=b"not_sb")  # noqa
     RE.subscribe(p)
     RE.subscribe(p2)
 
@@ -290,18 +286,17 @@ def test_zmq_prefix(RE, hw):
 
     def make_and_start_dispatcher(queue):
         def put_in_queue(name, doc):
-            print('putting ', name, 'in queue')
+            print("putting ", name, "in queue")
             queue.put((name, doc))
 
-        d = RemoteDispatcher('127.0.0.1:5568', prefix=b'sb')
+        d = RemoteDispatcher("127.0.0.1:5568", prefix=b"sb")
         d.subscribe(put_in_queue)
         print("REMOTE IS READY TO START")
         d.loop.call_later(9, d.stop)
         d.start()
 
     queue = multiprocessing.Queue()
-    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher,
-                                              daemon=True, args=(queue,))
+    dispatcher_proc = multiprocessing.Process(target=make_and_start_dispatcher, daemon=True, args=(queue,))
     dispatcher_proc.start()
     time.sleep(5)  # As above, give this plenty of time to start.
 
@@ -316,9 +311,7 @@ def test_zmq_prefix(RE, hw):
         local_accumulator.append((name, doc))
 
     # Check that numpy stuff is sanitized by putting some in the start doc.
-    md = {'stuff': {'nested': np.array([1, 2, 3])},
-          'scalar_stuff': np.float64(3),
-          'array_stuff': np.ones((3, 3))}
+    md = {"stuff": {"nested": np.array([1, 2, 3])}, "scalar_stuff": np.float64(3), "array_stuff": np.ones((3, 3))}
 
     # RE([Msg('open_run', **md), Msg('close_run')], local_cb)
     RE(count([hw.det]), local_cb, **md)

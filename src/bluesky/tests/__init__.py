@@ -1,7 +1,8 @@
 import pytest
+
 # some module level globals.
 ophyd = None
-reason = ''
+reason = ""
 
 try:
     import ophyd

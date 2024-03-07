@@ -1,13 +1,14 @@
+import logging
+from collections import defaultdict
 from io import StringIO
 from pprint import pformat
-import logging
+
 from . import CallbackBase
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
 TEMPLATES = {}
-TEMPLATES['long'] = """
+TEMPLATES["long"] = """
 {{- start.plan_name }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})
 
 Scan Plan
@@ -30,18 +31,19 @@ Metadata
 {% endif -%}
 {%- endfor -%}"""
 
-TEMPLATES['desc'] = """
+TEMPLATES["desc"] = """
 {{- start.plan_name }} ['{{ start.uid[:6] }}'] (scan num: {{ start.scan_id }})"""
 
-TEMPLATES['call'] = """RE({{ start.plan_name }}(
+TEMPLATES["call"] = """RE({{ start.plan_name }}(
 {%- for k, v in start.plan_args.items() %}{%- if not loop.first %}   {% endif %}{{ k }}={{ v }}
 {%- if not loop.last %},
 {% endif %}{% endfor %}))
 """
 
 
-def logbook_cb_factory(logbook_func, desc_template=None, long_template=None,
-                       desc_dispatch=None, long_dispatch=None):
+def logbook_cb_factory(
+    logbook_func, desc_template=None, long_template=None, desc_dispatch=None, long_dispatch=None
+):
     """Create a logbook run_start callback
 
     The returned function is suitable for registering as
@@ -72,11 +74,12 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None,
         description and attachments respectively.
     """
     import jinja2
+
     env = jinja2.Environment()
     if long_template is None:
-        long_template = TEMPLATES['long']
+        long_template = TEMPLATES["long"]
     if desc_template is None:
-        desc_template = TEMPLATES['desc']
+        desc_template = TEMPLATES["desc"]
 
     if desc_dispatch is None:
         desc_dispatch = {}
@@ -93,25 +96,22 @@ def logbook_cb_factory(logbook_func, desc_template=None, long_template=None,
     long_msg = env.from_string(long_template)
     desc_msg = env.from_string(desc_template)
 
-    desc_dispatch = defaultdict(lambda: desc_msg,
-                                {k: env.from_string(v)
-                                 for k, v in desc_dispatch.items()})
-    long_dispatch = defaultdict(lambda: long_msg,
-                                {k: env.from_string(v)
-                                 for k, v in long_dispatch.items()})
+    desc_dispatch = defaultdict(lambda: desc_msg, {k: env.from_string(v) for k, v in desc_dispatch.items()})
+    long_dispatch = defaultdict(lambda: long_msg, {k: env.from_string(v) for k, v in long_dispatch.items()})
 
     def lbcb(name, doc):
         # This only applies to 'start' Documents.
-        if name != 'start':
+        if name != "start":
             return
-        plan_name = doc.get('plan_name', '')
+        plan_name = doc.get("plan_name", "")
         body = long_dispatch[plan_name]
         desc = desc_dispatch[plan_name]
         atch = StringIO(body.render(start=doc))
         # monkey-patch a 'name' attribute onto StringIO
-        atch.name = 'long_description.txt'
+        atch.name = "long_description.txt"
         desc = desc.render(start=doc)
         logbook_func(text=desc, attachments=[atch], ensure=True)
+
     return lbcb
 
 
@@ -132,9 +132,10 @@ def call_str(start, call_template=None):
         If not provided defaults to `CALL_TEMPLATE`
     """
     import jinja2
+
     env = jinja2.Environment()
     if call_template is None:
-        call_template = TEMPLATES['call']
+        call_template = TEMPLATES["call"]
     call_renderer = env.from_string(call_template)
     return call_renderer.render(start=start)
 
@@ -153,22 +154,24 @@ class OlogCallback(CallbackBase):
     # turn off the default logger
     >>> gs.RE.logbook = None
     """
+
     def __init__(self, logbook):
         self.logbook = logbook
         from pyOlog import SimpleOlogClient
+
         self.client = SimpleOlogClient()
         # Check at init time we are in an IPython session.
         from IPython import get_ipython  # noqa: F401
 
     def start(self, doc):
         from IPython import get_ipython
+
         commands = list(get_ipython().history_manager.get_range())
-        document_content = ('%s: %s\n\n'
-                            'RunStart Document\n'
-                            '-----------------\n'
-                            '%s' % (doc['scan_id'],
-                                    commands[-1][2],
-                                    pformat(doc)))
+        document_content = "%s: %s\n\n" "RunStart Document\n" "-----------------\n" "%s" % (
+            doc["scan_id"],
+            commands[-1][2],
+            pformat(doc),
+        )
         olog_status = self.client.log(document_content, logbooks=self.logbook)
-        logger.debug('client.log returned %s' % olog_status)
+        logger.debug("client.log returned %s" % olog_status)
         super().start(doc)
