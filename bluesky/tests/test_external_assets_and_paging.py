@@ -50,6 +50,14 @@ def merge_iterators(*iterators):
     return wrapper
 
 
+def collect_plan(*objs, pre_declare: bool, stream=False):
+    yield from bps.open_run()
+    if pre_declare:
+        yield from bps.declare_stream(*objs, collect=True)
+    yield from bps.collect(*objs, stream=stream)
+    yield from bps.close_run()
+
+
 class Named(HasName):
     name: str = ""
     parent = None
@@ -59,6 +67,7 @@ class Named(HasName):
 
 
 def describe_datum(self: Named) -> Dict[str, DataKey]:
+    """Describe a single data key backed with Resource"""
     return {
         f"{self.name}-datum": DataKey(
             source="file", dtype="number", shape=[1000, 1500], external="OLD:"
@@ -67,6 +76,7 @@ def describe_datum(self: Named) -> Dict[str, DataKey]:
 
 
 def collect_asset_docs_datum(self) -> Iterator[Asset]:
+    """Produce Resource and Datum for a single frame in a file"""
     resource = PartialResource(
         resource_kwargs={"resource_arg": 42},
         root="/root",
@@ -84,10 +94,20 @@ def collect_asset_docs_datum(self) -> Iterator[Asset]:
 
 
 def read_datum(self: Named) -> Dict[str, Reading]:
+    """Read a single reference to a Datum"""
     return {f"{self.name}-datum": {"value": "RESOURCEUID/1", "timestamp": 456}}
 
 
+class DatumReadable(Named, Readable, WritesExternalAssets):
+    """A readable that produces a single Event backed by a Datum"""
+
+    describe = describe_datum
+    read = read_datum
+    collect_asset_docs = collect_asset_docs_datum
+
+
 def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
+    """Describe 2 datasets which will be backed by StreamResources"""
     return {
         f"{self.name}-sd1": DataKey(
             source="file", dtype="number", shape=[1000, 1500], external="STREAM:"
@@ -99,12 +119,14 @@ def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
 
 
 def get_index(self) -> int:
+    """Report how many frames were written"""
     return 10
 
 
 def collect_asset_docs_stream_datum(
     self: Named, index: Optional[int] = None
 ) -> Iterator[StreamAsset]:
+    """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
     index = index or 1
     for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
         stream_resource = StreamResource(
@@ -128,23 +150,175 @@ def collect_asset_docs_stream_datum(
 
 
 def read_empty(self) -> Dict[str, Reading]:
+    """Produce an empty event"""
     return {}
 
 
+class StreamDatumReadable(Named, Readable, WritesStreamAssets):
+    """A readable that produces a single frame from 2 StreamResources"""
+
+    describe = describe_stream_datum
+    read = read_empty
+    collect_asset_docs = collect_asset_docs_stream_datum
+    get_index = get_index
+
+
 def describe_pv(self: Named) -> Dict[str, DataKey]:
+    """Describe a single data_key backed by a PV value"""
     return {f"{self.name}-pv": DataKey(source="pv", dtype="number", shape=[])}
 
 
 def read_pv(self: Named) -> Dict[str, Reading]:
+    """Read a single data_key from a PV"""
     return {f"{self.name}-pv": Reading(value=5.8, timestamp=123)}
 
 
-def test_datum_readable_counts(RE):
-    class DatumReadable(Named, Readable, WritesExternalAssets):
-        describe = describe_datum
-        read = read_datum
-        collect_asset_docs = collect_asset_docs_datum
+class PvAndDatumReadable(Named, Readable, WritesExternalAssets):
+    """An odd device that produces a single event with one datakey from a pv, and one backed by a Datum"""
 
+    describe = merge_dicts(describe_pv, describe_datum)
+    read = merge_dicts(read_pv, read_datum)
+    collect_asset_docs = collect_asset_docs_datum
+
+
+class PvAndStreamDatumReadable(Named, Readable, WritesExternalAssets):
+    """An odd device that produces a single event with one datakey from a pv, and one backed by a StreamDatum"""
+
+    describe = merge_dicts(describe_pv, describe_stream_datum)
+    read = merge_dicts(read_pv, read_empty)
+    collect_asset_docs = collect_asset_docs_stream_datum
+    get_index = get_index
+
+
+def describe_collect_old_pv(self) -> Dict[str, Dict[str, DataKey]]:
+    """Doubly nested old describe format with 2 pvs in each stream"""
+    return {
+        stream: {
+            f"{stream}-{pv}": DataKey(source="pv", dtype="number", shape=[])
+            for pv in ["pv1", "pv2"]
+        }
+        for stream in ["stream1", "stream2"]
+    }
+
+
+def collect_old_pv(self) -> Iterator[PartialEvent]:
+    """Produce 2 events in each of the 2 streams"""
+    for i in range(2):
+        for stream in ["stream1", "stream2"]:
+            yield PartialEvent(
+                data={f"{stream}-{pv}": i for pv in ["pv1", "pv2"]},
+                timestamps={f"{stream}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
+            )
+
+
+class OldPvCollectable(Named, EventCollectable):
+    """Produce events in 2 streams backed by PVs"""
+
+    describe_collect = describe_collect_old_pv
+    collect = collect_old_pv
+
+
+def describe_collect_old_datum(self: Named):
+    """Produces a single data key in a stream backed by a Datum"""
+    return {
+        "stream3": {
+            f"{self.name}-datum": DataKey(
+                source="file", dtype="number", shape=[1000, 1500], external="OLD:"
+            )
+        }
+    }
+
+
+def collect_old_datum(self):
+    """Produces a single event backed by a Datum"""
+    yield PartialEvent(
+        data={f"{self.name}-datum": "RESOURCEUID/1"},
+        timestamps={f"{self.name}-datum": 456},
+        filled={f"{self.name}-datum": False},
+    )
+
+
+class OldDatumCollectable(Named, EventCollectable, WritesExternalAssets):
+    """Produces a single stream with a single event in it backed by a Datum"""
+
+    describe_collect = describe_collect_old_datum
+    collect = collect_old_datum
+    collect_asset_docs = collect_asset_docs_datum
+
+
+def describe_collect_two_streams_same_names(self):
+    """Buggy old describe output with the same data key in 2 streams"""
+    return {
+        stream: {"pv": DataKey(source="pv", dtype="number", shape=[])}
+        for stream in ["stream1", "stream2"]
+    }
+
+
+def collect_one_pv(self):
+    """Event producing value of a single pv"""
+    yield PartialEvent(data={"pv": 0}, timestamps={"pv": 100})
+
+
+class MultiKeyOldCollectable(Named, EventCollectable):
+    """Buggy Device that should fail describe_collect as it makes 2 streams with the same data_key"""
+
+    describe_collect = describe_collect_two_streams_same_names
+    collect = collect_one_pv
+
+
+class OldPvAndDatumCollectable(Named, EventCollectable, WritesExternalAssets):
+    """Old style Device that produces 2 streams with PVs and 1 stream with Datum"""
+
+    describe_collect = merge_dicts(describe_collect_old_pv, describe_collect_old_datum)
+    collect = merge_iterators(collect_old_pv, collect_old_datum)
+    collect_asset_docs = collect_asset_docs_datum
+
+
+def describe_collect_pv(self: Named) -> Dict[str, Dict[str, DataKey]]:
+    """New style describe collect with 2 PVs"""
+    return {
+        f"{self.name}-{pv}": DataKey(source="pv", dtype="number", shape=[])
+        for pv in ["pv1", "pv2"]
+    }
+
+
+def collect_pv(self: Named) -> Iterator[PartialEvent]:
+    """Collect for the new style describe collect of 2 data keys from PVs"""
+    for i in range(2):
+        yield PartialEvent(
+            data={f"{self.name}-{pv}": i for pv in ["pv1", "pv2"]},
+            timestamps={f"{self.name}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
+        )
+
+
+def collect_pages_pv(self: Named) -> Iterator[PartialEvent]:
+    """Same as collect_pv but in EventPage form"""
+    yield PartialEvent(
+        data={f"{self.name}-{pv}": [0, 1] for pv in ["pv1", "pv2"]},
+        timestamps={f"{self.name}-{pv}": [100, 101] for pv in ["pv1", "pv2"]},
+    )
+
+
+class PvCollectable(Named, EventCollectable):
+    """Produces events with 2 data keys backed by PVs"""
+    describe_collect = describe_collect_pv
+    collect = collect_pv
+
+
+class PvPageCollectable(Named, EventPageCollectable):
+    """Produces event pages with 2 data keys backed by PVs"""
+    describe_collect = describe_collect_pv
+    collect_pages = collect_pages_pv
+
+
+class StreamDatumCollectable(Named, Collectable, WritesStreamAssets):
+    """Produces no events, but only StreamResources for 2 data keys"""
+    describe_collect = describe_stream_datum
+    collect_asset_docs = collect_asset_docs_stream_datum
+    get_index = get_index
+
+
+def test_datum_readable_counts(RE):
     det = DatumReadable(name="det")
     docs = DocHolder()
     RE(bp.count([det]), docs.append)
@@ -158,12 +332,6 @@ def test_datum_readable_counts(RE):
 
 
 def test_stream_datum_readable_counts(RE):
-    class StreamDatumReadable(Named, Readable, WritesStreamAssets):
-        describe = describe_stream_datum
-        read = read_empty
-        collect_asset_docs = collect_asset_docs_stream_datum
-        get_index = get_index
-
     det = StreamDatumReadable(name="det")
     docs = DocHolder()
     RE(bp.count([det]), docs.append)
@@ -180,17 +348,6 @@ def test_stream_datum_readable_counts(RE):
 
 
 def test_combinations_counts(RE):
-    class PvAndDatumReadable(Named, Readable, WritesExternalAssets):
-        describe = merge_dicts(describe_pv, describe_datum)
-        read = merge_dicts(read_pv, read_datum)
-        collect_asset_docs = collect_asset_docs_datum
-
-    class PvAndStreamDatumReadable(Named, Readable, WritesExternalAssets):
-        describe = merge_dicts(describe_pv, describe_stream_datum)
-        read = merge_dicts(read_pv, read_empty)
-        collect_asset_docs = collect_asset_docs_stream_datum
-        get_index = get_index
-
     det1 = PvAndDatumReadable(name="det1")
     det2 = PvAndStreamDatumReadable(name="det2")
     docs = DocHolder()
@@ -206,6 +363,7 @@ def test_combinations_counts(RE):
         stop=1,
     )
     assert docs["descriptor"][0]["name"] == "primary"
+    # TODO: only works with a set at the moment
     assert list(docs["descriptor"][0]["data_keys"]) == [
         "det1-pv",
         "det1-datum",
@@ -227,56 +385,6 @@ def test_combinations_counts(RE):
     assert docs["event"][0]["filled"] == {"det1-datum": False}
 
 
-def collect_plan(*objs, pre_declare: bool, stream=False):
-    yield from bps.open_run()
-    if pre_declare:
-        yield from bps.declare_stream(*objs, collect=True)
-    yield from bps.collect(*objs, stream=stream)
-    yield from bps.close_run()
-
-
-def describe_collect_old_pv(self) -> Dict[str, Dict[str, DataKey]]:
-    return {
-        stream: {
-            f"{stream}-{pv}": DataKey(source="pv", dtype="number", shape=[])
-            for pv in ["pv1", "pv2"]
-        }
-        for stream in ["stream1", "stream2"]
-    }
-
-
-def collect_old_pv(self) -> Iterator[PartialEvent]:
-    for i in range(2):
-        for stream in ["stream1", "stream2"]:
-            yield PartialEvent(
-                data={f"{stream}-{pv}": i for pv in ["pv1", "pv2"]},
-                timestamps={f"{stream}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
-            )
-
-
-def describe_collect_old_datum(self: Named):
-    return {
-        "stream3": {
-            f"{self.name}-datum": DataKey(
-                source="file", dtype="number", shape=[1000, 1500], external="OLD:"
-            )
-        }
-    }
-
-
-def collect_old_datum(self):
-    yield PartialEvent(
-        data={f"{self.name}-datum": "RESOURCEUID/1"},
-        timestamps={f"{self.name}-datum": 456},
-        filled={f"{self.name}-datum": False},
-    )
-
-
-class OldPvCollectable(Named, EventCollectable):
-    describe_collect = describe_collect_old_pv
-    collect = collect_old_pv
-
-
 def test_collect_stream_true_raises(RE):
     with pytest.raises(
         RuntimeError,
@@ -293,22 +401,7 @@ def test_old_describe_fails_predeclare(RE):
         RE(collect_plan(OldPvCollectable(name="det"), pre_declare=True))
 
 
-def describe_collect_two_streams_same_names(self):
-    return {
-        stream: {"pv": DataKey(source="pv", dtype="number", shape=[])}
-        for stream in ["stream1", "stream2"]
-    }
-
-
-def collect_one_pv(self):
-    yield PartialEvent(data={"pv": 0}, timestamps={"pv": 100})
-
-
 def test_same_key_in_multiple_streams_fails(RE):
-    class MultiKeyOldCollectable(Named, EventCollectable):
-        describe_collect = describe_collect_two_streams_same_names
-        collect = collect_one_pv
-
     with pytest.raises(
         RuntimeError,
         match="Multiple streams ['stream1', 'stream2'] would emit the same data_keys ['pv']",
@@ -339,11 +432,6 @@ def test_old_pv_collectable(RE):
 
 
 def test_old_datum_collectable(RE):
-    class OldDatumCollectable(Named, EventCollectable, WritesExternalAssets):
-        describe_collect = describe_collect_old_datum
-        collect = collect_old_datum
-        collect_asset_docs = collect_asset_docs_datum
-
     det = OldDatumCollectable(name="det")
     docs = DocHolder()
     RE(collect_plan(det, pre_declare=False), docs.append)
@@ -359,13 +447,6 @@ def test_old_datum_collectable(RE):
 
 
 def test_old_datum_and_pv_collectable(RE):
-    class OldPvAndDatumCollectable(Named, EventCollectable, WritesExternalAssets):
-        describe_collect = merge_dicts(
-            describe_collect_old_pv, describe_collect_old_datum
-        )
-        collect = merge_iterators(collect_old_pv, collect_old_datum)
-        collect_asset_docs = collect_asset_docs_datum
-
     det = OldPvAndDatumCollectable(name="det")
     docs = DocHolder()
     RE(collect_plan(det, pre_declare=False), docs.append)
@@ -384,44 +465,6 @@ def test_old_datum_and_pv_collectable(RE):
         "stream2-pv2": [0, 1],
     }
     assert docs["event_page"][2]["data"] == {"det-datum": ["RESOURCEUID/1"]}
-
-
-def describe_collect_pv(self: Named) -> Dict[str, Dict[str, DataKey]]:
-    return {
-        f"{self.name}-{pv}": DataKey(source="pv", dtype="number", shape=[])
-        for pv in ["pv1", "pv2"]
-    }
-
-
-def collect_pv(self: Named) -> Iterator[PartialEvent]:
-    for i in range(2):
-        yield PartialEvent(
-            data={f"{self.name}-{pv}": i for pv in ["pv1", "pv2"]},
-            timestamps={f"{self.name}-{pv}": 100 + i for pv in ["pv1", "pv2"]},
-        )
-
-
-def collect_pages_pv(self: Named) -> Iterator[PartialEvent]:
-    yield PartialEvent(
-        data={f"{self.name}-{pv}": [0, 1] for pv in ["pv1", "pv2"]},
-        timestamps={f"{self.name}-{pv}": [100, 101] for pv in ["pv1", "pv2"]},
-    )
-
-
-class PvCollectable(Named, EventCollectable):
-    describe_collect = describe_collect_pv
-    collect = collect_pv
-
-
-class PvPageCollectable(Named, EventPageCollectable):
-    describe_collect = describe_collect_pv
-    collect_pages = collect_pages_pv
-
-
-class StreamDatumCollectable(Named, Collectable, WritesStreamAssets):
-    describe_collect = describe_stream_datum
-    collect_asset_docs = collect_asset_docs_stream_datum
-    get_index = get_index
 
 
 def test_new_collect_needs_predeclare(RE):
