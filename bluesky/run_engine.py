@@ -1777,15 +1777,17 @@ class RunEngine:
                        'plan_name': plan_name},
                       self.md)  # stateful, persistent metadata
         # The metadata is final. Validate it now, at the last moment.
-        # Use copy for some reasonable (admittedly not total) protection
-        # against users mutating the md with their validator.
-        # self.md_validator(dict(md))
-        
-        # This is a temporary fix to lelt the kafka consumers run properly.
-        md = self.md_validator(copy.deepcopy(md))
+        # The md_validator may mutate the metadata, so we pass a deep copy.
+        original = copy.deepcopy(md)
+        validated = self.md_validator(original)
+        # Back-compat: We used to ignore the return value from md_validator;
+        # all it could do was raise. Therefore there may be old md_validators
+        # out there which do not return the validated metadata.
+        if validated is None:
+            validated = original
 
         current_run = self._run_bundlers[run_key] = type(self).RunBundler(
-            md, self.record_interruptions, self.emit, self.emit_sync, self.log,
+            validated, self.record_interruptions, self.emit, self.emit_sync, self.log,
             strict_pre_declare=self._require_stream_declaration
         )
 
