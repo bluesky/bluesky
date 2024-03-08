@@ -47,7 +47,6 @@ def test_md_validator(RE):
     When an md_validator returns a dict, we should use that.
     """
 
-
     def md_validator(md):
         "Ensure top-level keys are lowercase."
         return {key.lower(): value for key, value in md.items()}
