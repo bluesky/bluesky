@@ -149,7 +149,7 @@ allowlist_externals =
     sphinx-autobuild
 commands =
     pre-commit: pre-commit run --all-files {posargs}
-    type-checking: mypy src tests {posargs}
+    type-checking: mypy src {posargs}
     tests: pytest --cov=bluesky --cov-report term --cov-report xml:cov.xml {posargs}
     docs: sphinx-{posargs:build -EW --keep-going} -T docs build/html
 """

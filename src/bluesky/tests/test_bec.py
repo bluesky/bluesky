@@ -207,7 +207,7 @@ from importlib.metadata import metadata  # noqa: E402
 
 from packaging import version  # noqa: E402
 
-JSONSCHEMA_VERSION: str = version.parse(metadata("jsonschema")["version"])
+JSONSCHEMA_VERSION: version.Version = version.parse(metadata("jsonschema")["version"])
 
 
 @pytest.mark.xfail(JSONSCHEMA_VERSION >= version.parse("3.0.0"), reason="Deprecations in jsonschema")

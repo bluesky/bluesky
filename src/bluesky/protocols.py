@@ -322,7 +322,7 @@ class Collectable(HasName, Protocol):
 @runtime_checkable
 class EventCollectable(Collectable, Protocol):
     @abstractmethod
-    def collect(self) -> SyncOrAsync[Iterator[PartialEvent]]:
+    def collect(self) -> SyncOrAsyncIterator[PartialEvent]:
         """Yield dictionaries that are partial Event documents.
 
         They should contain the keys 'time', 'data', and 'timestamps'.
@@ -334,7 +334,7 @@ class EventCollectable(Collectable, Protocol):
 @runtime_checkable
 class EventPageCollectable(Collectable, Protocol):
     @abstractmethod
-    def collect_pages(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
+    def collect_pages(self) -> SyncOrAsyncIterator[PartialEventPage]:
         """Yield dictionaries that are partial EventPage documents.
 
         They should contain the keys 'time', 'data', and 'timestamps'.
@@ -519,7 +519,7 @@ class HasHints(HasName, Protocol):
         ...
 
 
-def check_supports(obj, protocol: Type[T]) -> T:
+def check_supports(obj: T, protocol: Type[Any]) -> T:
     """Check that an object supports a protocol
 
     This exists so that multiple protocol checks can be run in a mypy

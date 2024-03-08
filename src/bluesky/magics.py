@@ -9,12 +9,14 @@ import asyncio
 import collections
 import warnings
 from operator import attrgetter
+from typing import List
 
 import numpy as np
 from IPython.core.magic import Magics, line_magic, magics_class
 from traitlets import MetaHasTraits
 
 from bluesky import RunEngine, RunEngineInterrupted
+from bluesky.protocols import Movable, Readable
 from bluesky.utils import ProgressBarManager
 
 from . import plan_stubs as bps
@@ -53,8 +55,8 @@ class MetaclassForClassProperties(MetaHasTraits, type):
         warnings.warn("BlueskyMagics.detectors is deprecated. " "Please use the newer labels feature.")  # noqa: B028
         self._detectors = val
 
-    _positioners = []
-    _detectors = []
+    _positioners: List[Movable] = []
+    _detectors: List[Readable] = []
 
 
 @magics_class

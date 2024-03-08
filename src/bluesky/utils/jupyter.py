@@ -6,8 +6,8 @@ from threading import RLock
 from typing import Any, List, Optional, TextIO
 
 import numpy as np
-from IPython import display
 from IPython.core.display import HTML
+from IPython.display import display
 from ipywidgets import HBox
 from tqdm.notebook import tqdm as tqdm_nb
 
@@ -53,15 +53,15 @@ class NotebookProgressBar(ProgressBarBase):
         self,
         pos: Any,
         *,
-        name: str = None,
+        name: Optional[str] = None,
         current: Any = None,
         initial: Any = None,
         target: Any = None,
         unit: str = "units",
         precision: Any = None,
         fraction: Any = None,
-        time_elapsed: float = None,
-        time_remaining: float = None,
+        time_elapsed: Optional[float] = None,
+        time_remaining: Optional[float] = None,
     ):
         if all(x is not None for x in (current, initial, target)):
             # In this case there is enough information to draw a progress bar with

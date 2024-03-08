@@ -2,6 +2,8 @@
 # Apache 2.0. See other_licenses/ in the repository directory.
 import logging
 import sys
+from types import ModuleType
+from typing import Optional
 
 try:
     import colorama
@@ -9,6 +11,7 @@ try:
     colorama.init()
 except ImportError:
     colorama = None
+curses: Optional[ModuleType]
 try:
     import curses
 except ImportError:

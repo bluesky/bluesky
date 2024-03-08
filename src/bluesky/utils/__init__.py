@@ -17,7 +17,7 @@ from collections import namedtuple
 from collections.abc import Iterable
 from functools import partial, reduce, wraps
 from inspect import Parameter, Signature
-from typing import Any, AsyncIterator, Callable, Dict, Iterator, List, Optional
+from typing import Any, AsyncIterable, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
 from weakref import WeakKeyDictionary, ref
 
 import msgpack
@@ -35,6 +35,7 @@ from bluesky.protocols import (
     Hints,
     Movable,
     Readable,
+    StreamAsset,
     SyncOrAsync,
     SyncOrAsyncIterator,
     T,
@@ -119,7 +120,7 @@ class PlanHalt(GeneratorExit):
 class RampFail(RuntimeError): ...
 
 
-PLAN_TYPES = (types.GeneratorType,)
+PLAN_TYPES: Tuple[Type, ...] = (types.GeneratorType,)
 try:
     from types import CoroutineType
 except ImportError:
@@ -517,7 +518,7 @@ class StructMeta(type):
 class Struct(metaclass=StructMeta):
     "The _fields of any subclass become its attritubes and __init__ args."
 
-    _fields = []
+    _fields: List[str] = []
 
     def __init__(self, *args, **kwargs):
         # Now bind default values of optional arguments.
@@ -1242,15 +1243,15 @@ class ProgressBarBase(abc.ABC):  # noqa: B024
         self,
         pos: Any,
         *,
-        name: str = None,
+        name: Optional[str] = None,
         current: Any = None,
         initial: Any = None,
         target: Any = None,
         unit: str = "units",
         precision: Any = None,
         fraction: Any = None,
-        time_elapsed: float = None,
-        time_remaining: float = None,
+        time_elapsed: Optional[float] = None,
+        time_remaining: Optional[float] = None,
     ): ...
 
     def clear(self): ...  # noqa: B027
@@ -1815,7 +1816,7 @@ def get_hinted_fields(obj) -> List[str]:
         return []
 
 
-already_warned = {}
+already_warned: Dict[Any, bool] = {}
 
 
 def warn_if_msg_args_or_kwargs(msg, meth, args, kwargs):
@@ -1840,26 +1841,30 @@ async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator
         async for v in iterator:
             yield v
     else:
-        for v in iterator:
+        for v in iterator:  # type: ignore
             yield v
 
 
-async def maybe_collect_asset_docs(msg, obj, index: Optional[int] = None, *args, **kwargs) -> Iterator[Asset]:
+async def maybe_collect_asset_docs(
+    msg, obj, index: Optional[int] = None, *args, **kwargs
+) -> AsyncIterable[Union[Asset, StreamAsset]]:
     # The if/elif statement must be done in this order because isinstance for protocol
     # doesn't check for exclusive signatures, and WritesExternalAssets will also
     # return true for a WritesStreamAsset as they both contain collect_asset_docs
     if isinstance(obj, WritesStreamAssets):
         warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
-        async for v in iterate_maybe_async(obj.collect_asset_docs(index, *args, **kwargs)):
-            yield v
+        async for stream_doc in iterate_maybe_async(obj.collect_asset_docs(index, *args, **kwargs)):
+            yield stream_doc
     elif isinstance(obj, WritesExternalAssets):
         warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
-        async for v in iterate_maybe_async(obj.collect_asset_docs(*args, **kwargs)):
-            yield v
+        async for doc in iterate_maybe_async(obj.collect_asset_docs(*args, **kwargs)):
+            yield doc
 
 
 async def maybe_await(ret: SyncOrAsync[T]) -> T:
     if inspect.isawaitable(ret):
         return await ret
     else:
-        return ret
+        # Mypy does not understand how to narrow type to non-awaitable in this
+        # instance, see https://github.com/python/mypy/issues/15520
+        return ret  # type: ignore

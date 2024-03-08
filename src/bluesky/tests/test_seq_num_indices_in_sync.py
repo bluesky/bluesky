@@ -1,5 +1,5 @@
 from random import randint, sample
-from typing import Dict, Iterator, List, Optional
+from typing import Dict, Iterable, Iterator, List, Optional, Union
 
 import pytest
 from event_model import ComposeStreamResource, EventModelValueError
@@ -10,12 +10,12 @@ from event_model.documents.stream_datum import StreamRange
 
 from bluesky import Msg
 from bluesky.protocols import (
-    Asset,
     EventPageCollectable,
     Flyable,
     Pausable,
     Readable,
     Reading,
+    StreamAsset,
     SyncOrAsync,
     WritesExternalAssets,
 )
@@ -23,8 +23,8 @@ from bluesky.run_engine import RunEngineInterrupted
 
 
 class ExternalAssetDevice:
-    sequence_counter_at_chunks = None
-    current_chunk = 0
+    sequence_counter_at_chunks: Optional[Union[range, List[int]]] = None
+    current_chunk: int = 0
 
     def __init__(
         self,
@@ -60,7 +60,8 @@ class ExternalAssetDevice:
         for stream_resource, _ in self.stream_resource_compose_datum_pairs:
             yield ("stream_resource", stream_resource)
 
-    def collect_stream_datum(self) -> Iterator[Asset]:
+    def collect_stream_datum(self) -> Iterator[StreamAsset]:
+        assert self.sequence_counter_at_chunks is not None
         if self.current_chunk >= self.number_of_chunks:  # No more collect()
             return
 
@@ -101,7 +102,7 @@ class ExternalAssetDevice:
             for i, (_, compose_stream_datum) in enumerate(self.stream_resource_compose_datum_pairs)
         )
 
-    def collect_stream_datum_repeat_stream_resource(self) -> Iterator[Asset]:
+    def collect_stream_datum_repeat_stream_resource(self) -> Iterator[StreamAsset]:
         if self.current_chunk == int(self.number_of_chunks / 2):
             # New stream_resource half way through the run
             self.stream_resource_compose_datum_pairs = tuple(
@@ -111,7 +112,7 @@ class ExternalAssetDevice:
 
         yield from self.collect_stream_datum()
 
-    def collect_Pageable_with_name(self) -> SyncOrAsync[Iterator[PartialEventPage]]:
+    def collect_Pageable_with_name(self) -> SyncOrAsync[Iterable[PartialEventPage]]:
         def timestamps():
             return {"det4": [1] * self.new_random_width}
 

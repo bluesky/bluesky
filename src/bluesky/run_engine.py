@@ -36,16 +36,6 @@ from .protocols import (
     Triggerable,
     check_supports,
 )
-
-try:
-    from asyncio import current_task
-except ImportError:
-    # handle py < 3,7
-    from asyncio.tasks import Task
-
-    current_task = Task.current_task
-    del Task
-
 from .utils import (
     AsyncInput,
     CallbackRegistry,
@@ -66,6 +56,16 @@ from .utils import (
     single_gen,
     warn_if_msg_args_or_kwargs,
 )
+
+current_task: typing.Callable[[typing.Optional[asyncio.AbstractEventLoop]], typing.Optional[asyncio.Task]]
+try:
+    from asyncio import current_task
+except ImportError:
+    # handle py < 3,7
+    from asyncio.tasks import Task
+
+    current_task = Task.current_task  # type: ignore
+    del Task
 
 
 class _RunEnginePanic(Exception): ...
@@ -970,7 +970,7 @@ class RunEngine:
         else:
             return tuple(self._run_start_uids)
 
-    __call__.__signature__ = _call_sig
+    __call__.__signature__ = _call_sig  # type: ignore
 
     def resume(self):
         """Resume a paused plan from the last checkpoint.
@@ -2472,7 +2472,7 @@ class RunEngine:
             status_object.add_callback(done_callback)
         except AttributeError:
             # for ophyd < v0.8.0
-            status_object.finished_cb = done_callback
+            status_object.finished_cb = done_callback  # type: ignore
         self._groups[group].add(p_event.wait)
         self._status_objs[group].add(status_object)
 
@@ -2783,7 +2783,7 @@ def _ensure_event_loop_running(loop):
     return th
 
 
-_ensure_event_loop_running.loop_to_thread = weakref.WeakKeyDictionary()
+_ensure_event_loop_running.loop_to_thread = weakref.WeakKeyDictionary()  # type: ignore
 
 _bluesky_event_loop = None
 
@@ -2811,7 +2811,7 @@ def in_bluesky_event_loop() -> bool:
 T = typing.TypeVar("T")
 
 
-def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: float = None) -> T:
+def call_in_bluesky_event_loop(coro: typing.Awaitable[T], timeout: typing.Optional[float] = None) -> T:
     if _bluesky_event_loop is None or not _bluesky_event_loop.is_running():
         # Quell "coroutine never awaited" warnings
         if iscoroutine(coro):

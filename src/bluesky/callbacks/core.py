@@ -280,7 +280,7 @@ class LiveTable(CallbackBase):
         "integer": "d",
         "string": "s",
     }
-    _fm_sty = namedtuple("fm_sty", ["width", "prec", "dtype"])
+    _fm_sty = namedtuple("fm_sty", ["width", "prec", "dtype"])  # type: ignore
     water_mark = "{st[plan_type]} {st[plan_name]} ['{st[uid]:.8s}'] " "(scan num: {st[scan_id]})"
     ev_time_key = "SUPERLONG_EV_TIMEKEY_THAT_I_REALLY_HOPE_NEVER_CLASHES"
 

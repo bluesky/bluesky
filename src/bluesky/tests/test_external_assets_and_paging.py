@@ -176,7 +176,7 @@ class PvAndDatumReadable(Named, Readable, WritesExternalAssets):
     collect_asset_docs = collect_asset_docs_datum
 
 
-class PvAndStreamDatumReadable(Named, Readable, WritesExternalAssets):
+class PvAndStreamDatumReadable(Named, Readable, WritesStreamAssets):
     """An odd device that produces a single event with one datakey from a pv, and one backed by a StreamDatum"""
 
     describe = merge_dicts(describe_pv, describe_stream_datum)

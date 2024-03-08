@@ -433,7 +433,7 @@ def test_stage_and_unstage_status_objects(RE):
 
         def _callback(self, d: dict, st: Status):
             d[self.name] = True
-            st.set_finished()
+            st.set_finished()  # type: ignore
 
         def stage(self) -> Status:
             st = StatusBase()

@@ -841,7 +841,7 @@ def test_stage_all_and_unstage_all(RE):
 
         def _callback(self, d: dict, st: Status):
             d[self.name] = True
-            st.set_finished()
+            st.set_finished()  # type: ignore
 
         def stage(self) -> Status:
             st = StatusBase()

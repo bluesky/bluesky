@@ -40,6 +40,7 @@ from .utils import (
     IllegalMessageSequence,
     Msg,
     _rearrange_into_parallel_dicts,
+    iterate_maybe_async,
     maybe_await,
     maybe_collect_asset_docs,
     maybe_update_hints,
@@ -180,7 +181,7 @@ class RunBundler:
         data_keys = {}
         config = {}
         object_keys = {}
-        hints = {}
+        hints: Dict[str, Any] = {}
 
         for obj, dks in objs_dks.items():
             maybe_update_hints(hints, obj)
@@ -410,7 +411,7 @@ class RunBundler:
         stream_bundle = await self._prepare_stream(name, {obj: self._describe_cache[obj]})
         compose_event = stream_bundle[1]
 
-        def emit_event(readings: Dict[str, Reading] = None, *args, **kwargs):
+        def emit_event(readings: Optional[Dict[str, Reading]] = None, *args, **kwargs):
             if readings is not None:
                 # We were passed something we can use, but check no args or kwargs
                 assert not args and not kwargs, (
@@ -419,8 +420,8 @@ class RunBundler:
             else:
                 # Ignore the inputs. Use this call as a signal to call read on the
                 # object, a crude way to be sure we get all the info we need.
-                readable_obj = check_supports(obj, Readable)
-                readings = readable_obj.read()
+                readable_obj = check_supports(obj, Readable)  # type: ignore
+                readings = readable_obj.read()  # type: ignore
                 assert not inspect.isawaitable(readings), (
                     f"{readable_obj} has async read() method and the callback "
                     "passed to subscribe() was not called with Dict[str, Reading]"
@@ -686,7 +687,8 @@ class RunBundler:
     async def _cache_describe_collect(self, obj: Collectable):
         "Read the object's describe and cache it."
         obj = check_supports(obj, Collectable)
-        self._describe_collect_cache[obj] = await maybe_await(obj.describe_collect())
+        c = await maybe_await(obj.describe_collect())
+        self._describe_collect_cache[obj] = c
 
     async def _describe_collect(self, collect_object: Flyable):
         """Read an object's describe_collect and cache it.
@@ -727,7 +729,7 @@ class RunBundler:
         ), "Single nested data keys should be pre-decalred"
 
         # Make sure you can't use identidal data keys in multiple streams
-        duplicates = defaultdict(dict)
+        duplicates: Dict[str, DataKey] = defaultdict(dict)
         for stream, data_keys in describe_collect.items():
             for key, stuff in data_keys.items():
                 for other_stream, other_data_keys in describe_collect.items():
@@ -832,7 +834,9 @@ class RunBundler:
 
                 doc["descriptor"] = descriptor_doc["uid"]
                 stream_datum_previous_indices_difference = await self._pack_seq_nums_into_stream_datum(
-                    doc, message_stream_name, stream_datum_previous_indices_difference
+                    doc,
+                    message_stream_name,  # type: ignore
+                    stream_datum_previous_indices_difference,  # type: ignore
                 )
             elif name == DocumentNames.datum.value:
                 ...
@@ -852,10 +856,10 @@ class RunBundler:
             )
 
         # Check we have a stream_datum for each external data_key in the descriptor
-        if descriptor_doc and data_keys_received and set(external_data_keys) != data_keys_received:
+        if descriptor_doc and data_keys_received and set(external_data_keys) != data_keys_received:  # type: ignore
             raise RuntimeError(
-                f"Received `stream_datum` for each of the data_keys {data_keys_received}, "
-                f"expected `stream_datum` for each of the data_keys {set(external_data_keys)}."
+                f"Received `stream_datum` for each of the data_keys {data_keys_received}, "  # type: ignore
+                f"expected `stream_datum` for each of the data_keys {set(external_data_keys)}."  # type: ignore
             )
 
         return stream_datum_previous_indices_difference
@@ -872,14 +876,14 @@ class RunBundler:
         message_stream_name: Optional[str],
     ):
         payload = []
-        pages: dict[frozenset[str], list[Event]] = defaultdict(list)
+        pages: Dict[FrozenSet[str], List[Event]] = defaultdict(list)
 
         if message_stream_name:
             compose_event = self._descriptors[message_stream_name].compose_event
             data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
             objs_read = frozenset(data_keys.keys())
 
-        for partial_event in collect_obj.collect():
+        async for partial_event in iterate_maybe_async(collect_obj.collect()):
             if return_payload:
                 payload.append(partial_event)
 
@@ -922,7 +926,7 @@ class RunBundler:
             compose_event_page = self._descriptors[message_stream_name].compose_event_page
             data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
 
-        for ev_page in collect_obj.collect_pages():
+        async for ev_page in iterate_maybe_async(collect_obj.collect_pages()):
             if return_payload:
                 payload.append(ev_page)
 

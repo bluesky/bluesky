@@ -1,5 +1,6 @@
 # %matplotlib qt5
 import shutil
+from typing import Any, Mapping
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,7 +62,10 @@ inner_hints = {"fields": [det4.name], "dimensions": [([motor1.name, motor2.name]
 RE(scan_nd([det4], mot1_cycl + mot2_cycl), hints=inner_hints)
 
 # outer product
-outer_hints = {"fields": [det4.name], "dimensions": [([motor2.name], "primary"), ([motor1.name], "primary")]}
+outer_hints: Mapping[str, Any] = {
+    "fields": [det4.name],
+    "dimensions": [([motor2.name], "primary"), ([motor1.name], "primary")],
+}
 md = {
     "shape": (20, 20),
     # 'extents': ([-1, 0], [-1, 0]),

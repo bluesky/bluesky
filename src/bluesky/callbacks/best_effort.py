@@ -15,11 +15,13 @@ from datetime import datetime
 from functools import partial
 from io import StringIO
 from pprint import pformat
+from typing import List, Mapping
 from warnings import warn
 
 import matplotlib.pyplot as plt
 import numpy as np
 from cycler import cycler
+from matplotlib.axis import Axis
 
 from .core import LiveTable, make_class_safe
 from .fitting import PeakStats
@@ -539,9 +541,11 @@ class PeakResults:
 
 class LivePlotPlusPeaks(LivePlot):
     # Track state of axes, which may share instances of LivePlotPlusPeaks.
-    __labeled = weakref.WeakKeyDictionary()  # map ax to True/False
-    __visible = weakref.WeakKeyDictionary()  # map ax to True/False
-    __instances = weakref.WeakKeyDictionary()  # map ax to list of instances
+    __labeled: Mapping[Axis, bool] = weakref.WeakKeyDictionary()  # map ax to True/False
+    __visible: Mapping[Axis, bool] = weakref.WeakKeyDictionary()  # map ax to True/False
+    __instances: Mapping[Axis, List["LivePlotPlusPeaks"]] = (
+        weakref.WeakKeyDictionary()
+    )  # map ax to list of instances
 
     def __init__(self, *args, peak_results, **kwargs):
         self.__setup_lock = threading.Lock()
