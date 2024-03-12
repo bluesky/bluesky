@@ -227,6 +227,16 @@ class RunEngine:
         completely up to the user. The function's return value is
         ignored.
 
+    md_normalizer : callable, optional
+        a function that, similar to md_validator, raises and prevents starting
+        a run if it deems the metadata to be invalid or incomplete.
+        If it succeeds, it returns the normalized/transformed version of
+        the original metadata.
+        Expected signature: f(md)
+        Function should raise if md is invalid. What that means is
+        completely up to the user.
+        Expected return: normalized metadata
+
     scan_id_source : callable, optional
         a function that will be used to calculate scan_id. Default is to
         increment scan_id by 1 each time. However you could pass in a
@@ -359,7 +369,7 @@ class RunEngine:
 
     def __init__(self, md=None, *, loop=None, preprocessors=None,
                  context_managers=None, md_validator=None,
-                 scan_id_source=default_scan_id_source,
+                 md_normalizer=None, scan_id_source=default_scan_id_source,
                  during_task=None, call_returns_result=False):
         if loop is None:
             loop = asyncio.new_event_loop()
@@ -415,6 +425,9 @@ class RunEngine:
         if md_validator is None:
             md_validator = _default_md_validator
         self.md_validator = md_validator
+        if md_normalizer is None:
+            md_normalizer = _default_md_normalizer
+        self.md_normalizer = md_normalizer
         self.scan_id_source = scan_id_source
 
         self.max_depth = None
@@ -1777,14 +1790,10 @@ class RunEngine:
                        'plan_name': plan_name},
                       self.md)  # stateful, persistent metadata
         # The metadata is final. Validate it now, at the last moment.
-        # The md_validator may mutate the metadata, so we pass a deep copy.
-        original = copy.deepcopy(md)
-        validated = self.md_validator(original)
-        # Back-compat: We used to ignore the return value from md_validator;
-        # all it could do was raise. Therefore there may be old md_validators
-        # out there which do not return the validated metadata.
-        if validated is None:
-            validated = original
+        self.md_validator(md)
+
+        # Apply normalizer at the same level of the validator
+        validated = self.md_normalizer(md)
 
         current_run = self._run_bundlers[run_key] = type(self).RunBundler(
             validated, self.record_interruptions, self.emit, self.emit_sync, self.log,
@@ -2711,7 +2720,21 @@ def _default_md_validator(md):
             "GOOD: sample='dirt' "
             "GOOD: sample={'color': 'red', 'number': 5} "
             "BAD: sample=[1, 2] ")
-    return md
+
+
+def _default_md_normalizer(md):
+    if 'sample' in md and not (hasattr(md['sample'], 'keys') or
+                               isinstance(md['sample'], str)):
+        raise ValueError(
+            "You specified 'sample' metadata. We give this field special "
+            "significance in order to make your data easily searchable. "
+            "Therefore, you must make 'sample' a string or a  "
+            "dictionary, like so: "
+            "GOOD: sample='dirt' "
+            "GOOD: sample={'color': 'red', 'number': 5} "
+            "BAD: sample=[1, 2] ")
+    # The md_normalizer may mutate the metadata, so we pass a deep copy.
+    return copy.deepcopy(md)
 
 
 def _ensure_event_loop_running(loop):

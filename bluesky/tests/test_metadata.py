@@ -1,5 +1,6 @@
 import bluesky
 from bluesky.plans import count
+import copy
 import ophyd
 
 
@@ -37,21 +38,23 @@ def test_old_md_validator(RE):
     assert start_doc["test"] == 1
 
 
-def test_md_validator(RE):
+def test_md_mormalizer(RE):
     """
-    Test a modern md_validator.
+    Test the new md_normalizer.
 
-    In current versions of bluesky, md_validator may return a
-    normalized valid result, or raise if it is unable to provide one.
+    In current versions of bluesky, md_normalizer is introduced to run
+    alongside md_validator. It returns a normalized valid result,
+    or raise if it is unable to provide one.
 
-    When an md_validator returns a dict, we should use that.
+    When an md_normalizer returns a dict, we should use that.
     """
 
-    def md_validator(md):
+    def md_normalizer(md):
         "Ensure top-level keys are lowercase."
-        return {key.lower(): value for key, value in md.items()}
+        deep_cp_md = copy.deepcopy(md)
+        return {key.lower(): value for key, value in deep_cp_md.items()}
 
-    metadata = {"TEST": 1, "a": {"b": {"c": []}}}
+    metadata = {"TEST": 1, "a": {"b": {"c": [1]}}}
     start_doc = None
 
     def test_callback(name, doc):
@@ -59,7 +62,7 @@ def test_md_validator(RE):
         if name == "start":
             start_doc = doc
 
-    RE.md_validator = md_validator
+    RE.md_normalizer = md_normalizer
     RE(count([], md=metadata), test_callback)
     assert "TEST" in metadata
     assert "TEST" not in start_doc
