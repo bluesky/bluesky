@@ -1790,7 +1790,7 @@ class RunEngine:
                        'plan_name': plan_name},
                       self.md)  # stateful, persistent metadata
         # The metadata is final. Validate it now, at the last moment.
-        self.md_validator(md)
+        self.md_validator(dict(md))
 
         # Apply normalizer at the same level of the validator
         validated = self.md_normalizer(md)
