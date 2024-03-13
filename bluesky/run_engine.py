@@ -1793,7 +1793,7 @@ class RunEngine:
         self.md_validator(dict(md))
 
         # Apply normalizer at the same level of the validator
-        validated = self.md_normalizer(md)
+        validated = self.md_normalizer(copy.deepcopy(md))
 
         current_run = self._run_bundlers[run_key] = type(self).RunBundler(
             validated, self.record_interruptions, self.emit, self.emit_sync, self.log,
@@ -2723,18 +2723,7 @@ def _default_md_validator(md):
 
 
 def _default_md_normalizer(md):
-    if 'sample' in md and not (hasattr(md['sample'], 'keys') or
-                               isinstance(md['sample'], str)):
-        raise ValueError(
-            "You specified 'sample' metadata. We give this field special "
-            "significance in order to make your data easily searchable. "
-            "Therefore, you must make 'sample' a string or a  "
-            "dictionary, like so: "
-            "GOOD: sample='dirt' "
-            "GOOD: sample={'color': 'red', 'number': 5} "
-            "BAD: sample=[1, 2] ")
-    # The md_normalizer may mutate the metadata, so we pass a deep copy.
-    return copy.deepcopy(md)
+    return md
 
 
 def _ensure_event_loop_running(loop):

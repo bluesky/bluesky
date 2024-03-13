@@ -1,6 +1,5 @@
 import bluesky
 from bluesky.plans import count
-import copy
 import ophyd
 
 
@@ -51,8 +50,7 @@ def test_md_mormalizer(RE):
 
     def md_normalizer(md):
         "Ensure top-level keys are lowercase."
-        deep_cp_md = copy.deepcopy(md)
-        return {key.lower(): value for key, value in deep_cp_md.items()}
+        return {key.lower(): value for key, value in md.items()}
 
     metadata = {"TEST": 1, "a": {"b": {"c": [1]}}}
     start_doc = None
