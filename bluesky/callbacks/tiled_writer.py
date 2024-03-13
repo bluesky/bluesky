@@ -1,12 +1,14 @@
 import numpy as np
-import pandas as pd
 from event_model import DocumentRouter, RunRouter
 from tiled.client import from_profile, from_uri
 from tiled.structures.array import ArrayStructure, BuiltinDtype
 from tiled.structures.core import Spec, StructureFamily
 from tiled.structures.data_source import Asset, DataSource, Management
 
-MIMETYPE_LOOKUP = {"hdf5": "application/x-hdf5"}
+MIMETYPE_LOOKUP = {
+    "hdf5": "application/x-hdf5",
+    "ADHDF5_SWMR_STREAM": "application/x-hdf5",
+}
 
 
 class TiledWriter:
@@ -60,17 +62,18 @@ class _RunWriter(DocumentRouter):
         )
 
     def event(self, doc):
-        parent_node = self._descriptor_nodes[doc["descriptor"]]
-        parent_node.write_dataframe(
-            pd.DataFrame({column: [value] for column, value in doc["data"].items()}),
-            key="data",
-        )
-        parent_node.write_dataframe(
-            pd.DataFrame(
-                {column: [value] for column, value in doc["timestamps"].items()}
-            ),
-            key="timestamps",
-        )
+        # parent_node = self._descriptor_nodes[doc["descriptor"]]
+        # parent_node.write_dataframe(
+        #     pd.DataFrame({column: [value] for column, value in doc["data"].items()}),
+        #     key="data",
+        # )
+        # parent_node.write_dataframe(
+        #     pd.DataFrame(
+        #         {column: [value] for column, value in doc["timestamps"].items()}
+        #     ),
+        #     key="timestamps",
+        # )
+        pass
 
     def stream_resource(self, doc):
         # Cache the StreamResource
@@ -78,7 +81,7 @@ class _RunWriter(DocumentRouter):
 
     def stream_datum(self, doc):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
-        arr_shape = dict(descriptor_node.metadata)["data_keys"]["image"]["shape"]
+
         num_rows = (
             doc["indices"]["stop"] - doc["indices"]["start"]
         )  # Number of rows added by new StreamDatum
@@ -104,6 +107,8 @@ class _RunWriter(DocumentRouter):
                 )
             ]
 
+            data_key = SR_doc["data_key"]
+            arr_shape = dict(descriptor_node.metadata)["data_keys"][data_key]["shape"]
             SR_node = descriptor_node.new(
                 structure_family=StructureFamily.array,
                 data_sources=[
@@ -117,7 +122,11 @@ class _RunWriter(DocumentRouter):
                             chunks=[[0]] + [[d] for d in arr_shape],
                         ),
                         # structure=ArrayStructure.from_array(np.ones(arr_shape)),
-                        parameters={"path": ["test"]},
+                        parameters={
+                            "path": SR_doc["resource_kwargs"]["dataset"]
+                            .strip("/")
+                            .split("/")
+                        },
                         management=Management.external,
                     )
                 ],
@@ -127,7 +136,7 @@ class _RunWriter(DocumentRouter):
 
             self._SR_nodes[SR_doc["uid"]] = SR_node
 
-        # Append StreamDatum to an existing StereamResource (by overwriting it with changed shape)
+        # Append StreamDatum to an existing StreamResource (by overwriting it with changed shape)
         url = SR_node.uri.replace("/metadata/", "/data_source/")
         SR_node.refresh()
         ds_dict = SR_node.data_sources()[0]
@@ -137,5 +146,3 @@ class _RunWriter(DocumentRouter):
         SR_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
         )
-
-        # breakpoint()

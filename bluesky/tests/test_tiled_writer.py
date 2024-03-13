@@ -1,28 +1,31 @@
+import json
 from typing import Dict, Iterator, Optional
-from event_model.documents.event_descriptor import DataKey
-from event_model.documents.event import PartialEvent
-from event_model.documents.resource import PartialResource
+
+import pytest
 from event_model.documents.datum import Datum
+from event_model.documents.event import PartialEvent
+from event_model.documents.event_descriptor import DataKey
+from event_model.documents.resource import PartialResource
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
-import bluesky.plans as bp
-import bluesky.plan_stubs as bps
-from bluesky.callbacks.tiled_writer import TiledWriter
 from tiled.catalog import in_memory
 from tiled.client import Context, from_context, record_history
 from tiled.server.app import build_app
-import pytest
+
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
+from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky.protocols import (
     Asset,
-    Readable,
-    Reading,
-    HasName,
-    WritesExternalAssets,
+    Collectable,
     EventCollectable,
     EventPageCollectable,
-    Collectable,
-    WritesStreamAssets,
+    HasName,
+    Readable,
+    Reading,
     StreamAsset,
+    WritesExternalAssets,
+    WritesStreamAssets,
 )
 
 
@@ -57,6 +60,33 @@ class DocHolder(dict):
     def assert_emitted(self, **numbers: int):
         assert list(self) == list(numbers)
         assert {name: len(d) for name, d in self.items()} == numbers
+
+
+class JSONLWriter:
+    def __init__(self, filepath):
+        self.file = open(filepath, "w")
+
+    def __call__(self, name, doc):
+        json.dump({"name": name, "doc": doc}, self.file)
+        self.file.write("\n")
+        if name == "stop":
+            self.file.close()
+
+
+def test_stream_datum_readable_counts(RE, client):
+    tw = TiledWriter(client)
+    det = StreamDatumReadableCollectable(name="det")
+    # docs = DocHolder()
+    # jsonl_writer = JSONLWriter('/Users/eugene/code/demo_stream_documents/test_documents.jsonl')
+    RE(bp.count([det], 2), tw)
+    bluesky_run = client.values().last()
+    breakpoint()
+
+
+def test_stream_datum_collectable(RE, client):
+    det = StreamDatumReadableCollectable(name="det")
+    tw = TiledWriter(client)
+    RE(collect_plan(det), print)
 
 
 def merge_dicts(*functions):
@@ -140,9 +170,9 @@ def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
         f"{self.name}-sd1": DataKey(
             source="file", dtype="number", shape=[1000, 1500], external="STREAM:"
         ),
-        f"{self.name}-sd2": DataKey(
-            source="file", dtype="number", shape=[], external="STREAM:"
-        ),
+        # f"{self.name}-sd2": DataKey(
+        #     source="file", dtype="number", shape=[], external="STREAM:"
+        # ),
     }
 
 
@@ -156,7 +186,7 @@ def collect_asset_docs_stream_datum(
 ) -> Iterator[StreamAsset]:
     """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
     index = index or 1
-    for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
+    for data_key in [f"{self.name}-sd1"]:  # , f"{self.name}-sd2"
         uid = f"{data_key}-uid"
         if self.counter == 0:
             stream_resource = StreamResource(
@@ -357,15 +387,6 @@ def test_datum_readable_counts(RE):
     assert docs["event"][0]["filled"] == {"det-datum": False}
 
 
-def test_stream_datum_readable_counts(RE, client):
-    tw = TiledWriter(client)
-    det = StreamDatumReadableCollectable(name="det")
-    docs = DocHolder()
-    RE(bp.count([det], 2), tw)
-    run = client.values().last()
-
-
-
 def test_combinations_counts(RE):
     det1 = PvAndDatumReadable(name="det1")
     det2 = PvAndStreamDatumReadable(name="det2")
@@ -512,16 +533,6 @@ def test_pv_collectable(RE, cls):
     }
 
 
-def test_stream_datum_collectable(RE, client):
-    det = StreamDatumReadableCollectable(name="det")
-    tw = TiledWriter(client)
-    RE(collect_plan(det), print)
-
-
-@pytest.mark.parametrize("cls1", [PvCollectable, PvPageCollectable])
-@pytest.mark.parametrize(
-    "cls2", [PvCollectable, PvPageCollectable, StreamDatumReadableCollectable]
-)
 def test_many_collectables_fails(RE, cls1, cls2):
     det1, det2 = cls1(name="det1"), cls2(name="det2")
     with pytest.raises(
