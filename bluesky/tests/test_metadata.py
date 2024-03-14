@@ -43,7 +43,7 @@ def test_md_mormalizer(RE):
 
     In current versions of bluesky, md_normalizer is introduced to run
     alongside md_validator. It returns a normalized valid result,
-    or raise if it is unable to provide one.
+    or raises if it is unable to provide one.
 
     When an md_normalizer returns a dict, we should use that.
     """
