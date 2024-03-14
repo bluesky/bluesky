@@ -87,7 +87,7 @@ class _RunWriter(DocumentRouter):
         )  # Number of rows added by new StreamDatum
 
         # Get the Stream Resource node if it already exists or register if from a cached SR document
-        print(f"Processing Stream Datum \n {doc}")
+        # print(f"Processing Stream Datum \n {doc}")
 
         try:
             SR_node = self._SR_nodes[doc["stream_resource"]]
@@ -118,12 +118,12 @@ class _RunWriter(DocumentRouter):
                         structure_family=StructureFamily.array,
                         structure=ArrayStructure(
                             data_type=BuiltinDtype.from_numpy_dtype(np.dtype("double")),
-                            shape=[0] + arr_shape,
+                            shape=[0, *arr_shape],
                             chunks=[[0]] + [[d] for d in arr_shape],
                         ),
                         # structure=ArrayStructure.from_array(np.ones(arr_shape)),
                         parameters={
-                            "path": SR_doc["resource_kwargs"]["dataset"]
+                            "path": SR_doc["resource_kwargs"]["path"]
                             .strip("/")
                             .split("/")
                         },
@@ -138,11 +138,14 @@ class _RunWriter(DocumentRouter):
 
         # Append StreamDatum to an existing StreamResource (by overwriting it with changed shape)
         url = SR_node.uri.replace("/metadata/", "/data_source/")
+        chunk_size = 100
         SR_node.refresh()
         ds_dict = SR_node.data_sources()[0]
         # SR_node.include_data_sources() ?
         ds_dict["structure"]["shape"][0] += num_rows
-        ds_dict["structure"]["chunks"][0] = [min(ds_dict["structure"]["shape"][0], 100)]
+        ds_dict["structure"]["chunks"][0] = [
+            min(ds_dict["structure"]["shape"][0], chunk_size)
+        ]
         SR_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
         )
