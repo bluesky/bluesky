@@ -8,6 +8,7 @@ from tiled.structures.data_source import Asset, DataSource, Management
 MIMETYPE_LOOKUP = {
     "hdf5": "application/x-hdf5",
     "ADHDF5_SWMR_STREAM": "application/x-hdf5",
+    "AD_HDF5_SWMR_SLICE": "application/x-hdf5",
 }
 
 
@@ -87,7 +88,7 @@ class _RunWriter(DocumentRouter):
         )  # Number of rows added by new StreamDatum
 
         # Get the Stream Resource node if it already exists or register if from a cached SR document
-        # print(f"Processing Stream Datum \n {doc}")
+        print(f"Processing Stream Datum \n {doc}")
 
         try:
             SR_node = self._SR_nodes[doc["stream_resource"]]
@@ -100,15 +101,22 @@ class _RunWriter(DocumentRouter):
             assets = [
                 Asset(
                     data_uri="file://localhost"
-                    + SR_doc["root"]
-                    + SR_doc["resource_path"],
+                    + "/"
+                    + SR_doc["root"].strip("/")
+                    + "/"
+                    + SR_doc["resource_path"].strip("/"),  # noqa
                     is_directory=False,
                     parameter="data_uri",
                 )
             ]
 
             data_key = SR_doc["data_key"]
-            arr_shape = dict(descriptor_node.metadata)["data_keys"][data_key]["shape"]
+            desc = dict(descriptor_node.metadata)["data_keys"][data_key]
+            if desc["dtype"] == "array":
+                data_shape = desc["shape"]
+            elif desc["dtype"] == "number":
+                data_shape = ()
+
             SR_node = descriptor_node.new(
                 structure_family=StructureFamily.array,
                 data_sources=[
@@ -117,11 +125,12 @@ class _RunWriter(DocumentRouter):
                         mimetype=MIMETYPE_LOOKUP[SR_doc["spec"]],
                         structure_family=StructureFamily.array,
                         structure=ArrayStructure(
-                            data_type=BuiltinDtype.from_numpy_dtype(np.dtype("double")),
-                            shape=[0, *arr_shape],
-                            chunks=[[0]] + [[d] for d in arr_shape],
+                            data_type=BuiltinDtype.from_numpy_dtype(
+                                np.dtype("float64")
+                            ),
+                            shape=[0, *data_shape],
+                            chunks=[[0]] + [[d] for d in data_shape],
                         ),
-                        # structure=ArrayStructure.from_array(np.ones(arr_shape)),
                         parameters={
                             "path": SR_doc["resource_kwargs"]["path"]
                             .strip("/")
@@ -138,14 +147,11 @@ class _RunWriter(DocumentRouter):
 
         # Append StreamDatum to an existing StreamResource (by overwriting it with changed shape)
         url = SR_node.uri.replace("/metadata/", "/data_source/")
-        chunk_size = 100
         SR_node.refresh()
         ds_dict = SR_node.data_sources()[0]
         # SR_node.include_data_sources() ?
         ds_dict["structure"]["shape"][0] += num_rows
-        ds_dict["structure"]["chunks"][0] = [
-            min(ds_dict["structure"]["shape"][0], chunk_size)
-        ]
+        ds_dict["structure"]["chunks"][0] = [ds_dict["structure"]["shape"][0]]
         SR_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
         )

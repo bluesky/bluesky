@@ -1,32 +1,24 @@
-import json
 from typing import Dict, Iterator, Optional
 
 import h5py
 import numpy as np
 import pytest
-from event_model.documents.datum import Datum
-from event_model.documents.event import PartialEvent
 from event_model.documents.event_descriptor import DataKey
-from event_model.documents.resource import PartialResource
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
 from tiled.catalog import in_memory
-from tiled.client import Context, from_context, record_history
+from tiled.client import Context, from_context
 from tiled.server.app import build_app
 
 import bluesky.plan_stubs as bps
 import bluesky.plans as bp
 from bluesky.callbacks.tiled_writer import TiledWriter
 from bluesky.protocols import (
-    Asset,
     Collectable,
-    EventCollectable,
-    EventPageCollectable,
     HasName,
     Readable,
     Reading,
     StreamAsset,
-    WritesExternalAssets,
     WritesStreamAssets,
 )
 
@@ -79,7 +71,7 @@ def test_stream_datum_readable_counts(RE, client, tmpdir):
 
 def test_stream_datum_collectable(RE, client):
     det = StreamDatumReadableCollectable(name="det")
-    tw = TiledWriter(client)
+    # tw = TiledWriter(client)
     RE(collect_plan(det), print)
 
 
@@ -94,9 +86,9 @@ def collect_plan(*objs, pre_declare: bool, stream=False):
 def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
     """Describe 2 datasets which will be backed by StreamResources"""
     return {
-        # f"{self.name}-sd2": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
+        # f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
         f"{self.name}-sd1": DataKey(
-            source="file", dtype="number", shape=[10, 15], external="STREAM:"
+            source="file", dtype="array", shape=[10, 15], external="STREAM:"
         ),
         # f"{self.name}-sd2": DataKey(
         #     source="file", dtype="number", shape=[], external="STREAM:"
@@ -119,7 +111,10 @@ def collect_asset_docs_stream_datum(
         data_desc = self.describe()[
             data_key
         ]  # Descriptor disctionary for the current data key
-        data_shape = data_desc["shape"]
+        if data_desc["dtype"] == "array":
+            data_shape = data_desc["shape"]
+        elif data_desc["dtype"] == "number":
+            data_shape = ()
         file_path = self.root + "/dataset.h5"
         hdf5_path = f"/{data_key}/VALUE"
         if self.counter == 0:
@@ -133,17 +128,14 @@ def collect_asset_docs_stream_datum(
             )
             # Create an empty hdf5 file
             # Initialize an empty HDF5 dataset (3D: var 1 dim, fixed 2 and 3 dims)
-            chunk_size = 10
             with h5py.File(file_path, "w") as f:
-                dset = f.create_dataset(
+                dset = f.require_dataset(
                     hdf5_path,
-                    [0] + data_shape,
-                    maxshape=[None] + data_shape,
+                    (0, *data_shape),
+                    maxshape=(None, *data_shape),
                     dtype=np.dtype("double"),
-                    chunks=(chunk_size, *data_shape),
+                    chunks=(10, *data_shape),
                 )
-
-            # breakpoint()
 
             yield "stream_resource", stream_resource
 
@@ -159,7 +151,7 @@ def collect_asset_docs_stream_datum(
         # Write (append to) the hdf5 dataset
         with h5py.File(file_path, "a") as f:
             dset = f[hdf5_path]
-            dset.resize([indx_max] + data_shape)
+            dset.resize([indx_max, *data_shape])
             dset[indx_min:indx_max, ...] = np.random.randn(
                 indx_max - indx_min, *data_shape
             )
