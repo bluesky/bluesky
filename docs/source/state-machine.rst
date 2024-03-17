@@ -332,6 +332,19 @@ abort instead.
     actions that it is not safe to replay: staging a device, adding a
     monitor, or adding a subscription.
 
+.. caution::
+
+    This plan will exit the entire Python session immediately:
+
+    .. code-block:: python
+
+        import bluesky.plan_stubs as bps
+
+        def exit_python_session_now():
+            """Exit this Python session immediately."""
+            yield from bps.clear_checkpoint()  # this plan will not resume
+            yield from bps.pause()  # trigger the Python session to exit
+
 .. _planned_pauses:
 
 Planned Pauses
