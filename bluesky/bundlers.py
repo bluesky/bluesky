@@ -758,6 +758,7 @@ class RunBundler:
 
         return indices_difference
 
+    # message strem name here?
     async def _pack_external_assets(
         self,
         asset_docs: Iterable[Tuple[str, ExternalAssetDoc]],
@@ -875,7 +876,7 @@ class RunBundler:
             if [x for x in self.get_external_data_keys(data_keys) if x in ev["data"]]:
                 raise RuntimeError("Received an event containing data for external data keys.")
 
-            ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
+            ev = compose_event(data=ev["data"], timestamps=ev["timestamps"], filled=ev["filled"])
 
             if stream:
                 doc_logger.debug(
