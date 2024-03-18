@@ -70,17 +70,19 @@ def test_stream_datum_readable_counts(RE, client, tmpdir):
 
 
 def test_stream_datum_collectable(RE, client, tmpdir):
-    # det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
-    # # tw = TiledWriter(client)
-    # RE(collect_plan(det), print)
-    pass
+    det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
+    tw = TiledWriter(client)
+    RE(collect_plan(det, pre_declare=False), tw)
+    arrs = client.values().last()["primary"].values()
+    assert arrs[0].read() is not None
+    assert arrs[1][:] is not None
 
 
-def collect_plan(*objs, pre_declare: bool, stream=False):
+def collect_plan(*objs, pre_declare: bool, stream=True):
     yield from bps.open_run()
     if pre_declare:
         yield from bps.declare_stream(*objs, collect=True)
-    yield from bps.collect(*objs, stream=stream)
+    yield from bps.collect(*objs, stream=stream, return_payload=False, name="primary")
     yield from bps.close_run()
 
 
@@ -111,7 +113,7 @@ def collect_asset_docs_stream_datum(
         uid = f"{data_key}-uid"
         data_desc = self.describe()[
             data_key
-        ]  # Descriptor disctionary for the current data key
+        ]  # Descriptor dictionary for the current data key
         if data_desc["dtype"] == "array":
             data_shape = data_desc["shape"]
         elif data_desc["dtype"] == "number":
@@ -156,9 +158,6 @@ def collect_asset_docs_stream_datum(
             )
 
         yield "stream_datum", stream_datum
-
-        with h5py.File(file_path, "r") as f:
-            print("HDF% Keys:", f.keys())
     self.counter += index
 
 

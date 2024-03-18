@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from event_model import DocumentRouter, RunRouter
 from tiled.client import from_profile, from_uri
 from tiled.structures.array import ArrayStructure, BuiltinDtype
@@ -63,18 +64,17 @@ class _RunWriter(DocumentRouter):
         )
 
     def event(self, doc):
-        # parent_node = self._descriptor_nodes[doc["descriptor"]]
-        # parent_node.write_dataframe(
-        #     pd.DataFrame({column: [value] for column, value in doc["data"].items()}),
-        #     key="data",
-        # )
-        # parent_node.write_dataframe(
-        #     pd.DataFrame(
-        #         {column: [value] for column, value in doc["timestamps"].items()}
-        #     ),
-        #     key="timestamps",
-        # )
-        pass
+        parent_node = self._descriptor_nodes[doc["descriptor"]]
+        parent_node.write_dataframe(
+            pd.DataFrame({column: [value] for column, value in doc["data"].items()}),
+            key="data",
+        )
+        parent_node.write_dataframe(
+            pd.DataFrame(
+                {column: [value] for column, value in doc["timestamps"].items()}
+            ),
+            key="timestamps",
+        )
 
     def stream_resource(self, doc):
         # Only cache the StreamResource; add the node when at least one StreamDatum is added
