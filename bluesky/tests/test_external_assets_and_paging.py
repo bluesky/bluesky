@@ -369,13 +369,13 @@ def test_combinations_counts(RE):
     )
     assert docs["descriptor"][0]["name"] == "primary"
     # TODO: only works with a set at the moment
-    assert list(docs["descriptor"][0]["data_keys"]) == [
+    assert set(docs["descriptor"][0]["data_keys"]) == {
         "det1-pv",
         "det1-datum",
         "det2-pv",
         "det2-sd1",
         "det2-sd2",
-    ]
+    }
     assert docs["event"][0]["descriptor"] == docs["descriptor"][0]["uid"]
     assert docs["event"][0]["data"] == {
         "det1-datum": "RESOURCEUID/1",
