@@ -876,7 +876,11 @@ class RunBundler:
             if [x for x in self.get_external_data_keys(data_keys) if x in ev["data"]]:
                 raise RuntimeError("Received an event containing data for external data keys.")
 
-            ev = compose_event(data=ev["data"], timestamps=ev["timestamps"], filled=ev["filled"])
+            # is there a way to generalise the keys?
+            if "filled" in ev.keys():
+                ev = compose_event(data=ev["data"], timestamps=ev["timestamps"], filled=ev["filled"])
+            else:
+                ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
 
             if stream:
                 doc_logger.debug(
@@ -993,30 +997,24 @@ class RunBundler:
                 )
             self._uncollected.discard(obj)
 
-        # If message_stream_name is given pre-declare stream should have been called
+        # Get message stream name for singly nested scans
         message_stream_name = msg.kwargs.get("name", None)
 
-        # Check if we have descriptors for the collect objects
-        # if we do it is a new style can (declare stream was called first)
-        # if we do not it is an old style and we need to do that now.
-
-        # If we want multiple objects we need predeclare and a stream_name.
-        # But we may have a single device in a declared stream, so >1 is not enough?
-
-        # this needs to also cover the second call of collect on a object,as these
-        # will have local_descriptors
-
-        if frozenset(collect_objects) not in self._local_descriptors or (
-            collect_objects[0] not in self._local_descriptors
-        ):
-            # i think this covers the paths?
-            if message_stream_name or len(collect_objects) > 1:
-                raise IllegalMessageSequence(
-                    "If collecting multiple objects you must predeclare a stream for all "
-                        "the objects first and provide the stream name"
-                )
-            else:  # Old style scan
-                await self._describe_collect(collect_objects[0])
+        # If message_stream_name is given pre-declare stream should have been called
+        if message_stream_name:
+            if message_stream_name not in self._descriptor_objs:
+                raise RuntimeError("If a message stream name is provided declare stream needs to be called first.")
+        else:
+            if frozenset(collect_objects) not in self._local_descriptors or (
+                collect_objects[0] not in self._local_descriptors
+            ):
+                if len(collect_objects) > 1:
+                    raise IllegalMessageSequence(
+                        "If collecting multiple objects you must predeclare a stream for all "
+                            "the objects first and provide the stream name"
+                    )
+                else:  # Old style scan
+                    await self._describe_collect(collect_objects[0])
 
 
         # Get the indicies from the collect objects
@@ -1036,7 +1034,8 @@ class RunBundler:
         indices_difference = await self._pack_external_assets(
             collected_asset_docs, message_stream_name=message_stream_name
         )
-
+        # If we are not using StreamAssets, StreamResource and StreamDatum,
+        # Then we need even pages
         if not message_stream_name:
             collect_object = collect_objects[0]
             local_descriptors = self._local_descriptors[collect_object]
