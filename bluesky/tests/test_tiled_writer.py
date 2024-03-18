@@ -62,17 +62,18 @@ def test_stream_datum_readable_counts(RE, client, tmpdir):
     tw = TiledWriter(client)
     det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
     RE(bp.count([det], 3), tw)
-    bs_run = client.values().last()
-    arr = bs_run["primary"].values().last()
-    assert arr.shape == (3, 10, 15)
-    assert arr.read() is not None
-    assert arr[:] is not None
+    arrs = client.values().last()["primary"].values()
+    assert arrs[0].shape == (3,)
+    assert arrs[1].shape == (3, 10, 15)
+    assert arrs[0].read() is not None
+    assert arrs[1][:] is not None
 
 
-def test_stream_datum_collectable(RE, client):
-    det = StreamDatumReadableCollectable(name="det")
-    # tw = TiledWriter(client)
-    RE(collect_plan(det), print)
+def test_stream_datum_collectable(RE, client, tmpdir):
+    # det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
+    # # tw = TiledWriter(client)
+    # RE(collect_plan(det), print)
+    pass
 
 
 def collect_plan(*objs, pre_declare: bool, stream=False):
@@ -86,13 +87,12 @@ def collect_plan(*objs, pre_declare: bool, stream=False):
 def describe_stream_datum(self: Named) -> Dict[str, DataKey]:
     """Describe 2 datasets which will be backed by StreamResources"""
     return {
-        # f"{self.name}-sd1": DataKey(source="file", dtype="number", shape=[1], external="STREAM:"),
         f"{self.name}-sd1": DataKey(
+            source="file", dtype="number", shape=[1], external="STREAM:"
+        ),
+        f"{self.name}-sd2": DataKey(
             source="file", dtype="array", shape=[10, 15], external="STREAM:"
         ),
-        # f"{self.name}-sd2": DataKey(
-        #     source="file", dtype="number", shape=[], external="STREAM:"
-        # ),
     }
 
 
@@ -106,7 +106,8 @@ def collect_asset_docs_stream_datum(
 ) -> Iterator[StreamAsset]:
     """Produce a StreamResource and StreamDatum for 2 data keys for 0:index"""
     index = index or 1
-    for data_key in [f"{self.name}-sd1"]:  # , f"{self.name}-sd2", f"{self.name}-sd3"
+    file_path = self.root + "/dataset.h5"
+    for data_key in [f"{self.name}-sd1", f"{self.name}-sd2"]:
         uid = f"{data_key}-uid"
         data_desc = self.describe()[
             data_key
@@ -115,7 +116,6 @@ def collect_asset_docs_stream_datum(
             data_shape = data_desc["shape"]
         elif data_desc["dtype"] == "number":
             data_shape = ()
-        file_path = self.root + "/dataset.h5"
         hdf5_path = f"/{data_key}/VALUE"
         if self.counter == 0:
             stream_resource = StreamResource(
@@ -126,9 +126,8 @@ def collect_asset_docs_stream_datum(
                 spec="ADHDF5_SWMR_STREAM",
                 uid=uid,
             )
-            # Create an empty hdf5 file
             # Initialize an empty HDF5 dataset (3D: var 1 dim, fixed 2 and 3 dims)
-            with h5py.File(file_path, "w") as f:
+            with h5py.File(file_path, "a") as f:
                 dset = f.require_dataset(
                     hdf5_path,
                     (0, *data_shape),
@@ -157,6 +156,9 @@ def collect_asset_docs_stream_datum(
             )
 
         yield "stream_datum", stream_datum
+
+        with h5py.File(file_path, "r") as f:
+            print("HDF% Keys:", f.keys())
     self.counter += index
 
 
