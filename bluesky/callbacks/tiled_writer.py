@@ -77,7 +77,7 @@ class _RunWriter(DocumentRouter):
         pass
 
     def stream_resource(self, doc):
-        # Cache the StreamResource
+        # Only cache the StreamResource; add the node when at least one StreamDatum is added
         self._SR_cache[doc["uid"]] = doc
 
     def stream_datum(self, doc):
@@ -88,8 +88,6 @@ class _RunWriter(DocumentRouter):
         )  # Number of rows added by new StreamDatum
 
         # Get the Stream Resource node if it already exists or register if from a cached SR document
-        print(f"Processing Stream Datum \n {doc}")
-
         try:
             SR_node = self._SR_nodes[doc["stream_resource"]]
 
@@ -149,7 +147,6 @@ class _RunWriter(DocumentRouter):
         url = SR_node.uri.replace("/metadata/", "/data_source/")
         SR_node.refresh()
         ds_dict = SR_node.data_sources()[0]
-        # SR_node.include_data_sources() ?
         ds_dict["structure"]["shape"][0] += num_rows
         ds_dict["structure"]["chunks"][0] = [ds_dict["structure"]["shape"][0]]
         SR_node.context.http_client.put(
