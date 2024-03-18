@@ -1,3 +1,4 @@
+import re
 from typing import Dict, Iterator, Optional
 from event_model.documents.event_descriptor import DataKey
 from event_model.documents.event import PartialEvent
@@ -392,15 +393,15 @@ def test_combinations_counts(RE):
 def test_collect_stream_true_raises(RE):
     with pytest.raises(
         RuntimeError,
-        match="Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported",
+        match=re.escape("Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported"),
     ):
         RE(collect_plan(OldPvCollectable("det"), pre_declare=False, stream=True))
 
 
 def test_old_describe_fails_predeclare(RE):
     with pytest.raises(
-        RuntimeError,
-        match="Old style describe_collect output with stream name not supported in declare_stream",
+        AssertionError,
+        match=re.escape("`declare_stream` contained `collect=True` but  `describe_collect` did not return a single Dict[str, DataKey] for the passed in "),
     ):
         RE(collect_plan(OldPvCollectable(name="det"), pre_declare=True))
 
@@ -408,7 +409,7 @@ def test_old_describe_fails_predeclare(RE):
 def test_same_key_in_multiple_streams_fails(RE):
     with pytest.raises(
         RuntimeError,
-        match="Multiple streams ['stream1', 'stream2'] would emit the same data_keys ['pv']",
+        match=re.escape("Can't use identical data keys in multiple streams"),
     ):
         RE(collect_plan(MultiKeyOldCollectable(name="det"), pre_declare=False))
 

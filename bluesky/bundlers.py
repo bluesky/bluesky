@@ -1,7 +1,7 @@
 import asyncio
 import inspect
 import time as ttime
-from collections import deque
+from collections import defaultdict, deque
 from typing import (Any, Callable, Deque, Dict, FrozenSet, Iterable, List, Optional,
                     Tuple, Union)
 
@@ -208,7 +208,7 @@ class RunBundler:
         try:
             stream_name = kwargs['name']
         except KeyError:
-            raise IllegalMessageSequence(
+            raise RuntimeError(
                 "A 'declare_stream' message was sent without a 'name' kwarg,"
             )
         collect = kwargs.get('collect', False)
@@ -225,7 +225,7 @@ class RunBundler:
                 assert len(formatted_data_keys) == 1 \
                     and formatted_data_keys[0][0] == stream_name, \
                     (
-                        "`declare_stream` contained `collect=True` but  `describe_collect` to did "
+                        "`declare_stream` contained `collect=True` but  `describe_collect` did "
                         f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
                     )
             else:
@@ -622,6 +622,8 @@ class RunBundler:
         """
         self._uncollected.add(msg.obj)
 
+    # Could we have a look at changing this now? we use one of each use can in
+        # seperate places so it could be two seperate methods for each dictionary type.
     def _maybe_format_datakeys_with_stream_name(
         self,
         describe_collect_dict: Union[Dict[str, DataKey], Dict[str, Dict[str, DataKey]]],
@@ -666,80 +668,57 @@ class RunBundler:
         obj = check_supports(obj, Collectable)
         self._describe_collect_cache[obj] = await maybe_await(obj.describe_collect())
 
-    async def _describe_collect(self, collect_objects: List[Flyable], message_stream_name: Optional[str] = None):
-        """Read object(s) describe_collect and cache it.
+    async def _describe_collect(self, collect_object: Flyable):
+        """Read an object's describe_collect and cache it.
 
-        Read describe collect for each collect object (one or more) and ensure it is
-        cached in the _describe_collect_cache. If there are multiple devices then they
-        must all be collected under one stream.
+        Read describe collect for a collect_object and ensure it is cached in the
+        _describe_collect_cache.
 
-        This is currently split into two distinct branches to match the use cases, but
-        should be refactored.
+        For the old style scans.
         """
-        if len(collect_objects) == 1:  # There is only one collect object
-            collect_obj = collect_objects[0]
+        await self._ensure_cached(collect_object, collect=True)
 
-            await self._ensure_cached(collect_obj, collect=True)
+        describe_collect = self._describe_collect_cache[collect_object]
 
-            describe_collect = self._describe_collect_cache[collect_obj]
+        # collect_obj.describe_collect() returns a dictionary like this:
+        #     {name_for_desc1: data_keys_for_desc1,
+        #      name_for_desc2: data_keys_for_desc2, ...}
 
-            describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(
-                    describe_collect, message_stream_name=message_stream_name
-            ))
+        describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(describe_collect))
 
-            local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
+        local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
-            # collect_obj.describe_collect() returns a dictionary like this:
-            #     {name_for_desc1: data_keys_for_desc1,
-            #      name_for_desc2: data_keys_for_desc2, ...}
-            for stream_name, stream_data_keys in describe_collect_items:
-                if stream_name not in self._descriptor_objs or (
-                    collect_obj not in self._descriptor_objs[stream_name]
-                ):
-                    # We do not have an Event Descriptor for this collect_obj.
-                    await self._prepare_stream(stream_name, {collect_obj: stream_data_keys})
-                else:
-                    objs_read = self._descriptor_objs[stream_name]
-                    if stream_data_keys != objs_read[collect_obj]:
-                        raise RuntimeError(
-                            "Mismatched objects read, "
-                            "expected {!s}, "
-                            "got {!s}".format(stream_data_keys, objs_read)
-                        )
+        # Make sure you can't use identidal data keys in multiple streams
+        duplicates = defaultdict(dict)
+        for stream, data_keys in describe_collect.items():
+            for key, stuff in data_keys.items():
+                for other_stream, other_data_keys in describe_collect.items():
+                    for other_key, other_stuff in other_data_keys.items():
+                        if stream != other_stream and key == other_key and stuff == other_stuff:
+                            duplicates[stream][key] = stuff
+        if len(duplicates) > 0:
+            raise RuntimeError(
+                "Can't use identical data keys in multiple streams: {duplicates}",
+                f"Data keys: {list(duplicates.values())}",
+                f"streams: {duplicates.keys()}",
+            )
 
-                local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
-            self._local_descriptors[frozenset(collect_objects)] = local_descriptors
-
-        else:  # There are multiple collect objects
-            await asyncio.gather(*[self._ensure_cached(obj, collect=True) for obj in collect_objects])
-
-            describe_collect_all = {collect_obj: self._describe_collect_cache[collect_obj]
-                                    for collect_obj in collect_objects}
-
-            local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
-
-            if message_stream_name not in self._descriptor_objs or (
-                collect_obj not in self._descriptor_objs[message_stream_name]
-                for collect_obj in collect_objects
+        for stream_name, stream_data_keys in describe_collect_items:
+            if stream_name not in self._descriptor_objs or (
+                collect_object not in self._descriptor_objs[stream_name]
             ):
-                await self._prepare_stream(message_stream_name, describe_collect_all)
+                await self._prepare_stream(stream_name, {collect_object: stream_data_keys})
             else:
-                objs_read = self._descriptor_objs[message_stream_name]
-                for collect_object, _ in objs_read.items():
-                    if describe_collect_all[collect_object] == objs_read[collect_object]:
-                        raise RuntimeError(
-                            "Mismatched objects read, "
-                            "expected {!s}, "
-                            "got {!s}".format(describe_collect_all, objs_read)
-                        )
+                objs_read = self._descriptor_objs[stream_name]
+                if stream_data_keys != objs_read[collect_object]:
+                    raise RuntimeError(
+                        "Mismatched objects read, "
+                        "expected {!s}, "
+                        "got {!s}".format(stream_data_keys, objs_read)
+                    )
+            local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
 
-            all_data_keys = {
-                data_key: value
-                for stream_data_keys in list(describe_collect_all.values())
-                for data_key, value in stream_data_keys.items()
-            }
-            local_descriptors[frozenset(all_data_keys)] = self._descriptors[message_stream_name]
-            self._local_descriptors[frozenset(collect_objects)] = local_descriptors
+        self._local_descriptors[collect_object] = local_descriptors
 
     async def _pack_seq_nums_into_stream_datum(
         self,
@@ -980,12 +959,14 @@ class RunBundler:
                 "A 'collect' message was sent but no run is open."
             )
 
-        # If message_stream_name is given then only one descriptor is generated on `describe_collect`
-        message_stream_name = msg.kwargs.get("name", None)
-
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'event_page' subscription once.
         stream = msg.kwargs.get("stream", False)
+
+        if stream is True:
+            raise RuntimeError(
+                "Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported",
+            )
 
         # If True, accumulate all the Events in memory and return them at the
         # end, providing the plan access to the Events. If False, do not
@@ -999,27 +980,43 @@ class RunBundler:
         # raise error if collect_objects don't obey WritesStreamAssests protocol
         indices: List[Callable[[None], SyncOrAsync[int]]] = []
         if len(collect_objects) > 1:
-            for collect_object in collect_objects:
-                indices.append(check_supports(collect_object, WritesStreamAssets).get_index)
+            indices = [check_supports(obj, WritesStreamAssets).get_index for obj in collect_objects]
 
-        for collect_object in collect_objects:
-            if isinstance(collect_object, EventCollectable) and isinstance(collect_object, EventPageCollectable):
+        # Warn for page collectable support
+        for obj in collect_objects:
+            if isinstance(obj, EventCollectable) and isinstance(obj, EventPageCollectable):
                 doc_logger.warn(
                     "collect() was called for a device %r which is both EventCollectable "
                     "and EventPageCollectable. Using device.collect_pages().",
-                    collect_object.name
+                    obj.name
                 )
-            self._uncollected.discard(collect_object)
+            self._uncollected.discard(obj)
 
-        # Obtain `local_descriptors` and describe collect depending on if `message_stream_name` was passed in
-        if message_stream_name:
-            if message_stream_name not in self._descriptors:
-                await self._describe_collect(collect_objects, message_stream_name=message_stream_name)
-        else:
-            if frozenset(collect_objects) not in self._local_descriptors:
-                await self._describe_collect(collect_objects)
+        # If message_stream_name is given pre-declare stream should have been called
+        message_stream_name = msg.kwargs.get("name", None)
 
-        local_descriptors = self._local_descriptors[frozenset(collect_objects)]
+        # Check if we have descriptors for the collect objects
+        # if we do it is a new style can (declare stream was called first)
+        # if we do not it is an old style and we need to do that now.
+
+        # If we want multiple objects we need predeclare and a stream_name.
+        # But we may have a single device in a declared stream, so >1 is not enough?
+
+        # this needs to also cover the second call of collect on a object,as these
+        # will have local_descriptors
+
+        if frozenset(collect_objects) not in self._local_descriptors or (
+            collect_objects[0] not in self._local_descriptors
+        ):
+            # i think this covers the paths?
+            if message_stream_name or len(collect_objects) > 1:
+                raise IllegalMessageSequence(
+                    "If collecting multiple objects you must predeclare a stream for all "
+                        "the objects first and provide the stream name"
+                )
+            else:  # Old style scan
+                await self._describe_collect(collect_objects[0])
+
 
         # Get the indicies from the collect objects
         coros = [maybe_await(get_index()) for get_index in indices]
@@ -1031,15 +1028,17 @@ class RunBundler:
             min_index = None
 
         collected_asset_docs = [
-            x for collect_object in collect_objects
-            async for x in maybe_collect_asset_docs(msg, collect_object, index=min_index,)
+            x for obj in collect_objects
+            async for x in maybe_collect_asset_docs(msg, obj, index=min_index,)
             ]
 
         indices_difference = await self._pack_external_assets(
             collected_asset_docs, message_stream_name=message_stream_name
         )
 
-        if len(collect_objects) == 1:
+        if not message_stream_name:
+            collect_object = collect_objects[0]
+            local_descriptors = self._local_descriptors[collect_object]
             if isinstance(collect_object, EventPageCollectable):
                 if stream:
                     raise IllegalMessageSequence(
@@ -1072,6 +1071,10 @@ class RunBundler:
         else:
             # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
             self._sequence_counters[message_stream_name] += indices_difference
+
+
+
+
 
     async def backstop_collect(self):
         for obj in list(self._uncollected):
