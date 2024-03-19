@@ -653,7 +653,7 @@ def kickoff(obj, *args, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    objs = [obj]+[check_supports(arg, Flyable) for arg in args]
+    objs = [check_supports(arg, Flyable) for arg in (obj,) + args]
 
     statuses: Dict[Flyable, Status] = {}
     for obj in objs:
