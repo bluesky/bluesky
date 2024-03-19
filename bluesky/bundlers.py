@@ -974,7 +974,6 @@ class RunBundler:
         Where there must be at least one collect object. If multiple are used
         they must obey the WritesStreamAssets protocol.
         """
-
         stream_name = None
 
         if not self.run_is_open:
@@ -986,8 +985,8 @@ class RunBundler:
 
         # If stream is True, run 'event' subscription per document.
         # If stream is False, run 'event_page' subscription once.
+        # Stream is True is no longer supported
         stream = msg.kwargs.get("stream", False)
-
         if stream is True:
             raise RuntimeError(
                 "Collect now emits EventPages (stream=False), "
@@ -1018,21 +1017,24 @@ class RunBundler:
                 )
             self._uncollected.discard(obj)
 
-        # Get message stream name for singly nested scans
+        # Get the provided message stream name for singly nested scans
         message_stream_name = msg.kwargs.get("name", None)
 
+        # Retrive the stream names from pre-declared streams
         declared_stream_names = self._declared_stream_names.get(frozenset(collect_objects), [])
+
+        # If a stream name was provided in the message, check the stream has been declared
+        # If one was not provided, but a single stream has been declared, then use that stream.
         if message_stream_name:
             assert message_stream_name in declared_stream_names, \
                 "If a message stream name is provided declare stream needs to be called first."
-
             stream_name = message_stream_name
-
         elif declared_stream_names:
             assert len(frozenset(declared_stream_names)) == 1  # Allow duplicate declarations
             stream_name = declared_stream_names[0]
 
-        # If there is not a stream name then we need to descibe collect
+        # If there is not a stream then we should be using an old-style doubly nested
+        # and we need to describe_collect and prepare the nested streams.
         if not stream_name:
             if frozenset(collect_objects) not in self._local_descriptors or (
                 collect_objects[0] not in self._local_descriptors
@@ -1042,7 +1044,7 @@ class RunBundler:
                         "If collecting multiple objects you must predeclare a stream for all "
                         "the objects first and provide the stream name"
                     )
-                else:  # Old style scan
+                else:
                     await self._describe_collect(collect_objects[0])
 
         # Get the indicies from the collect objects
@@ -1063,15 +1065,14 @@ class RunBundler:
             collected_asset_docs, message_stream_name=stream_name
         )
 
-        # If we are not using StreamAssets, StreamResource and StreamDatum,
-        # Then we need even pages
-        # we can do events&pages on new and old stuff and on stuff not writes stream assets
+        # Make event pages for an object which is EventCollectable or EventPageCollectable
+        # objects that are EventCollectable will now group the Events and Emit an Event Page
         if len(collect_objects) == 1 and not isinstance(collect_objects[0], WritesStreamAssets):
 
             local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
             collect_obj = collect_objects[0]
 
-            # this needs to get done for the single stuff.
+            # If the single collect object is singly nested, gather descriptors
             if collect_obj not in self._local_descriptors:
                 objs = self._descriptor_objs[stream_name]
                 data_keys = objs[collect_obj]
@@ -1097,7 +1098,6 @@ class RunBundler:
                         "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
                         "requires a `name=stream_name` argument"
                     )
-
                 # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
                 self._sequence_counters[stream_name] += indices_difference
 
