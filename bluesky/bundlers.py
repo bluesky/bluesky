@@ -680,18 +680,28 @@ class RunBundler:
         """Read an object's describe_collect and cache it.
 
         Read describe collect for a collect_object and ensure it is cached in the
-        _describe_collect_cache.
+        _describe_collect_cache. This is required for scans of a single collect object
+        where the data structure is doubly nested. In this case calling
+        describe_collect on the object returns a data structure like so:
 
-        For the old style scans.
+            {
+                "stream1" : {"stream1-pv1":{data_keys}, "stream1-pv2" :{data_keys}},
+                "stream2" : {"stream2-pv1":{data_keys}, "stream2-pv2" :{data_keys}}
+            }
+
+        Single nested data keys should be rejected since they are new style, and are
+        collected under one stream. They should be pre-declared with declare-stream,
+        prior to collecting. The describe_collect on this object returns a data
+        structure like so:
+            {
+                "stream1-pv1": {data_keys},
+                "stream1-pv1": {data_keys}
+            }
+
         """
         await self._ensure_cached(collect_object, collect=True)
 
         describe_collect = self._describe_collect_cache[collect_object]
-
-        # collect_obj.describe_collect() returns a dictionary like this:
-        #     {name_for_desc1: data_keys_for_desc1,
-        #      name_for_desc2: data_keys_for_desc2, ...}
-
         describe_collect_items = list(self._maybe_format_datakeys_with_stream_name(describe_collect))
 
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
