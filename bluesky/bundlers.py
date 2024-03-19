@@ -883,6 +883,7 @@ class RunBundler:
         if message_stream_name:
             compose_event = self._descriptors[message_stream_name].compose_event
             data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
+            objs_read = frozenset(data_keys.keys())
 
         for partial_event in collect_obj.collect():
             if return_payload:
