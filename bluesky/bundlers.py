@@ -1050,7 +1050,7 @@ class RunBundler:
             ]
 
         indices_difference = await self._pack_external_assets(
-            collected_asset_docs, message_stream_name=message_stream_name
+            collected_asset_docs, message_stream_name=stream_name
         )
  
         # If we are not using StreamAssets, StreamResource and StreamDatum,
@@ -1072,31 +1072,31 @@ class RunBundler:
 
             if isinstance(collect_obj, EventPageCollectable):
                 payload = await self._collect_event_pages(
-                    collect_obj, local_descriptors, return_payload, message_stream_name
+                    collect_obj, local_descriptors, return_payload, stream_name
                 )
                 # TODO: check that event pages have same length as indices_difference
             elif isinstance(collect_obj, EventCollectable):
                 payload = await self._collect_events(
-                    collect_obj, local_descriptors, return_payload, message_stream_name
+                    collect_obj, local_descriptors, return_payload, stream_name
                 )
                 # TODO: check that events have same length as indices_difference
             else:
                 return_payload = False
-                if not message_stream_name:
+                if not stream_name:
                     raise RuntimeError(
                         "A `collect` message on a device that isn't EventCollectable or EventPageCollectable "
                         "requires a `name=stream_name` argument"
                     )
 
                 # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
-                self._sequence_counters[message_stream_name] += indices_difference
+                self._sequence_counters[stream_name] += indices_difference
 
             if return_payload:
                 return payload
 
         else:
             # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
-            self._sequence_counters[message_stream_name] += indices_difference
+            self._sequence_counters[stream_name] += indices_difference
 
 
 
