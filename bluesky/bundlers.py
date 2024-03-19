@@ -1012,12 +1012,9 @@ class RunBundler:
 
         declared_stream_names = self._declared_stream_names.get(frozenset(collect_objects), [])
         if message_stream_name:
-            assert message_stream_name in declared_stream_names
+            assert message_stream_name in declared_stream_names, \
             ("If a message stream name is provided declare stream needs to be called first.")
-            
-            if message_stream_name not in self._descriptor_objs:
-                raise RuntimeError("If a message stream name is provided declare stream needs to be called first.")
-            
+
             stream_name = message_stream_name
 
         elif declared_stream_names:
