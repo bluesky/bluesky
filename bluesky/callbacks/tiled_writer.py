@@ -1,4 +1,4 @@
-import numpy as np
+import h5py
 import pandas as pd
 from event_model import DocumentRouter, RunRouter
 from tiled.client import from_profile, from_uri
@@ -96,24 +96,25 @@ class _RunWriter(DocumentRouter):
             SR_doc = self._SR_cache.pop(doc["stream_resource"])
 
             # POST /api/v1/register/{path}
+            file_path = (
+                "/"
+                + SR_doc["root"].strip("/")
+                + "/"
+                + SR_doc["resource_path"].strip("/")
+            )
+            data_path = SR_doc["resource_kwargs"]["path"].strip("/")
+            data_uri = "file://localhost" + file_path
             assets = [
-                Asset(
-                    data_uri="file://localhost"
-                    + "/"
-                    + SR_doc["root"].strip("/")
-                    + "/"
-                    + SR_doc["resource_path"].strip("/"),  # noqa
-                    is_directory=False,
-                    parameter="data_uri",
-                )
+                Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")
             ]
-
             data_key = SR_doc["data_key"]
             desc = dict(descriptor_node.metadata)["data_keys"][data_key]
             if desc["dtype"] == "array":
                 data_shape = desc["shape"]
             elif desc["dtype"] == "number":
                 data_shape = ()
+            with h5py.File(file_path, "r") as f:
+                data_type = BuiltinDtype.from_numpy_dtype(f[data_path].dtype)
 
             SR_node = descriptor_node.new(
                 structure_family=StructureFamily.array,
@@ -123,17 +124,11 @@ class _RunWriter(DocumentRouter):
                         mimetype=MIMETYPE_LOOKUP[SR_doc["spec"]],
                         structure_family=StructureFamily.array,
                         structure=ArrayStructure(
-                            data_type=BuiltinDtype.from_numpy_dtype(
-                                np.dtype("float64")
-                            ),
+                            data_type=data_type,
                             shape=[0, *data_shape],
                             chunks=[[0]] + [[d] for d in data_shape],
                         ),
-                        parameters={
-                            "path": SR_doc["resource_kwargs"]["path"]
-                            .strip("/")
-                            .split("/")
-                        },
+                        parameters={"path": data_path.split("/")},
                         management=Management.external,
                     )
                 ],
