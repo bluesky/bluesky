@@ -327,6 +327,7 @@ class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamA
 
 
 def test_datum_readable_counts(RE):
+    """Test that count-ing a datum-producing device results in expected documents."""
     det = DatumReadable(name="det")
     docs = DocHolder()
     RE(bp.count([det]), docs.append)
@@ -340,6 +341,7 @@ def test_datum_readable_counts(RE):
 
 
 def test_stream_datum_readable_counts(RE):
+    """Test that count-ing a StreamDatum-producing device results in expected documents."""
     det = StreamDatumReadableCollectable(name="det")
     docs = DocHolder()
     RE(bp.count([det], 2), docs.append)
@@ -362,6 +364,7 @@ def test_stream_datum_readable_counts(RE):
 
 
 def test_combinations_counts(RE):
+    """Test that mixing a StreamDatum- and Datum-producing device in one count works."""
     det1 = PvAndDatumReadable(name="det1")
     det2 = PvAndStreamDatumReadable(name="det2")
     docs = DocHolder()
@@ -569,6 +572,7 @@ def test_many_collectables_fails(RE, cls1, cls2):
 
 
 def test_many_stream_datum_collectables(RE):
+    """Test collecting from multiple StreamDatum-producing devices."""
     det1 = StreamDatumReadableCollectable(name="det1")
     det2 = StreamDatumReadableCollectable(name="det2")
     docs = DocHolder()
@@ -586,6 +590,7 @@ def test_many_stream_datum_collectables(RE):
 
 
 def tomo_plan(*objs):
+    """An applied flyscanning example plan"""
     yield from bps.open_run()
     for name in ["flats", "darks", "projections"]:
         # projections is flyscan, others are step scan, so set collect accordingly
@@ -601,6 +606,7 @@ def tomo_plan(*objs):
 
 
 def test_tomography_multi_stream_same_detectors(RE):
+    """Test tomo_plan applied example"""
     det1 = StreamDatumReadableCollectable(name="det1")
     det2 = StreamDatumReadableCollectable(name="det2")
     docs = DocHolder()
@@ -627,6 +633,7 @@ def test_tomography_multi_stream_same_detectors(RE):
 
 
 def change_conf_plan(*objs):
+    """Re-emit a fresh EventDescriptor after the first Event."""
     yield from bps.open_run()
     for _ in range(2):
         yield from bps.declare_stream(*objs, name="main")
@@ -635,6 +642,7 @@ def change_conf_plan(*objs):
 
 
 def test_multiple_declare_in_same_stream(RE):
+    """Test re-emitting an EventDescriptor while using StreamDatum-producing devices."""
     det1 = StreamDatumReadableCollectable(name="det1")
     det2 = StreamDatumReadableCollectable(name="det2")
     docs = DocHolder()
