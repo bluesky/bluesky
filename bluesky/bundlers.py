@@ -64,6 +64,8 @@ class RunBundler:
         self.emit = emit
         self.emit_sync = emit_sync
         self.log = log
+        # Map of set of collect objects to list of stream names that they can be collected into
+        self._declared_stream_names: Dict[FrozenSet, List[str]] = {}
 
     async def open_run(self, msg):
         self.run_is_open = True
@@ -216,24 +218,34 @@ class RunBundler:
         collect = kwargs.get('collect', False)
         assert no_obj is None
         objs = frozenset(objs)
-        objs_dks = {}
+        objs_dks = {}  # {collect_object: stream_data_keys}
+
         await asyncio.gather(*[self._ensure_cached(obj, collect=collect) for obj in objs])
         for obj in objs:
             if collect:
-                dks = self._describe_collect_cache[obj]
-                formatted_data_keys = self._maybe_format_datakeys_with_stream_name(
-                    dks, message_stream_name=stream_name
-                )
-                assert len(formatted_data_keys) == 1 \
-                    and formatted_data_keys[0][0] == stream_name, \
+                data_keys = self._describe_collect_cache[obj]
+                streams_and_data_keys: List[Tuple[str,Dict[str,Any]]] = \
+                    self._maybe_format_datakeys_with_stream_name(
+                        data_keys, message_stream_name=stream_name
+                    )
+
+                # ensure that there is only one stream and it is the stream we have provided.
+                assert len(streams_and_data_keys) == 1 \
+                    and streams_and_data_keys[0][0] == stream_name, \
                     (
                         "`declare_stream` contained `collect=True` but  `describe_collect` did "
                         f"not return a single Dict[str, DataKey] for the passed in {stream_name}"
                     )
             else:
-                dks = self._describe_cache[obj]
+                data_keys = self._describe_cache[obj]
 
-            objs_dks[obj] = dks
+            objs_dks[obj] = data_keys
+
+        
+
+        existing_stream_names = self._declared_stream_names.setdefault(objs, [])
+        assert stream_name not in existing_stream_names
+        existing_stream_names.append(stream_name)
 
         return (await self._prepare_stream(stream_name, objs_dks))
 
@@ -690,8 +702,13 @@ class RunBundler:
 
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
-        # check for singly nested stuff (That stuff should have been pre-declared)
+        # Check that singly nested stuff should have been pre-declared
+        def is_data_key(obj: Any) -> bool:
+            return isinstance(obj, dict) and {"dtype", "shape", "source"}.issubset(frozenset(obj.keys()))
 
+        assert all([not is_data_key(value) for value in describe_collect.values()]), \
+            "Single nested data keys should be pre-decalred"
+            
 
         # Make sure you can't use identidal data keys in multiple streams
         duplicates = defaultdict(dict)
@@ -703,7 +720,7 @@ class RunBundler:
                             duplicates[stream][key] = stuff
         if len(duplicates) > 0:
             raise RuntimeError(
-                "Can't use identical data keys in multiple streams: {duplicates}",
+                f"Can't use identical data keys in multiple streams: {duplicates}",
                 f"Data keys: {list(duplicates.values())}",
                 f"streams: {duplicates.keys()}",
             )
@@ -950,6 +967,8 @@ class RunBundler:
         they must obey the WritesStreamAssets protocol.
         """
 
+        stream_name = None
+
         if not self.run_is_open:
             # sanity check -- 'kickoff' should catch this and make this
             # code path impossible
@@ -993,8 +1012,17 @@ class RunBundler:
         # Get message stream name for singly nested scans
         message_stream_name = msg.kwargs.get("name", None)
 
+        # declared_stream_names = self._declared_stream_names.get(frozenset(collect_objects), [])
+        # if message_stream_name:
+        #     assert message_stream_name in declared_stream_names
+        #     ("If a message stream name is provided declare stream needs to be called first.")
+        # else:
+        #     assert len(declared_stream_names) == 1
+        #     message_stream_name = declared_stream_names[0]
+
         # If message_stream_name is given pre-declare stream should have been called
         if message_stream_name:
+            stream_name = message_stream_name
             if message_stream_name not in self._descriptor_objs:
                 raise RuntimeError("If a message stream name is provided declare stream needs to be called first.")
         else:
@@ -1032,8 +1060,16 @@ class RunBundler:
         # Then we need even pages
         # we can do events&pages on new and old stuff and on stuff not writes stream assets
         if len(collect_objects)==1 and not isinstance(collect_objects[0], WritesStreamAssets):
-
             collect_obj = collect_objects[0]
+
+
+            # this needs to get done for the single stuff.
+            if collect_obj not in self._local_descriptors:
+                objs = self._descriptors[stream_name]
+                data_keys = objs[collect_obj]
+                local_descriptors[frozenset(data_keys)] = self._descriptors[stream_name]
+                self._local_descriptors[collect_obj] = local_descriptors
+     
             local_descriptors = self._local_descriptors[collect_obj]
 
             if isinstance(collect_obj, EventPageCollectable):
