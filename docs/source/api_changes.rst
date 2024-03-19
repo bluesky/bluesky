@@ -2,6 +2,15 @@
  Release History
 =================
 
+v1.13.0a2 (2024-03-19)
+======================
+
+Added
+-----
+
+* `RunEngine.md_normalizer`, parallel to `md_validator`, which can _modify_ the metadata as
+  well as validate it.
+
 v1.13.0a1 (2024-02-20)
 ======================
 
