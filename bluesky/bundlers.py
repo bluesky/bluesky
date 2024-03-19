@@ -239,7 +239,6 @@ class RunBundler:
             objs_dks[obj] = data_keys
 
         existing_stream_names = self._declared_stream_names.setdefault(objs, [])
-        assert stream_name not in existing_stream_names
         existing_stream_names.append(stream_name)
 
         return (await self._prepare_stream(stream_name, objs_dks))
@@ -1020,7 +1019,7 @@ class RunBundler:
             stream_name = message_stream_name
 
         elif declared_stream_names:
-            assert len(declared_stream_names) == 1
+            assert len(frozenset(declared_stream_names)) == 1  # Allow duplicate declarations
             stream_name = declared_stream_names[0]
 
         # If there is not a stream name then we need to descibe collect

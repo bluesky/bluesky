@@ -629,12 +629,12 @@ def test_tomography_multi_stream_same_detectors(RE):
 def change_conf_plan(*objs):
     yield from bps.open_run()
     for _ in range(2):
-        yield from bps.declare_stream(*objs)
-        bps.trigger_and_read(objs)
+        yield from bps.declare_stream(*objs, name="main")
+        yield from bps.collect(*objs)
     yield from bps.close_run()
 
 
-def test_multiple_prepare_in_same_stream(RE):
+def test_multiple_declare_in_same_stream(RE):
     det1 = StreamDatumReadableCollectable(name="det1")
     det2 = StreamDatumReadableCollectable(name="det2")
     docs = DocHolder()
@@ -643,14 +643,14 @@ def test_multiple_prepare_in_same_stream(RE):
         start=1, descriptor=2, stream_resource=4, stream_datum=8, stop=1
     )
     data_keys = ["det1-sd1", "det1-sd2", "det2-sd1", "det2-sd2"]
-    assert docs["descriptor"][0]["name"] == "primary"
-    assert list(docs["descriptor"][0]["data_keys"]) == data_keys
+    assert docs["descriptor"][0]["name"] == "main"
+    assert frozenset(docs["descriptor"][0]["data_keys"]) == frozenset(data_keys)
     assert all(
         d["descriptor"] == docs["descriptor"][0]["uid"]
         for d in docs["stream_datum"][:4]
     )
-    assert docs["descriptor"][1]["name"] == "primary"
-    assert list(docs["descriptor"][1]["data_keys"]) == data_keys
+    assert docs["descriptor"][1]["name"] == "main"
+    assert frozenset(docs["descriptor"][1]["data_keys"]) == frozenset(data_keys)
     assert all(
         d["descriptor"] == docs["descriptor"][1]["uid"]
         for d in docs["stream_datum"][4:]
