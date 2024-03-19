@@ -25,7 +25,7 @@ from .utils import (
 )
 
 
-def declare_stream(*objs, name=None, collect=False):
+def declare_stream(*objs, name: str, collect=False):
     """
     Bundle future readings into a new Event document.
 
