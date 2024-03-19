@@ -10,9 +10,11 @@ from event_model import (ComposeDescriptorBundle, DataKey, Datum,
                          StreamDatum, StreamRange, StreamResource, compose_run,
                          pack_event_page)
 
+from event_model.documents.event import Event, PartialEvent
+
 from .log import doc_logger
 from .protocols import (Callback, Collectable, Configurable, EventCollectable,
-                        EventPageCollectable, Flyable, HasName, PartialEvent,
+                        EventPageCollectable, Flyable, HasName,
                         Readable, Reading, Subscribable, T, SyncOrAsync, WritesStreamAssets, check_supports)
 from .utils import (IllegalMessageSequence, Msg,
                     _rearrange_into_parallel_dicts, maybe_await,
@@ -688,6 +690,9 @@ class RunBundler:
 
         local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
 
+        # check for singly nested stuff (That stuff should have been pre-declared)
+
+
         # Make sure you can't use identidal data keys in multiple streams
         duplicates = defaultdict(dict)
         for stream, data_keys in describe_collect.items():
@@ -855,49 +860,37 @@ class RunBundler:
         collect_obj: EventCollectable,
         local_descriptors,
         return_payload: bool,
-        stream: bool,
         message_stream_name: Optional[str],
     ):
-        event_list: List[PartialEvent] = []
         payload = []
+        pages: dict[frozenset[str],list[Event]] = defaultdict(list)
 
         if message_stream_name:
             compose_event = self._descriptors[message_stream_name].compose_event
             data_keys = self._descriptors[message_stream_name].descriptor_doc["data_keys"]
-        for ev in collect_obj.collect():
+
+        for partial_event in collect_obj.collect():
             if return_payload:
-                payload.append(ev)
+                payload.append(partial_event)
 
             if not message_stream_name:
-                objs_read = frozenset(ev["data"])
+                objs_read = frozenset(partial_event["data"])
                 compose_event = local_descriptors[objs_read].compose_event
                 data_keys = local_descriptors[objs_read].descriptor_doc["data_keys"]
+                assert frozenset(data_keys.keys()) == objs_read
 
-            if [x for x in self.get_external_data_keys(data_keys) if x in ev["data"]]:
+            if [x for x in self.get_external_data_keys(data_keys) if x in partial_event["data"]]:
                 raise RuntimeError("Received an event containing data for external data keys.")
 
             # is there a way to generalise the keys?
-            if "filled" in ev.keys():
-                ev = compose_event(data=ev["data"], timestamps=ev["timestamps"], filled=ev["filled"])
+            if "filled" in partial_event.keys():
+                event = compose_event(data=partial_event["data"], timestamps=partial_event["timestamps"], filled=partial_event["filled"])
             else:
-                ev = compose_event(data=ev["data"], timestamps=ev["timestamps"])
+                event = compose_event(data=partial_event["data"], timestamps=partial_event["timestamps"])
 
-            if stream:
-                doc_logger.debug(
-                    "[event] document is emitted with data keys %r (run_uid=%r)",
-                    ev['data'].keys(), self._run_start_uid,
-                    ev["uid"],
-                    extra={
-                        'doc_name': 'event',
-                        'run_uid': self._run_start_uid,
-                        'data_keys': ev['data'].keys()
-                    }
-                )
-                await self.emit(DocumentNames.event, ev)
-            else:
-                event_list.append(ev)
+            pages[objs_read].append(event)
 
-        if not stream:
+        for event_list in pages.values():
             await self.emit(DocumentNames.event_page, pack_event_page(*event_list))
             doc_logger.debug(
                 "[event_page] document is emitted for descriptors (run_uid=%r)",
@@ -951,7 +944,7 @@ class RunBundler:
 
         Expect message object is
             Msg('collect',  collect_obj,  collect_obj_2, ..., stream=True,
-                return_payload=False, name='stream_name')
+                return_payload=True, name='stream_name')
 
         Where there must be at least one collect object. If multiple are used
         they must obey the WritesStreamAssets protocol.
@@ -1034,24 +1027,23 @@ class RunBundler:
         indices_difference = await self._pack_external_assets(
             collected_asset_docs, message_stream_name=message_stream_name
         )
+ 
         # If we are not using StreamAssets, StreamResource and StreamDatum,
         # Then we need even pages
-        if not message_stream_name:
-            collect_object = collect_objects[0]
-            local_descriptors = self._local_descriptors[collect_object]
-            if isinstance(collect_object, EventPageCollectable):
-                if stream:
-                    raise IllegalMessageSequence(
-                        "A 'collect' with `stream=True` was sent for an EventPageCollectable device, "
-                        "stream is not used for EventPages"
-                    )
+        # we can do events&pages on new and old stuff and on stuff not writes stream assets
+        if len(collect_objects)==1 and not isinstance(collect_objects[0], WritesStreamAssets):
+
+            collect_obj = collect_objects[0]
+            local_descriptors = self._local_descriptors[collect_obj]
+
+            if isinstance(collect_obj, EventPageCollectable):
                 payload = await self._collect_event_pages(
-                    collect_object, local_descriptors, return_payload, message_stream_name
+                    collect_obj, local_descriptors, return_payload, message_stream_name
                 )
                 # TODO: check that event pages have same length as indices_difference
-            elif isinstance(collect_object, EventCollectable):
+            elif isinstance(collect_obj, EventCollectable):
                 payload = await self._collect_events(
-                    collect_object, local_descriptors, return_payload, stream, message_stream_name
+                    collect_obj, local_descriptors, return_payload, message_stream_name
                 )
                 # TODO: check that events have same length as indices_difference
             else:
