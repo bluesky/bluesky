@@ -50,10 +50,18 @@ def merge_iterators(*iterators):
     return wrapper
 
 
-def collect_plan(*objs, pre_declare: bool, stream=False):
+def collect_plan(*objs, pre_declare: bool, stream=False, stream_name=None):
     yield from bps.open_run()
     if pre_declare:
-        yield from bps.declare_stream(*objs, collect=True)
+        yield from bps.declare_stream(*objs, name=stream_name, collect=True)
+    yield from bps.collect(*objs, stream=stream, name=stream_name)
+    yield from bps.close_run()
+
+
+def collect_plan_no_stream_name_in_collect(*objs, pre_declare: bool, stream=False, stream_name=None):
+    yield from bps.open_run()
+    if pre_declare:
+        yield from bps.declare_stream(*objs, name=stream_name, collect=True)
     yield from bps.collect(*objs, stream=stream)
     yield from bps.close_run()
 
@@ -311,7 +319,8 @@ class PvPageCollectable(Named, EventPageCollectable):
 class StreamDatumReadableCollectable(Named, Readable, Collectable, WritesStreamAssets):
     """Produces no events, but only StreamResources for 2 data keys and can be read or collected"""
 
-    describe = describe_collect = describe_stream_datum
+    describe = describe_stream_datum
+    describe_collect = describe_stream_datum
     read = read_empty
     collect_asset_docs = collect_asset_docs_stream_datum
     get_index = get_index
@@ -393,17 +402,34 @@ def test_combinations_counts(RE):
 def test_collect_stream_true_raises(RE):
     with pytest.raises(
         RuntimeError,
-        match=re.escape("Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported"),
+        match=re.escape("Collect now emits EventPages (stream=False), "
+                        "so emitting Events (stream=True) is no longer supported"),
     ):
         RE(collect_plan(OldPvCollectable("det"), pre_declare=False, stream=True))
 
 
-def test_old_describe_fails_predeclare(RE):
+def test_predeclare_requires_stream_name(RE):
     with pytest.raises(
         AssertionError,
-        match=re.escape("`declare_stream` contained `collect=True` but  `describe_collect` did not return a single Dict[str, DataKey] for the passed in "),
+        match=re.escape("A stream name that is not None is required for pre-declare"),
     ):
         RE(collect_plan(OldPvCollectable(name="det"), pre_declare=True))
+
+
+def test_new_style_with_steam_name_requires_pre_declare(RE):
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("If a message stream name is provided declare stream needs to be called first."),
+    ):
+        RE(collect_plan(StreamDatumReadableCollectable(name="det"), pre_declare=False, stream_name="main"))
+
+
+def test_new_style_with_no_stream_name_and_no_pre_declare_does_not_try_and_make_a_stream(RE):
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("Single nested data keys should be pre-decalred"),
+    ):
+        RE(collect_plan(StreamDatumReadableCollectable(name="det"), pre_declare=False))
 
 
 def test_same_key_in_multiple_streams_fails(RE):
@@ -472,21 +498,13 @@ def test_old_datum_and_pv_collectable(RE):
     assert docs["event_page"][2]["data"] == {"det-datum": ["RESOURCEUID/1"]}
 
 
-def test_new_collect_needs_predeclare(RE):
-    with pytest.raises(
-        RuntimeError,
-        match="New style describe_collect output requires declare_stream before collect",
-    ):
-        RE(collect_plan(PvCollectable(name="det"), pre_declare=False))
-
-
 @pytest.mark.parametrize("cls", [PvCollectable, PvPageCollectable])
 def test_pv_collectable(RE, cls):
     det = cls(name="det")
     docs = DocHolder()
-    RE(collect_plan(det, pre_declare=True), docs.append)
+    RE(collect_plan_no_stream_name_in_collect(det, pre_declare=True, stream_name="main"), docs.append)
     docs.assert_emitted(start=1, descriptor=1, event_page=1, stop=1)
-    assert docs["descriptor"][0]["name"] == "primary"
+    assert docs["descriptor"][0]["name"] == "main"
     assert list(docs["descriptor"][0]["data_keys"]) == ["det-pv1", "det-pv2"]
     assert docs["event_page"][0]["data"] == {
         "det-pv1": [0, 1],
@@ -498,14 +516,37 @@ def test_pv_collectable(RE, cls):
     }
 
 
+def test_new_collect_needs_predeclare(RE):
+    with pytest.raises(
+        AssertionError,
+        match="Single nested data keys should be pre-decalred",
+    ):
+        RE(collect_plan(PvCollectable(name="det"), pre_declare=False))
+
+
 def test_stream_datum_collectable(RE):
     det = StreamDatumReadableCollectable(name="det")
     docs = DocHolder()
-    RE(collect_plan(det, pre_declare=True), docs.append)
+    RE(collect_plan(det, pre_declare=True, stream_name="main"), docs.append)
     docs.assert_emitted(
         start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1
     )
-    assert docs["descriptor"][0]["name"] == "primary"
+    assert docs["descriptor"][0]["name"] == "main"
+    assert list(docs["descriptor"][0]["data_keys"]) == ["det-sd1", "det-sd2"]
+    assert docs["stream_resource"][0]["data_key"] == "det-sd1"
+    assert docs["stream_resource"][1]["data_key"] == "det-sd2"
+    assert docs["stream_datum"][0]["descriptor"] == docs["descriptor"][0]["uid"]
+    assert docs["stream_datum"][1]["descriptor"] == docs["descriptor"][0]["uid"]
+
+
+def test_stream_datum_collectable_no_stream_name(RE):
+    det = StreamDatumReadableCollectable(name="det")
+    docs = DocHolder()
+    RE(collect_plan_no_stream_name_in_collect(det, pre_declare=True, stream_name="main"), docs.append)
+    docs.assert_emitted(
+        start=1, descriptor=1, stream_resource=2, stream_datum=2, stop=1
+    )
+    assert docs["descriptor"][0]["name"] == "main"
     assert list(docs["descriptor"][0]["data_keys"]) == ["det-sd1", "det-sd2"]
     assert docs["stream_resource"][0]["data_key"] == "det-sd1"
     assert docs["stream_resource"][1]["data_key"] == "det-sd2"
@@ -518,10 +559,11 @@ def test_stream_datum_collectable(RE):
     "cls2", [PvCollectable, PvPageCollectable, StreamDatumReadableCollectable]
 )
 def test_many_collectables_fails(RE, cls1, cls2):
+    """If there are multiple objects they must all WritesStreamAssests"""
     det1, det2 = cls1(name="det1"), cls2(name="det2")
     with pytest.raises(
-        RuntimeError,
-        match="Cannot collect the output of multiple collect() or collect_pages() into the same stream",
+        AssertionError,
+        match=re.escape("does not implement all WritesStreamAssets methods"),
     ):
         RE(collect_plan(det1, det2, pre_declare=False))
 
@@ -530,13 +572,13 @@ def test_many_stream_datum_collectables(RE):
     det1 = StreamDatumReadableCollectable(name="det1")
     det2 = StreamDatumReadableCollectable(name="det2")
     docs = DocHolder()
-    RE(collect_plan(det1, det2, pre_declare=True), docs.append)
+    RE(collect_plan(det1, det2, pre_declare=True, stream_name="main"), docs.append)
     docs.assert_emitted(
         start=1, descriptor=1, stream_resource=4, stream_datum=4, stop=1
     )
     data_keys = ["det1-sd1", "det1-sd2", "det2-sd1", "det2-sd2"]
-    assert docs["descriptor"][0]["name"] == "primary"
-    assert list(docs["descriptor"][0]["data_keys"]) == data_keys
+    assert docs["descriptor"][0]["name"] == "main"
+    assert set(docs["descriptor"][0]["data_keys"]) == set(data_keys)  # This only works in a set
     assert [d["data_key"] for d in docs["stream_resource"]] == data_keys
     assert all(
         d["descriptor"] == docs["descriptor"][0]["uid"] for d in docs["stream_datum"]
@@ -552,7 +594,7 @@ def tomo_plan(*objs):
     bps.trigger_and_read(objs, name="flats")
     bps.trigger_and_read(objs, name="darks")
     # do the flyscan
-    bps.collect(*objs, name="projections")
+    yield from bps.collect(*objs, name="projections")
     # take some flats at the end
     bps.trigger_and_read(objs, name="flats")
     yield from bps.close_run()
