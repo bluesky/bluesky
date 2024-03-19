@@ -653,7 +653,7 @@ def kickoff(obj, *args, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    objs = [check_supports(arg, Flyable) for arg in (obj,) + args]
+    objs = [obj]+[check_supports(arg, Flyable) for arg in args]
 
     statuses: Dict[Flyable, Status] = {}
     for obj in objs:
@@ -705,8 +705,8 @@ def complete(obj, *args, group=None, wait=False, **kwargs):
     for obj in objs:
         ret = yield Msg('complete', obj, group=group, **kwargs)
         statuses[obj] = ret
-        if wait:
-            yield from _wait(group=group)
+    if wait:
+        yield from _wait(group=group)
 
     return list(statuses.values())
 
