@@ -241,8 +241,6 @@ class RunBundler:
 
             objs_dks[obj] = data_keys
 
-        
-
         existing_stream_names = self._declared_stream_names.setdefault(objs, [])
         assert stream_name not in existing_stream_names
         existing_stream_names.append(stream_name)
@@ -738,9 +736,9 @@ class RunBundler:
                         "expected {!s}, "
                         "got {!s}".format(stream_data_keys, objs_read)
                     )
-            local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
+            local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name] #
 
-        self._local_descriptors[collect_object] = local_descriptors
+        self._local_descriptors[collect_object] = local_descriptors #
 
     async def _pack_seq_nums_into_stream_datum(
         self,
@@ -1012,20 +1010,22 @@ class RunBundler:
         # Get message stream name for singly nested scans
         message_stream_name = msg.kwargs.get("name", None)
 
-        # declared_stream_names = self._declared_stream_names.get(frozenset(collect_objects), [])
-        # if message_stream_name:
-        #     assert message_stream_name in declared_stream_names
-        #     ("If a message stream name is provided declare stream needs to be called first.")
-        # else:
-        #     assert len(declared_stream_names) == 1
-        #     message_stream_name = declared_stream_names[0]
-
-        # If message_stream_name is given pre-declare stream should have been called
+        declared_stream_names = self._declared_stream_names.get(frozenset(collect_objects), [])
         if message_stream_name:
-            stream_name = message_stream_name
+            assert message_stream_name in declared_stream_names
+            ("If a message stream name is provided declare stream needs to be called first.")
+            
             if message_stream_name not in self._descriptor_objs:
                 raise RuntimeError("If a message stream name is provided declare stream needs to be called first.")
-        else:
+            
+            stream_name = message_stream_name
+
+        elif declared_stream_names:
+            assert len(declared_stream_names) == 1
+            stream_name = declared_stream_names[0]
+
+        # If there is not a stream name then we need to descibe collect
+        if not stream_name:
             if frozenset(collect_objects) not in self._local_descriptors or (
                 collect_objects[0] not in self._local_descriptors
             ):
@@ -1060,12 +1060,13 @@ class RunBundler:
         # Then we need even pages
         # we can do events&pages on new and old stuff and on stuff not writes stream assets
         if len(collect_objects)==1 and not isinstance(collect_objects[0], WritesStreamAssets):
-            collect_obj = collect_objects[0]
 
+            local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
+            collect_obj = collect_objects[0]
 
             # this needs to get done for the single stuff.
             if collect_obj not in self._local_descriptors:
-                objs = self._descriptors[stream_name]
+                objs = self._descriptor_objs[stream_name]
                 data_keys = objs[collect_obj]
                 local_descriptors[frozenset(data_keys)] = self._descriptors[stream_name]
                 self._local_descriptors[collect_obj] = local_descriptors
