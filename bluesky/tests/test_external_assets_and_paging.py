@@ -591,12 +591,12 @@ def tomo_plan(*objs):
         # projections is flyscan, others are step scan, so set collect accordingly
         yield from bps.declare_stream(*objs, name=name, collect=name == "projections")
     # take some flats, then darks
-    bps.trigger_and_read(objs, name="flats")
-    bps.trigger_and_read(objs, name="darks")
+    yield from bps.collect(*objs, name="flats")
+    yield from bps.collect(*objs, name="darks")
     # do the flyscan
     yield from bps.collect(*objs, name="projections")
     # take some flats at the end
-    bps.trigger_and_read(objs, name="flats")
+    yield from bps.collect(*objs, name="flats")
     yield from bps.close_run()
 
 
@@ -616,7 +616,7 @@ def test_tomography_multi_stream_same_detectors(RE):
     )
     data_keys = ["det1-sd1", "det1-sd2", "det2-sd1", "det2-sd2"]
     assert [d["name"] for d in docs["descriptor"]] == ["flats", "darks", "projections"]
-    assert all(list(d["data_keys"]) == data_keys for d in docs["descriptor"])
+    assert all(frozenset(d["data_keys"]) == frozenset(data_keys) for d in docs["descriptor"])
     assert [d["data_key"] for d in docs["stream_resource"]] == data_keys
     assert [d["descriptor"] for d in docs["stream_datum"]] == (
         [docs["descriptor"][0]["uid"]] * 4
