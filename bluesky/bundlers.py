@@ -10,7 +10,7 @@ from event_model import (ComposeDescriptorBundle, DataKey, Datum,
                          StreamDatum, StreamRange, StreamResource, compose_run,
                          pack_event_page)
 
-from event_model.documents.event import Event, PartialEvent
+from event_model.documents.event import Event
 
 from .log import doc_logger
 from .protocols import (Callback, Collectable, Configurable, EventCollectable,
@@ -209,12 +209,9 @@ class RunBundler:
     async def declare_stream(self, msg):
         """Generate and emit an EventDescriptor."""
         command, no_obj, objs, kwargs, _ = msg
-        try:
-            stream_name = kwargs['name']
-        except KeyError:
-            raise RuntimeError(
-                "A 'declare_stream' message was sent without a 'name' kwarg,"
-            )
+        stream_name = kwargs.get("name")
+        assert stream_name is not None, "A stream name that is not None is required for pre-declare"
+
         collect = kwargs.get('collect', False)
         assert no_obj is None
         objs = frozenset(objs)
@@ -224,7 +221,7 @@ class RunBundler:
         for obj in objs:
             if collect:
                 data_keys = self._describe_collect_cache[obj]
-                streams_and_data_keys: List[Tuple[str,Dict[str,Any]]] = \
+                streams_and_data_keys: List[Tuple[str, Dict[str, Any]]] = \
                     self._maybe_format_datakeys_with_stream_name(
                         data_keys, message_stream_name=stream_name
                     )
@@ -706,7 +703,6 @@ class RunBundler:
 
         assert all([not is_data_key(value) for value in describe_collect.values()]), \
             "Single nested data keys should be pre-decalred"
-            
 
         # Make sure you can't use identidal data keys in multiple streams
         duplicates = defaultdict(dict)
@@ -736,9 +732,9 @@ class RunBundler:
                         "expected {!s}, "
                         "got {!s}".format(stream_data_keys, objs_read)
                     )
-            local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name] #
+            local_descriptors[frozenset(stream_data_keys)] = self._descriptors[stream_name]
 
-        self._local_descriptors[collect_object] = local_descriptors #
+        self._local_descriptors[collect_object] = local_descriptors
 
     async def _pack_seq_nums_into_stream_datum(
         self,
@@ -878,7 +874,7 @@ class RunBundler:
         message_stream_name: Optional[str],
     ):
         payload = []
-        pages: dict[frozenset[str],list[Event]] = defaultdict(list)
+        pages: dict[frozenset[str], list[Event]] = defaultdict(list)
 
         if message_stream_name:
             compose_event = self._descriptors[message_stream_name].compose_event
@@ -900,7 +896,11 @@ class RunBundler:
 
             # is there a way to generalise the keys?
             if "filled" in partial_event.keys():
-                event = compose_event(data=partial_event["data"], timestamps=partial_event["timestamps"], filled=partial_event["filled"])
+                event = compose_event(
+                    data=partial_event["data"],
+                    timestamps=partial_event["timestamps"],
+                    filled=partial_event["filled"]
+                    )
             else:
                 event = compose_event(data=partial_event["data"], timestamps=partial_event["timestamps"])
 
@@ -981,7 +981,8 @@ class RunBundler:
 
         if stream is True:
             raise RuntimeError(
-                "Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported",
+                "Collect now emits EventPages (stream=False), "
+                "so emitting Events (stream=True) is no longer supported"
             )
 
         # If True, accumulate all the Events in memory and return them at the
@@ -1014,7 +1015,7 @@ class RunBundler:
         declared_stream_names = self._declared_stream_names.get(frozenset(collect_objects), [])
         if message_stream_name:
             assert message_stream_name in declared_stream_names, \
-            ("If a message stream name is provided declare stream needs to be called first.")
+                "If a message stream name is provided declare stream needs to be called first."
 
             stream_name = message_stream_name
 
@@ -1030,11 +1031,10 @@ class RunBundler:
                 if len(collect_objects) > 1:
                     raise IllegalMessageSequence(
                         "If collecting multiple objects you must predeclare a stream for all "
-                            "the objects first and provide the stream name"
+                        "the objects first and provide the stream name"
                     )
                 else:  # Old style scan
                     await self._describe_collect(collect_objects[0])
-
 
         # Get the indicies from the collect objects
         coros = [maybe_await(get_index()) for get_index in indices]
@@ -1053,11 +1053,11 @@ class RunBundler:
         indices_difference = await self._pack_external_assets(
             collected_asset_docs, message_stream_name=stream_name
         )
- 
+
         # If we are not using StreamAssets, StreamResource and StreamDatum,
         # Then we need even pages
         # we can do events&pages on new and old stuff and on stuff not writes stream assets
-        if len(collect_objects)==1 and not isinstance(collect_objects[0], WritesStreamAssets):
+        if len(collect_objects) == 1 and not isinstance(collect_objects[0], WritesStreamAssets):
 
             local_descriptors: Dict[Any, Dict[FrozenSet[str], ComposeDescriptorBundle]] = {}
             collect_obj = collect_objects[0]
@@ -1068,7 +1068,7 @@ class RunBundler:
                 data_keys = objs[collect_obj]
                 local_descriptors[frozenset(data_keys)] = self._descriptors[stream_name]
                 self._local_descriptors[collect_obj] = local_descriptors
-     
+
             local_descriptors = self._local_descriptors[collect_obj]
 
             if isinstance(collect_obj, EventPageCollectable):
@@ -1098,10 +1098,6 @@ class RunBundler:
         else:
             # Since there are no events or event_pages incrementing the sequence counter, we do it ourselves.
             self._sequence_counters[stream_name] += indices_difference
-
-
-
-
 
     async def backstop_collect(self):
         for obj in list(self._uncollected):
