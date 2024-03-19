@@ -659,8 +659,8 @@ def kickoff(obj, *args, group=None, wait=False, **kwargs):
     for obj in objs:
         ret = yield Msg('kickoff', obj, group=group, **kwargs)
         statuses[obj] = ret
-        if wait:
-            yield from _wait(group=group)
+    if wait:
+        yield from _wait(group=group)
 
     return list(statuses.values())
 
