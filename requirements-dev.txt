@@ -5,6 +5,7 @@ databroker
 doct
 doctr
 flake8
+h5py
 ipython
 ipywidgets
 jinja2
@@ -36,3 +37,4 @@ suitcase-jsonl
 suitcase-mongo
 suitcase-msgpack
 tifffile
+tiled[all]

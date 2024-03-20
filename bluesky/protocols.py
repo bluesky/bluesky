@@ -55,9 +55,13 @@ class Reading(ReadingOptional):
 Asset = Union[
     Tuple[Literal["resource"], PartialResource],
     Tuple[Literal["datum"], Datum],
-    Tuple[Literal["stream_resource"], StreamResource],
-    Tuple[Literal["stream_datum"], StreamDatum]
     ]
+
+StreamAsset = Union[
+    Tuple[Literal["stream_resource"], StreamResource],
+    Tuple[Literal["stream_datum"], StreamDatum],
+    ]
+
 
 T = TypeVar("T")
 SyncOrAsync = Union[T, Awaitable[T]]
@@ -121,8 +125,8 @@ class HasParent(Protocol):
 class WritesExternalAssets(Protocol):
     @abstractmethod
     def collect_asset_docs(self) -> SyncOrAsyncIterator[Asset]:
-        """Create the resource, datum, stream_resource, and stream_datum
-        documents describing data in external source.
+        """Create the resource and datum documents describing data in external
+            source.
 
         Example yielded values:
 
@@ -143,6 +147,44 @@ class WritesExternalAssets(Protocol):
                 'resource': '9123df61-a09f-49ae-9d23-41d4d6c6d788'}
             })
         """
+        ...
+
+
+@runtime_checkable
+class WritesStreamAssets(Protocol):
+    @abstractmethod
+    def collect_asset_docs(self, index: Optional[int] = None) -> SyncOrAsyncIterator[StreamAsset]:
+        """Create the resource and datum documents describing data in external
+            source up to a given index if provided.
+
+            An index will be provided when using stream resources and datums. The asset
+            docs will be collected from multiple streams and synchronised on the
+            highest common stream index.
+
+        Example yielded values:
+
+        .. code-block:: python
+
+            ('resource', {
+                'path_semantics': 'posix',
+                'resource_kwargs': {'frame_per_point': 1},
+                'resource_path': 'det.h5',
+                'root': '/tmp/tmpcvxbqctr/',
+                'spec': 'AD_HDF5',
+                'uid': '9123df61-a09f-49ae-9d23-41d4d6c6d788'
+            })
+            # or
+            ('datum', {
+                'datum_id': '9123df61-a09f-49ae-9d23-41d4d6c6d788/0',
+                'datum_kwargs': {'point_number': 0},
+                'resource': '9123df61-a09f-49ae-9d23-41d4d6c6d788'}
+            })
+            """
+        ...
+
+    @abstractmethod
+    def get_index(self) -> SyncOrAsync[int]:
+        """Retrive the current index of writer."""
         ...
 
 
