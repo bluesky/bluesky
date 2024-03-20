@@ -37,3 +37,4 @@ suitcase-jsonl
 suitcase-mongo
 suitcase-msgpack
 tifffile
+tiled
