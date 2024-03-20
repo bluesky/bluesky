@@ -5,6 +5,7 @@ databroker
 doct
 doctr
 flake8
+h5py
 ipython
 ipywidgets
 jinja2

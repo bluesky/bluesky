@@ -1,24 +1,26 @@
 from typing import Dict, Iterator, Optional
-from event_model.documents.event_descriptor import DataKey
-from event_model.documents.event import PartialEvent
-from event_model.documents.resource import PartialResource
+
+import pytest
 from event_model.documents.datum import Datum
+from event_model.documents.event import PartialEvent
+from event_model.documents.event_descriptor import DataKey
+from event_model.documents.resource import PartialResource
 from event_model.documents.stream_datum import StreamDatum
 from event_model.documents.stream_resource import StreamResource
-import bluesky.plans as bp
+
 import bluesky.plan_stubs as bps
-import pytest
+import bluesky.plans as bp
 from bluesky.protocols import (
     Asset,
-    Readable,
-    Reading,
-    HasName,
-    WritesExternalAssets,
+    Collectable,
     EventCollectable,
     EventPageCollectable,
-    Collectable,
-    WritesStreamAssets,
+    HasName,
+    Readable,
+    Reading,
     StreamAsset,
+    WritesExternalAssets,
+    WritesStreamAssets,
 )
 
 
@@ -392,7 +394,7 @@ def test_combinations_counts(RE):
 def test_collect_stream_true_raises(RE):
     with pytest.raises(
         RuntimeError,
-        match="Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported",
+        match="Collect now emits EventPages (stream=False), so emitting Events (stream=True) is no longer supported",  # noqa
     ):
         RE(collect_plan(OldPvCollectable("det"), pre_declare=False, stream=True))
 
