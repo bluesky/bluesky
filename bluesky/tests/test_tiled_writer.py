@@ -62,7 +62,7 @@ def test_stream_datum_readable_counts(RE, client, tmpdir):
     tw = TiledWriter(client)
     det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
     RE(bp.count([det], 3), tw)
-    arrs = client.values().last()["primary"].values()
+    arrs = client.values().last()["primary"]["external"].values()
     assert arrs[0].shape == (3,)
     assert arrs[1].shape == (3, 10, 15)
     assert arrs[0].read() is not None
@@ -73,7 +73,7 @@ def test_stream_datum_collectable(RE, client, tmpdir):
     det = StreamDatumReadableCollectable(name="det", root=str(tmpdir))
     tw = TiledWriter(client)
     RE(collect_plan(det, pre_declare=False), tw)
-    arrs = client.values().last()["primary"].values()
+    arrs = client.values().last()["primary"]["external"].values()
     assert arrs[0].read() is not None
     assert arrs[1][:] is not None
 
