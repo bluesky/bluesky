@@ -1,4 +1,4 @@
-import h5py
+import numpy as np
 import pandas as pd
 from event_model import DocumentRouter, RunRouter
 from tiled.client import from_profile, from_uri
@@ -59,22 +59,18 @@ class _RunWriter(DocumentRouter):
         self.node.update_metadata(metadata=metadata)
 
     def descriptor(self, doc):
-        self._descriptor_nodes[doc["uid"]] = self.node.create_container(
-            key=doc["name"], metadata=doc
-        )
+        descriptor_node = self.node.create_container(key=doc["name"], metadata=doc)
+        self._descriptor_nodes[doc["uid"]] = descriptor_node
+        descriptor_node.create_container(key="external")
+        descriptor_node.create_container(key="internal")
 
     def event(self, doc):
-        parent_node = self._descriptor_nodes[doc["descriptor"]]
-        parent_node.write_dataframe(
-            pd.DataFrame({column: [value] for column, value in doc["data"].items()}),
-            key="data",
-        )
-        parent_node.write_dataframe(
-            pd.DataFrame(
-                {column: [value] for column, value in doc["timestamps"].items()}
-            ),
-            key="timestamps",
-        )
+        descriptor_node = self._descriptor_nodes[doc["descriptor"]]
+        parent_node = descriptor_node["internal"]
+        for key in ["data", "timestamps"]:
+            data_dict = {column: [value] for column, value in doc[key].items()}
+            if data_dict:
+                parent_node.write_dataframe(pd.DataFrame(data_dict), key=key)
 
     def stream_resource(self, doc):
         # Only cache the StreamResource; add the node when at least one StreamDatum is added
@@ -82,6 +78,7 @@ class _RunWriter(DocumentRouter):
 
     def stream_datum(self, doc):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
+        parent_node = descriptor_node["external"]
 
         num_rows = (
             doc["indices"]["stop"] - doc["indices"]["start"]
@@ -108,15 +105,18 @@ class _RunWriter(DocumentRouter):
                 Asset(data_uri=data_uri, is_directory=False, parameter="data_uri")
             ]
             data_key = SR_doc["data_key"]
-            desc = dict(descriptor_node.metadata)["data_keys"][data_key]
-            if desc["dtype"] == "array":
-                data_shape = desc["shape"]
-            elif desc["dtype"] == "number":
+            data_desc = dict(descriptor_node.metadata)["data_keys"][data_key]
+            if data_desc["dtype"] == "array":
+                data_shape = data_desc["shape"]
+            elif data_desc["dtype"] == "number":
                 data_shape = ()
-            with h5py.File(file_path, "r") as f:
-                data_type = BuiltinDtype.from_numpy_dtype(f[data_path].dtype)
 
-            SR_node = descriptor_node.new(
+            # Find machine dtype, assume '<f8' by default
+            data_type = np.dtype(data_desc.get("dtype_str", "<f8"))
+            # with h5py.File(file_path, "r") as f:
+            #     data_type = f[data_path].dtype
+
+            SR_node = parent_node.new(
                 structure_family=StructureFamily.array,
                 data_sources=[
                     DataSource(
@@ -124,7 +124,7 @@ class _RunWriter(DocumentRouter):
                         mimetype=MIMETYPE_LOOKUP[SR_doc["spec"]],
                         structure_family=StructureFamily.array,
                         structure=ArrayStructure(
-                            data_type=data_type,
+                            data_type=BuiltinDtype.from_numpy_dtype(data_type),
                             shape=[0, *data_shape],
                             chunks=[[0]] + [[d] for d in data_shape],
                         ),
