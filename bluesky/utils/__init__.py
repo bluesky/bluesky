@@ -86,6 +86,10 @@ class NoReplayAllowed(Exception):
     pass
 
 
+class UncleanPause(Exception):
+    pass
+
+
 class IllegalMessageSequence(Exception):
     pass
 
