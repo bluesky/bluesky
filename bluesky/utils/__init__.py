@@ -32,7 +32,7 @@ import zict
 
 from bluesky.protocols import (
     T, Asset, HasParent, HasHints, Hints, Movable, Readable,
-    SyncOrAsync, SyncOrAsyncIterator, WritesExternalAssets, check_supports
+    SyncOrAsync, SyncOrAsyncIterator, WritesExternalAssets, WritesStreamAssets, check_supports
 )
 
 try:
@@ -1833,8 +1833,15 @@ async def iterate_maybe_async(iterator: SyncOrAsyncIterator[T]) -> AsyncIterator
             yield v
 
 
-async def maybe_collect_asset_docs(msg, obj, *args, **kwargs) -> Iterator[Asset]:
-    if isinstance(obj, WritesExternalAssets):
+async def maybe_collect_asset_docs(msg, obj, index: Optional[int] = None, *args, **kwargs) -> Iterator[Asset]:
+    # The if/elif statement must be done in this order because isinstance for protocol
+    # doesn't check for exclusive signatures, and WritesExternalAssets will also
+    # return true for a WritesStreamAsset as they both contain collect_asset_docs
+    if isinstance(obj, WritesStreamAssets):
+        warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
+        async for v in iterate_maybe_async(obj.collect_asset_docs(index, *args, **kwargs)):
+            yield v
+    elif isinstance(obj, WritesExternalAssets):
         warn_if_msg_args_or_kwargs(msg, obj.collect_asset_docs, args, kwargs)
         async for v in iterate_maybe_async(obj.collect_asset_docs(*args, **kwargs)):
             yield v
