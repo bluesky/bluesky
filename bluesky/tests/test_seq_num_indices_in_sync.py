@@ -194,6 +194,7 @@ def test_flyscan_with_stream_datum_pause(RE):
                 Msg("open_run", x),
                 Msg("kickoff", x),
                 Msg("pause", x),
+                Msg("declare_stream", None, x, name="primary", collect=True),
                 *[Msg("collect", x, name="primary")] * 10,
                 Msg("complete", x),
                 Msg("close_run", x),
@@ -255,6 +256,7 @@ def test_flyscan_with_mismatched_indices(RE):
         Msg("open_run", x),
         Msg("kickoff", x),
         Msg("pause", x),
+        Msg("declare_stream", None, x, name="stream1", collect=True),
         *[Msg("collect", x, name="stream1")] * 10,
         Msg("complete", x),
         Msg("close_run", x),
@@ -325,6 +327,7 @@ def test_changing_stream_resource_after_stream_datum_emitted(RE):
     plan = [
         Msg("open_run", x),
         Msg("kickoff", x),
+        Msg("declare_stream", None, x, name="primary", collect=True),
         *[Msg("collect", x, name="primary")] * 10,
         Msg("complete", x),
         Msg("close_run", x),
