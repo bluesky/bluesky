@@ -1,4 +1,5 @@
 import itertools
+from typing import Dict
 import uuid
 from cycler import cycler
 import operator
@@ -13,7 +14,7 @@ try:
 except ImportError:
     from toolz import partition
 
-from .protocols import Locatable, Triggerable, Status
+from .protocols import Flyable, Locatable, Triggerable, Status, check_supports
 from .utils import (
     get_hinted_fields,
     merge_cycler,
@@ -623,14 +624,15 @@ def prepare(obj, *args, group=None, wait=False, **kwargs):
     return ret
 
 
-def kickoff(obj, *, group=None, wait=False, **kwargs):
+def kickoff(obj, *args, group=None, wait=False, **kwargs):
     """
-    Kickoff a fly-scanning device.
+    Kickoff one or more fly-scanning devices.
 
     Parameters
     ----------
     obj : fly-able
         Device with 'kickoff', and 'complete' methods.
+    *args : Any Flyables passed in as args will be kicked off along with obj.
     group : string (or any hashable object), optional
         identifier used by 'wait'.
     wait : boolean, optional
@@ -650,15 +652,21 @@ def kickoff(obj, *, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    ret = (yield Msg('kickoff', obj, group=group, **kwargs))
+    objs = [obj]+[check_supports(arg, Flyable) for arg in args]
+
+    statuses: Dict[Flyable, Status] = {}
+    for obj in objs:
+        ret = yield Msg('kickoff', obj, group=group, **kwargs)
+        statuses[obj] = ret
     if wait:
         yield from _wait(group=group)
-    return ret
+
+    return list(statuses.values())
 
 
-def complete(obj, *, group=None, wait=False, **kwargs):
+def complete(obj, *args, group=None, wait=False, **kwargs):
     """
-    Tell a flyer, 'stop collecting, whenever you are ready'.
+    Tell flyable objects, 'stop collecting, whenever you are ready'.
 
     The flyer returns a status object. Some flyers respond to this
     command by stopping collection and returning a finished status
@@ -670,6 +678,7 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     ----------
     obj : fly-able
         Device with 'kickoff' and 'complete' methods.
+    *args : Any Flyables passed in as args will be completed along with obj.
     group : string (or any hashable object), optional
         identifier used by 'wait'
     wait : boolean, optional
@@ -689,10 +698,16 @@ def complete(obj, *, group=None, wait=False, **kwargs):
     :func:`bluesky.plan_stubs.collect`
     :func:`bluesky.plan_stubs.wait`
     """
-    ret = yield Msg('complete', obj, group=group, **kwargs)
+    objs = [obj]+[check_supports(arg, Flyable) for arg in args]
+
+    statuses: Dict[Flyable, Status] = {}
+    for obj in objs:
+        ret = yield Msg('complete', obj, group=group, **kwargs)
+        statuses[obj] = ret
     if wait:
         yield from _wait(group=group)
-    return ret
+
+    return list(statuses.values())
 
 
 def collect(obj, *args, stream=False, return_payload=True, name=None):
