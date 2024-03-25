@@ -808,6 +808,10 @@ class RunEngine:
             If True, pause at the next checkpoint.
             False by default.
         """
+        if self.state == 'panicked':
+            raise RuntimeError(
+                "The RunEngine is panicked and cannot be recovered. You must restart bluesky."
+            )
         future = asyncio.run_coroutine_threadsafe(self._request_pause_coro(defer), loop=self.loop)
         # TODO add a timeout here?
         return future.result()
