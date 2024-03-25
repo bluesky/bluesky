@@ -52,8 +52,7 @@ def test_disable(RE, hw):
     assert bec._table is not None
 
     bec.peaks.com
-    bec.peaks['com']
-    assert ast.literal_eval(repr(bec.peaks)) == vars(bec.peaks)
+    assert 'det_a' in bec.peaks['com']
 
     bec.clear()
     assert bec._table is None
