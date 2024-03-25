@@ -93,6 +93,7 @@ def test_zmq(RE, hw):
     gc.collect()
     gc.collect()
 
+
 def test_zmq_proxy_blocks_sigint_exits():
     # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
     # process, which coverage misses.
