@@ -202,14 +202,6 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
     assert err_msg_substr not in caplog.text, "Best Effort Callback failed while executing nested plans"
 
 
-from importlib.metadata import metadata  # noqa: E402
-
-from packaging import version  # noqa: E402
-
-JSONSCHEMA_VERSION: version.Version = version.parse(metadata("jsonschema")["version"])
-
-
-@pytest.mark.xfail(JSONSCHEMA_VERSION >= version.parse("3.0.0"), reason="Deprecations in jsonschema")
 def test_plot_ints(RE):
     from ophyd import Signal
 
