@@ -200,8 +200,6 @@ def test_multirun_nested_plan(capsys, caplog, RE, hw):
         "Best Effort Callback failed while executing nested plans"
 
 
-@pytest.mark.xfail(not (jsonschema.__version__.split('.') < ['3', ]),
-                   reason='Deprecations in jsonschema')
 def test_plot_ints(RE):
     from ophyd import Signal
     from bluesky.callbacks.best_effort import BestEffortCallback
