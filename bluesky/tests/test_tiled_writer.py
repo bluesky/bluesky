@@ -121,7 +121,7 @@ def collect_asset_docs_stream_datum(
         hdf5_path = f"/{data_key}/VALUE"
         if self.counter == 0:
             stream_resource = StreamResource(
-                resource_kwargs={"path": hdf5_path},
+                resource_kwargs={"path": hdf5_path, "chunked": False},
                 data_key=data_key,
                 root=self.root,
                 resource_path="/dataset.h5",

@@ -72,7 +72,7 @@ class _RunWriter(DocumentRouter):
             {c: [v] for c, v in doc["data"].items()}
             | {f"ts_{c}": [v] for c, v in doc["timestamps"].items()}
         )
-        if "data" in parent_node:
+        if "data" in parent_node.keys():
             parent_node["data"].append_partition(df, 0)
         else:
             parent_node.new(
@@ -140,16 +140,15 @@ class _RunWriter(DocumentRouter):
                         structure=ArrayStructure(
                             data_type=BuiltinDtype.from_numpy_dtype(data_type),
                             shape=[0, *data_shape],
-                            chunks=[[0]] + [[d] for d in data_shape],
+                            chunks=[[]] + [[d] for d in data_shape],
                         ),
                         parameters={"path": data_path.split("/")},
                         management=Management.external,
                     )
                 ],
-                metadata={},
+                metadata=SR_doc,
                 specs=[],
             )
-
             self._SR_nodes[SR_uid] = SR_node
         else:
             raise RuntimeError(
@@ -161,9 +160,10 @@ class _RunWriter(DocumentRouter):
         SR_node.refresh()
         ds_dict = SR_node.data_sources()[0]
         ds_dict["structure"]["shape"][0] += num_rows
-        ds_dict["structure"]["chunks"][0] = [1] * ds_dict["structure"]["shape"][
-            0
-        ]  # maybe ds_dict["structure"]["chunks"][0][-1] += numrows
+        ds_dict["structure"]["chunks"][0].append(num_rows)
+        is_chunked = SR_node.metadata["resource_kwargs"].get("chunked", True)
+        if not is_chunked:
+            ds_dict["structure"]["chunks"][0] = [sum(ds_dict["structure"]["chunks"][0])]
         SR_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
         )
