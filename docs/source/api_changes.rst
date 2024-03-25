@@ -2,6 +2,14 @@
  Release History
 =================
 
+v1.13.0a3 (2024-03-25)
+======================
+
+Added
+-----
+
+* Support for collecitng from multiple detectors in the run bundler
+
 v1.13.0a2 (2024-03-20)
 ======================
 
