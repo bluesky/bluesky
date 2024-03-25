@@ -101,12 +101,12 @@ class _RunWriter(DocumentRouter):
         )  # Number of rows added by new StreamDatum
 
         # Get the Stream Resource node if it already exists or register if from a cached SR document
-        try:
-            SR_node = self._SR_nodes[doc["stream_resource"]]
-
-        except KeyError:
+        SR_uid = doc["stream_resource"]
+        if SR_uid in self._SR_nodes.keys():
+            SR_node = self._SR_nodes[SR_uid]
+        elif SR_uid in self._SR_cache.keys():
             # Register a new (empty) Stream Resource
-            SR_doc = self._SR_cache.pop(doc["stream_resource"])
+            SR_doc = self._SR_cache.pop(SR_uid)
 
             # POST /api/v1/register/{path}
             file_path = (
@@ -126,11 +126,9 @@ class _RunWriter(DocumentRouter):
                 data_shape = data_desc["shape"]
             elif data_desc["dtype"] == "number":
                 data_shape = ()
-
-            # Find machine dtype, assume '<f8' by default
-            data_type = np.dtype(data_desc.get("dtype_str", "<f8"))
-            # with h5py.File(file_path, "r") as f:
-            #     data_type = f[data_path].dtype
+            data_type = np.dtype(
+                data_desc.get("dtype_str", "<f8")
+            )  # Find machine dtype; assume '<f8' by default
 
             SR_node = parent_node.new(
                 structure_family=StructureFamily.array,
@@ -152,14 +150,20 @@ class _RunWriter(DocumentRouter):
                 specs=[],
             )
 
-            self._SR_nodes[SR_doc["uid"]] = SR_node
+            self._SR_nodes[SR_uid] = SR_node
+        else:
+            raise RuntimeError(
+                f"Stream Resource {SR_uid} is referenced before being declared."
+            )
 
         # Append StreamDatum to an existing StreamResource (by overwriting it with changed shape)
         url = SR_node.uri.replace("/metadata/", "/data_source/")
         SR_node.refresh()
         ds_dict = SR_node.data_sources()[0]
         ds_dict["structure"]["shape"][0] += num_rows
-        ds_dict["structure"]["chunks"][0] = [1] * ds_dict["structure"]["shape"][0]
+        ds_dict["structure"]["chunks"][0] = [1] * ds_dict["structure"]["shape"][
+            0
+        ]  # maybe ds_dict["structure"]["chunks"][0][-1] += numrows
         SR_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
         )
