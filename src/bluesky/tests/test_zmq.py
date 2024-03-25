@@ -1,3 +1,5 @@
+import gc
+
 import multiprocessing
 import os
 import signal
@@ -86,8 +88,10 @@ def test_zmq(RE, hw):
     la = sanitize_doc(local_accumulator)
     assert ra == la
 
+    gc.collect()
+    gc.collect()
 
-def test_zmq_components():
+def test_zmq_proxy_blocks_sigint_exits():
     # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
     # process, which coverage misses.
 
@@ -97,7 +101,7 @@ def test_zmq_components():
 
     proxy = Proxy(5567, 5568)
     assert not proxy.closed
-    threading.Thread(target=delayed_sigint, args=(5,)).start()
+    threading.Thread(target=delayed_sigint, args=(1,)).start()
     try:
         proxy.start()
         # delayed_sigint stops the proxy
@@ -108,22 +112,31 @@ def test_zmq_components():
         proxy.start()
 
     proxy = Proxy()  # random port
-    threading.Thread(target=delayed_sigint, args=(5,)).start()
+    threading.Thread(target=delayed_sigint, args=(1,)).start()
     try:
         proxy.start()
         # delayed_sigint stops the proxy
     except KeyboardInterrupt:
         ...
-
+    assert proxy.closed
     repr(proxy)
+    gc.collect()
+    gc.collect()
 
+
+@pytest.mark.parametrize('host', ['localhost:5555', ('localhost', 5555)])
+def test_zmq_RD_ports_spec(host):
     # test that two ways of specifying address are equivalent
-    d = RemoteDispatcher("localhost:5555")
+    d = RemoteDispatcher(host)
     assert d.address == ("localhost", 5555)
-    d = RemoteDispatcher(("localhost", 5555))
-    assert d.address == ("localhost", 5555)
-
-    repr(d)
+    assert d._socket is None
+    assert d._context is None
+    assert not d.closed
+    d.stop()
+    assert d._socket is None
+    assert d._context is None
+    assert d.closed
+    del d
 
 
 def test_zmq_no_RE(RE):
@@ -322,6 +335,7 @@ def test_zmq_prefix(RE, hw):
     for i in range(len(local_accumulator)):  # noqa: B007
         remote_accumulator.append(queue.get(timeout=2))
     p.close()
+    p2.close()
     proxy_proc.terminate()
     dispatcher_proc.terminate()
     proxy_proc.join()
