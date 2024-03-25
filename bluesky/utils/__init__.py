@@ -19,6 +19,7 @@ import numpy as np
 from cycler import cycler
 import datetime
 from functools import wraps, partial
+from super_state_machine.errors import TransitionError
 import threading
 import time
 from tqdm import tqdm
@@ -243,9 +244,15 @@ class SigintHandler(SignalHandler):
                     self.log.debug("It has been 10 seconds since the "
                                    "last SIGINT. Resetting SIGINT "
                                    "handler.")
+
                 # weeee push these to threads to not block the main thread
-                threading.Thread(target=self.RE.request_pause,
-                                 args=(True,)).start()
+                def maybe_defer_pause():
+                    try:
+                        self.RE.request_pause(True)
+                    except TransitionError:
+                        ...
+
+                threading.Thread(target=maybe_defer_pause).start()
                 print("A 'deferred pause' has been requested. The "
                       "RunEngine will pause at the next checkpoint. "
                       "To pause immediately, hit Ctrl+C again in the "
@@ -258,8 +265,14 @@ class SigintHandler(SignalHandler):
                 self.log.debug("RunEngine detected two SIGINTs. "
                                "A hard pause will be requested.")
 
-                threading.Thread(target=self.RE.request_pause,
-                                 args=(False,)).start()
+                # weeee push these to threads to not block the main thread
+                def maybe_prompt_pause():
+                    try:
+                        self.RE.request_pause(False)
+                    except TransitionError:
+                        ...
+
+                threading.Thread(target=maybe_prompt_pause).start()
             self.last_sigint_time = time.time()
 
 
