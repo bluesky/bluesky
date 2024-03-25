@@ -4,20 +4,6 @@ import numpy as np
 from .utils import Msg
 
 
-try:
-    import ophyd.sim  # noqa: F401
-except ImportError:
-    raise ImportError("""
-The simulated hardware objects in the bluesky.examples module have been
-moved to ophyd.sim. A version of ophyd v0.8.0 or greater is required.""")
-else:
-    warnings.warn("""
-The simulated hardware objects in the bluesky.examples module have been
-moved to ophyd.sim. Update imports to suppress this warning.
-    """, stacklevel=2)
-    from ophyd.sim import *  # noqa: F403, F401
-
-
 # These are very old, raw implementations of 'plans' the pre-date the
 # bluesky.plans module. They are not documented or (we hope) used in
 # production, but they are still used in tests.
