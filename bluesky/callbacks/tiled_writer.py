@@ -68,25 +68,25 @@ class _RunWriter(DocumentRouter):
     def event(self, doc):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
         parent_node = descriptor_node["internal"]
-        for table_key in ["data", "timestamps"]:
-            df = pd.DataFrame(
-                {column: [value] for column, value in doc[table_key].items()}
+        df = pd.DataFrame(
+            {c: [v] for c, v in doc["data"].items()}
+            | {f"ts_{c}": [v] for c, v in doc["timestamps"].items()}
+        )
+        if "data" in parent_node:
+            parent_node["data"].append_partition(df, 0)
+        else:
+            parent_node.new(
+                structure_family=StructureFamily.table,
+                data_sources=[
+                    DataSource(
+                        structure_family=StructureFamily.table,
+                        structure=TableStructure.from_pandas(df),
+                        mimetype="text/csv",
+                    ),  # or PARQUET_MIMETYPE
+                ],
+                key="data",
             )
-            if table_key in parent_node:
-                parent_node[table_key].append_partition(df, 0)
-            else:
-                parent_node.new(
-                    structure_family=StructureFamily.table,
-                    data_sources=[
-                        DataSource(
-                            structure_family=StructureFamily.table,
-                            structure=TableStructure.from_pandas(df),
-                            mimetype="text/csv",
-                        ),  # or PARQUET_MIMETYPE
-                    ],
-                    key=table_key,
-                )
-                parent_node[table_key].write_partition(df, 0)
+            parent_node["data"].write_partition(df, 0)
 
     def stream_resource(self, doc):
         # Only cache the StreamResource; add the node when at least one StreamDatum is added
