@@ -183,7 +183,7 @@ def test_table(RE, hw):
 
     fout.seek(0)
     _compare_tables(fout, KNOWN_TABLE)
-
+    fout.close()
 
 KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 |   seq_num  |        time  |           det  |         motor  |
@@ -285,6 +285,7 @@ def test_evil_table_names(RE):
 |         2  |  12:47:09.7  |     0  |     0  |     0  |     0  |
 +------------+--------------+--------+--------+--------+--------+"""
     _compare_tables(fout, reference)
+    fout.close()
 
 
 def test_live_fit(RE, hw):
