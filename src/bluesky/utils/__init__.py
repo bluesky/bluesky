@@ -1686,7 +1686,12 @@ class DefaultDuringTask(DuringTask):
                 # https://www.riverbankcomputing.com/pipermail/pyqt/2015-March/035674.html
                 # adapted from code at
                 # https://bitbucket.org/tortoisehg/thg/commits/550e1df5fbad
-                if os.name == "posix" and hasattr(signal, "set_wakeup_fd"):
+                if (
+                    os.name == "posix" and
+                    hasattr(signal, "set_wakeup_fd") and
+                    # TODO also check if main interpreter
+                    threading.current_thread() is threading.main_thread()
+                ):
                     # Wake up Python interpreter via pipe so that SIGINT
                     # can be handled immediately.
                     # (http://qt-project.org/doc/qt-4.8/unix-signals.html)
