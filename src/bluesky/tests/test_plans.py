@@ -1,11 +1,11 @@
 import collections
 import inspect
-import packaging
 import random
 import re
 
 import numpy as np
 import numpy.testing as npt
+import packaging
 import pandas as pd
 import pytest
 
@@ -287,7 +287,7 @@ def test_bad_per_step_signature(hw, per_step):
 
 def require_ophyd_1_4_0():
     ophyd = pytest.importorskip("ophyd")
-    if packaging.version.Version(ophyd.__version__) < packaging.version.Version('1.4.0'):
+    if packaging.version.Version(ophyd.__version__) < packaging.version.Version("1.4.0"):
         pytest.skip("Needs ophyd 1.4.0 for realistic ophyd.sim Devices.")
 
 

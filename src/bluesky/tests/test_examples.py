@@ -23,7 +23,7 @@ from bluesky.examples import (
     wait_one,
 )
 
-from .utils import _fabricate_asycio_event, _careful_event_set
+from .utils import _careful_event_set, _fabricate_asycio_event
 
 
 def test_msgs(hw):

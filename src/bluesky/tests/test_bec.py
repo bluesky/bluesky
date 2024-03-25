@@ -1,4 +1,3 @@
-import ast
 import time as ttime
 import warnings
 from datetime import datetime
@@ -51,8 +50,8 @@ def test_disable(RE, hw):
     RE(scan([det], motor, 1, 5, 5))
     assert bec._table is not None
 
-    bec.peaks.com # noqa: B018
-    assert 'det_a' in bec.peaks['com']
+    bec.peaks.com  # noqa: B018
+    assert "det_a" in bec.peaks["com"]
 
     bec.clear()
     assert bec._table is None

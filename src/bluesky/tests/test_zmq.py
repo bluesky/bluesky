@@ -1,5 +1,4 @@
 import gc
-
 import multiprocessing
 import os
 import signal
@@ -91,6 +90,7 @@ def test_zmq(RE, hw):
     gc.collect()
     gc.collect()
 
+
 def test_zmq_proxy_blocks_sigint_exits():
     # The test `test_zmq` runs Proxy and RemoteDispatcher in a separate
     # process, which coverage misses.
@@ -124,7 +124,7 @@ def test_zmq_proxy_blocks_sigint_exits():
     gc.collect()
 
 
-@pytest.mark.parametrize('host', ['localhost:5555', ('localhost', 5555)])
+@pytest.mark.parametrize("host", ["localhost:5555", ("localhost", 5555)])
 def test_zmq_RD_ports_spec(host):
     # test that two ways of specifying address are equivalent
     d = RemoteDispatcher(host)

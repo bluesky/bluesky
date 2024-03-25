@@ -185,6 +185,7 @@ def test_table(RE, hw):
     _compare_tables(fout, KNOWN_TABLE)
     fout.close()
 
+
 KNOWN_TABLE = """+------------+--------------+----------------+----------------+
 |   seq_num  |        time  |           det  |         motor  |
 +------------+--------------+----------------+----------------+

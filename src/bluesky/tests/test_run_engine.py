@@ -40,7 +40,7 @@ from bluesky.run_engine import (
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector, MsgCollector
 
-from .utils import _fabricate_asycio_event, _careful_event_set
+from .utils import _careful_event_set, _fabricate_asycio_event
 
 
 def test_states():
