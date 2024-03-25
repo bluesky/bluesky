@@ -94,6 +94,7 @@ class Publisher:
     def close(self):
         if self.RE:
             self.RE.unsubscribe(self._subscription_token)
+        self._socket.close()
         self._context.destroy()  # close Socket(s); terminate Context
 
 
@@ -176,7 +177,7 @@ class Proxy:
                 backend.close()
             except NameError:
                 ...
-            context.term()
+            context.destroy()
             raise
         else:
             self.in_port = in_port
@@ -196,7 +197,7 @@ class Proxy:
             self.closed = True
             self._frontend.close()
             self._backend.close()
-            self._context.term()
+            self._context.destroy()
 
     def __repr__(self):
         return ("{}(in_port={in_port}, out_port={out_port})"
@@ -253,14 +254,22 @@ class RemoteDispatcher(Dispatcher):
         self.address = (address[0], int(address[1]))
 
         if loop is None:
-            loop = zmq_asyncio.ZMQEventLoop()
+            loop = asyncio.new_event_loop()
         self.loop = loop
-        asyncio.set_event_loop(self.loop)
-        self._context = zmq_asyncio.Context()
-        self._socket = self._context.socket(zmq.SUB)
-        url = "tcp://%s:%d" % self.address
-        self._socket.connect(url)
-        self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        self._context = None
+        self._socket = None
+
+        def __finish_setup():
+            asyncio.set_event_loop(self.loop)
+
+            self._context = zmq_asyncio.Context()
+            self._socket = self._context.socket(zmq.SUB)
+
+            url = "tcp://%s:%d" % self.address
+            self._socket.connect(url)
+            self._socket.setsockopt_string(zmq.SUBSCRIBE, "")
+
+        self.__factory = __finish_setup
         self._task = None
         self.closed = False
         self._strict = strict
@@ -316,16 +325,21 @@ class RemoteDispatcher(Dispatcher):
                                "started and interrupted. Create a fresh "
                                f"instance with {self!r}")
         try:
+            self.__factory()
             self._task = self.loop.create_task(self._poll())
             self.loop.run_until_complete(self._task)
             task_exception = self._task.exception()
             if task_exception is not None:
                 raise task_exception
-        except BaseException:
+        finally:
             self.stop()
-            raise
 
     def stop(self):
         if self._task is not None:
             self._task.cancel()
+        if self._socket is not None:
+            self._socket.close()
+        if self._context is not None:
+            self._context.destroy()
+        self.loop.close()
         self.closed = True
