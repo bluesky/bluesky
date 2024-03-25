@@ -1,6 +1,6 @@
 import asyncio
+import packaging
 import os
-from distutils.version import LooseVersion
 
 import numpy as np
 import pytest
@@ -35,7 +35,7 @@ def hw(tmpdir):
 
     # ophyd 1.4.0 added support for customizing the directory used by simulated
     # hardware that generates files
-    if LooseVersion(ophyd.__version__) >= LooseVersion("1.4.0"):
+    if packaging.version.Version(ophyd.__version__) >= packaging.version.Version('1.4.0'):
         return hw(str(tmpdir))
     else:
         return hw()
