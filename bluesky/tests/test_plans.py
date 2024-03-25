@@ -1,19 +1,21 @@
-from distutils.version import LooseVersion
-import pytest
+import collections
 import inspect
-from bluesky.tests.utils import DocCollector
-import bluesky.plans as bp
-import bluesky.plan_stubs as bps
-import bluesky.preprocessors as bpp
-from bluesky.utils import RequestStop
+import packaging
+import random
+import re
+
 import numpy as np
 import numpy.testing as npt
 import pandas as pd
-import random
-import re
-import collections
-from bluesky.tests.utils import MsgCollector
+import pytest
+
 from bluesky.plan_patterns import chunk_outer_product_args, outer_product
+from bluesky.tests.utils import DocCollector
+from bluesky.tests.utils import MsgCollector
+from bluesky.utils import RequestStop
+import bluesky.plan_stubs as bps
+import bluesky.plans as bp
+import bluesky.preprocessors as bpp
 
 
 def _validate_start(start, expected_values):
@@ -307,7 +309,7 @@ def test_bad_per_step_signature(hw, per_step):
 
 def require_ophyd_1_4_0():
     ophyd = pytest.importorskip("ophyd")
-    if LooseVersion(ophyd.__version__) < LooseVersion('1.4.0'):
+    if packaging.version.Version(ophyd.__version__) < packaging.version.Version('1.4.0'):
         pytest.skip("Needs ophyd 1.4.0 for realistic ophyd.sim Devices.")
 
 
