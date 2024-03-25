@@ -20,6 +20,8 @@ from inspect import Parameter, Signature
 from typing import Any, AsyncIterable, AsyncIterator, Callable, Dict, List, Optional, Tuple, Type, Union
 from weakref import WeakKeyDictionary, ref
 
+from super_state_machine.errors import TransitionError
+
 import msgpack
 import msgpack_numpy
 import numpy as np
@@ -250,7 +252,13 @@ class SigintHandler(SignalHandler):
                 if self.last_sigint_time is not None:
                     self.log.debug("It has been 10 seconds since the last SIGINT. Resetting SIGINT handler.")
                 # weeee push these to threads to not block the main thread
-                threading.Thread(target=self.RE.request_pause, args=(True,)).start()
+                def maybe_defer_pause():
+                    try:
+                        self.RE.request_pause(True)
+                    except TransitionError:
+                        ...
+
+                threading.Thread(target=maybe_defer_pause).start()
                 print(
                     "A 'deferred pause' has been requested. The "
                     "RunEngine will pause at the next checkpoint. "
@@ -264,7 +272,14 @@ class SigintHandler(SignalHandler):
                 # - Ctrl-C twice within 10 seconds -> hard pause
                 self.log.debug("RunEngine detected two SIGINTs. A hard pause will be requested.")
 
-                threading.Thread(target=self.RE.request_pause, args=(False,)).start()
+                # weeee push these to threads to not block the main thread
+                def maybe_prompt_pause():
+                    try:
+                        self.RE.request_pause(False)
+                    except TransitionError:
+                        ...
+
+                threading.Thread(target=maybe_prompt_pause).start()
             self.last_sigint_time = time.time()
 
 

@@ -40,7 +40,7 @@ from bluesky.run_engine import (
 from bluesky.tests import requires_ophyd
 from bluesky.tests.utils import DocCollector, MsgCollector
 
-from .utils import _fabricate_asycio_event
+from .utils import _fabricate_asycio_event, _careful_event_set
 
 
 def test_states():
@@ -1082,7 +1082,7 @@ def test_sideband_cancel(RE):
     ev = _fabricate_asycio_event(RE.loop)
 
     def done():
-        ev.set()
+        _careful_event_set(ev)()
 
     def side_band_kill():
         RE.loop.call_soon_threadsafe(RE._task.cancel)
