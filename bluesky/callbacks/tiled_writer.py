@@ -164,6 +164,10 @@ class _RunWriter(DocumentRouter):
         ds_dict["structure"]["chunks"][0].append(num_rows)
         if chunk_size is None:
             ds_dict["structure"]["chunks"][0] = [sum(ds_dict["structure"]["chunks"][0])]
+        elif ds_dict["structure"]["chunks"][0][-1] > chunk_size:
+            last_chunk = ds_dict["structure"]["chunks"][0].pop()
+            chunks_arr = [chunk_size] * int(last_chunk / chunk_size)
+            ds_dict["structure"]["chunks"][0].extend(chunks_arr)
         SR_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
         )
