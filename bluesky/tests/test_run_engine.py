@@ -716,7 +716,7 @@ def test_sigint_three_hits(RE, hw):
 def test_sigint_many_hits_pln(RE):
     pid = os.getpid()
 
-    def sim_kill(n=1):
+    def sim_kill(n):
         for j in range(n):
             print('KILL', j)
             ttime.sleep(0.05)
@@ -745,7 +745,7 @@ def test_sigint_many_hits_panic(RE):
     raise pytest.skip("hangs tests on exit")
     pid = os.getpid()
 
-    def sim_kill(n=1):
+    def sim_kill(n):
         for j in range(n):
             print('KILL', j, ttime.monotonic() - start_time)
             ttime.sleep(0.05)
@@ -874,7 +874,7 @@ def test_many_context_managers(RE):
             Manager.exits += 1
 
     n = 42
-    RE.context_managers.extend([Manager]*n)
+    RE.context_managers.extend([Manager] * n)
     RE([Msg('null')])
     assert Manager.enters == n
     assert Manager.exits == n
@@ -1078,6 +1078,7 @@ def test_sideband_cancel(RE):
 
     assert .5 < (stop - start) < 2
     timer.join()
+
 
 def test_no_rewind(RE):
     msg_lst = []
