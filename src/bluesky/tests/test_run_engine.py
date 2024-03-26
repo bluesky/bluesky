@@ -754,7 +754,7 @@ def test_sigint_three_hits(RE, hw):
 def test_sigint_many_hits_pln(RE):
     pid = os.getpid()
 
-    def sim_kill(n=1):
+    def sim_kill(n):
         for j in range(n):
             print("KILL", j)
             ttime.sleep(0.05)
@@ -782,7 +782,7 @@ def test_sigint_many_hits_pln(RE):
 def test_sigint_many_hits_panic(RE):
     pid = os.getpid()
 
-    def sim_kill(n=1):
+    def sim_kill(n):
         for j in range(n):
             print("KILL", j, ttime.monotonic() - start_time)
             ttime.sleep(0.05)
