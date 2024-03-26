@@ -160,9 +160,9 @@ class _RunWriter(DocumentRouter):
         SR_node.refresh()
         ds_dict = SR_node.data_sources()[0]
         ds_dict["structure"]["shape"][0] += num_rows
+        chunk_size = SR_node.metadata["resource_kwargs"].get("chunk_size", None)
         ds_dict["structure"]["chunks"][0].append(num_rows)
-        is_chunked = SR_node.metadata["resource_kwargs"].get("chunked", True)
-        if not is_chunked:
+        if chunk_size is None:
             ds_dict["structure"]["chunks"][0] = [sum(ds_dict["structure"]["chunks"][0])]
         SR_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
