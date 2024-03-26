@@ -64,5 +64,5 @@ jobs:
         # make sure the sqlite file exists to avoid race conditions
         set -vxeuo pipefail
         python -c "from bluesky.utils import get_history; get_history()"
-        coverage run -m pytest -v
+        coverage run -m pytest
         coverage report
