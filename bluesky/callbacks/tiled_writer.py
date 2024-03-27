@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import numpy as np
 import pandas as pd
 from event_model import DocumentRouter, RunRouter
@@ -96,7 +98,7 @@ class _RunWriter(DocumentRouter):
         descriptor_node = self._descriptor_nodes[doc["descriptor"]]
         parent_node = descriptor_node["external"]
 
-        num_rows = (
+        num_new_rows = (
             doc["indices"]["stop"] - doc["indices"]["start"]
         )  # Number of rows added by new StreamDatum
 
@@ -159,15 +161,23 @@ class _RunWriter(DocumentRouter):
         url = SR_node.uri.replace("/metadata/", "/data_source/")
         SR_node.refresh()
         ds_dict = SR_node.data_sources()[0]
-        ds_dict["structure"]["shape"][0] += num_rows
+        ds_dict["structure"]["shape"][0] += num_new_rows
+
+        # Set up the chunk size based on the Stream Resource parameter `chunk_size`:
+        #    None -- single chunk for all existing and new elements
+        #    int -- fixed-sized chunks with at most `chunk_size` elements, last chunk can be smaller
+        #    list[int] -- new elements are chunked according to the provided specs
         chunk_size = SR_node.metadata["resource_kwargs"].get("chunk_size", None)
-        ds_dict["structure"]["chunks"][0].append(num_rows)
-        if chunk_size is None:
-            ds_dict["structure"]["chunks"][0] = [sum(ds_dict["structure"]["chunks"][0])]
-        elif ds_dict["structure"]["chunks"][0][-1] > chunk_size:
-            last_chunk = ds_dict["structure"]["chunks"][0].pop()
-            chunks_arr = [chunk_size] * int(last_chunk / chunk_size)
-            ds_dict["structure"]["chunks"][0].extend(chunks_arr)
+        chunk_spec = ds_dict["structure"]["chunks"][0]
+        if isinstance(chunk_size, Iterable):
+            chunk_spec.extend(chunk_size)
+        else:
+            num_all_rows = ds_dict["structure"]["shape"][0]
+            chunk_size = chunk_size or num_all_rows
+            chunk_spec.clear()
+            chunk_spec.extend([chunk_size] * int(num_all_rows / chunk_size))
+            if num_all_rows % chunk_size:
+                chunk_spec.append(num_all_rows % chunk_size)
         SR_node.context.http_client.put(
             url, json={"data_source": ds_dict}, params={"data_source": 1}
         )
